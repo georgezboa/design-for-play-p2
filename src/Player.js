@@ -24,13 +24,20 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.invulnUntil = 0;
     this.wasOnGround = true;
     this.lastFallSpeed = 0;
+    this.jumpAnticipating = false;
+    this.jumpLaunchAt = 0;
+    this.landingRecoverUntil = 0;
+    this.landingFrameAt = 0;
     this.nextStrikeAt = 0;
+    this.actionLockedUntil = 0;
+    this.visualState = 'idle';
 
     this.setCollideWorldBounds(true);
     this.setDepth(LANES[lane].depth + 2);
     this.setTint(LANES[lane].figureTint);
 
     this.body.setMaxVelocity(MOVE.speedWalk, 1500);
+    this.play('player-idle');
     this.applyScale();
   }
 
@@ -68,6 +75,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.frozen) {
       this.setAccelerationX(0);
       this.setVelocityX(0);
+      this.updateVisualAnimation(true);
       this.applyScale();
       return;
     }
@@ -117,10 +125,17 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     if (input.jumpPressed) this.jumpBuffer = MOVE.bufferMs;
     else this.jumpBuffer -= dt;
 
-    if (this.jumpBuffer > 0 && this.coyote > 0) {
-      this.setVelocityY(MOVE.jumpVelocity);
+    if (this.jumpBuffer > 0 && this.coyote > 0 && !this.jumpAnticipating) {
+      this.jumpAnticipating = true;
+      this.jumpLaunchAt = this.scene.time.now + 68;
       this.jumpBuffer = 0;
       this.coyote = 0;
+      this.pulse(1.14, 0.78, 86);
+    }
+
+    if (this.jumpAnticipating && this.scene.time.now >= this.jumpLaunchAt) {
+      this.setVelocityY(MOVE.jumpVelocity);
+      this.jumpAnticipating = false;
       this.isJumping = true;
       this.pulse(0.8, 1.24, 170);
       sfx.jump();
@@ -143,7 +158,9 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     body.setGravityY(GRAVITY * (mult - 1));
 
     // --------------------------------------------------------------- landing
-    if (onGround && !this.wasOnGround && this.lastFallSpeed > 300) {
+    if (onGround && !this.wasOnGround && this.lastFallSpeed > 60) {
+      this.landingRecoverUntil = this.scene.time.now + 150;
+      this.landingFrameAt = this.scene.time.now + 72;
       this.pulse(1.26, 0.76, 160);
       sfx.land();
     }
@@ -157,7 +174,55 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
       this.setAlpha(1);
     }
 
+    this.updateVisualAnimation(onGround);
     this.applyScale();
+  }
+
+  updateVisualAnimation(onGround) {
+    if (this.scene.time.now < this.actionLockedUntil) return;
+
+    if (this.jumpAnticipating) {
+      this.anims.stop();
+      this.setTexture('player-jump-anticipation');
+      this.visualState = 'jump-anticipation';
+      return;
+    }
+
+    if (!onGround) {
+      const texture = this.body.velocity.y < 30 ? 'player-jump' : 'player-fall';
+      const state = texture === 'player-jump' ? 'jump' : 'fall';
+      if (this.visualState !== state) {
+        this.anims.stop();
+        this.setTexture(texture);
+        this.visualState = state;
+      }
+      return;
+    }
+
+    if (this.scene.time.now < this.landingRecoverUntil) {
+      this.anims.stop();
+      this.setTexture(
+        this.scene.time.now < this.landingFrameAt ? 'player-land-0' : 'player-land-1',
+      );
+      this.visualState = 'land';
+      return;
+    }
+
+    if (Math.abs(this.body.velocity.x) > 24) {
+      this.play('player-walk', true);
+      this.visualState = 'walk';
+    } else {
+      this.play('player-idle', true);
+      this.visualState = 'idle';
+    }
+  }
+
+  playInteraction() {
+    this.setAccelerationX(0);
+    this.setVelocityX(0);
+    this.actionLockedUntil = this.scene.time.now + 430;
+    this.play('player-interact', true);
+    this.visualState = 'interact';
   }
 
   strike() {
@@ -244,6 +309,10 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
   launch(velocity) {
     this.setVelocityY(velocity);
     this.isJumping = false;
+    this.jumpAnticipating = false;
+    this.jumpLaunchAt = 0;
+    this.landingRecoverUntil = 0;
+    this.landingFrameAt = 0;
     this.coyote = 0;
   }
 
@@ -271,10 +340,16 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.transiting = false;
     this.frozen = false;
     this.isJumping = false;
+    this.jumpAnticipating = false;
+    this.jumpLaunchAt = 0;
+    this.landingRecoverUntil = 0;
+    this.landingFrameAt = 0;
     this.coyote = 0;
     this.jumpBuffer = 0;
     this.invulnUntil = this.scene.time.now + 700;
     this.nextStrikeAt = 0;
+    this.actionLockedUntil = 0;
+    this.visualState = 'idle';
 
     this.body.allowGravity = true;
     this.body.setGravityY(0);
@@ -286,6 +361,7 @@ export default class Player extends Phaser.Physics.Arcade.Sprite {
     this.setAlpha(1);
     this.setTint(LANES[lane].figureTint);
     this.setDepth(LANES[lane].depth + 2);
+    this.play('player-idle', true);
     this.applyScale();
     this.scene.onLaneChanged(lane);
   }

@@ -206,31 +206,228 @@ export function buildTextures(scene) {
 
   // ---------------------------------------------------------------- actors
 
-  // The hunter: tricorn, long coat flaring at the hem, cleaver held low.
-  bake('player', 28, 44, (c) => {
+  // The passenger animation is built from small deterministic pose offsets.
+  // Separate baked textures keep the asset pipeline simple while still giving
+  // Phaser real animation frames to play.
+  const drawPassenger = (c, pose = {}) => {
+    const bob = pose.bob || 0;
+    const leftLeg = pose.leftLeg || 0;
+    const rightLeg = pose.rightLeg || 0;
+    const leftArm = pose.leftArm || 0;
+    const rightArm = pose.rightArm || 0;
+    const reach = pose.reach || 0;
+
     c.fillStyle(PAL.actor, 1);
-    // coat skirt
-    c.fillTriangle(3, 43, 14, 20, 25, 43);
-    c.fillRect(9, 20, 10, 20);
-    // legs breaking the hem
-    c.fillRect(10, 38, 3, 6);
-    c.fillRect(16, 38, 3, 6);
-    // torso + shoulders
-    c.fillRect(8, 14, 12, 10);
-    c.fillTriangle(5, 22, 14, 12, 23, 22);
-    // head
-    c.fillCircle(14, 10, 4);
-    // tricorn
-    c.fillTriangle(4, 8, 14, 1, 24, 8);
-    c.fillRect(4, 7, 20, 2);
-    // arm + cleaver
-    c.fillRect(20, 20, 3, 9);
-    c.fillRect(21, 28, 6, 2);
-    c.fillTriangle(23, 30, 27, 30, 25, 36);
-    // a touch of edge light on the left shoulder
+    // shoes and separated legs
+    c.fillRect(8 + leftLeg, 34 + bob, 5, 8);
+    c.fillRect(16 + rightLeg, 34 + bob, 5, 8);
+    c.fillRect(6 + leftLeg, 41 + bob, 8, 3);
+    c.fillRect(15 + rightLeg, 41 + bob, 8, 3);
+    // jacket with a slightly oversized commuter silhouette
+    c.fillRoundedRect(6, 15 + bob, 17, 23, 4);
+    c.fillRect(4 + leftArm, 19 + bob, 4, 15);
+    c.fillRect(21 + rightArm, 19 + bob, 4 + reach, 15);
+    // neck, face and short asymmetric hair
+    c.fillRect(11, 11 + bob, 7, 6);
+    c.fillCircle(14, 8 + bob, 6);
+    c.fillTriangle(8, 7 + bob, 10, 1 + bob, 18, 2 + bob);
+    c.fillTriangle(18, 2 + bob, 21, 7 + bob, 16, 6 + bob);
+    // messenger bag and diagonal strap
+    c.fillStyle(0x596574, 1);
+    c.fillRect(17, 25 + bob + Math.abs(leftLeg), 10, 10);
+    c.fillRect(19, 23 + bob, 6, 2);
+    c.lineStyle(2, 0x768494, 1);
+    c.lineBetween(8, 16 + bob, 21, 28 + bob);
+    // The brass ticket punch is the protagonist's signature tool. It remains
+    // visible at the hip in every pose so the player—not a duplicate body—owns
+    // the chapter's central mechanic.
+    c.fillStyle(0xcaa66b, 1);
+    c.fillRoundedRect(21, 20 + bob, 5, 9, 2);
+    c.fillStyle(0xf2d49a, 0.95);
+    c.fillRect(22, 21 + bob, 3, 2);
+    // cool edge light keeps the near-lane silhouette readable
     c.fillStyle(0x99a4b1, 1);
-    c.fillRect(8, 14, 2, 9);
-    c.fillTriangle(5, 22, 10, 15, 11, 22);
+    c.fillRect(6, 17 + bob, 2, 17);
+    c.fillRect(9, 3 + bob, 2, 7);
+    c.fillRect(7 + leftLeg, 41 + bob, 6, 1);
+    if (reach) {
+      c.fillStyle(0xb99a5a, 1);
+      c.fillRect(24 + reach, 25 + bob, 3, 3);
+      c.fillStyle(0xf2d49a, 1);
+      c.fillRoundedRect(25 + reach, 23 + bob, 6, 8, 2);
+    }
+  };
+
+  const passengerPoses = {
+    'player-idle-0': { bob: 0 },
+    'player-idle-1': { bob: 1, rightArm: 1 },
+    'player-idle-2': { bob: 2 },
+    'player-idle-3': { bob: 1, leftArm: -1 },
+    'player-walk-0': { bob: 0, leftLeg: -2, rightLeg: 2, leftArm: 1, rightArm: -1 },
+    'player-walk-1': { bob: 1, leftLeg: -1, rightLeg: 1 },
+    'player-walk-2': { bob: 0, leftLeg: 2, rightLeg: -2, leftArm: -1, rightArm: 1 },
+    'player-walk-3': { bob: 1, leftLeg: 0, rightLeg: 0, leftArm: -1, rightArm: 1 },
+    'player-walk-4': { bob: 1, leftLeg: 1, rightLeg: -1 },
+    'player-walk-5': { bob: 0, leftLeg: -2, rightLeg: 2, leftArm: 1, rightArm: -1 },
+    'player-jump-anticipation': { bob: 3, leftLeg: -2, rightLeg: 2, leftArm: 1, rightArm: -1 },
+    'player-jump': { bob: -1, leftLeg: 1, rightLeg: -1, leftArm: -1, rightArm: -1 },
+    'player-fall': { bob: 0, leftLeg: -1, rightLeg: 1, leftArm: 1, rightArm: 1 },
+    'player-land-0': { bob: 3, leftLeg: -2, rightLeg: 2, leftArm: 1, rightArm: 1 },
+    'player-land-1': { bob: 1, leftLeg: -1, rightLeg: 1, leftArm: 1, rightArm: 0 },
+    'player-interact-0': { bob: 0, reach: 0 },
+    'player-interact-1': { bob: 0, rightArm: 1, reach: 2 },
+    'player-interact-2': { bob: 0, rightArm: 1, reach: 4 },
+    'player-interact-3': { bob: 0, rightArm: 1, reach: 2 },
+  };
+  Object.entries(passengerPoses).forEach(([key, pose]) => bake(key, 32, 46, (c) => drawPassenger(c, pose)));
+  bake('player', 32, 46, (c) => drawPassenger(c, passengerPoses['player-idle-0']));
+
+  // The first-car conductor has a dedicated silhouette rather than sharing
+  // the intentionally uncanny generic witness body used elsewhere.
+  const drawConductor = (c, pose = {}) => {
+    const bob = pose.bob || 0;
+    const hand = pose.hand || 0;
+    c.fillStyle(PAL.actor, 1);
+    c.fillRect(11, 16 + bob, 12, 12);
+    c.fillCircle(17, 10 + bob, 7);
+    // peaked service cap
+    c.fillRect(8, 4 + bob, 18, 5);
+    c.fillRect(5, 8 + bob, 22, 3);
+    // long tailored coat and narrow stance
+    c.fillRoundedRect(7, 25 + bob, 20, 31, 4);
+    c.fillTriangle(7, 50 + bob, 4, 62, 17, 57 + bob);
+    c.fillTriangle(27, 50 + bob, 30, 62, 17, 57 + bob);
+    c.fillRect(10, 55, 5, 11);
+    c.fillRect(20, 55, 5, 11);
+    // one arm held behind, one presenting the ticket punch
+    c.fillRect(4, 28 + bob, 5, 24 - bob);
+    c.fillRect(26 + hand, 28 + bob, 4, 19);
+    c.fillRect(28 + hand, 44 + bob, 6, 5);
+    c.fillStyle(0xb99a5a, 1);
+    c.fillRect(13, 27 + bob, 8, 2);
+    c.fillRect(15, 31 + bob, 4, 4);
+    c.fillRect(29 + hand, 45 + bob, 4, 2);
+    c.fillStyle(0x99a4b1, 1);
+    c.fillRect(8, 26 + bob, 2, 28 - bob);
+    c.fillRect(9, 5 + bob, 13, 1);
+  };
+  const conductorPoses = [
+    { bob: 0, hand: 0 },
+    { bob: 0, hand: 1 },
+    { bob: 1, hand: 1 },
+    { bob: 0, hand: 0 },
+  ];
+  conductorPoses.forEach((pose, index) => bake(`conductor-idle-${index}`, 36, 67, (c) => drawConductor(c, pose)));
+  [1, 3, 6, 3].forEach((hand, index) =>
+    bake(`conductor-switch-${index}`, 42, 67, (c) => drawConductor(c, { bob: index === 2 ? -1 : 0, hand })),
+  );
+  bake('conductor', 36, 67, (c) => drawConductor(c, conductorPoses[0]));
+
+  const drawRecorder = (c, mode) => {
+    const color = mode === 'recording' ? 0xe45a5f : mode === 'playback' ? 0x75d4cd : 0x65757d;
+    c.fillStyle(0x111920, 1);
+    c.fillRoundedRect(1, 1, 38, 53, 5);
+    c.lineStyle(2, color, 0.9);
+    c.strokeRoundedRect(1, 1, 38, 53, 5);
+    c.fillStyle(0x26343b, 1);
+    c.fillRect(7, 8, 26, 15);
+    c.fillStyle(color, 1);
+    if (mode === 'recording') c.fillCircle(20, 15, 5);
+    else if (mode === 'playback') c.fillTriangle(16, 10, 27, 15, 16, 20);
+    else {
+      c.fillRect(12, 12, 16, 2);
+      c.fillRect(12, 17, 10, 2);
+    }
+    c.fillStyle(0xb99a5a, 0.9);
+    c.fillRect(8, 31, 24, 3);
+    c.fillRect(11, 38, 18, 9);
+    c.fillStyle(color, mode === 'idle' ? 0.35 : 0.8);
+    c.fillRect(14, 40, 12, 5);
+  };
+  ['idle', 'recording', 'playback'].forEach((mode) =>
+    bake(`echo-recorder-${mode}`, 40, 55, (c) => drawRecorder(c, mode)),
+  );
+
+  bake('pressure-pad-off', 62, 12, (c) => {
+    c.fillStyle(0x111920, 1);
+    c.fillRoundedRect(1, 2, 60, 10, 4);
+    c.lineStyle(1, 0x65757d, 0.8);
+    c.strokeRoundedRect(1, 2, 60, 10, 4);
+    c.fillStyle(0x26343b, 1);
+    c.fillRect(8, 0, 46, 5);
+  });
+
+  bake('pressure-pad-on', 62, 12, (c) => {
+    c.fillStyle(0x102426, 1);
+    c.fillRoundedRect(1, 4, 60, 8, 4);
+    c.lineStyle(1, 0x75d4cd, 1);
+    c.strokeRoundedRect(1, 4, 60, 8, 4);
+    c.fillStyle(0x75d4cd, 0.92);
+    c.fillRect(8, 2, 46, 4);
+  });
+
+  const drawGenerator = (c, active) => {
+    c.fillStyle(0x111920, 1);
+    c.fillRoundedRect(2, 8, 34, 46, 5);
+    c.lineStyle(2, active ? 0x75d4cd : 0x65757d, 0.9);
+    c.strokeRoundedRect(2, 8, 34, 46, 5);
+    c.fillStyle(active ? 0x1d3638 : 0x26343b, 1);
+    c.fillCircle(19, 28, 10);
+    c.lineStyle(3, active ? 0xe7d8b2 : 0xb99a5a, 1);
+    c.lineBetween(19, 28, active ? 32 : 25, active ? 15 : 22);
+    c.fillStyle(active ? 0x75d4cd : 0xe45a5f, 1);
+    c.fillCircle(19, 45, 3);
+  };
+  bake('hand-generator-off', 38, 55, (c) => drawGenerator(c, false));
+  bake('hand-generator-on', 38, 55, (c) => drawGenerator(c, true));
+
+  const drawRelay = (c, orientation) => {
+    c.fillStyle(0x101820, 1);
+    c.fillRoundedRect(1, 1, 34, 34, 6);
+    c.lineStyle(2, 0x65757d, 0.9);
+    c.strokeRoundedRect(1, 1, 34, 34, 6);
+    c.fillStyle(0x26343b, 1);
+    c.fillCircle(18, 18, 11);
+    c.lineStyle(4, 0xb99a5a, 1);
+    if (orientation === 0) c.lineBetween(9, 27, 27, 9);
+    else c.lineBetween(9, 9, 27, 27);
+    c.fillStyle(0xe7d8b2, 1);
+    c.fillCircle(18, 18, 3);
+    c.fillStyle(0x75d4cd, 0.55);
+    c.fillCircle(6, orientation === 0 ? 29 : 7, 2);
+  };
+  bake('circuit-relay-0', 36, 36, (c) => drawRelay(c, 0));
+  bake('circuit-relay-1', 36, 36, (c) => drawRelay(c, 1));
+
+  bake('power-switch-off', 36, 54, (c) => {
+    c.fillStyle(0x111920, 1);
+    c.fillRoundedRect(2, 1, 32, 52, 4);
+    c.lineStyle(2, 0x65757d, 1);
+    c.strokeRoundedRect(2, 1, 32, 52, 4);
+    c.fillStyle(0x26343b, 1);
+    c.fillRect(8, 9, 20, 14);
+    c.fillStyle(0xe45a5f, 1);
+    c.fillCircle(13, 16, 3);
+    c.fillStyle(0x67747b, 1);
+    c.fillRect(15, 30, 6, 16);
+    c.fillStyle(0xb99a5a, 1);
+    c.fillRect(13, 29, 10, 5);
+  });
+
+  bake('power-switch-on', 36, 54, (c) => {
+    c.fillStyle(0x111920, 1);
+    c.fillRoundedRect(2, 1, 32, 52, 4);
+    c.lineStyle(2, 0x91a8aa, 1);
+    c.strokeRoundedRect(2, 1, 32, 52, 4);
+    c.fillStyle(0x1d3638, 1);
+    c.fillRect(8, 9, 20, 14);
+    c.fillStyle(0x75d4cd, 1);
+    c.fillCircle(13, 16, 3);
+    c.fillCircle(22, 16, 3);
+    c.fillStyle(0x9b8661, 1);
+    c.fillRect(15, 26, 6, 16);
+    c.fillStyle(0xe7d8b2, 1);
+    c.fillRect(13, 39, 10, 5);
   });
 
   // The beast: hunched quadruped, long skull, ridged spine.
@@ -443,4 +640,40 @@ export function buildTextures(scene) {
   });
 
   g.destroy();
+}
+
+export function buildAnimations(scene) {
+  const add = (key, frameKeys, frameRate, repeat = -1) => {
+    if (scene.anims.exists(key)) return;
+    scene.anims.create({
+      key,
+      frames: frameKeys.map((frameKey) => ({ key: frameKey })),
+      frameRate,
+      repeat,
+    });
+  };
+
+  add('player-idle', ['player-idle-0', 'player-idle-1', 'player-idle-2', 'player-idle-3'], 6);
+  add(
+    'player-walk',
+    ['player-walk-0', 'player-walk-1', 'player-walk-2', 'player-walk-3', 'player-walk-4', 'player-walk-5'],
+    10,
+  );
+  add(
+    'player-interact',
+    ['player-interact-0', 'player-interact-1', 'player-interact-2', 'player-interact-3'],
+    10,
+    0,
+  );
+  add(
+    'conductor-idle',
+    ['conductor-idle-0', 'conductor-idle-1', 'conductor-idle-2', 'conductor-idle-3'],
+    3,
+  );
+  add(
+    'conductor-switch',
+    ['conductor-switch-0', 'conductor-switch-1', 'conductor-switch-2', 'conductor-switch-3'],
+    7,
+    0,
+  );
 }

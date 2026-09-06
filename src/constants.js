@@ -1,6 +1,6 @@
 export const GAME_W = 960;
 export const GAME_H = 600;
-export const WORLD_W = 5600;
+export const WORLD_W = 9500;
 
 export const GRAVITY = 1900;
 

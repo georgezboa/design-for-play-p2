@@ -1,20 +1,12 @@
 import Phaser from 'phaser';
 import { GAME_W, GAME_H } from '../constants.js';
-import { buildTextures } from '../textures.js';
-
-// Vite resolves each panorama to a hashed URL at build time and (with
-// assetsInlineLimit: 0) always emits them as real files rather than data URIs.
-import world01Url from '../assets/world_01_tutorial_panorama_fullres.png';
-import world02Url from '../assets/world_02_ai_apocalypse_panorama_fullres.png';
-import world03Url from '../assets/world_03_present_city_panorama_fullres.png';
-import world04Url from '../assets/world_04_retro_cyberpunk_panorama_fullres.png';
-import world05Url from '../assets/world_05_medieval_panorama_fullres.png';
-import world06Url from '../assets/world_06_nature_reclamation_panorama_fullres.png';
-import world07Url from '../assets/world_07_memory_panorama_fullres.png';
-import world08Url from '../assets/world_08_final_choice_panorama_fullres.png';
-import world09Url from '../assets/world_09_world_war_panorama_fullres.png';
-import world10Url from '../assets/world_10_prehistoric_panorama_fullres.png';
-import cyberpunkUrl from '../assets/cyberpunk_panorama_fullres.png';
+import { devParams, resolveDevChapterIndex } from '../devMode.js';
+import { buildAnimations, buildTextures } from '../textures.js';
+import { STORY_WORLDS } from '../story.js';
+import { queueWorldAsset, resolvePreviewWorldIndex } from '../worlds/worldAssets.js';
+import mechanicalTableBaseUrl from '../assets/tutorial/mechanical-table/base-plate.png?url';
+import mechanicalPipeUrl from '../assets/tutorial/mechanical-table/vendor/pipe-tileset-cc0.png?url';
+import { consumePendingLaunch } from '../shell/saveSystem.js';
 
 export default class BootScene extends Phaser.Scene {
   constructor() {
@@ -22,9 +14,9 @@ export default class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    // The story is deliberately told through a stack of large panoramas. The
-    // progress bar matters here: the player should not see a half-rendered
-    // world and mistake it for one of the simulation's failures.
+    // Only the initial panorama is queued here. Adjacent worlds are streamed
+    // by GameScene so the browser never uploads all source panoramas to the GPU
+    // at once.
     const bar = this.add.graphics().setDepth(10);
     const label = this.add
       .text(GAME_W / 2, GAME_H / 2 + 26, 'loading the first memory', {
@@ -47,21 +39,43 @@ export default class BootScene extends Phaser.Scene {
       label.destroy();
     });
 
-    this.load.image('backdrop-01', world01Url);
-    this.load.image('backdrop-02', world02Url);
-    this.load.image('backdrop-03', world03Url);
-    this.load.image('backdrop-04', world04Url);
-    this.load.image('backdrop-05', world05Url);
-    this.load.image('backdrop-06', world06Url);
-    this.load.image('backdrop-07', world07Url);
-    this.load.image('backdrop-08', world08Url);
-    this.load.image('backdrop-09', world09Url);
-    this.load.image('backdrop-10', world10Url);
-    this.load.image('backdrop-cyberpunk', cyberpunkUrl);
+    this.pendingLaunch = typeof sessionStorage === 'undefined'
+      ? null
+      : sessionStorage.getItem('nightfall.pendingLaunch.v1');
+    const params = devParams();
+    const directCarIndex = params.get('car') === '2' ? 2 : null;
+    const chapterIndex = resolveDevChapterIndex(STORY_WORLDS);
+    const parkourPreview = this.pendingLaunch?.startsWith('chapter-2') || chapterIndex === 1
+      || params.get('chapter') === 'cyberpunk'
+      || params.get('qa')?.startsWith('parkour-');
+    const previewIndex = resolvePreviewWorldIndex(STORY_WORLDS);
+    const initialWorld = STORY_WORLDS[directCarIndex ?? (parkourPreview ? 1 : previewIndex ?? 0)];
+    queueWorldAsset(this.load, initialWorld.texture);
+    this.load.image('mechanical-table-base', mechanicalTableBaseUrl);
+    this.load.spritesheet('mechanical-pipe-parts', mechanicalPipeUrl, {
+      frameWidth: 16,
+      frameHeight: 16,
+    });
   }
 
   create() {
     buildTextures(this);
-    this.scene.start('Game');
+    buildAnimations(this);
+    const params = devParams();
+    const pendingLaunch = consumePendingLaunch();
+    if (pendingLaunch?.startsWith('chapter-2')) {
+      this.scene.start('CyberpunkParkour', {
+        checkpoint: pendingLaunch === 'chapter-2-midpoint' ? 'midpoint' : 'start',
+      });
+      return;
+    }
+    if (params.get('car') === '2') {
+      this.scene.start('Game', { startWorldIndex: 2 });
+      return;
+    }
+    const chapterPreview = resolveDevChapterIndex(STORY_WORLDS) === 1
+      || params.get('chapter') === 'cyberpunk'
+      || params.get('qa')?.startsWith('parkour-');
+    this.scene.start(chapterPreview ? 'CyberpunkParkour' : 'Game');
   }
 }

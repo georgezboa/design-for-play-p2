@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="204" viewBox="0 0 64 204">
+  <!-- Direct extraction of CyberpunkParkourScene.createLadderView():
+       dark mounting shadow, amber rails/rungs, outer guide brackets. -->
+  <rect x="0" y="0" width="64" height="204" rx="2" fill="#03050a" fill-opacity=".62" stroke="#ffbf26" stroke-opacity=".45"/>
+  <g fill="#ffbf26" fill-opacity=".42">
+    <rect x="2" y="2" width="2" height="200"/>
+    <rect x="60" y="2" width="2" height="200"/>
+  </g>
+  <g fill="#ffbf26" fill-opacity=".75">
+    <rect x="4" y="1" width="16" height="2"/><rect x="44" y="1" width="16" height="2"/>
+    <rect x="4" y="201" width="16" height="2"/><rect x="44" y="201" width="16" height="2"/>
+  </g>
+  <g fill="#d88b10" stroke="#ffdc62" stroke-width="1">
+    <rect x="12" y="12" width="6" height="180"/>
+    <rect x="46" y="12" width="6" height="180"/>
+  </g>
+  <g fill="#e69a17" stroke="#ffd85a" stroke-width="1" stroke-opacity=".8">
+    <rect x="14" y="29" width="36" height="5"/><rect x="14" y="51" width="36" height="5"/>
+    <rect x="14" y="73" width="36" height="5"/><rect x="14" y="95" width="36" height="5"/>
+    <rect x="14" y="117" width="36" height="5"/><rect x="14" y="139" width="36" height="5"/>
+    <rect x="14" y="161" width="36" height="5"/><rect x="14" y="183" width="36" height="5"/>
+  </g>
+</svg>

@@ -5,65 +5,67 @@ export const STORY_WORLDS = [
   {
     startX: 0,
     texture: 'backdrop-01',
-    title: 'THE TUTORIAL',
-    subtitle: 'movement is easier when you do not ask where you are going',
+    title: 'PROLOGUE  //  BEFORE DEPARTURE',
+    subtitle: 'the train has a timetable, but it has not started moving.',
+    backdropOffsetX: -3400,
+    backdropOffsetY: -250,
   },
   {
-    startX: 510,
-    texture: 'backdrop-02',
+    startX: 4800,
+    texture: 'backdrop-cyberpunk',
     title: 'THE SAFETY TEST',
-    subtitle: 'the system has prepared a disaster for you to survive',
+    subtitle: 'move the city until it becomes a route',
   },
   {
-    startX: 1020,
+    startX: 5267,
     texture: 'backdrop-03',
     title: 'THE CITY THAT REMEMBERS',
     subtitle: 'every window is showing the same room',
   },
   {
-    startX: 1530,
+    startX: 5733,
     texture: 'backdrop-04',
     title: 'THE BACKUP',
     subtitle: 'the future is only the past with brighter advertisements',
   },
   {
-    startX: 2040,
+    startX: 6200,
     texture: 'backdrop-05',
     title: 'THE OLD VERSION',
     subtitle: 'the first inhabitants were given better names',
   },
   {
-    startX: 2550,
+    startX: 6667,
     texture: 'backdrop-06',
     title: 'THE RECOVERY',
     subtitle: 'something is growing through the places you forgot',
   },
   {
-    startX: 3060,
+    startX: 7133,
     texture: 'backdrop-07',
     title: 'THE MEMORY',
     subtitle: 'the scenery changes when you stop looking at it',
   },
   {
-    startX: 3570,
+    startX: 7600,
     texture: 'backdrop-cyberpunk',
     title: 'THE ADVERTISEMENT',
     subtitle: 'you have been selected to continue being yourself',
   },
   {
-    startX: 4080,
+    startX: 8067,
     texture: 'backdrop-09',
     title: 'THE EXCUSE',
     subtitle: 'the war was added so the silence would feel earned',
   },
   {
-    startX: 4590,
+    startX: 8533,
     texture: 'backdrop-10',
     title: 'THE FIRST SCENE',
     subtitle: 'before language, there was still a door',
   },
   {
-    startX: 5100,
+    startX: 9000,
     texture: 'backdrop-08',
     title: 'THE FINAL CHOICE',
     subtitle: 'the world cannot render two answers at once',
@@ -72,18 +74,13 @@ export const STORY_WORLDS = [
 
 export const NPC_DIALOGUES = {
   caretaker: {
-    name: 'THE CARETAKER',
-    role: 'maintenance / first pass',
+    name: 'THE CONDUCTOR',
+    role: 'night service / car 01',
     tint: 0x8996a8,
     start: {
       lines: [
-        'The lamps are not lit. They are being remembered.',
-        'When you move, the street moves first. We call that mercy.',
-        'I can answer one question. Choose carefully.',
-      ],
-      choices: [
-        { label: 'Have we met before?', next: 'met', memory: 1 },
-        { label: 'Who built this place?', next: 'built', witness: 1 },
+        'Night service is running without a timetable.',
+        'Take the punch. Tell the train what happens next.',
       ],
     },
     met: {
@@ -98,7 +95,7 @@ export const NPC_DIALOGUES = {
         'That is what the world says when it is afraid of its author.',
       ],
     },
-    repeat: { lines: ['Please keep walking. The scenery is waiting for you to forget it.'] },
+    repeat: { lines: ['The train reads punched actions from left to right.'] },
   },
 
   mara: {

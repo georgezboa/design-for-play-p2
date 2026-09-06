@@ -1,0 +1,59 @@
+{
+  "project": "NIGHTFALL",
+  "version": "v01",
+  "model": "MiniMax H3",
+  "masterAspectRatio": "8:5",
+  "masterResolution": "1920x1200",
+  "fps": 30,
+  "shotsPerTransition": 5,
+  "transitions": [
+    {
+      "id": "T01",
+      "title": "THE TRAIN BECOMES PLAYABLE",
+      "shots": ["T01-01", "T01-02", "T01-03", "T01-04", "T01-05"],
+      "finalPlate": "CH01_GAMEPLAY_FIRST_FRAME_REFERENCE_V01.png",
+      "finalPlateFrames": 45,
+      "finalPlateRule": "replace the final 1.5 seconds with the exact game-render plate; do not regenerate, repaint or crop"
+    },
+    {
+      "id": "T12",
+      "title": "CURRENT LEAVES THE TRAIN",
+      "shots": ["T12-01", "T12-02", "T12-03", "T12-04", "T12-05"]
+    },
+    {
+      "id": "T23",
+      "title": "POWER BECOMES TIME",
+      "shots": ["T23-01", "T23-02", "T23-03", "T23-04", "T23-05"]
+    },
+    {
+      "id": "T34",
+      "title": "THE RECORD BECOMES PAPER",
+      "shots": ["T34-01", "T34-02", "T34-03", "T34-04", "T34-05"]
+    },
+    {
+      "id": "T45",
+      "title": "THE GAP ENTERS THE ARCHIVE",
+      "shots": ["T45-01", "T45-02", "T45-03", "T45-04", "T45-05"]
+    },
+    {
+      "id": "T56",
+      "title": "THE MUSEUM CANNOT HOLD ONE WORLD",
+      "shots": ["T56-01", "T56-02", "T56-03", "T56-04", "T56-05"]
+    }
+  ],
+  "continuityLocks": [
+    "same Butch face, age, hair silhouette, lean proportions and asymmetrical charcoal jacket in every shot",
+    "two parallel marks remain on Butch's left forearm",
+    "Mara has no full-face or full-body appearance in transitions T12 through T45",
+    "cyan is physical held material, amber is transmitted causality, red is fault",
+    "original graphite-watercolor-gouache storybook treatment, no named-artist imitation",
+    "no readable generated text, logos, watermarks, generic glitch or explosive portal"
+  ],
+  "referenceImages": {
+    "butch": "../../NIGHTFALL_Source_Assets/08_CHARACTER_SOURCE/BUTCH_TPOSE_V01/CHAR_BUTCH_TPOSE_FRONT_v01.png",
+    "nightTrain": "../../design-for-play-p2/docs/visual-references/prologue-retro-transit-interior-target.png",
+    "echoCityClock": "../../design-for-play-p2/docs/visual-references/chapter03-hunyuan/CH03_clock_tower_hunyuan_ref_v01.png",
+    "echoCityMood": "../../design-for-play-p2/src/cars/presentCity3d/assets/ch03-sunrise-overlook-oil-v1.png",
+    "chapter01GameplayFirstFrame": "CH01_GAMEPLAY_FIRST_FRAME_REFERENCE_V01.png"
+  }
+}

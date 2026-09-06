@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "maxTextureWidth": 4096,
+  "chunkOverlap": 4,
+  "jpegQuality": 88,
+  "assets": [
+    {
+      "id": "world-01-tutorial",
+      "sourceFile": "world_01_tutorial_panorama_fullres.png",
+      "textureKeys": ["backdrop-01"]
+    },
+    {
+      "id": "world-02-ai-apocalypse",
+      "sourceFile": "world_02_ai_apocalypse_panorama_fullres.png",
+      "textureKeys": ["backdrop-02"]
+    },
+    {
+      "id": "world-03-present-city",
+      "sourceFile": "world_03_present_city_panorama_fullres.png",
+      "textureKeys": ["backdrop-03"]
+    },
+    {
+      "id": "world-04-retro-cyberpunk",
+      "sourceFile": "world_04_retro_cyberpunk_panorama_fullres.png",
+      "textureKeys": ["backdrop-04", "backdrop-cyberpunk"]
+    },
+    {
+      "id": "world-05-medieval",
+      "sourceFile": "world_05_medieval_panorama_fullres.png",
+      "textureKeys": ["backdrop-05"]
+    },
+    {
+      "id": "world-06-nature-reclamation",
+      "sourceFile": "world_06_nature_reclamation_panorama_fullres.png",
+      "textureKeys": ["backdrop-06"]
+    },
+    {
+      "id": "world-07-memory",
+      "sourceFile": "world_07_memory_panorama_fullres.png",
+      "textureKeys": ["backdrop-07"]
+    },
+    {
+      "id": "world-08-final-choice",
+      "sourceFile": "world_08_final_choice_panorama_fullres.png",
+      "textureKeys": ["backdrop-08"]
+    },
+    {
+      "id": "world-09-world-war",
+      "sourceFile": "world_09_world_war_panorama_fullres.png",
+      "textureKeys": ["backdrop-09"]
+    },
+    {
+      "id": "world-10-prehistoric",
+      "sourceFile": "world_10_prehistoric_panorama_fullres.png",
+      "textureKeys": ["backdrop-10"]
+    }
+  ]
+}

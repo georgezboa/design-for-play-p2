@@ -1,0 +1,29 @@
+{
+  "package": "nightfall-final-boss-intros",
+  "version": 1,
+  "status": "media-pending",
+  "video": {
+    "width": 1280,
+    "height": 720,
+    "fps": 30,
+    "codec": "h264",
+    "pixelFormat": "yuv420p",
+    "targetDurationSeconds": 12
+  },
+  "deliveries": [
+    {
+      "id": "chapter5-to-conductor",
+      "filename": "5-6-conductor.mp4",
+      "runtimePath": "/cinematics/5-6-conductor.mp4",
+      "condition": "magicStoneCount < 5",
+      "destination": "/final-boss.html?from=chapter5"
+    },
+    {
+      "id": "chapter5-to-black-knife",
+      "filename": "5-6-black-knife.mp4",
+      "runtimePath": "/cinematics/5-6-black-knife.mp4",
+      "condition": "magicStoneCount === 5",
+      "destination": "/hidden-final-boss.html?from=chapter5"
+    }
+  ]
+}

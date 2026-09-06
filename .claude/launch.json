@@ -4,8 +4,32 @@
     {
       "name": "nightfall",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 5180
+    },
+    {
+      "name": "nightfall-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "prod"
+      ],
+      "port": 5181
+    },
+    {
+      "name": "painted-country",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--mode",
+        "development",
+        "--port",
+        "5179"
+      ],
+      "port": 5179
     }
   ]
 }

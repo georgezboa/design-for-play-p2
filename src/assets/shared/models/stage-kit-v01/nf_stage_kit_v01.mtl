@@ -1,0 +1,31 @@
+# NIGHTFALL shared neutral materials v01
+newmtl NF_CHARCOAL
+Kd 0.035 0.045 0.060
+Ks 0.080 0.090 0.100
+Ns 18
+
+newmtl NF_IRON
+Kd 0.180 0.210 0.240
+Ks 0.160 0.170 0.180
+Ns 28
+
+newmtl NF_BRASS
+Kd 0.460 0.285 0.105
+Ks 0.220 0.150 0.060
+Ns 34
+
+newmtl NF_IVORY
+Kd 0.700 0.650 0.540
+Ks 0.080 0.070 0.050
+Ns 10
+
+newmtl NF_GLASS
+Kd 0.140 0.520 0.610
+Ks 0.420 0.700 0.760
+Ns 80
+d 0.30
+
+newmtl NF_SIGNAL
+Kd 0.920 0.500 0.080
+Ke 0.480 0.180 0.020
+Ns 45

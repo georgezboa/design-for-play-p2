@@ -1,0 +1,27 @@
+{
+  "image": "brush-mask-atlas-v01.png",
+  "width": 1248,
+  "height": 1248,
+  "columns": 4,
+  "rows": 4,
+  "frameWidth": 312,
+  "frameHeight": 312,
+  "frameOrder": [
+    "dry-graphite",
+    "broad-gouache",
+    "watercolor-bloom",
+    "ink-drag",
+    "chalk-smear",
+    "stipple-cloud",
+    "torn-paper-edge",
+    "bristle-fan",
+    "charcoal-dust",
+    "broken-hatch",
+    "sponge-dab",
+    "feathered-wash",
+    "scratch-cluster",
+    "rough-impact-oval",
+    "tapered-speed-slash",
+    "soft-mist-blot"
+  ]
+}

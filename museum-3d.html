@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Chapter 5 — Dreamcore Museum P0 (Three.js)</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #0b0b0d;
+        overflow: hidden;
+        font-family: "Courier New", ui-monospace, monospace;
+      }
+      #app { position: fixed; inset: 0; }
+      #app canvas { display: block; }
+
+      .hud { position: fixed; pointer-events: none; z-index: 10; }
+
+      #version-label {
+        top: 10px; left: 12px;
+        color: #8f8f8f; font-size: 11px; letter-spacing: 0.08em;
+      }
+
+      #runtime-coordinates {
+        top: 30px; left: 12px;
+        padding: 7px 9px;
+        color: #c2cad2; background: rgba(5, 8, 11, 0.82);
+        border: 1px solid rgba(151, 166, 179, 0.34);
+        font: 700 11px/1.45 "Courier New", ui-monospace, monospace;
+        letter-spacing: 0.04em; white-space: pre-line;
+      }
+      #runtime-coordinates[data-door-ready="true"] {
+        color: #ffe6a1; border-color: #d2ab54;
+        box-shadow: 0 0 18px rgba(210, 171, 84, 0.22);
+      }
+
+      #reticle {
+        top: 50%; left: 50%;
+        width: 6px; height: 6px; margin: -3px 0 0 -3px;
+        border-radius: 50%;
+        background: rgba(240, 240, 230, 0.9);
+        box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+      }
+
+      #prompt {
+        top: 56%; left: 50%; transform: translateX(-50%);
+        color: #f2efe4; font-size: 15px; letter-spacing: 0.06em;
+        background: rgba(12, 12, 14, 0.72);
+        border: 1px solid rgba(240, 240, 230, 0.35);
+        padding: 6px 14px;
+        display: none;
+        white-space: nowrap;
+      }
+
+      #subtitle {
+        bottom: 7%; left: 50%; transform: translateX(-50%);
+        max-width: 72ch; text-align: center;
+        color: #f5f2e8; font-size: 17px; line-height: 1.5;
+        background: rgba(10, 10, 12, 0.78);
+        padding: 10px 18px;
+        display: none;
+      }
+      #subtitle .speaker { color: #9fd8de; letter-spacing: 0.1em; }
+      #subtitle .dialogue-choices {
+        display: flex; gap: 10px; justify-content: center; align-items: center;
+        flex-wrap: wrap; margin-top: 9px; font-size: 14px;
+      }
+      #subtitle .dialogue-choice {
+        display: inline-block; padding: 5px 9px;
+        border: 1px solid rgba(240, 240, 230, 0.28);
+        background: rgba(28, 31, 32, 0.82);
+      }
+      #subtitle .dialogue-choice b { color: #e4bd72; margin-right: 4px; }
+      #subtitle .dialogue-silence { color: #aaa79d; font-size: 12px; }
+
+      #echo-minimap {
+        top: 42px; right: 18px;
+        width: 190px;
+        max-width: 190px;
+        position: fixed;
+        z-index: 16;
+        overflow: hidden;
+        contain: layout paint;
+        pointer-events: none;
+        color: #d7c59d;
+        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
+      }
+      #echo-minimap[hidden] { display: none; }
+      #echo-minimap .map-title {
+        margin: 0 0 5px 2px;
+        font-size: 10px;
+        letter-spacing: 0.13em;
+        text-shadow: 0 1px 3px #000;
+      }
+      #echo-minimap canvas {
+        width: 190px !important;
+        height: 158px !important;
+        max-width: 190px !important;
+        max-height: 158px !important;
+        display: block;
+      }
+
+      #echo-work-card {
+        left: 18px; bottom: 20px;
+        display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+        padding: 8px 10px;
+        border: 1px solid rgba(184, 153, 91, 0.42);
+        background: rgba(7, 10, 11, 0.74);
+        color: #77766f;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
+        transition: opacity 180ms ease;
+      }
+      #echo-work-card[hidden] { display: none; }
+      .echo-work-row { display: flex; align-items: center; gap: 7px; }
+      .echo-work-next {
+        padding-left: 1px;
+        color: #d8d1bc;
+        font-size: 10px;
+        letter-spacing: 0.09em;
+      }
+      .echo-work-step {
+        display: flex; align-items: center; gap: 5px;
+        font-size: 10px; letter-spacing: 0.08em;
+      }
+      .echo-work-step::before {
+        content: ''; width: 7px; height: 7px;
+        border: 1px solid #65665f; border-radius: 50%;
+        background: #15191a;
+      }
+      .echo-work-step + .echo-work-step::after {
+        content: ''; width: 11px; height: 1px; background: #4c4c47;
+        order: -1; margin-right: 1px;
+      }
+      .echo-work-step.done { color: #8ec9c3; }
+      .echo-work-step.done::before { background: #69b9b1; border-color: #a6d8d2; }
+      .echo-work-step.current { color: #e2c47e; }
+      .echo-work-step.current::before {
+        background: #c89a42; border-color: #f1d08a;
+        box-shadow: 0 0 10px rgba(224, 176, 79, 0.72);
+        animation: echo-current-duty 1.4s ease-in-out infinite;
+      }
+      @keyframes echo-current-duty { 50% { opacity: 0.48; transform: scale(0.82); } }
+
+      #lock-overlay {
+        position: fixed; inset: 0; z-index: 20;
+        display: flex; align-items: center; justify-content: center;
+        background: rgba(8, 8, 10, 0.62);
+        cursor: pointer;
+      }
+      #lock-overlay .inner {
+        color: #f2efe4; text-align: center;
+        border: 1px solid rgba(240, 240, 230, 0.4);
+        background: rgba(14, 14, 16, 0.85);
+        padding: 26px 42px;
+      }
+      #lock-overlay .title { font-size: 20px; letter-spacing: 0.22em; margin-bottom: 12px; }
+      #lock-overlay .hint { font-size: 13px; color: #b9b4a4; line-height: 1.7; }
+      #lock-overlay.resume .inner { padding: 16px 26px; }
+      #lock-overlay.hidden { display: none; }
+
+      #fade {
+        position: fixed; inset: 0; z-index: 30;
+        background: #050608;
+        opacity: 0; pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      #fade.on { opacity: 1; pointer-events: all; }
+      #fade .chapter-completion {
+        position: absolute; inset: 0;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 14px; padding: 8vw; box-sizing: border-box;
+        color: #eee8d9; text-align: center; opacity: 0;
+        transition: opacity 0.45s ease;
+      }
+      #fade .chapter-completion.visible { opacity: 1; }
+      #fade .chapter-completion div { color: #aaa394; font-size: 14px; letter-spacing: 0.08em; }
+      #fade .chapter-completion strong { font-size: clamp(18px, 2.5vw, 32px); letter-spacing: 0.16em; }
+      #fade .chapter-completion small { color: #79756d; font-size: 12px; }
+
+      #direction-exhibit {
+        position: fixed; inset: 0; z-index: 50;
+        display: none; align-items: center; justify-content: center;
+        background: rgba(6, 8, 10, 0.96);
+        color: #eee7d4;
+      }
+      #direction-exhibit.open { display: flex; }
+      #direction-shell {
+        position: relative;
+        width: min(94vw, 1320px);
+        height: min(88vh, 840px);
+        padding: 54px 22px 22px;
+        border: 14px solid #59432f;
+        outline: 2px solid #a78a55;
+        background: #161a1d;
+        box-shadow: 0 24px 90px rgba(0, 0, 0, 0.78), inset 0 0 0 2px #252c30;
+        box-sizing: border-box;
+      }
+      #direction-title {
+        position: absolute; left: 22px; top: 17px;
+        color: #d7c59d; font-size: 13px; letter-spacing: 0.12em;
+      }
+      #direction-frame {
+        width: 100%; height: 100%; border: 1px solid #69767b;
+        background: #07070a; display: block;
+      }
+      #direction-close {
+        position: absolute; right: 18px; top: 12px;
+        border: 1px solid #8e7952; background: #252321; color: #eee7d4;
+        padding: 8px 12px; font: 13px "Courier New", monospace;
+        cursor: pointer;
+      }
+      #direction-status {
+        position: absolute; left: 22px; bottom: -34px;
+        font-size: 12px; letter-spacing: 0.1em; color: #aaa18d;
+      }
+      #direction-exhibit.complete #direction-status { color: #9fd8de; }
+      #direction-translation {
+        position: absolute; inset: 54px 22px 22px; z-index: 3;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        padding: clamp(28px, 6vw, 84px); box-sizing: border-box;
+        background:
+          radial-gradient(circle at 50% 42%, rgba(109, 82, 50, 0.24), transparent 38%),
+          linear-gradient(180deg, #101315 0%, #070809 100%);
+        color: #e9e0ca; text-align: center;
+        opacity: 0; pointer-events: none; transition: opacity 260ms ease;
+      }
+      #direction-exhibit.translating #direction-translation { opacity: 1; pointer-events: auto; }
+      #direction-exhibit.translating #direction-frame { pointer-events: none; }
+      #direction-mode {
+        color: #d7b86d; font: bold clamp(13px, 1.4vw, 18px) Georgia, serif;
+        letter-spacing: 0.22em; text-transform: uppercase;
+      }
+      #direction-copy {
+        max-width: 760px; margin: 24px 0 30px;
+        color: #d2ccbd; font: clamp(16px, 2vw, 25px)/1.65 Georgia, serif;
+      }
+      #direction-begin {
+        border: 1px solid #b99b5c; background: #241f17; color: #f1e7cc;
+        padding: 12px 22px; font: bold 12px "Courier New", monospace;
+        letter-spacing: 0.16em; cursor: pointer;
+      }
+      #direction-begin:hover, #direction-begin:focus-visible { background: #443721; outline: 2px solid #d8be7a; }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <div id="version-label" class="hud">CH05 DREAMCORE MUSEUM — ECHO CITY AUTHORITY v0.5.0</div>
+    <div id="runtime-coordinates" class="hud" aria-live="off">X 0.00 · MAP-Y(Z) 0.00 · LOADING</div>
+    <div id="reticle" class="hud"></div>
+    <div id="prompt" class="hud"></div>
+    <div id="subtitle" class="hud"></div>
+    <aside id="echo-minimap" class="hud" hidden aria-label="Echo City night round map">
+      <div class="map-title">ECHO CITY · NIGHT ROUND</div>
+      <canvas id="echo-minimap-canvas" width="190" height="158"></canvas>
+    </aside>
+    <div id="echo-work-card" class="hud" hidden aria-label="Night round physical work progress"></div>
+    <div id="lock-overlay">
+      <div class="inner">
+        <div class="title">THE MUSEUM OF ONE ANSWER</div>
+        <div class="hint">
+          CLICK TO ENTER<br />
+          WASD / ARROWS — MOVE &nbsp;·&nbsp; SPACE — JUMP &nbsp;·&nbsp; MOUSE / DRAG — LOOK<br />
+          E / ENTER — INTERACT &nbsp;·&nbsp; ESC — RELEASE MOUSE
+        </div>
+      </div>
+    </div>
+    <div id="fade"><div class="chapter-completion" aria-live="polite"></div></div>
+    <section id="direction-exhibit" aria-hidden="true">
+      <div id="direction-shell">
+        <div id="direction-title">ARCHIVAL RECONSTRUCTION</div>
+        <button id="direction-close" type="button" aria-label="Return to corridor">×</button>
+        <iframe id="direction-frame" title="Chapter 5 parallel direction"></iframe>
+        <div id="direction-translation" aria-hidden="true">
+          <div id="direction-mode">GAZE RECORD</div>
+          <div id="direction-copy">The archive is translating this memory into an interaction law.</div>
+          <button id="direction-begin" type="button">BEGIN RECONSTRUCTION</button>
+        </div>
+        <div id="direction-status">ESC</div>
+      </div>
+    </section>
+    <script type="module" src="/src/chapters/museum3d/museum3d-main.js?v=central-two-world-boss-assets-20260813-5"></script>
+  </body>
+</html>

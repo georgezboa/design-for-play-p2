@@ -3,7 +3,11 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Nightfall — Gothic 2D Action Game</title>
+    <link rel="icon" href="data:," />
+    <title>NIGHTFALL — The Last Archive Line</title>
+    <meta name="theme-color" content="#030608" />
+    <meta name="description" content="NIGHTFALL — The Last Archive Line" />
+    <link rel="preload" as="image" href="/assets/ui/nightfall-title-background.png" fetchpriority="high" />
     <style>
       :root { color-scheme: dark; }
       * { box-sizing: border-box; }
@@ -13,6 +17,7 @@
         background: #04060a;
         font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
         color: #6b7684;
+        overflow: hidden;
       }
       #app {
         min-height: 100%;
@@ -23,9 +28,12 @@
         gap: 0;
         padding: 18px;
       }
+      body:has(#nightfall-title) #app { visibility: hidden; }
       #game canvas {
         display: block;
-        border-radius: 10px;
+        border-radius: 0;
+        image-rendering: pixelated;
+        image-rendering: crisp-edges;
         box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
       }
     </style>

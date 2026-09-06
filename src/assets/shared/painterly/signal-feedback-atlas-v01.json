@@ -1,0 +1,23 @@
+{
+  "image": "signal-feedback-atlas-v01.png",
+  "width": 1248,
+  "height": 1248,
+  "columns": 4,
+  "rows": 3,
+  "frameWidth": 312,
+  "frameHeight": 416,
+  "frameOrder": [
+    "relationship-sparks",
+    "relationship-connecting",
+    "relationship-flow",
+    "relationship-knot",
+    "action-seed",
+    "action-pulse",
+    "action-impact",
+    "action-settle",
+    "refusal-crack",
+    "refusal-interrupt",
+    "refusal-slash",
+    "refusal-fade"
+  ]
+}

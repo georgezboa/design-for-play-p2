@@ -1,0 +1,220 @@
+{
+  "ground": {
+    "target": [
+      1.5,
+      2.0,
+      0.0
+    ],
+    "ortho_scale": 72,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 26.6667,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "Decal_Crosswalk",
+      "Decal_Crosswalk.001",
+      "Decal_Crosswalk.002",
+      "Decal_Crosswalk_Wide",
+      "Decal_Crosswalk_Wide.001",
+      "Prop_Drain",
+      "Prop_Drain.001",
+      "Prop_ManholeCover",
+      "Prop_ManholeCover.001",
+      "Sidewalk_Straight_3m",
+      "Sidewalk_Straight_3m.001",
+      "Sidewalk_Straight_3m.002",
+      "Sidewalk_Straight_3m.003",
+      "Sidewalk_Straight_3m.004",
+      "Sidewalk_Straight_3m.005",
+      "Sidewalk_Straight_3m.006",
+      "Sidewalk_Straight_3m.007",
+      "Sidewalk_Straight_3m.008",
+      "Street_4WayIntersection",
+      "Street_4WayIntersection.001",
+      "Street_Asphalt_6x6",
+      "Street_Asphalt_6x6.001",
+      "Street_Asphalt_6x6.002",
+      "Street_Asphalt_6x6.003",
+      "Street_Asphalt_6x6.004",
+      "Street_Asphalt_6x6.005",
+      "Street_Asphalt_6x6.006",
+      "Street_Asphalt_6x6.007",
+      "Street_Asphalt_6x6.008",
+      "block_base",
+      "plaza_fountain",
+      "plaza_market",
+      "plaza_train",
+      "plaza_transit",
+      "train_platform_edge"
+    ]
+  },
+  "buildings": {
+    "target": [
+      -14.0,
+      8.0,
+      6.0
+    ],
+    "ortho_scale": 84,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 22.8571,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "Building_Large_2",
+      "Building_Large_2.001",
+      "Building_Medium_2.001",
+      "Building_Medium_2.002",
+      "Building_Medium_2.003",
+      "Building_Small_1",
+      "Building_Small_1.001"
+    ]
+  },
+  "market": {
+    "target": [
+      -16.0,
+      0.0,
+      1.0
+    ],
+    "ortho_scale": 22,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 87.2727,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "market_gate_post_a",
+      "market_gate_post_b",
+      "stall_a",
+      "stall_a_awning",
+      "stall_b",
+      "stall_b_awning"
+    ]
+  },
+  "transit": {
+    "target": [
+      8.0,
+      12.0,
+      1.0
+    ],
+    "ortho_scale": 34,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 56.4706,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "barrier_post",
+      "crossing_island",
+      "field_pylon_0",
+      "field_pylon_1",
+      "field_pylon_2"
+    ]
+  },
+  "fountain": {
+    "target": [
+      21.0,
+      -1.0,
+      1.0
+    ],
+    "ortho_scale": 26,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 73.8462,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "bell",
+      "bell_beam",
+      "bell_post_a",
+      "bell_post_b",
+      "fountain_basin",
+      "fountain_core",
+      "fountain_water",
+      "gate_post_a",
+      "gate_post_b"
+    ]
+  },
+  "occluders": {
+    "target": [
+      0.0,
+      -18.6,
+      0.5
+    ],
+    "ortho_scale": 28,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 68.5714,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "Prop_Bollard",
+      "Prop_Bollard.001",
+      "Prop_Bollard.002",
+      "Prop_Bollard.003",
+      "Prop_Bollard.004",
+      "Prop_Planter_Single",
+      "Prop_Planter_Single.001",
+      "Prop_Planter_Single.002",
+      "Prop_Planter_Single.003",
+      "Prop_Planter_Single.004"
+    ]
+  },
+  "masks": {
+    "target": [
+      18.5,
+      -1.0,
+      0.0
+    ],
+    "ortho_scale": 48,
+    "resolution": [
+      1920,
+      1200
+    ],
+    "ppm": 40.0,
+    "camera": {
+      "yaw_deg": 45,
+      "tilt_deg": 55,
+      "type": "ortho"
+    },
+    "objects": [
+      "field_plane",
+      "pad_butch",
+      "pad_mara",
+      "record_mark",
+      "safe_crossing",
+      "safe_crossing_edge"
+    ]
+  }
+}

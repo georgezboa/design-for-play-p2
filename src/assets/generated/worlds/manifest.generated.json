@@ -1,0 +1,342 @@
+{
+  "schemaVersion": 1,
+  "maxTextureWidth": 4096,
+  "chunkOverlap": 4,
+  "encoding": {
+    "format": "jpeg",
+    "quality": 88
+  },
+  "assets": [
+    {
+      "id": "world-01-tutorial",
+      "sourceFile": "world_01_tutorial_panorama_fullres.png",
+      "sourceSha256": "268d8d4c3b16b59a89dfc5b94cf26b6c85637e7a7e19b56d719cde5346fb9774",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-01"
+      ],
+      "chunks": [
+        {
+          "file": "world-01-tutorial/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 309437
+        },
+        {
+          "file": "world-01-tutorial/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 315643
+        },
+        {
+          "file": "world-01-tutorial/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 270366
+        }
+      ]
+    },
+    {
+      "id": "world-02-ai-apocalypse",
+      "sourceFile": "world_02_ai_apocalypse_panorama_fullres.png",
+      "sourceSha256": "31f8494799579b43ef9392348f246935fa534d322ae33ea3a5aa8c6ab2e6de48",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-02"
+      ],
+      "chunks": [
+        {
+          "file": "world-02-ai-apocalypse/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 584132
+        },
+        {
+          "file": "world-02-ai-apocalypse/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 615479
+        },
+        {
+          "file": "world-02-ai-apocalypse/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 485755
+        }
+      ]
+    },
+    {
+      "id": "world-03-present-city",
+      "sourceFile": "world_03_present_city_panorama_fullres.png",
+      "sourceSha256": "07fa338986478d3bb02f2f05ce2a8c9ab2cfa1f37ea4787db975e26b5ec1b184",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-03"
+      ],
+      "chunks": [
+        {
+          "file": "world-03-present-city/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 949204
+        },
+        {
+          "file": "world-03-present-city/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 991676
+        },
+        {
+          "file": "world-03-present-city/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 724581
+        }
+      ]
+    },
+    {
+      "id": "world-04-retro-cyberpunk",
+      "sourceFile": "world_04_retro_cyberpunk_panorama_fullres.png",
+      "sourceSha256": "46bcdaa5ff269317028577c8a4bd0a24be578108efb743e1a61cd9f05b2f5935",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-04",
+        "backdrop-cyberpunk"
+      ],
+      "chunks": [
+        {
+          "file": "world-04-retro-cyberpunk/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 1081462
+        },
+        {
+          "file": "world-04-retro-cyberpunk/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 1278983
+        },
+        {
+          "file": "world-04-retro-cyberpunk/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 1041554
+        }
+      ]
+    },
+    {
+      "id": "world-05-medieval",
+      "sourceFile": "world_05_medieval_panorama_fullres.png",
+      "sourceSha256": "c57ad1cf8ceb66f8f28a9d419cf04fa81098013d2ecc2da1d13e45f516763869",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-05"
+      ],
+      "chunks": [
+        {
+          "file": "world-05-medieval/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 731001
+        },
+        {
+          "file": "world-05-medieval/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 747272
+        },
+        {
+          "file": "world-05-medieval/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 556608
+        }
+      ]
+    },
+    {
+      "id": "world-06-nature-reclamation",
+      "sourceFile": "world_06_nature_reclamation_panorama_fullres.png",
+      "sourceSha256": "c6619c6c3ec0f9e1c6606f0c2a5b95d36c17f799ce92215d1ee41ad9e4f54060",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-06"
+      ],
+      "chunks": [
+        {
+          "file": "world-06-nature-reclamation/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 643371
+        },
+        {
+          "file": "world-06-nature-reclamation/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 685109
+        },
+        {
+          "file": "world-06-nature-reclamation/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 464403
+        }
+      ]
+    },
+    {
+      "id": "world-07-memory",
+      "sourceFile": "world_07_memory_panorama_fullres.png",
+      "sourceSha256": "aa015b233bdc0e49b0d00a8205181f8529eb84a3113cc19b0c325c289839c465",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-07"
+      ],
+      "chunks": [
+        {
+          "file": "world-07-memory/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 399286
+        },
+        {
+          "file": "world-07-memory/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 391433
+        },
+        {
+          "file": "world-07-memory/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 314421
+        }
+      ]
+    },
+    {
+      "id": "world-08-final-choice",
+      "sourceFile": "world_08_final_choice_panorama_fullres.png",
+      "sourceSha256": "926ff2bde45405ba12691d7023f9242c60cbb18a0e0de607a1d2c27860e23c0e",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-08"
+      ],
+      "chunks": [
+        {
+          "file": "world-08-final-choice/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 517976
+        },
+        {
+          "file": "world-08-final-choice/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 525540
+        },
+        {
+          "file": "world-08-final-choice/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 417242
+        }
+      ]
+    },
+    {
+      "id": "world-09-world-war",
+      "sourceFile": "world_09_world_war_panorama_fullres.png",
+      "sourceSha256": "39475caa1718a543fe598bf521ae00ee584be2909ffe0401e28f2a7d05030a99",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-09"
+      ],
+      "chunks": [
+        {
+          "file": "world-09-world-war/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 423006
+        },
+        {
+          "file": "world-09-world-war/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 463164
+        },
+        {
+          "file": "world-09-world-war/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 331649
+        }
+      ]
+    },
+    {
+      "id": "world-10-prehistoric",
+      "sourceFile": "world_10_prehistoric_panorama_fullres.png",
+      "sourceSha256": "f5296dbdd75b36a91bc68e9b3943a732cdad63fc196ff83d72c63f6f4684d649",
+      "sourceWidth": 11408,
+      "sourceHeight": 941,
+      "textureKeys": [
+        "backdrop-10"
+      ],
+      "chunks": [
+        {
+          "file": "world-10-prehistoric/chunk-00.jpg",
+          "x": 0,
+          "width": 4096,
+          "height": 941,
+          "bytes": 580945
+        },
+        {
+          "file": "world-10-prehistoric/chunk-01.jpg",
+          "x": 4092,
+          "width": 4096,
+          "height": 941,
+          "bytes": 638318
+        },
+        {
+          "file": "world-10-prehistoric/chunk-02.jpg",
+          "x": 8184,
+          "width": 3224,
+          "height": 941,
+          "bytes": 415747
+        }
+      ]
+    }
+  ]
+}

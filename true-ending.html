@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NIGHTFALL — THE UNFILED ENDING</title>
+    <style>
+      html,body{margin:0;height:100%;overflow:hidden;background:#000;color:#eee9dc;font-family:Georgia,serif}body{display:grid;place-items:center}.ending{width:min(760px,calc(100vw - 40px));text-align:center;opacity:0;animation:reveal 2.4s 1s forwards}.stones{display:flex;justify-content:center;gap:14px;margin:0 0 44px}.stone{width:26px;height:34px;clip-path:polygon(50% 0,90% 28%,78% 78%,50% 100%,22% 78%,10% 28%);background:radial-gradient(circle at 35% 25%,#fff,#62e0f4 12%,#76548e 55%,#100b19);filter:drop-shadow(0 0 12px #5cdbea)}.kicker{font:11px ui-monospace,monospace;letter-spacing:.32em;color:#6ddbe7}.ending h1{font-size:clamp(30px,5vw,52px);font-weight:400;letter-spacing:.06em;margin:14px 0 32px}.line{font-size:clamp(18px,2.4vw,25px);line-height:1.6;opacity:0;animation:line 1.5s forwards}.line:nth-of-type(2){animation-delay:3.4s}.line:nth-of-type(3){animation-delay:6.6s}.line:nth-of-type(4){animation-delay:10.2s}.line:nth-of-type(5){animation-delay:14.2s}.truth{color:#8be9f2}.continue{margin-top:44px;padding:12px 24px;border:1px solid #55757a;background:#050708;color:#dde8e5;font:700 11px ui-monospace,monospace;letter-spacing:.18em;opacity:0;animation:line 1s 17.5s forwards;cursor:pointer}@keyframes reveal{to{opacity:1}}@keyframes line{to{opacity:1}}
+    </style>
+  </head>
+  <body>
+    <main class="ending">
+      <div class="stones" aria-label="Four collected magic stones"><i class="stone"></i><i class="stone"></i><i class="stone"></i><i class="stone"></i></div>
+      <div class="kicker">THE RECORD BENEATH THE RECORD</div>
+      <h1>THE UNFILED ENDING</h1>
+      <p class="line">The stones do not open another carriage. They open the part of Butch’s memory the Conductor kept rewriting.</p>
+      <p class="line">There was no missing sister waiting at the end of the line.</p>
+      <p class="line truth">Mara was an illusion made by the Conductor: a passenger-shaped answer built from Butch’s loneliness.</p>
+      <p class="line">Butch never had a sister. Every rescue was the train teaching him to chase the absence it needed.</p>
+      <button class="continue" type="button">ACCEPT THE TRUTH · CONTINUE TO CREDITS</button>
+    </main>
+    <script type="module" src="/src/trueEnding-main.js"></script>
+  </body>
+</html>

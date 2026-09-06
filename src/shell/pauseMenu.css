@@ -1,0 +1,28 @@
+#nightfall-pause-menu[hidden] { display: none; }
+#nightfall-pause-menu { position: fixed; inset: 0; z-index: 30000; color: #dfc79e; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.nf-pause-backdrop { position: absolute; inset: 0; background: rgba(0, 0, 0, .76); backdrop-filter: blur(8px) saturate(.7); }
+.nf-pause-card {
+  position: absolute;
+  left: 50%; top: 50%; translate: -50% -50%;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  overflow: auto;
+  padding: clamp(24px, 5vw, 48px);
+  border: 1px solid rgba(223, 198, 154, .4);
+  background: linear-gradient(145deg, #101719f2, #030608f5);
+  box-shadow: 0 34px 100px #000;
+  text-align: center;
+}
+.nf-pause-eyebrow { margin: 0; color: #45d9e3; font-size: 10px; letter-spacing: .22em; }
+.nf-pause-card h2 { margin: 12px 0 26px; font: 400 clamp(28px, 6vw, 48px)/1 Georgia, serif; letter-spacing: .2em; }
+.nf-pause-actions, .nf-pause-settings { display: grid; gap: 8px; }
+.nf-pause-action { min-height: 46px; padding: 10px 18px; border: 1px solid rgba(223, 198, 154, .18); color: #dfc79e; background: transparent; font: 700 12px/1 ui-monospace, monospace; letter-spacing: .15em; cursor: pointer; }
+.nf-pause-action:hover, .nf-pause-action:focus-visible { outline: 0; border-color: #45d9e3; color: #f1dfbd; background: rgba(30, 101, 108, .2); }
+.nf-pause-action.is-danger { color: #d99a86; }
+.nf-pause-setting { display: grid; grid-template-columns: 1fr 1.1fr; align-items: center; gap: 16px; min-height: 42px; border-bottom: 1px solid rgba(223, 198, 154, .1); text-align: left; font-size: 11px; letter-spacing: .1em; }
+.nf-pause-setting input[type="range"] { width: 100%; accent-color: #45d9e3; }
+.nf-pause-setting input[type="checkbox"] { justify-self: end; width: 20px; height: 20px; accent-color: #45d9e3; }
+.nf-pause-controls-note { color: #7f796e; font-size: 9px; line-height: 1.8; letter-spacing: .08em; }
+.nf-pause-status { min-height: 18px; margin: 16px 0 6px; color: #45d9e3; font-size: 10px; letter-spacing: .12em; }
+.nf-pause-hint { color: #65625c; font-size: 9px; }
+@media (max-width: 560px) { .nf-pause-setting { grid-template-columns: 1fr; gap: 6px; padding: 8px 0; } .nf-pause-setting input[type="checkbox"] { justify-self: start; } }

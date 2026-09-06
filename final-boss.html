@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#030405" />
+    <title>All Worlds at Once — Nightfall Chapter 06</title>
+    <link rel="stylesheet" href="/src/chapters/finalBoss/style.css" />
+  </head>
+  <body>
+    <main class="game-shell">
+      <header>
+        <div><span class="eyebrow">NIGHTFALL · CHAPTER 06</span><h1>ALL WORLDS AT ONCE</h1></div>
+        <button id="mute" class="icon-button" aria-label="Mute sound">SOUND ON</button>
+      </header>
+
+      <section class="stage-wrap" aria-label="All Worlds at Once game">
+        <div id="game"></div>
+        <div id="menu" class="overlay">
+          <div class="menu-card">
+            <p class="kicker">THE CONDUCTOR'S LAST PLATFORM</p>
+            <h2>ALL WORLDS <span>AT ONCE</span></h2>
+            <p class="intro">Break the Conductor's four movements. Every broken bar tears open another world, remakes your paper body, and drops the fight through the floor.</p>
+            <div class="settings">
+              <fieldset><legend>DIFFICULTY</legend><div class="segmented" id="difficulty">
+                <button data-value="low">STORY · 6 LAYERS</button><button class="active" data-value="casual">ACTION · 4 LAYERS</button><button data-value="hard">NIGHTMARE · 3 LAYERS</button>
+              </div></fieldset>
+              <fieldset><legend>CAMERA SHAKE</legend><div class="segmented" id="shake"><button class="active" data-value="on">ON</button><button data-value="off">OFF</button></div></fieldset>
+              <fieldset><legend>FLASHING LIGHTS</legend><div class="segmented" id="flash"><button data-value="on">ON</button><button class="active" data-value="off">OFF</button></div></fieldset>
+            </div>
+            <button id="start" class="start-button">BREAK THE FIRST MOVEMENT <span>→</span></button>
+            <p class="controls"><b>MOVE</b> WASD / ARROWS <i></i> <b>CONTEXT ACTION / JUMP</b> SPACE <i></i> <b>DASH</b> SHIFT / X</p>
+          </div>
+        </div>
+        <div id="result" class="overlay hidden"><div class="result-card"><p id="result-kicker" class="kicker"></p><h2 id="result-title"></h2><p id="result-copy"></p><button id="again" class="start-button">BOARD AGAIN <span>↻</span></button></div></div>
+      </section>
+      <footer><span>CS247G · NIGHTFALL</span><span>Chapter 06 · Final Boss — The Conductor's last line</span></footer>
+    </main>
+    <script type="module" src="/src/chapters/finalBoss/spectacleBattle.js"></script>
+  </body>
+</html>

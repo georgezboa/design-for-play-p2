@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CHAPTER 03 // ECHO CITY</title>
+    <meta name="viewport" content="width=960, initial-scale=1" />
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #120906;
+        color: #f5e7ce;
+        font-family: Georgia, "Times New Roman", serif;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      #game {
+        width: 960px;
+        height: 600px;
+        margin: 0;
+        box-shadow: 0 18px 54px #000000cc;
+        flex: 0 0 auto;
+      }
+      canvas {
+        display: block;
+        outline: none;
+      }
+      .hud {
+        width: 960px;
+        margin: 0;
+        padding: 7px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+        color: #c9ae8c;
+        background: #2b150ee8;
+        border: 1px solid #7b5032;
+        border-radius: 2px;
+        box-sizing: border-box;
+        flex: 0 0 auto;
+      }
+      .hud strong { color: #f5e7ce; letter-spacing: .08em; }
+      .hud kbd {
+        background: #18473f;
+        color: #f5e7ce;
+        border: 1px solid #55d4c8;
+        border-bottom-width: 2px;
+        border-radius: 3px;
+        padding: 0 4px;
+        font-size: 11px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="hud">
+      <strong>CHAPTER 03 · ECHO CITY</strong> &nbsp;
+      Click to walk · Hold click / <kbd>E</kbd> to observe · Click to transplant · Right-click to release · <kbd>R</kbd> reset
+    </div>
+    <div id="game"></div>
+    <script type="module" src="/src/car03-main.js"></script>
+  </body>
+</html>

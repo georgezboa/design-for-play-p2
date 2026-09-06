@@ -1,0 +1,102 @@
+{
+  "chapter": "car03-echo-city-iso",
+  "generated": "2026-08-06",
+  "pipeline": "User-generated Hunyuan GLB -> meshoptimizer border-locked first pass -> Blender 4.1.1 silhouette-preserving final decimation and 2K PBR repack -> graph-authored civic block and walkable paving -> fixed 45/55 orthographic offline render -> geometry-locked painterly surface pass -> WebP runtime layer",
+  "camera": {
+    "yaw_deg": 45,
+    "tilt_deg": 55,
+    "type": "orthographic",
+    "ortho_scale": 62,
+    "render_px": [1920, 1200]
+  },
+  "hunyuan_sources": [
+    {
+      "asset": "central clock tower",
+      "source_file": "/Users/zhongzicheng/Downloads/钟表.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/clock_tower_low.glb",
+      "triangles_before": 1500004,
+      "triangles_after": 24000,
+      "reduction_percent": 98.4,
+      "dimensions_m": [1.65, 1.65, 5.2],
+      "texture_px": 2048
+    },
+    {
+      "asset": "municipal tram",
+      "source_file": "/Users/zhongzicheng/Downloads/电车.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/municipal_tram_low.glb",
+      "triangles_before": 1497526,
+      "triangles_after": 36000,
+      "reduction_percent": 97.6,
+      "dimensions_m": [2.5, 9.0, 3.35],
+      "texture_px": 2048
+    },
+    {
+      "asset": "reunion fountain",
+      "source_file": "/Users/zhongzicheng/Downloads/喷泉.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/reunion_fountain_low.glb",
+      "triangles_before": 1499760,
+      "triangles_after": 28000,
+      "reduction_percent": 98.13,
+      "dimensions_m": [4.6, 4.6, 2.7],
+      "texture_px": 2048
+    },
+    {
+      "asset": "produce market stall",
+      "source_file": "/Users/zhongzicheng/Downloads/杂货摊.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/produce_market_stall_low.glb",
+      "triangles_before": 1499524,
+      "triangles_after": 40000,
+      "reduction_percent": 97.33,
+      "dimensions_m": [3.6, 2.2, 2.8],
+      "texture_px": 2048
+    },
+    {
+      "asset": "old municipal archive",
+      "source_file": "/Users/zhongzicheng/Downloads/efd0e7ca51c98a1fa72fbe3470b03d92.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/old_municipal_archive_low.glb",
+      "triangles_before": 1496608,
+      "triangles_after": 79999,
+      "reduction_percent": 94.65,
+      "dimensions_m": [19.0, 9.0, 16.0],
+      "texture_px": 2048
+    },
+    {
+      "asset": "transit ministry",
+      "source_file": "/Users/zhongzicheng/Downloads/9184e101c6e45fa16c0d45b4009e75f0.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/transit_ministry_low.glb",
+      "triangles_before": 1498702,
+      "triangles_after": 70000,
+      "reduction_percent": 95.33,
+      "dimensions_m": [10.0, 17.0, 17.0],
+      "texture_px": 2048
+    },
+    {
+      "asset": "civic scanner tower",
+      "source_file": "/Users/zhongzicheng/Downloads/21aa925dd27c56d91e3ee5e9d92b14e9.glb",
+      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/scanner_tower_low.glb",
+      "triangles_before": 1500000,
+      "triangles_after": 31999,
+      "reduction_percent": 97.87,
+      "dimensions_m": [2.7, 2.7, 8.2],
+      "texture_px": 2048
+    }
+  ],
+  "runtime_assets": [
+    {
+      "file": "city_full_painterly_v6.webp",
+      "size_px": [1586, 992],
+      "sha256": "03062dd4e63b197cbf434799c48a371113cf879dd974a061f8a741e585838296",
+      "contents": "camera-locked late-afternoon civic square using seven optimized Hunyuan landmarks: archive, transit ministry, scanner tower, clock tower, tram, fountain and market stalls, plus broad graph-aligned walkable courts and CC0 dressing",
+      "note": "Built from the calibrated Blender v5 bake, then project-generated geometry-locked painterly surface enhancement. The broad courts and connecting lanes match the movement model; GLBs remain offline render sources and are not loaded by Phaser."
+    },
+    {
+      "file": "actor_butch.webp",
+      "status": "replaceable non-authoritative character placeholder"
+    },
+    {
+      "file": "actor_mara.webp",
+      "status": "replaceable non-authoritative character placeholder"
+    }
+  ],
+  "ownership": "Environment assets are project-generated from project reference images. Butch and Mara remain owned by the assigned human character contributor."
+}

@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "units": "meters",
+  "upAxis": "Y",
+  "forwardAxis": "-Z",
+  "status": "neutral source model; paint-over required; not integrated",
+  "files": [
+    {
+      "id": "nf_floor_module",
+      "label": "Floor Module",
+      "file": "nf_floor_module.obj",
+      "vertices": 24,
+      "faces": 18
+    },
+    {
+      "id": "nf_arch_rib",
+      "label": "Arch Rib",
+      "file": "nf_arch_rib.obj",
+      "vertices": 40,
+      "faces": 30
+    },
+    {
+      "id": "nf_window_frame",
+      "label": "Window Frame",
+      "file": "nf_window_frame.obj",
+      "vertices": 56,
+      "faces": 42
+    },
+    {
+      "id": "nf_door_frame",
+      "label": "Door Frame",
+      "file": "nf_door_frame.obj",
+      "vertices": 48,
+      "faces": 36
+    },
+    {
+      "id": "nf_world_frame",
+      "label": "Replaceable World Frame",
+      "file": "nf_world_frame.obj",
+      "vertices": 48,
+      "faces": 36
+    },
+    {
+      "id": "nf_display_plinth",
+      "label": "Display Plinth",
+      "file": "nf_display_plinth.obj",
+      "vertices": 32,
+      "faces": 24
+    },
+    {
+      "id": "nf_handrail",
+      "label": "Handrail",
+      "file": "nf_handrail.obj",
+      "vertices": 40,
+      "faces": 30
+    },
+    {
+      "id": "nf_service_trough",
+      "label": "Service Trough",
+      "file": "nf_service_trough.obj",
+      "vertices": 56,
+      "faces": 42
+    },
+    {
+      "id": "nf_pipe_run",
+      "label": "Signal Pipe Run",
+      "file": "nf_pipe_run.obj",
+      "vertices": 64,
+      "faces": 48
+    },
+    {
+      "id": "nf_glass_panel",
+      "label": "Glass Panel",
+      "file": "nf_glass_panel.obj",
+      "vertices": 40,
+      "faces": 30
+    }
+  ]
+}

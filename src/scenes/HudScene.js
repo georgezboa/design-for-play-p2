@@ -45,10 +45,10 @@ export default class HudScene extends Phaser.Scene {
     this.toast = this.add
       .text(GAME_W / 2, GAME_H - 96, '', {
         fontFamily: MONO,
-        fontSize: '16px',
+        fontSize: '13px',
         color: '#ffffff',
         backgroundColor: '#07090d',
-        padding: { x: 12, y: 7 },
+        padding: { x: 9, y: 5 },
         align: 'center',
       })
       .setOrigin(0.5)
@@ -59,10 +59,10 @@ export default class HudScene extends Phaser.Scene {
       .text(
         GAME_W / 2,
         42,
-        'A / D  MOVE     SPACE  LEAP     F  STRIKE     W / S  SHIFT DEPTH',
+        'A / D    SPACE    E',
         {
           fontFamily: MONO,
-          fontSize: '12px',
+          fontSize: '10px',
           color: '#66717f',
           align: 'center',
         },
@@ -71,32 +71,36 @@ export default class HudScene extends Phaser.Scene {
         .setScrollFactor(0);
 
     this.chapterTitle = this.add
-      .text(GAME_W / 2, 92, '', {
+      .text(GAME_W / 2, 244, '', {
         fontFamily: MONO,
         fontSize: '18px',
         color: '#d0d9e2',
         letterSpacing: 3,
         align: 'center',
+        backgroundColor: '#071016',
+        padding: { x: 11, y: 6 },
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setAlpha(0);
 
     this.chapterSubtitle = this.add
-      .text(GAME_W / 2, 119, '', {
+      .text(GAME_W / 2, 286, '', {
         fontFamily: MONO,
         fontSize: '11px',
         color: '#8e9aa7',
         align: 'center',
+        backgroundColor: '#071016',
+        padding: { x: 8, y: 5 },
       })
       .setOrigin(0.5)
       .setScrollFactor(0)
       .setAlpha(0);
 
-    // Dialogue is the main game surface. It pauses the world underneath it,
-    // giving every contradiction enough room to land before the player moves.
+    // Keep dialogue over the window band, not over the player and floor-mounted
+    // machinery. Lines arrive with a typewriter cadence instead of popping in.
     this.dialoguePanel = this.add
-      .rectangle(22, 356, GAME_W - 44, 222, 0x05070c, 0.95)
+      .rectangle(28, 34, 620, 164, 0x05070c, 0.9)
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(80)
@@ -104,9 +108,9 @@ export default class HudScene extends Phaser.Scene {
     this.dialoguePanel.setStrokeStyle(1, 0x3a4653, 0.95);
 
     this.dialogueSpeaker = this.add
-      .text(46, 378, '', {
+      .text(48, 52, '', {
         fontFamily: MONO,
-        fontSize: '17px',
+        fontSize: '13px',
         color: '#d9e3eb',
         letterSpacing: 2,
       })
@@ -115,9 +119,9 @@ export default class HudScene extends Phaser.Scene {
       .setVisible(false);
 
     this.dialogueRole = this.add
-      .text(46, 402, '', {
+      .text(48, 73, '', {
         fontFamily: MONO,
-        fontSize: '10px',
+        fontSize: '9px',
         color: '#697784',
         letterSpacing: 1,
       })
@@ -126,31 +130,31 @@ export default class HudScene extends Phaser.Scene {
       .setVisible(false);
 
     this.dialogueText = this.add
-      .text(46, 431, '', {
+      .text(48, 96, '', {
         fontFamily: MONO,
-        fontSize: '18px',
+        fontSize: '15px',
         color: '#f0f3f5',
-        lineSpacing: 9,
-        wordWrap: { width: GAME_W - 92 },
+        lineSpacing: 6,
+        wordWrap: { width: 570 },
       })
       .setScrollFactor(0)
       .setDepth(81)
       .setVisible(false);
 
     this.dialogueChoices = this.add
-      .text(46, 513, '', {
+      .text(48, 138, '', {
         fontFamily: MONO,
-        fontSize: '14px',
+        fontSize: '12px',
         color: '#d8c89f',
         lineSpacing: 8,
-        wordWrap: { width: GAME_W - 92 },
+        wordWrap: { width: 570 },
       })
       .setScrollFactor(0)
       .setDepth(81)
       .setVisible(false);
 
     this.dialogueHint = this.add
-      .text(GAME_W - 46, 552, '', {
+      .text(628, 174, '', {
         fontFamily: MONO,
         fontSize: '10px',
         color: '#687684',
@@ -160,7 +164,7 @@ export default class HudScene extends Phaser.Scene {
       .setDepth(81)
       .setVisible(false);
 
-    this.time.delayedCall(4200, () => {
+    this.time.delayedCall(2200, () => {
       if (this.hint) this.tweens.add({ targets: this.hint, alpha: 0, duration: 700 });
     });
 
@@ -183,6 +187,38 @@ export default class HudScene extends Phaser.Scene {
       .setScrollFactor(0)
       .setVisible(false);
 
+    this.chapterCardKicker = this.add
+      .text(GAME_W / 2, 220, '', {
+        fontFamily: 'Georgia, Times New Roman, serif',
+        fontSize: '13px',
+        color: '#9ba6ad',
+        letterSpacing: 6,
+      })
+      .setOrigin(0.5)
+      .setDepth(101)
+      .setVisible(false);
+    this.chapterCardTitle = this.add
+      .text(GAME_W / 2, 284, '', {
+        fontFamily: 'Georgia, Times New Roman, serif',
+        fontSize: '38px',
+        color: '#f0ede6',
+        letterSpacing: 3,
+      })
+      .setOrigin(0.5)
+      .setDepth(101)
+      .setVisible(false);
+    this.chapterCardSubtitle = this.add
+      .text(GAME_W / 2, 342, '', {
+        fontFamily: 'Georgia, Times New Roman, serif',
+        fontSize: '14px',
+        color: '#7e888e',
+        align: 'center',
+        wordWrap: { width: 620 },
+      })
+      .setOrigin(0.5)
+      .setDepth(101)
+      .setVisible(false);
+
     // The game scene restarts itself, so these listeners live on the global
     // bus and are torn down explicitly when this scene shuts down.
     this.onToast = (msg) => this.showToast(msg);
@@ -193,7 +229,9 @@ export default class HudScene extends Phaser.Scene {
     this.onDialogueLine = (data) => this.showDialogueLine(data);
     this.onDialogueChoices = (data) => this.showDialogueChoices(data);
     this.onDialogueClose = () => this.closeDialogue();
+    this.onDialogueReveal = () => this.finishDialogueTyping();
     this.onWorld = (data) => this.showWorld(data);
+    this.onPrologueTransition = (data) => this.showPrologueTransition(data);
 
     this.game.events.on('hud:toast', this.onToast);
     this.game.events.on('hud:gameover', this.onGameOver);
@@ -202,7 +240,9 @@ export default class HudScene extends Phaser.Scene {
     this.game.events.on('hud:dialogue:line', this.onDialogueLine);
     this.game.events.on('hud:dialogue:choices', this.onDialogueChoices);
     this.game.events.on('hud:dialogue:close', this.onDialogueClose);
+    this.game.events.on('hud:dialogue:reveal', this.onDialogueReveal);
     this.game.events.on('hud:world', this.onWorld);
+    this.game.events.on('hud:prologue-transition', this.onPrologueTransition);
 
     this.events.once('shutdown', () => {
       this.game.events.off('hud:toast', this.onToast);
@@ -212,7 +252,9 @@ export default class HudScene extends Phaser.Scene {
       this.game.events.off('hud:dialogue:line', this.onDialogueLine);
       this.game.events.off('hud:dialogue:choices', this.onDialogueChoices);
       this.game.events.off('hud:dialogue:close', this.onDialogueClose);
+      this.game.events.off('hud:dialogue:reveal', this.onDialogueReveal);
       this.game.events.off('hud:world', this.onWorld);
+      this.game.events.off('hud:prologue-transition', this.onPrologueTransition);
     });
   }
 
@@ -246,6 +288,9 @@ export default class HudScene extends Phaser.Scene {
     this.closeDialogue();
     this.chapterTitle.setAlpha(0);
     this.chapterSubtitle.setAlpha(0);
+    [this.chapterCardKicker, this.chapterCardTitle, this.chapterCardSubtitle].forEach((item) =>
+      item.setVisible(false).setAlpha(0),
+    );
   }
 
   showToast(message) {
@@ -267,18 +312,116 @@ export default class HudScene extends Phaser.Scene {
     this.tweens.add({ targets: this.bigText, alpha: 1, duration: 400 });
   }
 
+  showPrologueTransition(data) {
+    const baseHud = [
+      this.barFrame,
+      this.barFill,
+      this.scoreText,
+      this.coinText,
+      this.laneText,
+      this.hint,
+      this.toast,
+      this.chapterTitle,
+      this.chapterSubtitle,
+    ];
+    this.tweens.killTweensOf([
+      this.overlay,
+      this.chapterCardKicker,
+      this.chapterCardTitle,
+      this.chapterCardSubtitle,
+    ]);
+    this.tweens.add({ targets: baseHud, alpha: 0, duration: 420 });
+    this.overlay.setDepth(100).setVisible(true).setAlpha(0).setFillStyle(0x030405, 1);
+    this.chapterCardKicker.setText(data.kicker).setVisible(true).setAlpha(0);
+    this.chapterCardTitle.setText(data.title).setVisible(true).setAlpha(0);
+    this.chapterCardSubtitle.setText(data.subtitle).setVisible(true).setAlpha(0);
+
+    if (data.qa) {
+      this.overlay.setAlpha(1);
+      [this.chapterCardKicker, this.chapterCardTitle, this.chapterCardSubtitle].forEach((item) =>
+        item.setAlpha(1),
+      );
+      return;
+    }
+
+    this.tweens.add({ targets: this.overlay, alpha: 1, delay: 2400, duration: 850, ease: 'Sine.easeInOut' });
+    this.tweens.add({
+      targets: [this.chapterCardKicker, this.chapterCardTitle, this.chapterCardSubtitle],
+      alpha: 1,
+      delay: 3350,
+      duration: 900,
+      ease: 'Sine.easeOut',
+    });
+    this.tweens.add({
+      targets: [this.chapterCardKicker, this.chapterCardTitle, this.chapterCardSubtitle],
+      alpha: 0,
+      delay: 5500,
+      duration: 650,
+    });
+    this.tweens.add({
+      targets: this.overlay,
+      alpha: 0,
+      delay: 6100,
+      duration: 850,
+      onComplete: () => {
+        this.overlay.setVisible(false);
+        [this.chapterCardKicker, this.chapterCardTitle, this.chapterCardSubtitle].forEach((item) =>
+          item.setVisible(false),
+        );
+        [this.barFrame, this.barFill, this.scoreText, this.coinText, this.laneText].forEach((item) =>
+          item.setVisible(true).setAlpha(1),
+        );
+      },
+    });
+  }
+
   showDialogueLine(data) {
-    this.dialoguePanel.setVisible(true);
-    this.dialogueSpeaker.setText(data.speaker).setVisible(true);
-    this.dialogueRole.setText(data.role).setVisible(true);
-    this.dialogueText.setText(data.text).setVisible(true);
+    this.dialogueTimer?.remove(false);
+    this.dialogueFullText = data.text;
+    this.dialogueTypedCount = 0;
+    this.registry.set('dialogueTyping', true);
+    this.dialoguePanel.setVisible(true).setAlpha(0).setScale(0.98);
+    this.dialogueSpeaker.setText(data.speaker).setVisible(true).setAlpha(0);
+    this.dialogueRole.setText(data.role).setVisible(true).setAlpha(0);
+    this.dialogueText.setText('').setVisible(true).setAlpha(1);
     this.dialogueChoices.setText('').setVisible(false);
     this.dialogueHint.setText(
-      data.line === data.total ? 'E / SPACE  CONTINUE' : `${data.line} / ${data.total}   E / SPACE`,
+      data.line === data.total ? 'E  CONTINUE' : `${data.line} / ${data.total}   E`,
     ).setVisible(true);
+    this.tweens.add({
+      targets: this.dialoguePanel,
+      alpha: 0.9,
+      scale: 1,
+      duration: 150,
+      ease: 'Quad.easeOut',
+    });
+    this.tweens.add({
+      targets: [this.dialogueSpeaker, this.dialogueRole],
+      alpha: 1,
+      duration: 180,
+    });
+    this.dialogueTimer = this.time.addEvent({
+      delay: 18,
+      loop: true,
+      callback: () => {
+        this.dialogueTypedCount += 1;
+        this.dialogueText.setText(this.dialogueFullText.slice(0, this.dialogueTypedCount));
+        if (this.dialogueTypedCount >= this.dialogueFullText.length) this.finishDialogueTyping();
+      },
+    });
+  }
+
+  finishDialogueTyping() {
+    if (!this.registry.get('dialogueTyping')) return;
+    this.dialogueTimer?.remove(false);
+    this.dialogueTimer = null;
+    this.dialogueTypedCount = this.dialogueFullText?.length ?? 0;
+    this.dialogueText.setText(this.dialogueFullText ?? '');
+    this.registry.set('dialogueTyping', false);
   }
 
   showDialogueChoices(data) {
+    this.finishDialogueTyping();
     const choices = data.choices
       .map((choice, i) => `${i + 1}   ${choice}`)
       .join('\n');
@@ -287,6 +430,9 @@ export default class HudScene extends Phaser.Scene {
   }
 
   closeDialogue() {
+    this.dialogueTimer?.remove(false);
+    this.dialogueTimer = null;
+    this.registry.set('dialogueTyping', false);
     this.dialoguePanel.setVisible(false);
     this.dialogueSpeaker.setVisible(false);
     this.dialogueRole.setVisible(false);
@@ -296,6 +442,13 @@ export default class HudScene extends Phaser.Scene {
   }
 
   showWorld(world) {
+    const isOpeningCar = world.startX === 0;
+    this.openingCar = isOpeningCar; // remembered so update() can honour this rule when restoring counters
+    this.barFrame.setVisible(!isOpeningCar);
+    this.barFill.setVisible(!isOpeningCar);
+    this.scoreText.setVisible(!isOpeningCar);
+    this.coinText.setVisible(!isOpeningCar);
+    this.laneText.setVisible(!isOpeningCar);
     this.chapterTitle.setText(world.title);
     this.chapterSubtitle.setText(world.subtitle);
     this.chapterTitle.setAlpha(0);
@@ -304,8 +457,8 @@ export default class HudScene extends Phaser.Scene {
     this.tweens.add({
       targets: [this.chapterTitle, this.chapterSubtitle],
       alpha: 0,
-      delay: 2400,
-      duration: 1300,
+      delay: isOpeningCar ? 1100 : 2400,
+      duration: isOpeningCar ? 700 : 1300,
     });
   }
 
@@ -341,5 +494,32 @@ export default class HudScene extends Phaser.Scene {
       this.laneText.setColor(lane === 0 ? '#59636f' : '#9aa6b4');
       this.last.lane = lane;
     }
+
+    // Phase II relay room (Game scene's tutorialPuzzle.stageIndex === 1,
+    // the CONTACT_STAGE_INDEX room): hide the persistent MEMORY /
+    // WITNESSES counters for that room only. Written unconditionally each
+    // frame so event handlers that force-show these counters (showWorld,
+    // showPrologueTransition) are re-reconciled on the next frame; the
+    // restore branch honours showWorld's opening-car rule.
+    const game = this.scene.get('Game');
+    const inRelayRoom = game?.activeWorldIndex === 0
+      && Boolean(game?.timetablePuzzle)
+      && (game?.tutorialPuzzle?.stageIndex ?? -1) === 1;
+    // The IV–VI service table is a full theatrical cutaway, not a small HUD
+    // card.  Keep the world HUD out of its passenger-window band so health,
+    // lane and counters do not become accidental scenery or obscure the
+    // actor silhouette.  Reconcile every frame because QA warps and world
+    // events can force-show these objects after the panel has opened.
+    const inMechanicalTable = Boolean(
+      game?.timetablePuzzle?.mechanicalPanelMode?.startsWith?.('table-'),
+    );
+    const showWorldHud = !this.openingCar && !inMechanicalTable;
+    this.barFrame.setVisible(showWorldHud);
+    this.barFill.setVisible(showWorldHud);
+    this.laneText.setVisible(showWorldHud);
+    this.hint.setVisible(!inMechanicalTable);
+    const showCounters = showWorldHud && !inRelayRoom;
+    this.scoreText.setVisible(showCounters);
+    this.coinText.setVisible(showCounters);
   }
 }

@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>NIGHTFALL — CHAPTER 5 · THE MUSEUM OF ONE ANSWER — LABYRINTH WING</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #07070a;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #game {
+        width: 1280px;
+        height: 800px;
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
+      }
+      .embedded body { background: #07090b; overflow: hidden; }
+      .embedded #game {
+        width: 100vw;
+        height: 100vh;
+        box-shadow: none;
+      }
+      .embedded #game canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/chapters/museum/labyrinth/labyrinth-main.js?v=wing-route-escape-20260814-5"></script>
+  </body>
+</html>

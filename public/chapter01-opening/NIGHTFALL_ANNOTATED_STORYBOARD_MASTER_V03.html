@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NIGHTFALL — 章节连接生产分镜 V03</title>
+  <style>
+    :root {
+      --ink:#e9edf1; --muted:#9aa5ad; --paper:#0a0d10; --card:#12171b;
+      --line:#2f3940; --amber:#f3a941; --cyan:#47d9e8; --red:#ff6b57;
+      --green:#76d28a; --cream:#efe0be;
+    }
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--paper);color:var(--ink);font-family:"PingFang SC","Noto Sans CJK SC","Microsoft YaHei",sans-serif}
+    body{width:2400px;padding:56px}
+    h1,h2,h3,p{margin:0}
+    .kicker{font-size:22px;letter-spacing:.22em;color:var(--amber);font-weight:800}
+    h1{font-size:64px;line-height:1.08;margin-top:12px;letter-spacing:-.02em}
+    .dek{margin-top:20px;font-size:25px;line-height:1.55;color:#bac3c9;max-width:2000px}
+    .rulebar{display:flex;gap:18px;margin:32px 0 40px;align-items:stretch}
+    .rule{flex:1;background:#11171b;border:1px solid var(--line);border-radius:12px;padding:20px 22px;font-size:20px;line-height:1.45}
+    .rule b{display:block;color:var(--cyan);font-size:17px;letter-spacing:.1em;margin-bottom:5px}
+
+    .handoff{border:2px solid var(--amber);border-radius:18px;background:#0e1317;padding:28px;margin-bottom:54px;box-shadow:0 0 0 6px rgba(243,169,65,.06)}
+    .handoff-title{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px}
+    .handoff-title h2{font-size:38px}
+    .handoff-title p{font-size:19px;color:var(--muted)}
+    .handoff-grid{display:grid;grid-template-columns:520px 92px 520px 92px 1fr;gap:18px;align-items:center}
+    .mini{background:#080b0d;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    .mini .pic{aspect-ratio:1.6;background-image:url('./NIGHTFALL_ALL_TRANSITIONS_STORYBOARD_V02.png');background-size:500% 600%;background-repeat:no-repeat}
+    .mini.s4 .pic{background-position:75% 0%}
+    .mini.s5 .pic{background-position:100% 0%}
+    .mini-cap{padding:13px 16px 16px;min-height:110px;font-size:18px;line-height:1.35;color:#c8d0d5}
+    .mini-cap b{display:block;color:white;margin-bottom:4px;font-size:20px}
+    .arrow{font-size:58px;text-align:center;color:var(--amber);font-weight:900}
+    .actual{position:relative;border-radius:12px;overflow:hidden;border:3px solid var(--cyan);background:#000}
+    .actual img{width:100%;display:block}
+    .plate-tag{position:absolute;top:12px;left:12px;background:var(--cyan);color:#071013;padding:8px 12px;border-radius:6px;font-size:17px;font-weight:900;letter-spacing:.04em}
+    .anchor{position:absolute;border:3px solid;box-shadow:0 0 0 2px rgba(0,0,0,.6)}
+    .anchor span{position:absolute;top:-34px;left:-3px;padding:4px 8px;border-radius:5px;font-size:15px;font-weight:900;color:#071013;white-space:nowrap}
+    .a{left:4.4%;top:25.2%;width:73.8%;height:33%;border-color:var(--cyan)} .a span{background:var(--cyan)}
+    .b{left:25.5%;top:60%;width:9%;height:11%;border-color:var(--amber)} .b span{background:var(--amber)}
+    .c{left:78%;top:40.5%;width:6.4%;height:38%;border-color:var(--red)} .c span{background:var(--red)}
+    .d{left:2%;top:76%;width:96%;height:3%;border-color:var(--green)} .d span{background:var(--green)}
+    .e{left:5.8%;top:65%;width:52%;height:14%;border-color:var(--cream)} .e span{background:var(--cream)}
+    .timeline{display:grid;grid-template-columns:1fr 1fr 1fr;margin-top:24px;border-radius:10px;overflow:hidden;border:1px solid var(--line)}
+    .phase{padding:16px 18px;font-size:18px;line-height:1.4;background:#161d22;border-right:1px solid var(--line)}
+    .phase:last-child{border-right:0}.phase b{display:block;font-size:20px;margin-bottom:3px}.phase.gen b{color:var(--amber)}.phase.plate b{color:var(--cyan)}.phase.game b{color:var(--green)}
+    .handoff-note{margin-top:18px;padding:16px 18px;border-left:5px solid var(--cyan);background:#10191d;font-size:20px;line-height:1.5}
+
+    .section{margin-top:52px;padding-top:30px;border-top:2px solid var(--line)}
+    .section-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px}
+    .section-head h2{font-size:38px}.section-head .logic{font-size:20px;color:var(--cyan);font-weight:700;max-width:1320px;text-align:right}
+    .cards{display:grid;grid-template-columns:repeat(5,1fr);gap:20px}
+    .card{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:visible;min-width:0}
+    .card:not(:last-child)::after{content:"→";position:absolute;right:-25px;top:170px;z-index:4;color:var(--amber);font-size:32px;font-weight:900;text-shadow:0 2px 6px #000}
+    .shothead{height:62px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:#192127;border-bottom:1px solid var(--line)}
+    .sid{font-size:22px;font-weight:900;letter-spacing:.04em}.time{font-size:17px;color:var(--muted)}
+    .pic{aspect-ratio:1.6;background-image:url('./NIGHTFALL_ALL_TRANSITIONS_STORYBOARD_V02.png');background-size:500% 600%;background-repeat:no-repeat;background-color:#080a0c}
+    .pic.actual-first{background-image:url('./CH01_GAMEPLAY_FIRST_FRAME_REFERENCE_V01.png');background-size:cover;background-position:center!important;position:relative}
+    .pic.actual-first::after{content:"真实游戏首帧 · 非 AI 生成";position:absolute;left:12px;bottom:12px;background:var(--cyan);color:#061014;padding:7px 10px;border-radius:5px;font-size:14px;font-weight:900}
+    .copy{padding:16px 17px 18px;min-height:300px;font-size:17px;line-height:1.42}
+    .label{color:var(--muted);font-size:14px;font-weight:800;letter-spacing:.08em;margin-top:10px}.label:first-child{margin-top:0}
+    .value{color:#e5eaed;margin-top:2px}.cause{color:var(--amber);font-weight:800}.next{color:var(--cyan)}
+    .badge{display:inline-block;margin-top:11px;border:1px solid #44525c;color:#cbd3d8;padding:4px 8px;border-radius:99px;font-size:13px}
+    .footer{margin-top:64px;border-top:1px solid var(--line);padding-top:24px;display:flex;justify-content:space-between;font-size:16px;color:#7f8a92}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="kicker">NIGHTFALL / CHAPTER TRANSITIONS / PRODUCTION BOARD V03</div>
+    <h1>章节连接总分镜：每一格都必须有因果，最后一格必须能直接开玩</h1>
+    <p class="dek">阅读方向统一为从左到右。每排是一段完整转场；箭头不是“下一张漂亮图”，而是上一格发生的动作，真实改变了下一格的空间、材质或叙事状态。</p>
+    <div class="rulebar">
+      <div class="rule"><b>01 画面</b>这一秒观众看见什么。</div>
+      <div class="rule"><b>02 动作</b>镜头内实际发生什么。</div>
+      <div class="rule"><b>03 因果</b>为什么会变成下一格。</div>
+      <div class="rule"><b>04 接入</b>最后一格锁到下一章可玩首帧。</div>
+    </div>
+  </header>
+
+  <section class="handoff">
+    <div class="handoff-title">
+      <h2>重点修正｜开场 → 第一章：不是“像”，而是同一帧</h2>
+      <p>唯一允许切换的是控制权；画面像素不切换。</p>
+    </div>
+    <div class="handoff-grid">
+      <div class="mini s4"><div class="pic"></div><div class="mini-cap"><b>T01-04 · 生成画面</b>门机亮起，镜头开始对齐真实车厢的窗框、门和地板线。</div></div>
+      <div class="arrow">→</div>
+      <div class="mini s5"><div class="pic"></div><div class="mini-cap"><b>T01-05A · 对位过渡</b>只做轻微透视收束；不再增加新物体，不再改变构图。</div></div>
+      <div class="arrow">→</div>
+      <div class="actual">
+        <img src="./CH01_GAMEPLAY_FIRST_FRAME_REFERENCE_V01.png" alt="Chapter 1 actual gameplay first frame" />
+        <div class="plate-tag">T01-05B / 真实游戏底片</div>
+        <div class="anchor a"><span>A 两扇窗框</span></div>
+        <div class="anchor b"><span>B 门机</span></div>
+        <div class="anchor c"><span>C 右侧窄门</span></div>
+        <div class="anchor d"><span>D 地板线</span></div>
+        <div class="anchor e"><span>E 人物站位</span></div>
+      </div>
+    </div>
+    <div class="timeline">
+      <div class="phase gen"><b>00:19.0–00:20.5｜H3 生成</b>朝五组锚点靠近；运动幅度持续减小。</div>
+      <div class="phase plate"><b>00:20.5–00:22.0｜真实画面 45 帧</b>完整使用游戏首帧，含现有 UI；只保留游戏本身的微动。</div>
+      <div class="phase game"><b>00:22.0｜游戏接管</b>同一张画面继续显示，仅解锁输入与环境运动。</div>
+    </div>
+    <div class="handoff-note"><b>剪辑硬规则：</b>H3 输出不能直接作为视频最后一帧。先在五个锚点达到对位后交叉叠化到真实底片，再让真实底片连续存在 45 帧；视频层撤下时，下面的游戏画布已经显示完全相同的画面。禁止黑场、标题卡、二次推镜、UI 突现或角色跳位。</div>
+  </section>
+
+  <main id="board"></main>
+  <footer class="footer"><span>NIGHTFALL / annotated storyboard master</span><span>V03 · 2026-08-11 · 读法：画面 → 动作 → 因果 → 下一格</span></footer>
+
+  <script>
+    const rows = [
+      {
+        title:'开场 → 第一章｜普通列车',
+        logic:'矛盾世界被强制统一 → 只剩普通车厢 → 门机把抽象线索变成玩家的第一个可操作目标',
+        shots:[
+          ['T01-01','00:00–00:05','不相容的世界','黑暗列车内，多个车窗各自播放互相冲突的现实。','青色线索横穿窗面，Archivist 察觉这些世界无法同时成立。','世界彼此矛盾 → Archivist 必须介入','白色裁切框进入画面'],
+          ['T01-02','00:05–00:09','强制统一','白色框把复杂车窗逐格裁掉，只留下最普通的橙白色通勤车厢。','镜头沿被保留的车窗向内推进。','裁切完成 → 唯一幸存空间成为第一章现实','穿过车窗进入车厢'],
+          ['T01-03','00:09–00:14','进入真实空间','普通车厢内，Butch 醒来；青线缠上中央奶油色门机。','Butch 起身，目光与身体都被门机吸引。','青线选中门机 → 玩家目标被建立','Butch 伸手触碰'],
+          ['T01-04','00:14–00:19','第一次因果','手触门机，琥珀光沿线路奔向右侧窄门；画风开始简化为游戏质感。','摄影机停止自由运动，向真实首帧的五个锚点收束。','门机通电 → 右门与可玩空间被激活','构图进入精确对位'],
+          ['T01-05','00:19–00:22','交还控制权','最后 1.5 秒直接使用真实游戏首帧，包含现有 UI。','画面保持，视频层撤下；游戏层在同一像素位置解锁输入。','真实底片连续 45 帧 → 切层时无视觉变化','第一章开始，可立即操作']
+        ]
+      },
+      {
+        title:'第一章 → 第二章｜管线之城',
+        logic:'检票打孔产生实体孔洞 → 孔洞变成输送通道 → 通道扩张成第二章的城市机械系统',
+        shots:[
+          ['T12-01','00:00–00:04','打孔留下缺口','检票钳在票面咬出一个圆孔，普通车厢仍在背景。','孔边出现琥珀色余热，像一扇极小的门。','实体打孔 → 世界拥有可穿过的缺口','镜头钻入孔洞'],
+          ['T12-02','00:04–00:08','孔洞变管线','琥珀光沿座椅下的机械线路奔跑，管道从车厢结构中长出。','镜头追随光流，普通车厢被机械层覆盖。','能量沿结构传播 → 车厢骨架城市化','黄铜结构继续增殖'],
+          ['T12-03','00:08–00:13','机械变城市','黄铜管线翻折成铜色楼宇、桥梁与高架输送带。','摄影机从微观线路拉远为城市全景。','同一套输送结构尺度放大 → 管线之城成立','青线暴露系统故障'],
+          ['T12-04','00:13–00:18','线索卡住机器','一根青色纤维卡进齿轮，输送系统短暂停顿。','Butch 朝故障位置移动，城市让出一条可走路径。','纤维阻塞 → 关卡入口与动机同时出现','路径落到梯口'],
+          ['T12-05','00:18–00:21','落到可玩入口','镜头下降并锁定梯子与管线缺口，构图停止变化。','环境机械恢复节奏，玩家控制权开启。','故障位置具体化 → 第二章第一目标成立','第二章开始：检查堵塞点']
+        ]
+      },
+      {
+        title:'第二章 → 第三章｜Echo City',
+        logic:'修复让被压缩的社区重新发声 → Archivist 再次裁切失败 → 城市以错位回声的形式重现',
+        shots:[
+          ['T23-01','00:00–00:04','社区重新亮起','被修复的管线把能量送回不同街区，窗灯依次点亮。','每一盏灯发出不同节奏的脉冲，像城市重新说话。','修复完成 → 被压缩的生活重新可见','Archivist 试图重新归类'],
+          ['T23-02','00:04–00:08','裁切再次失败','白色框只想保留“利润中心”，其余街区被挤到框外。','框外灯光仍持续闪烁，拒绝消失。','真实生活超出分类 → 裁切工具失效','分类节点脱离网格'],
+          ['T23-03','00:08–00:13','节点变街灯','数据节点从白框中脱落，落地变成路灯、钟表与站牌。','不同节点显示不一致的时间和方向。','分类碎片落入现实 → 空间产生时间错位','多层街道叠合'],
+          ['T23-04','00:13–00:18','Echo City 显形','同一街道以多个时间版本错位重叠，远处列车穿过回声层。','镜头沿最稳定的站台线前进。','时间版本无法统一 → 回声城市成为新规则','稳定线指向站台'],
+          ['T23-05','00:18–00:21','独自进入站台','Butch 一人踏上站台，Lev 留在上一层空间，Mara 未出现。','东行列车门打开，站台时钟定格为可玩基准。','选择分离 → 第三章从独行状态开始','第三章开始：登上东行列车']
+        ]
+      },
+      {
+        title:'第三章 → 第四章｜Painted Country',
+        logic:'Butch 独自离开 → Mara 的话以火焰文字留下 → 灰烬成为能画出新世界的石墨',
+        shots:[
+          ['T34-01','00:00–00:04','东行，独自一人','列车离站；Butch 在车窗内，Lev 留在站台，Mara 没有实体出场。','站台后退，人物之间的距离被真实拉开。','分离选择发生 → 后续只能通过痕迹理解 Mara','远处出现两处火光'],
+          ['T34-02','00:04–00:09','火焰留下回答','两行火字依次燃起：“BUTCH, I’M ALIVE.” 与 “I LEFT BY CHOICE.”','Butch 读完，第二行火焰比第一行更稳定。','信息澄清生死与主动选择 → 旧追逐目标被改写','火焰燃尽为灰'],
+          ['T34-03','00:09–00:13','灰烬变石墨','火字灰烬落在车窗与地板上，聚成一支石墨笔。','列车震动让笔自动划出地平线。','语言燃尽留下材料 → 记忆开始改写空间','线条形成一道门'],
+          ['T34-04','00:13–00:18','画出的门成立','石墨线画出门框，青线穿针般缝合纸面裂口。','Butch 推门，列车材质逐渐变成纸与颜料。','石墨轮廓 + 青线缝合 → 门从图像变成实体','穿入彩绘乡野'],
+          ['T34-05','00:18–00:21','落到 Bay A','纸面展开为 Painted Country 的 Bay A，门保持在玩家身后。','颜料流动停止，交互轮廓出现。','绘画世界稳定 → 第四章可玩空间锁定','第四章开始：检查空白壁画']
+        ]
+      },
+      {
+        title:'第四章 → 第五章｜Museum of Roads Not Taken',
+        logic:'壁画保留 Mara 主动留下的空白 → 颜料使空白门实体化 → Archivist 把可能性封进博物馆展柜',
+        shots:[
+          ['T45-01','00:00–00:04','被选择的空白','完整壁画中有一块刻意未上色的 Mara 形缺口。','Butch 没有补画人物，只沿空白边缘描出门。','尊重缺席的选择 → 空白不再是待修复错误','门轮廓吸收周围颜料'],
+          ['T45-02','00:04–00:08','颜料使门变实','彩色颜料逆流进入轮廓，纸门获得厚度与把手。','门缝透出短暂的多色光。','颜色从画面迁入结构 → 平面门实体化','门后显露多个可能世界'],
+          ['T45-03','00:08–00:11','三秒可能性绽放','门后快速展开不同道路，但 Mara 的空白位置始终不被填满。','所有版本同时呼吸三秒后开始冻结。','可能性被看见但不被替人决定 → 空白保持','Archivist 的白框压下'],
+          ['T45-04','00:11–00:17','可能性被装柜','白框把每条道路切成独立矩形，边缘变成玻璃与金属。','道路缩小为展品，标签自动生成。','Archivist 分类可能性 → 道路成为博物馆藏品','镜头进入第一只展柜'],
+          ['T45-05','00:17–00:20','博物馆开门','展柜大厅形成，第一只柜内保留刚才的颜料门。','玻璃反光退去，玩家站位与入口锁定。','第一件展品连接前章 → 第五章空间有连续证据','第五章开始：调查未选择道路']
+        ]
+      },
+      {
+        title:'第五章 → 第六章｜Fusion Spine',
+        logic:'四件互相矛盾的证物被强制排成一条线 → 线承受不住而断裂 → 裂缝反而成为新世界的边界与铁路',
+        shots:[
+          ['T56-01','00:00–00:04','四件矛盾证物','四只展柜分别展示票孔、铜管、火字灰烬与空白颜料门。','青线从柜底穿过，把证物串在一起。','此前章节证据汇合 → 总冲突可被同时看见','Archivist 要求统一答案'],
+          ['T56-02','00:04–00:08','强制排成单线','白框把四件证物压成一条笔直的分类轴。','材质彼此排斥，玻璃发出高频裂纹。','矛盾被强行统一 → 结构应力累积','第一道裂缝出现'],
+          ['T56-03','00:08–00:13','裂缝成为边界','展柜碎裂，但碎片边缘没有消失，而是发光形成新的地域边界。','不同材质在各自边界内稳定下来。','统一失败 → 差异转化为可共存的结构','边界向地面延伸'],
+          ['T56-04','00:13–00:18','博物馆地板变铁路','发光裂缝拉长为铁轨，展厅穹顶翻成列车车顶与夜空。','镜头沿铁轨加速，四种材质在两侧并行。','边界获得方向 → Fusion Spine 成为移动世界','远方出现同向身影'],
+          ['T56-05','00:18–00:22','进入移动脊柱','列车穿行于融合地带；远处可见 Mara，但不被拉回主角身边。','列车与远方身影同向前进，镜头锁到玩家站位。','共存而非合并 → 第六章以平行前进开场','第六章开始：沿 Fusion Spine 前进']
+        ]
+      }
+    ];
+
+    const board = document.getElementById('board');
+    rows.forEach((row, r) => {
+      const section = document.createElement('section');
+      section.className = 'section';
+      section.innerHTML = `<div class="section-head"><h2>${row.title}</h2><div class="logic">整排逻辑：${row.logic}</div></div><div class="cards"></div>`;
+      const cards = section.querySelector('.cards');
+      row.shots.forEach((s, c) => {
+        const card = document.createElement('article');
+        card.className='card';
+        const px = c * 25, py = r * 20;
+        const actual = r===0 && c===4;
+        card.innerHTML = `
+          <div class="shothead"><span class="sid">${s[0]}</span><span class="time">${s[1]}</span></div>
+          <div class="pic ${actual?'actual-first':''}" style="background-position:${px}% ${py}%"></div>
+          <div class="copy">
+            <div class="label">本格含义</div><div class="value"><b>${s[2]}</b>｜${s[3]}</div>
+            <div class="label">发生动作</div><div class="value">${s[4]}</div>
+            <div class="label">因果关系</div><div class="value cause">${s[5]}</div>
+            <div class="label">下一格</div><div class="value next">${s[6]}</div>
+            <span class="badge">${actual?'实机交接帧':'视觉叙事帧'}</span>
+          </div>`;
+        cards.appendChild(card);
+      });
+      board.appendChild(section);
+    });
+  </script>
+</body>
+</html>

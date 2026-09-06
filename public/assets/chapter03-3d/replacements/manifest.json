@@ -1,0 +1,1141 @@
+{
+  "version": 1,
+  "sourceBatch": "ch03-full-replacement-v01",
+  "scalePolicy": "uniform-fit-no-axis-stretching",
+  "assets": [
+    {
+      "id": "env-archive-furniture",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-archive-furniture.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-archive-furniture/5f10f2aa-a4bf-47f0-89e6-9bd68b86ae51_0.glb",
+      "sourceSha256": "d97572578945be62f05327c97d9d99416bd9231918266c3ecdf1f6902eb375f7",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-archive-furniture.glb",
+      "outputSha256": "babad9c4dfa67ed9ebb17d3519e5be3f772259f4b2434a25813257c67e90086f",
+      "sourceBytes": 45676956,
+      "outputBytes": 4520900,
+      "trianglesBefore": 499908,
+      "triangleBudget": 40000,
+      "trianglesAfter": 40000,
+      "sourceDimensions": [
+        0.9866,
+        0.943,
+        0.2473
+      ],
+      "targetFitBoxMetres": [
+        15.5,
+        16.0,
+        4.0
+      ],
+      "uniformScale": 15.7108231,
+      "runtimeDimensionsMetres": [
+        15.4959,
+        14.8152,
+        3.8941
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-archive-shell",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-archive-shell.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-archive-shell/7cdded0e-90fb-452a-896a-8b057519a797_0.glb",
+      "sourceSha256": "1bda7cda2d979be275efb41c706bcb7b970360568c0bd06115d43cebb154bd3f",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-archive-shell.glb",
+      "outputSha256": "21ba9ab2169981373f4a87bc5c6109eb4928165d59d158ae81f6ebc921be2308",
+      "sourceBytes": 55817124,
+      "outputBytes": 5581136,
+      "trianglesBefore": 497610,
+      "triangleBudget": 52000,
+      "trianglesAfter": 52000,
+      "sourceDimensions": [
+        0.8587,
+        0.7402,
+        0.5774
+      ],
+      "targetFitBoxMetres": [
+        17.5,
+        18.0,
+        5.2
+      ],
+      "uniformScale": 9.00594938,
+      "runtimeDimensionsMetres": [
+        7.7315,
+        6.6647,
+        5.2206
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-butch-room-furniture",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-butch-room-furniture.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-butch-room-furniture/3b785ffe-eda3-4447-87f6-bd06016d5d0f_0.glb",
+      "sourceSha256": "8ab163ca9c59504805c7c46675fdf8f838f7da36f99c3cf47853b0cc975dfab7",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-butch-room-furniture.glb",
+      "outputSha256": "4415e3448acc66b69034eb442968b43c90b2ee88227a8efc8a85c1f885e3d81f",
+      "sourceBytes": 45798328,
+      "outputBytes": 4005156,
+      "trianglesBefore": 496322,
+      "triangleBudget": 30000,
+      "trianglesAfter": 30000,
+      "sourceDimensions": [
+        0.8694,
+        0.8669,
+        0.4495
+      ],
+      "targetFitBoxMetres": [
+        6.6,
+        6.6,
+        2.8
+      ],
+      "uniformScale": 6.22901885,
+      "runtimeDimensionsMetres": [
+        5.4172,
+        5.3996,
+        2.7983
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-butch-room-shell",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-butch-room-shell.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-butch-room-shell/4ac7ad0e-942e-4c5e-b20f-22d8b4b1f19c_0.glb",
+      "sourceSha256": "5a71f8017c19e9f41c9ca9236e07812538d4d7b7145579604a034181b6243ac4",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-butch-room-shell.glb",
+      "outputSha256": "b993b8aabb8c84bea192849c587b5cbb8df4aba1cc3c1e63426eb4812ca9bd0b",
+      "sourceBytes": 44480536,
+      "outputBytes": 3884452,
+      "trianglesBefore": 500000,
+      "triangleBudget": 38000,
+      "trianglesAfter": 38000,
+      "sourceDimensions": [
+        0.4377,
+        0.9817,
+        0.5427
+      ],
+      "targetFitBoxMetres": [
+        7.4,
+        7.4,
+        3.2
+      ],
+      "uniformScale": 5.89625923,
+      "runtimeDimensionsMetres": [
+        2.5802,
+        5.7883,
+        3.1998
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-campfire-props",
+      "category": "exterior",
+      "url": "/assets/chapter03-3d/replacements/env-campfire-props.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-campfire-props/ddb62744-c123-4391-b944-8149d5263549_0.glb",
+      "sourceSha256": "f40be1022fcaca858800b8b9a3c3fae67d7c504a7cf1fc7d9305f83a94bc9e19",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-campfire-props.glb",
+      "outputSha256": "fb1c64937bb240cf1d31059238a2c8b2904392557941a8380858ed108285853e",
+      "sourceBytes": 52746568,
+      "outputBytes": 4528216,
+      "trianglesBefore": 489956,
+      "triangleBudget": 22000,
+      "trianglesAfter": 22000,
+      "sourceDimensions": [
+        1.0328,
+        1.0766,
+        0.4547
+      ],
+      "targetFitBoxMetres": [
+        5.0,
+        5.0,
+        2.0
+      ],
+      "uniformScale": 4.39823331,
+      "runtimeDimensionsMetres": [
+        4.5377,
+        4.7409,
+        2.0013
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-doorless-carriage",
+      "category": "train",
+      "url": "/assets/chapter03-3d/replacements/env-doorless-carriage.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-doorless-carriage/608e7888-95f5-4194-80a5-81f6f2961a86_0.glb",
+      "sourceSha256": "e9b09323181544de16cef4f787d9f560c4575352ab951f61c2ab09e18abc6535",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-doorless-carriage.glb",
+      "outputSha256": "a21eef15eb310064b32438603765a8fdd0202ef8a351b0c51a64bf77fbeae2c2",
+      "sourceBytes": 54976208,
+      "outputBytes": 5625472,
+      "trianglesBefore": 496184,
+      "triangleBudget": 50000,
+      "trianglesAfter": 50000,
+      "sourceDimensions": [
+        0.374,
+        1.1366,
+        0.5459
+      ],
+      "targetFitBoxMetres": [
+        3.2,
+        10.0,
+        3.8
+      ],
+      "uniformScale": 6.9611462,
+      "runtimeDimensionsMetres": [
+        2.6024,
+        7.917,
+        3.8054
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-eda-oil-stall",
+      "category": "exterior",
+      "url": "/assets/chapter03-3d/replacements/env-eda-oil-stall.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-eda-oil-stall/ef1e4847-aa70-4be0-8686-3547bcf3002c_0.glb",
+      "sourceSha256": "2305712dcea5a57bc1ee0ce1621b974aa95815bc85fdd70570b4432eac1a3463",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-eda-oil-stall.glb",
+      "outputSha256": "5baab2a93bd6547e99b7f92ea2322a4bb99bbb0630319846dcc3197e9fb6988a",
+      "sourceBytes": 50563952,
+      "outputBytes": 4318336,
+      "trianglesBefore": 499956,
+      "triangleBudget": 28000,
+      "trianglesAfter": 28000,
+      "sourceDimensions": [
+        0.7664,
+        0.5711,
+        0.7651
+      ],
+      "targetFitBoxMetres": [
+        4.2,
+        3.0,
+        3.4
+      ],
+      "uniformScale": 4.44379326,
+      "runtimeDimensionsMetres": [
+        3.408,
+        2.5395,
+        3.3962
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-flower-stall",
+      "category": "exterior",
+      "url": "/assets/chapter03-3d/replacements/env-flower-stall.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-flower-stall/7adedc68-5fb9-4069-990a-d1d969d6963d_0.glb",
+      "sourceSha256": "62f04a7712ee9cce7ec5382be087def4ed1cab959e4e21289bba3af25ec6505e",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-flower-stall.glb",
+      "outputSha256": "d04a1895819ed75924c3fe339aed22cd7eb5c94b205a514af7fcdb826adb967c",
+      "sourceBytes": 51426592,
+      "outputBytes": 4395152,
+      "trianglesBefore": 498386,
+      "triangleBudget": 26000,
+      "trianglesAfter": 26000,
+      "sourceDimensions": [
+        0.595,
+        0.8342,
+        0.656
+      ],
+      "targetFitBoxMetres": [
+        4.2,
+        3.0,
+        3.4
+      ],
+      "uniformScale": 3.59628085,
+      "runtimeDimensionsMetres": [
+        2.1395,
+        2.9986,
+        2.3602
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-hotel-corridor-shell",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-hotel-corridor-shell.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-corridor-shell/c5eebcef-7583-4db1-8dae-ed1c547eb481_0.glb",
+      "sourceSha256": "8bdcaf5cfd579365e1df09b02131dc86604a681067f4e5604b80b1b131b1420e",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-hotel-corridor-shell.glb",
+      "outputSha256": "72008c174cf6a2f8fcf1f582c28aa0fbce4cae00d8e59215f4429f81778f3283",
+      "sourceBytes": 50204676,
+      "outputBytes": 4929840,
+      "trianglesBefore": 498944,
+      "triangleBudget": 42000,
+      "trianglesAfter": 42000,
+      "sourceDimensions": [
+        0.1431,
+        1.1561,
+        0.2921
+      ],
+      "targetFitBoxMetres": [
+        7.4,
+        15.2,
+        3.2
+      ],
+      "uniformScale": 10.95657606,
+      "runtimeDimensionsMetres": [
+        1.5689,
+        12.6725,
+        3.2078
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-hotel-lobby-furniture",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-hotel-lobby-furniture.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-lobby-furniture/04e6dfee-4dc7-4898-bc63-a4176472f52d_0.glb",
+      "sourceSha256": "28b4c5f94dc79038f05a85ea26f428a5d7318a24c2bf4cb6b8ac8892a8bbc011",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-hotel-lobby-furniture.glb",
+      "outputSha256": "a56c2114792d3386a0e6ef7d8fc8871f25a54ed28305638437b8103c2a76f19c",
+      "sourceBytes": 48222580,
+      "outputBytes": 4397976,
+      "trianglesBefore": 498158,
+      "triangleBudget": 32000,
+      "trianglesAfter": 32000,
+      "sourceDimensions": [
+        0.7947,
+        0.8157,
+        0.5058
+      ],
+      "targetFitBoxMetres": [
+        9.5,
+        8.5,
+        2.8
+      ],
+      "uniformScale": 5.53579458,
+      "runtimeDimensionsMetres": [
+        4.4034,
+        4.5158,
+        2.7969
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-hotel-lobby-shell",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-hotel-lobby-shell.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-lobby-shell/7554391b-a806-4fd5-81c4-f098a13eb2f8_0.glb",
+      "sourceSha256": "6f5c6b2a355a6ea7a5aa12a2f1840fd537ede9c28a6a9baa0d264112fd7130d4",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-hotel-lobby-shell.glb",
+      "outputSha256": "784bde61a14e04791ea90d2163896e37de6ece5eda3b102cb10156b7c8219fa8",
+      "sourceBytes": 54782280,
+      "outputBytes": 5000044,
+      "trianglesBefore": 499712,
+      "triangleBudget": 42000,
+      "trianglesAfter": 41999,
+      "sourceDimensions": [
+        0.7124,
+        0.6888,
+        0.7082
+      ],
+      "targetFitBoxMetres": [
+        11.0,
+        10.0,
+        3.2
+      ],
+      "uniformScale": 4.51856011,
+      "runtimeDimensionsMetres": [
+        3.2218,
+        3.1135,
+        3.2045
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-ministry-furniture",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-ministry-furniture.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-ministry-furniture/3bd5f6a9-52ac-43ea-8e31-ef60e4a439a0_0.glb",
+      "sourceSha256": "f4c98c50f6574dc7d15901bb57dd900cdefacbc19650218b4d6947faf61533a1",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-ministry-furniture.glb",
+      "outputSha256": "aecac0d555238a92f864c0ca30d992ad5022eb47d9ae01487122a6404a5b82ed",
+      "sourceBytes": 53548580,
+      "outputBytes": 5201168,
+      "trianglesBefore": 499800,
+      "triangleBudget": 38000,
+      "trianglesAfter": 37999,
+      "sourceDimensions": [
+        0.9018,
+        0.7653,
+        0.2858
+      ],
+      "targetFitBoxMetres": [
+        16.0,
+        16.0,
+        4.2
+      ],
+      "uniformScale": 14.69795263,
+      "runtimeDimensionsMetres": [
+        13.2618,
+        11.2514,
+        4.2091
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-ministry-shell",
+      "category": "interior",
+      "url": "/assets/chapter03-3d/replacements/env-ministry-shell.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-ministry-shell/09ca0577-740e-4d4f-9df4-d94f23799007_0.glb",
+      "sourceSha256": "61b6d5c70a9be908ac686d591ddb6dbd7c1f289a177bad1d578992f620dc02d4",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-ministry-shell.glb",
+      "outputSha256": "c4fb6019bcdaa3afa72739b6117d6ed0abd6ea00850c2ef8426ce4a09ecb5468",
+      "sourceBytes": 51538264,
+      "outputBytes": 5076688,
+      "trianglesBefore": 496892,
+      "triangleBudget": 52000,
+      "trianglesAfter": 52000,
+      "sourceDimensions": [
+        0.7943,
+        0.6413,
+        0.6499
+      ],
+      "targetFitBoxMetres": [
+        18.0,
+        18.0,
+        5.4
+      ],
+      "uniformScale": 8.3089696,
+      "runtimeDimensionsMetres": [
+        6.6048,
+        5.3289,
+        5.4009
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-service-alley-kit",
+      "category": "exterior",
+      "url": "/assets/chapter03-3d/replacements/env-service-alley-kit.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-service-alley-kit/1088b85b-fd32-4401-98d9-9cbd01fdda50_0.glb",
+      "sourceSha256": "38ef7561893ea4c565aad16193c140ab62051ce045a55304c75362769b4d1114",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-service-alley-kit.glb",
+      "outputSha256": "6009d5f9408c8a9a410c172abee0ed8cb6609914e6314863e518c85622e55db5",
+      "sourceBytes": 56570136,
+      "outputBytes": 4986524,
+      "trianglesBefore": 499204,
+      "triangleBudget": 32000,
+      "trianglesAfter": 32000,
+      "sourceDimensions": [
+        0.7406,
+        0.6576,
+        0.7006
+      ],
+      "targetFitBoxMetres": [
+        8.0,
+        4.5,
+        3.4
+      ],
+      "uniformScale": 4.85328768,
+      "runtimeDimensionsMetres": [
+        3.5976,
+        3.1929,
+        3.4027
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "env-single-train-door",
+      "category": "train",
+      "url": "/assets/chapter03-3d/replacements/env-single-train-door.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/env-single-train-door/5c1bd254-4a8e-4404-94ba-43a6a168a706_0.glb",
+      "sourceSha256": "0148f8be4581a8f87085d4aaf0712b4fde67655d1665a6f717276a5cd555c47b",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/env-single-train-door.glb",
+      "outputSha256": "19e247032051551769f115052f3209f9f9bb0e73f5b294c36889c0a570a8c79b",
+      "sourceBytes": 54465460,
+      "outputBytes": 1674508,
+      "trianglesBefore": 500000,
+      "triangleBudget": 14000,
+      "trianglesAfter": 14000,
+      "sourceDimensions": [
+        0.5899,
+        0.362,
+        1.053
+      ],
+      "targetFitBoxMetres": [
+        2.4,
+        1.0,
+        2.6
+      ],
+      "uniformScale": 2.46914034,
+      "runtimeDimensionsMetres": [
+        1.455,
+        0.8964,
+        2.6039
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            512,
+            512
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            512,
+            512
+          ]
+        }
+      ],
+      "separation": "independent-source"
+    },
+    {
+      "id": "prop-cut-connector-set",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-cut-connector-set.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-cut-connector-set/b8428257-8bc6-4ecd-bab8-34f7dc0a9d87_0.glb",
+      "sourceSha256": "6d58c1cfb2d55cb0e4313e65f1aaabf0229382c26882e7e9a38e27bb4ab272ae",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-cut-connector-set.glb",
+      "outputSha256": "2e18bf5c226d3fdcd4563967a137eef82346fcd7301a48e0c2fb870e60be82d4",
+      "sourceBytes": 48381496,
+      "outputBytes": 3636288,
+      "trianglesBefore": 500000,
+      "triangleBudget": 12000,
+      "trianglesAfter": 12000,
+      "sourceDimensions": [
+        0.8979,
+        0.6442,
+        0.6559
+      ],
+      "targetFitBoxMetres": [
+        1.1,
+        0.8,
+        0.35
+      ],
+      "uniformScale": 0.53362438,
+      "runtimeDimensionsMetres": [
+        0.479,
+        0.3435,
+        0.3501
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "prop-hotel-register-key",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-hotel-register-key.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-hotel-register-key/58684f38-7922-4a9e-9232-d9b0d890130c_0.glb",
+      "sourceSha256": "c2a60733923c586d75c1a823616baa700dae92b8b88f7f7c2f0bcebfb414d050",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-hotel-register-key.glb",
+      "outputSha256": "0482929d60fa97f0d8595740ca3adabcba2861fcca331e3c487adb9a07de85b5",
+      "sourceBytes": 54294232,
+      "outputBytes": 3944564,
+      "trianglesBefore": 499668,
+      "triangleBudget": 8000,
+      "trianglesAfter": 8000,
+      "sourceDimensions": [
+        0.6096,
+        0.9421,
+        0.5972
+      ],
+      "targetFitBoxMetres": [
+        0.55,
+        0.4,
+        0.18
+      ],
+      "uniformScale": 0.30142673,
+      "runtimeDimensionsMetres": [
+        0.1842,
+        0.2842,
+        0.1799
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "independent-source"
+    },
+    {
+      "id": "prop-oil-container-set",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-oil-container-set.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-oil-container-set/cebdeccf-08f1-4377-9d77-dca3566dcd51_0.glb",
+      "sourceSha256": "27d0108c6a3e7f3fa39ee769c4af047d82388ba07467e7ee2527b7755edec703",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-oil-container-set.glb",
+      "outputSha256": "f51a4834d7589e5dd59752736790771d02fdb5074955bf25b2f14d4cefdfbd76",
+      "sourceBytes": 54966920,
+      "outputBytes": 4273488,
+      "trianglesBefore": 500000,
+      "triangleBudget": 14000,
+      "trianglesAfter": 14000,
+      "sourceDimensions": [
+        0.8609,
+        0.8169,
+        0.677
+      ],
+      "targetFitBoxMetres": [
+        1.6,
+        1.2,
+        1.6
+      ],
+      "uniformScale": 1.46902912,
+      "runtimeDimensionsMetres": [
+        1.2678,
+        1.2004,
+        0.9936
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "fused-static-set"
+    },
+    {
+      "id": "prop-petar-toolbox",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-petar-toolbox.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-petar-toolbox/fcb47047-e1e7-487a-b2d1-8a1e7bcf7d4b_0.glb",
+      "sourceSha256": "d1209f8abcb96a8e747c27335f6ebb6dab58bbdfe9507448ca973f4bec2fbfdf",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-petar-toolbox.glb",
+      "outputSha256": "d5c74ac4938f2e3420bf0ac7d529bf8c27c8f6cefe3f82bc77f95a88d918f186",
+      "sourceBytes": 48952392,
+      "outputBytes": 3694536,
+      "trianglesBefore": 499896,
+      "triangleBudget": 10000,
+      "trianglesAfter": 10000,
+      "sourceDimensions": [
+        0.8292,
+        0.8262,
+        0.5062
+      ],
+      "targetFitBoxMetres": [
+        0.85,
+        0.5,
+        0.45
+      ],
+      "uniformScale": 0.60517012,
+      "runtimeDimensionsMetres": [
+        0.5017,
+        0.5,
+        0.3064
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "independent-source"
+    },
+    {
+      "id": "prop-solvent-bottle",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-solvent-bottle.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-solvent-bottle/a3c4f555-1a89-4099-aebb-c5169750f814_0.glb",
+      "sourceSha256": "ef3611a1ba6eaaa38a4ad01d43d588e083ecb5c9378aef2aedac03cf97901c81",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-solvent-bottle.glb",
+      "outputSha256": "ebf6dff73924dec2cd1cd1dac53e52c1388ff68555b3ab5cdfa9f223ac58fc77",
+      "sourceBytes": 50466640,
+      "outputBytes": 3672588,
+      "trianglesBefore": 499906,
+      "triangleBudget": 8000,
+      "trianglesAfter": 8000,
+      "sourceDimensions": [
+        0.6217,
+        0.5123,
+        1.0039
+      ],
+      "targetFitBoxMetres": [
+        0.35,
+        0.35,
+        0.65
+      ],
+      "uniformScale": 0.56300333,
+      "runtimeDimensionsMetres": [
+        0.35,
+        0.2884,
+        0.5656
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "independent-source"
+    },
+    {
+      "id": "prop-terminal-printer",
+      "category": "evidence",
+      "url": "/assets/chapter03-3d/replacements/prop-terminal-printer.glb",
+      "source": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/outputs/hunyuan3d/ch03-full-replacement-v01/prop-terminal-printer/9e46b11c-29a7-4378-947e-f7413f2c288d_0.glb",
+      "sourceSha256": "a562a6fa1d7b36f3751d4cebf2410f8aa45adf708c891a44546642886d288e68",
+      "output": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/public/assets/chapter03-3d/replacements/prop-terminal-printer.glb",
+      "outputSha256": "2d5f78f59d9a071ffda887202362d1d96cf4daeefeccb0e02aca325d2b94fc91",
+      "sourceBytes": 53042008,
+      "outputBytes": 3864732,
+      "trianglesBefore": 499580,
+      "triangleBudget": 12000,
+      "trianglesAfter": 11999,
+      "sourceDimensions": [
+        0.7266,
+        0.6412,
+        0.9076
+      ],
+      "targetFitBoxMetres": [
+        0.9,
+        0.75,
+        0.65
+      ],
+      "uniformScale": 0.71620285,
+      "runtimeDimensionsMetres": [
+        0.5204,
+        0.4592,
+        0.6504
+      ],
+      "textures": [
+        {
+          "name": "texture_pbr_20250901",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+          "size": [
+            1024,
+            1024
+          ]
+        },
+        {
+          "name": "texture_pbr_20250901_normal",
+          "size": [
+            1024,
+            1024
+          ]
+        }
+      ],
+      "separation": "independent-source"
+    }
+  ]
+}

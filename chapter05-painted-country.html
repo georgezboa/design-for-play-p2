@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NIGHTFALL — CHAPTER 5 ARCHIVE · THE PAINTED COUNTRY</title>
+    <style>
+      :root { color-scheme: light; }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; height: 100%; background: #efece2; overflow: hidden; }
+      #app { min-height: 100%; display: flex; align-items: center; justify-content: center; padding: 18px; }
+      #game canvas { display: block; max-width: 100%; box-shadow: 0 1px 2px rgba(74, 70, 64, 0.14), 0 18px 44px rgba(74, 70, 64, 0.16); }
+      .embedded #app { padding: 0; }
+      .embedded #game canvas { box-shadow: none; }
+    </style>
+  </head>
+  <body>
+    <div id="app"><div id="game"></div></div>
+    <script type="module" src="/src/chapters/paintedCountry/painted-country-main.js"></script>
+  </body>
+</html>

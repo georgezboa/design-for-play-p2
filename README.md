@@ -6,11 +6,136 @@ runs, and makes a final choice about whether the simulation should continue.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5180
+npm run assets:prepare   # only after a source panorama changes
+npm run dev      # http://localhost:5180 — chapter select
+npm run prod     # http://localhost:5181 — the real run, no skipping
 npm run build    # -> dist/
 ```
 
+## Dev mode and prod mode
+
+`npm run dev` opens on a **chapter select**: the Prologue's six junctions in the
+left column, the car order in the right. Move with `W`/`S` or the arrow keys,
+change column with `A`/`D`, start with `Enter`. Selecting a row writes the
+matching query string into the address bar, so the URL you end up on is
+shareable and survives a reload. Press `` ` `` at any time to come back here.
+
+`npm run prod` serves exactly the same code with every skip route switched off.
+There is no chapter select, and `?chapter=`, `?world=`, `?qa=` and `?artState=`
+are all ignored — the game always starts on the first frame of the Prologue.
+`npm run build` produces a bundle with the same guarantee. The two servers use
+different ports so a dev session and a clean run can be compared side by side.
+
+The switch is one build-time constant, `DEV_MODE` in `src/devMode.js`, set from
+Vite's `command`/`mode` in `vite.config.js`. Every dev route reads its query
+parameters through `devParams()` in that file, which returns an empty set in a
+production build — so adding a new route cannot accidentally leak into a shipped
+game.
+
+### Dev routes
+
+| Route | Effect |
+| --- | --- |
+| `?chapter=N` | Start inside chapter `N` (0 = Prologue, 1 = `THE SAFETY TEST`). Also accepts a slugified title, e.g. `?chapter=the-safety-test`. |
+| `?qa=timetable-N` | Warp into Prologue junction `N` with the earlier junctions already cleared. |
+| `?qa=phase2…phase6&state=…` | The per-phase QA fixtures documented under `docs/`. |
+| `?world=N` | Backdrop preview only: swap the painting and freeze world streaming. |
+| `?artState=…` | Force the tutorial car's power state. |
+
+A URL that already names one of these boots straight into it and skips the
+chapter select, so every existing QA link in `docs/` still works as a deep link.
+
+`?chapter=N` lands the player on the first ground run that can hold them:
+chapters 1, 3 and 8 begin over a hole in the near lane, so their spawn is nudged
+past it rather than dropped into it.
+
+### Getting your chapter into the chapter select
+
+The menu is built from the data the game already runs on, so most chapters
+appear without touching [`src/scenes/DevMenuScene.js`](src/scenes/DevMenuScene.js).
+Which case you are in depends on how your chapter is built.
+
+**1. Your chapter is a world in the main build.** Add your entry to
+`STORY_WORLDS` in [`src/story.js`](src/story.js) — `startX`, `texture`, `title`,
+`subtitle` — and it shows up in the right-hand column with a `?chapter=N` route.
+Nothing else is required. Two things to know:
+
+- `startX` is where your backdrop takes over, not a spawn point. The chapter
+  select lands the player on the first `LANE_NEAR` `kind: 'ground'` solid in
+  [`src/level.js`](src/level.js) that can hold them, so make sure your chapter
+  has ground somewhere at or after its `startX`.
+- Add your chapter's number word to `CHAPTER_WORDS` in `DevMenuScene.js` if you
+  want a name instead of the `CHAPTER 11` fallback.
+
+**2. Your chapter is a section of the Prologue.** Add your stage to
+`LEVEL.tutorialPuzzle.stages` in [`src/level.js`](src/level.js). It appears in
+the left-hand column with a `?qa=timetable-N` route, and the row's detail line
+comes from your stage's `lesson` field.
+
+**3. Your chapter is its own entry point.** This is the pattern car03, car04 and
+car06 use: your own HTML page in the project root, your own `src/carNN-main.js`,
+and usually your own `vite.carNN.config.js`. That game is a different page, so no
+query string can reach it — add one line to `STANDALONE_SLICES` at the top of
+[`src/scenes/DevMenuScene.js`](src/scenes/DevMenuScene.js) instead:
+
+```js
+{
+  label: 'CAR 07  //  YOUR CHAPTER',
+  detail: 'One line the menu shows when this row is selected.',
+  href: '/car07.html',
+},
+```
+
+The main dev server serves every HTML page in the project root, so `href` works
+without starting your car's own Vite config. Selecting the row navigates to that
+page; `` ` `` will not come back from it unless your entry point wires up the
+same shortcut, so reach the menu again through `http://localhost:5180/`.
+
+Whichever case you are in, keep world identity separate from sequence order. The
+car order is still expected to move, so name your chapter after what it *is*, not
+after the slot it currently occupies.
+
+## World background pipeline
+
+The full-resolution PNG files in `src/assets/` are source masters, not runtime
+textures. `npm run assets:prepare` converts the ten unique panoramas into
+overlapping JPEG chunks no wider than 4096 pixels and writes a generated
+manifest under `src/assets/generated/worlds/`.
+
+At runtime, Phaser loads only the current world and its neighbors. Distant
+world textures are released from GPU memory. The two cyberpunk story revisions
+share one generated asset instead of bundling the same panorama twice. Normal
+gameplay, story triggers, world order, and level geometry are unchanged.
+
+To preview a background without walking through the level, add `?world=N` or a
+texture key to the development URL. This freezes world streaming, so it judges a
+painting rather than playing a chapter — use `?chapter=N` to actually stand in
+one.
+
+```text
+http://localhost:5180/?world=5
+http://localhost:5180/?world=backdrop-05
+```
+
+The canonical source-to-texture mapping lives in
+`src/worlds/world-assets.json`. Builds run `npm run assets:check` automatically
+and fail with a direct instruction if a source image changed without regenerating
+its game assets.
+
 ## Controls
+
+Chapter 4 (`painted-country.html`) is the exception: it is a painting chapter,
+so it adds the pointer and lists its own controls in the car's margin.
+
+| Key | Action |
+| --- | --- |
+| `A` `D` / `←` `→` | Walk |
+| `Space` | Jump |
+| Hold left-click | Paint — turns a drawn line into a surface that bears weight |
+| Hold right-click | Wash — turns a surface back into a line and returns its pigment |
+| `R` | Start the bay over |
+
+### Every other car
 
 | Key | Action |
 | --- | --- |
@@ -84,6 +209,7 @@ and refuses the shift if it would put the player inside solid rock.
 | Change lane depth/scale/tint | `src/constants.js` → `LANES` |
 | Redraw any sprite | `src/textures.js` |
 | Change the simulation worlds | `src/story.js` → `STORY_WORLDS` |
+| Replace or add a panorama source | `src/worlds/world-assets.json`, then `npm run assets:prepare` |
 | Reframe the backdrop | `src/constants.js` → `BACKDROP` |
 | Retune the value ramp / fog | `src/palette.js` + `LANES` tints |
 | Move lamps, hearses, fences, graves | `src/level.js` → `decor` |

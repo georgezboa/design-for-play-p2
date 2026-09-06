@@ -1,0 +1,488 @@
+{
+  "version": 1,
+  "lines": [
+    {
+      "key": "ARCHIVIST\u0000I am at the museum service desk. This receiver stays on my channel while you are in the reconstruction.",
+      "lineId": "CH05_ARCHIVIST_0001",
+      "speaker": "ARCHIVIST",
+      "text": "I am at the museum service desk. This receiver stays on my channel while you are in the reconstruction.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0001.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Echo City is still running its nine thirty p.m. municipal closing round. The station lighting circuit is off, so take the canvas kit and restore night power first.",
+      "lineId": "CH05_ARCHIVIST_0002",
+      "speaker": "ARCHIVIST",
+      "text": "Echo City is still running its nine thirty p.m. municipal closing round. The station lighting circuit is off, so take the canvas kit and restore night power first.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0002.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000After the street lamps return, draw the final market stall curtains, restart the fountain pump, and return the public-works ledger.",
+      "lineId": "CH05_ARCHIVIST_0003",
+      "speaker": "ARCHIVIST",
+      "text": "After the street lamps return, draw the final market stall curtains, restart the fountain pump, and return the public-works ledger.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0003.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Correct. Nothing here is hidden. Walk the city and finish what the night attendant would have finished.",
+      "lineId": "CH05_ARCHIVIST_0004",
+      "speaker": "ARCHIVIST",
+      "text": "Correct. Nothing here is hidden. Walk the city and finish what the night attendant would have finished.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0004.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000That is intentional. Follow the dim platform marker and open the station breaker first. The rest of the route will be easier once the street grid is back.",
+      "lineId": "CH05_ARCHIVIST_0005",
+      "speaker": "ARCHIVIST",
+      "text": "That is intentional. Follow the dim platform marker and open the station breaker first. The rest of the route will be easier once the street grid is back.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0005.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The last stall is covered. Vendors tied their own curtains; the night attendant checked the final row.",
+      "lineId": "CH05_ARCHIVIST_0006",
+      "speaker": "ARCHIVIST",
+      "text": "The last stall is covered. Vendors tied their own curtains; the night attendant checked the final row.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0006.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Circulation restored. The pump stayed on overnight so mineral deposits did not harden in the basin.",
+      "lineId": "CH05_ARCHIVIST_0007",
+      "speaker": "ARCHIVIST",
+      "text": "Circulation restored. The pump stayed on overnight so mineral deposits did not harden in the basin.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0007.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Ledger returned and stamped. Most city records are ordinary: repairs, late keys, borrowed tools, and small mistakes.",
+      "lineId": "CH05_ARCHIVIST_0008",
+      "speaker": "ARCHIVIST",
+      "text": "Ledger returned and stamped. Most city records are ordinary: repairs, late keys, borrowed tools, and small mistakes.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0008.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The return slot opened a second tray. There is a night-service badge inside. Take it before you leave.",
+      "lineId": "CH05_ARCHIVIST_0009",
+      "speaker": "ARCHIVIST",
+      "text": "The return slot opened a second tray. There is a night-service badge inside. Take it before you leave.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0009.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000It belonged to the attendant whose round you just finished. The museum catalogued the work orders, but not the worker.",
+      "lineId": "CH05_ARCHIVIST_0010",
+      "speaker": "ARCHIVIST",
+      "text": "It belonged to the attendant whose round you just finished. The museum catalogued the work orders, but not the worker.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0010.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Bring the badge back. It should be displayed with the record.",
+      "lineId": "CH05_ARCHIVIST_0011",
+      "speaker": "ARCHIVIST",
+      "text": "Bring the badge back. It should be displayed with the record.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0011.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Station lamp on. The closing circuit is checking the line.",
+      "lineId": "CH05_ARCHIVIST_0012",
+      "speaker": "ARCHIVIST",
+      "text": "Station lamp on. The closing circuit is checking the line.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0012.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000That was the night clerk’s service window. The last tram has gone; you can switch it off.",
+      "lineId": "CH05_ARCHIVIST_0013",
+      "speaker": "ARCHIVIST",
+      "text": "That was the night clerk’s service window. The last tram has gone; you can switch it off.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0013.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The timetable slipped in its frame. Set it upright for the morning crew.",
+      "lineId": "CH05_ARCHIVIST_0014",
+      "speaker": "ARCHIVIST",
+      "text": "The timetable slipped in its frame. Set it upright for the morning crew.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0014.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000That standpipe fed the fountain crew’s hose. Close it before water freezes on the pavement.",
+      "lineId": "CH05_ARCHIVIST_0015",
+      "speaker": "ARCHIVIST",
+      "text": "That standpipe fed the fountain crew’s hose. Close it before water freezes on the pavement.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0015.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The night round is complete. The museum doorway is connected again.",
+      "lineId": "CH05_ARCHIVIST_0016",
+      "speaker": "ARCHIVIST",
+      "text": "The night round is complete. The museum doorway is connected again.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0016.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Walk back through the city. The four places you serviced will remain in their finished state.",
+      "lineId": "CH05_ARCHIVIST_0017",
+      "speaker": "ARCHIVIST",
+      "text": "Walk back through the city. The four places you serviced will remain in their finished state.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0017.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The museum doorway is offline while the closing round is open. The service kit lists the four remaining jobs.",
+      "lineId": "CH05_ARCHIVIST_0018",
+      "speaker": "ARCHIVIST",
+      "text": "The museum doorway is offline while the closing round is open. The service kit lists the four remaining jobs.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0018.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Before you go, can you hear me over the transformer hum?",
+      "lineId": "CH05_ARCHIVIST_0019",
+      "speaker": "ARCHIVIST",
+      "text": "Before you go, can you hear me over the transformer hum?",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0019.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000It is a borrowed receiver. If it gets worse, use the spare earpiece in the side pocket.",
+      "lineId": "CH05_ARCHIVIST_0020",
+      "speaker": "ARCHIVIST",
+      "text": "It is a borrowed receiver. If it gets worse, use the spare earpiece in the side pocket.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0020.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000That is where the museum stored it. I cleaned the part that touches your ear.",
+      "lineId": "CH05_ARCHIVIST_0021",
+      "speaker": "ARCHIVIST",
+      "text": "That is where the museum stored it. I cleaned the part that touches your ear.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0021.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000No answer usually means it works. Tap the receiver once if it cuts out.",
+      "lineId": "CH05_ARCHIVIST_0022",
+      "speaker": "ARCHIVIST",
+      "text": "No answer usually means it works. Tap the receiver once if it cuts out.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0022.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The curtain winch sticks in damp weather. Do not force it past the stop.",
+      "lineId": "CH05_ARCHIVIST_0023",
+      "speaker": "ARCHIVIST",
+      "text": "The curtain winch sticks in damp weather. Do not force it past the stop.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0023.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Three repair tickets from the same stall. The last attendant underlined “do not force.”",
+      "lineId": "CH05_ARCHIVIST_0024",
+      "speaker": "ARCHIVIST",
+      "text": "Three repair tickets from the same stall. The last attendant underlined “do not force.”",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0024.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000She asked the city twice. Procurement closed both requests.",
+      "lineId": "CH05_ARCHIVIST_0025",
+      "speaker": "ARCHIVIST",
+      "text": "She asked the city twice. Procurement closed both requests.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0025.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Stop when the canvas edges meet. The old handle can keep its dignity.",
+      "lineId": "CH05_ARCHIVIST_0026",
+      "speaker": "ARCHIVIST",
+      "text": "Stop when the canvas edges meet. The old handle can keep its dignity.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0026.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Check the basin before you start the pump. Anything caught in the grate?",
+      "lineId": "CH05_ARCHIVIST_0027",
+      "speaker": "ARCHIVIST",
+      "text": "Check the basin before you start the pump. Anything caught in the grate?",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0027.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Take out the cup. Leave the coins. Maintenance stopped arguing about those in 1987.",
+      "lineId": "CH05_ARCHIVIST_0028",
+      "speaker": "ARCHIVIST",
+      "text": "Take out the cup. Leave the coins. Maintenance stopped arguing about those in 1987.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0028.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Then the filter can take it. Your gloves will smell like the fountain either way.",
+      "lineId": "CH05_ARCHIVIST_0029",
+      "speaker": "ARCHIVIST",
+      "text": "Then the filter can take it. Your gloves will smell like the fountain either way.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0029.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000If the grate is clear, start it. Do not put your hand under the impeller.",
+      "lineId": "CH05_ARCHIVIST_0030",
+      "speaker": "ARCHIVIST",
+      "text": "If the grate is clear, start it. Do not put your hand under the impeller.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0030.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Keep the ledger flat. The binding was repaired last winter.",
+      "lineId": "CH05_ARCHIVIST_0031",
+      "speaker": "ARCHIVIST",
+      "text": "Keep the ledger flat. The binding was repaired last winter.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0031.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Public works used thick paper. They expected the records to outlive the pipes.",
+      "lineId": "CH05_ARCHIVIST_0032",
+      "speaker": "ARCHIVIST",
+      "text": "Public works used thick paper. They expected the records to outlive the pipes.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0032.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Night staff used whatever paper was in front of them. Do not erase it.",
+      "lineId": "CH05_ARCHIVIST_0033",
+      "speaker": "ARCHIVIST",
+      "text": "Night staff used whatever paper was in front of them. Do not erase it.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0033.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Both hands, please. The corner already came off once.",
+      "lineId": "CH05_ARCHIVIST_0034",
+      "speaker": "ARCHIVIST",
+      "text": "Both hands, please. The corner already came off once.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0034.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000The station lamp takes twenty seconds to warm. If it flickers once, leave it alone.",
+      "lineId": "CH05_ARCHIVIST_0035",
+      "speaker": "ARCHIVIST",
+      "text": "The station lamp takes twenty seconds to warm. If it flickers once, leave it alone.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0035.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Two cleaners and a bakery driver, most nights. The car was often late; the schedule still mattered.",
+      "lineId": "CH05_ARCHIVIST_0036",
+      "speaker": "ARCHIVIST",
+      "text": "Two cleaners and a bakery driver, most nights. The car was often late; the schedule still mattered.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0036.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Then use the other end. The city has been repainting that bench since before Mara crossed.",
+      "lineId": "CH05_ARCHIVIST_0037",
+      "speaker": "ARCHIVIST",
+      "text": "Then use the other end. The city has been repainting that bench since before Mara crossed.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0037.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Give the lamp time. Old fluorescent tubes dislike being watched.",
+      "lineId": "CH05_ARCHIVIST_0038",
+      "speaker": "ARCHIVIST",
+      "text": "Give the lamp time. Old fluorescent tubes dislike being watched.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0038.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Do you want the receiver off for the walk back?",
+      "lineId": "CH05_ARCHIVIST_0039",
+      "speaker": "ARCHIVIST",
+      "text": "Do you want the receiver off for the walk back?",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0039.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000All right. I can stay on the line. You do not have to report anything.",
+      "lineId": "CH05_ARCHIVIST_0040",
+      "speaker": "ARCHIVIST",
+      "text": "All right. I can stay on the line. You do not have to report anything.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0040.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Of course. The door lights will lead you back.",
+      "lineId": "CH05_ARCHIVIST_0041",
+      "speaker": "ARCHIVIST",
+      "text": "Of course. The door lights will lead you back.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0041.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000I will leave the channel open. No need to answer.",
+      "lineId": "CH05_ARCHIVIST_0042",
+      "speaker": "ARCHIVIST",
+      "text": "I will leave the channel open. No need to answer.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0042.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Next stop: the market shutters. You can find it on the service map.",
+      "lineId": "CH05_ARCHIVIST_0043",
+      "speaker": "ARCHIVIST",
+      "text": "Next stop: the market shutters. You can find it on the service map.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0043.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Next stop: the fountain pump. You can find it on the service map.",
+      "lineId": "CH05_ARCHIVIST_0044",
+      "speaker": "ARCHIVIST",
+      "text": "Next stop: the fountain pump. You can find it on the service map.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0044.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Next stop: the archive ledger. You can find it on the service map.",
+      "lineId": "CH05_ARCHIVIST_0045",
+      "speaker": "ARCHIVIST",
+      "text": "Next stop: the archive ledger. You can find it on the service map.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0045.ogg"
+    },
+    {
+      "key": "ARCHIVIST\u0000Next stop: the night-service badge. You can find it on the service map.",
+      "lineId": "CH05_ARCHIVIST_0046",
+      "speaker": "ARCHIVIST",
+      "text": "Next stop: the night-service badge. You can find it on the service map.",
+      "url": "/museum3d/voice/ch05/archivist/CH05_ARCHIVIST_0046.ogg"
+    },
+    {
+      "key": "BUTCH\u0000So this is maintenance, not another test.",
+      "lineId": "CH05_BUTCH_0001",
+      "speaker": "BUTCH",
+      "text": "So this is maintenance, not another test.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0001.ogg"
+    },
+    {
+      "key": "BUTCH\u0000One service key, one ledger, and a hand lamp. The hand lamp is barely enough to see the pavement.",
+      "lineId": "CH05_BUTCH_0002",
+      "speaker": "BUTCH",
+      "text": "One service key, one ledger, and a hand lamp. The hand lamp is barely enough to see the pavement.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0002.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Someone always had to stay five minutes later.",
+      "lineId": "CH05_BUTCH_0003",
+      "speaker": "BUTCH",
+      "text": "Someone always had to stay five minutes later.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0003.ogg"
+    },
+    {
+      "key": "BUTCH\u0000In the daytime, people met here. At night, somebody still had to keep the water moving.",
+      "lineId": "CH05_BUTCH_0004",
+      "speaker": "BUTCH",
+      "text": "In the daytime, people met here. At night, somebody still had to keep the water moving.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0004.ogg"
+    },
+    {
+      "key": "BUTCH\u0000That sounds more like a city than the museum labels do.",
+      "lineId": "CH05_BUTCH_0005",
+      "speaker": "BUTCH",
+      "text": "That sounds more like a city than the museum labels do.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0005.ogg"
+    },
+    {
+      "key": "BUTCH\u0000NIGHT SERVICE. A-17. The brass is worn where someone held it between two fingers.",
+      "lineId": "CH05_BUTCH_0006",
+      "speaker": "BUTCH",
+      "text": "NIGHT SERVICE. A-17. The brass is worn where someone held it between two fingers.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0006.ogg"
+    },
+    {
+      "key": "BUTCH\u0000When Mara crossed Echo City, people were lowering shutters, returning books, cleaning stone, and waiting for the last car.",
+      "lineId": "CH05_BUTCH_0007",
+      "speaker": "BUTCH",
+      "text": "When Mara crossed Echo City, people were lowering shutters, returning books, cleaning stone, and waiting for the last car.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0007.ogg"
+    },
+    {
+      "key": "BUTCH\u0000She was not moving through a case file. She was moving through other people’s evening.",
+      "lineId": "CH05_BUTCH_0008",
+      "speaker": "BUTCH",
+      "text": "She was not moving through a case file. She was moving through other people’s evening.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0008.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Someone left the light on so late passengers could still ask for help.",
+      "lineId": "CH05_BUTCH_0009",
+      "speaker": "BUTCH",
+      "text": "Someone left the light on so late passengers could still ask for help.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0009.ogg"
+    },
+    {
+      "key": "BUTCH\u0000There. First service at six ten. Nothing mysterious about it.",
+      "lineId": "CH05_BUTCH_0010",
+      "speaker": "BUTCH",
+      "text": "There. First service at six ten. Nothing mysterious about it.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0010.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Valve closed. The drip has stopped.",
+      "lineId": "CH05_BUTCH_0011",
+      "speaker": "BUTCH",
+      "text": "Valve closed. The drip has stopped.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0011.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Loud and clear. The left channel clicks.",
+      "lineId": "CH05_BUTCH_0012",
+      "speaker": "BUTCH",
+      "text": "Loud and clear. The left channel clicks.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0012.ogg"
+    },
+    {
+      "key": "BUTCH\u0000I can hear you. The earpiece smells like a coat closet.",
+      "lineId": "CH05_BUTCH_0013",
+      "speaker": "BUTCH",
+      "text": "I can hear you. The earpiece smells like a coat closet.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0013.ogg"
+    },
+    {
+      "key": "BUTCH\u0000How do you know?",
+      "lineId": "CH05_BUTCH_0014",
+      "speaker": "BUTCH",
+      "text": "How do you know?",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0014.ogg"
+    },
+    {
+      "key": "BUTCH\u0000The vendor could fix it.",
+      "lineId": "CH05_BUTCH_0015",
+      "speaker": "BUTCH",
+      "text": "The vendor could fix it.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0015.ogg"
+    },
+    {
+      "key": "BUTCH\u0000A paper cup and two coins.",
+      "lineId": "CH05_BUTCH_0016",
+      "speaker": "BUTCH",
+      "text": "A paper cup and two coins.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0016.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Only wet leaves.",
+      "lineId": "CH05_BUTCH_0017",
+      "speaker": "BUTCH",
+      "text": "Only wet leaves.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0017.ogg"
+    },
+    {
+      "key": "BUTCH\u0000It is heavier than it looks.",
+      "lineId": "CH05_BUTCH_0018",
+      "speaker": "BUTCH",
+      "text": "It is heavier than it looks.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0018.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Someone wrote a grocery list in the margin.",
+      "lineId": "CH05_BUTCH_0019",
+      "speaker": "BUTCH",
+      "text": "Someone wrote a grocery list in the margin.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0019.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Did anyone wait here this late?",
+      "lineId": "CH05_BUTCH_0020",
+      "speaker": "BUTCH",
+      "text": "Did anyone wait here this late?",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0020.ogg"
+    },
+    {
+      "key": "BUTCH\u0000The bench paint is still tacky.",
+      "lineId": "CH05_BUTCH_0021",
+      "speaker": "BUTCH",
+      "text": "The bench paint is still tacky.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0021.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Leave it on.",
+      "lineId": "CH05_BUTCH_0022",
+      "speaker": "BUTCH",
+      "text": "Leave it on.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0022.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Give me a minute of quiet.",
+      "lineId": "CH05_BUTCH_0023",
+      "speaker": "BUTCH",
+      "text": "Give me a minute of quiet.",
+      "url": "/museum3d/voice/ch05/butch/CH05_BUTCH_0023.ogg"
+    }
+  ]
+}

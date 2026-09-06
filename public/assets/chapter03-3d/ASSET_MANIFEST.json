@@ -1,0 +1,111 @@
+{
+  "chapter": "03 / ECHO CITY",
+  "runtime": "real-time Three.js GLB preview",
+  "generated": "2026-08-06",
+  "models": {
+    "pipeline": "Hunyuan source -> Blender silhouette-protected decimation and embedded runtime PBR repack; landmark files additionally use glTF-Transform Meshopt and WebP",
+    "files": [
+      "models/clock_tower_web.glb",
+      "models/municipal_tram_web.glb",
+      "models/reunion_fountain_web.glb",
+      "models/produce_market_stall_web.glb",
+      "models/old_municipal_archive_web.glb",
+      "models/transit_ministry_web.glb",
+      "models/scanner_tower_web.glb",
+      "models/ch03_queue_dispenser.glb",
+      "models/ch03_produce_scale.glb",
+      "models/ch03_porter_handcart.glb",
+      "models/ch03_receipt_spike.glb",
+      "models/ch03_queue_stanchion.glb",
+      "models/ch03_clerk_stamp_machine.glb",
+      "models/ch03_crosswalk_signal.glb",
+      "models/ch03_fountain_bench.glb",
+      "models/ch03_pa_speaker.glb",
+      "models/ch03_night_ticket_reader.glb",
+      "models/ch03_perimeter_tenement.glb",
+      "models/ch03_perimeter_corner_arcade.glb",
+      "models/ch03_perimeter_workers_hall.glb",
+      "models/ch03_shop_bakery_tenement.glb",
+      "models/ch03_shop_pharmacy_corner.glb",
+      "models/ch03_shop_printworks_rowhouse.glb",
+      "models/ch03_landmark_copper_heron_hotel.glb",
+      "models/ch03_landmark_civic_night_arcade.glb",
+      "models/ch03_open_air_station.glb",
+      "models/ch03_tram_tunnel_portal.glb",
+      "models/ch03_street_campfire.glb",
+      "models/ch03_crushed_trash_can.glb",
+      "models/ch03_abandoned_compact_car.glb",
+      "models/ch03_cliff_overlook_platform.glb"
+    ]
+  },
+  "narrativeProps": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from the approved isolated Chapter 3 prop references",
+    "optimization": "500k source triangles per asset reduced to 7k-14k; three 4096px source maps repacked as three embedded 1024px maps",
+    "runtimeTotal": "approximately 8.2 MB for ten GLBs",
+    "placement": "arrival: queue dispenser and night reader; market: produce scale, handcart and receipt device; transit/scanner: stanchion, clerk stamp, crosswalk signal and PA speaker; fountain: reunion bench"
+  },
+  "perimeterBuildings": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from three isolated project-authored building references",
+    "optimization": "466k-498k source triangles reduced to 18k/22k/20k while retaining the generated normal maps; three 4096px source maps repacked as embedded 1024px maps",
+    "runtimeTotal": "approximately 4.5 MB for three legacy GLB prototypes shared across eleven of the twenty-one street-wall instances",
+    "placement": "the old two-ring scatter is superseded by one camera-aware street wall: a seven-building north skyline, interrupted side frontages and a deliberately low player-facing south edge"
+  },
+  "denseDistrictBuildings": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from five project-authored isolated Chapter 3 building references",
+    "cost": "30 points per source plus repair/optimization passes; 150 generation points for the accepted five-model set",
+    "optimization": "source meshes reduced to 18k bakery, 20k pharmacy, 20k printworks, 36k hotel and 32k arcade while preserving roof silhouettes and embedded PBR detail",
+    "runtimeTotal": "approximately 9.65 MB for five shared GLBs; ten runtime instances contribute about 222k geometry triangles before the legacy street wall",
+    "placement": "bakery x3, pharmacy x2 and printworks x3 establish varied repeatable frontages; the Copper Heron Hotel anchors the east frontage and the Civic Night Arcade anchors the far north skyline, while the player-facing south edge remains low",
+    "visibilityAudit": "approved V2 parcel rule: A/B full buildings; C/D/F/H/I low masses; E/G open. All building collisions use measured oriented footprints and every pair retains visible clearance."
+  },
+  "transitArchitecture": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from two project-authored isolated references",
+    "cost": "30 points per asset; 60 points total",
+    "optimization": "open-air station reduced from 498,210 to 28,000 triangles; tunnel portal reduced from 500,000 to 22,000 triangles; three 4096px source maps per asset repacked as embedded 1024px maps",
+    "runtimeTotal": "approximately 2.8 MB for two GLBs",
+    "placement": "the station sits beside the readable southwest platform; the portal is mounted against the upper-left perimeter building and receives the chapter exit railway"
+  },
+  "streetDressing": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from three isolated text prompts approved for the Chapter 3 street edge",
+    "cost": "30 points per asset; 90 points total",
+    "optimization": "campfire 497,210 -> 7,998 triangles at 1024px; crushed trash can 499,312 -> 6,000 triangles at 1024px; abandoned compact car 499,364 -> 18,000 triangles at 1536px",
+    "runtimeTotal": "approximately 5.1 MB for three shared GLBs",
+    "placement": "one warm campfire in the south activity court; fourteen geometry-sharing crushed cans along building edges; three geometry-sharing wrecked cars occupy the marked paved exits and replace the intersecting northeast fence corner"
+  },
+  "sunriseOverlook": {
+    "source": "Tencent Hunyuan 3D 3.0 Normal + PBR, generated from the approved isolated text prompt",
+    "cost": "30 recorded points for job 1478287111517782016",
+    "optimization": "499,844 source triangles reduced to 15,999 triangles; three 4096px maps repacked as embedded 1024px maps; the generated lower rock mass and long braces were removed below the deck mounting lip",
+    "runtimeTotal": "approximately 1.03 MB",
+    "placement": "normalized to the authored summit footprint with its generated rock substructure sunk into the existing tunnel cliff; the open edge aligns with the final timber-walk approach"
+  },
+  "distantCity": {
+    "file": "backdrops/city-extension-isometric-v02.webp",
+    "source": "OpenAI built-in image generation, authored specifically for the production camera's 45-degree yaw and 45-48-degree top-down orthographic view",
+    "status": "SUPERSEDED — retained as a reference only and no longer loaded at runtime",
+    "role": "abandoned perspective-backdrop experiment; production now uses a closer locked camera and real world-space paving/buildings only",
+    "legacy": "city-horizon-v01.webp is retained as a superseded reference and is not loaded"
+  },
+  "railBoundary": {
+    "model": "models/municipal_tram_web.glb",
+    "reuse": "one boardable tram plus two shared-geometry convoy clones; two additional tilted clones form a stacked derelict-car barricade at the northeast street edge",
+    "layout": "the three service cars remain aligned on the station-to-tunnel railway; the wreck pair is a separate physical boundary that disguises the closed street edge"
+  },
+  "ground": {
+    "worn-limestone-source.png": {
+      "role": "project-generated seamless albedo source derived from the approved v6 material language only",
+      "generator": "OpenAI image generation built-in tool",
+      "prompt_scope": "orthographic top-down worn civic limestone; no scene layout, objects or baked lighting"
+    },
+    "worn-limestone-albedo.webp": "1024px runtime albedo",
+    "worn-limestone-height.webp": "1024px bump source",
+    "worn-limestone-roughness.webp": "1024px roughness source",
+    "worn-limestone-dark-albedo.webp": "1024px dark civic-cobble variant used for broad walkable courts",
+    "dark-city-cobbles.webp": {
+      "role": "dark backstage paving used only where west/north facades fully occlude the player",
+      "source": "Quaternius Downtown City MegaKit Standard / T_Concrete_Asphalt_BaseColor.png",
+      "license": "CC0"
+    }
+  },
+  "interaction": "A continuous 116x86 visible district underlies a rectilinear three-cross-street/three-spine road hierarchy: every exposed paved gap is raycast-walkable unless occupied by a real prop, tram car or measured oriented building footprint. Parcels E and G are both verified open navigation spaces; the northwest hidden band now stops before the visible tunnel gap. The rail bed itself is crossable; only the three tram bodies block movement. Fully occluded north/backstage strips are visibly darkened and remain non-walkable. The orthographic camera follows the player through a tight dead zone and is clamped to a close 2.4-3.2 zoom range."
+}

@@ -1,0 +1,49 @@
+{
+  "chapter": "car03-echo-city-iso",
+  "generated": "2026-08-05",
+  "pipeline": "Blender 4.1.1 offline renders (no runtime glTF/Three.js); PIL post-grade; exported WebP + spritesheet atlas into src/cars/presentCity/assets-iso/",
+  "camera_lock": {
+    "yaw_deg": 45,
+    "tilt_deg": 55,
+    "type": "orthographic",
+    "note": "Blender ortho_scale spans the larger image dimension; layer ppm = 1920/ortho_scale at 1920x1200, crowd ppm = 160/2.5 = 64 px/unit at 128x160. Both verified by two-point calibration renders (work/echo-city-isometric/blender/calibrate.py)."
+  },
+  "sources": [
+    {
+      "pack": "Quaternius Ultimate Animated Character Pack — UAL1_Standard.glb (Mannequin + Armature)",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "license_file": "open-source-assets/car03-2p5d/work/echo-city-isometric/src/anim/License.txt",
+      "used_for": ["crowd_atlas.webp"]
+    },
+    {
+      "pack": "Quaternius Downtown pack (gltf: streets, sidewalks, buildings, decals, props)",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "used_for": ["layer_ground.webp", "layer_buildings.webp", "layer_market.webp", "layer_transit.webp", "layer_fountain.webp", "layer_occluders.webp", "layer_masks.webp"]
+    },
+    {
+      "pack": "Quaternius Base Characters (Superhero male/female)",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "used_for": [],
+      "note": "Staged but NOT shipped. Per the work package, Base Characters may only do crowd/proportion stand-ins; crowd ended up using the UAL-1 mannequin instead. Butch/Mara final look stays with the human contributor."
+    }
+  ],
+  "runtime_assets": [
+    { "file": "layer_ground.webp", "size_px": [1920, 1200], "layer": "ground", "anchor_target": [1.5, 2.0, 0.0], "ortho_scale": 72, "ppm": 26.667, "status": "final-greybox", "contents": "street/sidewalk/plaza grid, crosswalk decals, drains, manholes, block base, train platform edge" },
+    { "file": "layer_buildings.webp", "size_px": [1920, 1200], "layer": "far buildings", "anchor_target": [-14.0, 8.0, 6.0], "ortho_scale": 84, "ppm": 22.857, "status": "final-greybox", "contents": "7 Quaternius building blocks framing the north/west edges" },
+    { "file": "layer_market.webp", "size_px": [1920, 1200], "layer": "market mechanisms", "anchor_target": [-16.0, 0.0, 1.0], "ortho_scale": 22, "ppm": 87.273, "status": "final-greybox", "contents": "2 stalls + awnings, 2 market gate posts (shutter leaves stay dynamic)" },
+    { "file": "layer_transit.webp", "size_px": [1920, 1200], "layer": "transit mechanisms", "anchor_target": [8.0, 12.0, 1.0], "ortho_scale": 34, "ppm": 56.471, "status": "final-greybox", "contents": "crossing island, barrier post (arm stays dynamic), 3 field pylons" },
+    { "file": "layer_fountain.webp", "size_px": [1920, 1200], "layer": "fountain + witness gate", "anchor_target": [21.0, -1.0, 1.0], "ortho_scale": 26, "ppm": 73.846, "status": "final-greybox", "contents": "fountain basin/water/core, bell + beam + posts, witness gate posts (red field stays dynamic)" },
+    { "file": "layer_occluders.webp", "size_px": [1920, 1200], "layer": "foreground occluders", "anchor_target": [0.0, -18.6, 0.5], "ortho_scale": 28, "ppm": 68.571, "status": "final-greybox", "contents": "5 bollards + 4 planters on the south/foreground edge" },
+    { "file": "layer_masks.webp", "size_px": [1920, 1200], "layer": "relationship masks", "anchor_target": [18.5, -1.0, 0.0], "ortho_scale": 48, "ppm": 40.0, "status": "baked-not-shipped", "contents": "field plane, safe crossing, record mark, witness pads — kept dynamic in the runtime instead (state-driven), layer retained for future art passes" },
+    { "file": "crowd_atlas.webp", "size_px": [1024, 3840], "layer": "actors/crowd", "tile_px": [128, 160], "layout": "24 rows (idle/walk/interact x 8 facing dirs) x 8 frames", "actions": ["Idle_Loop", "Walk_Loop", "Interact"], "status": "final-greybox", "contents": "UAL-1 mannequin, flat warm base colour for runtime tinting; feet anchored at tile bottom -6px" }
+  ],
+  "procedural_placeholders": [
+    { "what": "Butch (player)", "status": "placeholder-replaceable", "where": "echoCityIsoArt.js drawActor (white capsule)" },
+    { "what": "Mara", "status": "placeholder-replaceable", "where": "echoCityIsoArt.js drawActor (tungsten capsule)" },
+    { "what": "courier + player echo", "status": "placeholder-replaceable", "where": "echoCityIsoArt.js drawActor (cyan / amber ghost capsule)" },
+    { "what": "central clock, bus, crosswalk signal, barrier arm, market shutter leaves, witness gate field", "status": "dynamic-procedural-by-design", "where": "echoCityIsoArt.js" }
+  ],
+  "excluded_from_bake": ["clock_*", "courier", "market_group_*", "crowd_*", "mara", "butch", "train_body", "bus", "market_gate_bar", "gate_bar", "barrier_arm"],
+  "total_runtime_bytes": 490000,
+  "budget_bytes": 12582912
+}

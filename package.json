@@ -3,16 +3,68 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "desktop/main.cjs",
   "description": "A 2.5D lane-shifting platformer built with Phaser 3",
   "scripts": {
-    "dev": "vite",
+    "assets:prepare": "node scripts/prepare-world-assets.mjs",
+    "assets:check": "node scripts/prepare-world-assets.mjs --check",
+    "predev": "npm run assets:check",
+    "dev": "vite --mode development",
+    "preprod": "npm run assets:check",
+    "prod": "vite --mode production",
+    "prebuild": "npm run assets:check",
     "build": "vite build",
-    "preview": "vite preview"
+    "dev:chapter03": "vite --config vite.car03-3d.config.js",
+    "build:chapter03": "vite build --config vite.car03-3d.config.js",
+    "test:chapter03": "node --test tests/car03/*.test.mjs",
+    "dev:chapter05": "vite --config vite.museum3d.config.js",
+    "build:chapter05": "vite build --config vite.museum3d.config.js",
+    "test:chapter05": "node --test tests/chapter05/*.test.mjs",
+    "dev:final-boss": "vite --config vite.final-boss.config.js",
+    "build:final-boss": "vite build --config vite.final-boss.config.js",
+    "dev:hidden-final-boss": "vite --config vite.hidden-final-boss.config.js",
+    "build:hidden-final-boss": "vite build --config vite.hidden-final-boss.config.js",
+    "preview": "vite preview",
+    "build:submission-web": "npm run build",
+    "package:mac": "npm run build:submission-web && electron-builder --mac --universal --publish never",
+    "package:win": "npm run build:submission-web && electron-builder --win portable --publish never"
   },
   "dependencies": {
-    "phaser": "3.90.0"
+    "phaser": "3.90.0",
+    "three": "^0.179.1"
   },
   "devDependencies": {
-    "vite": "6.4.3"
+    "sharp": "^0.35.3",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "vite": "^6.4.3"
+  },
+  "build": {
+    "appId": "edu.stanford.cs247g.nightfall",
+    "productName": "NIGHTFALL",
+    "directories": {
+      "output": "release/desktop"
+    },
+    "files": [
+      "desktop/**",
+      "package.json",
+      "!node_modules/**"
+    ],
+    "npmRebuild": false,
+    "compression": "store",
+    "extraResources": [
+      {
+        "from": "dist",
+        "to": "game",
+        "filter": ["**/*"]
+      }
+    ],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.games"
+    },
+    "win": {
+      "target": ["portable"]
+    }
   }
 }

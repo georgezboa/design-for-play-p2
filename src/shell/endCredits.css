@@ -1,0 +1,30 @@
+#nightfall-end-credits {
+  position: fixed;
+  inset: 0;
+  z-index: 20001;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #000;
+  color: #eee8dc;
+  opacity: 0;
+  transition: opacity 900ms ease;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .2em;
+}
+
+#nightfall-end-credits.is-visible { opacity: 1; }
+
+.nf-end-credits-list {
+  display: grid;
+  justify-items: center;
+  gap: clamp(1.1rem, 3vh, 2.5rem);
+  width: min(500px, calc(100vw - 48px));
+  text-align: center;
+}
+
+.nf-end-credits-list > p,
+.nf-end-credits-list > small { margin: 0; color: #9a907f; font-size: clamp(.56rem, 1.2vw, .72rem); }
+.nf-end-credits-list h1 { margin: 0; color: #f1e7d3; font-size: clamp(1.25rem, 3.4vw, 2rem); font-weight: 500; line-height: 1.45; }
+.nf-end-credit-names { display: grid; gap: clamp(.65rem, 1.7vh, 1rem); margin: clamp(1rem, 4vh, 2.5rem) 0; }
+.nf-end-credit-names p { margin: 0; color: #d8d0c0; font-size: clamp(.86rem, 2vw, 1.14rem); }

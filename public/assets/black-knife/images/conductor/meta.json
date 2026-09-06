@@ -1,0 +1,44 @@
+{
+  "idle": {
+    "frameWidth": 399,
+    "frameHeight": 428,
+    "frames": 5,
+    "medianH": 421
+  },
+  "move": {
+    "frameWidth": 409,
+    "frameHeight": 386,
+    "frames": 5,
+    "medianH": 337
+  },
+  "baton": {
+    "frameWidth": 410,
+    "frameHeight": 599,
+    "frames": 5,
+    "medianH": 483
+  },
+  "locom": {
+    "frameWidth": 410,
+    "frameHeight": 375,
+    "frames": 5,
+    "medianH": 332
+  },
+  "magic": {
+    "frameWidth": 409,
+    "frameHeight": 572,
+    "frames": 5,
+    "medianH": 478
+  },
+  "damage": {
+    "frameWidth": 378,
+    "frameHeight": 392,
+    "frames": 3,
+    "medianH": 383
+  },
+  "defeat": {
+    "frameWidth": 396,
+    "frameHeight": 368,
+    "frames": 2,
+    "medianH": 356
+  }
+}

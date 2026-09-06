@@ -1,6 +1,7 @@
 # deps + build output
 node_modules/
 dist/
+release/
 
 # editor / OS noise
 .DS_Store
@@ -11,3 +12,16 @@ dist/
 # local env
 .env
 .env.local
+
+# generated asset tooling noise
+__pycache__/
+*.tripo.json
+screenshots/
+dist-car03/
+dist-painted-country/
+dist-museum3d/
+dist-car03-3d/
+tmp/
+outputs/car03-acceptance/
+outputs/qa-phase2/
+.gstack/

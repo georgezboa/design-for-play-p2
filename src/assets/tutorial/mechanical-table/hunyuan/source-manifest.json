@@ -1,0 +1,33 @@
+{
+  "source": "/Users/zhongzicheng/Downloads/f014a818991e89bc03e3816b94039cbd.glb",
+  "source_bytes": 77532612,
+  "optimized_glb": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/01_PROLOGUE/HUNYUAN_GENERATED/optimized/bogie_rocker_counterweight_low.glb",
+  "optimized_bytes": 11493076,
+  "runtime_png": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/design-for-play-p2/src/assets/tutorial/mechanical-table/hunyuan/bogie-stage-v1.png",
+  "triangles_before": 1499318,
+  "triangles_after": 48000,
+  "reduction_percent": 96.8,
+  "dimensions_m": [
+    3.2005,
+    1.2117,
+    1.6581
+  ],
+  "texture_sizes": [
+    [
+      0,
+      0
+    ],
+    [
+      2048,
+      2048
+    ],
+    [
+      2048,
+      2048
+    ],
+    [
+      2048,
+      2048
+    ]
+  ]
+}
