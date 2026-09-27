@@ -25,6 +25,47 @@
   transition: opacity 160ms linear;
 }
 .nf-cinematic.is-ready .nf-cinematic-loading { opacity: 0; }
+.nf-cinematic.is-preparing .nf-cinematic-loading { opacity: 1; }
+.nf-cinematic-progress {
+  position: absolute;
+  left: 50%;
+  bottom: calc(max(24px, env(safe-area-inset-bottom)) - 12px);
+  width: min(280px, 60vw);
+  height: 3px;
+  translate: -50% 0;
+  background: #2a251d;
+  opacity: 0;
+  transition: opacity 160ms linear;
+}
+.nf-cinematic-progress span { display: block; width: 0; height: 100%; background: #d8c49c; transition: width 200ms linear; }
+.nf-cinematic.is-preparing .nf-cinematic-progress { opacity: 1; }
+.nf-cinematic-skip {
+  --nf-skip-progress: 0;
+  position: absolute;
+  right: max(28px, env(safe-area-inset-right));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #b9ab90;
+  font: 600 10px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: .18em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 220ms linear;
+}
+.nf-cinematic-skip.is-visible { opacity: .82; }
+.nf-cinematic-skip.is-holding { opacity: 1; color: #ead6ae; }
+.nf-cinematic.is-finished .nf-cinematic-skip,
+.nf-cinematic.is-blackout .nf-cinematic-skip { opacity: 0; }
+.nf-cinematic-skip svg { width: 22px; height: 22px; rotate: -90deg; }
+.nf-cinematic-skip circle { fill: none; stroke-width: 2.5; }
+.nf-skip-track { stroke: rgba(234, 214, 174, .22); }
+.nf-skip-fill {
+  stroke: #ead6ae;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--nf-skip-progress) * 100);
+}
 .nf-cinematic-resume {
   position: absolute;
   inset: 50% auto auto 50%;
