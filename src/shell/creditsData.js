@@ -52,7 +52,7 @@ export const CREDIT_MUSIC = Object.freeze([
     license: 'CC BY-SA 3.0',
     source: 'https://commons.wikimedia.org/wiki/File:JOHN_MICHEL_CELLO-BEETHOVEN_SYMPHONY_7_Allegretto.ogg',
     licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
-    note: 'Cello arrangement · converted to MP3 for the game',
+    note: 'Performed on cello · converted to MP3 for the game',
   },
   {
     title: 'GNOSSIENNE NO. 1 (SATIE)',
