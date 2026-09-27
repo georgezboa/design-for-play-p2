@@ -1,0 +1,9 @@
+/* Game canvases take focus on click so keyboard input reaches them; the
+   browser's focus ring around the whole playfield is noise, not a cue.
+   Menus, buttons and links keep their own focus styles. */
+#game:focus,
+#game:focus-visible,
+canvas:focus,
+canvas:focus-visible {
+  outline: none;
+}

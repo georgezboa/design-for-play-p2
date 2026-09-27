@@ -1,5 +1,5 @@
 import { DEV_MODE } from './devMode.js';
-import { createSaveStore, returnToTitle } from './shell/saveSystem.js';
+import { createSaveStore, requestReturnToTitle } from './shell/saveSystem.js';
 
 // Every independently runnable chapter gets the same escape hatch while the
 // root Vite dev server is active. Standalone production builds never define
@@ -54,7 +54,7 @@ export function installDevMenuReturnControl() {
   control.addEventListener('click', (event) => {
     event.preventDefault();
     if (DEV_MODE) returnToDevMenu();
-    else returnToTitle();
+    else requestReturnToTitle();
   });
   document.body.append(control);
 
@@ -63,6 +63,6 @@ export function installDevMenuReturnControl() {
     if (!requested || event.metaKey || event.ctrlKey || event.altKey) return;
     event.preventDefault();
     if (DEV_MODE) returnToDevMenu();
-    else returnToTitle();
+    else requestReturnToTitle();
   });
 }
