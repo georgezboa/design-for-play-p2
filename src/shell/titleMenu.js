@@ -16,6 +16,9 @@ import {
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
 import { installPauseMenu } from './pauseMenu.js';
+import { SETTINGS_CONTROLS } from './settingsControls.js';
+import { mainGameControls } from './chapterControls.js';
+import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { activateHiddenRouter } from '../devMode.js';
 
 const store = createSaveStore();
@@ -310,6 +313,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
             checkpointId: () => globalThis.game?.scene?.getScene('CyberpunkParkour')?.sys?.isActive()
               ? 'chapter-2-start'
               : 'prologue-start',
+            controls: () => mainGameControls(),
           });
           playCinematic({
             id: 'opening',
@@ -344,7 +348,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
       const selected = checkpoint.id === save.checkpointId;
       const row = button(`${selected ? '◆' : '◇'}  CHAPTER ${checkpoint.chapter} · ${checkpoint.title}`, () => {
         store.selectCheckpoint(index, checkpoint.id);
-        launchCheckpoint(checkpoint.id);
+        launchCheckpoint(checkpoint.id, { route: resolveCheckpointRoute(checkpoint.id, { slot: index }) });
       }, 'nf-checkpoint');
       panel.append(row);
     });
@@ -363,15 +367,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     panel.classList.remove('nf-credits-panel');
     const settings = readSettings();
     panel.innerHTML = `<p class="nf-eyebrow">SYSTEM</p><h2>SETTINGS</h2>`;
-    const controls = [
-      ['masterVolume', 'MASTER VOLUME', 'range', 0, 100],
-      ['musicVolume', 'MUSIC VOLUME', 'range', 0, 100],
-      ['sfxVolume', 'SFX VOLUME', 'range', 0, 100],
-      ['textScale', 'TEXT SIZE', 'range', 90, 130],
-      ['subtitles', 'SUBTITLES', 'checkbox'],
-      ['reducedMotion', 'REDUCE MOTION', 'checkbox'],
-    ];
-    controls.forEach(([key, label, type, min, max]) => {
+    SETTINGS_CONTROLS.forEach(([key, label, type, min, max]) => {
       const row = document.createElement('label');
       row.className = 'nf-setting';
       row.innerHTML = `<span>${label}</span>`;
@@ -438,7 +434,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
     closeDialog();
     root.remove();
-    installPauseMenu({ checkpointId: chapter.checkpoint });
+    installPauseMenu({ checkpointId: chapter.checkpoint, controls: () => mainGameControls() });
     const arrive = () => {
       if (chapter.launch) {
         if (chapter.launch !== 'prologue-start') sessionStorage.setItem('nightfall.pendingLaunch.v1', chapter.launch);
@@ -518,7 +514,9 @@ export function createTitleMenu({ onStart, openCredits = false }) {
       button('BEGIN THE NIGHT SERVICE', () => renderSlots('new'), 'is-primary', 'OPEN A NEW ARCHIVE'),
       button('CONTINUE', () => {
         if (!activeSave) return renderSlots('checkpoints');
-        launchCheckpoint(activeSave.checkpointId);
+        launchCheckpoint(activeSave.checkpointId, {
+          route: resolveCheckpointRoute(activeSave.checkpointId, { slot: activeSave.slot ?? store.getActiveSlot() }),
+        });
       }, activeSave ? '' : 'is-disabled', activeSave ? formatSave(activeSave).title : 'NO JOURNEY FOUND'),
       button('LOAD / CHECKPOINTS', () => renderSlots('checkpoints'), '', 'SELECT ARCHIVE OR CHAPTER'),
       button('CREDITS', renderCredits, '', 'CREW · MUSIC · SOURCES · AI'),
