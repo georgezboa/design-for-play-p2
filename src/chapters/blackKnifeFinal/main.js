@@ -3,13 +3,16 @@ import { W, H } from './constants.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import BossScene from './scenes/BossScene.js';
 import { magicStoneSnapshot } from '../../shell/magicStones.js';
+import { DEV_MODE, devParams } from '../../devMode.js';
 
-const params = new URLSearchParams(window.location.search);
+// ?qa=1 / ?easter-egg=1 are dev-only unlocks (devParams() is empty in a
+// production build); players reach this page by holding all five stones.
+const params = devParams();
 const qaMode = params.get('qa') === '1';
 const easterEggMode = params.get('easter-egg') === '1';
 const stones = magicStoneSnapshot();
 
-if (!stones.allCollected && !import.meta.env.DEV && !qaMode && !easterEggMode) {
+if (!stones.allCollected && !DEV_MODE && !qaMode && !easterEggMode) {
   window.location.replace('/final-boss.html?from=chapter5');
 }
 
@@ -85,16 +88,16 @@ document.querySelector('#mute').addEventListener('click', event => {
   event.currentTarget.textContent = s.sound ? 'SOUND ON' : 'SOUND OFF';
 });
 
-window.render_game_to_text = () => JSON.stringify({
+if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
   scene: 'black-knife-final',
   entry: easterEggMode ? 'title-easter-egg' : 'five-stone-route',
-  access: { collected: stones.collected, required: stones.total, unlocked: stones.allCollected || import.meta.env.DEV || qaMode || easterEggMode },
+  access: { collected: stones.collected, required: stones.total, unlocked: stones.allCollected || DEV_MODE || qaMode || easterEggMode },
   state: window.__battleScene?.stateFlag ?? 'loading',
   player: window.__battleScene?.player ? { x: Math.round(window.__battleScene.player.x), y: Math.round(window.__battleScene.player.y), lives: window.__battleScene.player.lives, shields: window.__battleScene.player.shieldCharges } : null,
   boss: window.__battleScene?.boss ? { hp: window.__battleScene.boss.hp, phase: window.__battleScene.boss.phase } : null,
 });
 
-if (import.meta.env.DEV || qaMode) {
+if (DEV_MODE) {
   window.forceBlackKnifeWin = () => {
     const scene = window.__battleScene;
     if (scene?.stateFlag === 'play') scene.knockout();
