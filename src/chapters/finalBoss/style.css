@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&display=swap');
+@import '../../fonts/fonts.css';
 
 .dialogue-choices{gap:8px!important}.dialogue-speaker{justify-self:center;color:#43e9ff;font-size:9px;letter-spacing:.24em}.dialogue-claim{max-width:760px;line-height:1.6;letter-spacing:.06em!important;text-align:center}.dialogue-replies{width:min(860px,90vw)!important}.dialogue-choices button:disabled{opacity:.55;cursor:wait}
 
