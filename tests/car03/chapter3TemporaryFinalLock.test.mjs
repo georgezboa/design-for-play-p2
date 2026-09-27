@@ -48,9 +48,12 @@ describe('Chapter 3 integrated final lock v36', () => {
       ...filesBelow('src/cars/presentCity3d', (file) => /\.(?:js|png)$/.test(file)),
     ];
     assert.equal(sourceFiles.length, 24);
+    // Reopened once for the 1.0 release: the ?playtest= / ?dev= / ?focus= /
+    // ?autowalk= / ?endingqa= QA routes and window QA hooks became dev-only
+    // (DEV_MODE / devParams()). Gameplay itself is unchanged.
     assert.equal(
       aggregateSignature(sourceFiles),
-      'e9a0bf137786e4dc89b8f28da5fe610938046fb61ae445d12496ffcd71d67943',
+      'f7e72653cd33abe06818565f43f4b6c7020c26a8d1ae930ee37ca71709aabad6',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

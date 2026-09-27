@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { devParam } from '../../devMode.js';
 import {
   CAMERA_HOME,
   CAMERA_FOLLOW,
@@ -951,7 +952,7 @@ function createRenderer(container) {
 }
 
 function requestedCameraPreset() {
-  const focus = new URLSearchParams(window.location.search).get('focus');
+  const focus = devParam('focus');
   const target = CAMERA_FOCUS_TARGETS[focus];
   if (!target) return { ...CAMERA_HOME, focus: 'overview' };
   const dx = target[0] - CAMERA_HOME.target[0];
@@ -1054,7 +1055,7 @@ export class EchoCity3DPreview {
     this.controls.target.fromArray(this.cameraPreset.target);
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.08;
-    this.developerMode = new URLSearchParams(window.location.search).get('dev') === '1';
+    this.developerMode = devParam('dev') === '1';
     this.applyCameraMode();
     this.cameraFollowTarget = this.controls.target.clone();
 
@@ -1248,7 +1249,7 @@ export class EchoCity3DPreview {
 
     const ok = this.loadErrors.length === 0;
     this.modelsReady = true;
-    const autoWalk = new URLSearchParams(window.location.search).get('autowalk');
+    const autoWalk = devParam('autowalk');
     const autoTarget = {
       station: STATION_LAYOUT.approach,
       east: [51, 12],
@@ -1401,7 +1402,7 @@ export class EchoCity3DPreview {
   onKeyDown(event) {
     if (this.gameplayRuntime?.handleKeyDown(event)) return;
     if (event.key.toLowerCase() === 'r') this.resetCamera();
-    // The full-map developer camera is URL-only (`?dev=1`). It must never be
+    // The full-map developer camera is URL-only (`?dev=1`, dev builds only). It must never be
     // opened accidentally by pressing D during a normal playthrough.
     if (event.key.toLowerCase() === 'f') {
       if (!document.fullscreenElement) this.container.requestFullscreen?.();
