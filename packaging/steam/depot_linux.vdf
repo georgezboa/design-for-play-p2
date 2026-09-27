@@ -1,0 +1,17 @@
+// Linux x64 / SteamOS depot (placeholder ID 1000003). Built by: npm run package:steam:linux
+// Steamworks launch option: Executable "nightfall", Arguments "--no-sandbox",
+// OS Linux + SteamOS. Steam does not preserve the setuid bit that Chromium's
+// chrome-sandbox helper needs, so without --no-sandbox Electron may refuse to
+// start inside the Steam Linux Runtime. (The game only loads its own local
+// content, which is what makes this acceptable.)
+"DepotBuild"
+{
+	"DepotID"   "1000003"
+
+	"FileMapping"
+	{
+		"LocalPath"  "linux-unpacked/*"
+		"DepotPath"  "."
+		"Recursive"  "1"
+	}
+}

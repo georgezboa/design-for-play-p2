@@ -1,0 +1,17 @@
+// macOS universal (Apple Silicon + Intel) depot (placeholder ID 1000002).
+// Built on a Mac by: npm run package:steam:mac  (sign + notarize first for a
+// public build, see desktop/README.md).
+// Steamworks launch option: Executable "NIGHTFALL.app", OS macOS.
+"DepotBuild"
+{
+	"DepotID"   "1000002"
+
+	"FileMapping"
+	{
+		"LocalPath"  "mac-universal/NIGHTFALL.app/*"
+		"DepotPath"  "NIGHTFALL.app"
+		"Recursive"  "1"
+	}
+
+	"FileExclusion" ".DS_Store"
+}

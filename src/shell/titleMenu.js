@@ -17,6 +17,7 @@ import {
 import { CINEMATICS, playCinematic } from './gameFlow.js';
 import { installPauseMenu } from './pauseMenu.js';
 import { activateHiddenRouter } from '../devMode.js';
+import { quitGame, toggleFullscreen } from './desktopBridge.js';
 
 const store = createSaveStore();
 
@@ -388,10 +389,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
       row.append(input);
       panel.append(row);
     });
-    panel.append(button('TOGGLE FULLSCREEN', async () => {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
-    }));
+    panel.append(button('TOGGLE FULLSCREEN', () => toggleFullscreen()));
     panel.append(button('BACK', closeDialog, 'nf-back'));
     openDialog();
     panel.querySelector('input, button')?.focus();
@@ -493,6 +491,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     panel.append(
       button('QUIT', () => {
         closeDialog();
+        if (quitGame()) return; // desktop app: close the application
         root.classList.add('is-exiting');
         root.innerHTML = `
           <div class="nf-exit-screen" role="status">
@@ -575,10 +574,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
       return;
     }
     if (!event.metaKey && !event.ctrlKey && !event.altKey) hiddenChapterSequence = '';
-    if (event.key.toLowerCase() === 'f' && !event.repeat) {
-      if (document.fullscreenElement) await document.exitFullscreen();
-      else await document.documentElement.requestFullscreen();
-    }
+    if (event.key.toLowerCase() === 'f' && !event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey) await toggleFullscreen();
   };
   window.addEventListener('keydown', handleGlobalKey);
   window.addEventListener('nightfall:settings', (event) => syncCreditVolume(event.detail));

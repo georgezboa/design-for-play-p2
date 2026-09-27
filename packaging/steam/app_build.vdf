@@ -1,0 +1,36 @@
+// Steam ContentBuilder app build script for NIGHTFALL.
+//
+// 1. Replace the placeholder IDs below (and in the depot_*.vdf files) with the
+//    real App ID / Depot IDs from Steamworks -> App Admin -> SteamPipe -> Depots.
+//    Placeholders: App 1000000, Windows depot 1000001, macOS depot 1000002,
+//    Linux depot 1000003.
+// 2. Produce the unpacked builds:  npm run package:steam   (see desktop/README.md)
+// 3. Upload:
+//      steamcmd +login <steam_build_account> +run_app_build "$PWD/packaging/steam/app_build.vdf" +quit
+//
+// Relative paths are resolved from THIS file's directory.
+
+"AppBuild"
+{
+	"AppID"         "1000000"
+	"Desc"          "NIGHTFALL 1.0.0"
+
+	// Folder that holds win-unpacked/, mac-universal/ and linux-unpacked/.
+	"ContentRoot"   "../../release/desktop/"
+	// SteamCMD caches manifests/chunks here (keep it between uploads).
+	"BuildOutput"   "../../release/steam-output/"
+
+	// "1" = dry run: builds manifests and logs without uploading.
+	"Preview"       "0"
+	// Leave empty and set the build live by hand in Steamworks, or name a
+	// non-default beta branch (e.g. "beta"). The default branch cannot be set
+	// live from here.
+	"SetLive"       ""
+
+	"Depots"
+	{
+		"1000001" "depot_windows.vdf"
+		"1000002" "depot_mac.vdf"
+		"1000003" "depot_linux.vdf"
+	}
+}
