@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { PaintedCountryInhabitantScene, PAINTED_COUNTRY_INHABITANT_VIEW } from './PaintedCountryInhabitantScene.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
+import { DEV_MODE, devParam } from '../../devMode.js';
 
 installDevMenuReturnControl();
 
@@ -18,7 +19,7 @@ const game = new Phaser.Game({
 
 game.canvas.setAttribute('tabindex', '0');
 game.canvas.addEventListener('pointerdown', () => game.canvas.focus());
-window.game = game;
+if (DEV_MODE) window.game = game;
 
 const embedded = new URLSearchParams(window.location.search).get('embedded') === '1';
 let completionSent = false;
@@ -37,10 +38,13 @@ scene.onArchiveComplete = () => {
   window.parent.postMessage({ type: 'chapter05-direction:painted-country:complete' }, window.location.origin);
 };
 
-window.render_game_to_text = () => JSON.stringify(scene.state ? scene.renderToText() : { scene: 'painted-country-inhabitant', booting: true });
-window.advanceTime = (ms) => scene.state && scene.advanceTime(ms);
+if (DEV_MODE) {
+  window.render_game_to_text = () => JSON.stringify(scene.state ? scene.renderToText() : { scene: 'painted-country-inhabitant', booting: true });
+  window.advanceTime = (ms) => scene.state && scene.advanceTime(ms);
+}
 
-if (new URLSearchParams(window.location.search).get('qa-artifact') === '1') {
+// ?embedded=1 is the Museum's iframe contract; ?qa-artifact=1 (auto-win) is dev-only.
+if (devParam('qa-artifact') === '1') {
   const probe = window.setInterval(() => {
     if (!scene.state) return;
     window.clearInterval(probe);

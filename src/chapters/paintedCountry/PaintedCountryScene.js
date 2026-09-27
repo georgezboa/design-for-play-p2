@@ -34,6 +34,7 @@ import {
   makeRandom,
   paintedFill,
 } from './paperSurface.js';
+import { devParam } from '../../devMode.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — draw your own way through.
 //
@@ -143,7 +144,8 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   applyQaRoute() {
-    const qa = new URLSearchParams(window.location.search).get('qa');
+    // Dev-only: devParam() is null in production, so ?qa= cannot pre-solve a board.
+    const qa = devParam('qa');
     if (qa === 'door-view') {
       this.walker.setPosition(DOOR.x - 82, FLOOR_Y - 30);
       this.cameras.main.centerOn(DOOR.x + DOOR.w / 2, VIEW.h / 2);

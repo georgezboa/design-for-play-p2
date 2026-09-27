@@ -6,7 +6,7 @@ import { installDevMenuReturnControl } from '../../../devMenuReturn.js';
 import { installPauseMenu } from '../../../shell/pauseMenu.js';
 import { music } from '../../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from '../../museum3d/chapter05Score.js';
-import { devRoutesEnabled } from '../../../devMode.js';
+import { DEV_MODE, devRoutesEnabled } from '../../../devMode.js';
 
 installDevMenuReturnControl();
 // The Labyrinth is commonly embedded inside the Museum. Opt in explicitly so
@@ -41,11 +41,13 @@ const config = {
 };
 
 const game = new Phaser.Game(config);
+// Not dev-only: shell/pauseMenu.js pauses the scene through globalThis.game.
 window.game = game;
 
 const params = new URLSearchParams(window.location.search);
 const embedded = params.get('embedded') === '1';
-const qaArtifact = params.get('qa-artifact') === '1';
+// ?embedded=1 is the Museum's iframe contract; ?qa-artifact=1 (auto-win) is dev-only.
+const qaArtifact = DEV_MODE && params.get('qa-artifact') === '1';
 let completionSent = false;
 if (embedded) {
   document.documentElement.classList.add('embedded');
@@ -120,7 +122,7 @@ if (Number.isInteger(qaWing) && qaWing >= 0 && qaWing <= 3) {
   }, 50);
 }
 
-window.render_game_to_text = () => {
+if (DEV_MODE) window.render_game_to_text = () => {
   const scene = game.scene.getScene('MuseumLabyrinth');
   if (!scene || !scene.renderToText) {
     return JSON.stringify({ chapter: 'chapter05-museum-labyrinth', booting: true, music: music.qa() });

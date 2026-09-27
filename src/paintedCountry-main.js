@@ -10,7 +10,7 @@ import { PigmentTrainScene } from './chapters/paintedCountry/PigmentTrainScene.j
 import { PAPER_CSS } from './chapters/paintedCountry/paperPalette.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
-import { devRoutesEnabled } from './devMode.js';
+import { DEV_MODE, devRoutesEnabled } from './devMode.js';
 
 installDevMenuReturnControl();
 installPauseMenu({ checkpointId: 'chapter-4-start' });
@@ -47,9 +47,10 @@ game.canvas.setAttribute('tabindex', '0');
 game.canvas.addEventListener('pointerdown', () => game.canvas.focus());
 game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 
+// Not dev-only: shell/pauseMenu.js pauses the scenes through globalThis.game.
 window.game = game;
 
-window.render_game_to_text = () => {
+if (DEV_MODE) window.render_game_to_text = () => {
   const scene = ['PigmentTrain', 'DrawingStudio', 'PaintedCountry']
     .map((key) => game.scene.getScene(key))
     .find((candidate) => candidate?.sys?.isActive());
