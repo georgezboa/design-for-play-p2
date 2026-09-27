@@ -1,7 +1,7 @@
 # Prologue bogie Hunyuan derivative
 
 - Source supplied by George on 2026-08-05:
-  `/Users/zhongzicheng/Downloads/f014a818991e89bc03e3816b94039cbd.glb`
+  `(original download, not in repo) f014a818991e89bc03e3816b94039cbd.glb`
 - Source SHA-256:
   `bfb2a8c7f6d3fe6884c45c9617d5e4f388a2907b4e81b16a3c3cbe41261a3077`
 - Generation reference:

@@ -400,7 +400,11 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   startMusic() {
-    this.music = this.sound.add('chapter4-consequence-music', { loop: true, volume: 0.34 });
+    // A missing or undecodable score file leaves the scene silent rather than
+    // throwing from sound.add (Phaser only caches audio that loaded).
+    this.music = this.cache.audio.exists('chapter4-consequence-music')
+      ? this.sound.add('chapter4-consequence-music', { loop: true, volume: 0.34 })
+      : null;
     const play = () => {
       if (!this.music?.isPlaying) this.music?.play();
     };
@@ -599,7 +603,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.cabPromptTitle.setVisible(false);
     this.cabPromptHint.setVisible(false);
     this.subtitle.setAlpha(0);
-    this.tweens.add({ targets: this.music, volume: 0.43, duration: 900 });
+    if (this.music) this.tweens.add({ targets: this.music, volume: 0.43, duration: 900 });
 
     this.spawnCrowd();
     this.time.delayedCall(CROWD_APPROACH_MS, () => this.beginTrainEscape());
@@ -748,7 +752,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.trainMoving = false;
     this.chaseCameraActive = false;
     this.subtitle.setAlpha(0);
-    this.tweens.add({ targets: this.music, volume: 0.28, duration: 1200 });
+    if (this.music) this.tweens.add({ targets: this.music, volume: 0.28, duration: 1200 });
     this.time.delayedCall(1450, () => this.finishChapter());
   }
 

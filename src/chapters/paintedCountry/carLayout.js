@@ -148,11 +148,12 @@ export const SIGN = Object.freeze({
 // large mark drawn from these signs, plus one smaller repeated seal. Comparing
 // all three pictures reveals the repeated seal without requiring guesswork.
 export const SIGN_ART = {
-  [SIGN.MOON]: 'assets/chapter04/icons/Moon.webp',
-  [SIGN.EYE]: 'assets/chapter04/icons/Eye_Tier_3.webp',
-  [SIGN.HEIR]: 'assets/chapter04/icons/Heir.webp',
-  [SIGN.RAPTURE]: 'assets/chapter04/icons/Blood_Rapture.webp',
-  [SIGN.OEDON]: 'assets/chapter04/icons/Formless_Oedon.webp',
+  // Original project art, rendered by scripts/art/generate-chapter4-sign-icons.mjs.
+  [SIGN.MOON]: 'assets/chapter04/icons/sign-moon.webp',
+  [SIGN.EYE]: 'assets/chapter04/icons/sign-eye.webp',
+  [SIGN.HEIR]: 'assets/chapter04/icons/sign-heir.webp',
+  [SIGN.RAPTURE]: 'assets/chapter04/icons/sign-rapture.webp',
+  [SIGN.OEDON]: 'assets/chapter04/icons/sign-oedon.webp',
 };
 
 // The gallery. Hung high on purpose: the only way to read one is to build up

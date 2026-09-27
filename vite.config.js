@@ -1,5 +1,34 @@
 import { defineConfig } from 'vite';
-import { resolve } from 'node:path';
+import { createReadStream, statSync } from 'node:fs';
+import { extname, resolve, sep } from 'node:path';
+
+// The Chapter 1 opening storyboard, PDFs, QA frames and preview film are
+// production reference, not runtime assets, so they live in
+// docs/archive/chapter01-opening/ and never ship in dist/. The dev-only
+// preview page chapter01-opening.html still asks for them under
+// /chapter01-opening/, so the dev server maps that prefix onto the archive.
+const OPENING_ARCHIVE = resolve(import.meta.dirname, 'docs/archive/chapter01-opening');
+const ARCHIVE_TYPES = { '.png': 'image/png', '.mp4': 'video/mp4', '.pdf': 'application/pdf', '.json': 'application/json' };
+
+function serveOpeningArchiveInDev() {
+  return {
+    name: 'nightfall-dev-opening-archive',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use('/chapter01-opening', (req, res, next) => {
+        const relative = decodeURIComponent((req.url || '/').split('?')[0]);
+        const file = resolve(OPENING_ARCHIVE, `.${relative}`);
+        if (!file.startsWith(OPENING_ARCHIVE + sep)) return next();
+        let stat;
+        try { stat = statSync(file); } catch { return next(); }
+        if (!stat.isFile()) return next();
+        res.setHeader('Content-Type', ARCHIVE_TYPES[extname(file).toLowerCase()] || 'application/octet-stream');
+        res.setHeader('Content-Length', stat.size);
+        createReadStream(file).pipe(res);
+      });
+    },
+  };
+}
 
 // `command` and `mode` are the only two inputs that decide whether this build
 // may skip ahead. `npm run dev` serves in development mode and gets the
@@ -11,6 +40,7 @@ export default defineConfig(({ command, mode }) => {
   const devMode = command === 'serve' && mode !== 'production';
 
   return {
+    plugins: [serveOpeningArchiveInDev()],
     define: {
       __DEV_MODE__: JSON.stringify(devMode),
     },
@@ -38,7 +68,8 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         input: {
           main: resolve(import.meta.dirname, 'index.html'),
-          chapter01Opening: resolve(import.meta.dirname, 'chapter01-opening.html'),
+          // chapter01-opening.html is a dev-only storyboard preview (served by
+          // `npm run dev`); it is intentionally not a production entry.
           chapter03: resolve(import.meta.dirname, 'car03-3d.html'),
           chapter04: resolve(import.meta.dirname, 'painted-country.html'),
           chapter05: resolve(import.meta.dirname, 'museum-3d.html'),

@@ -12,8 +12,8 @@
   "hunyuan_sources": [
     {
       "asset": "central clock tower",
-      "source_file": "/Users/zhongzicheng/Downloads/钟表.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/clock_tower_low.glb",
+      "source_file": "(original download, not in repo) 钟表.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/clock_tower_low.glb",
       "triangles_before": 1500004,
       "triangles_after": 24000,
       "reduction_percent": 98.4,
@@ -22,8 +22,8 @@
     },
     {
       "asset": "municipal tram",
-      "source_file": "/Users/zhongzicheng/Downloads/电车.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/municipal_tram_low.glb",
+      "source_file": "(original download, not in repo) 电车.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/municipal_tram_low.glb",
       "triangles_before": 1497526,
       "triangles_after": 36000,
       "reduction_percent": 97.6,
@@ -32,8 +32,8 @@
     },
     {
       "asset": "reunion fountain",
-      "source_file": "/Users/zhongzicheng/Downloads/喷泉.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/reunion_fountain_low.glb",
+      "source_file": "(original download, not in repo) 喷泉.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/reunion_fountain_low.glb",
       "triangles_before": 1499760,
       "triangles_after": 28000,
       "reduction_percent": 98.13,
@@ -42,8 +42,8 @@
     },
     {
       "asset": "produce market stall",
-      "source_file": "/Users/zhongzicheng/Downloads/杂货摊.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/produce_market_stall_low.glb",
+      "source_file": "(original download, not in repo) 杂货摊.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized/produce_market_stall_low.glb",
       "triangles_before": 1499524,
       "triangles_after": 40000,
       "reduction_percent": 97.33,
@@ -52,8 +52,8 @@
     },
     {
       "asset": "old municipal archive",
-      "source_file": "/Users/zhongzicheng/Downloads/efd0e7ca51c98a1fa72fbe3470b03d92.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/old_municipal_archive_low.glb",
+      "source_file": "(original download, not in repo) efd0e7ca51c98a1fa72fbe3470b03d92.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/old_municipal_archive_low.glb",
       "triangles_before": 1496608,
       "triangles_after": 79999,
       "reduction_percent": 94.65,
@@ -62,8 +62,8 @@
     },
     {
       "asset": "transit ministry",
-      "source_file": "/Users/zhongzicheng/Downloads/9184e101c6e45fa16c0d45b4009e75f0.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/transit_ministry_low.glb",
+      "source_file": "(original download, not in repo) 9184e101c6e45fa16c0d45b4009e75f0.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/transit_ministry_low.glb",
       "triangles_before": 1498702,
       "triangles_after": 70000,
       "reduction_percent": 95.33,
@@ -72,8 +72,8 @@
     },
     {
       "asset": "civic scanner tower",
-      "source_file": "/Users/zhongzicheng/Downloads/21aa925dd27c56d91e3ee5e9d92b14e9.glb",
-      "optimized_file": "/Users/zhongzicheng/Documents/CS247G Game Design Part 2/NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/scanner_tower_low.glb",
+      "source_file": "(original download, not in repo) 21aa925dd27c56d91e3ee5e9d92b14e9.glb",
+      "optimized_file": "(external source-asset library, not in repo) NIGHTFALL_Source_Assets/05_CH03_CITY/HUNYUAN_GENERATED/optimized_v2/scanner_tower_low.glb",
       "triangles_before": 1500000,
       "triangles_after": 31999,
       "reduction_percent": 97.87,

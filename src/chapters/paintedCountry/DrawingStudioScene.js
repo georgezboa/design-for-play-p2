@@ -284,7 +284,11 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   startMusic() {
-    this.music = this.sound.add('chapter4-drawing-music', { loop: true, volume: 0.38 });
+    // A missing or undecodable score file leaves the scene silent rather than
+    // throwing from sound.add (Phaser only caches audio that loaded).
+    this.music = this.cache.audio.exists('chapter4-drawing-music')
+      ? this.sound.add('chapter4-drawing-music', { loop: true, volume: 0.38 })
+      : null;
     const play = () => { if (!this.music?.isPlaying) this.music?.play(); };
     if (this.sound.locked) this.sound.once('unlocked', play);
     else play();
@@ -893,7 +897,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     // Part III always begins before the six world colors. The studio teaches
     // the ring, but its finite room colors do not skip the train-yard pickups.
     this.registry.set('chapter4Pigments', []);
-    this.tweens.add({ targets: this.music, volume: 0, duration: 420 });
+    if (this.music) this.tweens.add({ targets: this.music, volume: 0, duration: 420 });
     this.cameras.main.fadeOut(420, 247, 244, 236);
     this.time.delayedCall(450, () => this.scene.start('PigmentTrain'));
   }
