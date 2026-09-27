@@ -84,7 +84,7 @@ import { CINEMATICS, playCinematic } from '../../shell/gameFlow.js';
 import { showEndCredits } from '../../shell/endCredits.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
-import { devParam } from '../../devMode.js';
+import { DEV_MODE, devParam } from '../../devMode.js';
 
 const PINK = 0xff176f;
 const CYAN = 0x43e9ff;
@@ -2694,7 +2694,9 @@ if (new URLSearchParams(window.location.search).get('from') === 'chapter5') {
   game.assetsPromise.finally(() => game.begin({ movement: conductorTestMovement }));
 }
 
-window.render_game_to_text = () => JSON.stringify({
+// QA/automation surface only: none of these globals (state dump, time
+// stepping, damage/position/pattern cheats) exist in a production build.
+if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
   chapter: 'chapter06-final-boss', renderer: 'three.js-spectacle-combat', coordinates: '+x right, +y up, +z toward camera; all units metres',
   mode: game.mode, difficulty, phase: game.phase, phaseTitle: PHASES[game.phase].title, activeWorld: PHASES[game.phase].world,
   music: music.qa(),
@@ -2714,14 +2716,14 @@ window.render_game_to_text = () => JSON.stringify({
   assetErrors: game.assetErrors,
 });
 
-window.advanceTime = (ms) => {
+if (DEV_MODE) window.advanceTime = (ms) => {
   const steps = Math.max(1, Math.round(ms / (1000 / 60)));
   for (let i = 0; i < steps; i += 1) game.update(1 / 60);
   game.render();
 };
 
-window.setFinalBossPreviewPhase = (phase) => { if (game.mode === 'play') { game.previewPhase(phase); game.render(); } };
-window.startFinalBossCyberTutorial = () => {
+if (DEV_MODE) window.setFinalBossPreviewPhase = (phase) => { if (game.mode === 'play') { game.previewPhase(phase); game.render(); } };
+if (DEV_MODE) window.startFinalBossCyberTutorial = () => {
   if (game.mode !== 'play') return;
   if (game.onboarding?.active) { game.onboarding.active = false; game.onboarding.stage = 'skipped-for-cyber-tutorial'; }
   game.phase = 1;
@@ -2731,7 +2733,7 @@ window.startFinalBossCyberTutorial = () => {
   game.startCyberOnboarding();
   game.render();
 };
-window.setFinalBossCombatPose = () => {
+if (DEV_MODE) window.setFinalBossCombatPose = () => {
   if (game.mode !== 'play' || game.transition) return;
   game.player.x = game.boss.x;
   game.player.z = game.boss.z + 2.45;
@@ -2744,18 +2746,18 @@ window.setFinalBossCombatPose = () => {
   game.boss.exposed = 2;
   game.render();
 };
-window.setFinalBossPlayerPosition = (x, z) => {
+if (DEV_MODE) window.setFinalBossPlayerPosition = (x, z) => {
   game.player.x = THREE.MathUtils.clamp(Number(x), ARENA.minX, ARENA.maxX);
   game.player.z = THREE.MathUtils.clamp(Number(z), ARENA.minZ, ARENA.maxZ);
   game.playerRoot.position.set(game.player.x, game.player.y, game.player.z);
   game.render();
 };
-window.setFinalBossPlayerInvulnerable = (enabled = true) => {
+if (DEV_MODE) window.setFinalBossPlayerInvulnerable = (enabled = true) => {
   game.player.inv = enabled ? 999 : 0;
   game.player.hp = game.player.maxHp;
   game.render();
 };
-window.damageFinalBossPlayer = (amount = 1) => {
+if (DEV_MODE) window.damageFinalBossPlayer = (amount = 1) => {
   if (game.mode !== 'play') return;
   if (game.player.respawnInv > 0) { game.takeHit(); game.render(); return; }
   for (let i = 0; i < Math.max(1, Math.round(Number(amount) || 1)); i += 1) {
@@ -2765,24 +2767,24 @@ window.damageFinalBossPlayer = (amount = 1) => {
   }
   game.render();
 };
-window.damageFinalBoss = (amount = 25) => { if (game.mode === 'play') { game.hitBoss(amount); game.render(); } };
-window.setFinalBossPaintCharge = (amount = 3) => { if (game.mode === 'play' && game.phase === 3) { game.player.color = Math.max(0, Math.min(3, Number(amount) || 0)); game.render(); } };
-window.rightClickFinalBossPigment = (x, z, holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 2, elapsed: 0, point: new THREE.Vector3(Number(x), 0, Number(z)), target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 2 }); game.render(); } };
-window.leftClickFinalBossPaint = (holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 0, elapsed: 0, point: null, target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 0 }); game.render(); } };
-window.releaseFinalBossPaintPointer = () => { if (game.paintHold.active) game.releasePaintPointer({ button: game.paintHold.button }); game.render(); };
-window.addFinalBossTestHole = (x, z, radius = 1.5) => { if (game.mode === 'play') { game.addPersistentHole(Number(x), Number(z), Number(radius)); game.render(); } };
-window.forceFinalBossPattern = (pattern) => {
+if (DEV_MODE) window.damageFinalBoss = (amount = 25) => { if (game.mode === 'play') { game.hitBoss(amount); game.render(); } };
+if (DEV_MODE) window.setFinalBossPaintCharge = (amount = 3) => { if (game.mode === 'play' && game.phase === 3) { game.player.color = Math.max(0, Math.min(3, Number(amount) || 0)); game.render(); } };
+if (DEV_MODE) window.rightClickFinalBossPigment = (x, z, holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 2, elapsed: 0, point: new THREE.Vector3(Number(x), 0, Number(z)), target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 2 }); game.render(); } };
+if (DEV_MODE) window.leftClickFinalBossPaint = (holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 0, elapsed: 0, point: null, target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 0 }); game.render(); } };
+if (DEV_MODE) window.releaseFinalBossPaintPointer = () => { if (game.paintHold.active) game.releasePaintPointer({ button: game.paintHold.button }); game.render(); };
+if (DEV_MODE) window.addFinalBossTestHole = (x, z, radius = 1.5) => { if (game.mode === 'play') { game.addPersistentHole(Number(x), Number(z), Number(radius)); game.render(); } };
+if (DEV_MODE) window.forceFinalBossPattern = (pattern) => {
   const map = { train: () => game.spawnPaperTrainPattern(0, true), 'train-diagonal': () => game.spawnPaperTrainPattern(1, true), 'train-vertical': () => game.spawnPaperTrainPattern(2, true), 'train-double': () => game.spawnPaperTrainPattern(3, true), 'train-cross': () => game.spawnPaperTrainPattern(4, true), 'train-triple': () => game.spawnPaperTrainPattern(5, true), suitcase: () => game.spawnSuitcaseRain(0), laser: () => game.spawnCyberLaser(0), 'ring-laser': () => game.spawnCyberRingLaser(), block: () => game.spawnCyberBlock(0), hole: () => game.spawnEchoHole(0), pigment: () => game.spawnPigmentObject(0), 'pigment-near': () => game.spawnPigmentObject(0, { x: game.player.x + 1, z: game.player.z - 1 }), cover: () => game.spawnPaintCover(0, { x: game.player.x + 2.65, z: game.player.z, axis: 'x' }), 'cover-sweep': () => { const x = game.player.x + 2.65; game.spawnPaintCover(0, { x, z: game.player.z, axis: 'x' }); game.spawnPaintSweep(0, { vertical: false, offset: game.player.z }); game.player.x = x + 1.1; game.playerRoot.position.x = game.player.x; }, 'wall-wave': () => game.spawnPaintCoverWave() };
   game.clearHazards();
   game.boss.attackClock = 999;
   map[pattern]?.(); game.render();
 };
-window.forceFinalBossAttackWindow = () => { game.boss.exposed = 4; game.render(); };
-window.setFinalBossPhaseRound = (round) => { game.boss.phaseRound = Math.max(0, Math.round(Number(round) || 0)); game.render(); };
-window.forceFinalBossNaturalBeat = () => { if (game.mode === 'play' && !game.transition) { game.clearHazards(); game.boss.attackClock = 0; game.spawnBeat(); game.render(); } };
-window.triggerFinalBossRescue = () => { game.phase = 3; game.setWorld(3); game.boss.hp = 10; game.startRescueSequence(); game.render(); };
-window.triggerFinalBossWorldFall = (nextPhase = Math.min(3, game.phase + 1)) => { if (game.mode === 'play' && nextPhase > game.phase) game.startWorldTransition(nextPhase); };
-window.triggerFinalBossSystemGate = () => {
+if (DEV_MODE) window.forceFinalBossAttackWindow = () => { game.boss.exposed = 4; game.render(); };
+if (DEV_MODE) window.setFinalBossPhaseRound = (round) => { game.boss.phaseRound = Math.max(0, Math.round(Number(round) || 0)); game.render(); };
+if (DEV_MODE) window.forceFinalBossNaturalBeat = () => { if (game.mode === 'play' && !game.transition) { game.clearHazards(); game.boss.attackClock = 0; game.spawnBeat(); game.render(); } };
+if (DEV_MODE) window.triggerFinalBossRescue = () => { game.phase = 3; game.setWorld(3); game.boss.hp = 10; game.startRescueSequence(); game.render(); };
+if (DEV_MODE) window.triggerFinalBossWorldFall = (nextPhase = Math.min(3, game.phase + 1)) => { if (game.mode === 'play' && nextPhase > game.phase) game.startWorldTransition(nextPhase); };
+if (DEV_MODE) window.triggerFinalBossSystemGate = () => {
   if (game.mode !== 'play') return;
   game.phase = 1; game.setWorld(1); game.puppet.setForm(1, true); game.startSystemGateTransition(2); game.render();
 };
