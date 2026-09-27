@@ -42,7 +42,7 @@ Chapter 3 music includes “Humoresque, Op. 101 No. 7,” arranged for piano and
 | `3.6_chopin_prelude_op28_no4.mp3` | Frédéric Chopin, Prelude in E minor, Op. 28 No. 4 | Ivan Ilić | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Ivan_Ilić-Chopin_Prelude_Opus_28_n.4.ogg |
 | `3.8_beethoven_sym7_mvt2_allegretto_cello.mp3` | Ludwig van Beethoven, Symphony No. 7, Op. 92, II *Allegretto* | John Michel, cello | CC BY-SA 3.0 | https://commons.wikimedia.org/wiki/File:JOHN_MICHEL_CELLO-BEETHOVEN_SYMPHONY_7_Allegretto.ogg |
 
-Modifications: transcoded from the source Ogg Vorbis to MP3 (and, in the release build, re-encoded to 160 kbps MP3); no edits to the performances. The converted 3.2 and 3.8 files remain available under their CC BY-SA licences. Per-file SHA-256 records: `/assets/music/ch3/ASSET_MANIFEST.md`.
+Modifications: transcoded from the source Ogg Vorbis files to MP3; for the release build 3.6 and 3.8 were re-encoded again (LAME VBR V2) to reduce download size. The performances are not edited. The converted 3.2 and 3.8 files remain available under their CC BY-SA licences. Per-file SHA-256 records: `/assets/music/ch3/ASSET_MANIFEST.md`.
 
 Chapter 3 also uses these public-domain / CC0 recordings (credit given voluntarily; no attribution is required):
 

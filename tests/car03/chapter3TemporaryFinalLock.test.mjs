@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v36', () => {
+describe('Chapter 3 integrated final lock v37', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -62,10 +62,16 @@ describe('Chapter 3 integrated final lock v36', () => {
       ...filesBelow('public/assets/chapter03-3d', (file) => !/ \d+\.[^/]+$/.test(file)),
       ...filesBelow('public/assets/music/ch3'),
     ];
-    assert.equal(assetFiles.length, 759);
+    // v37 (release/1.0 asset pass, 2026-09-27): reopened for asset-only
+    // changes with no runtime behaviour change — removed 4 unreferenced voice
+    // OGGs, the unshipped worn-limestone-source.png, the superseded backdrops
+    // and the stale music/ch3 "ASSET_MANIFEST 2.md" (759 -> 751 files);
+    // scrubbed absolute paths from replacements/manifest.json; re-encoded
+    // eight Chapter 3 MP3s to LAME V2 at identical loudness and length.
+    assert.equal(assetFiles.length, 751);
     assert.equal(
       aggregateSignature(assetFiles),
-      'be4c754b243e8296c7c8b12acd7121a1607f0ef1a97d62fc53a16a3d8f0e0e77',
+      '0dc11e665a7b3cbeef55d562490ec38aa690499bf1f47e3f8370b4cf9b4bd1e8',
       'Chapter 3 assets are locked. Reopen it explicitly and create a new lock version before changing assets.',
     );
   });
