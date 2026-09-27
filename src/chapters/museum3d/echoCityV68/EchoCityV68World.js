@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { devParam } from '../../../devMode.js';
 import {
   CAMERA_HOME,
   CAMERA_FOLLOW,
@@ -816,7 +817,7 @@ function createRenderer(container) {
 }
 
 function requestedCameraPreset() {
-  const focus = new URLSearchParams(window.location.search).get('focus');
+  const focus = devParam('focus');
   const target = CAMERA_FOCUS_TARGETS[focus];
   if (!target) return { ...CAMERA_HOME, focus: 'overview' };
   const dx = target[0] - CAMERA_HOME.target[0];

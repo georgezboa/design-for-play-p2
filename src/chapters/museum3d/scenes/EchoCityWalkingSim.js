@@ -24,6 +24,7 @@ import { createNightServiceBadge } from '../assets/NightServiceBadge.js';
 import { loadEchoCityModel } from '../assets/EchoCityModelLoader.js';
 import { CHAPTER05_DIRECTIONS } from '../directions/directionRegistry.js';
 import { LevRevisitSequence } from './LevRevisitSequence.js';
+import { devParams } from '../../../devMode.js';
 
 const STATION_PLATFORM_TOP_Y = 1.15;
 // Keep the two Echo City visits mutually exclusive. Resolve this when the
@@ -223,9 +224,8 @@ export class EchoCityWalkingSim {
     this._streetlightBudgetClock = 0;
     this._streetlightRanks = [];
     this.interactionCueLights = new Map();
-    this.route = resolveEchoCityRoute(
-      typeof window !== 'undefined' ? window.location.search : '',
-    );
+    // ?lev=1 is a dev-only preview route (devParams() is empty in production).
+    this.route = resolveEchoCityRoute(devParams().toString());
   }
 
   _addInteractionCue(id, parent, {
