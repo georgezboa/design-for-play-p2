@@ -1,0 +1,16 @@
+// Windows x64 depot (placeholder ID 1000001). Built by: npm run package:steam:win
+// Steamworks launch option: Executable "NIGHTFALL.exe", OS Windows, 64-bit.
+"DepotBuild"
+{
+	"DepotID"   "1000001"
+
+	"FileMapping"
+	{
+		"LocalPath"  "win-unpacked/*"
+		"DepotPath"  "."
+		"Recursive"  "1"
+	}
+
+	// Chromium writes nothing into the install dir, but never ship debug files.
+	"FileExclusion" "*.pdb"
+}

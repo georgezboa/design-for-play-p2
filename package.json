@@ -147,8 +147,7 @@
           ]
         }
       ],
-      "icon": "build/icon.ico",
-      "legalTrademarks": "NIGHTFALL"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
