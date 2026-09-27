@@ -19,10 +19,10 @@
 export const DEV_MODE = typeof __DEV_MODE__ === 'undefined' ? false : __DEV_MODE__;
 const HIDDEN_ROUTER_KEY = 'nightfall.hidden-router.v1';
 
-// The production title's 1111 code is an intentional playtest doorway. It
-// grants only this browser tab's session permission to use the existing named
-// test nodes; normal players can neither see the router nor activate a query
-// route by typing one into the address bar.
+// The title's 1111 test-node router exists only in the dev build. It still
+// records this session flag there, but the flag is never an input to
+// devRoutesEnabled(): a shipped build has no way to turn dev routes on, even
+// if a stale flag is left in sessionStorage.
 export function hiddenRouterActive(storage = globalThis.sessionStorage) {
   return storage?.getItem(HIDDEN_ROUTER_KEY) === '1';
 }
@@ -36,7 +36,7 @@ export function clearHiddenRouter(storage = globalThis.sessionStorage) {
 }
 
 export function devRoutesEnabled() {
-  return DEV_MODE || hiddenRouterActive();
+  return DEV_MODE;
 }
 
 // Every query key that can move the game away from a clean run. Reading them

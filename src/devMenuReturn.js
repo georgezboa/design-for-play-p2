@@ -1,9 +1,11 @@
 import { DEV_MODE } from './devMode.js';
-import { createSaveStore, returnToTitle } from './shell/saveSystem.js';
+import { createSaveStore } from './shell/saveSystem.js';
 
 // Every independently runnable chapter gets the same escape hatch while the
-// root Vite dev server is active. Standalone production builds never define
-// __DEV_MODE__, so this module becomes a no-op there.
+// root Vite dev server is active. In production (and in standalone builds,
+// which never define __DEV_MODE__) the only thing this does is record the
+// chapter's checkpoint: no floating button and no hotkey — players leave a
+// chapter through the pause menu's RETURN TO TITLE.
 const CONTROL_ID = 'nightfall-dev-menu-return';
 
 const PRODUCTION_CHECKPOINTS = Object.freeze({
@@ -25,6 +27,7 @@ export function installDevMenuReturnControl() {
   if (!DEV_MODE) {
     const checkpoint = PRODUCTION_CHECKPOINTS[window.location.pathname];
     if (checkpoint) createSaveStore().markCheckpoint(checkpoint);
+    return;
   }
 
   const style = document.createElement('style');
@@ -49,20 +52,17 @@ export function installDevMenuReturnControl() {
   const control = document.createElement('a');
   control.id = CONTROL_ID;
   control.href = '/';
-  control.textContent = DEV_MODE ? '` DEV MENU' : 'TITLE';
-  control.setAttribute('aria-label', DEV_MODE ? 'Return to development menu' : 'Return to title screen');
+  control.textContent = '` DEV MENU';
+  control.setAttribute('aria-label', 'Return to development menu');
   control.addEventListener('click', (event) => {
     event.preventDefault();
-    if (DEV_MODE) returnToDevMenu();
-    else returnToTitle();
+    returnToDevMenu();
   });
   document.body.append(control);
 
   window.addEventListener('keydown', (event) => {
-    const requested = DEV_MODE ? event.key === '`' : event.key.toLowerCase() === 't';
-    if (!requested || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (event.key !== '`' || event.metaKey || event.ctrlKey || event.altKey) return;
     event.preventDefault();
-    if (DEV_MODE) returnToDevMenu();
-    else returnToTitle();
+    returnToDevMenu();
   });
 }
