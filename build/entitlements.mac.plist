@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Hardened-runtime entitlements for the NIGHTFALL Developer ID build
+  (Steam / itch.io / direct download; NOT the Mac App Store).
+
+  Only used when the app is actually signed. The default config builds with
+  mac.identity = null (unsigned); see desktop/README.md for signing and
+  notarisation.
+
+  - allow-jit / allow-unsigned-executable-memory: required by V8 / Chromium.
+  - disable-library-validation: lets the Electron frameworks load even if
+    they carry a different Team ID (e.g. ad-hoc "-" signing). Can be removed
+    once a Developer ID build is confirmed to launch without it.
+  No network-server/camera/microphone entitlements are needed: the game only
+  listens on 127.0.0.1, which the hardened runtime permits.
+-->
+<plist version="1.0">
+  <dict>
+    <key>com.apple.security.cs.allow-jit</key>
+    <true/>
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <true/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <true/>
+  </dict>
+</plist>

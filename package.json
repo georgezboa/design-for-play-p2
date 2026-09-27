@@ -1,10 +1,15 @@
 {
   "name": "nightfall",
   "private": true,
-  "version": "0.1.0",
+  "productName": "NIGHTFALL",
+  "version": "1.0.0",
   "type": "module",
   "main": "desktop/main.cjs",
-  "description": "A 2.5D lane-shifting platformer built with Phaser 3",
+  "description": "NIGHTFALL — The Last Archive Line. A single-player night-train journey backward through time.",
+  "author": {
+    "name": "NIGHTFALL Team"
+  },
+  "license": "UNLICENSED",
   "scripts": {
     "assets:prepare": "node scripts/prepare-world-assets.mjs",
     "assets:check": "node scripts/prepare-world-assets.mjs --check",
@@ -26,45 +31,156 @@
     "build:hidden-final-boss": "vite build --config vite.hidden-final-boss.config.js",
     "preview": "vite preview",
     "build:submission-web": "npm run build",
-    "package:mac": "npm run build:submission-web && electron-builder --mac --universal --publish never",
-    "package:win": "npm run build:submission-web && electron-builder --win portable --publish never"
+    "test:desktop": "node --test tests/desktop/*.test.mjs",
+    "icons": "node build/make-icons.mjs",
+    "desktop": "npm run build && electron .",
+    "package:mac": "npm run build && electron-builder --mac --universal --publish never",
+    "package:win": "npm run build && electron-builder --win --x64 --publish never",
+    "package:linux": "npm run build && electron-builder --linux --x64 --publish never",
+    "package:steam": "npm run build && electron-builder --win --x64 --dir --publish never && electron-builder --linux --x64 --dir --publish never && electron-builder --mac --universal --dir --publish never",
+    "package:steam:win": "npm run build && electron-builder --win --x64 --dir --publish never",
+    "package:steam:mac": "npm run build && electron-builder --mac --universal --dir --publish never",
+    "package:steam:linux": "npm run build && electron-builder --linux --x64 --dir --publish never"
   },
   "dependencies": {
     "phaser": "3.90.0",
     "three": "^0.179.1"
   },
   "devDependencies": {
-    "sharp": "^0.35.3",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
+    "png2icons": "^2.0.1",
+    "sharp": "^0.35.3",
     "vite": "^6.4.3"
   },
   "build": {
-    "appId": "edu.stanford.cs247g.nightfall",
+    "appId": "com.nightfall.lastarchiveline",
     "productName": "NIGHTFALL",
+    "copyright": "Copyright © 2026 NIGHTFALL Team. Free to play.",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
     "directories": {
-      "output": "release/desktop"
+      "output": "release/desktop",
+      "buildResources": "build"
     },
     "files": [
-      "desktop/**",
+      "desktop/**/*",
+      "!desktop/README.md",
       "package.json",
       "!node_modules/**"
     ],
+    "asar": true,
+    "compression": "normal",
     "npmRebuild": false,
-    "compression": "store",
+    "nodeGypRebuild": false,
+    "electronLanguages": [
+      "en",
+      "en-US",
+      "en-GB"
+    ],
+    "publish": null,
     "extraResources": [
       {
         "from": "dist",
         "to": "game",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "src/fonts",
+        "to": "licenses",
+        "filter": [
+          "*-OFL.txt"
+        ]
       }
     ],
     "mac": {
-      "target": ["dmg", "zip"],
-      "category": "public.app-category.games"
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "universal"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "universal"
+          ]
+        }
+      ],
+      "category": "public.app-category.games",
+      "icon": "build/icon.icns",
+      "minimumSystemVersion": "11.0",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "build/entitlements.mac.plist",
+      "entitlementsInherit": "build/entitlements.mac.plist",
+      "identity": null,
+      "notarize": false
+    },
+    "dmg": {
+      "title": "${productName} ${version}",
+      "artifactName": "${productName}-${version}-mac.${ext}"
     },
     "win": {
-      "target": ["portable"]
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "legalTrademarks": "NIGHTFALL"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowElevation": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NIGHTFALL",
+      "uninstallDisplayName": "NIGHTFALL",
+      "deleteAppDataOnUninstall": false,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "artifactName": "${productName}-${version}-win-setup.${ext}"
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "dir",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "category": "Game",
+      "icon": "build/icon.png",
+      "executableName": "nightfall",
+      "synopsis": "A night-train journey backward through time.",
+      "extraResources": [
+        {
+          "from": "build/icon.png",
+          "to": "icon.png"
+        }
+      ]
     }
   }
 }
