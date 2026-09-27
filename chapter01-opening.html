@@ -41,13 +41,14 @@
     </main>
     <script type="module">
       import { installDevMenuReturnControl } from '/src/devMenuReturn.js';
+      import { DEV_MODE } from '/src/devMode.js';
       installDevMenuReturnControl();
 
       const opening = document.getElementById('opening');
       const status = document.getElementById('status');
       opening.addEventListener('play', () => { status.textContent = 'The last 1.5 seconds are the literal Chapter 1 first frame.'; });
       opening.addEventListener('ended', () => { status.textContent = 'Opening complete. Enter Chapter 1 when you are ready.'; });
-      window.render_game_to_text = () => JSON.stringify({
+      if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
         page: 'chapter-01-opening-preview',
         video: { currentTime: Number(opening.currentTime.toFixed(2)), duration: Number(opening.duration.toFixed(2)) || null, ended: opening.ended, muted: opening.muted },
         handoff: '/?chapter=0',
