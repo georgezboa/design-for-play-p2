@@ -80,11 +80,11 @@
     "placement": "normalized to the authored summit footprint with its generated rock substructure sunk into the existing tunnel cliff; the open edge aligns with the final timber-walk approach"
   },
   "distantCity": {
-    "file": "backdrops/city-extension-isometric-v02.webp",
+    "file": "docs/archive/chapter03-3d-reference/backdrops/city-extension-isometric-v02.webp (repository path; not shipped)",
     "source": "OpenAI built-in image generation, authored specifically for the production camera's 45-degree yaw and 45-48-degree top-down orthographic view",
-    "status": "SUPERSEDED — retained as a reference only and no longer loaded at runtime",
+    "status": "SUPERSEDED — retained in the repository archive as a reference only; not loaded at runtime and not shipped",
     "role": "abandoned perspective-backdrop experiment; production now uses a closer locked camera and real world-space paving/buildings only",
-    "legacy": "city-horizon-v01.webp is retained as a superseded reference and is not loaded"
+    "legacy": "city-horizon-v01.webp is archived beside it as a superseded reference and is not loaded"
   },
   "railBoundary": {
     "model": "models/municipal_tram_web.glb",
@@ -95,7 +95,8 @@
     "worn-limestone-source.png": {
       "role": "project-generated seamless albedo source derived from the approved v6 material language only",
       "generator": "OpenAI image generation built-in tool",
-      "prompt_scope": "orthographic top-down worn civic limestone; no scene layout, objects or baked lighting"
+      "prompt_scope": "orthographic top-down worn civic limestone; no scene layout, objects or baked lighting",
+      "archived": "docs/archive/chapter03-3d-reference/worn-limestone-source.png (repository path; source only, not shipped)"
     },
     "worn-limestone-albedo.webp": "1024px runtime albedo",
     "worn-limestone-height.webp": "1024px bump source",
