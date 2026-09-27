@@ -48,9 +48,12 @@ describe('Chapter 3 integrated final lock v36', () => {
       ...filesBelow('src/cars/presentCity3d', (file) => /\.(?:js|png)$/.test(file)),
     ];
     assert.equal(sourceFiles.length, 24);
+    // Reopened for release UX: Escape opens the shared pause menu instead of
+    // quitting, the city freezes while paused, camera shake honours REDUCE
+    // MOTION, and TEXT SIZE scales dialogue (car03-3d-main.js, car03-3d.html).
     assert.equal(
       aggregateSignature(sourceFiles),
-      'e9a0bf137786e4dc89b8f28da5fe610938046fb61ae445d12496ffcd71d67943',
+      'dcf09a8878b59e6689ac2a11bbc2722dcc58c425310d83ab92ac0cbbd5939bc4',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
