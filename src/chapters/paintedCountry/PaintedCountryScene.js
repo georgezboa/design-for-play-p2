@@ -77,7 +77,11 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   create() {
-    this.music = this.sound.add('chapter4-drawing-music', { loop: true, volume: 0.42 });
+    // A missing or undecodable score file leaves the scene silent rather than
+    // throwing from sound.add (Phaser only caches audio that loaded).
+    this.music = this.cache.audio.exists('chapter4-drawing-music')
+      ? this.sound.add('chapter4-drawing-music', { loop: true, volume: 0.42 })
+      : null;
     const playMusic = () => { if (!this.music?.isPlaying) this.music?.play(); };
     if (this.sound.locked) this.sound.once('unlocked', playMusic);
     else playMusic();
@@ -1388,7 +1392,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     // second scene, so the first scene never draws or pre-fills the HUE ring.
     this.registry.set('chapter4Pigments', []);
     this.registry.set('chapter4ArchiveAnswer', 'moon');
-    this.tweens.add({ targets: this.music, volume: 0, duration: 360 });
+    if (this.music) this.tweens.add({ targets: this.music, volume: 0, duration: 360 });
     this.cameras.main.fadeOut(420, 247, 244, 236);
     this.time.delayedCall(450, () => this.scene.start('DrawingStudio'));
   }

@@ -3,20 +3,6 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
-import conductorUrl from '../../../public/assets/chapter03-3d/characters/male_municipal_shared_rig.glb?url';
-import stationUrl from '../../../public/assets/chapter03-3d/models/ch03_open_air_station.glb?url';
-import fountainUrl from '../../../public/assets/chapter03-3d/models/reunion_fountain_web.glb?url';
-import clockUrl from '../../../public/assets/chapter03-3d/models/clock_tower_web.glb?url';
-import archiveUrl from '../../../public/assets/chapter03-3d/models/old_municipal_archive_web.glb?url';
-import butchUrl from '../../../public/assets/chapter03-3d/characters/butch_shared_rig.glb?url';
-import chapter3AnimationsUrl from '../../../public/assets/chapter03-3d/animations/quaternius_ual1_standard.glb?url';
-import tenementUrl from '../../../public/assets/chapter03-3d/models/ch03_perimeter_tenement.glb?url';
-import workersHallUrl from '../../../public/assets/chapter03-3d/models/ch03_perimeter_workers_hall.glb?url';
-import bakeryUrl from '../../../public/assets/chapter03-3d/models/ch03_shop_bakery_tenement.glb?url';
-import printworksUrl from '../../../public/assets/chapter03-3d/models/ch03_shop_printworks_rowhouse.glb?url';
-import trashUrl from '../../../public/assets/chapter03-3d/models/ch03_crushed_trash_can.glb?url';
-import benchUrl from '../../../public/assets/chapter03-3d/models/ch03_fountain_bench.glb?url';
-import speakerUrl from '../../../public/assets/chapter03-3d/models/ch03_pa_speaker.glb?url';
 import paperTextureUrl from '../../assets/shared/painterly/paper-texture-ivory-v01.png?url';
 import ch1TrainUrl from './assets/paper/ch1-train-exterior-v01.png?url';
 import ch1SuitcaseUrl from './assets/paper/ch1-suitcase.png?url';
@@ -57,24 +43,6 @@ import captchaCat02Url from './assets/captcha/cat-02.jpg?url';
 import captchaCat03Url from './assets/captcha/cat-03.jpg?url';
 import captchaPlane01Url from './assets/captcha/plane-01.jpg?url';
 import captchaPlane02Url from './assets/captcha/plane-02.jpg?url';
-import verdiDiesIraeUrl from '../../../public/assets/music/ch5/5.7_verdi_dies_irae.mp3?url';
-import echoCityMusicUrl from '../../../public/assets/music/ch6/6.3_dvorak_new_world_mvt4_theme.mp3?url';
-import allLinesMusicUrl from '../../../public/assets/music/ch6/6.4_mussorgsky_kiev_gate.mp3?url';
-import departureMusicUrl from '../../../public/assets/music/ch6/6.5_night_train_departure.mp3?url';
-import conductorVoice02 from '../../../public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0002.ogg?url';
-import conductorVoice05 from '../../../public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0005.ogg?url';
-import conductorVoice06 from '../../../public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0006.ogg?url';
-import conductorVoice07 from '../../../public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0007.ogg?url';
-import conductorVoice08 from '../../../public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0008.ogg?url';
-import butchVoice41 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0041.ogg?url';
-import butchVoice57 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0057.ogg?url';
-import butchVoice103 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0103.ogg?url';
-import butchVoice106 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0106.ogg?url';
-import butchVoice118 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0118.ogg?url';
-import butchVoice150 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0150.ogg?url';
-import butchVoice168 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0168.ogg?url';
-import butchVoice218 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0218.ogg?url';
-import butchVoice244 from '../../../public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0244.ogg?url';
 import { music } from '../../shared/musicDirector.js';
 import { audioFocus } from '../../shared/audioFocus.js';
 
@@ -85,6 +53,80 @@ import { showEndCredits } from '../../shell/endCredits.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 import { devParam } from '../../devMode.js';
+
+// Runtime files under public/ are referenced by their served path rather than
+// imported with ?url. An import made Vite copy each GLB/MP3/OGG a second time
+// into dist/assets/ under a hashed name (~61 MB of duplicates), left the
+// Chapter 6 preload profile warming URLs this module never requested, and made
+// a missing score file a build failure instead of a silent cue.
+const PUBLIC_ASSETS = Object.freeze({
+  conductorUrl: '/assets/chapter03-3d/characters/male_municipal_shared_rig.glb',
+  stationUrl: '/assets/chapter03-3d/models/ch03_open_air_station.glb',
+  fountainUrl: '/assets/chapter03-3d/models/reunion_fountain_web.glb',
+  clockUrl: '/assets/chapter03-3d/models/clock_tower_web.glb',
+  archiveUrl: '/assets/chapter03-3d/models/old_municipal_archive_web.glb',
+  butchUrl: '/assets/chapter03-3d/characters/butch_shared_rig.glb',
+  chapter3AnimationsUrl: '/assets/chapter03-3d/animations/quaternius_ual1_standard.glb',
+  tenementUrl: '/assets/chapter03-3d/models/ch03_perimeter_tenement.glb',
+  workersHallUrl: '/assets/chapter03-3d/models/ch03_perimeter_workers_hall.glb',
+  bakeryUrl: '/assets/chapter03-3d/models/ch03_shop_bakery_tenement.glb',
+  printworksUrl: '/assets/chapter03-3d/models/ch03_shop_printworks_rowhouse.glb',
+  trashUrl: '/assets/chapter03-3d/models/ch03_crushed_trash_can.glb',
+  benchUrl: '/assets/chapter03-3d/models/ch03_fountain_bench.glb',
+  speakerUrl: '/assets/chapter03-3d/models/ch03_pa_speaker.glb',
+  verdiDiesIraeUrl: '/assets/music/ch5/5.7_verdi_dies_irae.mp3',
+  echoCityMusicUrl: '/assets/music/ch6/6.3_dvorak_new_world_mvt4_theme.mp3',
+  allLinesMusicUrl: '/assets/music/ch6/6.4_mussorgsky_kiev_gate.mp3',
+  departureMusicUrl: '/assets/music/ch6/6.5_night_train_departure.mp3',
+  conductorVoice02: '/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0002.ogg',
+  conductorVoice05: '/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0005.ogg',
+  conductorVoice06: '/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0006.ogg',
+  conductorVoice07: '/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0007.ogg',
+  conductorVoice08: '/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0008.ogg',
+  butchVoice41: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0041.ogg',
+  butchVoice57: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0057.ogg',
+  butchVoice103: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0103.ogg',
+  butchVoice106: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0106.ogg',
+  butchVoice118: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0118.ogg',
+  butchVoice150: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0150.ogg',
+  butchVoice168: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0168.ogg',
+  butchVoice218: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0218.ogg',
+  butchVoice244: '/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0244.ogg',
+});
+const {
+  conductorUrl,
+  stationUrl,
+  fountainUrl,
+  clockUrl,
+  archiveUrl,
+  butchUrl,
+  chapter3AnimationsUrl,
+  tenementUrl,
+  workersHallUrl,
+  bakeryUrl,
+  printworksUrl,
+  trashUrl,
+  benchUrl,
+  speakerUrl,
+  verdiDiesIraeUrl,
+  echoCityMusicUrl,
+  allLinesMusicUrl,
+  departureMusicUrl,
+  conductorVoice02,
+  conductorVoice05,
+  conductorVoice06,
+  conductorVoice07,
+  conductorVoice08,
+  butchVoice41,
+  butchVoice57,
+  butchVoice103,
+  butchVoice106,
+  butchVoice118,
+  butchVoice150,
+  butchVoice168,
+  butchVoice218,
+  butchVoice244,
+} = PUBLIC_ASSETS;
 
 const PINK = 0xff176f;
 const CYAN = 0x43e9ff;
