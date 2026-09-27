@@ -151,6 +151,7 @@ import {
   NIGHT_FIRST_LINE, NIGHT_RECONNECT, NIGHT_SECOND_LINE, NIGHT_WAKE_DIALOGUE, SLEEP_DIALOGUE, daroMenu, finalTheoryMenu, levFinalMenu, morningEvidenceMenu,
 } from './chapter3FinalContent.js';
 import { car03Audio } from '../presentCity/car03Audio.js';
+import { devParam } from '../../devMode.js';
 
 const INTERACTION_RADIUS = 4.2;
 const SLEEP_BLACKOUT_MS = 5000;
@@ -2013,10 +2014,10 @@ export class Chapter3OpeningRuntime {
       groundHeightAt: (x, z) => this.preview.surfaceHeightAt(x, z),
     });
     this.replacements = new Chapter3ReplacementAssetSystem();
-    this.characterQa = new URLSearchParams(window.location.search).get('playtest') === 'chapter3-characters';
-    this.alleyQa = new URLSearchParams(window.location.search).get('playtest') === 'chapter3-alley';
-    this.npcLifeQa = new URLSearchParams(window.location.search).get('playtest') === 'chapter3-npc-life';
-    this.magicStoneQa = new URLSearchParams(window.location.search).get('playtest') === 'chapter3-magic-stone';
+    this.characterQa = devParam('playtest') === 'chapter3-characters';
+    this.alleyQa = devParam('playtest') === 'chapter3-alley';
+    this.npcLifeQa = devParam('playtest') === 'chapter3-npc-life';
+    this.magicStoneQa = devParam('playtest') === 'chapter3-magic-stone';
     this.characterQaAction = 'idle';
     this.characterQaElapsed = 0;
     this.characterQaActors = [];

@@ -5,6 +5,7 @@ import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { CINEMATICS, navigateAfterCinematic } from './shell/gameFlow.js';
 import { createSaveStore } from './shell/saveSystem.js';
+import { DEV_MODE, devParams } from './devMode.js';
 
 installDevMenuReturnControl();
 // Echo City is entered from the chapter list as a self-contained 3D page.
@@ -36,7 +37,9 @@ const preview = new EchoCity3DPreview({
   loadingFill: document.querySelector('#loading-fill'),
 });
 
-const query = new URLSearchParams(window.location.search);
+// ?playtest= jumps to one of the Chapter 3 QA states; dev builds only
+// (devParams() is empty in production, so a shipped city always opens at dawn).
+const query = devParams();
 const playtest = query.get('playtest');
 const openingStart = playtest === 'chapter3-time-transition'
   ? 'night-transition-qa'
@@ -107,7 +110,7 @@ const gameplayRuntime = new Chapter3OpeningRuntime({
 
 preview.attachGameplayRuntime(gameplayRuntime);
 
-window.render_game_to_text = () => {
+if (DEV_MODE) window.render_game_to_text = () => {
   const city = JSON.parse(preview.textState());
   return JSON.stringify({
     ...city,
@@ -117,10 +120,12 @@ window.render_game_to_text = () => {
       : { initialized: false, loading: true },
   });
 };
-window.advanceTime = (ms) => preview.advanceTime(ms);
-window.echoCity3D = preview;
-window.chapter3Runtime = gameplayRuntime;
-window.chapter3Opening = gameplayRuntime;
+if (DEV_MODE) {
+  window.advanceTime = (ms) => preview.advanceTime(ms);
+  window.echoCity3D = preview;
+  window.chapter3Runtime = gameplayRuntime;
+  window.chapter3Opening = gameplayRuntime;
+}
 
 preview.initialize()
   .then(() => {

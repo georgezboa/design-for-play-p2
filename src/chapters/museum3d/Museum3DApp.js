@@ -32,6 +32,7 @@ import { preloadChapter } from '../../shell/chapterPreloader.js';
 import { navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { music } from '../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from './chapter05Score.js';
+import { devParam } from '../../devMode.js';
 
 function buildCarriedNightKit() {
   const root = new THREE.Group();
@@ -641,7 +642,7 @@ export class Museum3DApp {
       completion.innerHTML = `<div>${COLLAPSE_STRINGS.completeLine}</div><strong>${COLLAPSE_STRINGS.chapterComplete}</strong><small>“The archive does not issue duplicates.”</small>`;
       completion.classList.add('visible');
     }
-    if (new URLSearchParams(window.location.search).get('qa-no-redirect') !== '1') {
+    if (devParam('qa-no-redirect') !== '1') {
       // The route is frozen before black. The film starts the route-specific
       // preload on its `playing` event; its completion gate then prevents a
       // cold Boss page from opening after either ending branch.

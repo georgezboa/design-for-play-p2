@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BorrowedGridCurrentScene, BORROWED_GRID_CURRENT_VIEW } from './BorrowedGridCurrentScene.js';
 import { BORROWED_GRID_CHAPTER05_CONTRACT } from './chapter05BorrowedGridContract.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
+import { DEV_MODE, devParams } from '../../devMode.js';
 
 installDevMenuReturnControl();
 
@@ -19,7 +20,7 @@ const game = new Phaser.Game({
 
 game.canvas.setAttribute('tabindex', '0');
 game.canvas.addEventListener('pointerdown', () => game.canvas.focus());
-window.game = game;
+if (DEV_MODE) window.game = game;
 
 const embedded = new URLSearchParams(window.location.search).get('embedded') === '1';
 let completionSent = false;
@@ -38,10 +39,14 @@ scene.onArchiveComplete = () => {
   window.parent.postMessage({ type: BORROWED_GRID_CHAPTER05_CONTRACT.completeMessage }, window.location.origin);
 };
 
-window.render_game_to_text = () => JSON.stringify(scene.state ? scene.renderToText() : { scene: 'borrowed-grid-current', booting: true });
-window.advanceTime = (ms) => scene.state && scene.advanceTime(ms);
+if (DEV_MODE) {
+  window.render_game_to_text = () => JSON.stringify(scene.state ? scene.renderToText() : { scene: 'borrowed-grid-current', booting: true });
+  window.advanceTime = (ms) => scene.state && scene.advanceTime(ms);
+}
 
-const params = new URLSearchParams(window.location.search);
+// ?embedded=1 (above) is the Museum's real iframe contract; every ?qa-* key
+// below is a dev route and reads through devParams(), empty in production.
+const params = devParams();
 const qaRound = Number(params.get('qa-round'));
 const qaNode = params.has('qa-node') ? Number(params.get('qa-node')) : Number.NaN;
 const qaCarry = params.has('qa-carry') ? Number(params.get('qa-carry')) : Number.NaN;

@@ -1,6 +1,7 @@
 import './endCredits.css';
 import { CREDIT_MUSIC, CREDIT_TEAM } from './creditsData.js';
 import { music } from '../shared/musicDirector.js';
+import { DEV_MODE } from '../devMode.js';
 
 // Final credits deliberately stay spare: the ending needs a clean list of the
 // people who made the game, not the title menu's full source and production
@@ -41,7 +42,7 @@ export function showEndCredits() {
     loop: true,
   });
 
-  window.render_game_to_text = () => JSON.stringify({
+  if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
     scene: 'EndCredits',
     visible: true,
     names: CREDIT_TEAM.map(({ name }) => name),

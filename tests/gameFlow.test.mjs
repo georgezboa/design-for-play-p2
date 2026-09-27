@@ -93,7 +93,7 @@ test('the shared ESC pause menu exposes resume, save, settings and title exit', 
   assert.doesNotMatch(pause, /else scene\.scene\.resume\(\)/);
 });
 
-test('the invisible 1111 title code opens every chapter’s named test nodes', () => {
+test('the dev-only 1111 title code opens every chapter’s named test nodes', () => {
   const title = source('src/shell/titleMenu.js');
   const devMode = source('src/devMode.js');
   assert.match(title, /hiddenChapterSequence === '1111'/);
@@ -116,7 +116,37 @@ test('the invisible 1111 title code opens every chapter’s named test nodes', (
   for (const movement of [1, 2, 3, 4]) assert.match(title, new RegExp(`CONDUCTOR ${['I', 'II', 'III', 'IV'][movement - 1]}[\\s\\S]*final-boss\\.html\\?qa=conductor-${movement}`));
   assert.match(title, /BLACK KNIFE · HIDDEN FINALE[\s\S]*hidden-final-boss\.html\?easter-egg=1/);
   assert.match(title, /preload: 'hiddenBoss'/);
-  assert.match(title, /activateHiddenRouter\(\)/);
-  assert.match(devMode, /hiddenRouterActive/);
-  assert.match(devMode, /return DEV_MODE \|\| hiddenRouterActive\(\)/);
+  // Release 1.0: the router and its key listener exist only in dev builds,
+  // and the session flag it sets no longer unlocks dev routes in production.
+  assert.match(title, /const hiddenChapters = DEV_MODE \? \[/);
+  assert.match(title, /if \(DEV_MODE && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
+  assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE;\n\}/);
+  assert.doesNotMatch(devMode, /DEV_MODE \|\| hiddenRouterActive\(\)/);
+});
+
+test('a stale hidden-router session flag cannot open dev routes outside dev mode', async () => {
+  const previous = globalThis.sessionStorage;
+  const values = new Map([['nightfall.hidden-router.v1', '1']]);
+  globalThis.sessionStorage = {
+    getItem: (key) => values.get(key) ?? null,
+    setItem: (key, value) => values.set(key, String(value)),
+    removeItem: (key) => values.delete(key),
+  };
+  try {
+    const devMode = await import('../src/devMode.js');
+    assert.equal(devMode.DEV_MODE, false);
+    assert.equal(devMode.hiddenRouterActive(), true);
+    assert.equal(devMode.devRoutesEnabled(), false);
+    assert.equal(devMode.devParam('qa', '?qa=1'), null);
+    assert.equal(devMode.hasDevRoute('?beat=collapse&qa=1&chapter=3'), false);
+  } finally {
+    globalThis.sessionStorage = previous;
+  }
+});
+
+test('production chapter pages get no TITLE button or T hotkey', () => {
+  const control = source('src/devMenuReturn.js');
+  assert.match(control, /if \(checkpoint\) createSaveStore\(\)\.markCheckpoint\(checkpoint\);\n    return;\n  \}/);
+  assert.doesNotMatch(control, /'TITLE'/);
+  assert.doesNotMatch(control, /returnToTitle/);
 });

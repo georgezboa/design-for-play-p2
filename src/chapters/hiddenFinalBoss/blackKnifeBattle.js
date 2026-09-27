@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { magicStoneSnapshot } from '../../shell/magicStones.js';
+import { DEV_MODE, devParams } from '../../devMode.js';
 
 const W = 960;
 const H = 540;
@@ -7,12 +8,12 @@ const PINK = 0xff176f;
 const CYAN = 0x43e9ff;
 const PHASES = Object.freeze(['THE EDGE', 'CROSS CUT', 'TEETH', 'FINAL VERDICT']);
 const HP_FOR = Object.freeze({ low: 18, casual: 12, hard: 6 });
-const params = new URLSearchParams(window.location.search);
+const params = devParams();
 const qaMode = params.get('qa') === '1';
 const easterEggMode = params.get('easter-egg') === '1';
 const stones = magicStoneSnapshot();
 
-if (!stones.allCollected && !import.meta.env.DEV && !qaMode && !easterEggMode) {
+if (!stones.allCollected && !DEV_MODE && !qaMode && !easterEggMode) {
   window.location.replace('/final-boss.html?from=chapter5');
 }
 
@@ -316,10 +317,10 @@ document.querySelector('#mute').addEventListener('click', (event) => {
   event.currentTarget.textContent = soundEnabled ? 'SOUND ON' : 'SOUND OFF';
 });
 
-window.render_game_to_text = () => JSON.stringify({
+if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
   scene: 'hidden-final-boss',
   entry: easterEggMode ? 'title-easter-egg' : 'five-stone-route',
-  access: { collected: stones.collected, required: stones.total, unlocked: stones.allCollected || import.meta.env.DEV || qaMode || easterEggMode },
+  access: { collected: stones.collected, required: stones.total, unlocked: stones.allCollected || DEV_MODE || qaMode || easterEggMode },
   state: gameScene?.state ?? 'loading',
   elapsed: Number((gameScene?.elapsed ?? 0).toFixed(2)),
   phase: PHASES[gameScene?.phase ?? 0],
@@ -332,5 +333,5 @@ window.render_game_to_text = () => JSON.stringify({
   attacks: gameScene?.attacks?.length ?? 0,
 });
 
-window.advanceTime = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, Math.max(0, milliseconds)));
-if (import.meta.env.DEV || qaMode) window.forceHiddenBossWin = () => gameScene?.finish(true);
+if (DEV_MODE) window.advanceTime = (milliseconds) => new Promise((resolve) => window.setTimeout(resolve, Math.max(0, milliseconds)));
+if (DEV_MODE) window.forceHiddenBossWin = () => gameScene?.finish(true);

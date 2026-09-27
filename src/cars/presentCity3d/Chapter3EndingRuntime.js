@@ -11,6 +11,7 @@ import {
 } from './chapter3EndingContent.js';
 import { RAIL_LAYOUT } from './city3dConfig.js';
 import { Chapter3VoicePlayback } from './Chapter3VoicePlayback.js';
+import { devParam } from '../../devMode.js';
 
 const INTERACTION_RADIUS = 4.2;
 
@@ -386,7 +387,7 @@ export class Chapter3EndingRuntime {
     this.elements = elements;
     this.dialogue = new Chapter3DialogueController(elements.dialogue);
     this.audio = new EndingAudio();
-    this.manualEndingClock = new URLSearchParams(window.location.search).get('endingqa') === 'manual';
+    this.manualEndingClock = devParam('endingqa') === 'manual';
     this.initialized = false;
     this.hoveredId = null;
     this.tabHeld = false;

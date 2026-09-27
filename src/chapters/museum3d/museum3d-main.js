@@ -11,6 +11,7 @@ import { createCollapseState } from './state/collapseGauntlet.js';
 import { COLLAPSE_SCRIPT, COLLAPSE_WARNING_SECONDS } from './systems/CollapseGauntletDirector.js';
 import { preloadChapter } from '../../shell/chapterPreloader.js';
 import { resolveFinalBossDestination } from '../../shell/finalBossRoute.js';
+import { DEV_MODE, devParams } from '../../devMode.js';
 
 installDevMenuReturnControl();
 installPauseMenu({ checkpointId: 'chapter-5-start' });
@@ -62,8 +63,14 @@ function stateForBeat(beat) {
   return s;
 }
 
-const params = new URLSearchParams(window.location.search);
+// Every museum query (?beat=, ?capture=, ?simlock=, ?qa-*) is a dev route:
+// devParams() is empty in production, so a shipped museum always opens in
+// the lobby. The debug coordinate HUD and version label are dev-only too.
+const params = devParams();
 const beat = params.get('beat');
+if (DEV_MODE) {
+  for (const id of ['version-label', 'runtime-coordinates']) document.getElementById(id).hidden = false;
+}
 const initialState = beat && DEBUG_BEATS.includes(beat) ? stateForBeat(beat) : createMuseumEntryState();
 const captureMode = params.get('capture') === '1' || params.get('simlock') === '1';
 const standaloneDirectionId = beat === 'echo' ? 'echo-city' : null;
@@ -73,7 +80,7 @@ const app = new Museum3DApp({
   lockOverlay: document.getElementById('lock-overlay'),
   promptEl: document.getElementById('prompt'),
   subtitleEl: document.getElementById('subtitle'),
-  coordinateEl: document.getElementById('runtime-coordinates'),
+  coordinateEl: DEV_MODE ? document.getElementById('runtime-coordinates') : null,
   minimapRoot: document.getElementById('echo-minimap'),
   minimapCanvas: document.getElementById('echo-minimap-canvas'),
   fadeEl: document.getElementById('fade'),
@@ -91,7 +98,7 @@ const app = new Museum3DApp({
   standaloneDirectionId,
 });
 
-installQaHooks(app);
+if (DEV_MODE) installQaHooks(app);
 if (params.get('simlock') === '1') app.setSimulatedLock(true);
 app.start().then(() => {
   if (captureMode && params.get('qa-view')) window.__qa.setView(params.get('qa-view'));
