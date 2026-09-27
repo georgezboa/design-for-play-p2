@@ -32,23 +32,64 @@ This register covers the production categories represented by the current integr
 - **Runtime derivative:** `/assets/music/scott-buckley-last-and-first-light.mp3`, transcoded to 128 kbps MP3 without source metadata
 - **Runtime SHA-256:** `f7ea852bc761d7b0d4a42ca586077661a1c3564f062e63830c6987b74b8e92d9`
 
-The current Chapter 5 tension score and other procedural cues are synthesized in-engine from project-authored Web Audio code rather than third-party recordings.
+### Chapter 3 — Echo City (required attribution)
+
+Chapter 3 music includes “Humoresque, Op. 101 No. 7,” arranged for piano and viola by Elias Goldstein, from the Al Goldstein collection, CC BY-SA 2.0 (https://creativecommons.org/licenses/by-sa/2.0/); “Symphony No. 7, Allegretto,” performed by John Michel, CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/); and “Prelude in E minor, Op. 28 No. 4,” performed by Ivan Ilić, CC BY 3.0 (https://creativecommons.org/licenses/by/3.0/). These recordings were converted to MP3 for the game.
+
+| Runtime file | Work | Performer / source | Licence | Source file page |
+| --- | --- | --- | --- | --- |
+| `3.2_dvorak_humoresque_no7.mp3` | Antonín Dvořák, *Humoresque*, Op. 101 No. 7 | Elias Goldstein, piano and viola; Al Goldstein collection | CC BY-SA 2.0 | https://commons.wikimedia.org/wiki/File:Dvořák_-_Humoresque_Op._101_No._7.ogg |
+| `3.6_chopin_prelude_op28_no4.mp3` | Frédéric Chopin, Prelude in E minor, Op. 28 No. 4 | Ivan Ilić | CC BY 3.0 | https://commons.wikimedia.org/wiki/File:Ivan_Ilić-Chopin_Prelude_Opus_28_n.4.ogg |
+| `3.8_beethoven_sym7_mvt2_allegretto_cello.mp3` | Ludwig van Beethoven, Symphony No. 7, Op. 92, II *Allegretto* | John Michel, cello | CC BY-SA 3.0 | https://commons.wikimedia.org/wiki/File:JOHN_MICHEL_CELLO-BEETHOVEN_SYMPHONY_7_Allegretto.ogg |
+
+Modifications: transcoded from the source Ogg Vorbis to MP3 (and, in the release build, re-encoded to 160 kbps MP3); no edits to the performances. The converted 3.2 and 3.8 files remain available under their CC BY-SA licences. Per-file SHA-256 records: `/assets/music/ch3/ASSET_MANIFEST.md`.
+
+Chapter 3 also uses these public-domain / CC0 recordings (credit given voluntarily; no attribution is required):
+
+- *Gnossienne No. 1* (Erik Satie), Jaan Patterson, CC0 1.0 — https://commons.wikimedia.org/wiki/File:Jaan_Patterson_-_05_-_Gnossiennes_No1_ric_Alfred_Leslie_Satie.ogg
+- *The Washington Post March* (John Philip Sousa), United States Marine Band, public domain (U.S. federal-government work) — https://commons.wikimedia.org/wiki/File:Washington_Post.ogg
+- Piano Sonata No. 8 “Pathétique”, II (Beethoven), Paul Pitman / Musopen, CC0 1.0 — https://commons.wikimedia.org/wiki/File:Beethoven,_Sonata_No._8_in_C_Minor_Pathetique,_Op._13_-_II._Adagio_cantabile.ogg
+- Piano Sonata No. 14 “Moonlight”, I (Beethoven), Paul Pitman / Musopen, public-domain dedication — https://commons.wikimedia.org/wiki/File:Ludwig_van_Beethoven_-_sonata_no._14_in_c_sharp_minor_%27moonlight%27,_op._27_no._2_-_i._adagio_sostenuto.ogg
+- Nocturne in D-flat major, Op. 27 No. 2 (Chopin), Frank Lévy / Musopen, public domain — https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._8_in_D-flat_major,_Op._27_No._2_(Frank_Levy).flac
+- Morning / departure (`3.9`): original project arrangement of the public-domain Largo theme from Dvořák's Symphony No. 9; project-owned recording.
+
+### Chapter 6 — All Worlds at Once
+
+- *Symphony No. 9 “From the New World”*, IV *Allegro con fuoco* (Antonín Dvořák), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Antonin_Dvorak_-_symphony_no._9_in_e_minor_%27from_the_new_world%27,_op._95_-_iv._allegro_con_fuoco.ogg (runtime edit starts at source 00:10).
+- *Pictures at an Exhibition*, X *The Great Gate of Kyiv* (Modest Mussorgsky), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_x._la_grande_porte_de_kiev_-_allegro_alla_breve._maestoso._con_grandezza.ogg
+- *Modern Industrial Pulse*, *Electro Grid Chase* and *Night Train Departure*: original project-owned cues. Details: `/assets/music/ch6/ASSET_MANIFEST.md`.
+
+### Prologue and Chapter One
+
+*Train Undertow*, *Train Resonance* and *Neon Safety Test* are original project-owned cues. Details: `/assets/music/ch1/ASSET_MANIFEST.md`.
+
+### Recordings with unresolved provenance (to be replaced before public release)
+
+The following runtime recordings are external performances of public-domain works, but **no performer, source or licence is recorded** for any of them. They are not credited here because their rights holders are unknown; they are scheduled for replacement (the replacement plan is `docs/MUSIC_REPLACEMENT_PLAN.md` in the source repository):
+
+- Chapter 4: Debussy, *The Snow Is Dancing* (`/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3`) and *Reflets dans l'eau* (`/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3`).
+- Chapter 5: Mussorgsky, *Promenade*, *The Old Castle* and *Catacombae*; Verdi, *Requiem*, *Dies irae* (`/assets/music/ch5/5.1`, `5.3`, `5.4`, `5.7`; see `/assets/music/ch5/ASSET_MANIFEST.md`). The Verdi cue is also used in the Chapter 6 false-boss movements I–II.
+- Hidden final boss: *Face the Fear* (`/assets/black-knife/audio/face-the-fear.mp3`); composer and performer unknown.
+
+Sound effects, room tones and some ambience are synthesized in-engine by project-authored Web Audio code rather than taken from third-party recordings.
 
 ## Generative and AI-assisted production
 
 - **Tencent Hunyuan 3D 3.0 / 3.1:** generated 3D source meshes for Echo City, the Museum reconstruction, environments, props and characters. Runtime assets were selected, edited, retopologized or optimized by the team. Chapter 3 per-asset details: `/assets/chapter03-3d/ASSET_MANIFEST.json` and `/assets/chapter03-3d/replacements/manifest.json`.
 - **OpenAI image generation:** title and visual-direction imagery, world panoramas, shared painterly textures, Chapter 3 surface sources and selected production reference art. Shared painterly details: `../src/assets/shared/painterly/ASSET_MANIFEST.md` in the source repository.
-- **MiniMax Hailuo H3:** opening and transition animation production sources. Shot-level records: `/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V01.json` and `/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V02.json`.
-- **Synthetic character voices:** generated English voice performances are present in Chapters 3 and 5. Their current manifests enumerate every runtime line but do not record the provider. This missing provenance is disclosed rather than guessed: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
+- **MiniMax Hailuo H3:** opening and transition animation production sources. Shot-level records (source repository, not shipped): `docs/archive/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V01.json` and `docs/archive/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V02.json`.
+- **Synthetic character voices:** generated English voice performances are present in Chapters 3 and 5, and Chapter 6 reuses selected Chapter 3 lines. Their current manifests enumerate every runtime line but do not record the provider. This missing provenance is disclosed rather than guessed: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
+- **Chapter 6 poetry-duel voices:** 61 spoken Shakespeare prompt and choice lines (`src/chapters/finalBoss/assets/voice/poetry/` in the source repository). No manifest records whether they are generated or recorded, or by whom; this is disclosed as unknown.
 - **AI-assisted development:** OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under human direction.
 
 ## Licensed source material
 
 - **Quaternius Universal Animation Library 1 and 2:** CC0 1.0. Bundled license files: `/assets/chapter03-3d/animations/QUATERNIUS_UAL1_LICENSE.txt` and `/assets/chapter03-3d/animations/QUATERNIUS_UAL2_LICENSE.txt`.
+- **Quaternius Downtown City MegaKit (Standard):** `T_Concrete_Asphalt_BaseColor.png`, source of the dark back-street paving `dark-city-cobbles.webp`; CC0 1.0. Record: `/assets/chapter03-3d/ASSET_MANIFEST.json`.
 - **Poly Haven:** `beige_wall_001`, `dirty_carpet`, `wood_table_001`, `rubber_tiles`, and `dark_wood`; CC0 1.0.
-- **ambientCG:** `Fingerprints001` and shared material sources; CC0 1.0.
-- **Kenney:** selected industrial, pipe, UI and impact source assets; CC0 1.0.
-- **Permanent Marker:** typeface by Font Diner; Apache License 2.0. Bundled license: `/fonts/PermanentMarker-LICENSE.txt`.
+- **ambientCG:** `Fingerprints001` (museum glass fingerprints); CC0 1.0.
+- **OpenGameArt — Clint Bellanger:** *16x16 Pipe Tileset* (https://opengameart.org/content/16x16-pipe-tileset), used for the Prologue mechanical-table pipe fittings; CC0. A second CC0 sheet, *Industrial Traps 2D* by Balmer (https://opengameart.org/content/industrial-traps-2d-sidescroller), is kept in the source repository as reference and is not used by the shipped build. Record: `src/assets/tutorial/mechanical-table/ASSET_PROVENANCE.md` in the source repository.
+- **Unsplash:** the eighteen Chapter 6 verification-screen photos are low-resolution derivatives of Unsplash photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee, used under the Unsplash License (https://unsplash.com/license). Per-photo IDs: `src/chapters/finalBoss/assets/captcha/SOURCES.md` in the source repository.
 
 ## Provenance rule
 

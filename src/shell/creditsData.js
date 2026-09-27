@@ -23,6 +23,82 @@ export const CREDIT_MUSIC = Object.freeze([
     localFile: '/assets/music/scott-buckley-last-and-first-light.mp3',
     note: 'Bittersweet contemporary classical · orchestra and solo violin · 07:48',
   },
+  // Entry 0 above is the credits track itself (endCredits.js / titleMenu.js
+  // play CREDIT_MUSIC[0]). The rows below are attribution only. Chapter 3's
+  // CC BY / CC BY-SA recordings must stay listed while they ship; see
+  // public/assets/music/ch3/ASSET_MANIFEST.md.
+  {
+    title: 'HUMORESQUE, OP. 101 NO. 7 (DVOŘÁK)',
+    creator: 'ELIAS GOLDSTEIN · AL GOLDSTEIN COLLECTION',
+    use: 'CHAPTER 3 · MARKET',
+    license: 'CC BY-SA 2.0',
+    source: 'https://commons.wikimedia.org/wiki/File:Dvořák_-_Humoresque_Op._101_No._7.ogg',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/2.0/',
+    note: 'Arranged for piano and viola by Elias Goldstein · converted to MP3 for the game',
+  },
+  {
+    title: 'PRELUDE IN E MINOR, OP. 28 NO. 4 (CHOPIN)',
+    creator: 'IVAN ILIĆ',
+    use: 'CHAPTER 3 · DUSK',
+    license: 'CC BY 3.0',
+    source: 'https://commons.wikimedia.org/wiki/File:Ivan_Ilić-Chopin_Prelude_Opus_28_n.4.ogg',
+    licenseUrl: 'https://creativecommons.org/licenses/by/3.0/',
+    note: 'Solo piano · converted to MP3 for the game',
+  },
+  {
+    title: 'SYMPHONY NO. 7, ALLEGRETTO (BEETHOVEN)',
+    creator: 'JOHN MICHEL, CELLO',
+    use: 'CHAPTER 3 · BURNING MESSAGE',
+    license: 'CC BY-SA 3.0',
+    source: 'https://commons.wikimedia.org/wiki/File:JOHN_MICHEL_CELLO-BEETHOVEN_SYMPHONY_7_Allegretto.ogg',
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/3.0/',
+    note: 'Cello arrangement · converted to MP3 for the game',
+  },
+  {
+    title: 'GNOSSIENNE NO. 1 (SATIE)',
+    creator: 'JAAN PATTERSON',
+    use: 'CHAPTER 3 · ARRIVAL',
+    license: 'CC0 1.0',
+    source: 'https://commons.wikimedia.org/wiki/File:Jaan_Patterson_-_05_-_Gnossiennes_No1_ric_Alfred_Leslie_Satie.ogg',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    note: 'Public-domain dedication · credited voluntarily',
+  },
+  {
+    title: 'THE WASHINGTON POST MARCH (SOUSA)',
+    creator: 'UNITED STATES MARINE BAND',
+    use: 'CHAPTER 3 · TRANSIT MINISTRY',
+    license: 'PUBLIC DOMAIN',
+    source: 'https://commons.wikimedia.org/wiki/File:Washington_Post.ogg',
+    licenseUrl: 'https://commons.wikimedia.org/wiki/File:Washington_Post.ogg',
+    note: 'U.S. federal-government work · credited voluntarily',
+  },
+  {
+    title: 'PATHÉTIQUE II · MOONLIGHT I (BEETHOVEN)',
+    creator: 'PAUL PITMAN / MUSOPEN',
+    use: 'CHAPTER 3 · SQUARE AND ARCHIVE',
+    license: 'PUBLIC DOMAIN',
+    source: 'https://commons.wikimedia.org/wiki/File:Beethoven,_Sonata_No._8_in_C_Minor_Pathetique,_Op._13_-_II._Adagio_cantabile.ogg',
+    licenseUrl: 'https://creativecommons.org/publicdomain/zero/1.0/',
+    note: 'CC0 / public-domain dedication · credited voluntarily',
+  },
+  {
+    title: 'NOCTURNE IN D-FLAT, OP. 27 NO. 2 (CHOPIN)',
+    creator: 'FRANK LÉVY / MUSOPEN',
+    use: 'CHAPTER 3 · COPPER HERON',
+    license: 'PUBLIC DOMAIN',
+    source: 'https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._8_in_D-flat_major,_Op._27_No._2_(Frank_Levy).flac',
+    licenseUrl: 'https://commons.wikimedia.org/wiki/File:Chopin_-_Nocturne_No._8_in_D-flat_major,_Op._27_No._2_(Frank_Levy).flac',
+    note: 'Credited voluntarily',
+  },
+  {
+    title: 'NEW WORLD SYMPHONY IV · GREAT GATE OF KYIV',
+    creator: 'MUSOPEN',
+    use: 'CHAPTER 6 · ECHO CITY AND PAINTED COUNTRY',
+    license: 'PUBLIC DOMAIN',
+    source: 'https://commons.wikimedia.org/wiki/File:Antonin_Dvorak_-_symphony_no._9_in_e_minor_%27from_the_new_world%27,_op._95_-_iv._allegro_con_fuoco.ogg',
+    licenseUrl: 'https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_x._la_grande_porte_de_kiev_-_allegro_alla_breve._maestoso._con_grandezza.ogg',
+    note: 'Dvořák and Mussorgsky · credited voluntarily',
+  },
 ]);
 
 export const CREDIT_GENERATIVE = Object.freeze([
@@ -47,7 +123,7 @@ export const CREDIT_GENERATIVE = Object.freeze([
   },
   {
     label: 'SYNTHETIC CHARACTER VOICES',
-    detail: 'Chapter 3 and Chapter 5 use generated English voice performances. The current audio manifests do not record the provider; attribution remains explicitly marked as incomplete.',
+    detail: 'Chapter 3 and Chapter 5 use generated English voice performances, and Chapter 6 reuses selected Chapter 3 lines. The audio manifests do not record the provider, and the source of the Chapter 6 poetry-duel voices is not recorded; attribution remains explicitly marked as incomplete.',
   },
 ]);
 
@@ -64,17 +140,22 @@ export const CREDIT_EXTERNAL = Object.freeze([
   },
   {
     label: 'AMBIENTCG',
-    detail: 'Fingerprints001 and shared material sources · CC0 1.0',
+    detail: 'Fingerprints001 museum glass fingerprints · CC0 1.0',
     source: 'https://ambientcg.com/',
   },
   {
-    label: 'KENNEY',
-    detail: 'Selected industrial, pipe, UI and impact source assets · CC0 1.0',
-    source: 'https://kenney.nl/assets',
+    label: 'QUATERNIUS DOWNTOWN CITY MEGAKIT',
+    detail: 'Concrete asphalt texture behind the Echo City back-street paving · CC0 1.0',
+    source: 'https://quaternius.com/',
   },
   {
-    label: 'PERMANENT MARKER',
-    detail: 'Google Fonts typeface by Font Diner · Apache License 2.0',
-    source: 'https://fonts.google.com/specimen/Permanent+Marker',
+    label: 'CLINT BELLANGER · OPENGAMEART',
+    detail: '16x16 Pipe Tileset, used for the Prologue mechanical-table fittings · CC0',
+    source: 'https://opengameart.org/content/16x16-pipe-tileset',
+  },
+  {
+    label: 'UNSPLASH',
+    detail: 'Chapter 6 verification-screen photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O\'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee · Unsplash License',
+    source: 'https://unsplash.com/license',
   },
 ]);
