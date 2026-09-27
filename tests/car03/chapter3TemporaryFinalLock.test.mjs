@@ -50,10 +50,11 @@ describe('Chapter 3 integrated final lock v36', () => {
     assert.equal(sourceFiles.length, 24);
     // Reopened once for the 1.0 release: the ?playtest= / ?dev= / ?focus= /
     // ?autowalk= / ?endingqa= QA routes and window QA hooks became dev-only
-    // (DEV_MODE / devParams()). Gameplay itself is unchanged.
+    // (DEV_MODE / devParams()), and car03-3d.html got its release <title> and
+    // favicon. Gameplay itself is unchanged.
     assert.equal(
       aggregateSignature(sourceFiles),
-      'f7e72653cd33abe06818565f43f4b6c7020c26a8d1ae930ee37ca71709aabad6',
+      '39e18dcd81e2ab90eef20844128df87c9dc691d63bb5f3cd0dd3611c86ed2219',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
