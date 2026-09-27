@@ -38,7 +38,7 @@ file is deleted without a replacement.
 | Head / tail | No baked fade-in or fade-out, and no more than 0.3 s of leading silence. Every cue gets its fades from the runtime. |
 | Record | Add performer, canonical file-page URL, licence and version, retrieval date and SHA-256 to that folder's `ASSET_MANIFEST.md`. If the licence is CC BY / CC BY-SA, also add the credit line to `public/CREDITS.md` and `src/shell/creditsData.js`. |
 
-Measured with `ffmpeg -af ebur128=peak=true` on the current files.
+Measured with `ffmpeg -af ebur128=peak=true` on the current files (the 2026-09-27 LAME V2 re-encode left loudness unchanged).
 
 ## Cue sheet
 
@@ -46,7 +46,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files.
 
 - **Piece:** Modest Mussorgsky, *Pictures at an Exhibition* (1874), opening *Promenade* (Allegro giusto, nel modo russico).
 - **Target file:** `public/assets/music/ch5/5.1_mussorgsky_promenade.mp3`
-- **Current:** 1:40.650 (100.65 s), 213 kbps, **−13.5 LUFS**, TP +0.5 dBTP.
+- **Current:** 1:40.676 (100.68 s), MP3 VBR ~196 kbps, **−13.5 LUFS**, TP +0.5 dBTP.
 - **Used at:** `src/chapters/museum3d/chapter05Score.js:5-16` (`lobby` and `corridor` share cue id `ch5-museum-promenade`, so walking lobby → corridor does not restart the track). Played from `src/chapters/museum3d/Museum3DApp.js:478-489` (`_syncChapterScore`).
 - **Behaviour:** loops (`loop: true`). Fade in 1.0 s, fade out 2.0 s, volume 0.46, dialogue duck −7 dB.
 - **Look for (to verify):**
@@ -58,7 +58,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files.
 
 - **Piece:** Mussorgsky, *Pictures at an Exhibition*, II. *Il vecchio castello* (The Old Castle).
 - **Target file:** `public/assets/music/ch5/5.3_mussorgsky_old_castle.mp3`
-- **Current:** 4:44.761 (284.76 s), 204 kbps, **−30.4 LUFS** (very quiet), TP −13.0 dBTP.
+- **Current:** 4:44.761 (284.76 s), MP3 VBR ~182 kbps, **−30.4 LUFS** (very quiet), TP −13.0 dBTP.
 - **Used at:** `src/chapters/museum3d/chapter05Score.js:23-28` (`echo`, id `ch5-old-castle`), played from `Museum3DApp.js:478-489`.
 - **Behaviour:** loops. Fade in 4.5 s, fade out 2.0 s, volume 0.30, duck −7 dB. The long fade and low volume make this a background bed. If the replacement is mastered at a normal level, normalise it down to about −30 LUFS or it will jump out of the mix.
 - **Look for (to verify):**
@@ -69,7 +69,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files.
 
 - **Piece:** Mussorgsky, *Pictures at an Exhibition*, *Catacombae (Sepulcrum romanum)*. It may be joined to *Cum mortuis in lingua mortua*. The current cue is 1:53, which suggests *Catacombae* with or without the *Cum mortuis* continuation.
 - **Target file:** `public/assets/music/ch5/5.4_mussorgsky_catacombae.mp3`
-- **Current:** 1:53.241 (113.24 s), 203 kbps, **−15.6 LUFS**, TP +0.7 dBTP.
+- **Current:** 1:53.241 (113.24 s), MP3 VBR ~180 kbps, **−15.6 LUFS**, TP +0.7 dBTP.
 - **Used at:** `src/chapters/museum3d/chapter05Score.js:17-22` (`labyrinth`, id `ch5-labyrinth-catacombae`), played by `src/chapters/museum/labyrinth/labyrinth-main.js:17-23`. `tests/chapter05/chapter05Music.test.mjs:27` asserts the filename.
 - **Behaviour:** loops. Fade in 1.4 s, fade out 1.2 s, volume 0.42, duck −7 dB.
 - **Look for (to verify):**
@@ -80,7 +80,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files.
 
 - **Piece:** Giuseppe Verdi, *Messa da Requiem* (1874), II. *Sequentia*, opening *Dies irae* chorus.
 - **Target file:** `public/assets/music/ch5/5.7_verdi_dies_irae.mp3`
-- **Current:** 2:02.096 (122.10 s), 245 kbps, **−15.6 LUFS**, TP +0.1 dBTP.
+- **Current:** 2:02.122 (122.12 s), MP3 VBR ~226 kbps, **−15.6 LUFS**, TP +0.1 dBTP.
 - **Used at:**
   - `src/chapters/museum3d/chapter05Score.js:29-34` (`collapse`, id `ch5-dies-irae`), played from `Museum3DApp.js:478-489`. Loops. Fade in 1.2 s, fade out 1.2 s, volume 0.42, duck −7 dB.
   - `src/chapters/finalBoss/spectacleBattle.js:77` (path) and `:183-187` (`BOSS_SCORE.falseBossVerdi`), played in `playMusic()` around `:2659-2679`. **Not looped** (`loop: false`). Fade in 0.9 s, fade out 1.8 s, volume 0.42, duck −9 dB. When the file reaches `ended`, the runtime chains into the Echo City cue (`then: 'false-boss-after-verdi'`). `tests/finalBossRoute.test.mjs:50` asserts the filename.
@@ -105,7 +105,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files.
 
 - **Piece:** Claude Debussy, *Images*, Book I (1905), No. 1 *Reflets dans l'eau*.
 - **Target file:** `public/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3`
-- **Current:** 5:32.904 (332.90 s), 172 kbps, **−29.2 LUFS** (quiet), TP −7.7 dBTP.
+- **Current:** 5:32.904 (332.90 s), MP3 VBR ~148 kbps, **−29.2 LUFS** (quiet), TP −7.7 dBTP.
 - **Used at:** loaded in `src/chapters/paintedCountry/PaintedCountryScene.js:74-76` and `DrawingStudioScene.js:64-66` (key `chapter4-drawing-music`). Played in `PaintedCountryScene.js:79-90` (volume 0.42) and `DrawingStudioScene.js:286-297` (`startMusic`, volume 0.38). Preloaded by `src/shell/chapterPreloader.js:83`.
 - **Behaviour:** Phaser sound, `loop: true`. Faded to 0 over 0.36 s when leaving the gallery (`PaintedCountryScene.js:1395`) and over 0.42 s when leaving the studio (`DrawingStudioScene.js:900`). No fade-in. The volume constants assume a quiet master, so normalise to about −29 LUFS.
 - **Look for (to verify):**
