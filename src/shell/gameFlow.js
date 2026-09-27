@@ -1,5 +1,7 @@
 import './gameFlow.css';
-import { preloadChapter } from './chapterPreloader.js';
+import { getChapterPreloadState, preloadChapter } from './chapterPreloader.js';
+import { preloadProgress } from './preloadQueue.js';
+import { SKIP_HOLD_MS, createHoldGesture, isSkipKey } from './holdToSkip.js';
 import { DEFAULT_SETTINGS, volumeForChannel } from './saveSystem.js';
 
 export const CINEMATICS = Object.freeze({
@@ -47,6 +49,11 @@ export function playCinematic({
   root.setAttribute('aria-label', label);
   root.innerHTML = `
     <div class="nf-cinematic-loading" role="status">LOADING FILM</div>
+    <div class="nf-cinematic-progress" aria-hidden="true"><span></span></div>
+    <div class="nf-cinematic-skip" aria-hidden="true">
+      <svg viewBox="0 0 36 36"><circle class="nf-skip-track" cx="18" cy="18" r="15"/><circle class="nf-skip-fill" cx="18" cy="18" r="15" pathLength="100"/></svg>
+      <span>HOLD TO SKIP</span>
+    </div>
   `;
   const video = sharedCinematicVideo(label);
   video.pause();
@@ -57,9 +64,126 @@ export function playCinematic({
   root.prepend(video);
   document.body.append(root);
   let preloadPromise = null;
+  let preloadSettled = false;
   const beginPreload = () => {
-    if (!preloadPromise && preloadChapterId) preloadPromise = preloadChapter(preloadChapterId);
+    if (!preloadPromise && preloadChapterId) {
+      preloadPromise = preloadChapter(preloadChapterId);
+      preloadPromise.then(() => { preloadSettled = true; });
+    }
     return preloadPromise;
+  };
+
+  // ---------- hold to skip ----------
+  // Any input reveals a small prompt; holding Space / Enter / Escape or a
+  // mouse button for about a second skips the film. Skipping runs the same
+  // completion path as the film ending, so preload hard-gates still apply.
+  const skipPrompt = root.querySelector('.nf-cinematic-skip');
+  const hold = createHoldGesture();
+  let holdFrame = 0;
+  let promptTimer = 0;
+  const showPrompt = () => {
+    skipPrompt.classList.add('is-visible');
+    window.clearTimeout(promptTimer);
+    promptTimer = window.setTimeout(() => {
+      if (!hold.holding) skipPrompt.classList.remove('is-visible');
+    }, 2600);
+  };
+  let holdTimer = 0;
+  // Returns true once the hold has completed (and the film was skipped).
+  const updateHold = () => {
+    const progress = hold.progress(performance.now());
+    skipPrompt.style.setProperty('--nf-skip-progress', String(progress));
+    skipPrompt.classList.toggle('is-holding', hold.holding);
+    if (!hold.completed) return false;
+    skip();
+    return true;
+  };
+  // Frames only animate the ring; a timer guarantees completion even when a
+  // heavy scene underneath starves requestAnimationFrame.
+  const holdFrameStep = () => {
+    holdFrame = 0;
+    if (updateHold() || settled || !hold.holding) return;
+    holdFrame = requestAnimationFrame(holdFrameStep);
+  };
+  const holdTimerStep = () => {
+    holdTimer = 0;
+    if (updateHold() || settled || !hold.holding) return;
+    holdTimer = window.setTimeout(holdTimerStep, 50);
+  };
+  const pressSkip = (source) => {
+    if (settled) return;
+    showPrompt();
+    hold.press(source, performance.now());
+    if (!holdFrame) holdFrame = requestAnimationFrame(holdFrameStep);
+    if (!holdTimer) holdTimer = window.setTimeout(holdTimerStep, SKIP_HOLD_MS);
+  };
+  const releaseSkip = (source) => {
+    hold.release(source);
+    if (!hold.holding) {
+      window.clearTimeout(holdTimer);
+      holdTimer = 0;
+      skipPrompt.style.setProperty('--nf-skip-progress', '0');
+      skipPrompt.classList.remove('is-holding');
+      showPrompt();
+    }
+  };
+  const onKeyDown = (event) => {
+    if (settled) return;
+    showPrompt();
+    if (!isSkipKey(event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (!event.repeat) pressSkip(`key:${event.code || event.key}`);
+  };
+  const onKeyUp = (event) => {
+    if (!isSkipKey(event)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    releaseSkip(`key:${event.code || event.key}`);
+  };
+  const onPointerDown = (event) => {
+    if (settled || event.target.closest?.('.nf-cinematic-resume')) return;
+    event.preventDefault();
+    pressSkip(`pointer:${event.pointerId}`);
+  };
+  const onPointerUp = (event) => releaseSkip(`pointer:${event.pointerId}`);
+  const onBlur = () => {
+    hold.releaseAll();
+    releaseSkip('blur');
+  };
+  const detachSkip = () => {
+    window.removeEventListener('keydown', onKeyDown, true);
+    window.removeEventListener('keyup', onKeyUp, true);
+    window.removeEventListener('pointerup', onPointerUp, true);
+    window.removeEventListener('pointercancel', onPointerUp, true);
+    window.removeEventListener('blur', onBlur);
+    root.removeEventListener('pointerdown', onPointerDown);
+    if (holdFrame) cancelAnimationFrame(holdFrame);
+    holdFrame = 0;
+    window.clearTimeout(holdTimer);
+    holdTimer = 0;
+    window.clearTimeout(promptTimer);
+    skipPrompt.classList.remove('is-visible', 'is-holding');
+  };
+  // Capture phase on window runs ahead of gameplay listeners, so the skip
+  // keys never leak into the scene underneath the film.
+  window.addEventListener('keydown', onKeyDown, true);
+  window.addEventListener('keyup', onKeyUp, true);
+  window.addEventListener('pointerup', onPointerUp, true);
+  window.addEventListener('pointercancel', onPointerUp, true);
+  window.addEventListener('blur', onBlur);
+  root.addEventListener('pointerdown', onPointerDown);
+
+  // ---------- preparing the next chapter ----------
+  const progressBar = root.querySelector('.nf-cinematic-progress span');
+  const renderPreparing = (state = getChapterPreloadState(preloadChapterId)) => {
+    const status = root.querySelector('.nf-cinematic-loading');
+    const percent = Math.round(preloadProgress(state) * 100);
+    if (status) status.textContent = `PREPARING EVERY OBJECT · PLEASE WAIT · ${percent}%`;
+    if (progressBar) progressBar.style.width = `${percent}%`;
+  };
+  const onPreloadProgress = (event) => {
+    if (event.detail?.chapterId === preloadChapterId) renderPreparing(event.detail);
   };
 
   let settled = false;
@@ -68,10 +192,17 @@ export function playCinematic({
   const finish = () => {
     if (settled) return;
     settled = true;
+    detachSkip();
+    video.pause();
+    root.querySelector('.nf-cinematic-resume')?.remove();
+    beginPreload();
+    // A hard-gated route that is still loading keeps the overlay black and
+    // shows live progress instead of fading back to the previous scene.
+    const holdForPreload = waitForPreload && Boolean(preloadPromise) && !preloadSettled;
     // The ending credits replace this overlay in the same document. Keeping
     // the overlay black until that screen mounts prevents the finished boss
     // frame from flashing through between the film and the credits.
-    if (preserveBlackout) {
+    if (preserveBlackout || holdForPreload) {
       root.classList.add('is-blackout');
       video.style.opacity = '0';
     } else {
@@ -80,9 +211,15 @@ export function playCinematic({
     window.setTimeout(async () => {
       if (beginPreload()) {
         if (waitForPreload) {
-          const status = root.querySelector('.nf-cinematic-loading');
-          if (status) status.textContent = 'PREPARING EVERY OBJECT · PLEASE WAIT';
+          if (holdForPreload && !preloadSettled) {
+            root.classList.add('is-preparing');
+            renderPreparing();
+            window.addEventListener('nightfall:preload', onPreloadProgress);
+          }
+          // The preload job settles on its own: every request has a stall
+          // timeout and the job a hard ceiling (see preloadQueue.js).
           await preloadPromise;
+          window.removeEventListener('nightfall:preload', onPreloadProgress);
         } else {
           await Promise.race([
             preloadPromise,
@@ -97,6 +234,11 @@ export function playCinematic({
       await onComplete?.();
       resolvePlayback();
     }, 260);
+  };
+  const skip = () => {
+    if (settled) return;
+    root.dataset.skipped = 'true';
+    finish();
   };
   video.addEventListener('playing', beginPreload, { once: true });
   video.addEventListener('canplay', () => root.classList.add('is-ready'), { once: true });
@@ -123,7 +265,7 @@ export function playCinematic({
     resume.focus();
   });
 
-  activePlayback = { id, root, video, promise, finish, beginPreload, requirePreloadReady: waitForPreload };
+  activePlayback = { id, root, video, promise, finish, skip, beginPreload, requirePreloadReady: waitForPreload };
   return promise;
 }
 

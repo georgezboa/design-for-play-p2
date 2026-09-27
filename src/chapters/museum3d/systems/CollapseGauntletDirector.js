@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { reducedMotionActive } from '../../../shell/motion.js';
 import {
   COLLAPSE_DOOR_PRESSURE_X,
   COLLAPSE_ENTRY,
@@ -221,6 +222,11 @@ function makeKeyInsertionRig() {
 }
 
 export class CollapseGauntletDirector {
+  // Read live: the OS preference or the in-game REDUCE MOTION setting.
+  get _reducedMotion() {
+    return reducedMotionActive();
+  }
+
   constructor({ ctx, root, materials, cases, corridorLights, ceilingFixtures = [], finalDoor }) {
     this.ctx = ctx;
     this.root = root;
@@ -267,7 +273,6 @@ export class CollapseGauntletDirector {
     this._displayedDoorSlots = 0;
     this._storyStarted = false;
     this._blockade = null;
-    this._reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches === true;
   }
 
   enter(snapshot) {

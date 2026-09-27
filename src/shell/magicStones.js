@@ -10,9 +10,10 @@ export const MAGIC_STONES = Object.freeze([
 
 const stoneById = (id) => MAGIC_STONES.find((stone) => stone.id === id);
 
-export function magicStoneSnapshot(storage = globalThis.localStorage) {
+// `slot` defaults to the active save slot.
+export function magicStoneSnapshot(storage = globalThis.localStorage, { slot = null } = {}) {
   const store = createSaveStore(storage);
-  const save = store.readAll()[store.getActiveSlot()];
+  const save = store.readAll()[slot ?? store.getActiveSlot()];
   const collected = [...new Set(save?.magicStones ?? [])].filter((id) => stoneById(id));
   return {
     collected,
@@ -21,6 +22,11 @@ export function magicStoneSnapshot(storage = globalThis.localStorage) {
     allCollected: MAGIC_STONES.every(({ id }) => collected.includes(id)),
     missing: MAGIC_STONES.filter(({ id }) => !collected.includes(id)).map(({ id }) => id),
   };
+}
+
+// One entry per stone in the registry, in order, marking which are held.
+export function magicStoneRow(snapshot = magicStoneSnapshot()) {
+  return MAGIC_STONES.map(({ id, name }) => ({ id, name, held: snapshot.collected.includes(id) }));
 }
 
 export function collectMagicStone(id, storage = globalThis.localStorage) {

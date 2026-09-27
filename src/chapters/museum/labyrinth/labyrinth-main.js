@@ -4,15 +4,19 @@ import { CELL, VIEW } from './labyrinthData.js';
 import { LABYRINTH_CHAPTER05_CONTRACT } from './chapter05LabyrinthContract.js';
 import { installDevMenuReturnControl } from '../../../devMenuReturn.js';
 import { installPauseMenu } from '../../../shell/pauseMenu.js';
+import { CHAPTER_CONTROLS } from '../../../shell/chapterControls.js';
+import { installPhaserMotionGuard } from '../../../shell/motion.js';
 import { music } from '../../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from '../../museum3d/chapter05Score.js';
 import { DEV_MODE, devRoutesEnabled } from '../../../devMode.js';
+
+installPhaserMotionGuard(Phaser);
 
 installDevMenuReturnControl();
 // The Labyrinth is commonly embedded inside the Museum. Opt in explicitly so
 // its own ESC handler pauses the Phaser scene before the iframe's old exit
 // listener can consume the key.
-installPauseMenu({ checkpointId: 'chapter-5-start', allowEmbedded: true });
+installPauseMenu({ checkpointId: 'chapter-5-start', allowEmbedded: true, controls: CHAPTER_CONTROLS.labyrinth });
 
 const labyrinthScore = CHAPTER5_SCORE.labyrinth;
 music.play(labyrinthScore.id, {

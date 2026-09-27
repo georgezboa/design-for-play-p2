@@ -17,7 +17,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   masterVolume: 80,
   musicVolume: 70,
   sfxVolume: 85,
-  subtitles: true,
   reducedMotion: false,
   textScale: 100,
 });
@@ -135,7 +134,6 @@ export function applySettings(settings = readSettings()) {
   const root = document.documentElement;
   root.style.setProperty('--nightfall-text-scale', String(settings.textScale / 100));
   root.dataset.reducedMotion = settings.reducedMotion ? 'true' : 'false';
-  root.dataset.subtitles = settings.subtitles ? 'true' : 'false';
   document.querySelectorAll('audio, video').forEach((media) => {
     media.volume = volumeForChannel(settings, media.dataset?.nightfallAudioChannel);
   });
@@ -144,8 +142,11 @@ export function applySettings(settings = readSettings()) {
   return settings;
 }
 
-export function launchCheckpoint(checkpointId, { replace = false } = {}) {
-  const checkpoint = checkpointById(checkpointId) ?? CHECKPOINTS[0];
+// `route` overrides the checkpoint's default page; the title menu passes the
+// resolved final-boss page for a Chapter 6 save (see finalBossRoute.js).
+export function launchCheckpoint(checkpointId, { replace = false, route = null } = {}) {
+  const base = checkpointById(checkpointId) ?? CHECKPOINTS[0];
+  const checkpoint = route ? { ...base, route } : base;
   sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
   if (checkpoint.launch) sessionStorage.setItem('nightfall.pendingLaunch.v1', checkpoint.launch);
   if (checkpoint.route === '/' && window.location.pathname === '/') {
@@ -166,11 +167,35 @@ export function hasDismissedTitle(storage = globalThis.sessionStorage) {
   return storage?.getItem('nightfall.titleDismissed.v1') === '1';
 }
 
+// The window a title exit should navigate: the top-level page when this one
+// is embedded (the Museum hosts the Labyrinth and other wings in iframes),
+// otherwise this window. A cross-origin parent cannot be navigated.
+export function titleNavigationTarget(win = globalThis.window) {
+  try {
+    if (win?.top && win.top !== win && win.top.location.origin === win.location.origin) return win.top;
+  } catch { /* cross-origin parent */ }
+  return win;
+}
+
 export function returnToTitle(storage = globalThis.sessionStorage) {
   storage?.removeItem('nightfall.titleDismissed.v1');
   storage?.removeItem('nightfall.pendingLaunch.v1');
   storage?.removeItem('nightfall.hidden-router.v1');
-  window.location.assign('/');
+  titleNavigationTarget(window).location.assign('/');
+}
+
+export const TITLE_REQUEST_EVENT = 'nightfall:request-title';
+export const RETURN_TO_TITLE_PROMPT = 'Return to the title screen? Unsaved progress since the last checkpoint will be lost.';
+
+// Ask before leaving a chapter. A page with the shared pause menu shows its
+// in-game confirmation (it cancels this event); anything else falls back to
+// the browser dialog.
+export function requestReturnToTitle({ confirm = globalThis.confirm } = {}) {
+  const event = new CustomEvent(TITLE_REQUEST_EVENT, { cancelable: true });
+  if (globalThis.dispatchEvent?.(event) === false) return false;
+  if (typeof confirm === 'function' && !confirm(RETURN_TO_TITLE_PROMPT)) return false;
+  returnToTitle();
+  return true;
 }
 
 export function formatSave(save) {

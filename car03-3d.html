@@ -674,6 +674,14 @@
           transform-origin: right bottom;
         }
       }
+
+      /* TEXT SIZE setting (title / pause menu) scales dialogue and HUD text. */
+      .dialogue-speaker { font-size: calc(13px * var(--nightfall-text-scale, 1)); }
+      .dialogue-text { font-size: calc(clamp(18px, 1.55vw, 21px) * var(--nightfall-text-scale, 1)); }
+      .dialogue-choice { font-size: calc(15px * var(--nightfall-text-scale, 1)); }
+      .dialogue-hint { font-size: calc(11px * var(--nightfall-text-scale, 1)); }
+      .walk-bark { font-size: calc(15px * var(--nightfall-text-scale, 1)); }
+      .evidence-body { font-size: calc(20px * var(--nightfall-text-scale, 1)); }
     </style>
   </head>
   <body>

@@ -82,11 +82,18 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(source('src/chapters/museum3d/chapter05Score.js'), /ch5-dies-irae/);
 });
 
-test('the shared ESC pause menu exposes resume, save, settings and title exit', () => {
+test('the shared ESC pause menu exposes resume, settings and a confirmed title exit', () => {
   const pause = source('src/shell/pauseMenu.js');
-  for (const label of ['RESUME', 'SAVE', 'SETTINGS', 'RETURN TO TITLE']) {
+  for (const label of ['RESUME', 'SETTINGS', 'RETURN TO TITLE', 'CANCEL']) {
     assert.match(pause, new RegExp(`action\\('${label}'`));
   }
+  // No SAVE button: the menu reports the saved checkpoint instead of
+  // re-marking the chapter start and claiming the journey was saved.
+  assert.doesNotMatch(pause, /action\('SAVE'/);
+  assert.doesNotMatch(pause, /JOURNEY SAVED/);
+  assert.match(pause, /LAST CHECKPOINT · CHAPTER/);
+  assert.match(pause, /action\('RETURN TO TITLE', showConfirm/);
+  assert.match(pause, /Unsaved progress since the last checkpoint will be lost\./);
   assert.match(pause, /event\.key !== 'Escape'/);
   assert.match(pause, /pausedPhaserScenes = game\.scene\.getScenes\(true\)/);
   assert.match(pause, /pausedPhaserScenes\.forEach/);

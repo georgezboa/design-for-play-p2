@@ -16,9 +16,12 @@
         align-items: center;
         justify-content: center;
       }
+      /* Fit the 1280×800 stage inside any window. A fixed 800px box centred
+         in a shorter (e.g. 16:9) window pushed its top edge — and the KEYS /
+         LIVES HUD — off-screen. */
       #game {
-        width: 1280px;
-        height: 800px;
+        width: min(1280px, 100vw);
+        height: min(800px, 100vh);
         box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
       }
       .embedded body { background: #07090b; overflow: hidden; }
@@ -31,6 +34,7 @@
         display: block;
         width: 100% !important;
         height: 100% !important;
+        margin: 0 !important;
         object-fit: contain;
       }
     </style>

@@ -51,7 +51,8 @@ const poetryVoice = (id) => poetryVoiceUrls[`./assets/voice/poetry/${id}.mp3`] |
 import { CINEMATICS, playCinematic } from '../../shell/gameFlow.js';
 import { showEndCredits } from '../../shell/endCredits.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
-import { createSaveStore } from '../../shell/saveSystem.js';
+import { createSaveStore, readSettings, volumeForChannel } from '../../shell/saveSystem.js';
+import { reducedMotionActive } from '../../shell/motion.js';
 import { DEV_MODE, devParam } from '../../devMode.js';
 
 // Runtime files under public/ are referenced by their served path rather than
@@ -272,8 +273,11 @@ const DIFFICULTY = {
 };
 
 let difficulty = 'casual';
-let shakeEnabled = true;
+// The in-fight toggles start from the global settings; REDUCE MOTION (in-game
+// or OS) overrides both at the moment of each shake or flash.
+let shakeEnabled = !reducedMotionActive();
 let flashEnabled = false;
+const globalBus = (channel) => volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? readSettings(), channel);
 let soundEnabled = true;
 
 function shadows(root) {
@@ -536,7 +540,7 @@ class SpectacleBattle {
     this.trauma = 0;
     this.dialoguePause = false;
     this.voiceAudio = typeof Audio === 'undefined' ? null : new Audio();
-    if (this.voiceAudio) { this.voiceAudio.preload = 'auto'; this.voiceAudio.playsInline = true; this.voiceAudio.volume = 0.9; }
+    if (this.voiceAudio) { this.voiceAudio.preload = 'auto'; this.voiceAudio.playsInline = true; this.voiceAudio.volume = 0.9 * globalBus('master'); }
     this.voiceState = { playing: false, speaker: null, tone: null, text: null };
     this.echoOutcome = null;
     this.echoQuiz = { attempts: 0, correct: 0, used: new Set(), current: null };
@@ -2235,7 +2239,7 @@ class SpectacleBattle {
     this.hitStop = 0.07;
     this.trauma = Math.min(1, this.trauma + 0.55);
     this.spawnImpact(this.player.x, 1.4 + this.player.y, this.player.z, PINK);
-    if (flashEnabled) { this.renderer.domElement.classList.add('hit-flash'); setTimeout(() => this.renderer.domElement.classList.remove('hit-flash'), 70); }
+    if (flashEnabled && !reducedMotionActive()) { this.renderer.domElement.classList.add('hit-flash'); setTimeout(() => this.renderer.domElement.classList.remove('hit-flash'), 70); }
     this.tone(63, 0.22, 'sawtooth', 0.055);
     if (this.player.hp <= 0) this.respawnPlayer();
   }
@@ -2573,7 +2577,7 @@ class SpectacleBattle {
       this.cameraTarget.lerp(target, 1 - Math.exp(-dt * 4));
     }
     this.trauma = Math.max(0, this.trauma - dt * 1.45);
-    const shake = shakeEnabled ? this.trauma * this.trauma : 0;
+    const shake = shakeEnabled && !reducedMotionActive() ? this.trauma * this.trauma : 0;
     const position = this.camera.position.clone();
     position.x += Math.sin(this.elapsed * 47) * shake * 0.42;
     position.y += Math.sin(this.elapsed * 61) * shake * 0.22;
@@ -2649,7 +2653,7 @@ class SpectacleBattle {
       const oscillator = this.audioContext.createOscillator();
       const gain = this.audioContext.createGain();
       oscillator.type = type; oscillator.frequency.value = frequency;
-      gain.gain.setValueAtTime(volume, this.audioContext.currentTime);
+      gain.gain.setValueAtTime(Math.max(0.0001, volume * globalBus('sfx')), this.audioContext.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.0001, this.audioContext.currentTime + duration);
       oscillator.connect(gain).connect(this.audioContext.destination);
       oscillator.start(); oscillator.stop(this.audioContext.currentTime + duration);
@@ -2713,7 +2717,17 @@ class SpectacleBattle {
 }
 
 const game = new SpectacleBattle(document.querySelector('#game'));
-installPauseMenu({ checkpointId: 'chapter-6-start' });
+installPauseMenu({
+  checkpointId: 'chapter-6-start',
+  controls: [
+    ['MOVE', 'WASD / ARROWS'],
+    ['JUMP / CONTEXT ACTION', 'SPACE'],
+    ['DASH', 'SHIFT / X'],
+    ['PAINT (MOVEMENT IV)', 'HOLD RIGHT MOUSE · ABSORB — HOLD LEFT MOUSE · RETURN'],
+    ['FULLSCREEN', 'F'],
+    ['PAUSE', 'ESC'],
+  ],
+});
 createSaveStore().markCheckpoint('chapter-6-start');
 
 // Chapter 5 already supplies the menu-to-boss transition through its red-lit
@@ -2839,6 +2853,23 @@ document.querySelectorAll('.segmented').forEach((group) => group.addEventListene
   if (group.id === 'shake') shakeEnabled = value === 'on';
   if (group.id === 'flash') flashEnabled = value === 'on';
 }));
+
+const syncMotionToggles = () => {
+  const reduced = reducedMotionActive();
+  if (reduced) shakeEnabled = false;
+  [['shake', shakeEnabled], ['flash', flashEnabled && !reduced]].forEach(([id, on]) => {
+    document.querySelectorAll(`#${id} button`).forEach((button) => {
+      button.classList.toggle('active', (button.dataset.value === 'on') === on);
+      button.disabled = reduced;
+      button.title = reduced ? 'Reduce Motion is on in Settings' : '';
+    });
+  });
+};
+syncMotionToggles();
+window.addEventListener('nightfall:settings', () => {
+  syncMotionToggles();
+  if (game.voiceAudio) game.voiceAudio.volume = 0.9 * globalBus('master');
+});
 
 document.querySelector('#start').addEventListener('click', () => { document.querySelector('#menu').classList.add('hidden'); game.begin(); });
 document.querySelector('#again').addEventListener('click', () => {

@@ -6,15 +6,23 @@ import { installPauseMenu } from './shell/pauseMenu.js';
 import { CINEMATICS, navigateAfterCinematic } from './shell/gameFlow.js';
 import { createSaveStore } from './shell/saveSystem.js';
 import { DEV_MODE, devParams } from './devMode.js';
+import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
+import { reducedMotionActive } from './shell/motion.js';
 
 installDevMenuReturnControl();
-// Echo City is entered from the chapter list as a self-contained 3D page.
-// Escape always returns there, so every city checkpoint has a reliable exit.
+// Escape opens the shared pause menu like every other chapter; leaving for
+// the title goes through its confirmation. An open evidence document still
+// closes first.
 installPauseMenu({
   checkpointId: 'chapter-3-start',
+  controls: CHAPTER_CONTROLS.echoCity,
   onEscape: () => {
-    window.location.assign('/');
-    return true;
+    const viewer = window.chapter3Runtime?.evidenceViewer;
+    if (viewer?.active) {
+      viewer.close();
+      return true;
+    }
+    return false;
   },
 });
 
@@ -109,6 +117,19 @@ const gameplayRuntime = new Chapter3OpeningRuntime({
   });
 
 preview.attachGameplayRuntime(gameplayRuntime);
+
+// While the pause menu is open the city holds still and ignores keys; camera
+// shake respects REDUCE MOTION (in-game setting or OS preference).
+const runCityFrame = preview.update.bind(preview);
+preview.update = (dt) => {
+  if (!globalThis.NIGHTFALL_PAUSED) runCityFrame(dt);
+};
+const handleCityKey = gameplayRuntime.handleKeyDown.bind(gameplayRuntime);
+gameplayRuntime.handleKeyDown = (event) => (globalThis.NIGHTFALL_PAUSED ? true : handleCityKey(event));
+const triggerCityShake = preview.triggerCameraShake.bind(preview);
+preview.triggerCameraShake = (...args) => {
+  if (!reducedMotionActive()) triggerCityShake(...args);
+};
 
 if (DEV_MODE) window.render_game_to_text = () => {
   const city = JSON.parse(preview.textState());

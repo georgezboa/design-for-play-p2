@@ -19,8 +19,8 @@ export const FINAL_BOSS_DESTINATIONS = Object.freeze({
   }),
 });
 
-export function resolveFinalBossDestination(storage = globalThis.localStorage) {
-  const stones = magicStoneSnapshot(storage);
+export function resolveFinalBossDestination(storage = globalThis.localStorage, { slot = null } = {}) {
+  const stones = magicStoneSnapshot(storage, { slot });
   const destination = stones.allCollected
     ? FINAL_BOSS_DESTINATIONS.blackKnife
     : FINAL_BOSS_DESTINATIONS.conductor;
@@ -31,4 +31,17 @@ export function resolveFinalBossDestination(storage = globalThis.localStorage) {
     allStonesCollected: stones.allCollected,
     missingStoneIds: Object.freeze([...stones.missing]),
   });
+}
+
+// Pages a saved checkpoint resumes on when they differ from the checkpoint's
+// default route. Chapter 6 is one checkpoint with two fights: Continue / Load
+// must reach the same boss the Museum would have sent this slot to.
+const CHAPTER_6_RESUME_ROUTES = Object.freeze({
+  conductor: '/final-boss.html',
+  'black-knife': '/hidden-final-boss.html',
+});
+
+export function resolveCheckpointRoute(checkpointId, { storage = globalThis.localStorage, slot = null } = {}) {
+  if (checkpointId !== 'chapter-6-start') return null;
+  return CHAPTER_6_RESUME_ROUTES[resolveFinalBossDestination(storage, { slot }).id];
 }

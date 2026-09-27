@@ -1,3 +1,11 @@
+import {
+  PRELOAD_JOB_CEILING_MS,
+  PRELOAD_STALL_TIMEOUT_MS,
+  cacheResource,
+  createCeiling,
+  runQueue,
+} from './preloadQueue.js';
+
 const CHAPTER03_MODELS = [
   'old_municipal_archive_web.glb', 'transit_ministry_web.glb', 'scanner_tower_web.glb',
   'clock_tower_web.glb', 'reunion_fountain_web.glb', 'municipal_tram_web.glb',
@@ -128,25 +136,15 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
 });
 
 const jobs = new Map();
+const jobStates = new Map();
 
 function absolute(url, base = window.location.href) {
   return new URL(url, base).href;
 }
 
 function dispatchProgress(detail) {
+  jobStates.set(detail.chapterId, detail);
   globalThis.dispatchEvent?.(new CustomEvent('nightfall:preload', { detail }));
-}
-
-async function cacheResource(url, signal, priority) {
-  const response = await fetch(url, {
-    cache: 'force-cache',
-    credentials: 'same-origin',
-    ...(priority ? { priority } : {}),
-    signal,
-  });
-  if (!response.ok) throw new Error(`Preload failed (${response.status}): ${url}`);
-  await response.arrayBuffer();
-  return url;
 }
 
 function discoverPageResources(html, route) {
@@ -159,40 +157,29 @@ function discoverPageResources(html, route) {
     .map((url) => absolute(url, absolute(route)));
 }
 
-async function runQueue(urls, signal, onSettled, concurrency = 2, priority = null) {
-  let index = 0;
-  const worker = async () => {
-    while (index < urls.length && !signal?.aborted) {
-      const url = urls[index++];
-      try {
-        await cacheResource(url, signal, priority);
-        onSettled(url, true);
-      } catch (error) {
-        if (error?.name !== 'AbortError') onSettled(url, false, error);
-      }
-    }
-  };
-  await Promise.all(Array.from({ length: Math.min(concurrency, urls.length) }, worker));
-}
-
-export function preloadChapter(chapterId, { signal } = {}) {
+export function preloadChapter(chapterId, {
+  signal,
+  stallTimeoutMs = PRELOAD_STALL_TIMEOUT_MS,
+  ceilingMs = PRELOAD_JOB_CEILING_MS,
+} = {}) {
   if (jobs.has(chapterId)) return jobs.get(chapterId);
   const profile = CHAPTER_PRELOAD_PROFILES[chapterId];
   if (!profile || typeof window === 'undefined') return Promise.resolve(null);
 
   const state = { chapterId, status: 'loading', loaded: 0, failed: 0, total: profile.assets.length + 1 };
   dispatchProgress({ ...state });
+  // A stalled or missing request must never hold a hard-gated transition
+  // forever: each resource has a stall timeout and the job has a ceiling.
+  const ceiling = createCeiling(profile.ceilingMs ?? ceilingMs, signal);
   const promise = (async () => {
     const route = absolute(profile.route);
     let pageResources = [];
     try {
-      const response = await fetch(route, { cache: 'force-cache', credentials: 'same-origin', signal });
-      if (!response.ok) throw new Error(`Preload failed (${response.status}): ${route}`);
-      const html = await response.text();
+      const html = await cacheResource(route, { signal: ceiling.signal, stallTimeoutMs, as: 'text' });
       pageResources = discoverPageResources(html, route);
       state.loaded += 1;
     } catch (error) {
-      if (error?.name === 'AbortError') throw error;
+      if (error?.name === 'AbortError' && !ceiling.timedOut()) throw error;
       state.failed += 1;
     }
 
@@ -203,23 +190,35 @@ export function preloadChapter(chapterId, { signal } = {}) {
     const urls = [...new Set([...profile.assets.map((url) => absolute(url)), ...pageResources])];
     state.total = urls.length + 1;
     dispatchProgress({ ...state });
-    await runQueue(urls, signal, (_url, ok) => {
-      if (ok) state.loaded += 1;
-      else state.failed += 1;
-      dispatchProgress({ ...state });
-    }, profile.concurrency ?? 2, profile.priority);
-    state.status = state.failed ? 'partial' : 'ready';
+    await runQueue(urls, {
+      signal: ceiling.signal,
+      onSettled: (_url, ok) => {
+        if (ok) state.loaded += 1;
+        else state.failed += 1;
+        dispatchProgress({ ...state });
+      },
+      concurrency: profile.concurrency ?? 2,
+      priority: profile.priority,
+      stallTimeoutMs,
+    });
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
+    state.status = ceiling.timedOut() ? 'timeout' : state.failed ? 'partial' : 'ready';
     dispatchProgress({ ...state });
     return { ...state };
   })().catch((error) => {
     const result = { ...state, status: error?.name === 'AbortError' ? 'cancelled' : 'partial', error };
     dispatchProgress(result);
     return result;
-  });
+  }).finally(() => ceiling.clear());
 
   jobs.set(chapterId, promise);
   globalThis.NIGHTFALL_PRELOADS = jobs;
   return promise;
+}
+
+// Latest progress snapshot for a job ({ loaded, failed, total, status }).
+export function getChapterPreloadState(chapterId) {
+  return jobStates.get(chapterId) ?? null;
 }
 
 export function getChapterPreload(chapterId) {
@@ -228,4 +227,5 @@ export function getChapterPreload(chapterId) {
 
 export function resetChapterPreloadsForTests() {
   jobs.clear();
+  jobStates.clear();
 }

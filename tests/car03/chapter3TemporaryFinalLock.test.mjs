@@ -48,13 +48,13 @@ describe('Chapter 3 integrated final lock v37', () => {
       ...filesBelow('src/cars/presentCity3d', (file) => /\.(?:js|png)$/.test(file)),
     ];
     assert.equal(sourceFiles.length, 24);
-    // Reopened once for the 1.0 release: the ?playtest= / ?dev= / ?focus= /
-    // ?autowalk= / ?endingqa= QA routes and window QA hooks became dev-only
-    // (DEV_MODE / devParams()), and car03-3d.html got its release <title> and
-    // favicon. Gameplay itself is unchanged.
+    // Reopened for the 1.0 release: QA routes/hooks became dev-only (DEV_MODE),
+    // car03-3d.html got its release <title>/favicon, Escape opens the shared
+    // pause menu, the city freezes while paused, camera shake honours REDUCE
+    // MOTION and TEXT SIZE scales dialogue. Gameplay itself is unchanged.
     assert.equal(
       aggregateSignature(sourceFiles),
-      '39e18dcd81e2ab90eef20844128df87c9dc691d63bb5f3cd0dd3611c86ed2219',
+      '39ca9afc5c773d6c07867cbd02d4b94cb9cb397edf315528873358eb534965c7',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

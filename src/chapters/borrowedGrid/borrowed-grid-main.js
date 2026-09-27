@@ -3,6 +3,10 @@ import { BorrowedGridCurrentScene, BORROWED_GRID_CURRENT_VIEW } from './Borrowed
 import { BORROWED_GRID_CHAPTER05_CONTRACT } from './chapter05BorrowedGridContract.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
 import { DEV_MODE, devParams } from '../../devMode.js';
+import { installPhaserMotionGuard } from '../../shell/motion.js';
+import '../../shell/canvasFocus.css';
+
+installPhaserMotionGuard(Phaser);
 
 installDevMenuReturnControl();
 
