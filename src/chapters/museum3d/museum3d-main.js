@@ -7,13 +7,14 @@ import { installQaHooks } from './qa/museum3dQaState.js';
 import { DEBUG_BEATS } from './config.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
+import { CHAPTER_CONTROLS } from '../../shell/chapterControls.js';
 import { createCollapseState } from './state/collapseGauntlet.js';
 import { COLLAPSE_SCRIPT, COLLAPSE_WARNING_SECONDS } from './systems/CollapseGauntletDirector.js';
 import { preloadChapter } from '../../shell/chapterPreloader.js';
 import { resolveFinalBossDestination } from '../../shell/finalBossRoute.js';
 
 installDevMenuReturnControl();
-installPauseMenu({ checkpointId: 'chapter-5-start' });
+installPauseMenu({ checkpointId: 'chapter-5-start', controls: CHAPTER_CONTROLS.museum });
 
 // Gate 1 debug routes: museum-3d.html?beat=corridor|echo|return starts at
 // that beat with the minimum legal preceding state already applied.

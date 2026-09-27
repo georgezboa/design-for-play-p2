@@ -80,7 +80,7 @@ test('Door 4 exposes one formal Chapter 5 route, message, and artifact contract'
 });
 
 test('the embedded Labyrinth pauses on ESC and production starts with all three lives', () => {
-  assert.match(labyrinthEntry, /installPauseMenu\(\{ checkpointId: 'chapter-5-start', allowEmbedded: true \}\)/);
+  assert.match(labyrinthEntry, /installPauseMenu\(\{ checkpointId: 'chapter-5-start', allowEmbedded: true, controls: CHAPTER_CONTROLS\.labyrinth \}\)/);
   assert.match(pauseMenu, /\(!allowEmbedded && window\.top !== window\)/);
   assert.match(labyrinthEntry, /const qaEnabled = devRoutesEnabled\(\)/);
   assert.match(labyrinthEntry, /params\.has\('qa-lives'\)/);
@@ -89,9 +89,11 @@ test('the embedded Labyrinth pauses on ESC and production starts with all three 
   assert.match(labyrinthScene, /this\.player\.invulnUntil = spawnGraceUntil/);
 });
 
-test('Chapter 3 uses Escape as a quick return to the chapter list', () => {
+test('Chapter 3 Escape opens the shared pause menu instead of quitting to the title', () => {
   const chapter3Entry = read('../../src/car03-3d-main.js');
-  assert.match(chapter3Entry, /window\.location\.assign\('\/'\)/);
+  assert.doesNotMatch(chapter3Entry, /window\.location\.assign\('\/'\)/);
+  assert.match(chapter3Entry, /controls: CHAPTER_CONTROLS\.echoCity/);
+  assert.match(chapter3Entry, /viewer\.close\(\);\s*return true;[\s\S]*?return false;/);
   assert.match(pauseMenu, /onEscape = null/);
   assert.match(pauseMenu, /if \(onEscape\(\) !== false\) return/);
 });

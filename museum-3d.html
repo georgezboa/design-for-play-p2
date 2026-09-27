@@ -242,6 +242,13 @@
         letter-spacing: 0.16em; cursor: pointer;
       }
       #direction-begin:hover, #direction-begin:focus-visible { background: #443721; outline: 2px solid #d8be7a; }
+
+      /* TEXT SIZE setting (title / pause menu) scales prompts and subtitles. */
+      #prompt { font-size: calc(15px * var(--nightfall-text-scale, 1)); }
+      #subtitle { font-size: calc(17px * var(--nightfall-text-scale, 1)); }
+      #subtitle .dialogue-choices { font-size: calc(14px * var(--nightfall-text-scale, 1)); }
+      #subtitle .dialogue-silence { font-size: calc(12px * var(--nightfall-text-scale, 1)); }
+      #lock-overlay .hint { font-size: calc(13px * var(--nightfall-text-scale, 1)); }
     </style>
   </head>
   <body>
@@ -262,7 +269,7 @@
         <div class="hint">
           CLICK TO ENTER<br />
           WASD / ARROWS — MOVE &nbsp;·&nbsp; SPACE — JUMP &nbsp;·&nbsp; MOUSE / DRAG — LOOK<br />
-          E / ENTER — INTERACT &nbsp;·&nbsp; ESC — RELEASE MOUSE
+          E / ENTER — INTERACT &nbsp;·&nbsp; ESC — RELEASE MOUSE / PAUSE
         </div>
       </div>
     </div>

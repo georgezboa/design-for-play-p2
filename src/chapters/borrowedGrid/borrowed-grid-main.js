@@ -2,6 +2,10 @@ import Phaser from 'phaser';
 import { BorrowedGridCurrentScene, BORROWED_GRID_CURRENT_VIEW } from './BorrowedGridCurrentScene.js';
 import { BORROWED_GRID_CHAPTER05_CONTRACT } from './chapter05BorrowedGridContract.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
+import { installPhaserMotionGuard } from '../../shell/motion.js';
+import '../../shell/canvasFocus.css';
+
+installPhaserMotionGuard(Phaser);
 
 installDevMenuReturnControl();
 

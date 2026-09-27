@@ -437,7 +437,7 @@ export class Museum3DApp {
     this.lockOverlay.classList.toggle('resume', this._hasEnteredMuseum);
     const hint = this.lockOverlay.querySelector('.hint');
     if (hint) {
-      hint.innerHTML = `${text}<br/>WASD / ARROWS — MOVE · SPACE — JUMP · MOUSE / DRAG — LOOK<br/>E / ENTER — INTERACT · ESC — RELEASE MOUSE`;
+      hint.innerHTML = `${text}<br/>WASD / ARROWS — MOVE · SPACE — JUMP · MOUSE / DRAG — LOOK<br/>E / ENTER — INTERACT · ESC — PAUSE MENU`;
     }
     this.lockOverlay.classList.remove('hidden');
   }

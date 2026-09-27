@@ -10,10 +10,14 @@ import { PigmentTrainScene } from './chapters/paintedCountry/PigmentTrainScene.j
 import { PAPER_CSS } from './chapters/paintedCountry/paperPalette.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
+import { installPhaserMotionGuard } from './shell/motion.js';
 import { devRoutesEnabled } from './devMode.js';
 
+installPhaserMotionGuard(Phaser);
+
 installDevMenuReturnControl();
-installPauseMenu({ checkpointId: 'chapter-4-start' });
+installPauseMenu({ checkpointId: 'chapter-4-start', controls: CHAPTER_CONTROLS.paintedCountry });
 
 const qa = devRoutesEnabled() ? new URLSearchParams(window.location.search).get('qa') : null;
 const allScenes = [PaintedCountryScene, DrawingStudioScene, PigmentTrainScene];

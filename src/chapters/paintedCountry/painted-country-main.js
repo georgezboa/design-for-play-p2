@@ -1,6 +1,10 @@
 import Phaser from 'phaser';
 import { PaintedCountryInhabitantScene, PAINTED_COUNTRY_INHABITANT_VIEW } from './PaintedCountryInhabitantScene.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
+import { installPhaserMotionGuard } from '../../shell/motion.js';
+import '../../shell/canvasFocus.css';
+
+installPhaserMotionGuard(Phaser);
 
 installDevMenuReturnControl();
 

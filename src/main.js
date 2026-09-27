@@ -12,6 +12,10 @@ import CyberpunkParkourScene from './cars/cyberpunkParkour/CyberpunkParkourScene
 import { createTitleMenu } from './shell/titleMenu.js';
 import { applySettings, readSettings, volumeForChannel } from './shell/saveSystem.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { mainGameControls } from './shell/chapterControls.js';
+import { installPhaserMotionGuard } from './shell/motion.js';
+
+installPhaserMotionGuard(Phaser);
 
 // Phaser starts the first scene in the array. The chapter select is added only
 // for `npm run dev`, and only when the URL does not already name a starting
@@ -78,6 +82,7 @@ const startGame = () => {
     checkpointId: () => game.scene.getScene('CyberpunkParkour')?.sys?.isActive()
       ? 'chapter-2-start'
       : 'prologue-start',
+    controls: () => mainGameControls(game),
   });
   return game;
 };
