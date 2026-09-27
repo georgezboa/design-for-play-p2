@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, BOSS, PLAYER, DEPTHS } from '../constants.js';
 import { createSfx } from '../sfx.js';
+import { readSettings, volumeForChannel } from '../../../shell/saveSystem.js';
 import Player from '../entities/Player.js';
 import Boss from '../entities/Boss.js';
 import Hud from '../entities/Hud.js';
@@ -12,6 +13,10 @@ import Hud from '../entities/Hud.js';
 // Arsenal grows every phase: baton fans → coal flak + signal lasers →
 // spiral streams + ticket walls + tracking eye beam → ticket vortex →
 // ENRAGED (red Conductor, faster music, piston-press waves, everything).
+const MUSIC_BASE_VOLUME = 0.5;
+// Global Master / Music / SFX buses from the title and pause settings.
+const bus = (channel) => volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? readSettings(), channel);
+
 export default class BossScene extends Phaser.Scene {
   constructor() { super('battle'); }
 
@@ -96,7 +101,12 @@ export default class BossScene extends Phaser.Scene {
   // ---------- audio ----------
   playSfx(name, vol = 1) {
     if (!this.settings.sound) return;
-    this.sfx.play(name, vol);
+    const level = vol * bus('sfx');
+    if (level > 0) this.sfx.play(name, level);
+  }
+
+  syncAudioSettings() {
+    this.music?.setVolume?.(MUSIC_BASE_VOLUME * bus('music'));
   }
 
   // ---------- battle lifecycle ----------
@@ -122,7 +132,7 @@ export default class BossScene extends Phaser.Scene {
 
     if (this.cache.audio.exists('music-battle') && this.settings.sound) {
       this.music?.stop();
-      this.music = this.sound.add('music-battle', { loop: true, volume: 0.5 });
+      this.music = this.sound.add('music-battle', { loop: true, volume: MUSIC_BASE_VOLUME * bus('music') });
       this.music.setRate(1);
       this.music.play();
     }
@@ -855,7 +865,7 @@ export default class BossScene extends Phaser.Scene {
       this.playSfx('enrage', 1);
       this.music?.setRate(1.18);
       this.announce('ENRAGED!', 900);
-      this.cameras.main.flash(160, 255, 30, 30);
+      if (this.settings.flash) this.cameras.main.flash(160, 255, 30, 30);
     } else {
       this.playSfx('phase', 1);
       this.announce(['', 'FULL STEAM!', 'PICKING UP SPEED!', 'DERAIL THIS!', ''][phase], 800);
