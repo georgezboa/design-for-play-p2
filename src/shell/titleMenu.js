@@ -16,7 +16,7 @@ import {
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
 import { installPauseMenu } from './pauseMenu.js';
-import { activateHiddenRouter } from '../devMode.js';
+import { DEV_MODE, activateHiddenRouter } from '../devMode.js';
 
 const store = createSaveStore();
 
@@ -399,8 +399,9 @@ export function createTitleMenu({ onStart, openCredits = false }) {
 
   // The 1111 router deliberately names playable test nodes, not just broad
   // chapters.  Keep these direct: films are useful for transition testing,
-  // but slow down moment-to-moment playtests.
-  const hiddenChapters = [
+  // but slow down moment-to-moment playtests.  Dev build only: a shipped
+  // title has no router, and typing 1111 there does nothing.
+  const hiddenChapters = DEV_MODE ? [
     { id: '1.1', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION I · THE PUNCH', detail: 'First carriage and opening timetable interaction.', route: '/?qa=phase1&state=entry' },
     { id: '1.2', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION II · CONTACT INTERLOCK', detail: 'Relay case, contactor and traction circuit.', route: '/?qa=phase2&state=entry' },
     { id: '1.3', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION III · AIR CIRCUIT', detail: 'Isolate, bleed and release the local air lock.', route: '/?qa=phase3&state=entry' },
@@ -431,7 +432,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     { id: '6.4', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR IV · PAINTED COUNTRY', detail: 'Pigment collection, paint return and Mara finale.', route: '/final-boss.html?qa=conductor-4' },
     { id: '6.5', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'BLACK KNIFE · HIDDEN FINALE', detail: 'Five-stone hidden boss direct entry.', preload: 'hiddenBoss', route: '/hidden-final-boss.html?easter-egg=1' },
     { id: '6.6', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'TRUE ENDING', detail: 'Ending presentation and credits return.', route: '/true-ending.html' },
-  ];
+  ] : [];
 
   const launchHiddenChapter = (chapter) => {
     activateHiddenRouter();
@@ -563,7 +564,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     options[(current + offset + options.length) % options.length]?.focus();
   });
   const handleGlobalKey = async (event) => {
-    if (!dialog.open && !event.repeat && event.key === '1') {
+    if (DEV_MODE && !dialog.open && !event.repeat && event.key === '1') {
       hiddenChapterSequence = `${hiddenChapterSequence}1`.slice(-4);
       window.clearTimeout(hiddenChapterTimer);
       hiddenChapterTimer = window.setTimeout(() => { hiddenChapterSequence = ''; }, 1800);
@@ -584,7 +585,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
   window.addEventListener('nightfall:settings', (event) => syncCreditVolume(event.detail));
   refresh();
   if (openCredits) renderCredits();
-  window.render_game_to_text = () => JSON.stringify({
+  if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
     scene: root.dataset.state === 'exited' ? 'Exited' : 'TitleMenu',
     dialog: dialog.open ? panel.querySelector('h2')?.textContent ?? 'dialog' : null,
     chapterSelect: root.dataset.chapterSelect === 'open' && dialog.open,

@@ -73,6 +73,8 @@ const startGame = () => {
   // Handy in the devtools console:
   //   game.scene.getScene('Game').player
   //   game.scene.getScene('Game').physics.world.drawDebug = true
+  // Not dev-only: shell/pauseMenu.js and titleMenu.js read globalThis.game to
+  // pause the active Phaser scenes and pick the checkpoint to save.
   window.game = game;
   installPauseMenu({
     checkpointId: () => game.scene.getScene('CyberpunkParkour')?.sys?.isActive()
@@ -515,19 +517,22 @@ const renderGameToText = () => {
     },
   });
 };
-window.render_game_to_text = renderGameToText;
+// Dev-only: a shipped build exposes no state dump (it would leak spoilers).
+if (DEV_MODE) {
+  window.render_game_to_text = renderGameToText;
 
-// Mirror the same compact state into a hidden DOM node. Some embedded-browser
-// test surfaces isolate page globals, but can still read authored DOM safely.
-const gameStateOutput = document.createElement('output');
-gameStateOutput.id = 'game-state';
-gameStateOutput.dataset.testid = 'game-state';
-gameStateOutput.hidden = true;
-document.body.appendChild(gameStateOutput);
-const syncGameStateOutput = () => {
-  gameStateOutput.textContent = renderGameToText();
-};
-syncGameStateOutput();
-window.setInterval(syncGameStateOutput, 500);
+  // Mirror the same compact state into a hidden DOM node. Some embedded-browser
+  // test surfaces isolate page globals, but can still read authored DOM safely.
+  const gameStateOutput = document.createElement('output');
+  gameStateOutput.id = 'game-state';
+  gameStateOutput.dataset.testid = 'game-state';
+  gameStateOutput.hidden = true;
+  document.body.appendChild(gameStateOutput);
+  const syncGameStateOutput = () => {
+    gameStateOutput.textContent = renderGameToText();
+  };
+  syncGameStateOutput();
+  window.setInterval(syncGameStateOutput, 500);
+}
 
 export default game;
