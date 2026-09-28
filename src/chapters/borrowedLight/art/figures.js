@@ -115,7 +115,9 @@ export function drawFigure(g, spec, { x, y, facing = 1, pose = 'idle', phase = 0
   const f = facing >= 0 ? 1 : -1;
   const P = poseAngles(pose, phase, t);
   const bw = spec.build;
-  const X = (lx) => x + lx * f * scale;
+  // Squash widens, stretch narrows: volume is kept, roughly.
+  const sx = 1 + (1 - squash) * 0.8;
+  const X = (lx) => x + lx * f * scale * sx;
   const Y = (ly) => y + ly * scale * squash;
 
   const hipY = P.hipY + P.bob * 0.4;

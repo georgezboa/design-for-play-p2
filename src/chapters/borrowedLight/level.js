@@ -14,7 +14,7 @@
 // always ridable before its 0.6 s flicker.
 
 export const WORLD = Object.freeze({
-  width: 19800,
+  width: 21600,
   top: -760,
   bottom: 1480,
   killY: 990,       // below every roof: Butch is falling into the mist → respawn
@@ -24,8 +24,8 @@ export const WORLD = Object.freeze({
 
 export const SECTIONS = Object.freeze({
   A: Object.freeze({ id: 'A', name: 'RAIN ROOFTOPS', from: 0, to: 8440, checkpoint: 'chapter-2-start', spawn: 'lamp-a0' }),
-  B: Object.freeze({ id: 'B', name: 'BLACKOUT', from: 8440, to: 14960, checkpoint: 'chapter-2-midpoint', spawn: 'lamp-b0' }),
-  C: Object.freeze({ id: 'C', name: 'EVACUATION PLATFORM', from: 14960, to: 19800, checkpoint: 'chapter-2-platform', spawn: 'lamp-c0' }),
+  B: Object.freeze({ id: 'B', name: 'BLACKOUT', from: 8440, to: 16760, checkpoint: 'chapter-2-midpoint', spawn: 'lamp-b0' }),
+  C: Object.freeze({ id: 'C', name: 'EVACUATION PLATFORM', from: 16760, to: 21600, checkpoint: 'chapter-2-platform', spawn: 'lamp-c0' }),
 });
 
 export const SECTION_ORDER = Object.freeze(['A', 'B', 'C']);
@@ -68,14 +68,24 @@ export const PLATFORMS = Object.freeze([
   ledge('b-stone-ledge', 11560, 220, -60, 'ledge', { hidden: true, h: 40 }),
   roof('b-roof10', 12340, 660, 300, 'brick'),
   roof('b-hotel', 13000, 1000, -150, 'hotel'),
-  roof('b-roof11', 14000, 960, 300, 'tenement'),
-  roof('b-plant', 14460, 240, 80, 'plantroom', { bottom: 190 }),
+  // B5 · BORROWED AFTERGLOW: the city holds a bridge to a water-tower roof;
+  // past it, two dark decks that only a sign's afterglow shows. The sign is
+  // on the bridge's line: to borrow the light you give up the way back.
+  roof('b-roof11a', 14000, 560, 300, 'tenement'),
+  roof('b-tower', 15000, 200, 300, 'watertower'),
+  ledge('b-deck3', 15270, 300, 320, 'ledge', { hidden: true, h: 40 }),
+  ledge('b-deck4', 15640, 300, 320, 'ledge', { hidden: true, h: 40 }),
+  roof('b-roof11b', 16010, 750, 300, 'tenement'),
+  roof('b-plant', 16220, 240, 80, 'plantroom', { bottom: 190 }),
 
   // ---- C · EVACUATION PLATFORM ----------------------------------------
-  roof('c-concourse', 14960, 990, 520, 'concourse'),
-  roof('c-yard', 16450, 500, 520, 'concourse'),
-  roof('c-gantry', 16950, 600, 180, 'gantry', { bottom: 250 }),
-  roof('c-platform', 18050, 1750, 180, 'platform'),
+  roof('c-concourse', 16760, 990, 520, 'concourse'),
+  roof('c-yard', 18250, 500, 520, 'concourse'),
+  roof('c-gantry', 18750, 600, 180, 'gantry', { bottom: 250 }),
+  // C4 · the signal box above the gantry: its node (the final bridge) is
+  // only in reach from the top of the vent's updraft — a mid-air punch.
+  ledge('c-signal', 19180, 120, -160, 'ledge', { h: 40 }),
+  roof('c-platform', 19850, 1750, 180, 'platform'),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -95,14 +105,17 @@ export const MACHINES = Object.freeze([
   { id: 'b-sign', kind: 'sign', x: 9700, y: 380, w: 200, h: 70, duration: 4000, travel: 200, section: 'B', text: 'OPEN LATE', glow: 360 },
   { id: 'b-lift1', kind: 'lift', x: 10680, w: 220, y0: 640, y1: 300, duration: 5000, travel: 1300, section: 'B' },
   { id: 'b-lift2', kind: 'lift', x: 11340, w: 200, y0: 300, y1: -60, duration: 5000, travel: 1300, section: 'B' },
-  { id: 'b-bridge', kind: 'bridge', x: 11900, y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true },
+  { id: 'b-bridge', kind: 'bridge', x: 11900, y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true, heldBy: 'b-n4' },
   { id: 'b-hotel-lift', kind: 'lift', x: 12780, w: 220, y0: 300, y1: -150, duration: 6000, travel: 1500, section: 'B' },
-  { id: 'b-shutter', kind: 'shutter', x: 14468, y: 190, w: 34, h: 110, duration: 4000, travel: 450, section: 'B' },
+  { id: 'b-bridge2', kind: 'bridge', x: 14560, y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true, heldBy: 'b-n7' },
+  { id: 'b-sign2', kind: 'sign', x: 15580, y: 90, w: 220, h: 70, duration: 4500, travel: 200, section: 'B', text: 'VACANCY', glow: 420 },
+  { id: 'b-shutter', kind: 'shutter', x: 16228, y: 190, w: 34, h: 110, duration: 4000, travel: 450, section: 'B' },
 
   // C
-  { id: 'c-points', kind: 'points', x: 15950, y: 520, length: 500, dir: 1, duration: 6000, travel: 700, section: 'C' },
-  { id: 'c-lift', kind: 'lift', x: 16730, w: 220, y0: 520, y1: 180, duration: 5000, travel: 1300, section: 'C' },
-  { id: 'c-drawbridge', kind: 'drawbridge', x: 17550, y: 180, length: 500, dir: 1, duration: 8000, travel: 900, section: 'C' },
+  { id: 'c-points', kind: 'points', x: 17750, y: 520, length: 500, dir: 1, duration: 6000, travel: 700, section: 'C' },
+  { id: 'c-lift', kind: 'lift', x: 18530, w: 220, y0: 520, y1: 180, duration: 5000, travel: 1300, section: 'C' },
+  { id: 'c-fan', kind: 'fan', x: 18950, w: 200, yTop: -340, yBottom: 180, duration: 5000, travel: 500, section: 'C' },
+  { id: 'c-drawbridge', kind: 'drawbridge', x: 19350, y: 180, length: 500, dir: 1, duration: 8000, travel: 900, section: 'C' },
 ].map((machine) => Object.freeze(machine)));
 
 // ---------------------------------------------------------------------------
@@ -129,17 +142,22 @@ export const NODES = Object.freeze([
   { id: 'b-n3', line: 'rose', machine: 'b-lift2', x: 11210, y: 300, mount: 'pole', section: 'B' },
   { id: 'b-n4', line: 'teal', machine: 'b-bridge', x: 11820, y: 300, mount: 'pole', section: 'B' },
   { id: 'b-n5', line: 'teal', machine: 'b-hotel-lift', x: 12640, y: 300, mount: 'pole', section: 'B' },
-  { id: 'b-n6', line: 'amber', machine: 'b-shutter', x: 14330, y: 300, mount: 'pole', section: 'B' },
+  // B5 is its own district: its rose line is not the rose line of B1–B3.
+  { id: 'b-n9', line: 'rose', machine: 'b-bridge2', x: 14470, y: 300, mount: 'pole', section: 'B', district: 'B5' },
+  { id: 'b-n7', line: 'rose', machine: 'b-bridge2', x: 15095, y: 300, mount: 'pole', section: 'B', district: 'B5' },
+  { id: 'b-n8', line: 'rose', machine: 'b-sign2', x: 15170, y: 300, mount: 'pole', section: 'B', district: 'B5' },
+  { id: 'b-n6', line: 'amber', machine: 'b-shutter', x: 16090, y: 300, mount: 'pole', section: 'B' },
 
   // C
-  { id: 'c-n1', line: 'amber', machine: 'c-points', x: 15840, y: 520, mount: 'pole', section: 'C' },
-  { id: 'c-n2', line: 'amber', machine: 'c-points', x: 16520, y: 520, mount: 'pole', section: 'C' },
-  { id: 'c-n3', line: 'teal', machine: 'c-lift', x: 16690, y: 520, mount: 'pole', section: 'C' },
-  { id: 'c-n4', line: 'amber', machine: 'c-drawbridge', x: 16600, y: 520, mount: 'pole', section: 'C' },
+  { id: 'c-n1', line: 'amber', machine: 'c-points', x: 17640, y: 520, mount: 'pole', section: 'C' },
+  { id: 'c-n2', line: 'amber', machine: 'c-points', x: 18320, y: 520, mount: 'pole', section: 'C' },
+  { id: 'c-n3', line: 'teal', machine: 'c-lift', x: 18490, y: 520, mount: 'pole', section: 'C' },
+  { id: 'c-n5', line: 'rose', machine: 'c-fan', x: 18860, y: 180, mount: 'pole', section: 'C' },
+  { id: 'c-n4', line: 'amber', machine: 'c-drawbridge', x: 19250, y: -160, mount: 'pole', section: 'C' },
 ].map((node) => Object.freeze(node)));
 
 // Required machines for the departure (the train remembers them in order).
-export const DEPARTURE_CHAIN = Object.freeze(['c-points', 'c-lift', 'c-drawbridge']);
+export const DEPARTURE_CHAIN = Object.freeze(['c-points', 'c-lift', 'c-fan', 'c-drawbridge']);
 export const DEPARTURE_BELLS = 8;
 
 // ---------------------------------------------------------------------------
@@ -152,8 +170,10 @@ export const LAMPS = Object.freeze([
   { id: 'lamp-b0', x: 8640, y: 640, section: 'B', spawnX: 8700 },  // section start
   { id: 'lamp-b1', x: 11020, y: 300, section: 'B', spawnX: 11080 }, // before the cut
   { id: 'lamp-b2', x: 13840, y: -150, section: 'B', spawnX: 13900 }, // after the hotel
-  { id: 'lamp-c0', x: 15080, y: 520, section: 'C', spawnX: 15140 },
-  { id: 'lamp-c1', x: 16560, y: 520, section: 'C', spawnX: 16480, lateOnly: false },
+  { id: 'lamp-b3', x: 15010, y: 300, section: 'B', spawnX: 15050 }, // the water tower, before the dark decks
+  { id: 'lamp-c0', x: 16880, y: 520, section: 'C', spawnX: 16940 },
+  { id: 'lamp-c1', x: 18360, y: 520, section: 'C', spawnX: 18280 },
+  { id: 'lamp-c2', x: 18790, y: 180, section: 'C', spawnX: 18820 }, // top of the lift
 ].map((lamp) => Object.freeze(lamp)));
 
 // ---------------------------------------------------------------------------
@@ -161,21 +181,31 @@ export const LAMPS = Object.freeze([
 export const TRAIN = Object.freeze({
   // Two cars fit the rooftop terminal (-400 … 1500); the door is on the rear car.
   start: Object.freeze({ x: -380, y: 760, cars: 2 }),
-  end: Object.freeze({ x: 18260, y: 180, cars: 3 }),
+  end: Object.freeze({ x: 20060, y: 180, cars: 3 }),
+  // The train ahead: Mara boards it on a far track as C begins (scroll 0.7).
+  ahead: Object.freeze({ x: 12420, y: 470, cars: 2, scroll: 0.7, scale: 0.55 }),
 });
 
 export const MECHANIC = Object.freeze({ x: 1130, y: 760, talkRadius: 150 });
 export const HOTEL_WINDOW = Object.freeze({ x: 13420, y: -150, readRadius: 150 });
-export const BENCH = Object.freeze({ x: 15360, y: 520, readRadius: 150 });
+// B's visual goal: Mara stands in the lit penthouse window, seen from roof
+// 10 and the hotel lift; the light goes out as Butch reaches the roof, and
+// only her ticket stub is left in the glass.
+export const WINDOW_SIGHTING = Object.freeze({ id: 'hotel-window', fromX: 12560, goneFeetY: -60, goneFromX: 12780 });
+export const BENCH = Object.freeze({ x: 17160, y: 520, readRadius: 150 });
 export const GRID_STONE = Object.freeze({ x: 11690, y: -60 });
-export const DEPARTURE_TRIGGER_X = 15720;
-export const BOARD_X = 18500;
+export const DEPARTURE_TRIGGER_X = 17520;
+export const BOARD_X = 20300;
+// Where the train puts Butch when it remembers the route for him.
+export const REMEMBER_PLACE = Object.freeze({ x: 19100, y: 180, upperFromX: 18750 });
 
 // Mara, always one roof ahead. Each sighting is a short authored run.
 export const MARA_SIGHTINGS = Object.freeze([
   Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2060, 760], [2390, 760]], leap: [2770, 420], waitMs: 1800, speed: 0.3 }),
   Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6100, section: 'A', path: [[6980, 260], [7440, 260]], leap: [7780, 0], waitMs: 1600, speed: 0.32 }),
-  Object.freeze({ id: 'hotel-roof', triggerX: 12450, section: 'B', path: [[13240, -150], [13940, -150]], leap: [14260, 80], waitMs: 600, lightningOnly: true }),
+  // After the ticket stub: lightning shows her below, crossing the held
+  // bridge to the water tower — the way on.
+  Object.freeze({ id: 'after-window', trigger: 'card', section: 'B', path: [[14120, 300], [14520, 300]], leap: [14860, 230], waitMs: 900, speed: 0.34, flash: true }),
 ]);
 
 // Neon: low saturation, amber / teal / rose only. `layer` 'mid' signs sit on
@@ -192,15 +222,16 @@ export const SIGNS = Object.freeze([
   // The goal for section A: the hotel's sign far off across the roofs, on
   // the mid skyline (scroll 0.5). It dies with the rest of the city.
   { x: 4520, y: 250, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'far', w: 400, scroll: 0.5 },
-  { x: 16100, y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
-  { x: 18310, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
+  { x: 17900, y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
+  { x: 20110, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));
 
 // Platform lamps along the evacuation platform, lit as the chain fires.
 export const PLATFORM_LAMPS = Object.freeze([
-  Object.freeze({ x: 18160, lights: 'c-points' }),
-  Object.freeze({ x: 18460, lights: 'c-lift' }),
-  Object.freeze({ x: 18760, lights: 'c-drawbridge' }),
+  Object.freeze({ x: 19960, lights: 'c-points' }),
+  Object.freeze({ x: 20260, lights: 'c-lift' }),
+  Object.freeze({ x: 20860, lights: 'c-fan' }),
+  Object.freeze({ x: 21160, lights: 'c-drawbridge' }),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -226,10 +257,15 @@ export const ROUTE = Object.freeze([
   { from: 'b-roof9', to: 'b-stone-ledge', via: 'b-lift2', optional: true },
   { from: 'b-roof9', to: 'b-roof10', via: 'b-bridge' },
   { from: 'b-roof10', to: 'b-hotel', via: 'b-hotel-lift' },
-  { from: 'b-hotel', to: 'b-roof11', via: 'drop' },
-  { from: 'b-roof11', to: 'c-concourse', via: 'drop', through: 'b-shutter' },
+  { from: 'b-hotel', to: 'b-roof11a', via: 'drop' },
+  { from: 'b-roof11a', to: 'b-tower', via: 'b-bridge2' },
+  { from: 'b-tower', to: 'b-deck3', via: 'jump' },
+  { from: 'b-deck3', to: 'b-deck4', via: 'jump' },
+  { from: 'b-deck4', to: 'b-roof11b', via: 'jump' },
+  { from: 'b-roof11b', to: 'c-concourse', via: 'drop', through: 'b-shutter' },
   { from: 'c-concourse', to: 'c-yard', via: 'c-points' },
   { from: 'c-yard', to: 'c-gantry', via: 'c-lift' },
+  { from: 'c-gantry', to: 'c-signal', via: 'c-fan', optional: true },
   { from: 'c-gantry', to: 'c-platform', via: 'c-drawbridge' },
 ].map((edge) => Object.freeze(edge)));
 
@@ -326,13 +362,14 @@ export function resolveStartSection({ search = '', devMode = false, unlocked = [
   return unlocked.includes(SECTION_CHECKPOINTS[requested]) ? requested : 'A';
 }
 
-export const circuitKey = (section, line) => `${section}:${line}`;
+export const circuitKey = (district, line) => `${district}:${line}`;
+export const districtOf = (node) => node.district ?? node.section;
 
 // The tuple the timetable model is built from.
 export function timetableDefinition() {
   return {
     // Each section is its own district: its lines are its own circuits.
-    nodes: NODES.map(({ id, line, machine, section }) => ({ id, line, machine, circuit: circuitKey(section, line) })),
+    nodes: NODES.map((node) => ({ id: node.id, line: node.line, machine: node.machine, circuit: circuitKey(districtOf(node), node.line) })),
     machines: MACHINES.map(({ id, kind, duration, travel }) => ({ id, kind, duration, travel })),
   };
 }

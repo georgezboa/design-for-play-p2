@@ -13,6 +13,7 @@ import { DEPTH, FONTS, INK, INK_HEX, LINE_COLORS } from './art/palette.js';
 const LINES_ORDER = ['amber', 'teal', 'rose'];
 
 const CX = 960;
+const TITLE_Y = 300;
 const CY = 82;
 const R = 40;
 
@@ -36,10 +37,16 @@ export class BorrowedLightHud {
     this.listenDim = scene.add.image(0, 0, 'bl-px').setOrigin(0).setScrollFactor(0).setDisplaySize(1920, 1080).setTint(0x0a1a20).setAlpha(0).setDepth(DEPTH.ghost - 1);
     this.listenLabel = this.text(CX, CY + R + 80, 'LISTENING · NEXT BELL', 14, '#9fd9cf', { alpha: 0, letter: 4 });
 
-    // Title card.
-    this.titleBig = this.text(CX, 470, '', 84, '#eadfc6', { font: FONTS.display, alpha: 0, letter: 10 });
-    this.titleSmall = this.text(CX, 560, '', 20, '#e0a24a', { alpha: 0, letter: 8 });
+    // Title card: high in the sky band, on its own soft dark backing, so it
+    // never sits on Butch, a node or a sign.
+    this.titleBand = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.dialog - 1).setAlpha(0);
+    this.titleBand.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0, 0, 0.66, 0.66).fillRect(0, TITLE_Y - 110, 1920, 44);
+    this.titleBand.fillStyle(0x03070b, 0.66).fillRect(0, TITLE_Y - 66, 1920, 136);
+    this.titleBand.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0.66, 0.66, 0, 0).fillRect(0, TITLE_Y + 70, 1920, 44);
+    this.titleBig = this.text(CX, TITLE_Y - 14, '', 76, '#eadfc6', { font: FONTS.display, alpha: 0, letter: 10 });
+    this.titleSmall = this.text(CX, TITLE_Y + 50, '', 18, '#e0a24a', { alpha: 0, letter: 8 });
     this.titleRule = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.dialog).setAlpha(0);
+    [this.titleBig, this.titleSmall].forEach((t) => t.setDepth(DEPTH.dialog + 0.5));
 
     // Toast.
     this.toastText = this.text(CX, 980, '', 18, INK, { alpha: 0, letter: 4 });
@@ -188,10 +195,14 @@ export class BorrowedLightHud {
 
   setListen(on, dt) {
     const target = on ? 1 : 0;
-    const a = this.listenDim.alpha / 0.28;
+    // Listening is about the playfield: a section card gets out of the way.
+    if (on && !this.listenWasOn && this.titleBig.alpha > 0) this.clearTitle();
+    this.listenWasOn = on;
+    const a = this.listenDim.alpha / 0.42;
     const next = Phaser.Math.Linear(a, target, Math.min(1, dt / 120));
-    this.listenDim.setAlpha(0.28 * next);
-    this.listenLabel.setAlpha(next);
+    this.listenDim.setAlpha(0.42 * next);
+    // Sit under the departure count when there is one, never on it.
+    this.listenLabel.setAlpha(next).setY(this.nextLabel.text ? CY + R + 98 : CY + R + 80);
   }
 
   // ---- title cards and toasts ---------------------------------------------
@@ -200,13 +211,15 @@ export class BorrowedLightHud {
     this.titleBig.setText(big);
     this.titleSmall.setText(small);
     const w = Math.max(this.titleBig.width, 600);
+    const ry = TITLE_Y + 28;
     this.titleRule.clear();
-    this.titleRule.lineStyle(2, 0xb08a4a, 0.9).lineBetween(CX - w / 2, 522, CX + w / 2, 522);
-    this.titleRule.fillStyle(0xe0a24a, 1).fillCircle(CX, 522, 4);
-    scene.tweens.killTweensOf([this.titleBig, this.titleSmall, this.titleRule]);
-    [this.titleBig, this.titleSmall, this.titleRule].forEach((o) => o.setAlpha(0));
-    scene.tweens.add({ targets: [this.titleBig, this.titleSmall, this.titleRule], alpha: 1, duration: 700, ease: 'Sine.easeOut' });
-    scene.tweens.add({ targets: [this.titleBig, this.titleSmall, this.titleRule], alpha: 0, duration: 900, delay: 700 + hold, ease: 'Sine.easeIn' });
+    this.titleRule.lineStyle(2, 0xb08a4a, 0.9).lineBetween(CX - w / 2, ry, CX + w / 2, ry);
+    this.titleRule.fillStyle(0xe0a24a, 1).fillCircle(CX, ry, 4);
+    const parts = [this.titleBig, this.titleSmall, this.titleRule, this.titleBand];
+    scene.tweens.killTweensOf(parts);
+    parts.forEach((o) => o.setAlpha(0));
+    scene.tweens.add({ targets: parts, alpha: 1, duration: 700, ease: 'Sine.easeOut' });
+    scene.tweens.add({ targets: parts, alpha: 0, duration: 900, delay: 700 + hold, ease: 'Sine.easeIn' });
   }
 
   toast(message, color = INK, ms = 2200) {
@@ -227,8 +240,9 @@ export class BorrowedLightHud {
 
   // ---- caption bar ---------------------------------------------------------
   clearTitle() {
-    this.scene.tweens.killTweensOf([this.titleBig, this.titleSmall, this.titleRule]);
-    this.scene.tweens.add({ targets: [this.titleBig, this.titleSmall, this.titleRule], alpha: 0, duration: 200 });
+    const parts = [this.titleBig, this.titleSmall, this.titleRule, this.titleBand];
+    this.scene.tweens.killTweensOf(parts);
+    this.scene.tweens.add({ targets: parts, alpha: 0, duration: 200 });
   }
 
   openDialog(lines, onDone) {

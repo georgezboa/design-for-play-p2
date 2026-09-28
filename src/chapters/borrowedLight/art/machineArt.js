@@ -472,7 +472,7 @@ export function drawGhost(g, machine, to, line, t) {
   const color = LINE_COLORS[line];
   const level = to === 'on' ? 1 : 0;
   const b = machineBounds(machine, machine.kind === 'bridge' ? Math.max(0.02, level) : level);
-  const pulse = 0.55 + 0.35 * Math.sin(t * 7);
+  const pulse = 0.7 + 0.3 * Math.sin(t * 7);
   const dash = (x1, y1, x2, y2) => {
     const len = Math.hypot(x2 - x1, y2 - y1);
     const n = Math.max(1, Math.floor(len / 18));
@@ -482,7 +482,11 @@ export function drawGhost(g, machine, to, line, t) {
       g.lineBetween(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * c, y1 + (y2 - y1) * c);
     }
   };
-  g.lineStyle(3, color.glow, pulse);
+  // A soft fill makes the ghost read as a shape, not just a dashed line.
+  if (!['points', 'drawbridge', 'fan', 'shutter'].includes(machine.kind)) {
+    g.fillStyle(color.hex, 0.14 + 0.06 * Math.sin(t * 7)).fillRect(b.x, b.y, b.w, Math.max(b.h, 18));
+  }
+  g.lineStyle(4, color.glow, pulse);
   if (machine.kind === 'points' || machine.kind === 'drawbridge') {
     const raised = machine.kind === 'points' ? 0.32 : -1.35;
     const a = raised * (1 - level);

@@ -279,41 +279,125 @@ test('scripted solve · B: memory light, the stone lift, the held bridge cut and
   assert.equal(tt.machineStatus('b-shutter').level, 1);
 });
 
-test('scripted solve · C: the departure chain fits inside eight bells, with slack', () => {
+test('scripted solve · B5: borrow the afterglow by cutting the bridge you came on', () => {
+  const tt = createTimetable(timetableDefinition());
+  tt.setMemoryLight(true);
+  // The city holds both B bridges from the start.
+  tt.hold('b-bridge', 'b-n4');
+  tt.hold('b-bridge2', machineById('b-bridge2').heldBy);
+  assert.equal(tt.nodeStatus('b-n7').powering, true, 'the lit tag is on the tower, where the cut makes sense');
+  const p = player(tt);
+  // B5 is its own district: B1-B3's rose line is free while B5's holds.
+  assert.equal(tt.punch('b-n1').result, 'queued');
+  tt.clearQueue();
+  p.at(14300);
+  p.walkTo(15170); // across the held bridge onto the water tower
+  const refused = tt.punch('b-n8');
+  assert.equal(refused.result, 'busy', 'the sign shares the held bridge\'s line');
+  assert.equal(refused.holder, 'b-bridge2');
+  assert.equal(tt.punch('b-n7').result, 'cut', 'cut from the tower side');
+  assert.equal(tt.punch('b-n8').result, 'queued');
+  p.waitBell();
+  assert.equal(tt.afterglowOf('b-n8'), 1);
+  // Three hops (~1.8 s) across the dark decks while the sign burns and glows.
+  p.wait(1800);
+  assert.ok(tt.machineStatus('b-sign2').powered && tt.afterglowOf('b-n8') > 0.6);
+  assert.equal(tt.machineStatus('b-bridge2').level, 0, 'the way back is gone');
+  // No dead end: from the tower the bridge can be called back, and from the
+  // roof behind as well (after a fall you respawn on the tower).
+  tt.update(6000);
+  assert.equal(tt.punch('b-n7').result, 'queued');
+  tt.clearQueue();
+  assert.equal(tt.punch('b-n9').result, 'queued');
+  tt.update(tt.msToBell());
+  assert.equal(tt.machineStatus('b-bridge2').held, true);
+});
+
+test('B5 geometry: the decks sit inside the sign node\'s afterglow, and the tower has its own lamp', () => {
+  const head = nodeHead(nodeById('b-n8'));
+  for (const id of ['b-deck3', 'b-deck4']) {
+    const d = platformById(id);
+    assert.equal(d.hidden, true);
+    const far = Math.hypot(d.x + d.w - head.x, d.y - head.y);
+    const sign = machineById('b-sign2');
+    const nearSign = Math.hypot(d.x + d.w / 2 - sign.x, d.y - sign.y) < sign.glow + 120;
+    assert.ok(far < 720 || nearSign, `${id} is lit by the afterglow or the sign`);
+  }
+  const tower = platformById('b-tower');
+  const lamp = LAMPS.find((l) => l.id === 'lamp-b3');
+  assert.ok(lamp.spawnX > tower.x && lamp.spawnX < tower.x + tower.w);
+  // The bridge can be cut from the tower, but not re-queued from the decks.
+  assert.ok(nodeById('b-n7').x > tower.x && nodeById('b-n7').x < tower.x + tower.w);
+  const chain = ['b-tower', 'b-deck3', 'b-deck4', 'b-roof11b'].map(platformById);
+  for (let i = 0; i < chain.length - 1; i += 1) {
+    const from = chain[i];
+    const to = chain[i + 1];
+    const takeoffs = from.kind === 'ledge' ? [right(from), right(from) - from.w / 2 + 20] : [right(from)];
+    for (const takeoff of takeoffs) {
+      const land = takeoff + arc.reachAtRise(from.y - to.y) * 0.97;
+      assert.ok(land > to.x + 10 && land < to.x + to.w, `${from.id} → ${to.id}: lands at ${Math.round(land)}`);
+    }
+    // A run of full jumps from each edge lands with room to take off again.
+    if (i < chain.length - 2) {
+      const land = right(from) + arc.reachAtRise(from.y - to.y);
+      assert.ok(right(to) - land >= 45, `${to.id}: ${Math.round(right(to) - land)} px left after a full jump`);
+    }
+  }
+});
+
+test('scripted solve · C: four machines, three lines, bell after bell — with a mid-air punch', () => {
   const tt = createTimetable(timetableDefinition());
   const p = player(tt);
-  p.at(15360);
+  p.at(17160);
   tt.update(700);
   tt.startCountdown(DEPARTURE_BELLS);
   const startBell = tt.bellIndex;
-  p.walkTo(15840);
-  tt.punch('c-n1');
+  p.walkTo(17640);
+  assert.equal(tt.punch('c-n1').result, 'queued');
   p.waitBell();
   p.wait(700);
   assert.equal(tt.machineStatus('c-points').level, 1);
-  p.walkTo(16520);
-  // Points hold the amber line, so the drawbridge is refused until cut.
-  assert.equal(tt.punch('c-n4').result, 'busy');
-  assert.equal(tt.punch('c-n2').result, 'cut');
-  p.walkTo(16600);
-  assert.equal(tt.punch('c-n4').result, 'queued');
-  p.walkTo(16690);
+  p.walkTo(18490);
   assert.equal(tt.punch('c-n3').result, 'queued');
-  p.walkTo(16800);
+  p.walkTo(18600);
   p.waitBell();
   p.wait(1300);
   assert.equal(tt.machineStatus('c-lift').level, 1);
-  p.at(16950);
-  p.walkTo(17550);
+  p.at(18750);
+  p.walkTo(18860);
+  assert.equal(tt.punch('c-n5').result, 'queued', 'the vent on the gantry');
+  p.walkTo(19050);
+  p.waitBell();
+  // Float up ~520 px at 620 px/s (~0.9 s), punch the signal-box node.
+  p.wait(1000);
+  assert.equal(tt.machineStatus('c-fan').powered, true);
+  const r = tt.punch('c-n4');
+  assert.equal(r.result, 'queued', 'the points expired long ago, so amber is free');
+  p.waitBell();
+  p.wait(900);
   assert.equal(tt.machineStatus('c-drawbridge').level, 1);
-  p.walkTo(18520);
+  p.at(19100);
+  p.walkTo(20300);
   assert.equal(tt.machineStatus('c-drawbridge').powered, true, 'bridge still down on arrival');
   const used = tt.bellIndex - startBell;
-  assert.ok(used <= 3, `solved in ${used} bells`);
-  assert.ok(DEPARTURE_BELLS - used >= 4, 'at least four bells of slack');
-  // Everything the train would need to remember was fired by the player.
+  assert.ok(used <= 5, `solved in ${used} bells`);
+  assert.ok(DEPARTURE_BELLS - used >= 3, 'at least three bells of slack');
   const fired = new Set(tt.history(startBell).map((entry) => entry.machineId));
   assert.deepEqual([...DEPARTURE_CHAIN].filter((id) => !fired.has(id)), []);
+});
+
+test('C4 geometry: the signal-box node is out of reach from the gantry but in reach from the updraft', () => {
+  const node = nodeById('c-n4');
+  const head = nodeHead(node);
+  const gantry = platformById('c-gantry');
+  const fan = machineById('c-fan');
+  const chestOnGantry = { y: gantry.y - 64 };
+  assert.ok(Math.abs(head.y + 20 - chestOnGantry.y) > PUNCH_RANGE, 'not from the deck');
+  // Floating at the top of the column (feet ~40 px under yTop).
+  const floatChest = { x: fan.x + fan.w - 20, y: fan.yTop + 40 - 64 };
+  assert.ok(Math.hypot(head.x - floatChest.x, head.y + 20 - floatChest.y) < PUNCH_RANGE, 'reachable mid-air');
+  assert.equal(fan.yBottom, gantry.y, 'the vent sits on the deck: stopping it drops you back onto the gantry');
+  assert.ok(fan.x > gantry.x && fan.x + fan.w < gantry.x + gantry.w);
 });
 
 test('start section: dev honours ?section=, production only honours an unlocked checkpoint', () => {
