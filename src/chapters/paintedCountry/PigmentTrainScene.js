@@ -469,8 +469,9 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   paintPart(id) {
+    // Feedback sits by the part, under the rails, clear of the part's tag.
     const bounds = this.partWorldBounds(TRAIN_PARTS.find((p) => p.id === id));
-    const at = { x: bounds.x + bounds.w / 2, y: bounds.y - 8 };
+    const at = { x: bounds.x + bounds.w / 2, y: FLOOR_Y + 44 };
     if (this.chapter.placePart(id)) {
       const part = this.chapter.pigment(id);
       noteAt(this, at.x, at.y, `${part.part} · ${part.name}`, { tone: 'good', hold: 900 });
@@ -679,7 +680,12 @@ export class PigmentTrainScene extends Phaser.Scene {
       quiz: null,
       homePlate: snapshot.homePlate,
       stone: { collected: this.stoneCollected, x: PIGMENT_STONE.x, y: PIGMENT_STONE.y },
+      // A point inside each part (for wheels, the second wheel's hub).
       parts: Object.fromEntries(TRAIN_PARTS.map((p) => {
+        if (p.type === 'wheels') {
+          const hub = this.trainWorldPoint(p.circles[1].x, p.circles[1].y);
+          return [p.id, { x: Math.round(hub.x), y: Math.round(hub.y) }];
+        }
         const r = this.partWorldBounds(p);
         return [p.id, { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h / 2) }];
       })),

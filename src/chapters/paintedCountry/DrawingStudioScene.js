@@ -41,16 +41,16 @@ const WORLD = Object.freeze({ w: 1640, h: 600 });
 const FLOOR_Y = 486;
 const MOVE_SPEED = 210;
 const JUMP_VELOCITY = -620;
-const REACH = 300;
+const REACH = 340;
 const DEPTH = Object.freeze({ BACK: 0, ROOM: 6, OBJECT: 14, PAINT: 18, BOARD: 23, FIGURE: 30, PROMPT: 48, GRAIN: 70 });
 
 // Rosa's easel. Regions are in canvas-local pixels.
-const CANVAS = Object.freeze({ x: 830, y: 140, w: 330, h: 250 });
-const SHELF = Object.freeze({ x: 380, y: 356, w: 390 });
-const EXIT = Object.freeze({ x: 1470, y: 300, w: 80, h: FLOOR_Y - 300 });
+const CANVAS = Object.freeze({ x: 880, y: 140, w: 330, h: 250 });
+const SHELF = Object.freeze({ x: 480, y: 356, w: 380 });
+const EXIT = Object.freeze({ x: 1440, y: 300, w: 80, h: FLOOR_Y - 300 });
 
 const SOURCE_LAYOUT = Object.freeze(STUDIO_SOURCES.map((source, index) => {
-  const x = SHELF.x + 30 + index * 55;
+  const x = SHELF.x + 34 + index * 52;
   const y = SHELF.y;
   return { id: source.id, kind: source.kind, x, y, rect: { x: x - 24, y: y - 50, w: 48, h: 52 } };
 }));
@@ -201,9 +201,9 @@ export class DrawingStudioScene extends Phaser.Scene {
     draftRect(g, this.rnd, x - 14, y - 14, w + 28, h + 28, { overshoot: 7, jitter: 0.8 });
     draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 - 70, FLOOR_Y, { overshoot: 5 });
     draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 + 70, FLOOR_Y, { overshoot: 5 });
-    this.add.text(x + w / 2, y + h + 22, '"THE ORCHARD IN SUMMER" · ROSA, 9', {
+    this.add.text(x + w / 2, y - 30, '"THE ORCHARD IN SUMMER" · ROSA, 9', {
       fontFamily: MONO, fontSize: '11px', color: '#5c574f', letterSpacing: 1.2,
-    }).setOrigin(0.5, 0).setDepth(DEPTH.BOARD);
+    }).setOrigin(0.5, 1).setDepth(DEPTH.BOARD);
     this.fillArt = this.graphics(DEPTH.BOARD);
     this.pencilArt = this.graphics(DEPTH.BOARD + 1);
     this.selectionArt = this.graphics(DEPTH.BOARD + 2);
@@ -412,7 +412,7 @@ export class DrawingStudioScene extends Phaser.Scene {
   drawCompletionFrame(amount) {
     const g = this.frameArt;
     const { x, y, w, h } = CANVAS;
-    const pad = 20 + 8 * amount;
+    const pad = 16 + 6 * amount;
     g.lineStyle(2.8, PAPER.bookCloth, 0.9 * amount);
     draftRect(g, makeRandom(0x5150), x - pad, y - pad, w + pad * 2, h + pad * 2, { overshoot: 8, jitter: 1.1 });
     g.lineStyle(1.4, PAPER.graphite, 0.72 * amount);
@@ -524,15 +524,15 @@ export class DrawingStudioScene extends Phaser.Scene {
       } else if (event.type === 'region-painted') {
         this.tutorialSeen.apply = true;
       } else if (event.type === 'apply-refused' && event.reason === 'dry-brush') {
-        noteAt(this, cx, CANVAS.y - 20, `THE BRUSH IS DRY · ${this.brush.label('washHold')} A THING ON THE SHELF`, { tone: 'warn' });
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `THE BRUSH IS DRY · ${this.brush.label('washHold')} A THING ON THE SHELF`, { tone: 'warn' });
       } else if (event.type === 'apply-refused' && event.reason === 'already-painted') {
-        noteAt(this, cx, CANVAS.y - 20, `ALREADY PAINTED · ${this.brush.label('washHold')} TO WASH IT OFF`, { tone: 'warn' });
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `ALREADY PAINTED · ${this.brush.label('washHold')} TO WASH IT OFF`, { tone: 'warn' });
       } else if (event.type === 'still-life-complete') {
         this.frameReveal = 0;
         this.tweens.add({ targets: this, frameReveal: 1, duration: 720, ease: 'Back.easeOut' });
-        noteAt(this, cx, CANVAS.y - 26, 'AS SHE REMEMBERED IT. THE DOOR IS OPEN.', { tone: 'good', hold: 2200 });
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, 'AS SHE REMEMBERED IT. THE DOOR IS OPEN.', { tone: 'good', hold: 2200 });
       } else if (event.type === 'still-life-looks-wrong') {
-        noteAt(this, cx, CANVAS.y - 26, "IT ISN'T AS ROSA REMEMBERED IT.\nWASH OFF WHAT LOOKS WRONG.", { tone: 'warn', hold: 2600 });
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, "IT ISN'T AS ROSA REMEMBERED IT.\nWASH OFF WHAT LOOKS WRONG.", { tone: 'warn', hold: 2600 });
       } else if (event.type === 'still-life-opened-again') {
         this.frameReveal = 0;
       }
@@ -569,7 +569,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     }
     const exitCentre = EXIT.x + EXIT.w / 2;
     if (snapshot.complete && Math.abs(this.walker.x - exitCentre) <= 200) {
-      this.tag.show(`${b.label('read')} · THROUGH TO THE PAINTED TRAIN`, exitCentre, EXIT.y - 30, { progress: this.hold.key === 'exit' ? progress : 0 });
+      this.tag.show(`${b.label('read')} · THROUGH TO THE PAINTED TRAIN`, exitCentre, EXIT.y + 70, { progress: this.hold.key === 'exit' ? progress : 0 });
       return;
     }
     if (!this.tutorialSeen.take && this.walker.x < SHELF.x + SHELF.w + 60) {
@@ -587,7 +587,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     STILL_LIFE_REGIONS.forEach((region) => {
       if (snapshot.fills[region.id] && this.studio.isRight(region.id)) return;
       const c = regionCentre(region.id);
-      drawGlintMarker(g, t, CANVAS.x + c.x + 14, CANVAS.y + c.y - 12, { alpha: snapshot.fills[region.id] ? 0.5 : 1 });
+      drawGlintMarker(g, t, CANVAS.x + c.x + 10, CANVAS.y + c.y - 10, { alpha: snapshot.fills[region.id] ? 0.5 : 1, nub: false });
     });
     if (snapshot.complete) drawGlintMarker(g, t, EXIT.x + EXIT.w - 4, EXIT.y - 6);
   }

@@ -106,7 +106,7 @@ export class PaintedLineScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
     this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.brush = new BrushInput(this, { anchor: () => ({ x: this.walker.x, y: this.walker.y - 10 }), radius: REACH + 30 });
+    this.brush = new BrushInput(this, { anchor: () => ({ x: this.walker.x, y: this.walker.y }), radius: REACH - 2 });
     this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
     this.tag = new PaperTag(this, { depth: DEPTH.UI + 4 });
     this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
@@ -184,7 +184,7 @@ export class PaintedLineScene extends Phaser.Scene {
     for (let c = 0; c <= LINE.cols; c += 1) grid.lineBetween(c * CELL, 260, c * CELL, TRACK_Y);
     for (let r = 13; r <= LINE.trackRow; r += 1) grid.lineBetween(0, r * CELL, W, r * CELL);
 
-    this.add.text(24, 26, 'THE LINE AHEAD  ·  PAINT IT IN BEFORE THE TRAIN', {
+    this.add.text(24, 26, 'THE LINE AHEAD', {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH.UI);
     this.add.text(this.frontX(FINISH_FRONT) + 40, 300, 'THE LAST PAINTED\nPLATFORM', {
@@ -616,9 +616,9 @@ export class PaintedLineScene extends Phaser.Scene {
         if (event.reason === 'gap') this.tutorialSeen.gap = true;
         else this.tutorialSeen.barrier = true;
         const text = event.reason === 'gap'
-          ? (first ? `THE TRAIN WAITS AT THE GAP · ${this.brush.label('paint')} THE TRACK IN` : 'THE TRAIN WAITS AT A GAP')
-          : (first ? `PAPER ON THE LINE · ${this.brush.label('wash')} IT AWAY` : 'THE TRAIN WAITS AT THE PAPER');
-        noteAt(this, x, TRAIN.topRow * CELL - 30, text, { tone: 'warn', hold: 2400 });
+          ? (first ? `THE TRAIN WAITS AT THE GAP · ${this.brush.label('paint')} · PAINT THE TRACK IN` : 'THE TRAIN WAITS AT A GAP')
+          : (first ? `PAPER ON THE LINE · ${this.brush.label('wash')} · WASH IT AWAY` : 'THE TRAIN WAITS AT THE PAPER');
+        noteAt(this, x + 40, TRAIN.topRow * CELL - 84, text, { tone: 'warn', hold: 2400 });
         whistle({ long: true });
         this.whistleClock = 0;
       } else if (event.type === 'train-arrived') {
@@ -718,7 +718,8 @@ export class PaintedLineScene extends Phaser.Scene {
     const waiting = this.line.state.waiting;
     if (waiting && Math.abs(this.walker.x - waiting.at * CELL) < 420) {
       const verb = waiting.reason === 'gap' ? `${b.label('paint')} · PAINT THE TRACK` : `${b.label('wash')} · WASH THE PAPER`;
-      return this.tag.show(verb, waiting.at * CELL + 10, waiting.reason === 'gap' ? TRACK_Y - 4 : TRAIN.topRow * CELL - 4);
+      // Above the train's roof, so the tag never sits on the engine.
+      return this.tag.show(verb, waiting.at * CELL + 40, TRAIN.topRow * CELL - 30);
     }
     return this.tag.hide();
   }
@@ -798,7 +799,11 @@ export class PaintedLineScene extends Phaser.Scene {
       hover: this.hover,
       tag: this.tag.visible ? this.tag.text : null,
       barriers: BARRIERS.length,
-      parts: Object.fromEntries(Object.entries(this.partRects(this.trainX)).map(([id, r]) => [id, { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h / 2) }])),
+      // A point on each part that no other part covers (wheels: the rim, below the body).
+      parts: Object.fromEntries(Object.entries(this.partRects(this.trainX)).map(([id, r]) => [id, {
+        x: Math.round(r.x + r.w / 2),
+        y: Math.round(id === 'green' ? TRACK_Y - 6 : r.y + r.h / 2),
+      }])),
       ...this.line.snapshot(),
     };
   }

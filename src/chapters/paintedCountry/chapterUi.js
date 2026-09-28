@@ -104,8 +104,14 @@ export class PaperTag {
 
 // A tiny tag nub with the amber glint, left on an interactable while it is
 // waiting to be used, so the room shows what is live before it is in reach.
-export function drawGlintMarker(g, time, x, y, { alpha = 1 } = {}) {
+export function drawGlintMarker(g, time, x, y, { alpha = 1, nub = true } = {}) {
   const pulse = reducedMotionActive() ? 0.8 : 0.55 + 0.45 * (0.5 + 0.5 * Math.sin((time / 2200) * Math.PI * 2 + x * 0.01));
+  if (!nub) {
+    // Just the glint, for small targets inside a drawing.
+    g.fillStyle(UI.amber, 0.3 * pulse * alpha).fillCircle(x, y, 7);
+    g.fillStyle(0xffe2a8, 0.95 * alpha).fillCircle(x, y, 2.6);
+    return;
+  }
   g.fillStyle(UI.paper, 0.95 * alpha);
   g.beginPath();
   g.moveTo(x - 9, y - 5);
@@ -215,7 +221,6 @@ export class ArchiveCard {
     g.clear();
     g.fillStyle(0x000000, 0.35).fillRect(-cardW / 2 + 6, -cardH / 2 + 10, cardW, cardH);
     g.fillStyle(UI.paper, 1).fillRect(-cardW / 2, -cardH / 2, cardW, cardH);
-    g.fillStyle(0xffffff, 0.12).fillRect(-cardW / 2, -cardH / 2, cardW * 0.6, cardH * 0.4);
     g.lineStyle(1, 0x2a1d14, 0.18).strokeRect(-cardW / 2, -cardH / 2, cardW, cardH);
     // the ticket punch hole every archive card carries
     g.fillStyle(0x050403, 0.85).fillCircle(cardW / 2 - 34, -cardH / 2 + 30, 11);

@@ -172,8 +172,9 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildViewer();
 
     this.brush = new BrushInput(this, {
-      anchor: () => ({ x: this.walker.x, y: this.walker.y - 10 }),
-      radius: REACH + 30,
+      anchor: () => ({ x: this.walker.x, y: this.walker.y }),
+      // The virtual cursor never leaves the brush's reach.
+      radius: REACH - 2,
     });
     this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
     this.tag = new PaperTag(this, { depth: DEPTH.HUD + 4 });
@@ -719,7 +720,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     } else {
       v.picture = null;
       this.lastPlateCell = null;
-      this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y - 10 }), REACH + 30);
+      this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y }), REACH - 2);
     }
   }
 
@@ -1239,7 +1240,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     }
     // First steps into the pigment zone: the dry brush.
     if (!this.tutorialSeen.pigment && colOf(this.walker.x) >= PIGMENT_ZONE.fromCol - 3 && this.car.state.pigment === 0) {
-      this.tag.show(`THE BRUSH IS DRY · ${b.label('wash')} THE GREY TO TAKE HER COLOUR BACK`, 102 * CELL, 16 * CELL);
+      this.tag.show(`THE BRUSH IS DRY · ${b.label('wash')} · WASH THE GREY FOR HER COLOUR`, 102 * CELL, 16 * CELL);
       return;
     }
     if (this.car.state.pigment > 0) this.tutorialSeen.pigment = true;
@@ -1306,7 +1307,7 @@ export class PaintedCountryScene extends Phaser.Scene {
         this.tutorialSeen.varnish = true;
         this.note(p.x, p.y, first ? `OFFICIAL RECORD · ${b.label('wash')} IT TWICE, THEN PAINT` : 'VARNISHED · WASH IT TWICE', 'warn', 'varnish', first ? 2600 : 1400);
       } else if (event.reason === 'no-pigment') {
-        this.note(this.walker.x, this.walker.y - 64, `DRY BRUSH · ${b.label('wash')} THE GREY FOR COLOUR`, 'no', 'dry', 1800);
+        this.note(this.walker.x, this.walker.y - 64, `DRY BRUSH · ${b.label('wash')} · WASH THE GREY FOR COLOUR`, 'no', 'dry', 1800);
       } else if (event.reason === 'sealed') {
         this.note(p.x, p.y, "THE DOOR'S OWN FACE", 'info', 'sealed', 1800);
       }
