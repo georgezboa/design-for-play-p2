@@ -18,6 +18,11 @@
 // - Machines flicker for FLICKER_MS before switching off, then travel home.
 // - Memory light (section B): a node that fired glows for MEMORY_MS after its
 //   bell.
+//
+// A node's `line` is its colour. The one-line rule applies per `circuit`
+// (default: the colour), so each district of the city can have its own
+// amber / teal / rose lines without one district's held bridge blocking
+// another's.
 
 export const BELL_MS = 4000;
 export const FLICKER_MS = 600;
@@ -38,18 +43,23 @@ function assertDefinition({ nodes, machines }) {
     }
   }
   const nodeIds = new Set();
-  const machineLine = new Map();
+  const machineCircuit = new Map();
+  const machineColor = new Map();
   for (const node of nodes) {
     if (!node.id || nodeIds.has(node.id)) throw new Error(`timetable: duplicate node ${node.id}`);
     nodeIds.add(node.id);
     if (!LINES.includes(node.line)) throw new Error(`timetable: node ${node.id} has unknown line ${node.line}`);
     if (!machineIds.has(node.machine)) throw new Error(`timetable: node ${node.id} powers missing machine ${node.machine}`);
-    const line = machineLine.get(node.machine);
-    if (line && line !== node.line) throw new Error(`timetable: machine ${node.machine} is fed by two lines`);
-    machineLine.set(node.machine, node.line);
+    const circuit = circuitOf(node);
+    const existing = machineCircuit.get(node.machine);
+    if (existing && existing !== circuit) throw new Error(`timetable: machine ${node.machine} is fed by two lines`);
+    machineCircuit.set(node.machine, circuit);
+    machineColor.set(node.machine, node.line);
   }
-  return machineLine;
+  return { machineCircuit, machineColor };
 }
+
+const circuitOf = (node) => node.circuit ?? node.line;
 
 export function createTimetable({ nodes = [], machines = [] } = {}, {
   bellMs = BELL_MS,
@@ -58,8 +68,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   cutGraceMs = CUT_GRACE_MS,
   startMs = 0,
 } = {}) {
-  const machineLine = assertDefinition({ nodes, machines });
-  const nodeById = new Map(nodes.map((node) => [node.id, { ...node }]));
+  const { machineCircuit, machineColor } = assertDefinition({ nodes, machines });
+  const nodeById = new Map(nodes.map((node) => [node.id, { ...node, circuit: circuitOf(node) }]));
   const defById = new Map(machines.map((machine) => [machine.id, { travel: 600, ...machine }]));
 
   let timeMs = startMs;
@@ -67,7 +77,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   let bellIndex = 0;
   let memoryLight = false;
   let countdown = null;
-  const queue = new Map(); // line -> nodeId
+  const queue = new Map(); // circuit -> nodeId
   const afterglow = new Map(); // nodeId -> remaining ms
   const history = []; // { nodeId, machineId, bell }
   const state = new Map();
@@ -83,12 +93,13 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     });
   }
 
-  const lineOf = (machineId) => machineLine.get(machineId) ?? null;
+  const circuitOfMachine = (machineId) => machineCircuit.get(machineId) ?? null;
+  const lineOf = (machineId) => machineColor.get(machineId) ?? null;
 
-  // A line is busy while one of its machines is powered and not already cut.
-  const busyMachineOn = (line) => {
+  // A circuit is busy while one of its machines is powered and not cut.
+  const busyMachineOn = (circuit) => {
     for (const [id, machine] of state) {
-      if (machine.powered && !machine.cut && lineOf(id) === line) return id;
+      if (machine.powered && !machine.cut && circuitOfMachine(id) === circuit) return id;
     }
     return null;
   };
@@ -159,9 +170,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     bellIndex += 1;
     sinceBell = 0;
     const fired = [];
-    for (const [line, nodeId] of queue) {
+    for (const [circuit, nodeId] of queue) {
       const node = nodeById.get(nodeId);
-      fired.push({ line, nodeId, machineId: node.machine });
+      fired.push({ circuit, nodeId, machineId: node.machine });
     }
     queue.clear();
     events.push({ type: 'bell', index: bellIndex, fired: fired.map((entry) => entry.nodeId) });
@@ -198,11 +209,11 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   const punch = (nodeId) => {
     const node = nodeById.get(nodeId);
     if (!node) return { result: 'unknown', nodeId };
-    const { line } = node;
+    const { line, circuit } = node;
     const machine = state.get(node.machine);
 
-    if (queue.get(line) === nodeId) {
-      queue.delete(line);
+    if (queue.get(circuit) === nodeId) {
+      queue.delete(circuit);
       return { result: 'unqueued', nodeId, line };
     }
     if (machine.powered && !machine.cut) {
@@ -213,10 +224,10 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       machine.cut = true;
       return { result: 'cut', nodeId, line, machineId: node.machine, remaining: machine.remaining };
     }
-    const holder = busyMachineOn(line);
+    const holder = busyMachineOn(circuit);
     if (holder) return { result: 'busy', nodeId, line, holder };
-    const cancelled = queue.get(line) ?? null;
-    queue.set(line, nodeId);
+    const cancelled = queue.get(circuit) ?? null;
+    queue.set(circuit, nodeId);
     return cancelled
       ? { result: 'replaced', nodeId, line, cancelled }
       : { result: 'queued', nodeId, line };
@@ -234,9 +245,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   const hold = (machineId, nodeId = null) => {
     if (!state.has(machineId)) return [];
     const events = [];
-    const line = lineOf(machineId);
-    const queued = line ? queue.get(line) : null;
-    if (queued) queue.delete(line);
+    const circuit = circuitOfMachine(machineId);
+    const queued = circuit ? queue.get(circuit) : null;
+    if (queued) queue.delete(circuit);
     powerOn(machineId, nodeId, events, { hold: true });
     return events;
   };
@@ -273,7 +284,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     const node = nodeById.get(nodeId);
     if (!node) return null;
     const machine = state.get(node.machine);
-    const queued = queue.get(node.line) === nodeId;
+    const queued = queue.get(node.circuit) === nodeId;
     const powering = machine.powered && machine.poweredBy === nodeId;
     return {
       id: nodeId,
@@ -283,7 +294,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       powering,
       poweringMachine: machine.powered,
       cut: machine.powered && machine.cut,
-      lineBusy: Boolean(busyMachineOn(node.line)),
+      circuit: node.circuit,
+      lineBusy: Boolean(busyMachineOn(node.circuit)),
       afterglow: afterglow.has(nodeId) ? afterglow.get(nodeId) / memoryMs : 0,
     };
   };
@@ -342,8 +354,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     machineStatus,
     snapshot,
     lineOf,
-    lineBusy: (line) => Boolean(busyMachineOn(line)),
-    queuedOn: (line) => queue.get(line) ?? null,
+    circuitOf: circuitOfMachine,
+    lineBusy: (circuit) => Boolean(busyMachineOn(circuit)),
+    queuedOn: (circuit) => queue.get(circuit) ?? null,
     isQueued: (nodeId) => [...queue.values()].includes(nodeId),
     setMemoryLight: (on) => { memoryLight = Boolean(on); if (!memoryLight) afterglow.clear(); },
     memoryLightOn: () => memoryLight,

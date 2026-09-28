@@ -114,7 +114,7 @@ export const NODES = Object.freeze([
   { id: 'a-n2', line: 'teal', machine: 'a-lift1', x: 2540, y: 760, mount: 'pole', section: 'A' },
   // A3 · lift + bridge on different lines, both punched from the low roof.
   { id: 'a-n3', line: 'teal', machine: 'a-lift2', x: 4390, y: 760, mount: 'pole', section: 'A' },
-  { id: 'a-n4', line: 'amber', machine: 'a-bridge2', x: 4280, y: 760, mount: 'pole', section: 'A' },
+  { id: 'a-n4', line: 'rose', machine: 'a-bridge2', x: 4280, y: 760, mount: 'pole', section: 'A' },
   // A4 · one amber line, two machines.
   { id: 'a-n5', line: 'amber', machine: 'a-bridge3', x: 5500, y: 460, mount: 'pole', section: 'A' },
   { id: 'a-n6', line: 'amber', machine: 'a-billboard', x: 5390, y: 460, mount: 'pole', section: 'A' },
@@ -181,7 +181,7 @@ export const MARA_SIGHTINGS = Object.freeze([
 // the parallax skyline; 'near' signs hang on playfield buildings. Every sign
 // dies when the blackout starts.
 export const SIGNS = Object.freeze([
-  { x: 1240, y: 560, text: 'CITY TERMINAL', color: 'amber', layer: 'near', w: 300 },
+  { x: 330, y: 548, text: 'CITY TERMINAL', color: 'amber', layer: 'near', w: 300 },
   { x: 3260, y: 250, text: 'TICKETS', color: 'teal', layer: 'near', w: 170 },
   { x: 4000, y: 600, text: 'LAUNDRY', color: 'rose', layer: 'near', w: 170 },
   { x: 5260, y: 320, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
@@ -323,10 +323,13 @@ export function resolveStartSection({ search = '', devMode = false, unlocked = [
   return unlocked.includes(SECTION_CHECKPOINTS[requested]) ? requested : 'A';
 }
 
+export const circuitKey = (section, line) => `${section}:${line}`;
+
 // The tuple the timetable model is built from.
 export function timetableDefinition() {
   return {
-    nodes: NODES.map(({ id, line, machine }) => ({ id, line, machine })),
+    // Each section is its own district: its lines are its own circuits.
+    nodes: NODES.map(({ id, line, machine, section }) => ({ id, line, machine, circuit: circuitKey(section, line) })),
     machines: MACHINES.map(({ id, kind, duration, travel }) => ({ id, kind, duration, travel })),
   };
 }

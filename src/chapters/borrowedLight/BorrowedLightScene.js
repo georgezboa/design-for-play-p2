@@ -40,6 +40,7 @@ import {
   TRAIN,
   WORLD,
   cableFor,
+  circuitKey,
   lampById,
   machineBounds,
   machineById,
@@ -125,6 +126,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.physics.world.setBounds(-800, WORLD.top - 600, WORLD.width + 1600, WORLD.bottom - WORLD.top + 1200);
     this.physics.world.timeScale = 1 / this.timescale;
     this.tweens.timeScale = this.timescale;
+    // QA on a slow software renderer: tweens must not drop long frames either.
+    if (this.maxFrameMs > 100) this.tweens.setLagSmooth(5000, 1000);
     this.time.timeScale = this.timescale;
 
     buildSharedTextures(this);
@@ -177,7 +180,15 @@ export class BorrowedLightScene extends Phaser.Scene {
   buildPlatforms() {
     this.solids = this.physics.add.staticGroup();
     PLATFORMS.forEach((platform) => {
-      const art = buildPlatformArt(this, platform);
+      const blackout = sectionAt(platform.x + platform.w / 2) === 'B';
+      const exclude = [
+        ...MACHINES.map((m) => { const b = machineBounds(m, 1); return [Math.min(b.x, m.x) - 60, Math.max(b.x + b.w, m.x + (m.w ?? 0)) + 60]; }),
+        ...NODES.map((n) => [n.x - 70, n.x + 70]),
+        ...LAMPS.map((l) => [l.x - 40, l.x + 80]),
+        [MECHANIC.x - 180, MECHANIC.x + 180],
+        [BENCH.x - 140, BENCH.x + 140],
+      ];
+      const art = buildPlatformArt(this, platform, { blackout, exclude });
       this.addCull(art.objects, art.x0, art.x1);
       const h = platform.kind === 'ledge'
         ? platform.h ?? 34
@@ -196,8 +207,16 @@ export class BorrowedLightScene extends Phaser.Scene {
     // A few catenary wires with hanging shades in front of everything: the
     // near layer that makes the roofs feel inside a city, not on a stage.
     const g = this.add.graphics().setScrollFactor(1.18, 1.05).setDepth(DEPTH.near);
+    const roofTopNear = (wx) => {
+      const p = PLATFORMS.filter((q) => q.kind === 'roof').reduce((best, q) => {
+        const d = Math.abs(q.x + q.w / 2 - wx);
+        return !best || d < best.d ? { d, y: q.y } : best;
+      }, null);
+      return p ? p.y : 600;
+    };
     for (let x = 400; x < WORLD.width * 1.18 + 2000; x += 1500 + (x % 700)) {
-      const y = -260 + ((x * 7) % 180);
+      // Screen-relative: sit well above the roofs the camera will be framing.
+      const y = roofTopNear(x / 1.18) * 1.05 - 640 + ((x * 7) % 120);
       const span = 900 + ((x * 3) % 500);
       g.lineStyle(3, 0x050506, 0.95);
       g.beginPath();
@@ -259,6 +278,16 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hotelG = hg;
     this.stub = this.add.graphics().setDepth(DEPTH.building + 0.7);
     this.addCull([hg, this.stub], hx - 700, hx + 700);
+
+    // The plant room's doorway (behind the shutter): a dark passage with posts.
+    const plant = PLATFORMS.find((p) => p.id === 'b-plant');
+    if (plant) {
+      const pg = this.add.graphics().setDepth(DEPTH.building - 0.2);
+      pg.fillStyle(0x07090a, 1).fillRect(plant.x, plant.bottom, plant.w, 300 - plant.bottom);
+      pg.fillStyle(0x151b1d, 1).fillRect(plant.x, plant.bottom, 14, 300 - plant.bottom).fillRect(plant.x + plant.w - 14, plant.bottom, 14, 300 - plant.bottom);
+      pg.lineStyle(1.4, INK_HEX, 0.4).lineBetween(plant.x, plant.bottom, plant.x, 300).lineBetween(plant.x + plant.w, plant.bottom, plant.x + plant.w, 300);
+      this.addCull([pg], plant.x - 200, plant.x + plant.w + 200);
+    }
 
     // Bench with Mara's letter.
     const bg = this.add.graphics().setDepth(DEPTH.prop + 1);
@@ -403,17 +432,27 @@ export class BorrowedLightScene extends Phaser.Scene {
     });
     kb.addCapture(['SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
     this.jumpQueued = false;
+    // A long frame can hand the same DOM keydown to a Key twice; every
+    // press must act once.
+    const seen = new WeakSet();
+    const once = (fn) => (_key, event) => {
+      if (event && typeof event === 'object') {
+        if (seen.has(event)) return;
+        seen.add(event);
+      }
+      fn();
+    };
     const jumpDown = () => {
       if (this.hud.cardOpen) { this.hud.closeCard(); return; }
       if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
       this.jumpQueued = true;
     };
-    this.keys.space.on('down', jumpDown);
-    this.keys.up.on('down', () => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; });
-    this.keys.w.on('down', () => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; });
-    this.keys.e.on('down', () => this.interact());
-    this.keys.enter.on('down', () => { if (this.hud.cardOpen) this.hud.closeCard(); else if (this.hud.dialogOpen) this.hud.advanceDialog(); });
-    this.keys.f.on('down', () => this.punch());
+    this.keys.space.on('down', once(jumpDown));
+    this.keys.up.on('down', once(() => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; }));
+    this.keys.w.on('down', once(() => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; }));
+    this.keys.e.on('down', once(() => this.interact()));
+    this.keys.enter.on('down', once(() => { if (this.hud.cardOpen) this.hud.closeCard(); else if (this.hud.dialogOpen) this.hud.advanceDialog(); }));
+    this.keys.f.on('down', once(() => this.punch()));
     this.input.on('pointerdown', (pointer) => {
       if (pointer.rightButtonDown()) return;
       if (this.hud.cardOpen) { this.hud.closeCard(); return; }
@@ -521,7 +560,7 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   killSigns(instant) {
-    this.signs.forEach((sign, i) => {
+    this.signs.filter((sign) => sectionAt(sign.x) !== 'C').forEach((sign, i) => {
       const off = () => {
         sign.lit = false;
         sign.img.setTexture(sign.offKey);
@@ -541,7 +580,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.blackout = on;
     this.dark.rt.setVisible(true);
     this.dark.rim.setVisible(on);
-    this.darkTarget = on ? 0.9 : 0;
+    this.darkTarget = on ? 0.86 : 0;
     if (instant) this.dark.alpha = this.darkTarget;
     this.nextLightning = this.clock + 6 + Math.random() * 6;
   }
@@ -608,6 +647,10 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   punch() {
     if (this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen) return;
+    // One press, one punch: a keydown can arrive twice in one long frame.
+    const now = performance.now();
+    if (now - (this.lastPunchAt ?? -1e9) < 160) return;
+    this.lastPunchAt = now;
     const node = this.targetNode();
     if (!node) return;
     const view = this.nodeViews.get(node.id);
@@ -673,6 +716,9 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   interact() {
+    const now = performance.now();
+    if (now - (this.lastInteractAt ?? -1e9) < 160) return;
+    this.lastInteractAt = now;
     if (this.hud.cardOpen) { this.hud.closeCard(); return; }
     if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
     if (this.locked || this.respawning || this.clock < (this.interactCooldown ?? 0)) return;
@@ -1382,7 +1428,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const rt = d.rt;
     rt.clear();
     const lightningLift = this.flashT * 0.6;
-    rt.fill(0x03060a, Math.max(0, d.alpha - lightningLift));
+    rt.fill(0x03070c, Math.max(0, d.alpha - lightningLift));
     const brush = d.brush;
     const light = (wx, wy, radius, strength = 1) => {
       const sx = wx - view.x;
@@ -1445,10 +1491,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     const snap = this.tt;
     const lines = {};
     for (const line of ['amber', 'teal', 'rose']) {
-      const queued = snap.queuedOn(line);
+      const circuit = circuitKey(this.section, line);
+      const queued = snap.queuedOn(circuit);
       let state = queued ? 'queued' : 'idle';
-      if (!queued && snap.lineBusy(line)) {
-        const holder = MACHINES.find((m) => snap.lineOf(m.id) === line && snap.machineStatus(m.id).powered && !snap.machineStatus(m.id).cut);
+      if (!queued && snap.lineBusy(circuit)) {
+        const holder = MACHINES.find((m) => snap.circuitOf(m.id) === circuit && snap.machineStatus(m.id).powered && !snap.machineStatus(m.id).cut);
         state = holder && snap.machineStatus(holder.id).held ? 'held' : 'powering';
       }
       lines[line] = state;

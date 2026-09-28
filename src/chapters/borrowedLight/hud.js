@@ -237,6 +237,9 @@ export class BorrowedLightHud {
   advanceDialog() {
     const d = this.dialog;
     if (!d) return;
+    const now = performance.now();
+    if (now - (this.lastAdvanceAt ?? -1e9) < 160) return;
+    this.lastAdvanceAt = now;
     const line = d.lines[d.index];
     if (d.shown < line.text.length) { d.shown = line.text.length; this.renderDialog(); return; }
     d.index += 1;
@@ -272,6 +275,7 @@ export class BorrowedLightHud {
   // ---- cards ---------------------------------------------------------------
   openCard({ heading, subheading = '', lines, kind = 'archive' }, onClose) {
     this.cardState = { onClose };
+    this.cardOpenedAt = performance.now();
     const g = this.cardPaper;
     g.clear();
     const x = 500;
@@ -309,6 +313,7 @@ export class BorrowedLightHud {
 
   closeCard() {
     if (!this.cardState) return;
+    if (performance.now() - this.cardOpenedAt < 250) return;
     const { onClose } = this.cardState;
     this.cardState = null;
     this.scene.tweens.add({ targets: this.card, alpha: 0, duration: 200, onComplete: () => this.card.setVisible(false) });

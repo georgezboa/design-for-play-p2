@@ -91,7 +91,7 @@ export function gradePanorama(scene, keys) {
     const canvas = makeCanvas(src.width * scale, src.height * scale);
     const ctx = canvas.getContext('2d');
     ctx.imageSmoothingEnabled = true;
-    try { ctx.filter = 'saturate(0.32) brightness(0.62) contrast(0.92) blur(1.1px)'; } catch { /* no canvas filter */ }
+    try { ctx.filter = 'saturate(0.34) brightness(0.8) contrast(0.9) blur(1.1px)'; } catch { /* no canvas filter */ }
     ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
     ctx.filter = 'none';
     // Cold grade + a veil of rain haze that thickens toward the ground.
@@ -100,8 +100,8 @@ export function gradePanorama(scene, keys) {
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.globalCompositeOperation = 'source-over';
     const veil = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    veil.addColorStop(0, 'rgba(8,14,20,0.55)');
-    veil.addColorStop(0.5, 'rgba(18,28,34,0.25)');
+    veil.addColorStop(0, 'rgba(8,14,20,0.4)');
+    veil.addColorStop(0.5, 'rgba(18,28,34,0.16)');
     veil.addColorStop(1, 'rgba(40,52,58,0.55)');
     ctx.fillStyle = veil;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -210,7 +210,7 @@ function paintLedge(platform) {
   return { canvas, originX: 4, originY: 0 };
 }
 
-export function buildPlatformArt(scene, platform, { blackout = false } = {}) {
+export function buildPlatformArt(scene, platform, { blackout = false, exclude = [] } = {}) {
   const seed = hashString(platform.id);
   const objects = [];
   if (platform.kind === 'ledge') {
@@ -219,7 +219,7 @@ export function buildPlatformArt(scene, platform, { blackout = false } = {}) {
     objects.push(scene.add.image(platform.x - originX, platform.y, key).setOrigin(0).setDepth(DEPTH.building + 1));
     return { objects, x0: platform.x - 20, x1: platform.x + platform.w + 20 };
   }
-  const { canvas, originX, originY, facadeH } = paintFacade(platform, { seed, blackout });
+  const { canvas, originX, originY, facadeH } = paintFacade(platform, { seed, blackout, exclude });
   const key = addCanvasTexture(scene, `bl-facade-${platform.id}`, canvas);
   objects.push(scene.add.image(platform.x - originX, platform.y - originY, key).setOrigin(0).setDepth(DEPTH.building));
   const wallTop = platform.y + facadeH;

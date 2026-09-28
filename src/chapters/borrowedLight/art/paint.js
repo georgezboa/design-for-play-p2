@@ -334,7 +334,7 @@ const STYLE = {
   watertower: { top: '#261b14', bottom: '#0f0a07', trim: '#18110c', win: [30, 46], cols: 60, rows: 90, lit: 0.22 },
   stairhead: { top: '#2e2119', bottom: '#1a120d', trim: '#1f160f', win: [0, 0], cols: 0, rows: 0, lit: 0 },
   plantroom: { top: '#1e2a2d', bottom: '#11191b', trim: '#0f1618', win: [0, 0], cols: 0, rows: 0, lit: 0 },
-  concourse: { top: '#26221d', bottom: '#0d0b09', trim: '#17130f', win: [54, 80], cols: 150, rows: 150, lit: 0.35, arch: true },
+  concourse: { top: '#26221d', bottom: '#0d0b09', trim: '#17130f', win: [0, 0], cols: 0, rows: 0, lit: 0 },
   platform: { top: '#2e2822', bottom: '#110e0b', trim: '#1b1713', win: [0, 0], cols: 0, rows: 0, lit: 0 },
   gantry: { top: '#1b2226', bottom: '#0d1114', trim: '#0d1114', win: [0, 0], cols: 0, rows: 0, lit: 0 },
 };
@@ -343,7 +343,7 @@ export function styleOf(name) { return STYLE[name] ?? STYLE.tenement; }
 
 // Paint the top of a building: HEADROOM px of sky with props, then the roof
 // edge at y = HEADROOM, then FACADE_DEPTH px of wall with windows.
-export function paintFacade(platform, { seed = 1, props = true, blackout = false } = {}) {
+export function paintFacade(platform, { seed = 1, props = true, blackout = false, exclude = [] } = {}) {
   const r = rng(seed);
   const st = styleOf(platform.style);
   const w = platform.w;
@@ -354,7 +354,7 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
   const top = HEADROOM;
   const x0 = pad;
 
-  if (props && !['stairhead', 'plantroom', 'gantry', 'terminal', 'platform', 'concourse', 'hotel'].includes(platform.style)) paintRoofProps(ctx, platform, x0, top, r);
+  if (props && !['stairhead', 'plantroom', 'gantry', 'terminal', 'platform', 'concourse', 'hotel'].includes(platform.style)) paintRoofProps(ctx, platform, x0, top, r, exclude);
 
   // Wall.
   const wall = ctx.createLinearGradient(0, top, 0, top + facadeH);
@@ -463,9 +463,10 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
   return { canvas, originX: pad, originY: HEADROOM, facadeH };
 }
 
-function paintRoofProps(ctx, platform, x0, top, r) {
+function paintRoofProps(ctx, platform, x0, top, r, exclude = []) {
   const w = platform.w;
-  const occupied = [];
+  // Keep props clear of machines, nodes and lamps (world x → canvas x).
+  const occupied = exclude.map(([a, b]) => [a - platform.x + x0, b - platform.x + x0]);
   const free = (x, width) => !occupied.some(([a, b]) => x < b + 20 && x + width > a - 20);
   const place = (x, width) => { occupied.push([x, x + width]); };
   // Keep props dim: they sit behind the roof edge and are never walkable.
@@ -565,15 +566,42 @@ function stationEdge(ctx, x0, top, w, h, r, style) {
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   for (let tx = x0; tx < x0 + w; tx += 36) ctx.fillRect(tx, top + 16, 1, 18);
   if (style === 'concourse') {
-    // Arcade arches below.
-    ctx.fillStyle = 'rgba(5,4,3,0.7)';
-    for (let ax = x0 + 40; ax < x0 + w - 120; ax += 200) {
-      ctx.beginPath();
-      ctx.moveTo(ax, top + h);
-      ctx.lineTo(ax, top + 200);
-      ctx.arc(ax + 70, top + 200, 70, Math.PI, 0);
-      ctx.lineTo(ax + 140, top + h);
-      ctx.fill();
+    // Station arcade below: tall arches with warm waiting-room light.
+    for (let ax = x0 + 40; ax < x0 + w - 150; ax += 210) {
+      const arch = () => {
+        ctx.beginPath();
+        ctx.moveTo(ax, top + h);
+        ctx.lineTo(ax, top + 190);
+        ctx.arc(ax + 75, top + 190, 75, Math.PI, 0);
+        ctx.lineTo(ax + 150, top + h);
+        ctx.closePath();
+      };
+      ctx.save();
+      arch();
+      ctx.clip();
+      const g = ctx.createLinearGradient(0, top + 110, 0, top + h);
+      g.addColorStop(0, 'rgba(12,9,7,1)');
+      g.addColorStop(0.35, 'rgba(90,56,26,0.9)');
+      g.addColorStop(1, 'rgba(20,14,10,1)');
+      ctx.fillStyle = g;
+      ctx.fillRect(ax, top + 100, 150, h);
+      // Mullioned fanlight.
+      ctx.strokeStyle = 'rgba(12,9,7,0.95)';
+      ctx.lineWidth = 3;
+      for (let k = 0; k < 5; k += 1) {
+        const a = Math.PI + (k / 4) * Math.PI;
+        ctx.beginPath(); ctx.moveTo(ax + 75, top + 190); ctx.lineTo(ax + 75 + Math.cos(a) * 75, top + 190 + Math.sin(a) * 75); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.moveTo(ax, top + 190); ctx.lineTo(ax + 150, top + 190); ctx.stroke();
+      // A figure or two waiting.
+      if (r() < 0.6) {
+        ctx.fillStyle = 'rgba(14,10,8,0.9)';
+        const fx = ax + 40 + r() * 70;
+        ctx.beginPath(); ctx.arc(fx, top + 300, 9, 0, Math.PI * 2); ctx.fill();
+        ctx.fillRect(fx - 12, top + 310, 24, 70);
+      }
+      ctx.restore();
+      inkPath(ctx, Array.from({ length: 13 }, (_, i) => [ax + 75 + Math.cos(Math.PI + (i / 12) * Math.PI) * 76, top + 190 + Math.sin(Math.PI + (i / 12) * Math.PI) * 76]), { width: 1.4, alpha: 0.3, r });
     }
   } else {
     // Platform: canopy columns in the headroom.
@@ -664,47 +692,83 @@ export function paintSkylineStrip({ width = 2048, height = 900, seed = 1, tone =
   const canvas = makeCanvas(width, height);
   const ctx = canvas.getContext('2d');
   const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-  const near = [14, 12, 12];
-  const far = [34, 48, 58];
-  const [cr, cg, cb] = mix(near, far, tone);
-  const body = `rgb(${cr},${cg},${cb})`;
-  let x = -40;
-  while (x < width + 40) {
-    const bw = 90 + r() * 220;
-    const bh = height * (1 - baseY) * (0.35 + r() * 0.75);
+  const near = [16, 13, 12];
+  const far = [30, 42, 50];
+  const base = mix(near, far, tone);
+  const col = (k = 0, a = 1) => `rgba(${Math.round(base[0] + k)},${Math.round(base[1] + k)},${Math.round(base[2] + k * 1.1)},${a})`;
+  const building = (x, bw, bh) => {
     const by = height - bh;
-    ctx.fillStyle = body;
+    // Body with a faint vertical falloff and a cold lit edge.
+    const g = ctx.createLinearGradient(0, by, 0, height);
+    g.addColorStop(0, col(4));
+    g.addColorStop(1, col(-4));
+    ctx.fillStyle = g;
     ctx.fillRect(x, by, bw, bh);
+    ctx.fillStyle = `rgba(111,183,173,${0.05 * (1 - tone * 0.4)})`;
+    ctx.fillRect(x, by, 3, bh);
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(x + bw - 10, by, 10, bh);
+    // Setback crown.
+    if (r() < 0.45 && bw > 110) {
+      const cw = bw * (0.4 + r() * 0.35);
+      const ch = 30 + r() * 70;
+      ctx.fillStyle = col(2);
+      ctx.fillRect(x + (bw - cw) / 2, by - ch, cw, ch);
+      ctx.fillStyle = `rgba(234,223,198,${0.12 * (1 - tone * 0.6)})`;
+      ctx.fillRect(x + (bw - cw) / 2, by - ch, cw, 1.5);
+    }
     // Roof furniture silhouettes.
-    if (r() < 0.35) {
+    ctx.fillStyle = col(0);
+    const kind = r();
+    if (kind < 0.3) {
       const tx = x + bw * (0.2 + r() * 0.5);
       ctx.fillRect(tx, by - 50, 46, 38);
       ctx.fillRect(tx + 6, by - 14, 4, 14); ctx.fillRect(tx + 36, by - 14, 4, 14);
       ctx.beginPath(); ctx.moveTo(tx - 4, by - 50); ctx.lineTo(tx + 23, by - 72); ctx.lineTo(tx + 50, by - 50); ctx.fill();
-    } else if (r() < 0.4) {
-      ctx.fillRect(x + bw * 0.6, by - 90 - r() * 60, 3, 150);
-    } else if (r() < 0.3) {
+    } else if (kind < 0.6) {
+      const ax = x + bw * (0.3 + r() * 0.5);
+      const ah = 60 + r() * 110;
+      ctx.fillRect(ax, by - ah, 3, ah);
+      ctx.fillRect(ax - 14, by - ah * 0.7, 31, 2);
+      ctx.fillStyle = `rgba(240,184,101,${0.55 * (1 - tone * 0.5)})`;
+      ctx.fillRect(ax - 1, by - ah - 3, 5, 5);
+    } else if (kind < 0.75) {
       ctx.beginPath(); ctx.moveTo(x, by); ctx.lineTo(x + bw / 2, by - 40 - r() * 30); ctx.lineTo(x + bw, by); ctx.fill();
     }
-    // Windows.
-    for (let wy = by + 20; wy < height - 10; wy += 26 + tone * 8) {
-      for (let wx = x + 10; wx < x + bw - 12; wx += 20 + tone * 6) {
-        if (r() < windows * (1 - tone * 0.5)) {
-          const a = 0.35 + r() * 0.5;
-          ctx.fillStyle = r() < 0.85 ? `rgba(240,184,101,${a * (1 - tone * 0.55)})` : `rgba(111,183,173,${a * 0.6})`;
-          ctx.fillRect(wx, wy, 8 - tone * 3, 11 - tone * 4);
+    // Windows: rows of small panes, a few floors awake.
+    const pw = 7 - tone * 2.5;
+    const ph = 10 - tone * 3.5;
+    const sx = 18 - tone * 4;
+    const sy = 24 - tone * 6;
+    for (let wy = by + 16; wy < height - 8; wy += sy) {
+      const rowLit = r() < 0.3 ? 2.2 : 0.6;
+      for (let wx = x + 8; wx < x + bw - 10; wx += sx) {
+        const roll = r();
+        if (roll < windows * rowLit) {
+          const a = (0.35 + r() * 0.45) * (1 - tone * 0.5);
+          ctx.fillStyle = r() < 0.88 ? `rgba(240,184,101,${a})` : `rgba(159,217,207,${a * 0.7})`;
+          ctx.fillRect(wx, wy, pw, ph);
+        } else if (roll < 0.5) {
+          ctx.fillStyle = 'rgba(0,0,0,0.16)';
+          ctx.fillRect(wx, wy, pw, ph);
         }
       }
     }
     // Faint ink rim on the roofline.
-    ctx.fillStyle = `rgba(234,223,198,${0.16 * (1 - tone * 0.7)})`;
+    ctx.fillStyle = `rgba(234,223,198,${0.18 * (1 - tone * 0.7)})`;
     ctx.fillRect(x, by, bw, 1.5);
+  };
+  let x = -40;
+  while (x < width + 40) {
+    const bw = 90 + r() * 220;
+    const bh = height * (1 - baseY) * (0.35 + r() * 0.75);
+    building(x, bw, bh);
     x += bw + (r() < 0.3 ? r() * 40 : -4);
   }
   // Atmospheric haze toward the bottom (the rain mist below the roofs).
-  const haze = ctx.createLinearGradient(0, height * 0.55, 0, height);
-  haze.addColorStop(0, 'rgba(60,78,88,0)');
-  haze.addColorStop(1, `rgba(60,78,88,${0.25 + tone * 0.35})`);
+  const haze = ctx.createLinearGradient(0, height * 0.5, 0, height);
+  haze.addColorStop(0, 'rgba(56,72,82,0)');
+  haze.addColorStop(1, `rgba(56,72,82,${0.22 + tone * 0.3})`);
   ctx.fillStyle = haze;
   ctx.fillRect(0, 0, width, height);
   return canvas;

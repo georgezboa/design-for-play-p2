@@ -155,6 +155,9 @@ function player(tt) {
 
 test('scripted solve · A1–A2: punch, bell, cross; punch, ride', () => {
   const tt = createTimetable(timetableDefinition());
+  // As in the game: section B's bridge is held by the city from the start;
+  // its teal circuit must not block section A's teal lift.
+  tt.hold('b-bridge');
   const p = player(tt);
   p.at(700);
   tt.update(1234); // arbitrary phase
@@ -189,6 +192,10 @@ test('scripted solve · A3: lift and bridge on different lines share one bell', 
   assert.equal(tt.machineStatus('a-bridge2').level, 1, 'bridge already out when the lift arrives');
   p.walkTo(5200);
   assert.equal(tt.machineStatus('a-bridge2').powered, true);
+  // Step 4 starts right away: the bridge just crossed must not be holding
+  // the line step 4 teaches with.
+  p.walkTo(5500);
+  assert.equal(tt.punch('a-n5').result, 'queued');
 });
 
 test('scripted solve · A4: the amber line holds a bridge OR a billboard', () => {

@@ -266,3 +266,23 @@ test('snapshot is plain JSON with bell phase, queue, machines and afterglow', ()
   assert.equal(snap.machines.held.remaining, null);
   assert.equal(snap.memoryLight, true);
 });
+
+test('circuits: the same colour in two districts are separate lines', () => {
+  const tt = createTimetable({
+    nodes: [
+      { id: 'a-teal', line: 'teal', machine: 'a-lift', circuit: 'A:teal' },
+      { id: 'b-teal', line: 'teal', machine: 'b-bridge', circuit: 'B:teal' },
+    ],
+    machines: [
+      { id: 'a-lift', duration: 5000 },
+      { id: 'b-bridge', duration: 'hold' },
+    ],
+  });
+  tt.hold('b-bridge');
+  assert.equal(tt.lineBusy('B:teal'), true);
+  assert.equal(tt.lineBusy('A:teal'), false);
+  assert.equal(tt.punch('a-teal').result, 'queued');
+  assert.equal(tt.lineOf('a-lift'), 'teal');
+  assert.equal(tt.circuitOf('a-lift'), 'A:teal');
+  assert.deepEqual(tt.snapshot().queued, { 'A:teal': 'a-teal' });
+});
