@@ -1,7 +1,12 @@
 // Central asset manifest. Spritesheets in public/assets/black-knife/images/conductor are
-// generated from the "Chapter 6 final boss" art drops (see art-source/ and
-// tools/process_assets.py): frames normalized, bottom-center anchored, packed
-// per animation. Any entry with path:null gets a generated placeholder.
+// Mathias's "Chapter 6 final boss" art drops (frames normalized, bottom-centre
+// anchored, packed per animation), gradient-mapped in 2026-09 from the old
+// neon palette to the finale's walnut / oxblood / brass / amber / ivory ramp
+// for THE BLACK TICKET. Any entry with path:null gets a painted placeholder
+// (PreloadScene.makeFallbacks).
+//
+// The battle music (face-the-fear.mp3) has no recorded provenance and is
+// listed for replacement in docs/MUSIC_REPLACEMENT_PLAN.md.
 
 export const CONDUCTOR_SHEETS = {
   'conductor-idle':   { path: '/assets/black-knife/images/conductor/idle.webp',   sheet: { frameWidth: 399, frameHeight: 428 }, frameRate: 8,  repeat: -1 },
@@ -14,8 +19,8 @@ export const CONDUCTOR_SHEETS = {
 };
 
 export const IMAGE_MANIFEST = {
-  // Player + projectiles + environment use generated neon placeholders for
-  // now — drop real art in public/assets and point these paths at it.
+  // Player (a punched ticket), projectiles and environment are painted in
+  // PreloadScene; drop real art in public/assets and point these paths at it.
   'player-ship': { path: null },
   'bullet-player': { path: null },
   'ticket': { path: null },

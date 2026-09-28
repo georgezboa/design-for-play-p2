@@ -184,6 +184,8 @@ export function createTagLayer(parent) {
 // Title card (.nf-title-card): kicker, main line, rule, optional sub-line.
 
 export function showTitleCard({ kicker = '', main = '', sub = '', duration = 4600, parent = document.body } = {}) {
+  // One card at a time: a new card replaces one still fading out.
+  parent.querySelectorAll(':scope > .nf-title-card').forEach((old) => old.remove());
   const card = el('div', 'nf-title-card');
   card.style.animationDuration = `${duration}ms`;
   card.innerHTML = '<div><p class="nf-title-card__kicker"></p><p class="nf-title-card__main"></p><div class="nf-title-card__rule"></div><p class="nf-title-card__sub"></p></div>';

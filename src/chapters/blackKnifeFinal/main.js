@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H } from './constants.js';
+import { W, H, BOSS, phaseStartHp } from './constants.js';
 import PreloadScene from './scenes/PreloadScene.js';
 import BossScene from './scenes/BossScene.js';
 import { magicStoneSnapshot } from '../../shell/magicStones.js';
@@ -22,7 +22,7 @@ const redirectToConductor = !stones.allCollected && !DEV_MODE && !qaMode && !eas
 if (redirectToConductor) {
   window.location.replace('/final-boss.html?from=chapter5');
 } else {
-  // The Black Knife fight is Chapter 6 too: Continue from this slot resumes
+  // The Black Ticket fight is Chapter 6 too: Continue from this slot resumes
   // here (see resolveCheckpointRoute in finalBossRoute.js).
   createSaveStore().markCheckpoint('chapter-6-start');
 }
@@ -40,7 +40,7 @@ const game = new Phaser.Game({
   width: W,
   height: H,
   parent: 'game',
-  backgroundColor: '#050008',
+  backgroundColor: '#0b0806',
   scene: [PreloadScene, BossScene],
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   render: { antialias: true, pixelArt: false },
@@ -71,9 +71,10 @@ window.addEventListener('nightfall:pause', (event) => {
   if (event.detail?.paused) game.sound.pauseAll();
   else if (document.querySelector('#pause-overlay').classList.contains('hidden')) game.sound.resumeAll();
 });
-document.querySelectorAll('.segmented').forEach(group => group.addEventListener('click', event => {
-  if (!event.target.matches('button')) return;
-  const value = event.target.dataset.value === 'on';
+document.querySelectorAll('.nf-segmented[id]').forEach(group => group.addEventListener('click', event => {
+  const button = event.target.closest('button');
+  if (!button) return;
+  const value = button.dataset.value === 'on';
   if (group.id.endsWith('shake')) window.__conductorSettings.shake = value;
   if (group.id.endsWith('flash')) window.__conductorSettings.flash = value;
   syncToggles();
@@ -113,6 +114,20 @@ document.querySelector('#again').addEventListener('click', () => {
   document.querySelector('#result').classList.add('hidden');
   window.__battleScene?.fullReset();
   document.querySelector('#menu').classList.remove('hidden');
+  document.querySelector('#start')?.focus({ preventScroll: true });
+});
+
+// Phase checkpoint: retry from the phase the passenger reached.
+document.querySelector('#retry-phase').addEventListener('click', () => {
+  document.querySelector('#result').classList.add('hidden');
+  game.sound.unlock();
+  window.__battleScene?.retryFromPhase();
+});
+
+// ASSIST (slower bullets, six lives) is offered after two failures.
+document.querySelector('#assist-offer [data-assist]').addEventListener('click', () => {
+  const scene = window.__battleScene;
+  scene?.setAssist(!scene.assist);
 });
 
 document.querySelector('#ending').addEventListener('click', () => window.location.assign(`/true-ending.html${qaMode ? '?qa=1' : ''}`));
@@ -125,12 +140,28 @@ document.querySelector('#mute').addEventListener('click', event => {
 });
 
 if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
-  scene: 'black-knife-final',
+  scene: 'black-ticket-final',
   entry: easterEggMode ? 'title-easter-egg' : 'five-stone-route',
   access: { collected: stones.collected, required: stones.total, unlocked: stones.allCollected || DEV_MODE || qaMode || easterEggMode },
   state: window.__battleScene?.stateFlag ?? 'loading',
   player: window.__battleScene?.player ? { x: Math.round(window.__battleScene.player.x), y: Math.round(window.__battleScene.player.y), lives: window.__battleScene.player.lives, shields: window.__battleScene.player.shieldCharges } : null,
-  boss: window.__battleScene?.boss ? { hp: window.__battleScene.boss.hp, phase: window.__battleScene.boss.phase } : null,
+  boss: window.__battleScene?.boss ? { hp: window.__battleScene.boss.hp, maxHp: BOSS.maxHp, phase: window.__battleScene.boss.phase, enraged: window.__battleScene.boss.enraged } : null,
+  failures: window.__battleScene?.failures ?? 0,
+  assist: Boolean(window.__battleScene?.assist),
+  maxLives: window.__battleScene?.maxLives ?? null,
+  checkpointPhase: window.__battleScene?.checkpointPhase ?? null,
+  parries: window.__battleScene?.parries ?? 0,
+  bellClock: window.__battleScene ? +window.__battleScene.bellClock.toFixed(2) : 0,
+  announce: window.__battleScene?.lastAnnounce ?? null,
+  hint: window.__battleScene?.lastHint ?? null,
+  result: document.querySelector('#result').classList.contains('hidden') ? null : {
+    kicker: document.querySelector('#result-kicker').textContent,
+    title: document.querySelector('#result-title').textContent,
+    copy: document.querySelector('#result-copy').textContent,
+    retry: !document.querySelector('#retry-phase').classList.contains('hidden'),
+    assistOffered: !document.querySelector('#assist-offer').classList.contains('hidden'),
+    ending: !document.querySelector('#ending').classList.contains('hidden'),
+  },
 });
 
 if (DEV_MODE) {
@@ -138,4 +169,23 @@ if (DEV_MODE) {
     const scene = window.__battleScene;
     if (scene?.stateFlag === 'play') scene.knockout();
   };
+  // Drop the Black Ticket to just above a phase break, then cross it.
+  window.forceBlackTicketPhase = (phase) => {
+    const scene = window.__battleScene;
+    if (scene?.stateFlag !== 'play' || phase < 1 || phase > 4) return;
+    scene.boss.hp = phaseStartHp(phase) + 1;
+    scene.onBossDamaged(scene.boss.damage(2));
+  };
+  window.damageBlackTicket = (amount = 100) => {
+    const scene = window.__battleScene;
+    if (scene?.stateFlag === 'play') scene.onBossDamaged(scene.boss.damage(amount));
+  };
+  window.failBlackTicket = () => {
+    const scene = window.__battleScene;
+    if (scene?.stateFlag !== 'play') return;
+    scene.player.lives = 1; scene.player.invuln = 0; scene.player.shieldTime = 0;
+    if (scene.player.hit()) scene.onPlayerHit();
+  };
+  window.setBlackTicketBell = (seconds) => { if (window.__battleScene) window.__battleScene.bellClock = Number(seconds); };
+  window.raiseBlackTicketShield = () => { const scene = window.__battleScene; if (scene?.stateFlag === 'play' && scene.player.tryShield()) return scene.onShieldRaised(); return null; };
 }

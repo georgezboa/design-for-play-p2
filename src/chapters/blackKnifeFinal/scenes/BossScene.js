@@ -1,18 +1,27 @@
 import Phaser from 'phaser';
-import { W, H, COLORS, BOSS, PLAYER, DEPTHS } from '../constants.js';
+import {
+  W, H, COLORS, BOSS, PLAYER, DEPTHS, ASSIST, BELL_SECONDS, PARRY_WINDOW, PHASE_CARDS,
+  nearestBellOffset, phaseStartHp,
+} from '../constants.js';
 import { createSfx } from '../sfx.js';
 import { readSettings, volumeForChannel } from '../../../shell/saveSystem.js';
+import { showTitleCard, stampAnnounce } from '../../../shell/finaleUi.js';
+import * as bellAudio from '../../borrowedLight/audio.js';
 import Player from '../entities/Player.js';
 import Boss from '../entities/Boss.js';
 import Hud from '../entities/Hud.js';
 
-// Chapter 6 — THE CONDUCTOR. Cuphead-style (Dr. Kahl's Robot pacing) boss
-// battle with Black Knife-inspired bullet patterns.
+// The hidden finale — THE BLACK TICKET, the Conductor's true form: the ticket
+// that never gets punched (docs/STORY_BIBLE.md). Mathias's side-scrolling
+// shooter, reskinned to the finale palette.
 //
-// FIVE phases (~7 minute fight) read off the HP bar → KNOCKOUT.
-// Arsenal grows every phase: baton fans → coal flak + signal lasers →
-// spiral streams + ticket walls + tracking eye beam → ticket vortex →
-// ENRAGED (red Conductor, faster music, piston-press waves, everything).
+// FIVE phases (about 2,600 HP, four to five minutes), each opening on one
+// stone's chapter. Arsenal grows every phase: baton fans → coal flak +
+// signal lasers → spiral streams + ticket walls + tracking eye beam →
+// ticket vortex → the last carriage (faster, piston-press waves).
+// A four-second bell runs under the fight: a shield raised on the bell is a
+// parry and keeps its charge. A failure retries from the current phase, and
+// ASSIST (slower bullets, six lives) is offered after two failures.
 const MUSIC_BASE_VOLUME = 0.5;
 // Global Master / Music / SFX buses from the title and pause settings.
 const bus = (channel) => volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? readSettings(), channel);
@@ -30,15 +39,15 @@ export default class BossScene extends Phaser.Scene {
 
     this.keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,Z,J,SPACE,X,C,L,SHIFT,K,P,ESC');
 
-    this.announceText = this.add.text(W / 2, H / 2, '', {
-      fontFamily: 'Space Mono, monospace', fontSize: '64px', fontStyle: 'bold',
-      color: '#ffe733', stroke: '#ff2266', strokeThickness: 8,
-    }).setOrigin(0.5).setDepth(DEPTHS.overlay).setVisible(false);
-
-    this.hintText = this.add.text(W / 2, H - 64, '', {
-      fontFamily: 'Space Mono, monospace', fontSize: '15px', fontStyle: 'bold',
-      color: '#43e9ff', stroke: '#03202a', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(DEPTHS.overlay).setVisible(false);
+    // Hints are paper tags in the DOM (finale.css .nf-hint), over the canvas.
+    this.hintEl = document.createElement('div');
+    this.hintEl.className = 'nf-hint';
+    (document.querySelector('.stage-wrap') ?? document.body).append(this.hintEl);
+    this.failures = 0;
+    this.assist = false;
+    this.maxLives = PLAYER.lives;
+    this.bellClock = 0;
+    bellAudio.installAudio();
 
     // Shield is also latched from a DOM keydown: Phaser can miss a tap that
     // starts and ends between two frames, and with only 3 charges every
@@ -54,6 +63,7 @@ export default class BossScene extends Phaser.Scene {
     window.__pauseBattle = () => this.pauseBattle();
     window.__resumeBattle = () => this.resumeBattle();
     this.events.on('shutdown', () => {
+      this.hintEl?.remove();
       window.removeEventListener('keydown', this._shieldKeyHandler);
       window.__startBattle = null; window.__battleScene = null;
       window.__pauseBattle = null; window.__resumeBattle = null;
@@ -77,20 +87,34 @@ export default class BossScene extends Phaser.Scene {
   }
 
   // ---------- environment ----------
+  // The last carriage at night: a walnut sky, rain, brass rails, and behind
+  // the Conductor the Black Ticket itself, the one hole never punched.
   buildBackground() {
     const g = this.add.graphics().setDepth(DEPTHS.bg);
-    g.fillStyle(COLORS.bg, 1).fillRect(0, 0, W, H);
-    for (let i = 0; i < 70; i += 1) {
-      g.fillStyle(0x2a0a22, 1).fillRect((i * 149) % W, (i * 97) % H, 2, 2);
+    g.fillGradientStyle(0x1a120c, 0x1a120c, 0x070504, 0x070504, 1).fillRect(0, 0, W, H);
+    for (let i = 0; i < 90; i += 1) {
+      g.fillStyle(0xeadfc6, 0.05 + (i % 5) * 0.012).fillRect((i * 149) % W, (i * 97) % (H - 120), 1.5, 9);
     }
-    // Perspective train tracks (from the key art)
-    g.lineStyle(3, 0x77123f, 1);
+    // the Black Ticket: a huge unpunched ticket behind the boss
+    const tx = W * 0.62;
+    const ty = 46;
+    const tw = W * 0.36;
+    const th = H * 0.6;
+    g.fillStyle(0x000000, 0.45).fillRoundedRect(tx + 10, ty + 12, tw, th, 18);
+    g.fillStyle(0x0e0a07, 1).fillRoundedRect(tx, ty, tw, th, 18);
+    g.lineStyle(3, COLORS.brass, 0.85).strokeRoundedRect(tx + 8, ty + 8, tw - 16, th - 16, 14);
+    g.lineStyle(1.2, COLORS.amber, 0.35).strokeRoundedRect(tx + 18, ty + 18, tw - 36, th - 36, 10);
+    for (let y = ty + 60; y < ty + th - 30; y += 34) g.fillStyle(COLORS.brass, 0.12).fillRect(tx + 40, y, tw - 80, 3);
+    g.lineStyle(3, COLORS.amber, 0.7).strokeCircle(tx + tw * 0.5, ty + 44, 16);
+    g.fillStyle(COLORS.oxblood, 0.55).fillRect(tx, ty + th - 58, tw, 22);
+    // brass rails in perspective, as on the Chapter 1 line
+    g.lineStyle(3, COLORS.brass, 0.9);
     g.lineBetween(0, H - 18, W, H - 92);
     g.lineBetween(0, H - 78, W, H - 128);
     for (let i = 0; i < 24; i += 1) {
       const t = i / 24;
       const x = t * W;
-      g.lineStyle(2.5, 0x5c0e33, 1);
+      g.lineStyle(2.5, 0x3a2517, 1);
       g.lineBetween(x, H - 18 - t * 74 + 6, x + 24, H - 78 - t * 50 - 4);
     }
     this.add.image(70, H - 105, 'crossing').setDepth(DEPTHS.tracks);
@@ -109,9 +133,39 @@ export default class BossScene extends Phaser.Scene {
     this.music?.setVolume?.(MUSIC_BASE_VOLUME * bus('music'));
   }
 
+  // ---------- the bell ----------
+  // True when the current moment is within the parry window of a bell.
+  onBell() { return this.stateFlag === 'play' && nearestBellOffset(this.bellClock) <= PARRY_WINDOW; }
+
+  tickBell(dt) {
+    const before = Math.floor(this.bellClock / BELL_SECONDS);
+    this.bellClock += dt;
+    if (Math.floor(this.bellClock / BELL_SECONDS) !== before) {
+      if (this.settings.sound && bus('sfx') > 0) bellAudio.bell({ soft: true });
+      this.hud?.ring();
+    }
+  }
+
+  // The parry: a shield raised on the bell keeps its charge.
+  onShieldRaised() {
+    if (!this.onBell()) return false;
+    this.player.shieldCharges = Math.min(PLAYER.shieldCharges, this.player.shieldCharges + 1);
+    this.parries = (this.parries ?? 0) + 1;
+    this.parryText = 'PARRY · ON THE BELL · CHARGE KEPT';
+    this.time.delayedCall(1400, () => { this.parryText = null; });
+    this.emitBurst(this.player.x, this.player.y, 18, COLORS.amberHot);
+    if (this.settings.sound && bus('sfx') > 0) bellAudio.lampLit?.();
+    return true;
+  }
+
   // ---------- battle lifecycle ----------
-  beginIntro() {
+  // fromPhase > 0 is a phase checkpoint: the Black Ticket starts at that
+  // phase's HP, the passenger with full lives and shields.
+  beginIntro({ fromPhase = 0 } = {}) {
     this.stateFlag = 'intro';
+    this.startPhase = fromPhase;
+    this.bellClock = 0;
+    this.maxLives = this.assist ? ASSIST.lives : PLAYER.lives;
     this.playerBullets = [];
     this.enemyShots = [];
     this.beams = [];
@@ -128,57 +182,63 @@ export default class BossScene extends Phaser.Scene {
 
     this.player = new Player(this);
     this.boss = new Boss(this);
+    this.hud?.destroy();
     this.hud = new Hud(this);
-
-    if (this.cache.audio.exists('music-battle') && this.settings.sound) {
-      this.music?.stop();
-      this.music = this.sound.add('music-battle', { loop: true, volume: MUSIC_BASE_VOLUME * bus('music') });
-      this.music.setRate(1);
-      this.music.play();
+    if (fromPhase > 0) {
+      this.boss.hp = phaseStartHp(fromPhase);
+      this.boss.phase = fromPhase;
+      this.boss.enraged = fromPhase === 4;
     }
 
-    // The Infinity Train chugs in from the right; the Conductor previews his
-    // weapons (baton raise → eye magic) — then READY? / WALLOP!
+    this.startMusic();
+
+    // The Black Ticket's engine chugs in from the right; he previews his
+    // weapons (baton raise → eye magic); the phase card; then DEPARTING.
     this.playSfx('train', 1);
     if (this.settings.shake) this.cameras.main.shake(900, 0.005);
     this.boss.playAnim('move');
+    const quick = fromPhase > 0;
     this.tweens.add({
-      targets: this.boss, x: this.boss.baseX, duration: 1900, ease: 'Cubic.easeOut',
+      targets: this.boss, x: this.boss.baseX, duration: quick ? 900 : 1900, ease: 'Cubic.easeOut',
       onComplete: () => this.boss.playAnim('idle'),
     });
-    this.time.delayedCall(2000, () => { if (this.stateFlag === 'intro') { this.boss.playAnim('baton'); this.playSfx('baton', 0.7); } });
-    this.time.delayedCall(2700, () => { if (this.stateFlag === 'intro') { this.boss.playAnim('magic'); this.eyeGlow(); } });
-    this.time.delayedCall(3400, () => {
+    if (!quick) {
+      this.time.delayedCall(2000, () => { if (this.stateFlag === 'intro') { this.boss.playAnim('baton'); this.playSfx('baton', 0.7); } });
+      this.time.delayedCall(2700, () => { if (this.stateFlag === 'intro') { this.boss.playAnim('magic'); this.eyeGlow(); } });
+    }
+    this.showPhaseCard(fromPhase);
+    this.time.delayedCall(quick ? 1500 : 3400, () => {
       if (this.stateFlag !== 'intro') return;
-      this.announce('READY?', 700, () => {
-        this.announce('WALLOP!', 600, () => {
-          this.boss.state = 'battle';
-          this.stateFlag = 'play';
-          this.decisionClock = 0.7;
-          this.showHint('X / C = SHIELD (1.5s)  —  3 CHARGES, REFILLED EVERY PHASE YOU BREAK.');
-        });
+      this.announce('DEPARTING', 1100, () => {
+        this.boss.state = 'battle';
+        this.stateFlag = 'play';
+        this.decisionClock = 0.7;
+        if (!quick) this.showHint('<kbd>X</kbd> / <kbd>C</kbd> · SHIELD · RAISE IT ON THE BELL AND THE CHARGE COMES BACK');
       });
     });
   }
 
-  showHint(text) {
-    this.hintText.setText(text).setVisible(true).setAlpha(0);
-    this.tweens.add({ targets: this.hintText, alpha: 1, duration: 250 });
-    this.time.delayedCall(3600, () => {
-      this.tweens.add({ targets: this.hintText, alpha: 0, duration: 400, onComplete: () => this.hintText.setVisible(false) });
-    });
+  showPhaseCard(phase) {
+    const card = PHASE_CARDS[phase] ?? PHASE_CARDS[0];
+    const numerals = ['I', 'II', 'III', 'IV', 'V'];
+    showTitleCard({ kicker: `PHASE ${numerals[phase]} · THE ${card.stone}`, main: card.chapter, sub: card.line, duration: 3000, parent: document.querySelector('.stage-wrap') ?? document.body });
   }
 
+  showHint(text, holdMs = 3600) {
+    this.hintEl.innerHTML = text;
+    this.hintEl.classList.add('show');
+    clearTimeout(this._hintTimer);
+    this._hintTimer = setTimeout(() => this.hintEl.classList.remove('show'), holdMs);
+    this.lastHint = text;
+  }
+
+  // In-fiction stamps (DEPARTING, CLAIM CLOSED, TICKET TORN) instead of
+  // announcer lines.
   announce(text, holdMs, then) {
-    this.announceText.setText(text).setVisible(true).setScale(0.4).setAlpha(0);
-    this.tweens.add({ targets: this.announceText, scale: 1, alpha: 1, duration: 160, ease: 'Back.easeOut' });
+    stampAnnounce(document.querySelector('.stage-wrap') ?? document.body, text, { holdMs: holdMs + 300 });
+    this.lastAnnounce = text;
     this.playSfx('phase', 0.7);
-    this.time.delayedCall(holdMs, () => {
-      this.tweens.add({
-        targets: this.announceText, alpha: 0, duration: 140,
-        onComplete: () => { this.announceText.setVisible(false); then?.(); },
-      });
-    });
+    this.time.delayedCall(holdMs, () => then?.());
   }
 
   eyeGlow() {
@@ -226,7 +286,7 @@ export default class BossScene extends Phaser.Scene {
     this.attackActive = false;
     this.boss.busy = false;
     const speedup = [1, 0.9, 0.78, 0.64, 0.5][this.boss.phase];
-    this.decisionClock = recoverySeconds * speedup;
+    this.decisionClock = recoverySeconds * speedup * (this.assist ? ASSIST.recoveryScale : 1);
     this.boss.reposition(this.boss.phase >= 2 && Math.random() < 0.45);
   }
 
@@ -283,7 +343,7 @@ export default class BossScene extends Phaser.Scene {
       if (this.stateFlag !== 'play') return;
       this.playSfx('train', 1);
       if (this.settings.shake) this.cameras.main.shake(420, 0.011);
-      const speed = 560 + phase * 70;
+      const speed = (560 + phase * 70) * (this.assist ? ASSIST.bulletScale : 1);
       const train = this.add.sprite(W + 180, rowY, 'conductor-locom').setDepth(DEPTHS.attacks).setScale(0.62);
       if (this.anims.exists('conductor-locom-anim')) train.play('conductor-locom-anim');
       this.enemyShots.push({ sprite: train, x: W + 180, y: rowY, vx: -speed, vy: 0, r: 62, kind: 'train', life: 6, pierce: true, trail: phase >= 1 ? 0.11 : 0 });
@@ -643,7 +703,12 @@ export default class BossScene extends Phaser.Scene {
     this.playSfx('shoot', 0.6);
   }
 
-  spawnEnemyShot(x, y, vx, vy, kind, opts = {}) {
+  spawnEnemyShot(x, y, vx0, vy0, kind, opts = {}) {
+    // ASSIST slows every bullet (and its gravity, so arcs keep their shape).
+    const k = this.assist ? ASSIST.bulletScale : 1;
+    const vx = vx0 * k;
+    const vy = vy0 * k;
+    if (opts.ay) opts = { ...opts, ay: opts.ay * k * k };
     const texture = {
       ticket: 'ticket', orb: 'orb', smokebomb: 'smoke', spark: 'spark',
       tentacle: 'boss-tentacle', traincar: 'traincar', wheel: 'wheel',
@@ -674,7 +739,7 @@ export default class BossScene extends Phaser.Scene {
   }
 
   emitSmoke(x, y) {
-    const color = this.boss?.enraged ? 0xff3344 : COLORS.smoke;
+    const color = this.boss?.enraged ? COLORS.amber : COLORS.smoke;
     this.particles.push({ x, y, vx: Phaser.Math.FloatBetween(10, 60), vy: Phaser.Math.FloatBetween(-90, -50), life: 1.1, color, size: Phaser.Math.Between(4, 9) });
   }
 
@@ -696,7 +761,8 @@ export default class BossScene extends Phaser.Scene {
       || Phaser.Input.Keyboard.JustDown(this.keys.L)
       || this.shieldRequested;
     this.shieldRequested = false;
-    if (shieldTapped && this.stateFlag === 'play') this.player.tryShield();
+    if (shieldTapped && this.stateFlag === 'play' && this.player.tryShield()) this.onShieldRaised();
+    if (this.stateFlag === 'play') this.tickBell(dt);
 
     this.player.update(dt, this.stateFlag === 'play' ? input : { dx: 0, dy: 0, fire: false, boost: false });
     this.boss.update(dt);
@@ -848,8 +914,9 @@ export default class BossScene extends Phaser.Scene {
   phaseTransition() {
     const phase = this.boss.phase;
     this.boss.enraged = phase === 4;
+    this.reachedPhase = Math.max(this.reachedPhase ?? 0, phase);
     if (this.settings.shake) this.cameras.main.shake(400, 0.014);
-    if (this.settings.flash) this.cameras.main.flash(120, 255, 40, 110);
+    if (this.settings.flash) this.cameras.main.flash(120, 224, 162, 74);
     // Fairness: clear the board so the new phase starts clean
     this.enemyShots.forEach(s => s.sprite.destroy());
     this.enemyShots = [];
@@ -859,22 +926,21 @@ export default class BossScene extends Phaser.Scene {
     // Fairness: surviving a phase refills all 3 shields
     this.player.rechargeShields();
     this.playSfx('shield', 1);
-    this.showHint('SHIELDS RECHARGED — 3 / 3');
+    this.showHint('SHIELDS REFILLED · 3 / 3 · A FAILURE NOW RETRIES FROM HERE');
     if (this.boss.enraged) {
-      // ENRAGED: the Conductor burns red, the music speeds up, smoke turns red
+      // The last carriage: he burns amber, the music quickens.
       this.playSfx('enrage', 1);
       this.music?.setRate(1.18);
-      this.announce('ENRAGED!', 900);
-      if (this.settings.flash) this.cameras.main.flash(160, 255, 30, 30);
+      if (this.settings.flash) this.cameras.main.flash(160, 224, 162, 74);
     } else {
       this.playSfx('phase', 1);
-      this.announce(['', 'FULL STEAM!', 'PICKING UP SPEED!', 'DERAIL THIS!', ''][phase], 800);
     }
+    this.showPhaseCard(phase);
     this.eyeGlow();
   }
 
   onPlayerHit() {
-    if (this.settings.flash) this.cameras.main.flash(90, 255, 255, 255);
+    if (this.settings.flash) this.cameras.main.flash(90, 239, 228, 204);
     if (this.player.dead) this.gameOver();
   }
 
@@ -898,12 +964,12 @@ export default class BossScene extends Phaser.Scene {
     this.playSfx('knockout', 1);
     this.time.delayedCall(500, () => this.playSfx('win', 1)); // victory fanfare
     if (this.settings.shake) this.cameras.main.shake(700, 0.02);
-    this.announce('KNOCKOUT!', 1600);
+    this.announce('CLAIM CLOSED', 1600);
     this.boss.playAnim('defeat');
     this.tweens.add({ targets: this.boss.sprite, scaleX: 0.84, scaleY: 0.76, duration: 1400, ease: 'Sine.easeOut' });
     for (let i = 0; i < 10; i += 1) {
       this.time.delayedCall(i * 150, () => this.emitBurst(
-        this.boss.x + Phaser.Math.Between(-150, 110), this.boss.y - Phaser.Math.Between(30, 260), 12, i % 2 ? COLORS.pink : COLORS.yellow,
+        this.boss.x + Phaser.Math.Between(-150, 110), this.boss.y - Phaser.Math.Between(30, 260), 12, i % 2 ? COLORS.paper : COLORS.amber,
       ));
     }
     this.time.delayedCall(2400, () => this.showResult(true));
@@ -911,22 +977,58 @@ export default class BossScene extends Phaser.Scene {
 
   gameOver() {
     this.stateFlag = 'gameover';
+    this.failures += 1;
+    this.checkpointPhase = this.boss.phase;
     this.clearBattle();
     this.music?.stop();
     this.playSfx('lose', 1); // defeat dirge — distinct from the win fanfare
     this.boss.playAnim('idle');
-    this.announce('DERAILED…', 1200);
+    this.announce('TICKET TORN', 1200);
     this.time.delayedCall(1500, () => this.showResult(false));
   }
 
   showResult(won) {
-    document.querySelector('#result-kicker').textContent = won ? 'CHAPTER 6 COMPLETE' : 'NO CHECKPOINTS ON THIS LINE';
-    document.querySelector('#result-title').textContent = won ? 'A KNOCKOUT!' : 'DERAILED';
+    const numerals = ['I', 'II', 'III', 'IV', 'V'];
+    const phase = this.checkpointPhase ?? 0;
+    const card = PHASE_CARDS[phase];
+    document.querySelector('#result-kicker').textContent = won ? 'THE LAST CARRIAGE · CLAIM CLOSED' : `PHASE ${numerals[phase]} · ${card.chapter}`;
+    document.querySelector('#result-title').textContent = won ? 'The Black Ticket is punched.' : 'The ticket tore.';
     document.querySelector('#result-copy').textContent = won
-      ? 'The Conductor slumps over his engine. The four stones unseal the true ending.'
-      : 'The Conductor punched your last ticket. The battle resets from the top — your 3 shields fully recharge every time you break a phase, so spend them freely on the vortex and anything you cannot outrun.';
+      ? 'All five stones answer. The line that never ends has a last stop after all.'
+      : `The line holds your place: retry from phase ${numerals[phase]}, with every life and all three shields. Raise a shield on the bell and it keeps its charge.`;
     document.querySelector('#ending').classList.toggle('hidden', !won);
+    document.querySelector('#again').classList.toggle('hidden', won);
+    const retry = document.querySelector('#retry-phase');
+    if (retry) {
+      retry.classList.toggle('hidden', won || phase === 0);
+      retry.querySelector('b').textContent = `RETRY FROM PHASE ${numerals[phase]}`;
+    }
+    const assist = document.querySelector('#assist-offer');
+    const offer = !won && this.failures >= ASSIST.offerAfterFailures;
+    assist?.classList.toggle('hidden', !offer);
+    if (assist) assist.querySelector('[data-assist]').classList.toggle('active', this.assist);
     document.querySelector('#result').classList.remove('hidden');
+    ((won ? document.querySelector('#ending') : phase > 0 ? retry : document.querySelector('#again')) ?? document.querySelector('#again'))?.focus({ preventScroll: true });
+  }
+
+  setAssist(on) {
+    this.assist = Boolean(on);
+    document.querySelector('#assist-offer [data-assist]')?.classList.toggle('active', this.assist);
+  }
+
+  // Retry from the phase the passenger reached.
+  retryFromPhase() {
+    const phase = this.checkpointPhase ?? 0;
+    this.fullReset();
+    this.beginIntro({ fromPhase: phase });
+  }
+
+  startMusic() {
+    if (!this.cache.audio.exists('music-battle') || !this.settings.sound) return;
+    this.music?.stop();
+    this.music = this.sound.add('music-battle', { loop: true, volume: MUSIC_BASE_VOLUME * bus('music') });
+    this.music.setRate(this.boss?.enraged ? 1.18 : 1);
+    this.music.play();
   }
 
   fullReset() {
@@ -936,6 +1038,7 @@ export default class BossScene extends Phaser.Scene {
     this.player?.sprite.destroy(); this.player?.shieldGfx.destroy(); this.player?.trailGfx.destroy();
     this.boss?.sprite.destroy();
     this.hud?.destroy();
+    this.hud = null;
     this.music?.stop();
     this.stateFlag = 'menu';
     this.fxGfx.clear();

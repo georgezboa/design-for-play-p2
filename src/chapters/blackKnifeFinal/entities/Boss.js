@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, BOSS, DEPTHS } from '../constants.js';
 
-// The Conductor — a giant one-eyed conductor fused with the Infinity Train.
-// One sprite, many animation states (from the hand-drawn frame sets):
+// The Black Ticket — the Conductor's true form: the ticket that never gets
+// punched, the line that never ends, fused with his engine. Mathias's
+// hand-drawn frame sets, recoloured to the finale palette. One sprite, many
+// animation states:
 //   idle · move · baton · magic · damage (flinch) · defeat
 // The 'locom' sheet is used by the scene for the detached charging train.
 export default class Boss {
@@ -50,7 +52,7 @@ export default class Boss {
         .setScale(this.sprite.scaleX, this.sprite.scaleY)
         .setDepth(this.sprite.depth - 1)
         .setAlpha(0.45);
-      if (this.enraged) g.setTint(0xff8080);
+      if (this.enraged) g.setTint(0xffc080);
       this.scene.tweens.add({ targets: g, alpha: 0, duration: 150, onComplete: () => g.destroy() });
     }
     this.sprite.play(key, true);
@@ -143,9 +145,9 @@ export default class Boss {
     const bob = Math.sin(this.bobT * speed) * (this.enraged ? 7 : 4);
     this.sprite.setPosition(this.x, this.y + bob);
 
-    // Hit flash; when enraged the Conductor burns red between flashes
-    if (this.hitFlash > 0) this.sprite.setTintFill(0xffffff);
-    else if (this.enraged) this.sprite.setTint(0xff7070);
+    // Hit flash; in the last phase the Black Ticket burns amber between flashes
+    if (this.hitFlash > 0) this.sprite.setTintFill(0xfff3dc);
+    else if (this.enraged) this.sprite.setTint(0xffc890);
     else this.sprite.clearTint();
 
     // Chimney smoke puffs
