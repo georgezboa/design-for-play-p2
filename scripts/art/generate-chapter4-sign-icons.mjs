@@ -1,17 +1,21 @@
 // Chapter 4 // THE PAINTED COUNTRY — original door-sign icons.
 //
-// Renders the five vestibule-door signs (moon, eye, heir, rapture, oedon) as
+// Renders the five vestibule-door signs of docs/STORY_BIBLE.md — HAWTHORN
+// (Mara's small mark, the answer), TICKET, LANTERN and APPLE (the three large
+// marks, one per gallery plate) and ROSE (Rosa's own mark, the decoy) — as
 // pencil-and-ink marks on the chapter's paper, entirely from code: no source
-// image, font or third-party art is involved. The large marks deliberately
-// echo the procedural archive plates in PaintedCountryScene.buildArchiveSymbol
-// Textures() (eye = eye and pupil, heir = crowned head and shoulders, rapture =
-// drop inside a burst, moon = the small crescent seal), so the gallery clue
-// reads against the door. "oedon" is the distractor and gets a silhouette
-// nothing in the gallery uses (an open spiral).
+// image, font or third-party art is involved.
 //
-// Usage: node scripts/art/generate-chapter4-sign-icons.mjs
-// Output: public/assets/chapter04/icons/sign-<id>.webp (+ .svg next to this
-// script's output when --svg is passed, for review).
+// Two files per sign:
+//   sign-<id>.webp  the square door plate (paper, deckle, four screws);
+//   mark-<id>.webp  the bare mark on a transparent ground, which the gallery
+//                   plates in PaintedCountryScene compose under the archive's
+//                   grey, so the door and the plates share one drawing.
+// The hawthorn is flat and open (five round petals, thorns, two haws) and the
+// rose is cupped and spiralled, so the decoy never reads as the answer.
+//
+// Usage: node scripts/art/generate-chapter4-sign-icons.mjs [--svg]
+// Output: public/assets/chapter04/icons/{sign,mark}-<id>.webp
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
@@ -144,109 +148,159 @@ const S = 400;
 const CX = 200;
 const CY = 188; // a little high: the door prints a small label along the bottom
 
+// Extra accents for the Chapter 4 set (docs/STORY_BIBLE.md): the apple red
+// and the rose pink sit next to the palette's warm book cloth.
+const APPLE_RED = '#b4453a';
+const ROSE_PINK = '#c46a7a';
+const AMBER = '#c8892f';
+
 const GLYPHS = {
-  // The small seal from every archive picture: a ring with a crescent.
-  moon: () => {
-    const ringR = 118;
-    const outer = ellipse(CX, CY, 84, 84);
-    const bite = ellipse(CX + 38, CY - 26, 70, 70);
-    const crescentClip = `M${CX - 84} ${CY} a84 84 0 1 0 168 0 a84 84 0 1 0 -168 0 Z`;
-    return [
-      `<mask id="crescent"><path d="${crescentClip}" fill="#fff"/><circle cx="${CX + 38}" cy="${CY - 26}" r="70" fill="#000"/></mask>`,
-      `<g mask="url(#crescent)">${blot(outer, { color: C.graphite, seed: 11 })}${hatch('moonHatch', crescentClip, { size: S, spacing: 9, angle: 52, seed: 12, color: C.boneBlack, opacity: 0.35 })}</g>`,
-      stroke(ellipse(CX, CY, ringR, ringR), { width: 12, color: C.graphite, seed: 13, closed: true, samples: 96 }),
-      stroke(bite, { width: 2.5, color: C.graphiteFaint, seed: 14, closed: true, construction: false }).replace('filter="url(#ink)"', 'opacity="0.6"'),
-      // tick marks round the ring, like an accession stamp
-      ...Array.from({ length: 12 }, (_, i) => {
-        const a = (Math.PI * 2 * i) / 12;
-        return stroke(line(CX + Math.cos(a) * (ringR + 16), CY + Math.sin(a) * (ringR + 16), CX + Math.cos(a) * (ringR + 30), CY + Math.sin(a) * (ringR + 30)), { width: 5, color: C.graphiteSoft, seed: 20 + i, samples: 6, construction: false });
-      }),
-    ].join('\n');
-  },
-
-  // THE NAVE: a broad almond eye with an iris and a filled pupil.
-  eye: () => {
-    const upper = (t) => {
-      const x = CX - 150 + t * 300;
-      const u = (x - CX) / 150;
-      return [x, CY - 88 * (1 - u * u) ** 0.9];
+  // THE SHARED SMALL MARK — Mara's hawthorn: a thorny twig, one flat
+  // five-petal blossom and two haws. Deliberately flat and open, so it can
+  // never be mistaken for Rosa's cupped, spiralled rose.
+  hawthorn: () => {
+    const twig = polyline([[CX - 150, CY + 120], [CX - 60, CY + 60], [CX + 20, CY + 30], [CX + 130, CY - 40]]);
+    const thorns = [[CX - 100, CY + 88, CX - 118, CY + 44], [CX - 20, CY + 46, CX - 16, CY + 2], [CX + 70, CY - 8, CX + 104, CY + 20]];
+    const bx = CX - 10;
+    const by = CY - 70;
+    const petals = Array.from({ length: 5 }, (_, i) => {
+      const a = -Math.PI / 2 + (i * Math.PI * 2) / 5;
+      const px = bx + Math.cos(a) * 44;
+      const py = by + Math.sin(a) * 44;
+      return [
+        blot(ellipse(px, py, 30, 30), { color: C.sheetHigh, seed: 110 + i, opacity: 1 }),
+        stroke(ellipse(px, py, 30, 30), { width: 6, color: C.graphite, seed: 120 + i, closed: true, samples: 40, construction: false }),
+      ].join('\n');
+    });
+    const stamens = Array.from({ length: 7 }, (_, i) => {
+      const a = (i * Math.PI * 2) / 7;
+      return `<circle cx="${f(bx + Math.cos(a) * 16)}" cy="${f(by + Math.sin(a) * 16)}" r="5" fill="${APPLE_RED}"/>`;
+    });
+    const leaf = (t) => {
+      const a = t * Math.PI * 2;
+      const lobes = 1 + 0.18 * Math.sin(a * 3);
+      return [CX + 96 + Math.cos(a) * 44 * lobes, CY + 70 + Math.sin(a) * 26 * lobes];
     };
-    const lower = (t) => {
-      const x = CX + 150 - t * 300;
-      const u = (x - CX) / 150;
-      return [x, CY + 70 * (1 - u * u) ** 0.9];
+    return [
+      stroke(twig, { width: 13, color: C.graphite, seed: 101, samples: 80 }),
+      ...thorns.map(([x1, y1, x2, y2], i) => stroke(line(x1, y1, x2, y2), { width: 7, color: C.graphite, seed: 104 + i, samples: 8, construction: false })),
+      stroke(line(bx + 10, by + 40, CX + 20, CY + 30), { width: 7, color: C.graphite, seed: 108, samples: 10, construction: false }),
+      blot(leaf, { color: '#7a9a62', seed: 109, opacity: 0.85 }),
+      stroke(leaf, { width: 7, color: C.graphite, seed: 130, closed: true, samples: 60 }),
+      ...petals,
+      ...stamens,
+      blot(ellipse(CX + 118, CY - 72, 17, 17), { color: APPLE_RED, seed: 140 }),
+      blot(ellipse(CX + 144, CY - 52, 15, 15), { color: APPLE_RED, seed: 141 }),
+      stroke(ellipse(CX + 118, CY - 72, 17, 17), { width: 4, color: C.graphite, seed: 142, closed: true, samples: 30, construction: false }),
+      stroke(ellipse(CX + 144, CY - 52, 15, 15), { width: 4, color: C.graphite, seed: 143, closed: true, samples: 30, construction: false }),
+    ].join('\n');
+  },
+
+  // 1978 · CITY ROOM: the early-shift ticket, notched and punched once.
+  ticket: () => {
+    const x0 = CX - 150;
+    const y0 = CY - 84;
+    const w = 300;
+    const h = 168;
+    const outline = polyline([
+      [x0 + 18, y0], [x0 + w - 18, y0], [x0 + w, y0 + 18], [x0 + w, y0 + h / 2 - 16],
+      [x0 + w - 14, y0 + h / 2], [x0 + w, y0 + h / 2 + 16], [x0 + w, y0 + h - 18], [x0 + w - 18, y0 + h],
+      [x0 + 18, y0 + h], [x0, y0 + h - 18], [x0, y0 + h / 2 + 16], [x0 + 14, y0 + h / 2],
+      [x0, y0 + h / 2 - 16], [x0, y0 + 18], [x0 + 18, y0],
+    ]);
+    const body = `M${x0} ${y0} H${x0 + w} V${y0 + h} H${x0} Z`;
+    return [
+      `<path d="${body}" fill="${C.sheetHigh}" opacity="0.9"/>`,
+      `<rect x="${x0 + 6}" y="${y0 + 6}" width="${w - 12}" height="34" fill="${C.bookCloth}" opacity="0.82" filter="url(#ink)"/>`,
+      hatch('ticketHatch', body, { size: S, spacing: 14, angle: -20, seed: 201, opacity: 0.18 }),
+      stroke(outline, { width: 11, color: C.graphite, seed: 202, samples: 140, closed: true }),
+      // perforation
+      ...Array.from({ length: 7 }, (_, i) => `<circle cx="${x0 + 214}" cy="${f(y0 + 56 + i * 16)}" r="3.6" fill="${C.graphite}" opacity="0.8"/>`),
+      // printed lines
+      ...[70, 96, 122].map((y, i) => stroke(line(x0 + 30, y0 + y, x0 + 170 - i * 26, y0 + y), { width: 7, color: C.graphiteSoft, seed: 210 + i, samples: 10, construction: false })),
+      // the punch
+      blot(ellipse(x0 + 256, y0 + 104, 20, 20), { color: C.boneBlack, seed: 220, opacity: 0.95 }),
+      stroke(ellipse(x0 + 256, y0 + 104, 20, 20), { width: 4, color: C.graphite, seed: 221, closed: true, samples: 30, construction: false }),
+    ].join('\n');
+  },
+
+  // BELLWETHER ORCHARD: the porch lantern, lit.
+  lantern: () => {
+    const cap = polyline([[CX - 70, CY - 70], [CX - 36, CY - 118], [CX + 36, CY - 118], [CX + 70, CY - 70], [CX - 70, CY - 70]]);
+    const glass = `M${CX - 58} ${CY - 70} H${CX + 58} V${CY + 96} H${CX - 58} Z`;
+    return [
+      stroke(ellipse(CX, CY - 142, 20, 20), { width: 8, color: C.graphite, seed: 301, closed: true, samples: 40 }),
+      `<clipPath id="lanternClip"><path d="${glass}"/></clipPath>`,
+      `<g clip-path="url(#lanternClip)">${blot(ellipse(CX, CY + 20, 70, 110), { color: '#f3dca4', seed: 302, opacity: 0.9 })}</g>`,
+      blot((t) => {
+        const a = t * Math.PI * 2;
+        return [CX + Math.sin(a) * 22 * (1 - Math.cos(a) * 0.1), CY + 24 - Math.cos(a) * 44 + (Math.cos(a) > 0 ? 0 : 0)];
+      }, { color: AMBER, seed: 303 }),
+      blot(ellipse(CX, CY + 36, 10, 16), { color: '#f7e7b8', seed: 304 }),
+      hatch('lanternHatch', glass, { size: S, spacing: 12, angle: 60, seed: 305, opacity: 0.22 }),
+      stroke(cap, { width: 11, color: C.graphite, seed: 306, samples: 80, closed: true }),
+      stroke(polyline([[CX - 58, CY - 70], [CX + 58, CY - 70], [CX + 58, CY + 96], [CX - 58, CY + 96], [CX - 58, CY - 70]]), { width: 11, color: C.graphite, seed: 307, samples: 100, closed: true }),
+      stroke(line(CX, CY - 70, CX, CY + 96), { width: 5, color: C.graphiteSoft, seed: 308, samples: 12, construction: false }),
+      stroke(polyline([[CX - 80, CY + 96], [CX + 80, CY + 96], [CX + 64, CY + 122], [CX - 64, CY + 122], [CX - 80, CY + 96]]), { width: 10, color: C.graphite, seed: 309, samples: 60, closed: true }),
+    ].join('\n');
+  },
+
+  // ROSA'S DRAWING: a big round orchard apple, the way a child draws one.
+  apple: () => {
+    const body = (t) => {
+      const a = t * Math.PI * 2 - Math.PI / 2;
+      const r = 118 * (1 - 0.22 * Math.max(0, Math.cos(a + Math.PI / 2)) ** 6) * (1 + 0.05 * Math.sin(a * 2));
+      return [CX + Math.cos(a) * r * 1.02, CY + 30 + Math.sin(a) * r * 0.94];
     };
-    const almond = `M${CX - 150} ${CY} Q${CX} ${CY - 176} ${CX + 150} ${CY} Q${CX} ${CY + 140} ${CX - 150} ${CY} Z`;
+    const pts = Array.from({ length: 73 }, (_, i) => body(i / 72));
+    const d = `M${pts.map(([x, y]) => `${f(x)} ${f(y)}`).join(' L')} Z`;
+    const leaf = `M${CX + 8} ${CY - 92} Q${CX + 70} ${CY - 150} ${CX + 118} ${CY - 112} Q${CX + 62} ${CY - 72} ${CX + 8} ${CY - 92} Z`;
     return [
-      hatch('eyeHatch', almond, { size: S, spacing: 12, angle: -30, seed: 31, opacity: 0.32 }),
-      `<clipPath id="eyeClip"><path d="${almond}"/></clipPath>`,
-      `<g clip-path="url(#eyeClip)">${blot(ellipse(CX, CY - 6, 64, 64), { color: C.bookCloth, seed: 32 })}</g>`,
-      stroke(upper, { width: 14, color: C.graphite, seed: 33 }),
-      stroke(lower, { width: 12, color: C.graphite, seed: 34 }),
-      stroke(ellipse(CX, CY - 6, 64, 64), { width: 8, color: C.graphite, seed: 35, closed: true }),
-      blot(ellipse(CX, CY - 6, 27, 27), { color: C.boneBlack, seed: 36, opacity: 0.95 }),
-      `<circle cx="${CX - 12}" cy="${CY - 20}" r="8" fill="${C.sheetHigh}"/>`,
-      // lashes on the upper lid only, so the mark is not symmetric
-      ...[-0.62, -0.3, 0, 0.3, 0.62].map((u, i) => {
-        const x = CX + u * 150;
-        const y = CY - 88 * (1 - u * u) ** 0.9;
-        return stroke(line(x, y - 10, x + u * 26, y - 40), { width: 6, color: C.graphite, seed: 40 + i, samples: 8, construction: false });
-      }),
+      `<clipPath id="appleClip"><path d="${d}"/></clipPath>`,
+      `<g clip-path="url(#appleClip)">${blot(ellipse(CX, CY + 30, 130, 120), { color: APPLE_RED, seed: 401, opacity: 0.86 })}</g>`,
+      hatch('appleHatch', d, { size: S, spacing: 10, angle: -40, seed: 402, color: C.boneBlack, opacity: 0.22 }),
+      `<ellipse cx="${CX - 44}" cy="${CY - 14}" rx="18" ry="30" fill="${C.sheetHigh}" opacity="0.7" transform="rotate(-24 ${CX - 44} ${CY - 14})"/>`,
+      stroke(body, { width: 12, color: C.graphite, seed: 403, closed: true, samples: 90 }),
+      stroke(polyline([[CX - 4, CY - 72], [CX + 2, CY - 110], [CX + 14, CY - 138]]), { width: 11, color: C.graphite, seed: 404, samples: 16 }),
+      `<path d="${leaf}" fill="#7a9a62" opacity="0.85" filter="url(#ink)"/>`,
+      stroke((t) => {
+        const a = t;
+        return [CX + 8 + a * 110, CY - 92 - Math.sin(a * Math.PI) * 30];
+      }, { width: 7, color: C.graphite, seed: 405, samples: 20 }),
     ].join('\n');
   },
 
-  // THE LISTENING FIELD: a crowned heir, reduced to head, shoulders and crown.
-  heir: () => {
-    const headY = CY + 18;
-    const shoulders = polyline([[CX - 140, CY + 170], [CX - 104, CY + 104], [CX, CY + 84], [CX + 104, CY + 104], [CX + 140, CY + 170]]);
-    const crown = polyline([[CX - 78, CY - 50], [CX - 90, CY - 150], [CX - 38, CY - 92], [CX, CY - 166], [CX + 38, CY - 92], [CX + 90, CY - 150], [CX + 78, CY - 50], [CX - 78, CY - 50]]);
-    const crownD = `M${CX - 78} ${CY - 50} L${CX - 90} ${CY - 150} L${CX - 38} ${CY - 92} L${CX} ${CY - 166} L${CX + 38} ${CY - 92} L${CX + 90} ${CY - 150} L${CX + 78} ${CY - 50} Z`;
-    return [
-      hatch('crownHatch', crownD, { size: S, spacing: 10, angle: 35, seed: 51, color: C.graphiteSoft, opacity: 0.6 }),
-      stroke(ellipse(CX, headY, 62, 62), { width: 13, color: C.graphite, seed: 52, closed: true }),
-      stroke(shoulders, { width: 14, color: C.graphite, seed: 53, samples: 80 }),
-      stroke(crown, { width: 12, color: C.graphite, seed: 54, samples: 96 }),
-      ...[[CX - 90, CY - 150], [CX, CY - 166], [CX + 90, CY - 150]].map(([x, y], i) => blot(ellipse(x, y - 12, 11, 11), { color: C.graphiteSoft, seed: 55 + i })),
-    ].join('\n');
-  },
-
-  // THE LAST CITY: a falling drop inside a radiating burst.
-  rapture: () => {
-    const drop = (t) => {
-      // teardrop: point at the top, round belly below
-      const a = -Math.PI / 2 + t * Math.PI * 2;
-      const r = 70;
-      const x = CX + Math.cos(a) * r * (1 - Math.sin(a)) * 0.62;
-      const y = CY + 30 + Math.sin(a) * r * 1.02;
-      return [x, y];
-    };
-    const dropPts = Array.from({ length: 49 }, (_, i) => drop(i / 48));
-    const dropD = `M${dropPts.map(([x, y]) => `${f(x)} ${f(y)}`).join(' L')} Z`;
-    return [
-      `<clipPath id="dropClip"><path d="${dropD}"/></clipPath>`,
-      `<g clip-path="url(#dropClip)">${blot(ellipse(CX, CY + 30, 90, 90), { color: C.cyan, seed: 61, opacity: 0.85 })}</g>`,
-      hatch('dropHatch', dropD, { size: S, spacing: 9, angle: -55, seed: 62, color: C.boneBlack, opacity: 0.3 }),
-      stroke(drop, { width: 12, color: C.graphite, seed: 63, closed: true, samples: 80 }),
-      ...Array.from({ length: 8 }, (_, i) => {
-        const a = (Math.PI * 2 * i) / 8 - Math.PI / 2;
-        const r0 = 112;
-        const r1 = i % 2 === 0 ? 162 : 146;
-        return stroke(line(CX + Math.cos(a) * r0, CY + 14 + Math.sin(a) * r0, CX + Math.cos(a) * r1, CY + 14 + Math.sin(a) * r1, 0.04), { width: i % 2 === 0 ? 13 : 9, color: C.graphite, seed: 70 + i, samples: 10 });
-      }),
-    ].join('\n');
-  },
-
-  // Distractor: an open inward spiral with a single dot at its heart.
-  oedon: () => {
-    const turns = 2.6;
+  // THE DECOY — Rosa's own mark: a cupped rose in a spiral, on a stem.
+  rose: () => {
     const spiral = (t) => {
-      const a = t * turns * Math.PI * 2 + Math.PI;
-      const r = 150 - t * 128;
-      return [CX + Math.cos(a) * r, CY + 10 + Math.sin(a) * r * 0.92];
+      const a = t * Math.PI * 2 * 2.4;
+      const r = 6 + t * 58;
+      return [CX + Math.cos(a) * r, CY - 34 + Math.sin(a) * r * 0.82];
     };
+    const cup = (t) => {
+      const a = Math.PI * (0.05 + t * 0.9);
+      return [CX + Math.cos(a) * 70, CY - 30 + Math.sin(a) * 60];
+    };
+    const stem = polyline([[CX, CY + 50], [CX - 6, CY + 110], [CX + 4, CY + 170]]);
+    // Five overlapping petals round the cup: a scalloped edge, not a disc.
+    const bloom = (t) => {
+      const a = t * Math.PI * 2;
+      const r = 84 + 16 * Math.abs(Math.sin(a * 2.5));
+      return [CX + Math.cos(a) * r, CY - 30 + Math.sin(a) * r * 0.86];
+    };
+    const bloomPts = Array.from({ length: 91 }, (_, i) => bloom(i / 90));
+    const bloomD = `M${bloomPts.map(([x, y]) => `${f(x)} ${f(y)}`).join(' L')} Z`;
+    const leaf = `M${CX - 2} ${CY + 118} Q${CX - 70} ${CY + 80} ${CX - 104} ${CY + 118} Q${CX - 56} ${CY + 150} ${CX - 2} ${CY + 118} Z`;
     return [
-      stroke(spiral, { width: 13, color: C.indigo, seed: 81, samples: 160 }),
-      blot(ellipse(CX + 4, CY + 12, 16, 16), { color: C.graphite, seed: 82 }),
+      blot(bloom, { color: ROSE_PINK, seed: 501, opacity: 0.8 }),
+      hatch('roseHatch', bloomD, { size: S, spacing: 9, angle: 45, seed: 502, color: C.boneBlack, opacity: 0.2 }),
+      stroke(bloom, { width: 10, color: C.graphite, seed: 509, closed: true, samples: 120 }),
+      stroke(spiral, { width: 8, color: C.graphite, seed: 503, samples: 140 }),
+      stroke(cup, { width: 9, color: C.graphite, seed: 504, samples: 60 }),
+      stroke(stem, { width: 11, color: C.graphite, seed: 505, samples: 40 }),
+      `<path d="${leaf}" fill="#7a9a62" opacity="0.8" filter="url(#ink)"/>`,
+      stroke(line(CX - 4, CY + 118, CX - 96, CY + 118), { width: 5, color: C.graphite, seed: 506, samples: 12, construction: false }),
+      ...[[CX + 6, CY + 84, CX + 26, CY + 74], [CX - 4, CY + 150, CX - 24, CY + 142]].map(([x1, y1, x2, y2], i) => stroke(line(x1, y1, x2, y2), { width: 5, color: C.graphite, seed: 507 + i, samples: 6, construction: false })),
     ].join('\n');
   },
 };
@@ -281,20 +335,24 @@ const DEFS = `<defs>
 </filter>
 </defs>`;
 
-// Output sizes follow the icons they replace, so nothing downstream changes.
+// Door plates (square, on paper, with screws) and the bare marks the gallery
+// plates are composed from (transparent, no plate), one of each per sign.
 export const SIGN_ICONS = [
-  { id: 'moon', file: 'sign-moon.webp', width: 404, height: 405, seed: 101 },
-  { id: 'eye', file: 'sign-eye.webp', width: 400, height: 400, seed: 202 },
-  { id: 'heir', file: 'sign-heir.webp', width: 404, height: 405, seed: 303, glyphScale: 0.78 },
-  { id: 'rapture', file: 'sign-rapture.webp', width: 404, height: 405, seed: 404, glyphScale: 0.9 },
-  { id: 'oedon', file: 'sign-oedon.webp', width: 250, height: 251, seed: 505 },
+  { id: 'hawthorn', seed: 101, glyphScale: 0.84 },
+  { id: 'ticket', seed: 202, glyphScale: 0.82 },
+  { id: 'lantern', seed: 303, glyphScale: 0.8 },
+  { id: 'apple', seed: 404, glyphScale: 0.84 },
+  { id: 'rose', seed: 505, glyphScale: 0.82 },
 ];
+const PLATE_SIZE = 256;
+const MARK_SIZE = 256;
 
-function svgFor(icon) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${icon.width}" height="${icon.height}" viewBox="0 0 ${S} ${S}" preserveAspectRatio="none">
+function svgFor(icon, { bare = false } = {}) {
+  const size = bare ? MARK_SIZE : PLATE_SIZE;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${S} ${S}">
 ${DEFS}
-${plate(icon.seed)}
-<g transform="translate(${CX} ${S / 2}) scale(${icon.glyphScale ?? 0.86}) translate(${-CX} ${-S / 2})">
+${bare ? '' : plate(icon.seed)}
+<g transform="translate(${CX} ${S / 2}) scale(${bare ? 0.98 : icon.glyphScale ?? 0.86}) translate(${-CX} ${-S / 2})">
 ${GLYPHS[icon.id]()}
 </g>
 </svg>`;
@@ -302,13 +360,14 @@ ${GLYPHS[icon.id]()}
 
 await fs.mkdir(outDir, { recursive: true });
 for (const icon of SIGN_ICONS) {
-  const svg = svgFor(icon);
-  if (writeSvg) await fs.writeFile(path.join(outDir, icon.file.replace(/\.webp$/, '.svg')), svg);
-  await sharp(Buffer.from(svg), { density: 96 })
-    .resize(icon.width, icon.height, { fit: 'fill' })
-    .flatten({ background: C.sheet })
-    .webp({ quality: 90, effort: 6 })
-    .toFile(path.join(outDir, icon.file));
-  const { size } = await fs.stat(path.join(outDir, icon.file));
-  console.log(`[chapter4-icons] ${icon.file} ${icon.width}x${icon.height} ${size} bytes`);
+  for (const bare of [false, true]) {
+    const file = `${bare ? 'mark' : 'sign'}-${icon.id}.webp`;
+    const svg = svgFor(icon, { bare });
+    if (writeSvg) await fs.writeFile(path.join(outDir, file.replace(/\.webp$/, '.svg')), svg);
+    let image = sharp(Buffer.from(svg), { density: 96 }).resize(bare ? MARK_SIZE : PLATE_SIZE, bare ? MARK_SIZE : PLATE_SIZE, { fit: 'fill' });
+    image = bare ? image : image.flatten({ background: C.sheet });
+    await image.webp({ quality: 90, alphaQuality: 90, effort: 6 }).toFile(path.join(outDir, file));
+    const { size } = await fs.stat(path.join(outDir, file));
+    console.log(`[chapter4-icons] ${file} ${size} bytes`);
+  }
 }

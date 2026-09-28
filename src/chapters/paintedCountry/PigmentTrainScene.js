@@ -1,37 +1,56 @@
 import Phaser from 'phaser';
 import {
-  EXPANSION_PHASE,
   CHAPTER4_IGNITION_SIGN,
+  EXPANSION_PHASE,
   PIGMENTS,
   TRAIN_BUILD_EXAMPLE_ORDER,
   TRAIN_BUILD_RULES,
   createChapter4Expansion,
 } from './chapter4ExpansionModel.js';
-import { SIGN_ART } from './carLayout.js';
 import { drawPaintedPlayer } from './paintedPlayerFigure.js';
-import { drawPigmentHalo, haloPointToward, pigmentAtHalo } from './pigmentHalo.js';
+import { drawPigmentHalo, haloPointToward } from './pigmentHalo.js';
 import { PAPER } from './paperPalette.js';
-import { buildPaperGrain, draftLine, makeRandom } from './paperSurface.js';
-import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
-import { createSaveStore } from '../../shell/saveSystem.js';
+import { buildPaperGrain, draftLine, draftRect, makeRandom } from './paperSurface.js';
+import { BrushInput } from './brushInput.js';
+import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt, showTitleCard } from './chapterUi.js';
+import { drawGreyCell } from './platePencil.js';
+import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { devParam } from '../../devMode.js';
+
+// Chapter 4 // THE PAINTED COUNTRY — Part III, the train yard.
+//
+// The residents lend their colours: RIGHT-HOLD each place along the yard to
+// borrow it. LEFT-HOLD a part of the unfinished train to paint it with the
+// colour borrowed for it, wheels first. When it is whole, hold on the cab to
+// board: no second quiz. The painted train then runs the line ahead
+// (PaintedLineScene), where the colours go back to the people who lent them.
+//
+// Above the HOME door hangs a plate under the archive's grey. Washing it is
+// optional; the Pigment Stone is under it.
+//
+// The colour ring around Butch's head only SHOWS what he has borrowed. It
+// never takes a click, so a click on the carriage always reaches the part
+// under the brush (the old ring swallowed carriage clicks).
 
 const VIEW = { w: 960, h: 600 };
-const WORLD = { w: 4000, h: 600 };
+const WORLD = { w: 3200, h: 600 };
 const FLOOR_Y = 474;
 const MOVE_SPEED = 220;
 const JUMP_VELOCITY = -620;
-const HOLD_SECONDS = 0.5;
 const TRAIN_ENTRY_X = 116;
 const SOURCE_SCALE = 0.68;
 const TRAIN_SCALE = 0.82;
 const TRAIN_ORIGIN = Object.freeze({ x: 2260, y: 468 });
 const TRAIN_MIRROR_X = 2600;
-const TRAIN_ESCAPE_DISTANCE = 780;
-const TRAIN_ESCAPE_MS = 5700;
-const CROWD_APPROACH_MS = 2100;
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+const SOURCE_REACH = 190;
+const PART_REACH = 420;
 
 const SOURCE_X = [270, 590, 910, 1230, 1550, 1870];
+const SOURCE_TITLES = ['BAKERY', 'STATION', 'ORCHARD', 'MILL', 'SQUARE', 'HOME'];
+
+// The plate above the HOME door: grey over, the stone under.
+const HOME_PLATE = Object.freeze({ x: SOURCE_X[5] + 30, y: 196, w: 56, h: 56 });
+export const PIGMENT_STONE = Object.freeze({ x: HOME_PLATE.x + HOME_PLATE.w / 2, y: HOME_PLATE.y + HOME_PLATE.h / 2 });
 
 const TRAIN_PARTS = Object.freeze([
   { id: 'red', type: 'rect', x: 2288, y: 372, w: 212, h: 84 },
@@ -41,8 +60,6 @@ const TRAIN_PARTS = Object.freeze([
   { id: 'blue', type: 'rect', x: 2594, y: 372, w: 306, h: 84 },
   { id: 'violet', type: 'roof', x: 2482, y: 326, w: 430, h: 40 },
 ]);
-
-const SOURCE_TITLES = ['BAKERY', 'STATION', 'ORCHARD', 'MILL', 'SQUARE', 'HOME'];
 
 function cssColor(value) {
   return `#${value.toString(16).padStart(6, '0')}`;
@@ -64,41 +81,29 @@ export class PigmentTrainScene extends Phaser.Scene {
     if (!this.cache.audio.exists('chapter4-consequence-music')) {
       this.load.audio('chapter4-consequence-music', '/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3');
     }
-    Object.entries(SIGN_ART).forEach(([sign, file]) => {
-      if (!this.textures.exists(`train-sign-${sign}`)) this.load.image(`train-sign-${sign}`, file);
-    });
   }
 
-  create() {
-    const qa = import.meta.env.DEV ? new URLSearchParams(window.location.search).get('qa') : null;
-    const qaUnlocked = ['fused-train', 'ignition'].includes(qa) ? PIGMENTS.map(({ id }) => id) : [];
-    // Normal play always re-collects the six world colors from left to right.
-    // Only explicit QA routes may prefill them for focused train testing.
+  create(data = {}) {
+    this.qa = devParam('qa');
+    const qaUnlocked = ['fused-train', 'train-ready'].includes(this.qa) ? PIGMENTS.map(({ id }) => id) : [];
+    // Normal play always borrows the six colours from left to right. Only
+    // explicit QA routes may prefill them.
     const unlockedPigments = qaUnlocked;
     this.registry.set('chapter4Pigments', []);
     this.fusedEntry = unlockedPigments.length === PIGMENTS.length;
     this.chapter = createChapter4Expansion({ unlockedPigments });
     this.rnd = makeRandom(0xc4104);
-    this.selectedId = null;
-    this.selectedPartId = null;
-    this.ringPress = null;
+    this.hold = { key: null, progress: 0 };
+    this.hover = null;
     this.failedPartId = null;
     this.failedPartUntil = 0;
-    this.hold = { key: null, progress: 0 };
-    this.cutscene = false;
-    this.trainOffset = 0;
     this.trainShakeUntil = 0;
-    this.crowd = [];
-    this.speechBubbles = [];
-    this.chaseBeat = 'idle';
-    this.trainMoving = false;
-    this.chaseCameraActive = false;
-    this.chaseCameraX = null;
-    this.chaseCameraStartX = null;
-    this.lastHint = '';
-    this.chapterTransitionStarted = false;
-    this.ignitionOpen = false;
-    this.tutorialSeen = { collect: this.fusedEntry, selectPart: false, chooseColor: false, board: false };
+    this.trainOffset = 0;
+    this.transitioning = false;
+    this.locked = false;
+    this.stoneCollected = magicStoneSnapshot().collected.includes('chapter-4');
+    if (this.qa === 'home-plate') this.stoneCollected = false;
+    this.tutorialSeen = { collect: this.fusedEntry, part: false, board: false };
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
@@ -106,20 +111,30 @@ export class PigmentTrainScene extends Phaser.Scene {
 
     this.buildWorld();
     this.buildSources();
+    this.buildHomePlate();
     this.buildTrain();
     this.buildPlayer();
-    this.buildHud();
-    this.buildIgnitionChoice();
     this.buildGrain();
     this.bindInput();
     this.startMusic();
     this.applyQaState();
     this.refreshPresentation();
+
+    if (!data.skipIntro && !this.qa) {
+      this.locked = true;
+      showTitleCard(this, {
+        kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
+        main: 'III · THE PAINTED TRAIN',
+        hold: 1600,
+        onDone: () => { this.locked = false; },
+      });
+    }
   }
 
   buildWorld() {
     const g = this.add.graphics().setDepth(0);
     g.fillStyle(PAPER.sheet, 1).fillRect(0, 0, WORLD.w, WORLD.h);
+    g.fillStyle(PAPER.sheetLow, 1).fillRect(0, 0, WORLD.w, 52);
     g.fillStyle(PAPER.sheetHigh, 0.94).fillRect(0, 94, WORLD.w, 270);
     g.fillStyle(PAPER.sheetLow, 0.9).fillRect(0, FLOOR_Y, WORLD.w, WORLD.h - FLOOR_Y);
 
@@ -134,41 +149,21 @@ export class PigmentTrainScene extends Phaser.Scene {
       const x = SOURCE_X[i];
       g.lineStyle(1.2, PAPER.graphiteFaint, 0.55);
       draftLine(g, this.rnd, x - 116, 118, x + 116, 118, { jitter: 0.5, segments: 7 });
-      this.add.text(x, 86, SOURCE_TITLES[i], {
+      this.add.text(x, 100, SOURCE_TITLES[i], {
         fontFamily: MONO,
-        fontSize: '11px',
-        color: '#8d8579',
+        fontSize: '12px',
+        color: '#6f675c',
         letterSpacing: 2,
       }).setOrigin(0.5).setDepth(4);
     }
 
-    if (this.fusedEntry) {
-      this.add.text(210, 118, 'THREE ARCHIVES  ·  SIX REMEMBERED COLORS', {
-        fontFamily: MONO,
-        fontSize: '11px',
-        color: '#2f8c9e',
-        letterSpacing: 2,
-      }).setDepth(4);
-      this.add.text(210, 142, 'THE HUE RING CARRIES THEM INTO THE UNFINISHED TRAIN.', {
-        fontFamily: MONO,
-        fontSize: '9px',
-        color: '#8d8579',
-        letterSpacing: 1.4,
-      }).setDepth(4);
-    }
-
-    this.yardTitle = this.add.text(2135, 86, 'THE UNFINISHED TRAIN', {
+    // The yard's name lives in the title strip.
+    this.yardTitle = this.add.text(24, 26, 'THE YARD  ·  THE UNFINISHED TRAIN', {
       fontFamily: MONO,
-      fontSize: '14px',
+      fontSize: '13px',
       color: '#5c574f',
-      letterSpacing: 2.8,
-    }).setDepth(4);
-    this.yardSubtitle = this.add.text(2135, 109, 'SIX PARTS. SIX COLORS.', {
-      fontFamily: MONO,
-      fontSize: '10px',
-      color: '#8d8579',
-      letterSpacing: 1.6,
-    }).setDepth(4);
+      letterSpacing: 2.5,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(70);
 
     const floor = this.add.rectangle(WORLD.w / 2, FLOOR_Y + 52, WORLD.w, 104, 0xffffff, 0);
     this.physics.add.existing(floor, true);
@@ -186,16 +181,66 @@ export class PigmentTrainScene extends Phaser.Scene {
         art: this.add.graphics().setDepth(12),
       };
       source.art.setScale(SOURCE_SCALE).setPosition(source.x * (1 - SOURCE_SCALE), FLOOR_Y * (1 - SOURCE_SCALE));
-      source.label = this.add.text(source.x, 498, pigment.source, {
+      source.label = this.add.text(source.x, 492, pigment.source, {
         fontFamily: MONO,
-        fontSize: '8px',
+        fontSize: '11px',
         color: cssColor(pigment.color),
         align: 'center',
         letterSpacing: 1.2,
-        wordWrap: { width: 138 },
+        wordWrap: { width: 150 },
       }).setOrigin(0.5, 0).setDepth(13);
       return source;
     });
+  }
+
+  buildHomePlate() {
+    this.homePlateArt = this.add.graphics().setDepth(14);
+    this.stoneArt = this.add.graphics().setDepth(15);
+  }
+
+  drawHomePlate(time) {
+    const g = this.homePlateArt;
+    const s = this.stoneArt;
+    g.clear();
+    s.clear();
+    if (this.fusedEntry) return;
+    const { x, y, w, h } = HOME_PLATE;
+    const plate = this.chapter.state.homePlate;
+    g.lineStyle(1.1, PAPER.graphiteSoft, 0.8);
+    g.lineBetween(x + w / 2, y, x + w / 2 - 10, y - 18);
+    g.lineBetween(x + w / 2, y, x + w / 2 + 10, y - 18);
+    g.fillStyle(PAPER.sheetHigh, 1).fillRect(x - 4, y - 4, w + 8, h + 8);
+    g.lineStyle(2, PAPER.graphite, 0.9);
+    draftRect(g, makeRandom(0x40e), x - 4, y - 4, w + 8, h + 8, { overshoot: 3, jitter: 0.5 });
+    if (!plate.revealed) {
+      drawGreyCell(g, x, y, w / 2, 0x5ee);
+      drawGreyCell(g, x + w / 2, y, w / 2, 0x5ef);
+      drawGreyCell(g, x, y + h / 2, w / 2, 0x5f0);
+      drawGreyCell(g, x + w / 2, y + h / 2, w / 2, 0x5f1);
+      if (plate.washes > 0) g.fillStyle(PAPER.sheetHigh, 0.45).fillRect(x + 6, y + 6, w - 12, h - 12);
+      return;
+    }
+    // Under the grey: Rosa's pencil of the stone, and the stone itself.
+    if (this.stoneCollected) {
+      g.lineStyle(1.2, PAPER.graphiteSoft, 0.7).strokeCircle(x + w / 2, y + h / 2, 12);
+      return;
+    }
+    const cx = PIGMENT_STONE.x;
+    const cy = PIGMENT_STONE.y;
+    s.fillStyle(UI.amber, 0.14 + Math.sin(time / 420) * 0.05).fillCircle(cx, cy, 22);
+    s.fillStyle(0xc9a0dc, 1);
+    s.lineStyle(1.6, PAPER.graphite, 0.85);
+    s.beginPath();
+    s.moveTo(cx, cy - 16);
+    s.lineTo(cx + 10, cy - 6);
+    s.lineTo(cx + 6, cy + 10);
+    s.lineTo(cx, cy + 15);
+    s.lineTo(cx - 6, cy + 10);
+    s.lineTo(cx - 10, cy - 6);
+    s.closePath();
+    s.fillPath();
+    s.strokePath();
+    s.fillStyle(0xffffff, 0.7).fillCircle(cx - 3, cy - 6, 2.4);
   }
 
   buildTrain() {
@@ -203,32 +248,22 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.positionTrainArt();
     this.referenceArt = this.add.graphics().setDepth(9);
     this.referenceArt.setScale(-1, 1).setPosition(4656, 0);
-    this.referenceLabel = this.add.text(2328, 146, 'FINISHED TRAIN', {
+    this.referenceLabel = this.add.text(2328, 146, 'THE PAINTED TRAIN, AS DRAWN', {
       fontFamily: MONO,
-      fontSize: '9px',
+      fontSize: '11px',
       color: '#5c574f',
       letterSpacing: 1.5,
     }).setOrigin(0.5).setDepth(14);
-    this.referenceRule = this.add.text(2328, 257, 'WHEELS  →  BODY  →  ROOF', {
+    this.referenceRule = this.add.text(2328, 262, 'WHEELS  →  BODY  →  ROOF', {
       fontFamily: MONO,
-      fontSize: '8px',
-      color: '#8d8579',
+      fontSize: '11px',
+      color: '#6f675c',
       letterSpacing: 1.1,
     }).setOrigin(0.5).setDepth(14);
     this.drawReferenceTrain();
-    this.cabPromptArt = this.add.graphics().setDepth(34);
-    this.cabPromptTitle = this.add.text(0, 0, 'BOARD', {
-      fontFamily: MONO,
-      fontSize: '13px',
-      color: '#4a4640',
-      letterSpacing: 2.4,
-    }).setOrigin(0.5).setDepth(35).setVisible(false);
-    this.cabPromptHint = this.add.text(0, 0, 'HOLD', {
-      fontFamily: MONO,
-      fontSize: '8px',
-      color: '#2f8c9e',
-      letterSpacing: 2,
-    }).setOrigin(0.5).setDepth(35).setVisible(false);
+    this.ringArt = this.add.graphics().setDepth(90);
+    this.focusArt = this.add.graphics().setDepth(91);
+    this.markerArt = this.add.graphics().setDepth(89);
   }
 
   buildPlayer() {
@@ -239,58 +274,8 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.figure = this.add.graphics().setDepth(28);
     this.playerFacing = 1;
     this.playerAnimation = 'idle';
-
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.13);
     this.cameras.main.setDeadzone(260, 180);
-  }
-
-  buildHud() {
-    // Objective/counter values remain available to render_game_to_text, but
-    // they are no longer screen furniture. All teaching now happens beside
-    // the object in a hand-drawn frame.
-    const stateLabel = () => ({
-      text: '',
-      visible: false,
-      setText(value) { this.text = value; return this; },
-      setVisible(value) { this.visible = value; return this; },
-    });
-    this.objective = stateLabel();
-    this.counter = stateLabel();
-    this.controls = stateLabel();
-
-    this.flash = this.add.text(0, 0, '', {
-      fontFamily: MONO,
-      fontSize: '10px',
-      color: '#b4453a',
-      align: 'center',
-      lineSpacing: 4,
-      letterSpacing: 1.1,
-      backgroundColor: '#fdfcf8ee',
-      padding: { x: 11, y: 8 },
-    }).setOrigin(0.5, 1).setDepth(92).setAlpha(0);
-    this.subtitle = this.add.text(480, 456, '', {
-      fontFamily: MONO,
-      fontSize: '13px',
-      color: '#3f3b35',
-      letterSpacing: 1.4,
-    }).setScrollFactor(0).setDepth(90)
-      .setOrigin(0.5, 1)
-      .setBackgroundColor('#fdfcf8ee')
-      .setPadding(18, 12, 18, 12)
-      .setAlign('center')
-      .setAlpha(0);
-    this.interactionRing = this.add.graphics().setDepth(90);
-    this.selectedArt = this.add.graphics().setDepth(91);
-    this.contextFrame = this.add.graphics().setDepth(92);
-    this.contextText = this.add.text(0, 0, '', {
-      fontFamily: MONO,
-      fontSize: '10px',
-      color: '#4a4640',
-      align: 'center',
-      lineSpacing: 4,
-      letterSpacing: 1.1,
-      padding: { x: 9, y: 7 },
-    }).setOrigin(0.5, 1).setDepth(93).setVisible(false);
   }
 
   buildGrain() {
@@ -302,106 +287,21 @@ export class PigmentTrainScene extends Phaser.Scene {
       .setAlpha(0.68);
   }
 
-  buildIgnitionChoice() {
-    const depth = 140;
-    this.ignitionElements = [];
-    const add = (object) => {
-      object.setScrollFactor(0).setDepth(depth + this.ignitionElements.length * 0.01).setVisible(false);
-      this.ignitionElements.push(object);
-      return object;
-    };
-    add(this.add.rectangle(VIEW.w / 2, VIEW.h / 2, 820, 470, PAPER.sheetHigh, 0.985)
-      .setStrokeStyle(2, PAPER.graphite, 0.9));
-    add(this.add.text(VIEW.w / 2, 92, 'IGNITION ARCHIVE', {
-      fontFamily: MONO, fontSize: '18px', color: '#4a4640', letterSpacing: 3,
-    }).setOrigin(0.5));
-    add(this.add.text(VIEW.w / 2, 126,
-      'THE NAVE  ·  THE LISTENING FIELD  ·  THE LAST CITY\nALL THREE RECORDS END ON THE SAME WORD.', {
-        fontFamily: MONO, fontSize: '10px', color: '#8d8579', align: 'center',
-        lineSpacing: 7, letterSpacing: 1.4,
-      }).setOrigin(0.5));
-    add(this.add.text(VIEW.w / 2, 202, 'WHICH SIGN STARTS THE BORROWED TRAIN?', {
-      fontFamily: MONO, fontSize: '12px', color: '#4a4640', letterSpacing: 2,
-    }).setOrigin(0.5));
-
-    const signs = Object.keys(SIGN_ART);
-    signs.forEach((sign, index) => {
-      const x = 256 + index * 112;
-      const image = add(this.add.image(x, 300, `train-sign-${sign}`).setDisplaySize(66, 66));
-      image.setInteractive({ useHandCursor: true });
-      image.on('pointerdown', () => this.chooseIgnition(sign));
-      const label = sign.toUpperCase().replace('-', ' ');
-      add(this.add.text(x, 354, label, {
-        fontFamily: MONO, fontSize: '9px', color: '#5c574f', letterSpacing: 1.2,
-      }).setOrigin(0.5));
-    });
-    this.ignitionFeedback = add(this.add.text(VIEW.w / 2, 412, '', {
-      fontFamily: MONO, fontSize: '11px', color: '#b4453a', align: 'center', letterSpacing: 1.4,
-    }).setOrigin(0.5));
-  }
-
-  setIgnitionVisible(visible) {
-    this.ignitionOpen = visible;
-    this.ignitionElements.forEach((element) => element.setVisible(visible));
-  }
-
-  openIgnitionChoice() {
-    if (!this.chapter.state.boarded && !this.chapter.boardTrain()) return;
-    this.walker.body.setVelocity(0, 0);
-    this.ignitionFeedback.setText('');
-    this.setIgnitionVisible(true);
-  }
-
-  chooseIgnition(sign) {
-    if (!this.ignitionOpen) return;
-    const result = this.chapter.chooseIgnition(sign);
-    if (!result.ok) {
-      this.ignitionFeedback.setText(`${String(sign).toUpperCase()} DOES NOT MATCH THE THREE NOTES.\nTHE TRAIN WAITS.`);
-      this.cameras.main.shake(90, 0.0018);
-      return;
-    }
-    this.ignitionFeedback.setText('MOON  ·  THE ARCHIVE ENGINE ANSWERS.');
-    this.time.delayedCall(480, () => {
-      this.setIgnitionVisible(false);
-      this.beginChaseSequence();
-    });
-  }
-
   bindInput() {
-    this.keys = this.input.keyboard.addKeys({ left: 'LEFT', right: 'RIGHT', up: 'UP', a: 'A', d: 'D', w: 'W', space: 'SPACE' });
-    this.input.keyboard.addCapture(['LEFT', 'RIGHT', 'UP', 'SPACE']);
+    this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
+    this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.input.keyboard.on('keydown', (event) => {
-      if (event.key.toLowerCase() === 'r') this.scene.restart();
-      else if (event.key.toLowerCase() === 'f') {
-        if (this.scale.isFullscreen) this.scale.stopFullscreen();
-        else this.scale.startFullscreen();
-      }
+    this.input.keyboard.on('keydown-F', () => {
+      if (this.scale.isFullscreen) this.scale.stopFullscreen();
+      else this.scale.startFullscreen();
     });
-    this.input.on('pointerdown', (pointer) => {
-      if (this.ignitionOpen) return;
-      if (this.chapter.state.phase !== EXPANSION_PHASE.BUILD || this.chapter.state.trainBuilt) return;
-      const world = this.pointerWorld(pointer);
-      const haloPigment = pigmentAtHalo(this.walker.x, this.walker.y - 50, PIGMENTS, world.x, world.y);
-      if (haloPigment && this.chapter.pigment(haloPigment.id).collected && !this.chapter.pigment(haloPigment.id).built) {
-        if (!this.selectedPartId) {
-          this.flashMessage('PICK A PART FIRST.', cssColor(PAPER.cyan));
-          return;
-        }
-        this.selectedId = haloPigment.id;
-        this.ringPress = { id: haloPigment.id, startedAt: this.time.now };
-        this.tutorialSeen.chooseColor = true;
-        return;
-      }
-      const part = this.partAt(world.x, world.y);
-      if (part && !this.chapter.pigment(part.id).built) this.selectPart(part.id);
-    });
-    this.input.on('pointerup', () => this.releaseRingColor());
+    this.brush = new BrushInput(this, { anchor: null });
+    this.brush.cursor.setDepth(95);
+    this.tag = new PaperTag(this, { depth: 120 });
+    this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
   }
 
   startMusic() {
-    // A missing or undecodable score file leaves the scene silent rather than
-    // throwing from sound.add (Phaser only caches audio that loaded).
     this.music = this.cache.audio.exists('chapter4-consequence-music')
       ? this.sound.add('chapter4-consequence-music', { loop: true, volume: 0.34 })
       : null;
@@ -416,90 +316,37 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   applyQaState() {
-    if (!import.meta.env.DEV) return;
-    const qa = new URLSearchParams(window.location.search).get('qa');
-    if (!['build-train', 'ring-press', 'train-ready', 'fused-train', 'ignition', 'consequence'].includes(qa)) return;
-
+    // Dev-only: devParam() is null in production.
+    const qa = this.qa;
+    if (qa === 'home-plate') {
+      this.walker.setPosition(SOURCE_X[5] - 40, 410);
+      this.cameras.main.centerOn(SOURCE_X[5], 300);
+      return;
+    }
+    if (!['build-train', 'train-ready', 'fused-train'].includes(qa)) return;
     if (!this.fusedEntry) PIGMENTS.forEach(({ id }) => this.chapter.collect(id));
     this.walker.setPosition(2470, 410);
-    this.cameras.main.stopFollow();
     this.cameras.main.centerOn(2560, 300);
-    if (['build-train', 'fused-train'].includes(qa)) return;
-    if (qa === 'ring-press') {
-      this.selectedPartId = 'green';
-      this.selectedId = 'green';
-      this.ringPress = { id: 'green', startedAt: this.time.now - 300 };
-      return;
-    }
-
-    TRAIN_BUILD_EXAMPLE_ORDER.forEach((id) => this.chapter.placePart(id, id));
-    if (qa === 'train-ready') return;
-    if (qa === 'ignition') {
-      this.chapter.boardTrain();
-      this.time.delayedCall(250, () => this.openIgnitionChoice());
-      return;
-    }
-    if (qa === 'consequence') {
-      this.chapter.boardTrain();
-      this.chapter.chooseIgnition(CHAPTER4_IGNITION_SIGN);
-      this.time.delayedCall(350, () => this.beginChaseSequence());
-    }
+    if (qa === 'train-ready') TRAIN_BUILD_EXAMPLE_ORDER.forEach((id) => this.chapter.placePart(id, id));
+    this.chapter.drainEvents();
   }
 
-  selectPart(id) {
-    const item = this.chapter.pigment(id);
-    if (!item || item.built || this.chapter.state.phase !== EXPANSION_PHASE.BUILD) return;
-    this.selectedPartId = id;
-    this.selectedId = null;
-    this.tutorialSeen.selectPart = true;
-  }
-
-  releaseRingColor() {
-    if (!this.ringPress) return;
-    const colorId = this.ringPress.id;
-    const partId = this.selectedPartId;
-    this.ringPress = null;
-    if (!partId || this.chapter.state.phase !== EXPANSION_PHASE.BUILD) return;
-    if (this.chapter.placePart(partId, colorId)) {
-      const part = this.chapter.pigment(partId);
-      this.flashMessage(`${part.part} SET.`, cssColor(part.color));
-      this.selectedPartId = null;
-      this.selectedId = null;
-      this.trainShakeUntil = this.time.now + 180;
-      return;
-    }
-
-    const failure = this.chapter.snapshot().lastFailure;
-    this.failedPartId = partId;
-    this.failedPartUntil = this.time.now + 760;
-    this.cameras.main.shake(90, 0.0022);
-    if (failure?.reason === 'wrong-color') {
-      this.flashMessage('WRONG COLOR.', '#b4453a');
-    } else if (failure?.reason === 'unsupported') {
-      this.flashMessage('BUILD FROM THE BOTTOM.', '#b4453a');
-    }
-  }
-
-  stepPlayer() {
-    if (this.cutscene || this.ignitionOpen || this.chapter.state.phase === EXPANSION_PHASE.CHASE || this.chapter.state.complete) {
+  stepPlayer(move) {
+    if (this.transitioning || this.locked) {
       this.walker.body.setVelocityX(0);
       return;
     }
-    const left = this.keys.left.isDown || this.keys.a.isDown;
-    const right = this.keys.right.isDown || this.keys.d.isDown;
-    const jump = this.keys.up.isDown || this.keys.w.isDown || this.keys.space.isDown;
-    this.walker.body.setVelocityX(left && !right ? -MOVE_SPEED : right && !left ? MOVE_SPEED : 0);
-    if (jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
+    this.walker.body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
+    if (move.jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
     this.walker.x = Phaser.Math.Clamp(this.walker.x, 42, WORLD.w - 44);
   }
 
-  updateFigure(time) {
-    if (!this.figure.visible) return;
+  updateFigure() {
     const moving = Math.abs(this.walker.body.velocity.x) > 8;
     if (this.walker.body.velocity.x < -8) this.playerFacing = -1;
     if (this.walker.body.velocity.x > 8) this.playerFacing = 1;
     this.playerAnimation = moving ? 'walk' : 'idle';
-    drawPaintedPlayer(this.figure, this.walker, this.input.activePointer);
+    drawPaintedPlayer(this.figure, this.walker, this.brush);
   }
 
   trainWorldPoint(x, y) {
@@ -525,10 +372,6 @@ export class PigmentTrainScene extends Phaser.Scene {
       );
   }
 
-  pointerWorld(pointer = this.input.activePointer) {
-    return this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-  }
-
   sourceAt(x, y) {
     return this.sources.find((source) => Phaser.Geom.Rectangle.Contains(source.rect, x, y)) ?? null;
   }
@@ -538,12 +381,18 @@ export class PigmentTrainScene extends Phaser.Scene {
     return TRAIN_PARTS.find((part) => pointInPart(part, local.x, local.y)) ?? null;
   }
 
-  boardAt(x, y) {
-    if (!this.chapter.state.trainBuilt || this.chapter.state.phase !== EXPANSION_PHASE.BUILD) return null;
-    const cab = this.partWorldBounds(TRAIN_PARTS.find((part) => part.id === 'orange'));
-    if (Math.abs(this.walker.x - (cab.x + cab.w / 2)) > 220) return null;
-    const rect = new Phaser.Geom.Rectangle(cab.x - 12, cab.y - 18, cab.w + 24, cab.h + 30);
-    return Phaser.Geom.Rectangle.Contains(rect, x, y) ? { rect } : null;
+  onHomePlate(x, y) {
+    return !this.fusedEntry && x >= HOME_PLATE.x - 6 && x <= HOME_PLATE.x + HOME_PLATE.w + 6
+      && y >= HOME_PLATE.y - 6 && y <= HOME_PLATE.y + HOME_PLATE.h + 6;
+  }
+
+  cabBounds() {
+    return this.partWorldBounds(TRAIN_PARTS.find((part) => part.id === 'orange'));
+  }
+
+  nearCab() {
+    const cab = this.cabBounds();
+    return Math.abs(this.walker.x - (cab.x + cab.w / 2)) <= 220;
   }
 
   setHold(key, dt) {
@@ -556,346 +405,297 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.hold = { key: null, progress: 0 };
   }
 
-  stepInteraction(dt) {
-    if (this.cutscene || this.ignitionOpen) return this.resetHold();
-    const pointer = this.input.activePointer;
-    const { x, y } = this.pointerWorld(pointer);
-    const phase = this.chapter.state.phase;
+  // What the brush is on, in priority order: train parts first (so the ring
+  // can never swallow a carriage click), then the cab, the HOME plate and
+  // the places lending colour. The ring is not in this list at all.
+  hitTest() {
+    const { worldX: x, worldY: y } = this.brush;
+    const built = this.chapter.state.trainBuilt;
+    const part = this.partAt(x, y);
+    if (part && built && part.id === 'orange') return { type: 'cab', part };
+    if (part && !this.chapter.pigment(part.id).built && Math.abs(this.walker.x - x) <= PART_REACH) return { type: 'part', part };
+    if (part && built && this.nearCab()) return { type: 'cab', part };
+    if (this.onHomePlate(x, y) && !this.chapter.state.homePlate.revealed && Math.abs(this.walker.x - PIGMENT_STONE.x) <= SOURCE_REACH) {
+      return { type: 'home-plate' };
+    }
+    const source = this.sourceAt(x, y);
+    if (source && !this.chapter.pigment(source.id).collected && Math.abs(this.walker.x - source.x) <= SOURCE_REACH) {
+      return { type: 'source', source };
+    }
+    return null;
+  }
 
-    if (phase === EXPANSION_PHASE.COLLECT) {
-      const source = this.sourceAt(x, y);
-      const inReach = source && Phaser.Math.Distance.Between(this.walker.x, this.walker.y, source.x, 390) <= 170;
-      if (!source || !inReach || !pointer.rightButtonDown() || this.chapter.pigment(source.id).collected) return this.resetHold();
-      if (this.setHold(`source:${source.id}`, dt)) {
-        this.chapter.collect(source.id);
-        this.selectedId = source.id;
-        this.flashMessage(`${source.name} TAKEN.`, cssColor(source.color));
+  stepInteraction(dt, move) {
+    const b = this.brush;
+    const hit = this.hitTest();
+    this.hover = hit;
+    if (move.interactPressed && this.chapter.state.trainBuilt && this.nearCab()) {
+      this.boardTrain();
+      return;
+    }
+    if (!hit) return this.resetHold();
+    if (hit.type === 'source' && b.washDown) {
+      if (this.setHold(`source:${hit.source.id}`, dt)) {
+        this.chapter.collect(hit.source.id);
+        noteAt(this, hit.source.x, 250, `${hit.source.name} · BORROWED`, { tone: 'info', hold: 1000 });
+        this.tutorialSeen.collect = true;
         this.resetHold();
       }
       return;
     }
-
-    if (phase === EXPANSION_PHASE.BUILD && this.chapter.state.trainBuilt) {
-      const board = this.boardAt(x, y);
-      if (!board || !pointer.leftButtonDown()) return this.resetHold();
+    if (hit.type === 'home-plate' && b.washDown) {
+      if (this.setHold('home-plate', dt)) {
+        this.chapter.washHomePlate();
+        this.resetHold();
+        this.handleEvents();
+      }
+      return;
+    }
+    if (hit.type === 'part' && b.paintDown) {
+      if (this.setHold(`part:${hit.part.id}`, dt)) {
+        this.resetHold();
+        this.paintPart(hit.part.id);
+      }
+      return;
+    }
+    if (hit.type === 'cab' && b.paintDown) {
       if (this.setHold('board', dt)) {
-        this.tutorialSeen.board = true;
         this.resetHold();
-        this.openIgnitionChoice();
+        this.boardTrain();
       }
       return;
     }
-
     this.resetHold();
   }
 
-  beginChaseSequence() {
-    if (this.chapter.state.phase !== EXPANSION_PHASE.CHASE) return;
-    this.cutscene = true;
-    this.chaseBeat = 'crowd-approach';
-    this.trainMoving = false;
-    this.walker.body.setVelocity(0, 0);
-    this.figure.setVisible(false);
-    this.cameras.main.stopFollow();
-    this.chaseCameraX = this.cameras.main.midPoint.x;
-    this.chaseCameraStartX = this.chaseCameraX;
-    this.cabPromptArt.clear();
-    this.cabPromptTitle.setVisible(false);
-    this.cabPromptHint.setVisible(false);
-    this.subtitle.setAlpha(0);
-    if (this.music) this.tweens.add({ targets: this.music, volume: 0.43, duration: 900 });
-
-    this.spawnCrowd();
-    this.time.delayedCall(CROWD_APPROACH_MS, () => this.beginTrainEscape());
-    this.time.delayedCall(CROWD_APPROACH_MS + TRAIN_ESCAPE_MS + 850, () => this.finishConsequence());
-  }
-
-  spawnCrowd() {
-    if (this.crowd.length) return;
-    const trainRearX = this.trainWorldPoint(2976, 456).x;
-    for (let i = 0; i < 9; i += 1) {
-      const person = this.makeResident(2080 - i * 29, FLOOR_Y, i);
-      this.crowd.push(person);
-      this.tweens.add({
-        targets: person,
-        x: trainRearX - 38 - i * 25,
-        duration: 1600 + i * 55,
-        ease: 'Sine.easeOut',
-      });
-    }
-
-    this.time.delayedCall(330, () => this.showSpeechBubble(this.crowd[0], 'WAIT!', -4, -113));
-    this.time.delayedCall(760, () => this.showSpeechBubble(this.crowd[3], 'OUR COLORS!', 2, -142));
-    this.time.delayedCall(1180, () => this.showSpeechBubble(this.crowd[4], 'COME BACK!', 18, -112));
-  }
-
-  makeResident(x, y, index) {
-    const container = this.add.container(x, y).setDepth(26);
-    container.poseArt = this.add.graphics();
-    container.color = PIGMENTS[index % PIGMENTS.length].color;
-    container.runSeed = index * 0.72;
-    container.baseY = y;
-    container.add(container.poseArt);
-    this.drawResidentPose(container, 0, false);
-    return container;
-  }
-
-  drawResidentPose(person, time, running) {
-    const g = person.poseArt;
-    const stride = running ? Math.sin(time / 82 + person.runSeed) : 0;
-    const arm = stride * 11;
-    const leg = stride * 10;
-    g.clear();
-    g.lineStyle(2, PAPER.graphite, 0.9);
-    g.fillStyle(PAPER.sheetHigh, 0.96).fillCircle(0, -62, 10);
-    g.strokeCircle(0, -62, 10);
-    g.fillStyle(person.color, 0.76).fillRoundedRect(-6, -51, 12, 27, 3);
-    g.strokeRoundedRect(-6, -51, 12, 27, 3);
-    g.lineBetween(-3, -45, -12 + arm, -31);
-    g.lineBetween(3, -45, 12 - arm, -31);
-    g.lineBetween(-2, -24, -10 + leg, 0);
-    g.lineBetween(2, -24, 10 - leg, 0);
-    g.lineStyle(2, PAPER.fault, 0.82);
-    g.lineBetween(-8, -78, -2, -74);
-    g.lineBetween(2, -74, 8, -78);
-  }
-
-  showSpeechBubble(person, text, offsetX, offsetY) {
-    if (!person || this.chaseBeat === 'settled') return;
-    const width = Math.max(64, text.length * 7 + 24);
-    const height = 34;
-    const bubble = this.add.container(person.x + offsetX, person.baseY + offsetY).setDepth(42);
-    const art = this.add.graphics();
-    art.fillStyle(PAPER.sheetHigh, 0.98).fillRoundedRect(-width / 2, -height / 2, width, height, 11);
-    art.lineStyle(1.6, PAPER.graphiteSoft, 0.88).strokeRoundedRect(-width / 2, -height / 2, width, height, 11);
-    art.fillStyle(PAPER.sheetHigh, 0.98).fillTriangle(-7, height / 2 - 2, 8, height / 2 - 2, -1, height / 2 + 11);
-    art.lineStyle(1.4, PAPER.graphiteSoft, 0.88);
-    art.lineBetween(-7, height / 2 - 2, -1, height / 2 + 11);
-    art.lineBetween(-1, height / 2 + 11, 8, height / 2 - 2);
-    art.lineStyle(2.2, person.color, 0.72).lineBetween(-width / 2 + 13, height / 2 - 5, width / 2 - 13, height / 2 - 5);
-    const label = this.add.text(0, -1, text, {
-      fontFamily: MONO,
-      fontSize: '10px',
-      color: '#4a4640',
-      letterSpacing: 1.4,
-    }).setOrigin(0.5);
-    bubble.add([art, label]);
-    bubble.setScale(0.72).setAlpha(0);
-    const entry = { person, bubble, offsetX, offsetY };
-    this.speechBubbles.push(entry);
-    this.tweens.add({ targets: bubble, scale: 1, alpha: 1, duration: 230, ease: 'Back.easeOut' });
-  }
-
-  beginTrainEscape() {
-    if (this.chaseBeat !== 'crowd-approach') return;
-    this.chaseBeat = 'train-escape';
-    this.trainMoving = true;
-    this.chaseCameraActive = true;
-    this.trainShakeUntil = this.time.now + 480;
-    this.cameras.main.shake(110, 0.0016);
-    this.tweens.add({
-      targets: this,
-      trainOffset: TRAIN_ESCAPE_DISTANCE,
-      duration: TRAIN_ESCAPE_MS,
-      ease: 'Sine.easeInOut',
-      onComplete: () => {
-        this.trainMoving = false;
-        this.chaseBeat = 'settling';
-      },
-    });
-    this.crowd.forEach((person, index) => {
-      this.tweens.add({
-        targets: person,
-        x: person.x + 340 + index * 7,
-        duration: TRAIN_ESCAPE_MS,
-        ease: 'Sine.easeOut',
-      });
-    });
-  }
-
-  updateChaseCamera(dt) {
-    if (!this.chaseCameraActive) return;
-    const halfView = VIEW.w / 2;
-    const trainFocusX = TRAIN_MIRROR_X + this.trainOffset + 70;
-    const trainFrontX = this.trainWorldPoint(2240, FLOOR_Y).x;
-    const crowdLeftX = this.crowd.length
-      ? Math.min(...this.crowd.map((person) => person.x - 18))
-      : trainFocusX;
-    const groupFocusX = (crowdLeftX + trainFrontX) / 2;
-    const escapeProgress = Phaser.Math.Clamp(this.trainOffset / TRAIN_ESCAPE_DISTANCE, 0, 1);
-    const trainPriority = escapeProgress * escapeProgress;
-    const cinematicFocusX = Phaser.Math.Linear(groupFocusX, trainFocusX, trainPriority);
-    const forwardOnlyFocusX = Math.max(this.chaseCameraStartX ?? halfView, cinematicFocusX);
-    const targetX = Phaser.Math.Clamp(forwardOnlyFocusX, halfView, WORLD.w - halfView);
-    const smoothing = 1 - Math.exp(-4.4 * dt);
-    this.chaseCameraX = Phaser.Math.Linear(this.chaseCameraX ?? this.cameras.main.midPoint.x, targetX, smoothing);
-    this.cameras.main.centerOn(this.chaseCameraX, VIEW.h / 2);
-  }
-
-  updateChaseVisuals(time, dt) {
-    if (this.chapter.state.phase !== EXPANSION_PHASE.CHASE) return;
-    const running = this.chaseBeat !== 'settled';
-    this.crowd.forEach((person) => {
-      const bob = running ? -Math.abs(Math.sin(time / 82 + person.runSeed)) * 3 : 0;
-      person.y = person.baseY + bob;
-      this.drawResidentPose(person, time, running);
-    });
-    this.speechBubbles.forEach((entry) => {
-      entry.bubble.setPosition(entry.person.x + entry.offsetX, entry.person.y + entry.offsetY);
-    });
-    this.updateChaseCamera(dt);
-  }
-
-  finishConsequence() {
-    if (!this.chapter.revealConsequence()) return;
-    this.chaseBeat = 'settled';
-    this.trainMoving = false;
-    this.chaseCameraActive = false;
-    this.subtitle.setAlpha(0);
-    if (this.music) this.tweens.add({ targets: this.music, volume: 0.28, duration: 1200 });
-    this.time.delayedCall(1450, () => this.finishChapter());
-  }
-
-  finishChapter() {
-    if (this.chapterTransitionStarted) return;
-    this.chapterTransitionStarted = true;
-    const wash = this.add.rectangle(0, 0, VIEW.w, VIEW.h, PAPER.bookCloth, 0)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setDepth(200);
-    this.tweens.add({
-      targets: wash,
-      fillAlpha: { from: 0, to: 0.32 },
-      duration: 520,
-      yoyo: true,
-      hold: 720,
-      ease: 'Sine.easeInOut',
-      onComplete: () => {
-        createSaveStore().markCheckpoint('chapter-5-start');
-        navigateAfterCinematic('chapter-4-to-5', CINEMATICS.chapter4To5, '/museum-3d.html', {
-          label: 'Chapter 4 to Chapter 5 transition',
-          preloadChapterId: 'chapter5',
-        });
-      },
-    });
-  }
-
-  flashMessage(text, color = '#b4453a') {
-    if (this.lastHint === text && this.time.now - (this.lastHintAt ?? 0) < 850) return;
-    this.lastHint = text;
-    this.lastHintAt = this.time.now;
-    this.tweens.killTweensOf(this.flash);
-    const fixedBuildMessage = this.chapter.state.phase === EXPANSION_PHASE.BUILD;
-    this.flash
-      .setPosition(fixedBuildMessage ? 2270 : this.walker.x, fixedBuildMessage ? 320 : this.walker.y - 84)
-      .setText(text)
-      .setColor(color)
-      .setAlpha(1);
-    this.tweens.add({ targets: this.flash, alpha: 0, delay: 1100, duration: 650 });
-  }
-
-  showContextPrompt(spec) {
-    this.contextFrame.clear();
-    if (!spec) {
-      this.contextText.setVisible(false);
+  paintPart(id) {
+    // Feedback sits by the part, under the rails, clear of the part's tag.
+    const bounds = this.partWorldBounds(TRAIN_PARTS.find((p) => p.id === id));
+    const at = { x: bounds.x + bounds.w / 2, y: FLOOR_Y + 44 };
+    if (this.chapter.placePart(id)) {
+      const part = this.chapter.pigment(id);
+      noteAt(this, at.x, at.y, `${part.part} · ${part.name}`, { tone: 'good', hold: 900 });
+      this.trainShakeUntil = this.time.now + 180;
+      this.tutorialSeen.part = true;
       return;
     }
-    this.contextText.setText(spec.text).setPosition(spec.x, spec.y).setColor(cssColor(spec.color)).setVisible(true);
-    const bounds = this.contextText.getBounds();
-    this.contextFrame.fillStyle(PAPER.sheetHigh, 0.95).fillRoundedRect(bounds.x - 5, bounds.y - 4, bounds.width + 10, bounds.height + 8, 3);
-    this.contextFrame.lineStyle(1.5, PAPER.graphiteSoft, 0.82);
-    const rnd = makeRandom(Math.floor(spec.x * 19 + spec.y));
-    draftLine(this.contextFrame, rnd, bounds.x - 5, bounds.y - 4, bounds.x + bounds.width + 5, bounds.y - 4, { overshoot: 3, jitter: 0.7 });
-    draftLine(this.contextFrame, rnd, bounds.x + bounds.width + 5, bounds.y - 4, bounds.x + bounds.width + 5, bounds.y + bounds.height + 4, { overshoot: 3, jitter: 0.7 });
-    draftLine(this.contextFrame, rnd, bounds.x + bounds.width + 5, bounds.y + bounds.height + 4, bounds.x - 5, bounds.y + bounds.height + 4, { overshoot: 3, jitter: 0.7 });
-    draftLine(this.contextFrame, rnd, bounds.x - 5, bounds.y + bounds.height + 4, bounds.x - 5, bounds.y - 4, { overshoot: 3, jitter: 0.7 });
-    this.contextFrame.lineStyle(2.4, spec.color, 0.84);
-    draftLine(this.contextFrame, rnd, bounds.x + 8, bounds.y + bounds.height + 1, bounds.x + bounds.width - 8, bounds.y + bounds.height + 1, { overshoot: 0, jitter: 1, segments: 5 });
-  }
-
-  drawCabPrompt(visible) {
-    this.cabPromptArt.clear();
-    this.cabPromptTitle.setVisible(visible);
-    this.cabPromptHint.setVisible(visible);
-    if (!visible) return;
-    const cab = this.partWorldBounds(TRAIN_PARTS.find((part) => part.id === 'orange'));
-    const anchorX = cab.x + cab.w / 2;
-    const anchorY = cab.y - 58;
-    const iconX = anchorX - 42;
-    const iconY = anchorY + 9;
-    const progress = this.hold.key === 'board' ? Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1) : 0;
-
-    this.cabPromptTitle.setPosition(anchorX + 12, anchorY + 1);
-    this.cabPromptHint.setPosition(anchorX + 12, anchorY + 20);
-    this.cabPromptArt.fillStyle(PAPER.sheetHigh, 0.96).fillCircle(iconX, iconY, 13);
-    this.cabPromptArt.lineStyle(1.5, PAPER.graphiteSoft, 0.86).strokeCircle(iconX, iconY, 13);
-    this.cabPromptArt.lineStyle(1.2, PAPER.graphite, 0.82).strokeRoundedRect(iconX - 4, iconY - 7, 8, 13, 3);
-    this.cabPromptArt.lineBetween(iconX, iconY - 5, iconX, iconY - 1);
-    if (progress > 0) {
-      this.cabPromptArt.lineStyle(3, PAPER.cyan, 0.94);
-      this.cabPromptArt.beginPath();
-      this.cabPromptArt.arc(iconX, iconY, 16, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress, false);
-      this.cabPromptArt.strokePath();
+    const failure = this.chapter.snapshot().lastFailure;
+    this.failedPartId = id;
+    this.failedPartUntil = this.time.now + 760;
+    const part = this.chapter.pigment(id);
+    if (failure?.reason === 'not-borrowed') {
+      noteAt(this, at.x, at.y, `NO ${part.name} YET · BORROW IT FROM THE ${part.source}`, { tone: 'warn', hold: 1600 });
+    } else if (failure?.reason === 'unsupported') {
+      const missing = failure.missing.map((m) => this.chapter.pigment(m).part).join(' AND ');
+      noteAt(this, at.x, at.y, `NOTHING TO STAND ON · ${missing} FIRST`, { tone: 'warn', hold: 1600 });
     }
-    this.cabPromptArt.lineStyle(1.5, PAPER.cyan, 0.72);
-    const rnd = makeRandom(0x4cab);
-    draftLine(this.cabPromptArt, rnd, anchorX - 3, anchorY + 30, anchorX + 27, anchorY + 30, { overshoot: 1, jitter: 0.5, segments: 4 });
-    draftLine(this.cabPromptArt, rnd, anchorX + 12, anchorY + 34, anchorX, cab.y - 6, { overshoot: 0, jitter: 0.5, segments: 4 });
   }
 
-  updateContextPrompt() {
+  handleEvents() {
+    this.chapter.drainEvents().forEach((event) => {
+      if (event.type === 'home-plate-thinned') {
+        noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y - 6, 'THE GREY THINS · ONCE MORE', { hold: 1000 });
+      } else if (event.type === 'home-plate-revealed' && !this.stoneCollected) {
+        this.time.delayedCall(500, () => this.collectStone());
+      }
+    });
+  }
+
+  collectStone() {
+    if (this.stoneCollected) return;
+    collectMagicStone('chapter-4');
+    this.stoneCollected = true;
+    const snapshot = magicStoneSnapshot();
+    noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y - 10, `PIGMENT STONE · ${snapshot.count} / ${snapshot.total}`, { tone: 'good', hold: 2200 });
+    this.cameras.main.flash(240, 224, 162, 74);
+  }
+
+  boardTrain() {
+    if (this.transitioning || !this.chapter.boardTrain()) return;
+    this.transitioning = true;
+    this.tag.hide();
+    this.registry.set('chapter4Pigments', PIGMENTS.map(({ id }) => id));
+    this.registry.set('chapter4ArchiveAnswer', CHAPTER4_IGNITION_SIGN);
+    if (this.music) this.tweens.add({ targets: this.music, volume: 0, duration: 420 });
+    this.cameras.main.fadeOut(520, 247, 244, 236);
+    this.time.delayedCall(560, () => this.scene.start('PaintedLine'));
+  }
+
+  updateTag() {
+    const b = this.brush;
+    if (this.locked || this.transitioning) return this.tag.hide();
+    const hit = this.hover;
+    const progress = this.hold.key ? this.hold.progress / HOLD_SECONDS : 0;
+    if (hit?.type === 'source') {
+      return this.tag.show(`${b.label('washHold')} · BORROW ${hit.source.name}`, hit.source.x, 272, { progress });
+    }
+    if (hit?.type === 'home-plate') {
+      return this.tag.show(`${b.label('washHold')} · WASH THE GREY`, PIGMENT_STONE.x, HOME_PLATE.y - 8, { progress });
+    }
+    if (hit?.type === 'part') {
+      const bounds = this.partWorldBounds(hit.part);
+      const part = this.chapter.pigment(hit.part.id);
+      return this.tag.show(`${b.label('paintHold')} · PAINT THE ${part.part}`, bounds.x + bounds.w / 2, bounds.y - 6, { progress });
+    }
+    if (this.chapter.state.trainBuilt && this.nearCab()) {
+      const cab = this.cabBounds();
+      return this.tag.show(`${b.label('paintHold')} ON THE CAB · ${b.label('read')} · BOARD`, cab.x + cab.w / 2, cab.y - 8, { progress: this.hold.key === 'board' ? progress : 0 });
+    }
+    const snap = this.chapter.snapshot();
+    if (snap.collectedCount === 0 && this.walker.x < SOURCE_X[0] + 200) {
+      return this.tag.show(`AIM AT THE AWNING · ${b.label('washHold')} TO BORROW ITS COLOUR`, SOURCE_X[0], 272);
+    }
+    if (this.walker.x > 2140 && !snap.trainBuilt && !this.tutorialSeen.part) {
+      return this.tag.show(`${b.label('paintHold')} A PART · WHEELS FIRST`, 2560, 300);
+    }
+    return this.tag.hide();
+  }
+
+  drawMarkers() {
+    const g = this.markerArt;
+    g.clear();
+    const t = this.time.now;
+    this.sources.forEach((s) => { if (!this.chapter.pigment(s.id).collected) drawGlintMarker(g, t, s.x + 44, 286); });
+    if (!this.fusedEntry && !this.chapter.state.homePlate.revealed) drawGlintMarker(g, t, HOME_PLATE.x + HOME_PLATE.w + 4, HOME_PLATE.y - 6);
+    TRAIN_PARTS.forEach((p) => {
+      if (this.chapter.pigment(p.id).built) return;
+      const bounds = this.partWorldBounds(p);
+      drawGlintMarker(g, t, bounds.x + bounds.w - 6, bounds.y + 4, { alpha: 0.8 });
+    });
+    if (this.chapter.state.trainBuilt) {
+      const cab = this.cabBounds();
+      drawGlintMarker(g, t, cab.x + cab.w - 4, cab.y - 6);
+    }
+  }
+
+  // The borrowed colours, shown round Butch's head. Display only.
+  drawRing() {
+    const g = this.ringArt;
+    g.clear();
     const snapshot = this.chapter.snapshot();
-    const phase = snapshot.phase;
-    this.tutorialSeen.collect ||= snapshot.collectedCount > 0;
-    this.tutorialSeen.board ||= snapshot.boarded;
-    let spec = null;
-    if (phase === EXPANSION_PHASE.COLLECT && snapshot.collectedCount === 0) {
-      const source = this.sources
-        .filter((item) => !this.chapter.pigment(item.id).collected)
-        .map((item) => ({ ...item, distance: Math.abs(this.walker.x - item.x) }))
-        .filter((item) => item.distance <= 170)
-        .sort((a, b) => a.distance - b.distance)[0];
-      if (source) spec = { text: 'RIGHT-HOLD · TAKE COLOR', x: source.x, y: 178, color: source.color };
-    } else if (phase === EXPANSION_PHASE.BUILD && !snapshot.trainBuilt && this.walker.x > 2140) {
-      if (!this.selectedPartId) {
-        spec = { text: 'CLICK A TRAIN PART', x: 2780, y: 300, color: PAPER.cyan };
-      } else {
-        const pressed = this.ringPress ? this.chapter.pigment(this.ringPress.id) : null;
-        spec = {
-          text: pressed ? `${pressed.name} · RELEASE` : 'HOLD A RING COLOR',
-          x: 2780,
-          y: 300,
-          color: pressed?.color ?? PAPER.cyan,
-        };
-      }
+    const activeIds = snapshot.pigments.filter((item) => item.collected && !item.built).map((item) => item.id);
+    const progressId = this.hold.key?.startsWith('source:') ? this.hold.key.slice('source:'.length) : null;
+    if (activeIds.length || progressId) {
+      drawPigmentHalo(g, {
+        x: this.walker.x,
+        y: this.walker.y - 50,
+        pigments: PIGMENTS,
+        activeIds,
+        progressId,
+        progress: this.hold.progress / HOLD_SECONDS,
+        time: this.time.now,
+      });
     }
-    this.showContextPrompt(spec);
-    const cab = this.partWorldBounds(TRAIN_PARTS.find((part) => part.id === 'orange'));
-    const nearCab = Math.abs(this.walker.x - (cab.x + cab.w / 2)) <= 220;
-    this.drawCabPrompt(phase === EXPANSION_PHASE.BUILD && snapshot.trainBuilt && nearCab);
+  }
 
-    this.selectedArt.clear();
-    if (phase === EXPANSION_PHASE.COLLECT || phase === EXPANSION_PHASE.BUILD) {
-      const activeIds = snapshot.pigments.filter((item) => item.collected && !item.built).map((item) => item.id);
-      const progressId = this.hold.key?.startsWith('source:') ? this.hold.key.slice('source:'.length) : null;
-      if (activeIds.length || progressId) {
-        const pressProgress = this.ringPress
-          ? Phaser.Math.Clamp((this.time.now - this.ringPress.startedAt) / 260, 0, 1)
-          : 0;
-        drawPigmentHalo(this.selectedArt, {
-          x: this.walker.x,
-          y: this.walker.y - 50,
-          pigments: PIGMENTS,
-          activeIds,
-          selectedId: phase === EXPANSION_PHASE.BUILD ? this.selectedId : null,
-          pressedId: this.ringPress?.id ?? null,
-          pressProgress,
-          progressId,
-          progress: this.hold.progress / HOLD_SECONDS,
-          time: this.time.now,
-        });
-      }
+  drawFocus() {
+    const g = this.focusArt;
+    g.clear();
+    const hit = this.hover;
+    if (!hit) return;
+    let rect = null;
+    let color = UI.amberInk;
+    if (hit.type === 'source') {
+      rect = hit.source.rect;
+      color = hit.source.color;
+    } else if (hit.type === 'part' || hit.type === 'cab') {
+      rect = this.partWorldBounds(hit.part);
+      if (this.failedPartId === hit.part.id && this.time.now < this.failedPartUntil) color = PAPER.fault;
+    } else if (hit.type === 'home-plate') {
+      rect = { x: HOME_PLATE.x - 4, y: HOME_PLATE.y - 4, w: HOME_PLATE.w + 8, h: HOME_PLATE.h + 8 };
     }
+    if (!rect) return;
+    g.lineStyle(2.2, color, 0.94);
+    draftRect(g, makeRandom(0x8710 + Math.floor(rect.x)), rect.x - 4, rect.y - 4, rect.w + 8, rect.h + 8, { overshoot: 4, jitter: 0.8 });
+    if (!this.hold.key) return;
+    const progress = Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1);
+    const head = { x: this.walker.x, y: this.walker.y - 50 };
+    const centre = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
+    const edge = haloPointToward(head.x, head.y, centre.x, centre.y, 36);
+    const from = hit.type === 'source' || hit.type === 'home-plate' ? centre : edge;
+    const to = hit.type === 'source' || hit.type === 'home-plate' ? edge : centre;
+    const end = { x: Phaser.Math.Linear(from.x, to.x, progress), y: Phaser.Math.Linear(from.y, to.y, progress) };
+    g.lineStyle(2.5, color, 0.72);
+    [-2.5, 2.5].forEach((o) => draftLine(g, makeRandom(0x8820 + o), from.x, from.y + o, end.x, end.y + o * 0.25, { overshoot: 0, jitter: 1.2, segments: 9 }));
+  }
+
+  refreshPresentation() {
+    this.sources.forEach((source) => {
+      source.art.setVisible(!this.fusedEntry);
+      source.label.setVisible(!this.fusedEntry);
+      if (!this.fusedEntry) this.drawSource(source);
+    });
+    this.drawTrain();
+  }
+
+  update(time, delta) {
+    const dt = Math.min(delta, 50) / 1000;
+    this.brush.update(dt);
+    this.restart.update(dt, this.brush.pad);
+    if (this.restart.blocking) {
+      this.walker.body.setVelocityX(0);
+      return;
+    }
+    const move = this.brush.readMove(this.keys);
+    this.stepPlayer(move);
+    if (!this.locked && !this.transitioning) this.stepInteraction(dt, move);
+    this.updateFigure();
+    this.refreshPresentation();
+    this.drawHomePlate(time);
+    this.drawRing();
+    this.drawFocus();
+    this.drawMarkers();
+    this.updateTag();
+    this.brush.drawCursor({ hidden: this.transitioning });
+  }
+
+  textState() {
+    const snapshot = this.chapter.snapshot();
+    const b = this.brush;
+    return {
+      scene: 'PigmentTrain',
+      camera: { x: Math.round(this.cameras.main.worldView.x), y: Math.round(this.cameras.main.worldView.y) },
+      coordinateSystem: 'world pixels; origin top-left; x right; y down',
+      phase: snapshot.phase,
+      locked: this.locked,
+      player: {
+        x: Math.round(this.walker.x),
+        y: Math.round(this.walker.y),
+        facing: this.playerFacing,
+        animation: this.playerAnimation,
+        onGround: this.walker.body.blocked.down,
+      },
+      pointer: { mode: b.mode, x: Math.round(b.worldX), y: Math.round(b.worldY) },
+      hover: this.hover ? { type: this.hover.type, id: this.hover.part?.id ?? this.hover.source?.id ?? null } : null,
+      hold: { key: this.hold.key, progress: Number((this.hold.progress / HOLD_SECONDS).toFixed(2)) },
+      holdSeconds: HOLD_SECONDS,
+      tag: this.tag.visible ? this.tag.text : null,
+      counts: {
+        collected: snapshot.collectedCount,
+        trainParts: snapshot.builtCount,
+        failedAttempts: snapshot.failedAttempts,
+      },
+      trainBuilt: snapshot.trainBuilt,
+      boarded: snapshot.boarded,
+      quiz: null,
+      homePlate: snapshot.homePlate,
+      stone: { collected: this.stoneCollected, x: PIGMENT_STONE.x, y: PIGMENT_STONE.y },
+      // A point inside each part (for wheels, the second wheel's hub).
+      parts: Object.fromEntries(TRAIN_PARTS.map((p) => {
+        if (p.type === 'wheels') {
+          const hub = this.trainWorldPoint(p.circles[1].x, p.circles[1].y);
+          return [p.id, { x: Math.round(hub.x), y: Math.round(hub.y) }];
+        }
+        const r = this.partWorldBounds(p);
+        return [p.id, { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h / 2) }];
+      })),
+      sourcesAt: Object.fromEntries(this.sources.map((s) => [s.id, { x: s.x, y: 360 }])),
+      buildRules: Object.fromEntries(Object.entries(TRAIN_BUILD_RULES).map(([id, rule]) => [id, { requires: [...rule.requires], tier: rule.tier }])),
+      lastFailure: snapshot.lastFailure,
+      pigments: snapshot.pigments.map(({ id, collected, built }) => ({ id, collected, built })),
+      phaseIsBoarded: snapshot.phase === EXPANSION_PHASE.BOARDED,
+      music: { playing: Boolean(this.music?.isPlaying), volume: Number((this.music?.volume ?? 0).toFixed(2)) },
+    };
   }
 
   drawSource(source) {
@@ -1140,200 +940,4 @@ export class PigmentTrainScene extends Phaser.Scene {
     return { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
   }
 
-  drawInteractionRing() {
-    const g = this.interactionRing;
-    g.clear();
-    const pointer = this.input.activePointer;
-    const world = this.pointerWorld(pointer);
-    const phase = this.chapter.state.phase;
-    const source = phase === EXPANSION_PHASE.COLLECT ? this.sourceAt(world.x, world.y) : null;
-    const haloPigment = phase === EXPANSION_PHASE.BUILD
-      ? pigmentAtHalo(this.walker.x, this.walker.y - 50, PIGMENTS, world.x, world.y)
-      : null;
-    const part = phase === EXPANSION_PHASE.BUILD && !haloPigment ? this.partAt(world.x, world.y) : null;
-    const board = phase === EXPANSION_PHASE.BUILD ? this.boardAt(world.x, world.y) : null;
-    let rect = null;
-    let color = PAPER.cyan;
-    if (source && !this.chapter.pigment(source.id).collected) {
-      rect = source.rect;
-      color = source.color;
-    } else if (this.selectedPartId && phase === EXPANSION_PHASE.BUILD && !this.chapter.pigment(this.selectedPartId).built) {
-      rect = this.partWorldBounds(TRAIN_PARTS.find((item) => item.id === this.selectedPartId));
-      color = this.failedPartId === this.selectedPartId && this.time.now < this.failedPartUntil ? PAPER.fault : PAPER.cyan;
-    } else if (part && !this.chapter.pigment(part.id).built) {
-      rect = this.partWorldBounds(part);
-      color = PAPER.cyan;
-    } else if (board) {
-      rect = board.rect;
-      color = PAPER.cyan;
-    }
-    if (rect) {
-      g.lineStyle(2.2, color, 0.94);
-      const rnd = makeRandom(0x8710 + Math.floor(rect.x));
-      draftLine(g, rnd, rect.x - 4, rect.y - 4, rect.x + rect.w + 4, rect.y - 4, { overshoot: 4, jitter: 0.8 });
-      draftLine(g, rnd, rect.x + rect.w + 4, rect.y - 4, rect.x + rect.w + 4, rect.y + rect.h + 4, { overshoot: 4, jitter: 0.8 });
-      draftLine(g, rnd, rect.x + rect.w + 4, rect.y + rect.h + 4, rect.x - 4, rect.y + rect.h + 4, { overshoot: 4, jitter: 0.8 });
-      draftLine(g, rnd, rect.x - 4, rect.y + rect.h + 4, rect.x - 4, rect.y - 4, { overshoot: 4, jitter: 0.8 });
-    }
-    if (this.ringPress && this.selectedPartId && rect) {
-      const pressed = this.chapter.pigment(this.ringPress.id);
-      const progress = Phaser.Math.Clamp((this.time.now - this.ringPress.startedAt) / 260, 0, 1);
-      const head = { x: this.walker.x, y: this.walker.y - 50 };
-      const centre = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
-      const from = haloPointToward(head.x, head.y, centre.x, centre.y, 39 + progress * 5);
-      const end = { x: Phaser.Math.Linear(from.x, centre.x, progress * 0.72), y: Phaser.Math.Linear(from.y, centre.y, progress * 0.72) };
-      g.lineStyle(2.7 + progress * 1.4, pressed.color, 0.76);
-      [-3, 3].forEach((offset) => draftLine(g, makeRandom(0x8830 + offset), from.x, from.y + offset, end.x, end.y + offset * 0.2, {
-        overshoot: 0,
-        jitter: 1.4,
-        segments: 9,
-      }));
-      return;
-    }
-    if (!this.hold.key || !rect) return;
-    const progress = Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1);
-    const head = { x: this.walker.x, y: this.walker.y - 50 };
-    const centre = { x: rect.x + rect.w / 2, y: rect.y + rect.h / 2 };
-    const haloEdge = haloPointToward(head.x, head.y, centre.x, centre.y, 36);
-    const from = this.hold.key.startsWith('source:') ? centre : haloEdge;
-    const destination = this.hold.key.startsWith('source:') ? haloEdge : centre;
-    const end = { x: Phaser.Math.Linear(from.x, destination.x, progress), y: Phaser.Math.Linear(from.y, destination.y, progress) };
-    g.lineStyle(2.5, color, 0.72);
-    [-2.5, 2.5].forEach((offset) => draftLine(g, makeRandom(0x8820 + offset), from.x, from.y + offset, end.x, end.y + offset * 0.25, {
-      overshoot: 0,
-      jitter: 1.2,
-      segments: 9,
-    }));
-  }
-
-  refreshPresentation() {
-    const snapshot = this.chapter.snapshot();
-    const phase = snapshot.phase;
-    const sourcesVisible = phase === EXPANSION_PHASE.COLLECT || phase === EXPANSION_PHASE.BUILD;
-    this.sources.forEach((source) => {
-      source.art.setVisible(sourcesVisible);
-      source.label.setVisible(sourcesVisible);
-      if (sourcesVisible) this.drawSource(source);
-    });
-    const referenceVisible = phase === EXPANSION_PHASE.BUILD;
-    this.referenceArt.setVisible(referenceVisible);
-    this.referenceLabel.setVisible(referenceVisible);
-    this.referenceRule.setVisible(referenceVisible);
-    this.drawTrain();
-    if (phase === EXPANSION_PHASE.COLLECT) {
-      this.objective.setText('TAKE ALL SIX COLORS.');
-      this.counter.setText(`COLORS  ${snapshot.collectedCount}/6`);
-      this.controls.setText('MOVE · JUMP · RIGHT-HOLD');
-      this.yardTitle.setText('THE UNFINISHED TRAIN');
-      this.yardSubtitle.setText('SIX PARTS. SIX COLORS.');
-    } else if (phase === EXPANSION_PHASE.BUILD && !snapshot.trainBuilt) {
-      this.objective.setText('COPY THE TRAIN. BUILD BOTTOM-UP.');
-      this.counter.setText(`TRAIN  ${snapshot.builtCount}/6`);
-      this.controls.setText('CLICK PART · HOLD COLOR · RELEASE');
-      this.yardTitle.setText('THE UNFINISHED TRAIN');
-      this.yardSubtitle.setText('COPY IT. BUILD BOTTOM-UP.');
-    } else if (phase === EXPANSION_PHASE.BUILD) {
-      this.objective.setText(snapshot.boarded ? 'CHOOSE THE ARCHIVE SIGN.' : 'BOARD THE TRAIN.');
-      this.counter.setText('TRAIN  6/6');
-      this.controls.setText('HOLD TO BOARD');
-      this.yardTitle.setText('THE PAINTED TRAIN');
-      this.yardSubtitle.setText('READY TO GO.');
-    } else if (phase === EXPANSION_PHASE.CHASE) {
-      this.objective.setText('THE CROWD IS CHASING THE TRAIN.');
-      this.counter.setText('CONSEQUENCE');
-      this.yardTitle.setText('');
-      this.yardSubtitle.setText('');
-    }
-
-    this.controls.setVisible(phase !== EXPANSION_PHASE.CHASE);
-  }
-
-  update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
-    this.stepPlayer();
-    this.stepInteraction(dt);
-    this.updateFigure(time);
-
-    this.updateChaseVisuals(time, dt);
-
-    this.refreshPresentation();
-    this.drawInteractionRing();
-    this.updateContextPrompt();
-  }
-
-  textState() {
-    const snapshot = this.chapter.snapshot();
-    const pointer = this.input.activePointer;
-    const world = this.pointerWorld(pointer);
-    const source = this.sourceAt(world.x, world.y);
-    const part = this.partAt(world.x, world.y);
-    const board = this.boardAt(world.x, world.y);
-    return {
-      scene: 'PigmentTrain',
-      coordinateSystem: 'world pixels; origin top-left; x right; y down',
-      phase: snapshot.phase,
-      objective: this.objective?.text ?? '',
-      player: {
-        x: Math.round(this.walker.x),
-        y: Math.round(this.walker.y),
-        facing: this.playerFacing,
-        animation: this.playerAnimation,
-        onGround: this.walker.body.blocked.down,
-        cutscene: this.cutscene,
-      },
-      selectedPart: this.selectedPartId,
-      selectedColor: this.selectedId,
-      ringPress: this.ringPress ? {
-        id: this.ringPress.id,
-        progress: Number(Phaser.Math.Clamp((this.time.now - this.ringPress.startedAt) / 260, 0, 1).toFixed(2)),
-      } : null,
-      counts: {
-        collected: snapshot.collectedCount,
-        trainParts: snapshot.builtCount,
-        failedAttempts: snapshot.failedAttempts,
-      },
-      train: {
-        heading: 'right',
-        offset: Math.round(this.trainOffset),
-        moving: this.trainMoving,
-      },
-      trainBuilt: snapshot.trainBuilt,
-      boarded: snapshot.boarded,
-      ignition: {
-        open: this.ignitionOpen,
-        chosen: snapshot.ignition.chosen,
-        started: snapshot.ignition.started,
-        wrongTries: snapshot.ignition.wrongTries,
-        answerCarriedFromArchives: this.registry.get('chapter4ArchiveAnswer') ?? null,
-      },
-      crowdVisible: this.crowd.length > 0,
-      chase: {
-        beat: this.chaseBeat,
-        cameraCenterX: Math.round(this.cameras.main.midPoint.x),
-        nearestCrowdGap: this.crowd.length
-          ? Math.round(this.trainWorldPoint(2976, 456).x - Math.max(...this.crowd.map((person) => person.x)))
-          : null,
-        speech: this.speechBubbles.map((entry) => entry.bubble.list[1]?.text ?? '').filter(Boolean),
-      },
-      consequenceRevealed: snapshot.consequenceRevealed,
-      complete: snapshot.complete,
-      interaction: {
-        pointer: {
-          x: Math.round(pointer.x),
-          y: Math.round(pointer.y),
-          worldX: Math.round(world.x),
-          worldY: Math.round(world.y),
-        },
-        source: source?.id ?? null,
-        trainPart: part?.id ?? null,
-        board: Boolean(board),
-        holdProgress: Number(this.hold.progress.toFixed(2)),
-      },
-      tutorialSeen: { ...this.tutorialSeen },
-      buildRules: Object.fromEntries(Object.entries(TRAIN_BUILD_RULES).map(([id, rule]) => [id, { requires: [...rule.requires], tier: rule.tier }])),
-      lastFailure: snapshot.lastFailure,
-      pigments: snapshot.pigments.map(({ id, collected, built }) => ({ id, collected, built })),
-      music: { playing: Boolean(this.music?.isPlaying), volume: Number((this.music?.volume ?? 0).toFixed(2)) },
-    };
-  }
 }

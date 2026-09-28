@@ -1,7 +1,20 @@
+// Chapter 4 // THE PAINTED COUNTRY — Part III, the train yard, as rules.
+//
+// The residents lend Butch their colours (RIGHT-HOLD each place: bakery,
+// station, orchard, mill, square, home) and he paints the unfinished train
+// with them (LEFT-HOLD a part: it takes the colour borrowed for it, wheels
+// first). Then a simple hold boards it. There is no second quiz: the door in
+// Part I already asked the question.
+//
+// Above the HOME door hangs a plate under the archive's grey. Washing it is
+// optional, and under it is the Pigment Stone.
+
+import { SIGN } from './carLayout.js';
+
 export const EXPANSION_PHASE = Object.freeze({
   COLLECT: 'collect-six-colors',
   BUILD: 'build-the-train',
-  CHASE: 'people-are-coming',
+  BOARDED: 'boarded',
 });
 
 export const PIGMENTS = Object.freeze([
@@ -13,11 +26,11 @@ export const PIGMENTS = Object.freeze([
   { id: 'violet', name: 'MULBERRY', color: 0x84658f, source: 'FAMILY QUILT', part: 'ROOF' },
 ]);
 
-export const CHAPTER4_IGNITION_SIGN = 'moon';
+// The mark the train carries on its cab: the answer from Part I, painted on,
+// not asked again.
+export const CHAPTER4_IGNITION_SIGN = SIGN.HAWTHORN;
 
-// Part I teaches weight and support. Part II teaches copying color. Part III
-// combines both lessons: colors must match the reference, and unsupported
-// pieces cannot float into the finished train.
+// Wheels first; bodies on the wheels; the cab and roof on the bodies.
 export const TRAIN_BUILD_RULES = Object.freeze({
   green: Object.freeze({ requires: [], tier: 0 }),
   red: Object.freeze({ requires: ['green'], tier: 1 }),
@@ -29,6 +42,9 @@ export const TRAIN_BUILD_RULES = Object.freeze({
 
 export const TRAIN_BUILD_EXAMPLE_ORDER = Object.freeze(['green', 'red', 'blue', 'yellow', 'orange', 'violet']);
 
+// Two washes take the grey off the HOME plate.
+export const HOME_PLATE_WASHES = 2;
+
 export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
   const initiallyUnlocked = new Set(unlockedPigments);
   const state = {
@@ -36,7 +52,6 @@ export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
     trainBuilt: false,
     boarded: false,
     complete: false,
-    consequenceRevealed: false,
     failedAttempts: 0,
     lastFailure: null,
     pigments: PIGMENTS.map((pigment) => ({
@@ -44,7 +59,7 @@ export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
       collected: initiallyUnlocked.has(pigment.id),
       built: false,
     })),
-    ignition: { chosen: null, started: false, wrongTries: 0 },
+    homePlate: { washes: 0, revealed: false },
     events: [],
   };
 
@@ -80,11 +95,15 @@ export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
     return false;
   }
 
-  function placePart(partId, pigmentId) {
-    if (state.phase !== EXPANSION_PHASE.BUILD || state.trainBuilt) return false;
+  // A part takes the colour borrowed for it; the explicit colour argument is
+  // kept for tests and QA. Colours can be painted as they are borrowed — the
+  // yard does not wait for all six.
+  function placePart(partId, pigmentId = partId) {
+    if (state.trainBuilt || state.boarded) return false;
     const part = pigment(partId);
     const color = pigment(pigmentId);
-    if (!part || !color || !color.collected || part.built) return false;
+    if (!part || !color || part.built) return false;
+    if (!color.collected) return failBuild('not-borrowed', partId, pigmentId);
     if (partId !== pigmentId) return failBuild('wrong-color', partId, pigmentId);
 
     const rule = TRAIN_BUILD_RULES[partId];
@@ -97,37 +116,30 @@ export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
     emit('train-part-placed', { id: partId, part: part.part, tier: rule.tier });
     if (builtCount() === state.pigments.length) {
       state.trainBuilt = true;
+      state.phase = EXPANSION_PHASE.BUILD;
       emit('train-built');
     }
     return true;
   }
 
   function boardTrain() {
-    if (state.phase !== EXPANSION_PHASE.BUILD || !state.trainBuilt || state.boarded) return false;
+    if (!state.trainBuilt || state.boarded) return false;
     state.boarded = true;
+    state.complete = true;
+    state.phase = EXPANSION_PHASE.BOARDED;
     emit('train-boarded');
     return true;
   }
 
-  function chooseIgnition(sign) {
-    if (!state.boarded || state.ignition.started) return { ok: false, reason: 'not-ready' };
-    state.ignition.chosen = sign;
-    if (sign !== CHAPTER4_IGNITION_SIGN) {
-      state.ignition.wrongTries += 1;
-      emit('ignition-refused', { sign, tries: state.ignition.wrongTries });
-      return { ok: false, reason: 'wrong-sign' };
+  function washHomePlate() {
+    if (state.homePlate.revealed) return false;
+    state.homePlate.washes += 1;
+    if (state.homePlate.washes >= HOME_PLATE_WASHES) {
+      state.homePlate.revealed = true;
+      emit('home-plate-revealed');
+    } else {
+      emit('home-plate-thinned', { left: HOME_PLATE_WASHES - state.homePlate.washes });
     }
-    state.ignition.started = true;
-    state.phase = EXPANSION_PHASE.CHASE;
-    emit('ignition-started', { sign });
-    return { ok: true, reason: 'started' };
-  }
-
-  function revealConsequence() {
-    if (state.phase !== EXPANSION_PHASE.CHASE || !state.boarded || state.consequenceRevealed) return false;
-    state.consequenceRevealed = true;
-    state.complete = true;
-    emit('crowd-arrived');
     return true;
   }
 
@@ -138,20 +150,18 @@ export function createChapter4Expansion({ unlockedPigments = [] } = {}) {
     unlockPigment,
     placePart,
     boardTrain,
-    chooseIgnition,
-    revealConsequence,
+    washHomePlate,
     snapshot() {
       return {
         phase: state.phase,
         trainBuilt: state.trainBuilt,
         boarded: state.boarded,
-        ignition: { ...state.ignition },
         complete: state.complete,
-        consequenceRevealed: state.consequenceRevealed,
         failedAttempts: state.failedAttempts,
         lastFailure: state.lastFailure ? { ...state.lastFailure, missing: [...state.lastFailure.missing] } : null,
         collectedCount: collectedCount(),
         builtCount: builtCount(),
+        homePlate: { ...state.homePlate },
         pigments: state.pigments.map((item) => ({ ...item })),
       };
     },
