@@ -95,7 +95,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.devMode = Boolean(data.devMode);
     this.timescale = Math.max(0.1, Math.min(2, Number(data.timescale) || 1));
     this.skipIntro = Boolean(data.skipIntro);
-    this.maxFrameMs = data.qaTimescale ? 1000 : 100;
+    this.qaTimescale = Boolean(data.qaTimescale);
+    this.maxFrameMs = this.qaTimescale ? 1000 : 100;
   }
 
   preload() {
@@ -133,11 +134,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     cam.setBounds(-300, WORLD.top, WORLD.width + 300, WORLD.bottom - WORLD.top);
     cam.setBackgroundColor('#05080d');
     this.physics.world.setBounds(-800, WORLD.top - 600, WORLD.width + 1600, WORLD.bottom - WORLD.top + 1200);
-    this.physics.world.timeScale = 1 / this.timescale;
-    this.tweens.timeScale = this.timescale;
+    this.applyTimescale();
     // QA on a slow software renderer: tweens must not drop long frames either.
     if (this.maxFrameMs > 100) this.tweens.setLagSmooth(5000, 1000);
-    this.time.timeScale = this.timescale;
 
     buildSharedTextures(this);
     this.bg = buildBackground(this, PANORAMA_URLS.map((_, i) => `bl-w4-${i}`));
@@ -541,6 +540,20 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.hud.titleCard(CHAPTER_TITLE, `CHAPTER 2 · ${SECTION_LABEL[section]}`);
       if (section === 'C') this.time.delayedCall(1200, () => this.startAhead());
     }
+  }
+
+  applyTimescale() {
+    this.physics.world.timeScale = 1 / this.timescale;
+    this.tweens.timeScale = this.timescale;
+    this.time.timeScale = this.timescale;
+  }
+
+  // Dev QA only: a scripted run can slow down for one precise beat.
+  setQaTimescale(v) {
+    if (!this.qaTimescale) return this.timescale;
+    this.timescale = Math.max(0.02, Math.min(2, Number(v) || 1));
+    this.applyTimescale();
+    return this.timescale;
   }
 
   // Mara in the hotel window: lit while Butch climbs toward it, dark once
@@ -1394,6 +1407,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hud.setListen(this.listening, dt);
     this.ghostLabels.forEach((label) => label.setVisible(false));
     if (this.listening) {
+      // Labels stay in the playfield: under the bell HUD, above the toasts.
+      const view = this.cameras.main.worldView;
       this.tt.preview().filter((change) => machineById(change.machineId).section === this.section).slice(0, 6).forEach((change, i) => {
         const machine = machineById(change.machineId);
         const line = this.tt.lineOf(change.machineId);
@@ -1403,9 +1418,11 @@ export class BorrowedLightScene extends Phaser.Scene {
         const verb = change.to === 'on'
           ? { bridge: 'EXTENDS', lift: 'RISES', billboard: 'LIGHTS · SOLID', fan: 'BLOWS', shutter: 'OPENS', points: 'THROWS', drawbridge: 'LOWERS', sign: 'LIGHTS' }[machine.kind]
           : 'SWITCHES OFF';
-        const top = machine.kind === 'fan' ? machine.yTop + 60 : b.y;
+        const top = machine.kind === 'fan' ? Math.max(machine.yTop + 60, machine.yBottom - 260) : b.y;
+        const lx = Phaser.Math.Clamp(b.x + b.w / 2, view.x + 160, view.right - 160);
+        const ly = Phaser.Math.Clamp(top - 14, view.y + 270, view.bottom - 130);
         this.ghostLabels[i].setText(`NEXT BELL · ${verb}`).setColor(LINE_COLORS[line].css)
-          .setPosition(b.x + b.w / 2, top - 14).setVisible(true);
+          .setPosition(lx, ly).setVisible(true);
       });
     }
     // Stone.

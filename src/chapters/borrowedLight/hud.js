@@ -195,10 +195,14 @@ export class BorrowedLightHud {
 
   setListen(on, dt) {
     const target = on ? 1 : 0;
+    // Listening is about the playfield: a section card gets out of the way.
+    if (on && !this.listenWasOn && this.titleBig.alpha > 0) this.clearTitle();
+    this.listenWasOn = on;
     const a = this.listenDim.alpha / 0.42;
     const next = Phaser.Math.Linear(a, target, Math.min(1, dt / 120));
     this.listenDim.setAlpha(0.42 * next);
-    this.listenLabel.setAlpha(next);
+    // Sit under the departure count when there is one, never on it.
+    this.listenLabel.setAlpha(next).setY(this.nextLabel.text ? CY + R + 98 : CY + R + 80);
   }
 
   // ---- title cards and toasts ---------------------------------------------
