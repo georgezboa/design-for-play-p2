@@ -18,7 +18,8 @@ test('the completed chapter route owns all four film handoffs', () => {
   assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /CINEMATICS\.chapter2To3/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /nightfall:chapter3-complete/);
   assert.match(source('src/car03-3d-main.js'), /CINEMATICS\.chapter3To4/);
-  assert.match(source('src/chapters/paintedCountry/PigmentTrainScene.js'), /CINEMATICS\.chapter4To5/);
+  // Chapter 4 now ends on the line ahead (PaintedLineScene), not the yard.
+  assert.match(source('src/chapters/paintedCountry/PaintedLineScene.js'), /CINEMATICS\.chapter4To5/);
 });
 
 test('Chapter One releases its score before the 1→2 film begins', () => {
@@ -32,7 +33,7 @@ test('every transition preloads its next chapter while the film is playing', () 
   const chapter1 = source('src/nightService-main.js');
   const chapter2 = source('src/chapters/borrowedLight/BorrowedLightScene.js');
   const chapter3 = source('src/car03-3d-main.js');
-  const chapter4 = source('src/chapters/paintedCountry/PigmentTrainScene.js');
+  const chapter4 = source('src/chapters/paintedCountry/PaintedLineScene.js');
   assert.match(flow, /video\.addEventListener\('playing', beginPreload/);
   assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady/);
   assert.match(flow, /if \(waitForPreload\)[\s\S]*?await preloadPromise/);

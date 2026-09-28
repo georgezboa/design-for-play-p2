@@ -8,7 +8,8 @@ const chapter1Main = read('src/nightService-main.js');
 const chapter2 = read('src/chapters/borrowedLight/BorrowedLightScene.js');
 const chapter2Level = read('src/chapters/borrowedLight/level.js');
 const chapter3 = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
-const chapter4 = read('src/chapters/paintedCountry/DrawingStudioScene.js');
+// Chapter 4's stone is under the washed HOME plate in the painted-train yard.
+const chapter4 = read('src/chapters/paintedCountry/PigmentTrainScene.js');
 const museum = read('src/chapters/museum3d/Museum3DApp.js');
 const lobby = read('src/chapters/museum3d/scenes/ServiceLobby.js');
 // hidden-final-boss.html runs the Black Knife fight in src/chapters/blackKnifeFinal/.
@@ -28,7 +29,8 @@ test('every stone is an authored world pickup rather than a completion offer', (
   assert.match(chapter3, /collectMagicStone\('chapter-3'\)/);
   assert.match(chapter3, /event\.code === 'KeyE' \|\| event\.key === 'Enter'/);
   assert.doesNotMatch(chapter3, /magic-stone-echo-city/);
-  assert.match(chapter4, /PIGMENT_STONE = Object\.freeze\(\{ x: 790, y: 426 \}\)/);
+  assert.match(chapter4, /PIGMENT_STONE = Object\.freeze\(\{ x: HOME_PLATE\.x \+ HOME_PLATE\.w \/ 2/);
+  assert.match(chapter4, /washHomePlate\(\)/);
   assert.match(chapter4, /collectMagicStone\('chapter-4'\)/);
   [chapter1, chapter2, chapter3, chapter4].forEach((source) => assert.doesNotMatch(source, /offerMagicStone/));
   assert.match(lobby, /offerMagicStone\('black-knife'\)/);
