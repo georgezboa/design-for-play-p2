@@ -1,7 +1,7 @@
 import { createSaveStore } from './saveSystem.js';
 
 export const MAGIC_STONES = Object.freeze([
-  Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Hidden beneath the unfinished letter in Mara\'s suitcase.' }),
+  Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Zoom deep into the orchard case: beneath the unfinished letter to Rosa.' }),
   Object.freeze({ id: 'chapter-2', chapter: 2, name: 'GRID STONE', clue: 'Waiting on the lower return route beneath the airborne crossing.' }),
   Object.freeze({ id: 'chapter-3', chapter: 3, name: 'ECHO STONE', clue: 'Found in an unclaimed coat by Seline at the dusk campfire.' }),
   Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'Tucked behind a loose paper panel in the color room.' }),
