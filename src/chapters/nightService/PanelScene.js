@@ -156,15 +156,22 @@ export class PanelScene extends Phaser.Scene {
 
   init(data = {}) {
     this.actId = data.actId ?? 'act1';
+    // An act definition can be handed in directly (e.g. the Museum's
+    // one-answer exhibit, which is not a Chapter 1 act).
+    this.actDef = data.act ?? this.actDef ?? null;
     this.startStep = data.step ?? null;
     this.carryIn = data.carry ?? null;
     this.services = data.services ?? this.services ?? {};
     this.fromAct = data.fromAct ?? null;
   }
 
+  resolveAct() {
+    return this.actDef ?? actById(this.actId);
+  }
+
   preload() {
     if (!this.textures.exists('nsv-paper')) this.load.image('nsv-paper', PAPER_URL);
-    const act = actById(this.actId);
+    const act = this.resolveAct();
     const worlds = new Set(['fields', ...(act.assets ?? [])].filter((name) => WORLDS[name]));
     worlds.forEach((name) => WORLDS[name].chunks.forEach(({ key, url }) => {
       if (!this.textures.exists(key)) this.load.image(key, url);
@@ -172,8 +179,11 @@ export class PanelScene extends Phaser.Scene {
   }
 
   create() {
-    this.act = actById(this.actId);
-    this.model = createPanelModel(this.act, { carry: this.carryIn ?? startCarry(this.actId), step: this.startStep });
+    this.act = this.resolveAct();
+    const freshCarry = this.actDef
+      ? { bell: 0, items: [], flags: [], linkHistory: [], ...(this.actDef.start ?? {}) }
+      : startCarry(this.actId);
+    this.model = createPanelModel(this.act, { carry: this.carryIn ?? freshCarry, step: this.startStep });
     this.layout = this.model.layout;
     this.audio = this.services.audio ?? { play() {}, unlock() {}, setRailRate() {} };
     this.clock = 0;
@@ -591,8 +601,8 @@ export class PanelScene extends Phaser.Scene {
   introduce() {
     const reduce = reducedMotionActive();
     const act = this.act;
-    this.titleKicker.setText('CHAPTER 1 · NIGHT SERVICE');
-    this.titleMain.setText(`${ROMAN[act.number] ?? act.number} · ${act.title}`);
+    this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
+    this.titleMain.setText(act.heading ?? `${ROMAN[act.number] ?? act.number} · ${act.title}`);
     const hold = this.startStep ? 200 : 1700;
     Object.values(this.views).forEach((view, i) => {
       view.cover.setAlpha(1);
@@ -1653,6 +1663,12 @@ export class PanelScene extends Phaser.Scene {
     if (m.state.ended) return;
     m.state.queue.length = 0;
     m.state.blocking = null;
+    if (this.act.devSkip) {
+      // acts outside Chapter 1 (the Museum exhibit) name their own skip
+      m.state.queue.push(...this.act.devSkip);
+      m.update(0);
+      return;
+    }
     m.state.queue.push({ checkpoint: this.act.id === 'act1' ? 'chapter-1-act-2' : this.act.id === 'act2' ? 'chapter-1-act-3' : 'chapter-2-start' });
     m.state.queue.push(this.act.id === 'act3' ? { endChapter: true } : { nextAct: this.act.next ?? (this.act.id === 'act1' ? 'act2' : 'act3') });
     m.update(0);

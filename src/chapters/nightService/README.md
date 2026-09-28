@@ -36,6 +36,14 @@ export const ACT2 = defineAct({
 Everything is tile-normalised: `x`, `y`, `at` and hotspot rects run 0..1 across
 the panel.
 
+**Acts outside Chapter 1.** `PanelScene` can also run an act that is not in the
+chapter's act list: start it with `game.scene.start('PanelScene', { act: MY_ACT })`.
+Such an act can set `kicker` and `heading` (the intro title card, which default
+to `CHAPTER 1 · NIGHT SERVICE` and the act title) and `devSkip` (the `N` skip's
+effects). The Museum's exhibit `acts/oneAnswer.js` (page `one-answer.html`,
+entry `src/chapters/museum3d/oneAnswer/oneAnswer-main.js`) works this way; its
+model tests are in `tests/nightService/oneAnswer.test.mjs`.
+
 ### Tiles and scenes
 
 ```js
