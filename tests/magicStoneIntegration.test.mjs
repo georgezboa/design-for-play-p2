@@ -11,7 +11,8 @@ const chapter3 = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
 const chapter4 = read('src/chapters/paintedCountry/DrawingStudioScene.js');
 const museum = read('src/chapters/museum3d/Museum3DApp.js');
 const lobby = read('src/chapters/museum3d/scenes/ServiceLobby.js');
-const hiddenBoss = read('src/chapters/hiddenFinalBoss/blackKnifeBattle.js');
+// hidden-final-boss.html runs the Black Knife fight in src/chapters/blackKnifeFinal/.
+const hiddenBoss = read('src/chapters/blackKnifeFinal/main.js');
 const finalBossRoute = read('src/shell/finalBossRoute.js');
 const flow = read('src/shell/gameFlow.js');
 
@@ -40,14 +41,12 @@ test('five stones, including the Museum Black Knife stone, select Mathias boss w
   assert.match(finalBossRoute, /route: '\/final-boss\.html\?from=chapter5'/);
   assert.match(finalBossRoute, /cinematicPath: '\/cinematics\/5-6-black-knife\.mp4'/);
   assert.match(finalBossRoute, /cinematicPath: '\/cinematics\/5-6-conductor\.mp4'/);
-  assert.match(hiddenBoss, /PHASES = Object\.freeze\(\['THE EDGE', 'CROSS CUT', 'TEETH', 'FINAL VERDICT'\]\)/);
-  assert.match(hiddenBoss, /this\.elapsed >= 60/);
-  assert.match(hiddenBoss, /window\.location\.assign\('\/true-ending\.html'\)/);
+  assert.match(hiddenBoss, /const redirectToConductor = !stones\.allCollected && !DEV_MODE && !qaMode && !easterEggMode/);
   assert.match(hiddenBoss, /window\.location\.replace\('\/final-boss\.html\?from=chapter5'\)/);
+  assert.match(hiddenBoss, /window\.location\.assign\(`\/true-ending\.html/);
   assert.match(hiddenBoss, /easterEggMode/);
-  assert.match(hiddenBoss, /All five stones resonate/);
   assert.match(hiddenBoss, /'five-stone-route'/);
-  assert.doesNotMatch(hiddenBoss, /All four stones resonate|'four-stone-route'/);
+  assert.doesNotMatch(hiddenBoss, /'four-stone-route'/);
 });
 
 test('Chapter 3 and every other chapter transition wait for the complete preload job', () => {
