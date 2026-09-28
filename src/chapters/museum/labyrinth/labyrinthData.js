@@ -8,8 +8,8 @@
 // scene loads). Each wing is its own full sub-labyrinth; you clear the keys
 // in it before the connector to the next one unlocks. Statues line the
 // halls and only hold still while you look straight at them. Three lives.
-// Die three times and the archive keeps everything you found — the maze
-// reshuffles and you start again from zero.
+// Die three times and the archive takes back the keys you found in that
+// wing: you start again at its entrance, and they wait in the dark again.
 //
 // Pure data: grid size, wing map, tuning, palette, strings. mazeGenerator.js
 // builds the layout from this; LabyrinthScene.js is the only thing that
@@ -113,7 +113,7 @@ export const TUNING = {
   shieldPickupRadius: 40,
   shieldCap: 3, // max carried charges
   shieldDurationMs: 3000, // how long one activation blocks all statue damage
-  shieldTutorialThreatRadius: 720, // first post-pickup hunter teaches Space before impact
+  shieldTutorialThreatRadius: 720, // first post-pickup hunter teaches Shift before impact
 
   statueCount: WINGS.reduce((sum, w) => sum + w.statues, 0),
   statueSpeed: 0.205, // px/ms while hunting — still slower than the player
@@ -157,7 +157,7 @@ export const STRINGS = {
   title: 'THE MUSEUM OF ONE ANSWER',
   slice: 'LABYRINTH WING',
   plaque: '"It only moves while you\'re not looking. Keep it in your eyes."',
-  controls: 'WASD / ARROWS  MOVE   ·   SPACE  SHIELD   ·   R  RESTART',
+  controls: 'WASD MOVE  ·  MOUSE AIM  ·  Q HOLD GAZE  ·  SHIFT SHIELD  ·  E USE  ·  HOLD R RESTART',
   keysLabel: (n, total) => `KEYS  ${n} / ${total}`,
   livesLabel: 'LIVES',
   shieldLabel: (n) => `SHIELD  ×${n}`,
@@ -167,8 +167,8 @@ export const STRINGS = {
     'YOU LOOKED AWAY TOO LONG.',
   ],
   shieldFoundNote: (n) => `SHIELD RECOVERED — ${n} CHARGE${n === 1 ? '' : 'S'}.`,
-  shieldFirstFoundNote: 'SHIELD RECOVERED — PRESS SPACE WHEN A STATUE CLOSES IN.',
-  shieldTutorialPrompt: '[SPACE]  ACTIVATE SHIELD',
+  shieldFirstFoundNote: 'SHIELD RECOVERED — PRESS SHIFT WHEN A STATUE CLOSES IN.',
+  shieldTutorialPrompt: '[SHIFT]  ACTIVATE SHIELD',
   shieldFullNote: 'ALREADY CARRYING AS MANY SHIELDS AS YOU CAN HOLD.',
   shieldUpNote: 'SHIELD UP — IT CAN\'T TOUCH YOU.',
   shieldEmptyNote: 'NO SHIELD CHARGES — FIND ONE FIRST.',
@@ -185,7 +185,10 @@ export const STRINGS = {
   wingCard: (name) => name,
   wingLivesRestored: 'NEW WING — LIVES RESTORED TO THREE.',
   gameOverLine: 'THE ARCHIVE HOLDS YOUR PLACE.',
-  gameOverSub: 'RETURN TO THIS WING\'S ENTRANCE   ·   [R] CONTINUE',
+  gameOverSub: (lost) => `${lost ? `THE ARCHIVE TAKES BACK ${lost} KEY${lost === 1 ? '' : 'S'} FROM THIS WING   ·   ` : ''}[R] RETURN TO ITS ENTRANCE`,
+  restartHold: (progress) => `HOLD R TO REBUILD THE MAZE  ${'▰'.repeat(Math.round(progress * 6))}${'▱'.repeat(6 - Math.round(progress * 6))}`,
+  restartConfirmLine: 'REBUILD THE LABYRINTH?',
+  restartConfirmSub: 'A NEW MAZE, AND EVERY KEY YOU CARRY IS LOST   ·   [Y] REBUILD   ·   [N] KEEP GOING',
   winLine: 'YOU WALKED OUT WITH EVERY KEY.',
   winSub: 'THE GATE CLOSES ON SOMETHING BEHIND YOU.',
   fragmentRestLine: 'A BROKEN EYE RESTS ON YOUR SIDE OF THE GATE.',
