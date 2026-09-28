@@ -520,9 +520,14 @@ export function drawPlateWall(ctx) {
     inkRect(c, x - 26, y - 26, fw + 52, fh + 52, { w: 2 });
     inkRect(c, x, y, fw, fh, { w: 1.2, alpha: 0.6 });
     // the nameplate
-    c.fillStyle = brassFill(c, x + fw / 2 - 90, y + fh + 44, 180, 22);
-    roundRectPath(c, x + fw / 2 - 90, y + fh + 40, 180, 24, 3); c.fill();
-    mono(c, PAST(env) ? 'ROSA VELEZ · AGE 9' : 'PLATE IV · ARTIST UNKNOWN', x + fw / 2 - 80, y + fh + 52, 11, '#2a1d14');
+    const plateText = PAST(env) ? 'ROSA VELEZ · AGE 9' : 'PLATE IV · ARTIST UNKNOWN';
+    c.font = '700 11px "Space Mono", monospace';
+    const plateW = Math.ceil(c.measureText(plateText).width) + 32;
+    c.fillStyle = brassFill(c, x + fw / 2 - plateW / 2, y + fh + 44, plateW, 22);
+    roundRectPath(c, x + fw / 2 - plateW / 2, y + fh + 40, plateW, 24, 3); c.fill();
+    c.textAlign = 'center';
+    mono(c, plateText, x + fw / 2, y + fh + 52, 11, '#2a1d14');
+    c.textAlign = 'left';
     finish(c, env, { vig: 0.5 });
   });
   ctx.glow(w * 0.5, h * 0.3, 360, { color: 0xffd7a0, alpha: 0.18 });

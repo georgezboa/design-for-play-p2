@@ -71,6 +71,7 @@ function installStyles() {
     .nf-stone-offer .nf-card__lines{grid-column:2}
     .nf-stone-offer .nf-stone-row{grid-column:2;display:flex;align-items:center;gap:12px;margin:14px 0 4px;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;color:#6b5640}
     .nf-stone-offer .nf-stones i{border-color:#8a6934;background:rgba(42,29,20,.18)}
+    .nf-stone-offer .nf-stones i.is-held{background:radial-gradient(circle at 35% 35%,#ffd79a,#e0a24a 60%,#7a4a18);box-shadow:0 0 8px rgba(224,162,74,.55)}
     .nf-stone-offer .nf-stones i.is-pending{border-style:dashed;border-color:#8a2a1e}
     .nf-stone-offer .nf-stone-actions{grid-column:2;display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
     .nf-stone-offer .nf-stone-actions button{padding:10px 16px;border:1px solid #8a6934;border-radius:4px;background:#2a1d14;color:#eadfc6;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;cursor:pointer}
