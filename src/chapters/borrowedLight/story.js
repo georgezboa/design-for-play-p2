@@ -45,6 +45,7 @@ export const HINTS = Object.freeze({
   talk: 'E · TALK',
   listen: 'HOLD Q · LISTEN',
   busy: 'LINE HOLDING · PUNCH ITS LIT TAG TO CUT',
+  cut: 'LINE CUT · FREE AFTER THE FLICKER',
 });
 
 export const STONE_TOAST = 'GRID STONE · AN UNFILED OBJECT';
