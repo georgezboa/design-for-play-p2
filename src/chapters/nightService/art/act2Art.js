@@ -78,22 +78,28 @@ function luggageTag(c, x, y, { text, leaf = false, lit = true, scale = 1, angle 
   c.translate(x, y);
   c.rotate(angle);
   c.scale(scale, scale);
+  c.font = '700 11px "Space Mono", monospace';
+  const textW = c.measureText(text).width;
+  // the tag grows to fit its word, plus room for the hawthorn leaf
+  const tw = Math.max(58, 6 + textW + (leaf ? 22 : 8));
   c.fillStyle = lit ? '#e8dcc0' : '#cbbd9c';
   c.beginPath();
-  c.moveTo(0, -11); c.lineTo(58, -11); c.lineTo(58, 11); c.lineTo(0, 11); c.lineTo(-8, 0); c.closePath();
+  c.moveTo(0, -11); c.lineTo(tw, -11); c.lineTo(tw, 11); c.lineTo(0, 11); c.lineTo(-8, 0); c.closePath();
   c.fill();
   c.strokeStyle = 'rgba(70, 50, 30, 0.8)'; c.lineWidth = 1; c.stroke();
   c.fillStyle = 'rgba(60, 40, 25, 0.95)';
   c.beginPath(); c.arc(-1, 0, 2, 0, Math.PI * 2); c.fill();
   c.fillStyle = '#5a2218';
-  c.font = '700 11px "Space Mono", monospace';
   c.fillText(text, 6, 4);
   if (leaf) {
+    // a pressed hawthorn leaf: lobed, with a midrib
+    const lx = 6 + textW + 11;
     c.fillStyle = '#4f6b3a';
-    c.beginPath(); c.ellipse(50, -4, 5, 2.6, 0.6, 0, Math.PI * 2); c.fill();
-    c.beginPath(); c.ellipse(46, -2, 4, 2.2, -0.5, 0, Math.PI * 2); c.fill();
-    c.strokeStyle = '#2f4424'; c.lineWidth = 0.8;
-    c.beginPath(); c.moveTo(42, 2); c.lineTo(52, -6); c.stroke();
+    c.beginPath(); c.ellipse(lx, -1, 7, 4, -0.7, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(lx - 3, 2, 4, 2.6, 0.5, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.ellipse(lx + 3, -5, 4, 2.4, 0.2, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#2f4424'; c.lineWidth = 0.9;
+    c.beginPath(); c.moveTo(lx - 7, 6); c.lineTo(lx + 6, -6); c.stroke();
   }
   c.restore();
 }
