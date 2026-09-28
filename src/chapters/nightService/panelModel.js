@@ -504,6 +504,8 @@ export function createPanelModel(act, options = {}) {
       case 'enableLens': {
         s.lens.enabled = true;
         if (arg && typeof arg === 'object') Object.assign(s.lens, pick(arg, ['x', 'y', 'r']));
+        // `{ tile, u, v }` places the lens at a tile-local point instead
+        if (arg?.tile && slotRect(arg.tile)) Object.assign(s.lens, tilePoint(slotRect(arg.tile), arg.u ?? 0.5, arg.v ?? 0.5));
         events.emit('lens', { ...s.lens, appeared: true });
         break;
       }
@@ -622,7 +624,21 @@ export function createPanelModel(act, options = {}) {
         events.emit('actor:cross', { actor: actor.id, tile: actor.tile });
         continue;
       }
-      if (target.requires !== undefined && !evaluate(target.requires)) { setBlocked(actor, true); break; }
+      if (target.requires !== undefined && !evaluate(target.requires)) {
+        setBlocked(actor, true);
+        // `retreat` names a safe spot to back off to (a train off a missing span)
+        if (target.retreat && target.tile === actor.tile) {
+          const rx = (target.retreat.x ?? actor.x) - actor.x;
+          const ry = (target.retreat.y ?? actor.y) - actor.y;
+          const dist = Math.hypot(rx * layout.tileW, ry * layout.tileH);
+          if (dist > EPSILON) {
+            const k = Math.min(1, budget / dist);
+            actor.x += rx * k;
+            actor.y += ry * k;
+          }
+        }
+        break;
+      }
       if (target.tile !== actor.tile) {
         if (!crossingAllowed(actor, target)) { setBlocked(actor, true); break; }
         setBlocked(actor, false);

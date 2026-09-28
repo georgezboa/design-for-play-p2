@@ -16,7 +16,7 @@ export const CHUTE_AT = 0.7;
 // ---------------------------------------------------------------------------
 // shared pieces
 
-function backWall(c, w, h, floorY, { seed = 1, tone = ['#132328', '#1f383e'] } = {}) {
+export function backWall(c, w, h, floorY, { seed = 1, tone = ['#132328', '#1f383e'] } = {}) {
   c.fillStyle = vgrad(c, 0, floorY, [[0, tone[0]], [1, tone[1]]]);
   c.fillRect(-20, -20, w + 40, floorY + 20);
   // faint damask stripes
@@ -28,7 +28,7 @@ function backWall(c, w, h, floorY, { seed = 1, tone = ['#132328', '#1f383e'] } =
   brushTexture(c, 0, 0, w, floorY, { seed, color: 'rgba(200,230,230,0.025)', count: 70 });
 }
 
-function wainscot(c, w, h, top, bottom, { seed = 2, x0 = -20, x1 = null } = {}) {
+export function wainscot(c, w, h, top, bottom, { seed = 2, x0 = -20, x1 = null } = {}) {
   const right = x1 ?? w + 20;
   wood(c, x0, top, right - x0, bottom - top, { base: '#3a2517', seed, vertical: true });
   c.fillStyle = 'rgba(0,0,0,0.18)';
@@ -45,7 +45,7 @@ function wainscot(c, w, h, top, bottom, { seed = 2, x0 = -20, x1 = null } = {}) 
   inkLine(c, x0, top - 5, right, top - 5, { w: 1.4, alpha: 0.5 });
 }
 
-function floorboards(c, w, h, floorY, { seed = 4, runner = null } = {}) {
+export function floorboards(c, w, h, floorY, { seed = 4, runner = null } = {}) {
   c.fillStyle = vgrad(c, floorY, h + 20, [[0, '#3b2819'], [1, '#150d08']]);
   c.fillRect(-20, floorY, w + 40, h - floorY + 20);
   const random = rng(seed);
@@ -79,14 +79,14 @@ function floorboards(c, w, h, floorY, { seed = 4, runner = null } = {}) {
   ink(c, [[-4, floorY], [w + 4, floorY]], { w: 2.8, alpha: 0.95, jitter: 0.5 });
 }
 
-function ceiling(c, w, depth = 22) {
+export function ceiling(c, w, depth = 22) {
   wood(c, -20, -20, w + 40, depth + 20, { base: '#1d140d', seed: 21 });
   c.fillStyle = brassFill(c, -20, depth - 3, w + 40, 5);
   c.fillRect(-20, depth - 3, w + 40, 5);
   inkLine(c, -20, depth + 2, w + 20, depth + 2, { w: 1.6, alpha: 0.55 });
 }
 
-function hangingLamp(c, x, cordTop, shadeY, { r = 22 } = {}) {
+export function hangingLamp(c, x, cordTop, shadeY, { r = 22 } = {}) {
   ink(c, [[x, cordTop], [x, shadeY - 4]], { w: 1.2, alpha: 0.7, jitter: 0.2 });
   c.fillStyle = vgrad(c, shadeY - 4, shadeY + 14, [[0, '#6b4a26'], [1, '#2e2012']]);
   c.beginPath();
@@ -151,11 +151,11 @@ function routeMap(c, x, y, w, h) {
   inkRect(c, x - 6, y - 6, w + 12, h + 12, { w: 1.5 });
 }
 
-function paperSpots(c, x, y, w, h) {
+export function paperSpots(c, x, y, w, h) {
   speckle(c, x, y, w, h, { count: Math.round((w * h) / 90), color: 'rgba(90, 60, 30, 0.12)', size: 2, seed: Math.round(x + y) });
 }
 
-function finish(c, env, { grain = 0.2, vig = 0.45 } = {}) {
+export function finish(c, env, { grain = 0.2, vig = 0.45 } = {}) {
   paperGrain(c, env.w, env.h, env.paper, grain);
   vignette(c, env.w, env.h, vig);
   if (env.era === 'past') sepiaWash(c, env.w, env.h);
