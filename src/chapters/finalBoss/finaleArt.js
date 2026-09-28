@@ -16,6 +16,7 @@
 import { PAL, amberGlint, glow as inkGlow, ink, inkEllipse, inkRect, paperTag, rivet, rng, roundRectPath, sepia, speckle, vgrad, wood, brassFill } from '../nightService/art/ink.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from '../nightService/art/wallArt.js';
 import { drawConductorCar, drawDesk, drawDoor, drawLockers, drawWindow } from '../nightService/art/act1Art.js';
+import { drawCarriageScene, drawCityRoom, drawHouse, drawPlatform } from '../nightService/art/act3Art.js';
 import { BUTCH_PARTS, CONDUCTOR_PARTS, RES, TRAIN_PARTS } from '../nightService/art/figures.js';
 import { PAPER_URL, WORLDS } from '../nightService/worldAssets.js';
 import { BUTCH_SPEC, drawFigure } from '../borrowedLight/art/figures.js';
@@ -41,12 +42,13 @@ function loadImage(url) {
 }
 
 // Paper grain and the night-fields panorama the Act 1 window looks out on.
-export async function loadFinaleArtSources() {
-  const [paper, ...fields] = await Promise.all([
-    loadImage(PAPER_URL),
-    ...WORLDS.fields.chunks.map((chunk) => loadImage(chunk.url)),
-  ]);
-  return { paper, fields: fields.filter(Boolean) };
+export async function loadFinaleArtSources({ worlds = ['fields'] } = {}) {
+  const chunks = worlds.flatMap((name) => WORLDS[name]?.chunks ?? []);
+  const [paper, ...loaded] = await Promise.all([loadImage(PAPER_URL), ...chunks.map((chunk) => loadImage(chunk.url))]);
+  // Chapter 1 paintings crop the panoramas by their texture keys (nsv-w07-0 ...).
+  const images = Object.fromEntries(chunks.map((chunk, index) => [chunk.key, loaded[index]]).filter(([, image]) => image));
+  const fields = WORLDS.fields.chunks.map((chunk) => images[chunk.key]).filter(Boolean);
+  return { paper, fields, images };
 }
 
 // ---------------------------------------------------------------------------
@@ -54,7 +56,7 @@ export async function loadFinaleArtSources() {
 // painter.js): static paint, sprites and glows are composited straight into
 // one panel canvas; live pieces (dust, rain, animators) are dropped.
 
-function panelContext(canvas, underlay, { w, h, era, paper, fields }) {
+function panelContext(canvas, underlay, { w, h, era, paper, fields, images = {}, hide = [] }) {
   // Two layers, as in Phaser: live fields sit under the painted canvas, whose
   // window holes are cut with destination-out.
   const c = canvas.getContext('2d');
@@ -74,11 +76,12 @@ function panelContext(canvas, underlay, { w, h, era, paper, fields }) {
     text: () => stub,
     paint(key, fn) {
       c.save();
-      fn(c, { w, h, era, paper, images: {}, bleed: 0 });
+      fn(c, { w, h, era, paper, images, bleed: 0 });
       c.restore();
       return stub;
     },
     sprite(key, sw, sh, fn, x, y, { origin = [0.5, 0.5], angle = 0, alpha = 1 } = {}) {
+      if (hide.includes(key)) return stub;
       const part = makeCanvas(sw * RES, sh * RES);
       const pc = part.getContext('2d');
       pc.scale(RES, RES);
@@ -124,10 +127,10 @@ function panelContext(canvas, underlay, { w, h, era, paper, fields }) {
 }
 
 // Paint one Chapter 1 panel (SceneDef.draw) at its native size.
-export function paintChapterOnePanel(draw, { w = 820, h = 468, era = 'present', paper = null, fields = [] } = {}) {
+export function paintChapterOnePanel(draw, { w = 820, h = 468, era = 'present', paper = null, fields = [], images = {}, hide = [] } = {}) {
   const top = makeCanvas(w, h);
   const under = makeCanvas(w, h);
-  draw(panelContext(top, under, { w, h, era, paper, fields }));
+  draw(panelContext(top, under, { w, h, era, paper, fields, images, hide }));
   const c = under.getContext('2d');
   c.drawImage(top, 0, 0);
   paintVignette(c, w, h);
@@ -669,4 +672,99 @@ export function paintBridgeDeck(lengthPx = 400, widthPx = 150) {
   ink(c, [[widthPx - 4, 0], [widthPx - 4, lengthPx]], { w: 2, alpha: 0.9, bleed: false });
   amberGlint(c, widthPx / 2, 14, 6, 0.8);
   return canvas;
+}
+
+// ---------------------------------------------------------------------------
+// The true ending: Chapter 1 Act 3's windows, framed in a brass bezel.
+// beat: carriage | city | platform | door
+
+export const ENDING_PANEL = Object.freeze({ w: 900, h: 512 });
+
+function orchardCaseOnStep(c, x, y, s = 1, { tagText = '' } = {}) {
+  c.save();
+  c.translate(x, y);
+  c.scale(s, s);
+  c.fillStyle = 'rgba(0,0,0,0.45)';
+  c.beginPath(); c.ellipse(26, 36, 34, 6, 0, 0, TAU); c.fill();
+  c.fillStyle = '#6d4a2c';
+  roundRectPath(c, 0, 4, 52, 32, 4); c.fill();
+  c.fillStyle = 'rgba(255, 220, 170, 0.14)'; c.fillRect(1, 5, 50, 6);
+  c.fillStyle = PAL.brass; c.fillRect(11, 4, 5, 32); c.fillRect(37, 4, 5, 32); c.fillRect(20, -2, 12, 5);
+  ink(c, [[0, 4], [52, 4], [52, 36], [0, 36]], { w: 1.4, closed: true, bleed: false, jitter: 0.2 });
+  paperTag(c, 48, 18, { angle: 0.35, scale: 1.3, glint: true, string: [34, 2], seed: 7 });
+  if (tagText) {
+    c.save(); c.translate(48, 18); c.rotate(0.35);
+    c.fillStyle = 'rgba(60, 30, 18, 0.95)'; c.font = '700 4.2px "Space Mono", monospace';
+    c.fillText(tagText, 11, 1.8);
+    c.restore();
+  }
+  c.restore();
+}
+
+export function paintEndingPanel(beat, sources) {
+  const { w, h } = ENDING_PANEL;
+  const draw = { carriage: drawCarriageScene, city: drawCityRoom, platform: drawPlatform, door: drawHouse }[beat] ?? drawCarriageScene;
+  const panel = paintChapterOnePanel(draw, { w, h, era: beat === 'city' ? 'past' : 'present', hide: ['act3-bench-case'], ...sources });
+  const c = panel.getContext('2d');
+  if (beat === 'platform') {
+    // Butch, off the train at Bellwether, the orchard case in his arms
+    const butch = paintInkButch({ pose: 'case', scale: 3 });
+    c.drawImage(butch, w * 0.56, h * 0.745 - butch.height * 0.62 + 6, butch.width * 0.62, butch.height * 0.62);
+  }
+  if (beat === 'door') {
+    // Rosa's door: the orchard house's porch in the foreground (clapboard,
+    // a lamp, the door standing open on a lit hall), the case on the step.
+    const stepY = h * 0.82;
+    const wx = w * 0.5;
+    c.save();
+    c.fillStyle = 'rgba(8, 6, 5, 0.35)';
+    c.fillRect(0, 0, wx, h);
+    c.restore();
+    wood(c, wx, h * 0.06, w - wx + 10, stepY - h * 0.06, { base: '#4a3a2c', seed: 91, vertical: false, grain: 'rgba(0,0,0,0.3)' });
+    for (let y = h * 0.06; y < stepY; y += 18) { c.fillStyle = 'rgba(0,0,0,0.28)'; c.fillRect(wx, y, w - wx + 10, 2); }
+    ink(c, [[wx, h * 0.06], [wx, stepY]], { w: 2.6 });
+    const dx = w * 0.62;
+    const dw = w * 0.2;
+    const dy = h * 0.26;
+    c.fillStyle = vgrad(c, dy, stepY, [[0, '#ffe0a8'], [1, '#e0a24a']]);
+    c.fillRect(dx, dy, dw, stepY - dy);
+    // the hall inside: a coat hook and the stair rail, in warm ink
+    ink(c, [[dx + dw * 0.72, dy + 20], [dx + dw * 0.72, stepY - 8]], { w: 2, color: 'rgba(120, 70, 30, 0.6)', bleed: false });
+    ink(c, [[dx + dw * 0.72, dy + 60], [dx + dw, dy + 20]], { w: 2, color: 'rgba(120, 70, 30, 0.6)', bleed: false });
+    // the open door leaf
+    c.fillStyle = '#2a1d14';
+    c.beginPath(); c.moveTo(dx, dy); c.lineTo(dx + dw * 0.28, dy + 10); c.lineTo(dx + dw * 0.28, stepY - 6); c.lineTo(dx, stepY); c.closePath(); c.fill();
+    ink(c, [[dx, dy], [dx + dw * 0.28, dy + 10], [dx + dw * 0.28, stepY - 6], [dx, stepY]], { w: 1.8, closed: true });
+    c.fillStyle = PAL.brassLight; c.beginPath(); c.arc(dx + dw * 0.23, dy + (stepY - dy) * 0.55, 3, 0, TAU); c.fill();
+    wood(c, dx - 12, dy - 14, dw + 24, 14, { base: '#5a3a22', seed: 92 });
+    ink(c, [[dx - 12, dy - 14], [dx + dw + 12, dy - 14], [dx + dw + 12, dy], [dx - 12, dy]], { w: 2, closed: true });
+    ink(c, [[dx, dy], [dx, stepY], [dx + dw, stepY], [dx + dw, dy]], { w: 2.4 });
+    // a porch lamp
+    const lx = dx + dw + 34;
+    c.fillStyle = PAL.brassDark; c.fillRect(lx - 4, dy - 8, 8, 14);
+    c.fillStyle = '#ffe3a8'; roundRectPath(c, lx - 9, dy + 6, 18, 24, 3); c.fill();
+    ink(c, [[lx - 9, dy + 6], [lx + 9, dy + 6], [lx + 9, dy + 30], [lx - 9, dy + 30]], { w: 1.4, closed: true });
+    inkGlow(c, lx, dy + 18, 200, 'rgba(255, 196, 110, 0.9)', 0.45);
+    inkGlow(c, dx + dw * 0.5, stepY - 20, 420, 'rgba(255, 196, 110, 0.9)', 0.32);
+    // the step, and the case left on it
+    c.fillStyle = vgrad(c, stepY, h, [[0, '#5a5244'], [1, '#262219']]);
+    c.fillRect(-10, stepY, w + 20, h - stepY + 10);
+    ink(c, [[-4, stepY], [w + 4, stepY]], { w: 2.4, alpha: 0.9 });
+    orchardCaseOnStep(c, dx - w * 0.2, stepY - 36, 2.2, { tagText: 'R. VELEZ' });
+    // a hawthorn by the lane, Mara's mark
+    ink(c, [[w * 0.12, stepY], [w * 0.14, h * 0.55], [w * 0.2, h * 0.42]], { w: 3.2, color: '#2a2016', bleed: false });
+    for (let i = 0; i < 30; i += 1) {
+      const a = (i / 30) * TAU;
+      c.fillStyle = i % 3 ? 'rgba(90, 120, 70, 0.85)' : 'rgba(240, 228, 210, 0.9)';
+      c.beginPath(); c.arc(w * 0.17 + Math.cos(a) * 52 * (0.35 + (i % 5) / 6), h * 0.45 + Math.sin(a) * 36 * (0.35 + (i % 4) / 5), 5, 0, TAU); c.fill();
+    }
+  }
+  const framed = makeCanvas(w + BEZEL * 2, h + BEZEL * 2);
+  const fc = framed.getContext('2d');
+  fc.drawImage(panel, BEZEL, BEZEL);
+  // the bezel punches its own window hole, so it is painted on its own sheet
+  const bezel = makeCanvas(w + BEZEL * 2, h + BEZEL * 2);
+  paintBezel(bezel.getContext('2d'), w, h);
+  fc.drawImage(bezel, 0, 0);
+  return framed;
 }
