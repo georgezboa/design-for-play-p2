@@ -343,8 +343,10 @@ test('script: ordered steps, conditions, effects and blocking waits', () => {
   model.update(2);
   assert.ok(model.hasItem('coin'));
   assert.equal(model.state.card.id, 'c1');
-  // step two needs b back at overview
+  // step two needs b back at overview; an open card pauses the script
   model.zoomOut('b');
+  assert.equal(model.state.bell, 0, 'the script waits while the card is read');
+  model.closeCard();
   assert.equal(model.state.bell, 1);
   assert.equal(model.timeOfDay(), TIMES_OF_DAY[1]);
   const bell = log.find(([name]) => name === 'bell')[1];

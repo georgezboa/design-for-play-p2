@@ -116,20 +116,35 @@ function wallClock(c, x, y, r) {
 }
 
 function routeMap(c, x, y, w, h) {
-  c.fillStyle = '#cdbf9e';
+  // A yellowed line map of the night service: a coast, a river, the line.
+  c.fillStyle = '#d2c3a0';
   c.fillRect(x, y, w, h);
-  c.fillStyle = 'rgba(120, 90, 50, 0.25)';
-  c.fillRect(x, y, w, h);
-  paperSpots(c, x, y, w, h);
-  // the line: a meandering route with stops
-  const pts = [[0.08, 0.7], [0.25, 0.62], [0.4, 0.68], [0.55, 0.42], [0.72, 0.46], [0.9, 0.24]].map(([u, v]) => [x + u * w, y + v * h]);
-  ink(c, pts, { w: 2.2, color: PAL.oxblood, alpha: 0.9, jitter: 0.3, bleed: false });
+  c.save();
+  c.beginPath(); c.rect(x, y, w, h); c.clip();
+  c.fillStyle = 'rgba(60, 100, 105, 0.45)';
+  c.beginPath();
+  c.moveTo(x, y); c.lineTo(x + w * 0.42, y); c.bezierCurveTo(x + w * 0.36, y + h * 0.2, x + w * 0.2, y + h * 0.28, x + w * 0.18, y + h * 0.45);
+  c.bezierCurveTo(x + w * 0.16, y + h * 0.6, x + w * 0.05, y + h * 0.7, x, y + h * 0.72); c.closePath(); c.fill();
+  ink(c, [[x + w * 0.42, y], [x + w * 0.3, y + h * 0.18], [x + w * 0.19, y + h * 0.36], [x + w * 0.15, y + h * 0.58], [x, y + h * 0.72]], { w: 1.2, color: '#3d5c5e', alpha: 0.8, bleed: false, jitter: 0.4 });
+  ink(c, [[x + w * 0.25, y + h * 0.3], [x + w * 0.4, y + h * 0.45], [x + w * 0.52, y + h * 0.5], [x + w * 0.7, y + h * 0.72], [x + w * 0.78, y + h]], { w: 1.4, color: 'rgba(60, 100, 105, 0.8)', bleed: false, jitter: 0.5 });
+  // hills
+  [[0.62, 0.22], [0.8, 0.3], [0.88, 0.14]].forEach(([u, v]) => ink(c, [[x + (u - 0.05) * w, y + v * h + 6], [x + u * w, y + v * h], [x + (u + 0.05) * w, y + v * h + 6]], { w: 1, color: '#6a5238', alpha: 0.6, bleed: false }));
+  c.restore();
+  const pts = [[0.22, 0.62], [0.36, 0.7], [0.5, 0.64], [0.6, 0.48], [0.74, 0.44], [0.9, 0.3]].map(([u, v]) => [x + u * w, y + v * h]);
+  ink(c, pts, { w: 3, color: '#2b221a', alpha: 0.85, jitter: 0.3, bleed: false });
+  ink(c, pts, { w: 1.2, color: '#d2c3a0', alpha: 1, jitter: 0.3, bleed: false });
   pts.forEach(([px, py], i) => {
-    c.fillStyle = i === pts.length - 1 ? PAL.oxblood : '#2b221a';
-    c.beginPath(); c.arc(px, py, i === pts.length - 1 ? 3.6 : 2.6, 0, Math.PI * 2); c.fill();
+    const last = i === pts.length - 1;
+    c.fillStyle = last ? PAL.oxblood : '#f1e6c8';
+    c.beginPath(); c.arc(px, py, last ? 4.4 : 3, 0, Math.PI * 2); c.fill();
+    c.strokeStyle = '#2b221a'; c.lineWidth = 1.2; c.stroke();
   });
-  // a second faint branch line
-  ink(c, [[x + 0.55 * w, y + 0.42 * h], [x + 0.6 * w, y + 0.85 * h]], { w: 1.2, color: '#4b3a2a', alpha: 0.5, jitter: 0.3, bleed: false });
+  c.fillStyle = PAL.oxblood;
+  c.fillRect(pts[0][0] - 5, pts[0][1] - 5, 10, 10);
+  // compass
+  ink(c, [[x + w * 0.88, y + h * 0.7], [x + w * 0.88, y + h * 0.9]], { w: 1, color: '#4b3a2a', bleed: false });
+  ink(c, [[x + w * 0.84, y + h * 0.8], [x + w * 0.92, y + h * 0.8]], { w: 1, color: '#4b3a2a', bleed: false });
+  paperSpots(c, x, y, w, h);
   c.strokeStyle = PAL.walnutMid;
   c.lineWidth = 6;
   c.strokeRect(x - 3, y - 3, w + 6, h + 6);
@@ -190,11 +205,11 @@ export function drawDesk(ctx) {
     c.fillStyle = '#4a2a1c'; c.fillRect(0, -48, 14, 48); inkRect(c, 0, -48, 14, 48, { w: 1.2 });
     c.restore();
     // wall clock and route map
-    wallClock(c, w * 0.83, h * 0.22, 30);
-    ink(c, [[w * 0.83, h * 0.22], [w * 0.83 - 12, h * 0.22 - 14]], { w: 2.2, color: '#2a1d14', bleed: false });
-    ink(c, [[w * 0.83, h * 0.22], [w * 0.83 + 3, h * 0.22 - 22]], { w: 1.6, color: '#2a1d14', bleed: false });
-    routeMap(c, w * 0.53, h * 0.12, w * 0.2, h * 0.24);
-    hangingLamp(c, w * 0.62, 20, h * 0.42 - 18, { r: 18 });
+    wallClock(c, w * 0.87, h * 0.24, 30);
+    ink(c, [[w * 0.87, h * 0.24], [w * 0.87 - 12, h * 0.24 - 14]], { w: 2.2, color: '#2a1d14', bleed: false });
+    ink(c, [[w * 0.87, h * 0.24], [w * 0.87 + 3, h * 0.24 - 22]], { w: 1.6, color: '#2a1d14', bleed: false });
+    routeMap(c, w * 0.58, h * 0.12, w * 0.21, h * 0.26);
+    hangingLamp(c, w * 0.5, 20, h * 0.36, { r: 17 });
     // stacked parcels on the floor, left of the desk
     parcel(c, w * -0.01, floorY - 42, 48, 42, { seed: 11, tone: '#7c5b3a' });
     parcel(c, w * 0.005, floorY - 70, 38, 28, { seed: 12, tone: '#94744c' });
@@ -270,7 +285,7 @@ export function drawDesk(ctx) {
   });
   const top = h * 0.555;
   ctx.glow(w * 0.13, top - 32, 120, { color: 0xffc070, alpha: 0.32, flicker: 0.08 });
-  ctx.glow(w * 0.62, h * 0.42, 150, { color: 0xffc98a, alpha: 0.2, flicker: 0.05 });
+  ctx.glow(w * 0.5, h * 0.4, 160, { color: 0xffc98a, alpha: 0.22, flicker: 0.05 });
   ctx.dust(w * 0.45, h * 0.3, w * 0.35, h * 0.45, { count: 16 });
 }
 
@@ -607,7 +622,13 @@ export function drawWindow(ctx) {
     const ty = h * 0.74;
     wood(c, glass.x + glass.w * 0.12, ty, glass.w * 0.76, 12, { base: '#5a3a22', seed: 55 });
     inkRect(c, glass.x + glass.w * 0.12, ty, glass.w * 0.76, 12, { w: 2 });
-    ink(c, [[w * 0.5, ty + 12], [w * 0.5, ty + 40], [w * 0.44, ty + 56]], { w: 2 });
+    // two brass brackets hold the table to the wall
+    [0.3, 0.7].forEach((u) => {
+      const bx = glass.x + glass.w * u;
+      c.fillStyle = brassFill(c, bx - 3, ty + 12, 6, 30);
+      c.beginPath(); c.moveTo(bx - 3, ty + 12); c.lineTo(bx + 3, ty + 12); c.lineTo(bx + 3, ty + 44); c.closePath(); c.fill();
+      ink(c, [[bx - 3, ty + 12], [bx + 3, ty + 44], [bx + 3, ty + 12]], { w: 1.2, alpha: 0.7 });
+    });
     c.fillStyle = 'rgba(255, 220, 160, 0.35)';
     c.fillRect(w * 0.6, ty - 26, 16, 24);
     c.fillStyle = 'rgba(120, 50, 20, 0.7)';
@@ -631,8 +652,34 @@ export function drawWindow(ctx) {
 // ---------------------------------------------------------------------------
 // BR "door" — the door to the Conductor's car, its ticket slot and chute.
 
-export const DOOR = Object.freeze({ x: 0.56, w: 0.28, top: 0.14 });
-export const SLOT_Y = 0.44;
+export const DOOR = Object.freeze({ x: 0.775, w: 0.19, top: 0.13 });
+export const SLOT_Y = 0.45;
+/** Where Butch waits: just left of the ticket box, facing the door. */
+export const DOOR_WAIT_X = 0.575;
+
+function ticketBox(c, x, y, lit) {
+  // a wall-mounted brass ticket validator fed by the chute from above
+  const bw = 58;
+  const bh = 78;
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.6)'; c.shadowBlur = 12; c.shadowOffsetX = 5; c.shadowOffsetY = 4;
+  c.fillStyle = brassFill(c, x - bw / 2, y - bh / 2, bw, bh);
+  roundRectPath(c, x - bw / 2, y - bh / 2, bw, bh, 6);
+  c.fill();
+  c.restore();
+  c.fillStyle = 'rgba(40, 25, 10, 0.35)';
+  c.fillRect(x - bw / 2 + 6, y - bh / 2 + 6, bw - 12, 22);
+  // the slot
+  c.fillStyle = lit ? '#ffd27e' : '#0b0806';
+  c.fillRect(x - 18, y - 4, 36, 7);
+  // a small punched-card window below
+  c.fillStyle = lit ? 'rgba(255, 220, 150, 0.9)' : 'rgba(20, 14, 10, 0.9)';
+  c.fillRect(x - 12, y + 14, 24, 12);
+  if (lit) glow(c, x, y, 70, 'rgba(255, 200, 110, 0.9)', 0.6);
+  ink(c, [[x - bw / 2, y - bh / 2], [x + bw / 2, y - bh / 2], [x + bw / 2, y + bh / 2], [x - bw / 2, y + bh / 2]], { w: 1.8, closed: true });
+  [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sy]) => rivet(c, x + sx * (bw / 2 - 6), y + sy * (bh / 2 - 6), 2));
+  return { top: y - bh / 2 };
+}
 
 export function drawDoor(ctx, variant = 'locked') {
   const { w, h } = ctx;
@@ -642,117 +689,126 @@ export function drawDoor(ctx, variant = 'locked') {
   const dTop = DOOR.top * h;
   const chuteX = CHUTE_AT * w;
   const slotY = SLOT_Y * h;
+  const lit = variant !== 'locked';
   ctx.paint(`act1-door-${variant}`, (c, env) => {
     backWall(c, w, h, floorY, { seed: 61 });
-    wainscot(c, w, h, h * 0.5, floorY, { seed: 62, x1: dx - 12 });
-    // wall sconce and a fire bucket
-    const sx = w * 0.26;
-    c.fillStyle = brassFill(c, sx - 8, h * 0.2, 16, 30);
+    ceiling(c, w);
+    wainscot(c, w, h, h * 0.54, floorY, { seed: 62, x1: dx - 30 });
+    // wall sconce, a fire bucket on its hook, a framed notice of rules (no words)
+    const sx = w * 0.3;
+    c.fillStyle = brassFill(c, sx - 3, h * 0.22, 6, 26);
     c.fillRect(sx - 3, h * 0.22, 6, 26);
     c.fillStyle = '#ffe1a0';
-    c.beginPath(); c.moveTo(sx - 14, h * 0.2); c.lineTo(sx + 14, h * 0.2); c.lineTo(sx + 9, h * 0.13); c.lineTo(sx - 9, h * 0.13); c.closePath(); c.fill();
-    ink(c, [[sx - 14, h * 0.2], [sx + 14, h * 0.2], [sx + 9, h * 0.13], [sx - 9, h * 0.13]], { w: 1.6, closed: true });
-    glow(c, sx, h * 0.17, 120, 'rgba(255, 190, 110, 0.9)', 0.28);
-    const bx = w * 0.1;
-    c.fillStyle = vgrad(c, h * 0.3, h * 0.42, [[0, '#8a3326'], [1, '#4a1a14']]);
-    c.beginPath(); c.moveTo(bx - 16, h * 0.3); c.lineTo(bx + 16, h * 0.3); c.lineTo(bx + 12, h * 0.42); c.lineTo(bx - 12, h * 0.42); c.closePath(); c.fill();
-    ink(c, [[bx - 16, h * 0.3], [bx + 16, h * 0.3], [bx + 12, h * 0.42], [bx - 12, h * 0.42]], { w: 1.6, closed: true });
-    ink(c, [[bx - 16, h * 0.3], [bx, h * 0.25], [bx + 16, h * 0.3]], { w: 1.2, alpha: 0.7 });
-    // bulkhead around the door: a heavier walnut frame
-    wood(c, dx - 26, dTop - 30, dw + 52, floorY - dTop + 30, { base: '#2a1a10', seed: 63, vertical: true });
-    inkRect(c, dx - 26, dTop - 30, dw + 52, floorY - dTop + 30, { w: 2.2 });
+    c.beginPath(); c.moveTo(sx - 15, h * 0.22); c.lineTo(sx + 15, h * 0.22); c.lineTo(sx + 9, h * 0.14); c.lineTo(sx - 9, h * 0.14); c.closePath(); c.fill();
+    ink(c, [[sx - 15, h * 0.22], [sx + 15, h * 0.22], [sx + 9, h * 0.14], [sx - 9, h * 0.14]], { w: 1.6, closed: true });
+    glow(c, sx, h * 0.18, 150, 'rgba(255, 190, 110, 0.9)', 0.3);
+    const bx = w * 0.11;
+    ink(c, [[bx, h * 0.24], [bx, h * 0.29]], { w: 1.6, color: PAL.brassLight });
+    c.fillStyle = vgrad(c, h * 0.3, h * 0.43, [[0, '#8a3326'], [1, '#4a1a14']]);
+    c.beginPath(); c.moveTo(bx - 17, h * 0.3); c.lineTo(bx + 17, h * 0.3); c.lineTo(bx + 12, h * 0.43); c.lineTo(bx - 12, h * 0.43); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.12)'; c.fillRect(bx - 11, h * 0.31, 5, h * 0.1);
+    ink(c, [[bx - 17, h * 0.3], [bx + 17, h * 0.3], [bx + 12, h * 0.43], [bx - 12, h * 0.43]], { w: 1.6, closed: true });
+    ink(c, [[bx - 17, h * 0.3], [bx, h * 0.25], [bx + 17, h * 0.3]], { w: 1.2, alpha: 0.7 });
+    const nx = w * 0.4;
+    const ny = h * 0.2;
+    c.fillStyle = '#cdbf9e'; c.fillRect(nx, ny, 64, 84);
+    c.fillStyle = 'rgba(60,40,25,0.5)';
+    for (let i = 0; i < 7; i += 1) c.fillRect(nx + 8, ny + 12 + i * 10, i % 3 === 2 ? 30 : 48, 2);
+    c.fillStyle = PAL.oxblood; c.fillRect(nx + 8, ny + 5, 20, 4);
+    c.strokeStyle = PAL.walnutMid; c.lineWidth = 5; c.strokeRect(nx - 2, ny - 2, 68, 88);
+    inkRect(c, nx - 5, ny - 5, 74, 94, { w: 1.4 });
+    // bulkhead around the door: heavier walnut frame with rivets
+    wood(c, dx - 24, dTop - 26, dw + 48, floorY - dTop + 26, { base: '#2a1a10', seed: 63, vertical: true });
+    inkRect(c, dx - 24, dTop - 26, dw + 48, floorY - dTop + 26, { w: 2.2 });
     for (let i = 0; i < 6; i += 1) {
-      rivet(c, dx - 16, dTop - 18 + i * ((floorY - dTop) / 5.2), 2.6);
-      rivet(c, dx + dw + 16, dTop - 18 + i * ((floorY - dTop) / 5.2), 2.6);
+      rivet(c, dx - 13, dTop - 12 + i * ((floorY - dTop) / 5.3), 2.6);
+      rivet(c, dx + dw + 13, dTop - 12 + i * ((floorY - dTop) / 5.3), 2.6);
     }
     if (variant === 'open') {
-      // doorway into the Conductor's car: warm lamplight, a tall silhouette
-      c.fillStyle = vgrad(c, dTop, floorY, [[0, '#5a3218'], [0.55, '#b4722e'], [1, '#6a3a18']]);
+      // the doorway into the Conductor's car: warm lamplight, a tall figure
+      c.fillStyle = vgrad(c, dTop, floorY, [[0, '#5a3218'], [0.5, '#c4843a'], [1, '#6a3a18']]);
       c.fillRect(dx, dTop, dw, floorY - dTop);
-      glow(c, dx + dw * 0.55, dTop + (floorY - dTop) * 0.4, dw * 1.1, 'rgba(255, 200, 120, 0.9)', 0.5);
-      c.fillStyle = 'rgba(20, 12, 8, 0.85)';
-      const fx = dx + dw * 0.64;
-      c.beginPath(); c.ellipse(fx, dTop + 56, 7, 8, 0, 0, Math.PI * 2); c.fill();
-      c.beginPath(); c.moveTo(fx - 12, dTop + 66); c.lineTo(fx + 12, dTop + 66); c.lineTo(fx + 15, floorY - 30); c.lineTo(fx - 15, floorY - 30); c.closePath(); c.fill();
-      c.fillRect(fx - 20, dTop + 44, 40, 5);
-      glow(c, fx + 20, floorY - 60, 40, 'rgba(255, 220, 140, 0.95)', 0.9);
-      // door leaf swung inward, seen edge-on
+      glow(c, dx + dw * 0.5, dTop + (floorY - dTop) * 0.42, dw * 1.3, 'rgba(255, 205, 130, 0.95)', 0.55);
+      // far wall and floor of the next car
+      c.fillStyle = 'rgba(60, 30, 14, 0.5)';
+      c.fillRect(dx, floorY - 30, dw, 30);
+      ink(c, [[dx, floorY - 30], [dx + dw, floorY - 30]], { w: 1.4, alpha: 0.5 });
+      c.fillStyle = 'rgba(22, 12, 8, 0.88)';
+      const fx = dx + dw * 0.62;
+      c.beginPath(); c.ellipse(fx, dTop + 64, 7.5, 8.5, 0, 0, Math.PI * 2); c.fill();
+      c.fillRect(fx - 11, dTop + 46, 22, 10);
+      c.fillRect(fx - 15, dTop + 53, 30, 4);
+      c.beginPath(); c.moveTo(fx - 13, dTop + 74); c.lineTo(fx + 13, dTop + 74); c.lineTo(fx + 17, floorY - 34); c.lineTo(fx - 17, floorY - 34); c.closePath(); c.fill();
+      glow(c, fx - 22, floorY - 70, 46, 'rgba(255, 225, 150, 0.95)', 0.95);
+      // the door leaf swung inward, seen edge-on at the hinge
       c.fillStyle = '#3e2718';
-      c.beginPath(); c.moveTo(dx, dTop); c.lineTo(dx + 22, dTop + 12); c.lineTo(dx + 22, floorY - 8); c.lineTo(dx, floorY); c.closePath(); c.fill();
-      ink(c, [[dx, dTop], [dx + 22, dTop + 12], [dx + 22, floorY - 8], [dx, floorY]], { w: 2, closed: true });
-      // spill of light on the floor outside
+      c.beginPath(); c.moveTo(dx + dw, dTop); c.lineTo(dx + dw - 20, dTop + 12); c.lineTo(dx + dw - 20, floorY - 8); c.lineTo(dx + dw, floorY); c.closePath(); c.fill();
+      ink(c, [[dx + dw, dTop], [dx + dw - 20, dTop + 12], [dx + dw - 20, floorY - 8], [dx + dw, floorY]], { w: 2, closed: true });
       c.save();
       c.globalCompositeOperation = 'lighter';
-      c.fillStyle = 'rgba(255, 180, 90, 0.18)';
-      c.beginPath(); c.moveTo(dx, floorY); c.lineTo(dx + dw, floorY); c.lineTo(dx + dw + 60, h); c.lineTo(dx - 90, h); c.closePath(); c.fill();
+      c.fillStyle = 'rgba(255, 180, 90, 0.2)';
+      c.beginPath(); c.moveTo(dx, floorY); c.lineTo(dx + dw, floorY); c.lineTo(dx + dw + 20, h + 10); c.lineTo(dx - 150, h + 10); c.closePath(); c.fill();
       c.restore();
     } else {
       // the closed door leaf
       wood(c, dx, dTop, dw, floorY - dTop, { base: '#4a2f1c', seed: 64, vertical: true });
       c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(dx, dTop, dw, floorY - dTop);
-      inkRect(c, dx + 14, dTop + (floorY - dTop) * 0.56, dw - 28, (floorY - dTop) * 0.36, { w: 1.4, alpha: 0.6 });
-      // porthole with the warm car beyond
+      inkRect(c, dx + 12, dTop + (floorY - dTop) * 0.56, dw - 24, (floorY - dTop) * 0.36, { w: 1.4, alpha: 0.6 });
+      // porthole: the warm car beyond, and a figure in it
       const px = dx + dw / 2;
-      const py = dTop + 52;
-      c.fillStyle = brassFill(c, px - 32, py - 32, 64, 64);
-      c.beginPath(); c.arc(px, py, 31, 0, Math.PI * 2); c.fill();
-      c.fillStyle = vgrad(c, py - 24, py + 24, [[0, '#6a3a18'], [1, '#c4843a']]);
-      c.beginPath(); c.arc(px, py, 24, 0, Math.PI * 2); c.fill();
+      const py = dTop + 56;
+      c.fillStyle = brassFill(c, px - 31, py - 31, 62, 62);
+      c.beginPath(); c.arc(px, py, 30, 0, Math.PI * 2); c.fill();
+      c.fillStyle = vgrad(c, py - 23, py + 23, [[0, '#6a3a18'], [1, '#c4843a']]);
+      c.beginPath(); c.arc(px, py, 23, 0, Math.PI * 2); c.fill();
       c.fillStyle = 'rgba(20,12,8,0.75)';
-      c.beginPath(); c.ellipse(px + 8, py - 2, 5, 5.5, 0, 0, Math.PI * 2); c.fill();
-      c.fillRect(px + 1, py + 4, 14, 22);
+      c.beginPath(); c.ellipse(px + 7, py - 1, 4.5, 5, 0, 0, Math.PI * 2); c.fill();
+      c.fillRect(px + 2, py - 7, 10, 3);
+      c.fillRect(px + 1, py + 5, 13, 20);
       c.fillStyle = 'rgba(255,255,255,0.18)';
-      c.beginPath(); c.moveTo(px - 16, py - 12); c.lineTo(px - 6, py - 20); c.lineTo(px - 10, py - 4); c.closePath(); c.fill();
-      inkEllipse(c, px, py, 31, 31, { w: 2 });
-      inkEllipse(c, px, py, 24, 24, { w: 1.4, alpha: 0.7 });
-      for (let i = 0; i < 8; i += 1) rivet(c, px + Math.cos((i / 8) * Math.PI * 2) * 27.5, py + Math.sin((i / 8) * Math.PI * 2) * 27.5, 1.8);
-      // brass handle
-      const hx = dx + dw - 22;
-      const hy = h * 0.54;
+      c.beginPath(); c.moveTo(px - 15, py - 11); c.lineTo(px - 6, py - 19); c.lineTo(px - 10, py - 4); c.closePath(); c.fill();
+      inkEllipse(c, px, py, 30, 30, { w: 2 });
+      inkEllipse(c, px, py, 23, 23, { w: 1.4, alpha: 0.7 });
+      for (let i = 0; i < 8; i += 1) rivet(c, px + Math.cos((i / 8) * Math.PI * 2) * 26.5, py + Math.sin((i / 8) * Math.PI * 2) * 26.5, 1.8);
+      // brass lever handle on the left of the leaf, toward the corridor
+      const hx = dx + 18;
+      const hy = h * 0.53;
       c.fillStyle = brassFill(c, hx - 6, hy - 22, 12, 44);
       roundRectPath(c, hx - 5, hy - 22, 10, 44, 4); c.fill();
-      c.fillStyle = brassFill(c, hx - 20, hy - 5, 24, 10);
-      roundRectPath(c, hx - 20, hy - 4, 22, 8, 4); c.fill();
+      c.fillStyle = brassFill(c, hx, hy - 5, 26, 10);
+      roundRectPath(c, hx - 2, hy - 4, 26, 8, 4); c.fill();
       ink(c, [[hx - 5, hy - 22], [hx + 5, hy - 22], [hx + 5, hy + 22], [hx - 5, hy + 22]], { w: 1.4, closed: true });
-      ink(c, [[hx - 20, hy - 4], [hx, hy - 4], [hx, hy + 4], [hx - 20, hy + 4]], { w: 1.4, closed: true });
+      ink(c, [[hx - 2, hy - 4], [hx + 24, hy - 4], [hx + 24, hy + 4], [hx - 2, hy + 4]], { w: 1.4, closed: true });
       c.fillStyle = '#0d0907'; c.fillRect(hx - 2, hy + 10, 4, 7);
-      // lock light above the door
-      const lampColor = variant === 'unlocked' ? '#ffcf7a' : '#c0392b';
-      c.fillStyle = '#1a1210'; c.fillRect(dx + dw / 2 - 10, dTop - 26, 20, 14);
-      c.fillStyle = lampColor;
-      c.beginPath(); c.arc(dx + dw / 2, dTop - 19, 5, 0, Math.PI * 2); c.fill();
-      glow(c, dx + dw / 2, dTop - 19, 26, variant === 'unlocked' ? 'rgba(255,200,110,0.9)' : 'rgba(220,60,40,0.9)', 0.6);
       ink(c, [[dx, dTop], [dx + dw, dTop], [dx + dw, floorY], [dx, floorY]], { w: 2.4, closed: true });
     }
-    // floor with runner coming in from the left edge
-    floorboards(c, w, h, floorY, { seed: 66, runner: [-40, dx - 10] });
-    // the chute: pipe from the top edge down into the ticket slot plate
+    // lock lamp above the door
+    const lampColor = lit ? '#ffcf7a' : '#c0392b';
+    c.fillStyle = '#1a1210'; c.fillRect(dx + dw / 2 - 11, dTop - 22, 22, 14);
+    c.fillStyle = lampColor;
+    c.beginPath(); c.arc(dx + dw / 2, dTop - 15, 5, 0, Math.PI * 2); c.fill();
+    glow(c, dx + dw / 2, dTop - 15, 30, lit ? 'rgba(255,200,110,0.9)' : 'rgba(220,60,40,0.9)', 0.65);
+    // floor with the runner coming in from the left edge
+    floorboards(c, w, h, floorY, { seed: 66, runner: [-40, dx - 16] });
+    // the chute: a brass pipe from the ceiling (top edge) into the ticket box
     const pipeW = 26;
-    c.fillStyle = brassFill(c, chuteX - pipeW / 2, -20, pipeW, slotY, true);
-    c.fillRect(chuteX - pipeW / 2, -20, pipeW, slotY - 14 + 20);
-    [h * 0.02, h * 0.2].forEach((y) => {
+    const boxTop = slotY - 39;
+    c.fillStyle = brassFill(c, chuteX - pipeW / 2, -20, pipeW, boxTop + 20, true);
+    c.fillRect(chuteX - pipeW / 2, -20, pipeW, boxTop + 22);
+    [h * 0.015, h * 0.2].forEach((y) => {
       c.fillStyle = brassFill(c, chuteX - pipeW / 2 - 5, y, pipeW + 10, 8);
       c.fillRect(chuteX - pipeW / 2 - 5, y, pipeW + 10, 8);
       rivet(c, chuteX - pipeW / 2 - 1, y + 4, 2);
       rivet(c, chuteX + pipeW / 2 + 1, y + 4, 2);
     });
-    ink(c, [[chuteX - pipeW / 2, -8], [chuteX - pipeW / 2, slotY - 14]], { w: 2.2 });
-    ink(c, [[chuteX + pipeW / 2, -8], [chuteX + pipeW / 2, slotY - 14]], { w: 2.2 });
-    // the slot plate
-    const lit = variant !== 'locked';
-    c.fillStyle = brassFill(c, chuteX - 26, slotY - 16, 52, 32);
-    roundRectPath(c, chuteX - 26, slotY - 16, 52, 32, 5); c.fill();
-    c.fillStyle = lit ? '#ffd27e' : '#0b0806';
-    c.fillRect(chuteX - 16, slotY - 3, 32, 6);
-    if (lit) glow(c, chuteX, slotY, 50, 'rgba(255, 200, 110, 0.9)', 0.55);
-    ink(c, [[chuteX - 26, slotY - 16], [chuteX + 26, slotY - 16], [chuteX + 26, slotY + 16], [chuteX - 26, slotY + 16]], { w: 1.8, closed: true });
-    rivet(c, chuteX - 21, slotY - 11, 1.8); rivet(c, chuteX + 21, slotY - 11, 1.8);
-    rivet(c, chuteX - 21, slotY + 11, 1.8); rivet(c, chuteX + 21, slotY + 11, 1.8);
+    ink(c, [[chuteX - pipeW / 2, -8], [chuteX - pipeW / 2, boxTop]], { w: 2.2 });
+    ink(c, [[chuteX + pipeW / 2, -8], [chuteX + pipeW / 2, boxTop]], { w: 2.2 });
+    ticketBox(c, chuteX, slotY, lit);
     finish(c, env);
   });
-  ctx.glow(w * 0.26, h * 0.17, 140, { color: 0xffc070, alpha: 0.2, flicker: 0.07 });
-  if (variant === 'open') ctx.glow(dx + dw * 0.55, h * 0.5, 220, { color: 0xffb060, alpha: 0.35, flicker: 0.06 });
-  ctx.dust(w * 0.05, h * 0.1, w * 0.45, h * 0.6, { count: 8 });
+  ctx.glow(w * 0.3, h * 0.18, 150, { color: 0xffc070, alpha: 0.22, flicker: 0.07 });
+  if (variant === 'open') ctx.glow(dx + dw * 0.5, h * 0.5, 240, { color: 0xffb060, alpha: 0.38, flicker: 0.06 });
+  ctx.dust(w * 0.05, h * 0.1, w * 0.5, h * 0.6, { count: 8 });
 }
 
 // ---------------------------------------------------------------------------
@@ -802,10 +858,27 @@ export function drawConductorCar(ctx) {
     }
     // a ceiling lamp and a coat hook with a spare cap
     hangingLamp(c, w * 0.45, -10, h * 0.06, { r: 24 });
-    ink(c, [[w * 0.12, h * 0.3], [w * 0.14, h * 0.34], [w * 0.16, h * 0.3]], { w: 2, color: PAL.brassLight });
+    // a peg rail: the Conductor's spare cap and a folded scarf
+    const px = w * 0.07;
+    const py = h * 0.3;
+    wood(c, px, py, w * 0.16, 12, { base: '#4a2f1c', seed: 78 });
+    inkRect(c, px, py, w * 0.16, 12, { w: 1.6 });
+    [0.2, 0.5, 0.8].forEach((u) => {
+      const hx = px + w * 0.16 * u;
+      ink(c, [[hx, py + 10], [hx, py + 22], [hx + 7, py + 26]], { w: 2.4, color: PAL.brassLight, bleed: false });
+    });
+    const cx = px + w * 0.08;
     c.fillStyle = '#121a28';
-    c.beginPath(); c.ellipse(w * 0.14, h * 0.37, 20, 9, 0, 0, Math.PI * 2); c.fill();
-    c.fillStyle = PAL.brass; c.fillRect(w * 0.14 - 18, h * 0.38, 36, 3);
+    c.beginPath(); c.moveTo(cx - 22, py + 34); c.quadraticCurveTo(cx, py + 14, cx + 22, py + 34); c.closePath(); c.fill();
+    c.fillStyle = PAL.brass; c.fillRect(cx - 22, py + 32, 44, 4);
+    c.fillStyle = '#070a10';
+    c.beginPath(); c.ellipse(cx + 8, py + 38, 18, 4, 0.1, 0, Math.PI * 2); c.fill();
+    c.fillStyle = PAL.brassLight; c.beginPath(); c.arc(cx, py + 25, 2.6, 0, Math.PI * 2); c.fill();
+    ink(c, [[cx - 22, py + 34], [cx - 10, py + 20], [cx + 10, py + 20], [cx + 22, py + 34]], { w: 1.4 });
+    const sx = px + w * 0.128;
+    c.fillStyle = PAL.oxblood;
+    c.beginPath(); c.moveTo(sx - 6, py + 22); c.lineTo(sx + 8, py + 22); c.lineTo(sx + 10, py + 74); c.lineTo(sx - 4, py + 70); c.closePath(); c.fill();
+    ink(c, [[sx - 6, py + 22], [sx - 4, py + 70], [sx + 10, py + 74], [sx + 8, py + 22]], { w: 1.2, alpha: 0.8 });
     // a small desk with the timetable ledger
     const dx = w * 0.68;
     const dTop = h * 0.64;

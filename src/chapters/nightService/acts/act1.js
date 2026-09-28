@@ -9,13 +9,14 @@
 
 import { defineAct } from '../panelModel.js';
 import {
-  CHUTE_AT, DOOR, FLOOR, SLOT_Y, drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers,
+  CHUTE_AT, DOOR, DOOR_WAIT_X, FLOOR, SLOT_Y, drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers,
   drawWindow, taggedCubbyZoomRect, cubbyRect, TAGGED_CUBBY,
 } from '../art/act1Art.js';
+import { ACT1_FX } from '../art/act1Fx.js';
 
 const cubby = cubbyRect(756, 420, TAGGED_CUBBY.col, TAGGED_CUBBY.row);
-const cubbyTag = { x: (cubby.x + cubby.w * 0.5) / 756, y: (cubby.y + cubby.h + 7) / 420 };
-const doorway = [DOOR.x - 0.1, 0.12, 0.48, 0.48];
+const cubbyTag = { x: (cubby.x + cubby.w * 0.56) / 756, y: (cubby.y + cubby.h * 0.5) / 420 };
+const doorway = [0.52, 0.16, 0.48, 0.48];
 
 export const ACT1 = defineAct({
   id: 'act1',
@@ -28,6 +29,7 @@ export const ACT1 = defineAct({
   slots: ['desk', 'lockers', 'window', 'door'],
   start: { bell: 0, items: [] },
   assets: ['fields'],
+  fx: ACT1_FX,
   cards: {
     A1: {
       stamp: 'CLAIM 1978-0412',
@@ -54,7 +56,7 @@ export const ACT1 = defineAct({
             to: 'cubby',
             rect: taggedCubbyZoomRect(),
             requires: { flag: 'butchAtDoor' },
-            tag: { x: cubbyTag.x - 0.012, y: cubbyTag.y, angle: 0.35, string: [cubbyTag.x - 0.02, cubbyTag.y - 0.03] },
+            tag: { x: cubbyTag.x, y: cubbyTag.y, angle: 0.3, scale: 1.2 },
           }],
         },
         cubby: {
@@ -66,7 +68,7 @@ export const ACT1 = defineAct({
             card: 'A1',
             rect: [0.2, 0.36, 0.33, 0.38],
             pulseOnce: true,
-            tag: { x: 0.47, y: 0.46, angle: 0.5, string: [0.44, 0.43] },
+            tag: { x: 0.46, y: 0.44, angle: 0.45, scale: 1.7 },
           }],
         },
       },
@@ -90,7 +92,7 @@ export const ACT1 = defineAct({
           hotspots: [{
             id: 'handle',
             kind: 'use',
-            rect: [DOOR.x + DOOR.w - 0.08, 0.42, 0.08, 0.26],
+            rect: [DOOR.x, 0.4, 0.07, 0.24],
             requires: { all: [{ flag: 'butchAtDoor' }, { notFlag: 'ticketDropped' }] },
             do: [{ sfx: 'rattle' }, { fx: { name: 'slotFlash' } }],
           }],
@@ -131,7 +133,7 @@ export const ACT1 = defineAct({
               { tile: 'desk', x: 0.6, y: FLOOR },
               { tile: 'desk', x: 1, y: FLOOR },
               { tile: 'door', x: 0, y: FLOOR, via: 'floor' },
-              { tile: 'door', x: DOOR.x - 0.1, y: FLOOR },
+              { tile: 'door', x: DOOR_WAIT_X, y: FLOOR },
             ],
           },
         },
@@ -141,7 +143,7 @@ export const ACT1 = defineAct({
       ],
       skip: [
         { setFlag: 'butchAtDoor' },
-        { placeActor: { actor: 'butch', tile: 'door', x: DOOR.x - 0.1, y: FLOOR, pose: 'idle', facing: 1 } },
+        { placeActor: { actor: 'butch', tile: 'door', x: DOOR_WAIT_X, y: FLOOR, pose: 'idle', facing: 1 } },
       ],
     },
     {
@@ -149,12 +151,13 @@ export const ACT1 = defineAct({
       when: { all: [{ flag: 'butchAtDoor' }, { link: { a: 'lockers', b: 'door', type: 'chute' } }] },
       hint: { tile: 'lockers', hotspot: 'tagged' },
       do: [
-        { lockInput: true },
+        // a beat to see the ticket at the chute mouth (and the envelope's tag)
+        { wait: 900 },
         { fx: { name: 'ticketDrop', from: { tile: 'lockers', x: CHUTE_AT, y: 0.72 }, to: { tile: 'door', x: CHUTE_AT, y: SLOT_Y }, ms: 1500 } },
         { setFlag: 'ticketDropped' },
         { sfx: 'clack' },
         { setState: { tile: 'door', state: 'unlocked' } },
-        { wait: 650 },
+        { wait: 800 },
       ],
       skip: [{ setFlag: 'ticketDropped' }, { setState: { tile: 'door', state: 'unlocked' } }],
     },
@@ -162,11 +165,12 @@ export const ACT1 = defineAct({
       id: 'conductor',
       when: { flag: 'ticketDropped' },
       do: [
-        { lockInput: true },
         { sfx: 'door' },
         { setState: { tile: 'door', state: 'open' } },
         { wait: 700 },
         { walkButch: { id: 'throughDoor', speed: 120, path: [{ tile: 'door', x: DOOR.x + DOOR.w * 0.5, y: FLOOR - 0.01 }] } },
+        // from here the scene plays itself
+        { lockInput: true },
         { placeActor: { actor: 'butch', visible: false } },
         { wait: 250 },
         { zoomTo: { tile: 'door', to: 'conductor', rect: doorway } },

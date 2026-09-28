@@ -1,0 +1,132 @@
+// Chapter 1 // NIGHT SERVICE — standalone entry (night-service.html).
+//
+// A Gorogoa-style panel puzzle on its own 1920×1080 antialiased Phaser game.
+// The shared shell supplies the pause menu (with Chapter 1 controls),
+// settings, reduce motion, text size, saves, magic stones and cinematics.
+//
+// Which act opens:
+//   production — the active save slot's checkpoint (chapter-1-start → Act 1,
+//                chapter-1-act-2 → Act 2, chapter-1-act-3 → Act 3; the legacy
+//                prologue-start resumes Act 1). URL parameters are ignored.
+//   development — `?act=1|2|3` and `?step=<step id>` override the save.
+
+import Phaser from 'phaser';
+import './fonts/fonts.css';
+import { PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
+import { CHECKPOINT_ACTS, resolveActParam } from './chapters/nightService/acts/index.js';
+import { createNightServiceAudio } from './chapters/nightService/audio.js';
+import { installDevMenuReturnControl } from './devMenuReturn.js';
+import { installPauseMenu } from './shell/pauseMenu.js';
+import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
+import { installPhaserMotionGuard } from './shell/motion.js';
+import { DEV_MODE, devParams } from './devMode.js';
+import { applySettings, createSaveStore, readSettings } from './shell/saveSystem.js';
+import { collectMagicStone } from './shell/magicStones.js';
+import { CINEMATICS, playCinematic } from './shell/gameFlow.js';
+
+installPhaserMotionGuard(Phaser);
+applySettings(readSettings());
+installDevMenuReturnControl();
+
+const store = createSaveStore();
+
+function savedAct() {
+  const save = store.readAll()[store.getActiveSlot()];
+  return CHECKPOINT_ACTS[save?.checkpointId] ?? 'act1';
+}
+
+const params = devParams();
+const startAct = resolveActParam(params.get('act')) ?? savedAct();
+const startStep = params.get('step');
+
+let scene = null;
+const pause = installPauseMenu({
+  checkpointId: 'chapter-1-start',
+  controls: CHAPTER_CONTROLS.nightServicePanels ?? CHAPTER_CONTROLS.nightService,
+  // Escape first backs out of whatever is in the player's hands.
+  onEscape: () => (scene?.sys?.isActive() ? scene.escape() : false),
+});
+void pause;
+
+const audio = createNightServiceAudio();
+
+// Chapter 2 today is the existing parkour on the main page, launched the way
+// CHECKPOINTS does it (a pending launch read by BootScene).
+function launchChapter2() {
+  sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
+  sessionStorage.setItem('nightfall.pendingLaunch.v1', 'chapter-2');
+  window.location.assign(DEV_MODE ? '/?play=1&chapter=1' : '/?play=1');
+}
+
+const services = {
+  audio,
+  devMode: DEV_MODE,
+  // dev-only QA knob: headless software GL renders ~2 fps, so solve scripts
+  // allow bigger simulation steps (`?dtmax=250`). Production is fixed at 50.
+  maxDt: Math.min(500, Number(params.get('dtmax')) || 50),
+  onCheckpoint(id) {
+    const slot = store.getActiveSlot();
+    if (!store.readAll()[slot]) store.startNew(slot);
+    store.markCheckpoint(id, { slot });
+  },
+  onStone(id) {
+    collectMagicStone(id);
+  },
+  onActChange(actId) {
+    document.documentElement.dataset.nightServiceAct = actId;
+  },
+  onChapterEnd() {
+    services.onCheckpoint('chapter-2-start');
+    audio.destroy();
+    playCinematic({
+      id: 'chapter-1-to-2',
+      src: CINEMATICS.chapter1To2,
+      label: 'Chapter 1 to Chapter 2 transition',
+      preloadChapterId: 'chapter2',
+      onComplete: launchChapter2,
+    });
+  },
+};
+
+const game = new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game',
+  width: 1920,
+  height: 1080,
+  backgroundColor: '#0b0705',
+  render: { antialias: true, pixelArt: false, roundPixels: false, powerPreference: 'high-performance' },
+  scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  scene: [],
+});
+
+game.canvas.setAttribute('tabindex', '0');
+game.canvas.setAttribute('role', 'application');
+game.canvas.setAttribute('aria-label', 'Night Service panel puzzle');
+game.canvas.addEventListener('pointerdown', () => game.canvas.focus());
+game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
+
+// Not dev-only: shell/pauseMenu.js pauses the scenes through globalThis.game.
+window.game = game;
+
+const boot = async () => {
+  // captions use the bundled Space Mono; wait briefly so the first line never
+  // renders in a fallback face
+  try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
+  game.scene.add(PANEL_SCENE, PanelScene, true, { actId: startAct, step: startStep, services });
+  scene = game.scene.getScene(PANEL_SCENE);
+  document.documentElement.dataset.nightServiceAct = startAct;
+};
+if (game.isBooted) boot(); else game.events.once('ready', boot);
+
+if (DEV_MODE) {
+  window.render_game_to_text = () => {
+    const active = game.scene.getScene(PANEL_SCENE);
+    return JSON.stringify(active?.sys?.isActive() && active.model ? active.textState() : { scene: 'booting' });
+  };
+  window.__nightService = {
+    get scene() { return game.scene.getScene(PANEL_SCENE); },
+    get model() { return game.scene.getScene(PANEL_SCENE)?.model; },
+  };
+}
+
+export default game;

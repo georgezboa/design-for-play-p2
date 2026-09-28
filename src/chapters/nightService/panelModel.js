@@ -442,7 +442,22 @@ export function createPanelModel(act, options = {}) {
       }
       case 'unlockDrag': tileList(arg).forEach((id) => { s.tiles[id].draggable = true; }); events.emit('draggable'); break;
       case 'lockTile': tileList(arg).forEach((id) => { s.tiles[id].draggable = false; }); events.emit('draggable'); break;
-      case 'lockInput': s.inputLocked = true; events.emit('input', { locked: true }); break;
+      case 'lockInput': {
+        s.inputLocked = true;
+        // whatever is in the player's hands goes back where it came from
+        if (s.dragging) {
+          const tile = s.dragging;
+          s.dragging = null;
+          events.emit('drag:end', { tile, swapped: false, from: slotOf(tile), to: slotOf(tile) });
+        }
+        const floating = floatingFrame();
+        if (floating) {
+          floating.host = floating.origin;
+          events.emit('frame:drop', { frame: floating.id, onto: floating.origin, returned: true });
+        }
+        events.emit('input', { locked: true });
+        break;
+      }
       case 'unlockInput': s.inputLocked = false; events.emit('input', { locked: false }); break;
       case 'grantStone': if (!hasFlag(`stone:${arg}`)) s.flags.push(`stone:${arg}`); events.emit('stone', { id: arg }); break;
       case 'checkpoint': events.emit('checkpoint', { id: arg }); break;
@@ -514,7 +529,8 @@ export function createPanelModel(act, options = {}) {
       for (let guard = 0; guard < 1000; guard += 1) {
         refreshLinks();
         resumeWalks();
-        if (s.blocking || s.ended) break;
+        // An open archive card pauses the script: reading is never rushed.
+        if (s.blocking || s.ended || s.card) break;
         if (s.queue.length) {
           applyEffect(s.queue.shift());
           continue;
