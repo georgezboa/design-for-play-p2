@@ -93,6 +93,8 @@ async function boot() {
       punch: (id) => scene()?.tt.punch(id),
       hold: (id) => scene()?.tt.hold(id),
       snap: () => scene()?.snapCamera(),
+      // Slow a scripted run down further for a precise beat (QA timescale only).
+      timescale: (v) => scene()?.setQaTimescale(v),
     };
   }
 }
