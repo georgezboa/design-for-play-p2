@@ -1,0 +1,101 @@
+/*
+ * NIGHTFALL shared UI kit (DOM chapters: Echo City, Museum, finales, true
+ * ending). Mirrors the Phaser styling of Chapter 1 (night-service) and
+ * Chapter 2 (borrowed-light) so every chapter speaks one visual language:
+ *   walnut + brass frames, ivory ink, amber for "you can act on this",
+ *   oxblood stamps, Georgia for voice, Space Mono for labels.
+ * Import once per page: `import './shell/uiKit.css'` (path relative).
+ * Text scales with the global Text Size setting via --nf-text-scale
+ * (--nightfall-text-scale, set on <html> by applySettings).
+ */
+:root {
+  --nf-walnut: #1c130d;
+  --nf-walnut-2: #2a1d14;
+  --nf-brass: #b08a4a;
+  --nf-brass-hi: #d9b56e;
+  --nf-ivory: #eadfc6;
+  --nf-paper: #efe4cc;
+  --nf-paper-ink: #2a1d14;
+  --nf-amber: #e0a24a;
+  --nf-teal: #23434a;
+  --nf-oxblood: #8a2a1e;
+  --nf-rose: #c46a7a;
+  --nf-serif: Georgia, 'Times New Roman', 'DejaVu Serif', serif;
+  --nf-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --nf-display: 'Anton', Impact, sans-serif;
+  --nf-scale: var(--nightfall-text-scale, 1);
+}
+
+/* ---------- caption bar (dialogue) ---------- */
+.nf-caption {
+  position: fixed; left: 50%; bottom: max(24px, 3vh); transform: translateX(-50%);
+  width: min(1180px, calc(100vw - 48px)); box-sizing: border-box;
+  padding: calc(14px * var(--nf-scale)) 28px calc(18px * var(--nf-scale));
+  background: linear-gradient(180deg, rgba(28, 19, 13, 0.94), rgba(20, 13, 9, 0.96));
+  border: 2px solid var(--nf-brass); border-radius: 10px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(217, 181, 110, 0.25);
+  color: var(--nf-ivory); z-index: 9000; pointer-events: auto;
+}
+.nf-caption[hidden] { display: none; }
+.nf-caption__speaker {
+  font: 700 calc(15px * var(--nf-scale)) / 1.2 var(--nf-mono); letter-spacing: 0.14em;
+  color: var(--nf-amber); text-transform: uppercase; margin: 0 0 6px;
+}
+.nf-caption__text { font: calc(24px * var(--nf-scale)) / 1.4 var(--nf-serif); margin: 0; }
+.nf-caption__next { position: absolute; right: 18px; bottom: 12px; color: var(--nf-amber); font: calc(22px * var(--nf-scale)) var(--nf-serif); animation: nf-bob 1.4s ease-in-out infinite; }
+.nf-caption__choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.nf-caption__choice {
+  font: calc(16px * var(--nf-scale)) / 1.3 var(--nf-mono); letter-spacing: 0.04em;
+  color: var(--nf-ivory); background: rgba(234, 223, 198, 0.06);
+  border: 1px solid rgba(176, 138, 74, 0.7); border-radius: 6px; padding: 8px 14px; cursor: pointer;
+}
+.nf-caption__choice:hover, .nf-caption__choice:focus-visible { border-color: var(--nf-amber); background: rgba(224, 162, 74, 0.14); outline: none; }
+
+/* ---------- archive card (records, letters, clues) ---------- */
+.nf-card-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(5, 4, 3, 0.62); z-index: 9500; }
+.nf-card {
+  position: relative; width: min(620px, calc(100vw - 48px)); box-sizing: border-box;
+  padding: 34px 40px 30px; color: var(--nf-paper-ink);
+  background: var(--nf-paper) radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%);
+  border-radius: 4px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(42, 29, 20, 0.18);
+  transform: rotate(-0.6deg);
+}
+/* the ticket punch hole every archive card carries */
+.nf-card::before { content: ''; position: absolute; top: 18px; right: 22px; width: 26px; height: 26px; border-radius: 50%; background: rgba(5, 4, 3, 0.85); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(42, 29, 20, 0.15); }
+.nf-card__stamp { font: 700 calc(15px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.18em; color: var(--nf-oxblood); margin: 0 0 10px; text-transform: uppercase; }
+.nf-card__title { font: 700 calc(30px * var(--nf-scale)) / 1.15 var(--nf-serif); margin: 0 0 14px; }
+.nf-card__lines { font: calc(20px * var(--nf-scale)) / 1.5 var(--nf-serif); margin: 0; }
+.nf-card__lines p { margin: 0 0 8px; }
+.nf-card__lines s, .nf-card__lines del { text-decoration-color: #b02a1e; text-decoration-thickness: 3px; }
+.nf-card__close { margin-top: 18px; font: calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.14em; color: #6b5640; text-transform: uppercase; background: none; border: 0; cursor: pointer; padding: 0; }
+.nf-card__close:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 4px; }
+
+/* ---------- paper-tag prompt (interactable marker) ---------- */
+.nf-tag {
+  position: fixed; transform: translate(-50%, -100%); pointer-events: none; z-index: 8800;
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 22px;
+  font: 700 calc(13px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--nf-paper-ink); background: var(--nf-paper);
+  clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%);
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+.nf-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--nf-walnut); }
+.nf-tag::after { content: ''; position: absolute; right: -6px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--nf-amber); box-shadow: 0 0 12px 4px rgba(224, 162, 74, 0.7); animation: nf-glint 2.2s ease-in-out infinite; }
+.nf-tag kbd { font: inherit; color: var(--nf-oxblood); }
+
+/* ---------- chapter title card ---------- */
+.nf-title-card { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 8900; text-align: center; animation: nf-title 4.6s ease both; }
+.nf-title-card__kicker { font: calc(16px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.4em; color: var(--nf-amber); margin: 0 0 10px; }
+.nf-title-card__main { font: calc(64px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; color: var(--nf-ivory); margin: 0; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8); }
+.nf-title-card__rule { width: 360px; height: 2px; margin: 18px auto 0; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
+
+/* ---------- stone row (five sockets) ---------- */
+.nf-stones { display: inline-flex; gap: 10px; }
+.nf-stones i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--nf-brass); background: rgba(0, 0, 0, 0.4); }
+.nf-stones i.is-held { background: radial-gradient(circle at 35% 35%, #ffd79a, var(--nf-amber) 60%, #7a4a18); box-shadow: 0 0 10px rgba(224, 162, 74, 0.7); }
+
+@keyframes nf-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes nf-glint { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
+@keyframes nf-title { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .nf-caption__next, .nf-tag::after { animation: none; } }
+:root[data-reduced-motion='true'] .nf-caption__next, :root[data-reduced-motion='true'] .nf-tag::after { animation: none; }
