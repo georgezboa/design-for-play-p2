@@ -431,7 +431,11 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
     drainpipe(ctx, x0 + (r() < 0.5 ? 14 : w - 20), top, facadeH, r);
   }
   if (platform.style === 'terminal') terminalCanopy(ctx, x0, top, w, r);
-  if (platform.style === 'concourse' || platform.style === 'platform') stationEdge(ctx, x0, top, w, facadeH, r, platform.style);
+  if (platform.style === 'concourse') stationEdge(ctx, x0, top, w, facadeH, r, platform.style);
+  if (platform.style === 'platform') {
+    platformSection(ctx, x0, top, w, facadeH, r);
+    platformProps(ctx, platform, x0, top, r, exclude);
+  }
   if (platform.style === 'gantry') gantryTruss(ctx, x0, top, w, facadeH, r);
   if (platform.style === 'stairhead') stairheadDoor(ctx, x0, top, w, facadeH, r);
   if (platform.style === 'plantroom') plantLouvres(ctx, x0, top, w, facadeH, r);
@@ -622,6 +626,221 @@ function stationEdge(ctx, x0, top, w, h, r, style) {
     ctx.fillRect(x0, top - 260, w, 12);
     inkLine(ctx, x0, top - 261, x0 + w, top - 261, { width: 1.5, alpha: 0.3, r });
   }
+}
+
+// The evacuation platform, in section: coping, tactile edge and a tiled
+// front wall, then the near track bed (ballast, sleepers, rails, puddles)
+// and the viaduct arches dropping into the mist.
+function platformSection(ctx, x0, top, w, h, r) {
+  const T = (dy) => top + dy;
+  // Canopy columns and beam in the headroom (the lamps hang from it).
+  ctx.fillStyle = 'rgba(12,10,8,0.9)';
+  for (let cx = x0 + 120; cx < x0 + w; cx += 300) ctx.fillRect(cx, top - 250, 10, 250);
+  ctx.fillRect(x0, top - 260, w, 12);
+  inkLine(ctx, x0, top - 261, x0 + w, top - 261, { width: 1.5, alpha: 0.3, r });
+
+  // Coping stone, the white edge line and the tactile strip.
+  ctx.fillStyle = '#5a534a';
+  ctx.fillRect(x0 - 8, T(10), w + 16, 10);
+  ctx.fillStyle = 'rgba(234,223,198,0.78)';
+  ctx.fillRect(x0 - 8, T(10), w + 16, 2.5);
+  ctx.fillStyle = '#9c7a2e';
+  ctx.fillRect(x0 - 8, T(20), w + 16, 12);
+  ctx.fillStyle = 'rgba(40,30,12,0.55)';
+  for (let tx = x0 - 4; tx < x0 + w + 8; tx += 9) {
+    ctx.fillRect(tx, T(22), 4, 3);
+    ctx.fillRect(tx + 4, T(27), 4, 3);
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(x0 - 8, T(32), w + 16, 6);
+
+  // Tiled front wall: cream over bottle-green, grimed toward the track.
+  const wallTop = T(38);
+  const wallBot = T(150);
+  const tiles = ctx.createLinearGradient(0, wallTop, 0, wallBot);
+  tiles.addColorStop(0, '#6d6656');
+  tiles.addColorStop(0.55, '#4b4a3e');
+  tiles.addColorStop(0.56, '#23372f');
+  tiles.addColorStop(1, '#121b17');
+  ctx.fillStyle = tiles;
+  ctx.fillRect(x0, wallTop, w, wallBot - wallTop);
+  ctx.fillStyle = 'rgba(0,0,0,0.22)';
+  for (let yy = wallTop + 14; yy < wallBot; yy += 14) ctx.fillRect(x0, yy, w, 1);
+  for (let yy = wallTop, row = 0; yy < wallBot; yy += 14, row += 1) {
+    for (let tx = x0 + (row % 2) * 14; tx < x0 + w; tx += 28) ctx.fillRect(tx, yy, 1, 14);
+  }
+  // Wall bays: posters, and bulkhead lamps with warm spill on the tiles.
+  for (let bx = x0 + 150; bx < x0 + w - 160; bx += 420) {
+    const px = bx + r() * 40;
+    const pw = 96;
+    const ph = 64;
+    ctx.fillStyle = '#16120e';
+    ctx.fillRect(px - 4, T(54) - 4, pw + 8, ph + 8);
+    const hue = r.pick(['#7c3b2a', '#2f5a57', '#6a5a2c', '#3c3550']);
+    ctx.fillStyle = hue;
+    ctx.fillRect(px, T(54), pw, ph);
+    ctx.fillStyle = 'rgba(234,223,198,0.55)';
+    ctx.fillRect(px + 10, T(62), pw - 20, 8);
+    ctx.fillStyle = 'rgba(234,223,198,0.25)';
+    for (let k = 0; k < 3; k += 1) ctx.fillRect(px + 10, T(78) + k * 8, (pw - 20) * (0.5 + r() * 0.5), 3);
+    // Half torn off in the rain.
+    ctx.fillStyle = 'rgba(20,16,12,0.8)';
+    ctx.beginPath(); ctx.moveTo(px + pw, T(54) + ph); ctx.lineTo(px + pw - 26, T(54) + ph); ctx.lineTo(px + pw, T(54) + ph - 30); ctx.closePath(); ctx.fill();
+    const lx = bx + 250;
+    if (lx < x0 + w - 40) {
+      const spill = ctx.createRadialGradient(lx, T(60), 2, lx, T(60), 90);
+      spill.addColorStop(0, 'rgba(242,194,122,0.42)');
+      spill.addColorStop(1, 'rgba(242,194,122,0)');
+      ctx.fillStyle = spill;
+      ctx.fillRect(lx - 90, T(38), 180, 112);
+      ctx.fillStyle = '#16120e';
+      ctx.fillRect(lx - 11, T(50), 22, 16);
+      ctx.fillStyle = 'rgba(255,214,150,0.9)';
+      ctx.fillRect(lx - 7, T(54), 14, 8);
+    }
+  }
+  wetStreaks(ctx, x0, wallTop, w, wallBot - wallTop, r, 0.1);
+  // The dark gap under the platform lip.
+  const lip = ctx.createLinearGradient(0, wallBot, 0, T(172));
+  lip.addColorStop(0, '#07090a');
+  lip.addColorStop(1, 'rgba(7,9,10,0.4)');
+  ctx.fillStyle = lip;
+  ctx.fillRect(x0, wallBot, w, T(172) - wallBot);
+
+  // Near track bed, seen a little from above.
+  const bedTop = T(166);
+  const bedBot = T(262);
+  const ballast = ctx.createLinearGradient(0, bedTop, 0, bedBot);
+  ballast.addColorStop(0, '#1c1f1e');
+  ballast.addColorStop(1, '#2a2a26');
+  ctx.fillStyle = ballast;
+  ctx.fillRect(x0 - 8, bedTop, w + 16, bedBot - bedTop);
+  for (let i = 0; i < w * 0.9; i += 1) {
+    const sx = x0 + r() * w;
+    const sy = bedTop + r() * (bedBot - bedTop);
+    const shade = 40 + Math.floor(r() * 50);
+    ctx.fillStyle = `rgba(${shade},${shade},${shade - 4},0.55)`;
+    ctx.fillRect(sx, sy, 2 + r() * 3, 1.5 + r() * 2);
+  }
+  // Sleepers: trapezoids, narrower at the far rail.
+  for (let sx = x0 + 6; sx < x0 + w; sx += 44) {
+    ctx.fillStyle = '#231a13';
+    ctx.beginPath();
+    ctx.moveTo(sx + 4, T(184)); ctx.lineTo(sx + 24, T(184));
+    ctx.lineTo(sx + 30, T(246)); ctx.lineTo(sx - 2, T(246));
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = 'rgba(234,223,198,0.07)';
+    ctx.fillRect(sx + 4, T(184), 20, 2);
+  }
+  // Puddles in the four-foot, catching the lamps and the sky.
+  for (let px = x0 + 90 + r() * 120; px < x0 + w - 80; px += 260 + r() * 220) {
+    const pw = 70 + r() * 90;
+    const py = T(205) + r() * 30;
+    const pool = ctx.createLinearGradient(0, py - 8, 0, py + 8);
+    pool.addColorStop(0, 'rgba(111,183,173,0.22)');
+    pool.addColorStop(0.5, 'rgba(242,194,122,0.26)');
+    pool.addColorStop(1, 'rgba(111,183,173,0.12)');
+    ctx.fillStyle = pool;
+    ctx.beginPath(); ctx.ellipse(px, py, pw / 2, 6 + r() * 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(234,223,198,0.35)';
+    ctx.fillRect(px - pw * 0.25, py - 1, pw * 0.3, 1.2);
+  }
+  // Two rails: dark web, wet bright head.
+  for (const [ry, thick] of [[T(190), 5], [T(236), 7]]) {
+    ctx.fillStyle = '#0b0c0c';
+    ctx.fillRect(x0 - 8, ry, w + 16, thick + 3);
+    ctx.fillStyle = 'rgba(200,210,208,0.55)';
+    ctx.fillRect(x0 - 8, ry, w + 16, 1.6);
+    ctx.fillStyle = 'rgba(0,0,0,0.4)';
+    for (let cx = x0 + 18; cx < x0 + w; cx += 44) ctx.fillRect(cx, ry + thick, 8, 3);
+    inkLine(ctx, x0 - 8, ry, x0 + w + 8, ry, { width: 1, alpha: 0.25, r, jitter: 0.3 });
+  }
+  // Retaining wall and viaduct arches dropping into the mist.
+  const wallY = bedBot;
+  const ret = ctx.createLinearGradient(0, wallY, 0, top + h);
+  ret.addColorStop(0, '#1d1814');
+  ret.addColorStop(1, '#0a0806');
+  ctx.fillStyle = ret;
+  ctx.fillRect(x0, wallY, w, top + h - wallY);
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(x0 - 8, wallY, w + 16, 8);
+  ctx.fillStyle = 'rgba(0,0,0,0.14)';
+  for (let yy = wallY + 22; yy < top + h; yy += 16) ctx.fillRect(x0, yy, w, 1);
+  for (let ax = x0 + 60; ax < x0 + w - 200; ax += 280) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(ax, top + h);
+    ctx.lineTo(ax, T(390));
+    ctx.arc(ax + 100, T(390), 100, Math.PI, 0);
+    ctx.lineTo(ax + 200, top + h);
+    ctx.closePath();
+    const g = ctx.createLinearGradient(0, T(290), 0, top + h);
+    g.addColorStop(0, 'rgba(5,7,9,1)');
+    g.addColorStop(1, 'rgba(14,27,34,0.9)');
+    ctx.fillStyle = g;
+    ctx.fill();
+    ctx.restore();
+    inkPath(ctx, Array.from({ length: 13 }, (_, i) => [ax + 100 + Math.cos(Math.PI + (i / 12) * Math.PI) * 101, T(390) + Math.sin(Math.PI + (i / 12) * Math.PI) * 101]), { width: 1.4, alpha: 0.28, r });
+  }
+}
+
+// Benches, a luggage cart and a stack of trunks on the platform, painted in
+// the headroom (flat art; never solid) and kept clear of the train door.
+function platformProps(ctx, platform, x0, top, r, exclude = []) {
+  const occupied = exclude.map(([a, b]) => [a - platform.x + x0, b - platform.x + x0]);
+  const free = (x, width) => !occupied.some(([a, b]) => x < b + 10 && x + width > a - 10);
+  const iron = '#0e0b09';
+  const bench = (x) => {
+    ctx.fillStyle = iron;
+    ctx.fillRect(x, top - 34, 120, 7);
+    ctx.fillRect(x + 4, top - 62, 112, 5);
+    ctx.fillRect(x + 4, top - 50, 112, 5);
+    for (const lx of [x + 8, x + 104]) {
+      ctx.fillRect(lx, top - 62, 6, 62);
+      ctx.fillRect(lx - 6, top - 3, 18, 3);
+    }
+    ctx.fillStyle = 'rgba(234,223,198,0.16)';
+    ctx.fillRect(x, top - 34, 120, 1.5);
+    ctx.fillRect(x + 4, top - 62, 112, 1.2);
+    inkLine(ctx, x, top - 34, x + 120, top - 34, { width: 1, alpha: 0.35, r, jitter: 0.3 });
+  };
+  const trunk = (x, y, tw, th, color) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y - th, tw, th);
+    ctx.fillStyle = 'rgba(0,0,0,0.45)';
+    ctx.fillRect(x + tw * 0.22, y - th, 4, th);
+    ctx.fillRect(x + tw * 0.72, y - th, 4, th);
+    ctx.fillRect(x, y - th, tw, 3);
+    ctx.fillStyle = 'rgba(234,223,198,0.14)';
+    ctx.fillRect(x, y - th, tw, 1.2);
+  };
+  const cart = (x) => {
+    ctx.fillStyle = iron;
+    ctx.fillRect(x, top - 30, 150, 8);
+    ctx.fillRect(x + 146, top - 78, 5, 52);
+    ctx.fillRect(x + 146, top - 80, 22, 5);
+    for (const wx of [x + 24, x + 124]) {
+      ctx.beginPath(); ctx.arc(wx, top - 11, 11, 0, Math.PI * 2); ctx.fill();
+    }
+    trunk(x + 6, top - 30, 70, 34, '#3a2a1e');
+    trunk(x + 80, top - 30, 60, 26, '#2c3230');
+    trunk(x + 18, top - 64, 48, 22, '#4a3424');
+  };
+  const place = (wx, width, fn) => {
+    const x = wx - platform.x + x0;
+    if (x < x0 + 10 || x + width > x0 + platform.w - 10 || !free(x, width)) return;
+    occupied.push([x, x + width]);
+    fn(x);
+  };
+  const stack = (x) => { trunk(x, top, 58, 38, '#3a2a1e'); trunk(x + 60, top, 46, 28, '#2a2f2c'); trunk(x + 8, top - 38, 42, 22, '#44301f'); };
+  // World x. The door (about 20410-20500) and the lamp posts (19960, 20260,
+  // 20860, 21160) stay clear.
+  place(20010, 170, cart);
+  place(20284, 108, stack);
+  place(20600, 120, bench);
+  place(20920, 170, cart);
+  place(21250, 120, bench);
+  place(21420, 108, stack);
 }
 
 function gantryTruss(ctx, x0, top, w, h, r) {
