@@ -149,11 +149,6 @@ export const CREDIT_EXTERNAL = Object.freeze([
     source: 'https://quaternius.com/',
   },
   {
-    label: 'CLINT BELLANGER · OPENGAMEART',
-    detail: '16x16 Pipe Tileset, used for the Prologue mechanical-table fittings · CC0',
-    source: 'https://opengameart.org/content/16x16-pipe-tileset',
-  },
-  {
     label: 'UNSPLASH',
     detail: 'Chapter 6 verification-screen photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O\'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee · Unsplash License',
     source: 'https://unsplash.com/license',

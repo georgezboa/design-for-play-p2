@@ -59,8 +59,9 @@ test('an old chapter-2-midpoint save lands in section B in production', () => {
 });
 
 test('Chapter 1 hands off to the new page, and the 1→2 preload profile warms it', () => {
-  const chapter1 = read('src/scenes/GameScene.js');
-  assert.match(chapter1, /markCheckpoint\('chapter-2-start'\)[\s\S]*?preloadChapterId: 'chapter2'[\s\S]*?launchCheckpoint\('chapter-2-start'\)/);
+  const chapter1 = read('src/nightService-main.js');
+  assert.match(chapter1, /function launchChapter2\(\) \{\s*launchCheckpoint\('chapter-2-start'\);/);
+  assert.match(chapter1, /onCheckpoint\('chapter-2-start'\)[\s\S]*?preloadChapterId: 'chapter2',\s*onComplete: launchChapter2/);
   const preloader = read('src/shell/chapterPreloader.js');
   assert.match(preloader, /chapter2: Object\.freeze\(\{\s*route: '\/borrowed-light\.html'/);
 });
@@ -106,8 +107,13 @@ test('the Grid Stone keeps its id, gets a new clue, and is an authored world pic
 });
 
 test('story text: the mechanic line from the spec and Mara\'s letter kept word for word from the old chapter', () => {
-  const old = read('src/cars/cyberpunkParkour/CyberpunkParkourScene.js');
-  for (const line of MARA_LETTER.lines) assert.ok(old.includes(line.replace(/'/g, "\\'")) || old.includes(line), `letter line missing from original: ${line}`);
+  // Mara's letter exactly as the retired Phaser parkour chapter
+  // (src/cars/cyberpunkParkour/CyberpunkParkourScene.js) wrote it.
+  assert.deepEqual(MARA_LETTER.lines, [
+    'Butch— I made it through this city, but I could not wait here.',
+    'The train opened the next door before dawn. I went on.',
+    'If you are following me, keep moving. I will leave another mark where I can. — Mara',
+  ]);
   assert.ok(MECHANIC_LINES.some((l) => /three nights ago\. Took the same roofs\. Said you'd be along\./.test(l.text)));
   assert.ok(MECHANIC_LINES.every((l) => l.speaker === 'ROOFTOP MECHANIC'));
   // Nothing defines Butch's relation to Mara.
