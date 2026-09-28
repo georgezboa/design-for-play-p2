@@ -319,6 +319,44 @@ export class AudioGuide {
     this._click(52, 0.6, 0.12, 0.17);
   }
 
+  // The shared verbs' sounds (docs/CH1_NIGHT_SERVICE_PANELS_SPEC.md §5): the
+  // same partials and envelopes as src/chapters/nightService/audio.js, so the
+  // museum's bell and punch are recognisably the night service's.
+  _tone(freq, { type = 'sine', t = 0, attack = 0.005, peak = 0.2, decay = 0.3, to = null } = {}) {
+    const ctx = this._ensureContext();
+    if (!ctx) return;
+    try {
+      const t0 = ctx.currentTime + t;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, t0);
+      if (to) osc.frequency.exponentialRampToValueAtTime(to, t0 + attack + decay);
+      gain.gain.setValueAtTime(0.0001, t0);
+      gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peak), t0 + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0 + attack + decay);
+      osc.connect(gain).connect(this._sfxBus ?? ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + attack + decay + 0.05);
+    } catch {
+      /* audio is cosmetic */
+    }
+  }
+
+  /** The night service's struck bell: inharmonic partials, ~4 s decay. */
+  trainBell() {
+    [[392, 0.34, 4.5], [784, 0.14, 3.2], [941, 0.1, 2.6], [1176, 0.07, 2.2], [1568, 0.05, 1.6], [2090, 0.03, 1.1], [196, 0.12, 5]]
+      .forEach(([f, p, d]) => this._tone(f, { peak: p, decay: d, attack: 0.004 }));
+    this._noiseBurst({ duration: 0.05, gainValue: 0.12, cutoff: 2400, filterType: 'bandpass' });
+  }
+
+  /** The ticket punch "clack". */
+  punchClack() {
+    this._noiseBurst({ duration: 0.05, gainValue: 0.3, cutoff: 3200, filterType: 'bandpass' });
+    this._tone(180, { type: 'triangle', peak: 0.3, decay: 0.09, to: 90 });
+    this._noiseBurst({ duration: 0.04, when: 0.06, gainValue: 0.14, cutoff: 1800, filterType: 'bandpass' });
+  }
+
   archiveKeyTurn(index) {
     this._click(310 + index * 18, 0.07);
     this._click(150 + index * 6, 0.09, 0.07);

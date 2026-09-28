@@ -27,9 +27,9 @@ panoramas*).
 | 3 | ECHO CITY (3D investigation) | `car03-3d.html` | `src/car03-3d-main.js`, `src/cars/presentCity3d/`, `public/assets/chapter03-3d/` |
 | 4 | THE PAINTED COUNTRY | `painted-country.html` | `src/paintedCountry-main.js`, `src/chapters/paintedCountry/` |
 | 5 | THE MUSEUM OF ONE ANSWER | `museum-3d.html` | `src/chapters/museum3d/`, `public/museum3d/` |
-| 5 | · Door 1 — Labyrinth | `labyrinth.html` | `src/chapters/museum/labyrinth/` |
-| 5 | · Door 2 — Borrowed Grid | `borrowed-grid.html` | `src/chapters/borrowedGrid/` |
-| 5 | · Painted Country revisit | `chapter05-painted-country.html` | `src/chapters/paintedCountry/painted-country-main.js` |
+| 5 | · Door 4 — Labyrinth | `labyrinth.html` | `src/chapters/museum/labyrinth/` |
+| 5 | · Object Pending Classification (lobby exhibit) | `one-answer.html` | `src/chapters/nightService/acts/oneAnswer.js`, `src/chapters/museum3d/oneAnswer/` |
+| 5 | · Painted Country revisit (unreachable in production; kept for the Chapter 4 owner) | `chapter05-painted-country.html` | `src/chapters/paintedCountry/painted-country-main.js` |
 | 6 | ALL WORLDS AT ONCE — the Conductor | `final-boss.html` | `src/chapters/finalBoss/` |
 | 6 | BLACK KNIFE — hidden finale (all five stones) | `hidden-final-boss.html` | `src/chapters/blackKnifeFinal/` |
 | — | The Unfiled Ending | `true-ending.html` | `src/trueEnding-main.js` |
@@ -77,7 +77,8 @@ page gets a `` ` DEV MENU`` link back to the launcher.
 | `borrowed-light.html` | `?section=A\|B\|C` (production honours it only when unlocked), `?timescale=`, `?intro=0` |
 | `car03-3d.html` | `?playtest=chapter3-campfire`, `chapter3-25`, `chapter3-sunrise` |
 | `painted-country.html` | `?qa=drawing`, `?qa=pigments` |
-| `museum-3d.html` | `?beat=corridor`, `?beat=echo&standalone=1`, `?beat=collapse` |
+| `museum-3d.html` | `?beat=corridor`, `?beat=reveal`, `?beat=labyrinth-done`, `?beat=collapse`, `?beat=echo&standalone=1` (Echo City, dev only) |
+| `one-answer.html` | `?step=<step id>`, `?dtmax=1000`; `N` files the exhibit |
 | `final-boss.html` | `?qa=conductor-1..4` |
 | `hidden-final-boss.html` | `?qa=1`, `?easter-egg=1` (skip the five-stone gate) |
 | `true-ending.html` | `?qa=1` (skip the five-stone gate) |
@@ -96,8 +97,8 @@ textures. `npm run assets:prepare` cuts each panorama listed in
 `src/assets/generated/worlds/`, with a generated manifest; `npm run
 assets:check` (run before every dev/prod/build) fails if a source changed
 without regenerating. Four panoramas remain, cropped by Night Service
-(world-01, 03, 07), Borrowed Light and the Museum's Borrowed Grid door
-(world-04).
+(world-01, 03, 07; the Museum's one-answer exhibit reuses 03 and 07) and
+Borrowed Light (world-04).
 
 ## Desktop and Steam builds
 

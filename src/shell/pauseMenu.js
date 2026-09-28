@@ -1,3 +1,4 @@
+import './uiKit.css';
 import './pauseMenu.css';
 import './canvasFocus.css';
 import {
@@ -11,6 +12,7 @@ import {
 } from './saveSystem.js';
 import { getActiveCinematic } from './gameFlow.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
+import { MAGIC_STONE_MEANING, magicStoneRowHtml, magicStoneSnapshot } from './magicStones.js';
 
 const PAUSE_ID = 'nightfall-pause-menu';
 
@@ -67,6 +69,7 @@ export function installPauseMenu({
       <p class="nf-pause-eyebrow">NIGHT SERVICE SUSPENDED</p>
       <h2>PAUSED</h2>
       <p class="nf-pause-checkpoint"></p>
+      <div class="nf-pause-stones" aria-live="polite"></div>
       <nav class="nf-pause-actions"></nav>
       <div class="nf-pause-settings" hidden></div>
       <div class="nf-pause-confirm" hidden role="alertdialog" aria-labelledby="nf-pause-confirm-title" aria-describedby="nf-pause-confirm-copy">
@@ -83,6 +86,15 @@ export function installPauseMenu({
   const settingsPanel = root.querySelector('.nf-pause-settings');
   const confirmPanel = root.querySelector('.nf-pause-confirm');
   const checkpointLine = root.querySelector('.nf-pause-checkpoint');
+  const stonesLine = root.querySelector('.nf-pause-stones');
+  // The five-stone meta-goal is visible from the first pause of the game,
+  // long before the Museum's last stone is offered.
+  const renderStones = () => {
+    let snapshot;
+    try { snapshot = magicStoneSnapshot(); } catch { return; }
+    stonesLine.innerHTML = `<span class="nf-pause-stones__label">UNFILED OBJECTS</span>${magicStoneRowHtml(snapshot)}<span class="nf-pause-stones__count">${snapshot.count} / ${snapshot.total}</span>`;
+    stonesLine.title = MAGIC_STONE_MEANING.join(' ');
+  };
   const status = root.querySelector('.nf-pause-status');
   let paused = false;
   let inSettings = false;
@@ -142,6 +154,7 @@ export function installPauseMenu({
     paused = true;
     root.hidden = false;
     checkpointLine.textContent = describeLastCheckpoint();
+    renderStones();
     setRuntimePaused(true);
     actions.querySelector('button')?.focus();
   };

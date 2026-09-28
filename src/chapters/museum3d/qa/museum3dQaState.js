@@ -1,15 +1,12 @@
-// QA + automation hooks for the P0 graybox. Exposes a readable text snapshot
-// for the Playwright loop and fixed camera views for the required screenshot
-// set. Not part of the player-facing build path.
+// DEV_MODE-only QA + automation hooks for the Museum: a readable text
+// snapshot for the Playwright loop, fixed camera views for screenshots, and
+// shortcuts that drive the real completion paths (never used by gameplay).
 
-// Fixed views required for the Gate 0–1 report:
-//   lobby         — ordinary service lobby
-//   corridor      — archive corridor first pass
-//   echo          — Echo City entrance (spawn plaza, gate ahead)
-//   reclassified  — reclassified lobby (desk in glass, doorway behind)
-import { ECHO_CITY_ENTRY } from '../scenes/EchoCityWalkingSim.js';
 import { COLLAPSE_ENTRY } from '../state/collapseGauntlet.js';
 import { CHAPTER_EXHIBIT_ORDER, chapterExhibit } from '../data/chapterExhibitCatalog.js';
+import { CHAPTER05_DIRECTIONS } from '../directions/directionRegistry.js';
+import { MAGIC_STONES, collectMagicStone } from '../../../shell/magicStones.js';
+import { createSaveStore } from '../../../shell/saveSystem.js';
 import { music } from '../../../shared/musicDirector.js';
 
 export function installQaHooks(app) {
@@ -31,24 +28,24 @@ export function installQaHooks(app) {
       }
     },
 
-    // Drive the real, legal action chain to the reclassified return state
-    // without fades — used by the reclassified screenshot view.
-    playthroughToReturn() {
-      for (const type of [
-        'inspectTicket', 'carryTicket', 'enterCorridor', 'corridorLoop',
-        'enterEchoCity', 'takeNightKit',
-        'openStationPanel', 'switchStationLamp',
-        'releaseMarketPawl', 'lockMarketShutters',
-        'clearFountainGrate', 'restoreFountainCirculation',
-        'unlockArchiveSlot', 'returnArchiveLedger', 'claimNightBadge',
-        'returnTicket', 'returnToMuseum',
-      ]) {
-        app.model.dispatch({ type });
-      }
-      app.directionProgress.dispatch({ type: 'artifact.take', id: 'echo-city' });
-      app.directionProgress.dispatch({ type: 'artifact.display', id: 'echo-city' });
-      app.setActiveScene('lobby');
-      app.getActiveScene().enter(app.model.getSnapshot());
+    // The same path a real completion message takes (the embedded page's
+    // postMessage → direction.complete → close → _onDirectionClosed).
+    completeDirection(id) {
+      app.directionProgress.dispatch({ type: 'direction.complete', id });
+      if (app.directionExhibit.opened) return app.directionExhibit.close();
+      app._onDirectionClosed(id, true);
+      return true;
+    },
+    solveExhibit: () => qa.completeDirection(CHAPTER05_DIRECTIONS.ONE_ANSWER),
+    completeLabyrinth: () => qa.completeDirection(CHAPTER05_DIRECTIONS.LABYRINTH),
+
+    /** Seed `count` magic stones into the active save slot (route QA). */
+    seedStones(count = 5) {
+      const store = createSaveStore();
+      const slot = store.getActiveSlot();
+      if (!store.readAll()[slot]) store.startNew(slot);
+      MAGIC_STONES.slice(0, count).forEach(({ id }) => collectMagicStone(id));
+      return count;
     },
 
     jumpTo(sceneName, spawn) {
@@ -67,22 +64,26 @@ export function installQaHooks(app) {
       if (name === 'lobby') {
         qa.jumpTo('lobby');
         qa.lookAt(-6.2, 0.4, 2, 2.5, 0.02);
-      } else if (name === 'central-display') {
+      } else if (name === 'pending-exhibit') {
         qa.jumpTo('lobby');
-        qa.lookAt(-3.45, 0.1, 1.5, 0, -0.02);
-      } else if (name === 'black-knife-stone') {
+        qa.lookAt(1.0, 2.9, 0.6, 0, -0.3);
+      } else if (name === 'black-ticket-stone') {
         qa.jumpTo('lobby');
-        qa.lookAt(-3.65, 1.25, -3.65, 3.2, -0.03);
+        qa.lookAt(3.3, 2.05, 3.8, 0.7, -0.52);
       } else if (name === 'corridor') {
         qa.jumpTo('corridor', { x: 9.5, z: 0, yaw: -Math.PI / 2 });
-      } else if (name === 'echo') {
-        qa.jumpTo('echo', ECHO_CITY_ENTRY.spawn);
-      } else if (name === 'reclassified') {
-        qa.playthroughToReturn();
-        qa.lookAt(-3.4, -4.4, 1.2, 3.2, 0.02);
-      } else if (name === 'maintenance') {
-        qa.playthroughToReturn();
-        qa.lookAt(0, 7.0, 0, 11.2, -0.04);
+      } else if (name === 'chapter-cases') {
+        qa.jumpTo('corridor');
+        qa.lookAt(22, -0.6, 22, 2, -0.05);
+      } else if (name === 'filed-cases') {
+        qa.jumpTo('corridor');
+        qa.lookAt(22, 0.9, 22, -2, -0.05);
+      } else if (name === 'door-4') {
+        qa.jumpTo('corridor');
+        qa.lookAt(38, -0.8, 38, -2, 0);
+      } else if (name === 'reveal') {
+        qa.jumpTo('lobby');
+        qa.lookAt(-2.2, 2.6, 1.5, 0, -0.18);
       } else if (name === 'collapse-start') {
         qa.jumpTo('corridor', COLLAPSE_ENTRY);
       } else if (name === 'collapse-door') {
@@ -90,7 +91,6 @@ export function installQaHooks(app) {
       } else {
         throw new Error(`unknown QA view: ${name}`);
       }
-      // render one frame immediately so canvas captures are fresh
       app.renderer.render(app.scene, app.camera);
     },
   };
@@ -111,39 +111,23 @@ export function installQaHooks(app) {
         z: Number(app.controller.position.z.toFixed(2)),
         yaw: Number(app.controller.getYaw().toFixed(2)),
         grounded: app.controller.isGrounded,
-        verticalVelocity: Number(app.controller.verticalVelocity.toFixed(2)),
       },
       pointerLocked: app.controller.isLocked,
-      ticket: s.ticket,
-      echoRecord: s.echoRecord,
-      echoGameplay: app.activeSceneName === 'echo'
-        ? app.getActiveScene()?.getGameplayState?.() ?? null
-        : null,
-      minimap: app.minimap?.getSnapshot?.() ?? { visible: false, markers: [] },
-      corridor: s.corridor,
+      exhibit: s.exhibit,
+      labyrinth: s.labyrinth,
       lobby: s.lobby,
       collapse: s.collapse,
       collapseGameplay: app.scenes.get('corridor')?.gauntlet?.getSnapshot?.() ?? null,
       directions: app.directionProgress.getSnapshot(),
-      museumExhibits: CHAPTER_EXHIBIT_ORDER.map((id) => {
-        const exhibit = chapterExhibit(id);
-        return {
-          id,
-          chapter: exhibit.chapter,
-          title: exhibit.title,
-          mode: exhibit.mode,
-          present: id === 'last-train' || app.scenes.get('corridor')?.artifactNiches?.has(id) === true,
-        };
-      }),
+      museumExhibits: CHAPTER_EXHIBIT_ORDER.map((id) => ({ id, ...chapterExhibit(id), present: app.scenes.get('corridor')?.artifactNiches?.has(id) === true })),
       centralDisplay: app.scenes.get('lobby')?.getCentralDisplayState?.() ?? null,
+      echoCityBuilt: app.scenes.has('echo'),
       focusedInteractable: focused ? { id: focused.id, prompt: typeof focused.prompt === 'function' ? focused.prompt() : focused.prompt } : null,
+      card: app.cards.current,
       dialoguePlaying: app.dialogue.isPlaying,
       dialogueLine: app.dialogue.currentLine,
-      dialogueChoice: app.dialogue.choiceState,
-      labyrinthExhibit: {
-        open: app.labyrinth.opened,
-        completed: app.labyrinth.completed,
-      },
+      frameOpen: app.directionExhibit.opened ? app.directionExhibit.directionId : null,
+      labyrinthExhibit: { open: app.labyrinth.opened, completed: app.labyrinth.completed },
       music: music.qa(),
       availableActions: app.model.availableActions(),
     };

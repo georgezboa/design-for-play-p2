@@ -35,6 +35,10 @@ import { buildLayout, worldToCell } from './mazeGenerator.js';
 import { cloneWalls, playerCanReachTargets, stateWouldCrush } from './wingMechanics.js';
 import { StatueNPC } from './StatueNPC.js';
 import { applyWingEntryRules, choosePrimaryHunterId, statueCanDamage } from './labyrinthEncounterRules.js';
+import { cellKey, keysLostOnGameOver, markSeen, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
+
+// unsurveyed cells on the survey map: darker than the surveyed floor
+const MINIMAP_FOG = 0x0a2230;
 import { sfx } from '../../../sfx.js';
 import { labyrinthCues } from './labyrinthCues.js';
 import * as chaseMusic from './chaseMusic.js';
@@ -76,19 +80,31 @@ export class LabyrinthScene extends Phaser.Scene {
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
       e: Phaser.Input.Keyboard.KeyCodes.E,
       enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
+      q: Phaser.Input.Keyboard.KeyCodes.Q,
+      r: Phaser.Input.Keyboard.KeyCodes.R,
     });
-    this.input.keyboard.on('keydown-R', () => {
-      if (this.state === 'over') this.restartCurrentWing();
-      else this.startRun();
+    // Space does nothing here (it is jump everywhere else in the game); it is
+    // captured only so the page never scrolls.
+    // R: from game over it continues at the wing entrance. While playing it
+    // only rebuilds the maze after a 1.5 s hold and a confirm (updateRestart).
+    this.input.keyboard.on('keydown-R', (event) => {
+      if (!event.repeat && this.state === 'over') this.restartCurrentWing();
     });
-    this.input.keyboard.on('keydown-SPACE', (event) => {
+    this.input.keyboard.on('keydown-Y', () => { if (this.state === 'confirm-restart') this.startRun(); });
+    this.input.keyboard.on('keydown-N', () => { if (this.state === 'confirm-restart') this.closeRestartConfirm(); });
+    this.input.keyboard.on('keydown-SHIFT', (event) => {
       if (!event.repeat) this.tryActivateShield();
     });
     this.input.keyboard.on('keydown-E', () => this.tryInteract());
     this.input.keyboard.on('keydown-ENTER', () => this.tryInteract());
+    // Aim-to-face: the mouse turns Butch toward what he should keep in view.
+    this.aimScreen = null;
+    this.input.on('pointermove', (pointer) => { this.aimScreen = { x: pointer.x, y: pointer.y }; });
+    this.input.on('pointerdown', (pointer) => { this.aimScreen = { x: pointer.x, y: pointer.y }; });
+    this.game.canvas?.addEventListener?.('mouseleave', () => { this.aimScreen = null; });
   }
 
-  // Space — consumes one carried shield charge (found as a collectible around
+  // Shift — consumes one carried shield charge (found as a collectible around
   // the maze) to go untouchable by statues for TUNING.shieldDurationMs.
   // Exactly the tool for closing on a key or an exit gate with a hunter
   // nearby without eating a hit for it.
@@ -126,6 +142,10 @@ export class LabyrinthScene extends Phaser.Scene {
 
     this.layout = buildLayout(Math.random);
     this.state = 'playing';
+    this.restartHeldMs = 0;
+    this.lastLostKeys = 0;
+    // fog of war for the survey map: cells Butch's light has touched, per floor
+    this.seenByFloor = [new Set(), new Set()];
     this.caption = { text: '', until: 0 };
     this.artifactReady = false;
     this.artifactTaken = false;
@@ -157,6 +177,10 @@ export class LabyrinthScene extends Phaser.Scene {
     this.buildEntities();
     this.buildHud();
     this.buildMinimap();
+    // the vision cone, drawn over the fog like the Chapter 1 punch-hole lens:
+    // a warm 1978-sepia wedge, an ivory inked edge and a brass rim
+    if (this.coneG) this.coneG.destroy();
+    this.coneG = this.add.graphics().setDepth(55);
 
     this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
     this.cameras.main.startFollow(this.playerSprite, true, 0.14, 0.14);
@@ -773,25 +797,37 @@ export class LabyrinthScene extends Phaser.Scene {
     this.redrawMinimapWalls();
   }
 
+  get seenCells() {
+    return this.seenByFloor?.[this.activeFloor ?? 0] ?? new Set();
+  }
+
+  // Fog of war: the survey starts blank and fills in cell by cell as the
+  // light reaches it (markSeen → paintMinimapCell).
   redrawMinimapWalls() {
     const mm = this.minimap;
     if (!mm) return;
     mm.wallsBake.clear();
-    mm.wallsBake.fill(PAL.mapBackground, 1);
-    for (let gy = 0; gy < GRID_H; gy += 1) {
-      for (let gx = 0; gx < GRID_W; gx += 1) {
-        if (!this.layout.walls[gy][gx]) continue;
-        mm.wallsBake.fill(PAL.mapWall, 0.96, gx * CELL * mm.scale, gy * CELL * mm.scale, Math.ceil(CELL * mm.scale), Math.ceil(CELL * mm.scale));
-      }
+    mm.wallsBake.fill(MINIMAP_FOG, 1);
+    for (const key of this.seenCells) {
+      const [gx, gy] = key.split(',').map(Number);
+      this.paintMinimapCell(gx, gy);
     }
     mm.label.setText(`SURVEY · FLOOR ${this.activeFloor === 0 ? 'I' : 'II'}`);
+  }
+
+  paintMinimapCell(gx, gy) {
+    const mm = this.minimap;
+    if (!mm) return;
+    const size = Math.ceil(CELL * mm.scale);
+    const solid = this.layout.walls[gy]?.[gx];
+    mm.wallsBake.fill(solid ? PAL.mapWall : PAL.mapBackground, solid ? 0.96 : 1, gx * CELL * mm.scale, gy * CELL * mm.scale, size, size);
   }
 
   // Punches a wing gate open on the survey map the moment it unlocks, so
   // the map stays truthful instead of still showing a wall that's gone.
   openGateOnMinimap(gate) {
     const mm = this.minimap;
-    if (!mm) return;
+    if (!mm || !this.seenCells.has(cellKey(gate.cell.x, gate.cell.y))) return;
     mm.wallsBake.fill(
       PAL.mapBackground, 1,
       gate.cell.x * CELL * mm.scale, gate.cell.y * CELL * mm.scale,
@@ -810,10 +846,12 @@ export class LabyrinthScene extends Phaser.Scene {
     // survey objective instead of making the player search the whole maze.
     const allKeys = this.player.keysCollected >= TUNING.keysTotal;
 
-    // Remaining keys.
+    // Remaining keys — only the ones Butch's light has already found
+    // (fog of war: the survey is drawn as you walk it, not handed to you).
     mm.markers.fillStyle(PAL.amber, 1);
     for (const k of this.layout.keys) {
       if (k.collected || (k.wing === 3 && k.floor !== this.activeFloor)) continue;
+      if (!seenAt(this.seenCells, k.x, k.y)) continue;
       const [kx, ky] = toMini(k.x, k.y);
       mm.markers.fillCircle(kx, ky, 3);
     }
@@ -822,6 +860,7 @@ export class LabyrinthScene extends Phaser.Scene {
     mm.markers.fillStyle(PAL.cyan, 1);
     for (const s of this.layout.shields) {
       if (s.collected || (s.wing === 3 && s.floor !== this.activeFloor)) continue;
+      if (!seenAt(this.seenCells, s.x, s.y)) continue;
       const [sx, sy] = toMini(s.x, s.y);
       mm.markers.fillRect(sx - 2.5, sy - 2.5, 5, 5);
     }
@@ -846,7 +885,8 @@ export class LabyrinthScene extends Phaser.Scene {
     mm.markers.fillStyle(PAL.ivory, 1);
     mm.markers.fillTriangle(pts[0][0], pts[0][1], pts[1][0], pts[1][1], pts[2][0], pts[2][1]);
 
-    if (allKeys) {
+    const exitSeen = seenAt(this.seenCells, this.layout.exit.x, this.layout.exit.y);
+    if (allKeys && exitSeen) {
       const [ex, ey] = toMini(this.layout.exit.x, this.layout.exit.y);
       const exitPulse = 0.68 + 0.32 * Math.sin(time / 180);
       mm.markers.lineStyle(2, PAL.torchCore, exitPulse);
@@ -861,6 +901,7 @@ export class LabyrinthScene extends Phaser.Scene {
     let nearestD = Infinity;
     for (const k of this.layout.keys) {
       if (k.collected || (k.wing === 3 && k.floor !== this.activeFloor)) continue;
+      if (!seenAt(this.seenCells, k.x, k.y)) continue;
       const d = Phaser.Math.Distance.Between(this.playerSprite.x, this.playerSprite.y, k.x, k.y);
       if (d < nearestD) {
         nearestD = d;
@@ -873,16 +914,18 @@ export class LabyrinthScene extends Phaser.Scene {
       const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
       const idx = (Math.round(((dirAngle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) + 8) % 8;
       const paces = Math.max(1, Math.round(nearestD / CELL));
-      mm.nearestText.setText(`KEY ${arrows[idx]} ${paces} PACES  ·  ${missing} LEFT`);
-    } else if (allKeys) {
+      mm.nearestText.setText(`KEY ${arrows[idx]} ${pacesLabel(paces)}  ·  ${missing} LEFT`);
+    } else if (allKeys && exitSeen) {
       const exit = this.layout.exit;
       const dirAngle = Math.atan2(exit.y - this.playerSprite.y, exit.x - this.playerSprite.x);
       const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
       const idx = (Math.round(((dirAngle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) + 8) % 8;
       const paces = Math.max(1, Math.round(Phaser.Math.Distance.Between(this.playerSprite.x, this.playerSprite.y, exit.x, exit.y) / CELL));
-      mm.nearestText.setText(`ESCAPE ${arrows[idx]} ${paces} PACES`);
+      mm.nearestText.setText(`ESCAPE ${arrows[idx]} ${pacesLabel(paces)}`);
+    } else if (allKeys) {
+      mm.nearestText.setText('EVERY KEY  ·  FIND THE SEAL');
     } else {
-      mm.nearestText.setText('');
+      mm.nearestText.setText(`${missing} KEY${missing === 1 ? '' : 'S'} LEFT  ·  UNMAPPED`);
     }
 
     mm.pipRow.forEach((pip, i) => {
@@ -965,9 +1008,50 @@ export class LabyrinthScene extends Phaser.Scene {
     this.interactText?.setText('');
     chaseMusic.setChasing(false);
     sfx.gameover();
+    // Something is at stake: the keys found in this wing go back into its dark.
+    const lost = keysLostOnGameOver(this.layout.keys, this.currentWingId);
+    for (const key of lost) {
+      key.collected = false;
+      const view = this.keySprites.find((entry) => entry.data === key);
+      if (view) {
+        this.tweens.add({ targets: view.img, y: key.y - 10, duration: 1400, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+        this.tweens.add({ targets: view.glint, alpha: 0.15, scale: 0.6, duration: 900, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
+      }
+    }
+    this.player.keysCollected = Math.max(0, this.player.keysCollected - lost.length);
+    this.lastLostKeys = lost.length;
+    this.syncFloorEntities();
     this.endOverlay.dim.setVisible(true);
     this.endOverlay.line1.setText(STRINGS.gameOverLine).setColor(css(PAL.red));
-    this.endOverlay.line2.setText(STRINGS.gameOverSub);
+    this.endOverlay.line2.setText(STRINGS.gameOverSub(lost.length));
+  }
+
+  // R held for RESTART_HOLD_MS while playing asks before rebuilding the maze.
+  updateRestart(delta) {
+    if (this.state !== 'playing') { this.restartHeldMs = 0; return; }
+    this.restartHeldMs = this.keys.r.isDown ? this.restartHeldMs + delta : 0;
+    const { phase, progress } = restartHoldPhase(this.restartHeldMs);
+    if (phase === 'confirm') this.openRestartConfirm();
+    else if (phase === 'holding') this.interactText.setText(STRINGS.restartHold(progress));
+  }
+
+  openRestartConfirm() {
+    this.state = 'confirm-restart';
+    this.restartHeldMs = 0;
+    this.playerSprite.body.setVelocity(0, 0);
+    this.interactText.setText('');
+    this.endOverlay.dim.setVisible(true);
+    this.endOverlay.line1.setText(STRINGS.restartConfirmLine).setColor(css(PAL.ivory));
+    this.endOverlay.line2.setText(STRINGS.restartConfirmSub);
+  }
+
+  closeRestartConfirm() {
+    this.state = 'playing';
+    this.endOverlay.dim.setVisible(false);
+    this.endOverlay.line1.setText('');
+    this.endOverlay.line2.setText('');
+    // the pause cannot be used to shake a hunter off
+    this.player.invulnUntil = Math.max(this.player.invulnUntil, this.time.now + 600);
   }
 
   // A full loss restarts the *current wing*, not the entire Labyrinth. The
@@ -1049,7 +1133,9 @@ export class LabyrinthScene extends Phaser.Scene {
     // Clamp so a lag spike (or a backgrounded tab resuming) can't hand a
     // single physics step a huge delta.
     const dt = Math.min(delta, 50);
+    this.updateRestart(dt);
     if (this.state === 'playing') this.updatePlaying(time, dt);
+    else this.coneG?.clear();
     this.updateTorches(time);
     this.renderFog();
     this.updateMinimap(time);
@@ -1184,9 +1270,16 @@ export class LabyrinthScene extends Phaser.Scene {
     this.updateFragmentClues(time);
     const input = this.readInput();
     const moving = input.x !== 0 || input.y !== 0;
-    if (moving) {
-      this.player.facing = { x: input.x, y: input.y };
-    }
+    // Aim-to-face: the mouse aims Butch's gaze (walk one way, watch another);
+    // keyboard-only, he faces where he walks and Q holds his gaze in place.
+    const aim = this.aimScreen ? this.cameras.main.getWorldPoint(this.aimScreen.x, this.aimScreen.y) : null;
+    this.player.facing = resolveFacing({
+      facing: this.player.facing,
+      move: input,
+      aim,
+      player: { x: this.playerSprite.x, y: this.playerSprite.y },
+      hold: this.keys.q.isDown,
+    });
     // Arcade Physics velocity is px/s; TUNING.playerSpeed is px/ms.
     this.playerSprite.body.setVelocity(input.x * TUNING.playerSpeed * 1000, input.y * TUNING.playerSpeed * 1000);
     this.playerSprite.setTexture(facingTexture(this.player.facing));
@@ -1199,6 +1292,13 @@ export class LabyrinthScene extends Phaser.Scene {
     this.playerSprite.setAlpha(invuln ? 0.5 + 0.5 * Math.sin(time / 60) : 1);
     this.playerGlow.setPosition(this.playerSprite.x, this.playerSprite.y - 12);
     this.playerGlow.setAlpha(this.player.torchLit ? 0.38 : 0.08);
+
+    // the survey map fills in wherever the light has reached
+    const lightRadius = this.currentWingId === 0
+      ? TUNING.flashlightRadius
+      : (this.player.torchLit ? TUNING.carriedTorchRadius : TUNING.darkVisionRadius);
+    markSeen(this.seenCells, { x: this.playerSprite.x, y: this.playerSprite.y }, lightRadius, (gx, gy) => this.paintMinimapCell(gx, gy));
+    this.drawVisionCone(time);
 
     // Active-shield aura: track the player, hidden when not up.
     const shieldActive = time < this.player.shieldActiveUntil;
@@ -1390,11 +1490,39 @@ export class LabyrinthScene extends Phaser.Scene {
     }
     const stair = this.nearestStair();
     this.interactText.setText(
-      this.player.shieldTutorialPrompt && !shieldActive
-        ? STRINGS.shieldTutorialPrompt
-        : (stair ? STRINGS.stairHint : ''),
+      this.restartHeldMs > 0
+        ? STRINGS.restartHold(restartHoldPhase(this.restartHeldMs).progress)
+        : this.player.shieldTutorialPrompt && !shieldActive
+          ? STRINGS.shieldTutorialPrompt
+          : (stair ? STRINGS.stairHint : ''),
     );
     if (this.currentWingId === 3) this.wingLabel.setText(`THE LAST GALLERY · FLOOR ${this.activeFloor === 0 ? 'I' : 'II'}`);
+  }
+
+  // The cone the statues test (TUNING.visionConeDeg, the current vision
+  // range, stopped by walls), drawn in the Chapter 1 punch-hole lens
+  // language: warm sepia glass, an ivory inked edge, a brass rim.
+  drawVisionCone(time) {
+    const g = this.coneG;
+    if (!g) return;
+    g.clear();
+    const range = this.player.torchLit ? TUNING.visionRange : TUNING.darkVisionRadius * 1.3;
+    const pts = visionConePoints(this.layout.walls, { x: this.playerSprite.x, y: this.playerSprite.y - 8 }, this.player.facing, { range });
+    const breathe = 0.5 + 0.5 * Math.sin(time / 900);
+    g.fillStyle(0xe0b27a, 0.075 + breathe * 0.02);
+    g.beginPath();
+    g.moveTo(pts[0].x, pts[0].y);
+    for (let i = 1; i < pts.length; i += 1) g.lineTo(pts[i].x, pts[i].y);
+    g.closePath();
+    g.fillPath();
+    g.lineStyle(2, 0xeadfc6, 0.34);
+    g.lineBetween(pts[0].x, pts[0].y, pts[1].x, pts[1].y);
+    g.lineBetween(pts[0].x, pts[0].y, pts[pts.length - 1].x, pts[pts.length - 1].y);
+    g.lineStyle(3, 0xb08a4a, 0.5);
+    g.beginPath();
+    g.moveTo(pts[1].x, pts[1].y);
+    for (let i = 2; i < pts.length; i += 1) g.lineTo(pts[i].x, pts[i].y);
+    g.strokePath();
   }
 
   // Fog-of-war: opaque black overlay, punched through with a soft glow
@@ -1458,6 +1586,9 @@ export class LabyrinthScene extends Phaser.Scene {
       hunterReliefMs: Math.max(0, Math.round(Math.max(this.wingEntryGraceUntil, this.hunterReliefUntil) - this.time.now)),
       artifactReady: this.artifactReady,
       artifactTaken: this.artifactTaken,
+      seenCells: this.seenCells?.size ?? 0,
+      restartHeldMs: Math.round(this.restartHeldMs ?? 0),
+      lastLostKeys: this.lastLostKeys ?? 0,
       statues: this.statues?.map((s) => s.state),
     };
   }

@@ -38,3 +38,8 @@
 .nf-pause-action { font-size: calc(12px * var(--nightfall-text-scale, 1)); }
 .nf-pause-setting { font-size: calc(11px * var(--nightfall-text-scale, 1)); }
 @media (max-width: 560px) { .nf-pause-setting { grid-template-columns: 1fr; gap: 6px; padding: 8px 0; } .nf-pause-setting input[type="checkbox"] { justify-self: start; } }
+
+/* the five-stone row (.nf-stones, src/shell/uiKit.css), shown in every chapter */
+.nf-pause-stones { display: flex; align-items: center; justify-content: center; gap: 12px; margin: -10px 0 22px; font-size: calc(10px * var(--nightfall-text-scale, 1)); letter-spacing: .16em; }
+.nf-pause-stones__label { color: #8d8474; }
+.nf-pause-stones__count { color: #b9a583; }

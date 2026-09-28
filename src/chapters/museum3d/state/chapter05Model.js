@@ -16,8 +16,13 @@ export const PHASES = Object.freeze([
 
 // Legal phase transitions. TransitionDirector is the only runtime consumer
 // allowed to move the player between spaces, and it validates against this.
+//
+// The shipping route is lobby ⇄ corridor, then collapse → complete. The
+// collapse starts from either space once BOTH the lobby exhibit (OBJECT
+// PENDING CLASSIFICATION) and the Labyrinth are done, in either order.
+// `echo-city` / `return` survive only for the dev-only Echo City beat.
 export const PHASE_TRANSITIONS = Object.freeze({
-  lobby: ['corridor'],
+  lobby: ['corridor', 'collapse'],
   corridor: ['echo-city', 'lobby', 'return', 'collapse'],
   'echo-city': ['corridor', 'return'],
   return: [],
@@ -69,8 +74,10 @@ export function createInitialState() {
       cassetteClaimed: false,
       conversationComplete: false,
     },
-    corridor: { pass: 1, guideStandSide: 'south' },
     lobby: { deskReclassified: false },
+    // The one-answer exhibit in the lobby's central case, and Door 4.
+    exhibit: { solved: false },
+    labyrinth: { complete: false },
     collapse: createCollapseState(),
   };
 }
@@ -142,17 +149,6 @@ export function reduce(prev, action) {
       if (!canTransition(state.phase, 'corridor')) return rejected('illegal transition');
       state.phase = 'corridor';
       emit('phase.changed', { phase: 'corridor' });
-      break;
-    }
-    case 'corridorLoop': {
-      // First pass returns the player to the corridor entrance with the guide
-      // stand moved to the opposite wall. Measurable, honest, repeatable once.
-      if (state.phase !== 'corridor' || state.corridor.pass !== 1) {
-        return rejected('corridor does not repeat again');
-      }
-      state.corridor.pass = 2;
-      state.corridor.guideStandSide = 'north';
-      emit('corridor.looped', { pass: 2 });
       break;
     }
     case 'enterEchoCity': {
@@ -352,26 +348,38 @@ export function reduce(prev, action) {
       emit('phase.changed', { phase: 'corridor' });
       break;
     }
-    case 'unlockFinale': {
-      if (state.phase !== 'corridor') return rejected('all directions return through the archive corridor');
-      if (!canTransition(state.phase, 'return')) return rejected('illegal transition');
-      state.phase = 'return';
+    case 'solveExhibit': {
+      // OBJECT PENDING CLASSIFICATION: the player refused the one answer.
+      // The lobby reclassifies its own service desk as evidence (the lost
+      // desk: register open at BUTCH, the phone ringing).
+      if (state.phase !== 'lobby') return rejected('the exhibit is in the lobby');
+      if (state.exhibit.solved) return rejected('the exhibit is already classified');
+      state.exhibit.solved = true;
+      emit('exhibit.solved');
       if (!state.lobby.deskReclassified) {
         state.lobby.deskReclassified = true;
         emit('lobby.deskReclassified');
       }
-      emit('phase.changed', { phase: 'return' });
       break;
     }
     case 'labyrinthComplete': {
       if (state.phase !== 'corridor') return rejected('the Labyrinth must return to the archive corridor');
+      if (state.labyrinth.complete) return rejected('the Labyrinth is already filed');
+      state.labyrinth.complete = true;
+      emit('labyrinth.completed');
+      break;
+    }
+    case 'startCollapse': {
+      // Both halves of the chapter are required, in either order.
+      if (!['lobby', 'corridor'].includes(state.phase)) return rejected('the collapse starts from the lobby or the corridor');
+      if (!state.exhibit.solved) return rejected('the exhibit is still pending');
+      if (!state.labyrinth.complete) return rejected('the Labyrinth still holds its keys');
       if (!canTransition(state.phase, 'collapse')) return rejected('illegal transition');
       const collapse = reduceCollapse(state.collapse, { type: 'collapse.start' });
+      if (collapse.state === state.collapse) return rejected('collapse already started');
       state.collapse = collapse.state;
       state.phase = 'collapse';
-      state.lobby.deskReclassified = true;
       for (const event of collapse.events) events.push(event);
-      emit('lobby.deskReclassified');
       emit('phase.changed', { phase: 'collapse' });
       break;
     }
@@ -433,10 +441,12 @@ export class Chapter05Model {
     if (s.phase === 'lobby' && !s.ticket.inspected) actions.push('inspectTicket');
     if (s.phase === 'lobby' && s.ticket.inspected && !s.ticket.carried) actions.push('carryTicket');
     if (s.phase === 'lobby' && s.ticket.carried) actions.push('enterCorridor');
+    if (s.phase === 'lobby' && !s.exhibit.solved) actions.push('solveExhibit');
     if (s.phase === 'corridor') {
-      if (s.corridor.pass === 1) actions.push('corridorLoop');
       actions.push('leaveCorridor');
+      if (!s.labyrinth.complete) actions.push('labyrinthComplete');
     }
+    if (['lobby', 'corridor'].includes(s.phase) && s.exhibit.solved && s.labyrinth.complete) actions.push('startCollapse');
     if (s.phase === 'echo-city') {
       if (!s.echoRecord.nightKitTaken) actions.push('takeNightKit');
       else if (!s.echoRecord.stationLampOn) actions.push(s.echoRecord.stationPanelOpened ? 'switchStationLamp' : 'openStationPanel');

@@ -160,13 +160,17 @@ test('the collapse lock freezes every trigger while the stones may reveal the hi
   assert.match(designLock, /with all (four|five) it.*BLACK KNIFE/s);
 });
 
-test('Labyrinth completion grants exactly eight keys and enters collapse directly', () => {
+test('the collapse grants exactly eight keys once the exhibit and the Labyrinth are both done', () => {
   const seed = createInitialState();
   seed.phase = 'corridor';
   seed.ticket.inspected = true;
   seed.ticket.carried = true;
+  seed.exhibit.solved = true;
+  seed.lobby.deskReclassified = true;
   const model = new Chapter05Model(seed);
-  const result = model.dispatch({ type: 'labyrinthComplete' });
+  assert.equal(model.dispatch({ type: 'labyrinthComplete' }).changed, true);
+  assert.equal(model.getSnapshot().phase, 'corridor', 'the Labyrinth alone files its keys, it does not collapse the wing');
+  const result = model.dispatch({ type: 'startCollapse' });
   const state = model.getSnapshot();
   assert.equal(result.changed, true);
   assert.equal(state.phase, 'collapse');

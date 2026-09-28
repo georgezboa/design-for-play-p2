@@ -1,11 +1,21 @@
 import { createSaveStore } from './saveSystem.js';
 
+// The five magic stones (docs/STORY_BIBLE.md → Magic stones): records the
+// archive could not file. Holding all five lets Butch reach the line's last
+// carriage. Code ids never change; the fifth keeps `black-knife` but is shown
+// to the player as the BLACK TICKET STONE.
 export const MAGIC_STONES = Object.freeze([
-  Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Zoom deep into the orchard case: beneath the unfinished letter to Rosa.' }),
-  Object.freeze({ id: 'chapter-2', chapter: 2, name: 'GRID STONE', clue: 'High above the blackout roofs, shown only by the afterglow of the rose-line lamp.' }),
-  Object.freeze({ id: 'chapter-3', chapter: 3, name: 'ECHO STONE', clue: 'Found in an unclaimed coat by Seline at the dusk campfire.' }),
-  Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'Tucked behind a loose paper panel in the color room.' }),
-  Object.freeze({ id: 'black-knife', chapter: 6, name: 'BLACK KNIFE STONE', clue: 'Kept in the Museum lobby behind a shattered display pane.' }),
+  Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Night Service: zoom deep into the orchard case, beneath the unfinished letter to Rosa.' }),
+  Object.freeze({ id: 'chapter-2', chapter: 2, name: 'GRID STONE', clue: 'Borrowed Light: a ledge above the roofs that shows only in the afterglow of a punched node.' }),
+  Object.freeze({ id: 'chapter-3', chapter: 3, name: 'ECHO STONE', clue: 'Echo City: left in an unclaimed coat by the campfire.' }),
+  Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'The Painted Country: in the drawing studio, once every colour is back on the page.' }),
+  Object.freeze({ id: 'black-knife', chapter: 5, name: 'BLACK TICKET STONE', clue: 'The Museum: behind the pigment vials in the pending case. Only broken glass reaches it.' }),
+]);
+
+/** What the stones are, in the archive's own words (offer card, pause menu). */
+export const MAGIC_STONE_MEANING = Object.freeze([
+  'A record the archive could not file.',
+  'There are five. Carry all five, and the line’s last carriage opens.',
 ]);
 
 const stoneById = (id) => MAGIC_STONES.find((stone) => stone.id === id);
@@ -29,6 +39,16 @@ export function magicStoneRow(snapshot = magicStoneSnapshot()) {
   return MAGIC_STONES.map(({ id, name }) => ({ id, name, held: snapshot.collected.includes(id) }));
 }
 
+/** The five sockets as `.nf-stones` markup (src/shell/uiKit.css). */
+export function magicStoneRowHtml(snapshot = magicStoneSnapshot(), { pending = null } = {}) {
+  const sockets = magicStoneRow(snapshot).map(({ id, name, held }) => {
+    const cls = held ? 'is-held' : id === pending ? 'is-pending' : '';
+    const label = held ? name : id === pending ? `${name} (here)` : 'an empty socket';
+    return `<i class="${cls}" title="${label}" aria-label="${label}"></i>`;
+  }).join('');
+  return `<span class="nf-stones" role="img" aria-label="${snapshot.count} of ${snapshot.total} stones held">${sockets}</span>`;
+}
+
 export function collectMagicStone(id, storage = globalThis.localStorage) {
   if (!stoneById(id)) return null;
   const store = createSaveStore(storage);
@@ -41,16 +61,27 @@ function installStyles() {
   if (document.getElementById('nightfall-magic-stone-style')) return;
   const style = document.createElement('style');
   style.id = 'nightfall-magic-stone-style';
+  // The offer is a punched archive card (`.nf-card`, src/shell/uiKit.css);
+  // these rules only add the stone, the socket row and the two choices.
   style.textContent = `
-    .nf-stone-offer{position:fixed;inset:0;z-index:10020;display:grid;place-items:center;background:radial-gradient(circle at 50% 43%,rgba(31,50,61,.64),rgba(1,3,5,.96) 56%);color:#e9e4d5;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-    .nf-stone-card{width:min(520px,calc(100vw - 32px));padding:30px 32px 26px;text-align:center;border:1px solid rgba(122,235,255,.5);background:linear-gradient(145deg,rgba(8,13,16,.98),rgba(18,12,20,.98));box-shadow:0 0 80px rgba(67,233,255,.16)}
-    .nf-stone-gem{width:68px;height:82px;margin:0 auto 20px;clip-path:polygon(50% 0,90% 28%,78% 78%,50% 100%,22% 78%,10% 28%);background:radial-gradient(circle at 38% 28%,#fff 0 4%,#7aeaff 8%,#795ab4 48%,#130d23 82%);filter:drop-shadow(0 0 18px rgba(92,225,255,.75));animation:nfStonePulse 1.8s ease-in-out infinite}
-    .nf-stone-card small{display:block;color:#66ddea;letter-spacing:.22em}.nf-stone-card h2{margin:10px 0 12px;font:600 24px Georgia,serif;letter-spacing:.08em}.nf-stone-card p{min-height:42px;color:#bcb6a8;line-height:1.55}
-    .nf-stone-actions{display:flex;gap:12px;justify-content:center;margin-top:24px}.nf-stone-actions button{min-width:170px;padding:12px 16px;border:1px solid #59717a;background:#0b1114;color:#e9e4d5;font:700 12px ui-monospace,monospace;letter-spacing:.12em;cursor:pointer}.nf-stone-actions button:first-child{border-color:#65ddea;color:#8cecff}.nf-stone-count{margin-top:18px;color:#747d80;font-size:11px;letter-spacing:.14em}
-    @keyframes nfStonePulse{50%{transform:translateY(-5px) scale(1.04);filter:drop-shadow(0 0 30px rgba(92,225,255,.92))}}
+    .nf-stone-offer{z-index:10020;background:radial-gradient(circle at 50% 42%,rgba(40,27,16,.55),rgba(5,4,3,.9) 62%)}
+    .nf-stone-offer .nf-card{display:grid;grid-template-columns:86px 1fr;column-gap:22px;align-items:start}
+    .nf-stone-offer .nf-stone-gem{grid-row:1 / span 3;width:70px;height:70px;margin-top:6px;border-radius:44% 56% 52% 48% / 58% 44% 56% 42%;background:radial-gradient(circle at 36% 30%,#8c8378 0 6%,#3d3833 26%,#161311 72%);box-shadow:inset -6px -8px 14px rgba(0,0,0,.55),0 8px 18px rgba(0,0,0,.35)}
+    .nf-stone-offer .nf-stone-gem.is-ember{background:radial-gradient(circle at 36% 30%,#ffd79a 0 6%,#e0a24a 30%,#6b2a22 80%)}
+    .nf-stone-offer .nf-card__lines{grid-column:2}
+    .nf-stone-offer .nf-stone-row{grid-column:2;display:flex;align-items:center;gap:12px;margin:14px 0 4px;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;color:#6b5640}
+    .nf-stone-offer .nf-stones i{border-color:#8a6934;background:rgba(42,29,20,.18)}
+    .nf-stone-offer .nf-stones i.is-held{background:radial-gradient(circle at 35% 35%,#ffd79a,#e0a24a 60%,#7a4a18);box-shadow:0 0 8px rgba(224,162,74,.55)}
+    .nf-stone-offer .nf-stones i.is-pending{border-style:dashed;border-color:#8a2a1e}
+    .nf-stone-offer .nf-stone-actions{grid-column:2;display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
+    .nf-stone-offer .nf-stone-actions button{padding:10px 16px;border:1px solid #8a6934;border-radius:4px;background:#2a1d14;color:#eadfc6;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;cursor:pointer}
+    .nf-stone-offer .nf-stone-actions button[data-leave]{background:transparent;color:#6b5640}
+    .nf-stone-offer .nf-stone-actions button:focus-visible,.nf-stone-offer .nf-stone-actions button:hover{outline:2px solid #e0a24a;outline-offset:2px}
   `;
   document.head.append(style);
 }
+
+const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => `&#${char.charCodeAt(0)};`);
 
 export function offerMagicStone(id, { storage = globalThis.localStorage } = {}) {
   const stone = stoneById(id);
@@ -61,25 +92,32 @@ export function offerMagicStone(id, { storage = globalThis.localStorage } = {}) 
   globalThis.NIGHTFALL_STONE_OFFER = true;
   return new Promise((resolve) => {
     const root = document.createElement('section');
-    root.className = 'nf-stone-offer';
+    root.className = 'nf-card-backdrop nf-stone-offer';
     root.setAttribute('role', 'dialog');
     root.setAttribute('aria-modal', 'true');
-    root.innerHTML = `<div class="nf-stone-card"><div class="nf-stone-gem"></div><small>AN UNFILED OBJECT</small><h2>${stone.name}</h2><p>${stone.clue}</p><div class="nf-stone-actions"><button data-take>TAKE THE STONE · E</button><button data-leave>LEAVE IT</button></div><div class="nf-stone-count">FOUND ${before.count} / ${before.total}</div></div>`;
+    root.innerHTML = `<article class="nf-card">
+      <div class="nf-stone-gem${id === 'chapter-1' ? ' is-ember' : ''}" aria-hidden="true"></div>
+      <p class="nf-card__stamp">AN UNFILED OBJECT</p>
+      <h2 class="nf-card__title">${escapeHtml(stone.name)}</h2>
+      <div class="nf-card__lines">${MAGIC_STONE_MEANING.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div>
+      <div class="nf-stone-row">${magicStoneRowHtml(before, { pending: id })}<span>${before.count} / ${before.total} HELD</span></div>
+      <div class="nf-stone-actions"><button type="button" data-take>TAKE IT · E</button><button type="button" data-leave>LEAVE IT · L</button></div>
+    </article>`;
     document.body.append(root);
     const finish = (taken) => {
       if (taken) collectMagicStone(id, storage);
       globalThis.NIGHTFALL_STONE_OFFER = false;
-      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('keydown', onKey, true);
       root.remove();
       resolve(taken);
     };
     const onKey = (event) => {
-      if (event.code === 'KeyE' || event.code === 'Enter') { event.preventDefault(); finish(true); }
-      else if (event.code === 'KeyL') { event.preventDefault(); finish(false); }
+      if (event.code === 'KeyE' || event.code === 'Enter') { event.preventDefault(); event.stopImmediatePropagation(); finish(true); }
+      else if (event.code === 'KeyL') { event.preventDefault(); event.stopImmediatePropagation(); finish(false); }
     };
     root.querySelector('[data-take]').addEventListener('click', () => finish(true));
     root.querySelector('[data-leave]').addEventListener('click', () => finish(false));
-    window.addEventListener('keydown', onKey);
+    window.addEventListener('keydown', onKey, true);
     root.querySelector('[data-take]').focus();
   });
 }

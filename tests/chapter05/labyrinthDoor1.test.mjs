@@ -64,14 +64,13 @@ function makeStatue(walls, spawnCell, spawnPos) {
   return new StatueNPC(walls, spawnCell, spawnPos, 0, sprite);
 }
 
-test('Door 4 exposes one formal Chapter 5 route, message, and artifact contract', () => {
+test('Door 4 exposes one formal Chapter 5 route and message contract', () => {
   assert.equal(LABYRINTH_CHAPTER05_CONTRACT.doorNumber, 4);
   assert.equal(LABYRINTH_CHAPTER05_CONTRACT.artifactLabel, 'Looking Fragment');
   const definition = directionDefinition(CHAPTER05_DIRECTIONS.LABYRINTH);
   assert.equal(definition.src, LABYRINTH_CHAPTER05_CONTRACT.embeddedSrc);
   assert.equal(definition.completeMessage, LABYRINTH_CHAPTER05_CONTRACT.completeMessage);
   assert.equal(definition.exitMessage, LABYRINTH_CHAPTER05_CONTRACT.exitMessage);
-  assert.equal(definition.artifactId, LABYRINTH_CHAPTER05_CONTRACT.artifactId);
   assert.equal(definition.title, '4');
   assert.match(labyrinthEntry, /LABYRINTH_CHAPTER05_CONTRACT\.completeMessage/);
   assert.match(labyrinthEntry, /LABYRINTH_CHAPTER05_CONTRACT\.exitMessage/);
@@ -98,7 +97,7 @@ test('Chapter 3 Escape opens the shared pause menu instead of quitting to the ti
   assert.match(pauseMenu, /if \(onEscape\(\) !== false\) return/);
 });
 
-test('Door 4 completion grants the corridor route while the Looking Fragment stays pre-displayed', () => {
+test('Door 4 completion files the Labyrinth and nothing else', () => {
   const previousWindow = globalThis.window;
   const parentWindow = {};
   let messageListener = null;
@@ -137,19 +136,14 @@ test('Door 4 completion grants the corridor route while the Looking Fragment sta
       data: { type: LABYRINTH_CHAPTER05_CONTRACT.completeMessage },
     });
 
-    // V02 leaves the Looking Fragment in its pre-display niche. The complete
-    // message closes Door 1 and makes the eight-key gauntlet eligible to start.
-    let snapshot = progress.getSnapshot();
+    // The complete message closes the frame and files Door 4. The collapse
+    // still needs the lobby exhibit too (chapter model `startCollapse`).
+    const snapshot = progress.getSnapshot();
     assert.equal(exhibit.opened, false);
-    assert.equal(snapshot.carriedArtifact, null);
     assert.equal(snapshot.completed[LABYRINTH_CHAPTER05_CONTRACT.id], true);
-    assert.equal(snapshot.artifacts[LABYRINTH_CHAPTER05_CONTRACT.artifactId].displayed, true);
-    assert.equal(snapshot.allComplete, true);
-
-    // A finished Door 1 run must not accidentally file any other direction.
-    assert.equal(snapshot.completed[CHAPTER05_DIRECTIONS.BORROWED_GRID], false);
+    assert.equal(snapshot.allComplete, false, 'the one-answer exhibit is still pending');
+    assert.equal(snapshot.completed[CHAPTER05_DIRECTIONS.ONE_ANSWER], false);
     assert.equal(snapshot.completed[CHAPTER05_DIRECTIONS.ECHO_CITY], false);
-    assert.equal(snapshot.completed[CHAPTER05_DIRECTIONS.PAINTED_COUNTRY], false);
   } finally {
     globalThis.window = previousWindow;
   }
@@ -180,7 +174,7 @@ test('the labyrinth stays the full four-wing, eight-key, eight-statue maze', () 
   assert.ok(inWing(layout.exit, layout.wings[3]));
 });
 
-test('a full loss returns to the current wing entrance without erasing route progress', () => {
+test('a full loss returns to the current wing entrance, keeping opened routes', () => {
   const layout = buildLayout(() => 0.5);
   assert.equal(layout.wingStarts.length, 4);
   for (const start of layout.wingStarts) {
@@ -190,7 +184,7 @@ test('a full loss returns to the current wing entrance without erasing route pro
   assert.match(labyrinthScene, /this\.layout\.wingStarts\[wingId\]/);
   assert.match(labyrinthScene, /this\.player\.lives = TUNING\.lives/);
   assert.match(labyrinthScene, /if \(statue\.wing === wingId\) statue\.resetToSpawn\(\)/);
-  assert.equal(STRINGS.gameOverSub, "RETURN TO THIS WING'S ENTRANCE   ·   [R] CONTINUE");
+  assert.match(STRINGS.gameOverSub(0), /\[R\] RETURN TO ITS ENTRANCE/);
 });
 
 test('a statue freezes under the player gaze and hunts once unseen', () => {
@@ -468,12 +462,12 @@ test('the scene keeps the locked state machine and readable statue states', () =
   assert.doesNotMatch(labyrinthScene, /\.mp3/);
 });
 
-test('the first shield is taught and activated with Space', () => {
-  assert.match(STRINGS.controls, /SPACE\s+SHIELD/);
-  assert.match(STRINGS.shieldFirstFoundNote, /PRESS SPACE/);
-  assert.match(STRINGS.shieldTutorialPrompt, /SPACE/);
-  assert.match(labyrinthScene, /keydown-SPACE/);
-  assert.doesNotMatch(labyrinthScene, /keydown-Q/);
+test('the first shield is taught and activated with Shift (Space is jump everywhere else)', () => {
+  assert.match(STRINGS.controls, /SHIFT\s+SHIELD/);
+  assert.match(STRINGS.shieldFirstFoundNote, /PRESS SHIFT/);
+  assert.match(STRINGS.shieldTutorialPrompt, /SHIFT/);
+  assert.match(labyrinthScene, /keydown-SHIFT/);
+  assert.doesNotMatch(labyrinthScene, /keydown-SPACE/);
   assert.match(labyrinthScene, /shieldTutorialThreatRadius/);
 });
 

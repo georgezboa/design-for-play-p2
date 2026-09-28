@@ -1,19 +1,21 @@
-// Beat 2 — V02 Chapter 5 archive corridor and collapse gauntlet.
-// Only Door 4 (The Labyrinth) is playable in this route. The first three
-// directions survive as pre-displayed records behind sealed archive shutters.
+// Beat 2 — the archive corridor and the collapse gauntlet.
+//
+//   north wall (left walking east): three FILED CLAIM cabinets (x 14/22/30,
+//     the archive's one clean answer, each a readable card), then Door 4 —
+//     THE LABYRINTH (x 38), the only door that opens;
+//   south wall (right): the four chapter cases, Chapter 1 → 4 (x 14/22/30/38);
+//   east wall (x 42): the Final Archive door with the Labyrinth's eight keyholes.
 //
 // Layout: x ∈ [8, 42], z ∈ [-2, 2], ceiling 3.2. Entrance from lobby at x=8.
 
 import * as THREE from 'three';
-import { COLORS } from '../config.js';
-import { mat, emissiveMat, flatMat, box, plane, label, fluorescentFixture, glassMat, hitProxy } from '../util/graybox.js';
+import { mat, emissiveMat, box, plane, label, fluorescentFixture, glassMat, hitProxy } from '../util/graybox.js';
 import { createMuseumMaterialLibrary } from '../assets/MuseumMaterials.js';
-import { addAcousticCeilingGrid, createGuidePedestal, createPublicBench, createWallRadiator } from '../assets/MuseumProps.js';
+import { addAcousticCeilingGrid, createPublicBench, createWallRadiator } from '../assets/MuseumProps.js';
 import { CHAPTER05_DIRECTIONS, isDirectionPlayable } from '../directions/directionRegistry.js';
 import { directionAtDoorway } from '../directions/directionDoorways.js';
-import { animateReturnArtifact, createReturnArtifact } from '../assets/ReturnArtifacts.js';
-import { createChapterSupportingElements } from '../assets/ChapterExhibitElements.js';
-import { chapterExhibit, exhibitDialogue } from '../data/chapterExhibitCatalog.js';
+import { animateChapterCaseObject, createChapterCaseObject } from '../assets/ChapterCaseObjects.js';
+import { CHAPTER_EXHIBIT_ORDER, FILED_CLAIMS, MUSEUM_DATE, chapterExhibit, exhibitCard } from '../data/chapterExhibitCatalog.js';
 import { CollapseGauntletDirector } from '../systems/CollapseGauntletDirector.js';
 import { COLLAPSE_STRINGS } from '../state/collapseGauntlet.js';
 
@@ -128,62 +130,27 @@ export class ArchiveCorridor {
       this.ceilingFixtures.push(fixture);
     }
 
-    // ---- One sealed first door, two sealed records, then Door 4 Labyrinth. ----
-    this._recordDoors = [];
-    this._sealArchiveBay(g, { x: 14, id: 'record-1', number: '1' });
-    this._sealArchiveBay(g, { x: 22, id: 'borrowed-grid', number: '2' });
-    this._sealArchiveBay(g, { x: 30, id: 'echo-city', number: '3' });
+    // ---- three filed claims, then Door 4 — the Labyrinth. ----
+    this.filedCases = FILED_CLAIMS.map((claim, index) => this._filedCase(g, { x: 14 + index * 8, claim }));
     this.labyrinthScreen = this._numberedDoor(g, {
       x: 38,
       id: 'labyrinth',
       number: '4',
       screenColor: 0x21131a,
     });
-    // Door 4 is the only playable museum door. Give it a visible interaction
-    // point so the player does not have to guess which part of the panel owns E.
-    this.labyrinthInteractPoint = new THREE.Group();
-    this.labyrinthInteractPoint.name = 'door-4-interaction-point';
-    this.labyrinthInteractPoint.position.set(38.62, 1.02, -1.77);
-    const pointRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.11, 0.022, 10, 28),
-      new THREE.MeshBasicMaterial({ color: 0xf0c56d, depthTest: false }),
-    );
-    pointRing.name = 'door-4-interact-ring';
-    const pointCore = new THREE.Mesh(
-      new THREE.SphereGeometry(0.035, 12, 8),
-      new THREE.MeshBasicMaterial({ color: 0xffe4a0, depthTest: false }),
-    );
-    pointCore.position.z = 0.015;
-    this.labyrinthInteractPoint.add(pointRing, pointCore);
-    g.add(this.labyrinthInteractPoint);
 
-    // The whole journey is already catalogued before the Labyrinth opens. Keep
-    // the approved spatial order and collapse choreography; the new chapter
-    // headings make each record's origin clear without moving its fixed case.
+    // The whole journey is already catalogued: Chapter 1 → 4 walking east.
     this.artifactNiches = new Map();
-    for (const [id, x] of [
-      [CHAPTER05_DIRECTIONS.LABYRINTH, 38],
-      [CHAPTER05_DIRECTIONS.BORROWED_GRID, 22],
-      [CHAPTER05_DIRECTIONS.ECHO_CITY, 30],
-      [CHAPTER05_DIRECTIONS.PAINTED_COUNTRY, 14],
-    ]) {
-      this.artifactNiches.set(id, this._artifactNiche(g, { id, x }));
-    }
-    label(g, 'MEMORY TRANSLATION INDEX\nTHE ARCHIVE PRESERVES EACH MEMORY AS A DIFFERENT LAW', {
-      x: 10.6, y: 2.66, z: 1.81, w: 4.3, h: 0.62,
-      fg: '#d8caa5', bg: '#171a18', font: 'bold 28px Georgia, serif',
+    CHAPTER_EXHIBIT_ORDER.forEach((id, index) => {
+      this.artifactNiches.set(id, this._artifactNiche(g, { id, x: 14 + index * 8 }));
+    });
+    label(g, `CLAIM 1978-0412\nFILED ${MUSEUM_DATE}`, {
+      x: 10.6, y: 2.66, z: 1.81, w: 3.4, h: 0.62,
+      fg: '#d8caa5', bg: '#171a18', font: 'bold 30px Georgia, serif',
       rotationY: Math.PI,
     });
 
     this.finalDoor = this._finalArchiveDoor(g);
-
-    // guide stand — south side on pass 1, north side after the loop
-    this.guideStand = new THREE.Group();
-    g.add(this.guideStand);
-    const guideAssembly = createGuidePedestal(this.materials);
-    this.guideStand.add(guideAssembly.group);
-    hitProxy(this.guideStand, { x: 0, y: 1.2, z: 0, w: 0.8, h: 0.9, d: 0.8, name: 'corridor-guide-proxy' });
-    this._applyStandSide('south');
 
     // Waiting furniture is ordinary civic stock, not abstract gray boxes.
     for (const bx of [17.5, 26.5]) {
@@ -263,83 +230,87 @@ export class ArchiveCorridor {
     // nearest legal standing position. A deep box reaches into the collision
     // boundary and lets the camera end up *inside* the proxy; Three's default
     // front-face raycast then cannot see a way back out of it.
-    return hitProxy(g, {
+    const proxy = hitProxy(g, {
       x, y: 1.35, z: -1.82, w: 2.4, h: 2.3, d: 0.12,
       name: `${id}-interaction-proxy`,
     });
+    proxy.userData.tagAnchor = 0.97; // over the door panel, above the numeral frame
+    return proxy;
   }
 
-  _sealArchiveBay(g, { x, id, number }) {
-    const shutter = new THREE.Group();
-    shutter.name = `${id}-standalone-shutter`;
-    shutter.position.set(x, 0, -1.73);
-    g.add(shutter);
-    box(shutter, {
-      x: 0, y: 1.25, z: 0, w: 1.86, h: 2.32, d: 0.08,
-      material: this.materials.oliveSteel,
-      name: `${id}-standalone-panel`,
-      collide: true,
-      collisionWorld: this.ctx.collisionWorld,
-    });
-    for (const y of [0.38, 0.76, 1.14, 1.52, 1.9, 2.26]) {
-      box(shutter, { x: 0, y, z: 0.055, w: 1.68, h: 0.028, d: 0.025, material: this.materials.brass, name: 'sealed-rail' });
+  // A former sealed shutter, now a glass-fronted filing cabinet: drawers of
+  // index cards and one claim card propped behind the glass. E reads it.
+  _filedCase(g, { x, claim }) {
+    const group = new THREE.Group();
+    group.name = `${claim.id}-filed-case`;
+    group.position.set(x, 0, -1.8);
+    g.add(group);
+    const m = this.materials;
+    // close the old doorway behind it: this bay no longer leads anywhere
+    box(g, { x, y: 1.25, z: -2, w: 2.02, h: 2.5, d: 0.3, material: m.wallDark, name: `${claim.id}-bay-infill-wall`, collide: true, collisionWorld: this.ctx.collisionWorld });
+    box(group, { x: 0, y: 0.62, z: 0, w: 1.72, h: 1.24, d: 0.34, material: m.walnutDark, name: `${claim.id}-cabinet` });
+    this.ctx.collisionWorld.addBoxFromCenterSize(x, -1.8, 1.72, 0.34, `${claim.id}-cabinet`);
+    for (let row = 0; row < 3; row += 1) {
+      for (let col = 0; col < 3; col += 1) {
+        const dx = (col - 1) * 0.54;
+        const dy = 0.22 + row * 0.34;
+        box(group, { x: dx, y: dy, z: 0.172, w: 0.5, h: 0.3, d: 0.02, material: m.walnut, name: `${claim.id}-drawer` });
+        box(group, { x: dx, y: dy + 0.07, z: 0.186, w: 0.16, h: 0.028, d: 0.02, material: m.brass, name: `${claim.id}-drawer-pull` });
+        label(group, '1978-0412', { x: dx, y: dy - 0.05, z: 0.184, w: 0.22, h: 0.07, fg: '#2a1d14', bg: '#e6dcc2', font: 'bold 44px "Courier New", monospace' });
+      }
     }
-    box(shutter, { x: 0, y: 1.26, z: 0.085, w: 1.2, h: 0.46, d: 0.035, material: this.materials.walnutDark, name: 'sealed-accession-plate' });
-    label(shutter, 'RECORD SEALED', { x: 0, y: 1.3, z: 0.112, w: 1.08, h: 0.32, fg: '#b6b09e', bg: '#111416', font: 'bold 46px Georgia, serif' });
-    if (number) label(shutter, number, { x: 0, y: 2.52, z: 0.112, w: 0.58, h: 0.42, fg: '#d8d4c9', bg: '#111416', font: 'bold 62px Georgia, serif' });
-    const lock = new THREE.Mesh(new THREE.TorusGeometry(0.12, 0.025, 8, 20), this.materials.brass);
-    lock.name = 'sealed-lock-ring';
-    lock.position.set(0.59, 0.54, 0.11);
-    lock.rotation.x = Math.PI / 2;
-    shutter.add(lock);
+    // the vitrine on top, holding the claim card
+    box(group, { x: 0, y: 1.26, z: 0, w: 1.8, h: 0.05, d: 0.4, material: m.brass, name: `${claim.id}-cap` });
+    box(group, { x: 0, y: 1.72, z: 0.02, w: 1.7, h: 0.86, d: 0.02, material: emissiveMat(0x0c0b09, 0.2), name: `${claim.id}-back` });
+    box(group, { x: 0, y: 1.72, z: 0.19, w: 1.74, h: 0.9, d: 0.012, material: glassMat(), name: `${claim.id}-glass` });
+    const card = label(group, `${claim.title}\n${claim.stamp}`, {
+      x: 0, y: 1.74, z: 0.06, w: 1.3, h: 0.46,
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 30px Georgia, serif',
+    });
+    card.rotation.x = -0.05;
+    const punch = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({ color: 0x050403 }));
+    punch.position.set(0.56, 1.9, 0.064);
+    group.add(punch);
+    const light = new THREE.PointLight(0xffd7a1, 1.2, 2.4, 2);
+    light.position.set(0, 2.1, 0.4);
+    group.add(light);
+    const proxy = hitProxy(group, { x: 0, y: 1.2, z: 0.24, w: 1.8, h: 2.1, d: 0.1, name: `${claim.id}-interaction-proxy` });
+    proxy.userData.tagAnchor = 1; // above the vitrine, never on the claim card
+    return { id: claim.id, claim, group, proxy };
   }
 
   _artifactNiche(g, { id, x }) {
     const exhibit = chapterExhibit(id);
     const group = new THREE.Group();
-    group.name = `${id}-return-niche`;
+    group.name = `${id}-chapter-case`;
     group.position.set(x, 0, 1.86);
     g.add(group);
     box(group, { x: 0, y: 1.42, z: 0.07, w: 2.25, h: 1.54, d: 0.16, material: this.materials.walnutDark, name: `${id}-niche-frame` });
     box(group, { x: 0, y: 1.42, z: -0.03, w: 2.02, h: 1.30, d: 0.08, material: emissiveMat(0x080a0b, 0.2), name: `${id}-niche-back` });
     const glass = box(group, { x: 0, y: 1.42, z: -0.24, w: 2.07, h: 1.34, d: 0.012, material: glassMat(), name: `${id}-niche-glass` });
-    const artifact = createReturnArtifact(id);
-    artifact.position.set(0, 1.48, -0.17);
-    artifact.scale.setScalar(id === CHAPTER05_DIRECTIONS.LABYRINTH
-      ? 1.1
-      : id === CHAPTER05_DIRECTIONS.ECHO_CITY ? 1.3 : 1.22);
+    const artifact = createChapterCaseObject(id);
+    artifact.position.set(0, 1.46, -0.14);
+    artifact.scale.multiplyScalar(1.45);
     artifact.rotation.y = Math.PI;
     artifact.visible = true;
     group.add(artifact);
-    const supportingElements = createChapterSupportingElements(id);
-    supportingElements.position.set(0, 1.40, -0.16);
-    supportingElements.scale.setScalar(0.88);
-    supportingElements.rotation.y = Math.PI;
-    group.add(supportingElements);
-    const light = new THREE.PointLight(id === CHAPTER05_DIRECTIONS.BORROWED_GRID ? 0x55ddd5 : 0xffd7a1, id === CHAPTER05_DIRECTIONS.BORROWED_GRID ? 2.4 : 1.8, 3.4, 2);
+    const light = new THREE.PointLight(0xffd7a1, 1.8, 3.4, 2);
     light.position.set(0, 1.6, -0.55);
     group.add(light);
     const proxy = hitProxy(group, { x: 0, y: 1.42, z: -0.32, w: 2.25, h: 1.54, d: 0.12, name: `${id}-niche-interaction-proxy` });
-    label(group, `${exhibit.chapter} · ${exhibit.title}\n${exhibit.mode}`, {
-      x: 0, y: 0.54, z: -0.255, w: 2.05, h: 0.36,
+    // the cases hang on the south wall: their labels face north, into the corridor
+    label(group, `${exhibit.chapter} · ${exhibit.title}\n${exhibit.object}`, {
+      x: 0, y: 0.54, z: -0.255, w: 2.05, h: 0.36, rotationY: Math.PI,
       fg: '#eee4cb', bg: '#090b0c', font: 'bold 25px Georgia, serif',
     });
+    // the accession plate sits under the chapter label, leaving the case's
+    // top edge to the interaction tag
     label(group, exhibit.accession, {
-      x: 0, y: 2.31, z: -0.255, w: 1.18, h: 0.18,
+      x: 0, y: 0.25, z: -0.255, w: 1.18, h: 0.16, rotationY: Math.PI,
       fg: '#c9b681', bg: '#15120d', font: 'bold 26px Georgia, serif',
     });
-    return { group, artifact, supportingElements, exhibit, light, glass, proxy, displayed: true, shattered: false };
-  }
-
-  _syncArtifacts() {
-    const snapshot = this.ctx.directionProgress.getSnapshot();
-    for (const [id, niche] of this.artifactNiches) {
-      const displayed = snapshot.artifacts[id]?.displayed === true;
-      niche.displayed = displayed;
-      niche.artifact.visible = displayed;
-      niche.supportingElements.visible = displayed;
-      if (!niche.shattered) niche.light.intensity = displayed ? (id === CHAPTER05_DIRECTIONS.BORROWED_GRID ? 2.4 : 1.8) : 0;
-    }
+    proxy.userData.tagAnchor = 1; // on the case's top edge, clear of every label
+    return { group, artifact, exhibit, light, glass, proxy, displayed: true, shattered: false };
   }
 
   _finalArchiveDoor(g) {
@@ -404,78 +375,56 @@ export class ArchiveCorridor {
     return { root, void: voidPlane, leftPivot, rightPivot, lockedPlaque, openPlaque, keyRoot, keySlots, proxy, openAmount: 0 };
   }
 
-  _recordDoor(g, { x, id, title, status, description = null, doorColor }) {
-    const door = box(g, { x, y: 1.25, z: -2, w: 2.0, h: 2.5, d: 0.12, material: mat(doorColor), name: `${id}-door`, collide: true, collisionWorld: this.ctx.collisionWorld });
-    label(g, `${title}\n${status}`, { x, y: 2.55, z: -1.82, w: 2.4, h: 0.6 });
-    label(g, status, { x, y: 1.4, z: -1.9, w: 1.5, h: 0.3, bg: '#e8dfc8', fg: '#5a1f1f' });
-    box(g, { x: x + 0.7, y: 1.05, z: -1.9, w: 0.08, h: 0.08, d: 0.08, material: mat(COLORS.brass), name: `${id}-knob` });
-    this._recordDoors.push({ id, title, status, description, knob: door });
-  }
-
   // Re-registered by Museum3DApp each time this space becomes active.
   registerInteractions() {
-    const registerDirection = (id, mesh) => {
-      this.ctx.interaction.register(`direction-${id}`, {
-        mesh,
-        enabled: () => this.ctx.model.getSnapshot().phase === 'corridor',
-        prompt: () => this.ctx.directionProgress.getSnapshot().completed[id]
-          ? 'E — LABYRINTH FILED'
-          : 'E — ENTER DOOR 4 · THE LABYRINTH',
-        action: () => this._enterDirection(id),
-      });
-    };
-    registerDirection(CHAPTER05_DIRECTIONS.LABYRINTH, this.labyrinthScreen);
+    const { interaction, model, directionProgress } = this.ctx;
+    const labyrinthDone = () => directionProgress.getSnapshot().completed[CHAPTER05_DIRECTIONS.LABYRINTH];
+    interaction.register(`direction-${CHAPTER05_DIRECTIONS.LABYRINTH}`, {
+      mesh: this.labyrinthScreen,
+      enabled: () => model.getSnapshot().phase === 'corridor',
+      prompt: () => (labyrinthDone() ? 'DOOR 4 · EIGHT KEYS FILED' : 'E · ENTER DOOR 4 — THE LABYRINTH'),
+      action: () => {
+        if (labyrinthDone()) {
+          this.ctx.dialogue.play([{ speaker: null, text: 'Door 4 is filed. You carry its eight keys.' }]);
+          return;
+        }
+        this._enterDirection(CHAPTER05_DIRECTIONS.LABYRINTH);
+      },
+    });
     for (const [id, niche] of this.artifactNiches) {
-      this.ctx.interaction.register(`gallery-artifact-${id}`, {
+      interaction.register(`chapter-case-${id}`, {
         mesh: niche.proxy,
-        enabled: () => this.ctx.model.getSnapshot().phase === 'corridor',
-        prompt: 'E — READ ACCESSION CARD',
-        action: () => {
-          this.ctx.dialogue.play(exhibitDialogue(niche.exhibit));
-        },
+        enabled: () => model.getSnapshot().phase === 'corridor',
+        prompt: 'E · READ THE ACCESSION CARD',
+        action: () => this.ctx.showCard(exhibitCard(niche.exhibit)),
       });
     }
-    this.ctx.interaction.register('final-archive-door', {
+    for (const filed of this.filedCases) {
+      interaction.register(`filed-claim-${filed.id}`, {
+        mesh: filed.proxy,
+        enabled: () => model.getSnapshot().phase === 'corridor',
+        prompt: 'E · READ THE FILED CLAIM',
+        action: () => this.ctx.showCard(filed.claim),
+      });
+    }
+    interaction.register('final-archive-door', {
       mesh: this.finalDoor.proxy,
-      enabled: () => ['corridor', 'collapse'].includes(this.ctx.model.getSnapshot().phase)
+      enabled: () => ['corridor', 'collapse'].includes(model.getSnapshot().phase)
         && this.ctx.controller.position.x >= 39.15,
       prompt: () => {
-        const state = this.ctx.model.getSnapshot();
-        if (state.phase !== 'collapse') return 'E — INSPECT EIGHT KEYHOLES';
+        const state = model.getSnapshot();
+        if (state.phase !== 'collapse') return 'E · INSPECT THE EIGHT KEYHOLES';
         if (state.collapse.doorOpen) return COLLAPSE_STRINGS.promptJump;
-        return `${COLLAPSE_STRINGS.promptSlotKey} / LMB — ${state.collapse.keysSlotted} / 8`;
+        return `${COLLAPSE_STRINGS.promptSlotKey} · ${state.collapse.keysSlotted} / 8`;
       },
       action: () => {
-        const state = this.ctx.model.getSnapshot();
+        const state = model.getSnapshot();
         if (state.phase !== 'collapse') this.ctx.dialogue.play([{ speaker: null, text: COLLAPSE_STRINGS.exitDoorSealedNote }]);
         else if (state.collapse.doorOpen) {
           this.ctx.controller.setPose(41.28, this.ctx.controller.position.z, -Math.PI / 2);
         }
       },
     });
-    for (const { id, title, status, description, knob } of this._recordDoors) {
-      this.ctx.interaction.register(id, {
-        mesh: knob,
-        enabled: () => this.ctx.model.getSnapshot().phase === 'corridor',
-        prompt: `E — ${title}`,
-        action: () => {
-          this.ctx.dialogue.play([
-            { speaker: null, text: description ?? `${title}. ${status}. The label is printed, dated, and honest.` },
-          ]);
-        },
-      });
-    }
-  }
-
-  _applyStandSide(side) {
-    if (side === 'south') {
-      this.guideStand.position.set(11, 0, 1.4);
-    } else {
-      this.guideStand.position.set(11, 0, -1.4);
-    }
-    const world = this.ctx.collisionWorld;
-    world.removeById('corridor-guide-stand');
-    world.addBoxFromCenterSize(11, side === 'south' ? 1.4 : -1.4, 0.5, 0.5, 'corridor-guide-stand');
   }
 
   _inZone(pos, zone) {
@@ -484,15 +433,10 @@ export class ArchiveCorridor {
 
   _enterDirection(id) {
     if (!isDirectionPlayable(id)) return false;
-    // A returned artifact still has a dedicated niche and can be placed there
-    // manually. If the player walks straight to another numbered door, file it
-    // automatically instead of silently disabling every door in the corridor.
     return this.ctx.openDirection(id);
   }
 
   enter(snapshot) {
-    this._applyStandSide(snapshot.corridor.guideStandSide);
-    this._syncArtifacts();
     this.gauntlet.enter(snapshot);
   }
 
@@ -514,15 +458,9 @@ export class ArchiveCorridor {
         ? `direction-${CHAPTER05_DIRECTIONS.LABYRINTH}`
         : null,
     );
-    if (this.labyrinthInteractPoint) {
-      const pulse = 1 + Math.sin(performance.now() / 220) * 0.12;
-      this.labyrinthInteractPoint.scale.setScalar(pulse);
-      this.labyrinthInteractPoint.visible = snapshot.phase === 'corridor'
-        && this._doorwayDirection === CHAPTER05_DIRECTIONS.LABYRINTH;
-    }
     const time = performance.now() / 1000;
     for (const niche of this.artifactNiches.values()) {
-      if (niche.displayed) animateReturnArtifact(niche.artifact, time);
+      if (!niche.shattered) animateChapterCaseObject(niche.artifact, time);
     }
   }
 

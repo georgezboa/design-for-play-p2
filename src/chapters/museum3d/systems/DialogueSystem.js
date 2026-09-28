@@ -1,8 +1,17 @@
 import { chapter05VoiceAssetFor } from '../generated/chapter05VoiceAssets.js';
 import { VoicePlayback } from './VoicePlayback.js';
 
-// Subtitle dialogue queue. Lines stay on screen long enough to read at normal
-// speaking speed (acceptance §6); E/Enter advances early while Space jumps.
+// Subtitle dialogue queue, drawn in the shared `.nf-caption` bar
+// (src/shell/uiKit.css): speaker in amber Space Mono, the line in Georgia.
+// Lines stay on screen long enough to read at normal speaking speed; E/Enter
+// advances early while Space jumps.
+
+const escapeHtml = (value) => String(value).replace(/[&<>"]/g, (char) => `&#${char.charCodeAt(0)};`);
+
+function captionHtml(speaker, text, extra = '') {
+  const who = speaker ? `<p class="nf-caption__speaker">${escapeHtml(speaker)}</p>` : '';
+  return `${who}<p class="nf-caption__text">${escapeHtml(text)}</p>${extra}`;
+}
 
 export class DialogueSystem {
   constructor(subtitleEl) {
@@ -57,9 +66,7 @@ export class DialogueSystem {
       return;
     }
     const { speaker, text } = this._current;
-    this.el.innerHTML = speaker
-      ? `<span class="speaker">${speaker}:</span> ${text}`
-      : text;
+    this.el.innerHTML = captionHtml(speaker, text, '<span class="nf-caption__next" aria-hidden="true">▸</span>');
     this.el.style.display = 'block';
     // ~55 ms per character, clamped to [2.4s, 9s].
     this._timer = Math.min(9, Math.max(2.4, text.length * 0.055));
@@ -90,9 +97,9 @@ export class DialogueSystem {
   _renderChoice() {
     if (!this._choice) return;
     const options = this._choice.options
-      .map((option, index) => `<span class="dialogue-choice"><b>${index + 1}</b> ${option.label}</span>`)
+      .map((option, index) => `<span class="nf-caption__choice"><b>${index + 1}</b> ${escapeHtml(option.label)}</span>`)
       .join('');
-    this.el.innerHTML = `<span class="speaker">BUTCH:</span> ${this._choice.prompt}<span class="dialogue-choices">${options}<span class="dialogue-silence">or keep walking</span></span>`;
+    this.el.innerHTML = captionHtml('BUTCH', this._choice.prompt, `<div class="nf-caption__choices">${options}<span class="nf-caption__silence">or keep walking</span></div>`);
     this.el.style.display = 'block';
   }
 

@@ -48,7 +48,9 @@ export class EmbeddedDirectionExhibit {
     this.titleEl.textContent = definition.archiveTitle ?? `ARCHIVAL RECONSTRUCTION · DOOR ${definition.title}`;
     if (this.modeEl) this.modeEl.textContent = definition.modeLabel ?? 'ARCHIVAL RECONSTRUCTION';
     if (this.copyEl) this.copyEl.textContent = definition.ingress ?? '';
-    this.statusEl.textContent = this.progress.getSnapshot().completed[directionId] ? '·' : 'ESC';
+    if (this.beginButton) this.beginButton.textContent = definition.beginLabel ?? 'BEGIN';
+    if (this.root.dataset) this.root.dataset.direction = directionId;
+    this.statusEl.textContent = this.progress.getSnapshot().completed[directionId] ? '·' : 'ESC · RETURN TO THE MUSEUM';
     this.root.classList.toggle('complete', this.progress.getSnapshot().completed[directionId]);
     if (!this._loaded.has(directionId) || this.iframe.dataset.direction !== directionId) {
       this.iframe.src = definition.src;

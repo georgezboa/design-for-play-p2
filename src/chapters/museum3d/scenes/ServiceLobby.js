@@ -1,28 +1,30 @@
-// Beat 1 (empty service lobby) + Beat 4 (reclassified lobby).
+// Beat 1 (the service hall, Room 101) and Beat 4 (the lost desk).
 // One room, two variants, driven entirely by the narrative snapshot.
 //
 // Layout (meters): x ∈ [-8, 8], z ∈ [-6, 6], ceiling 3.4.
 //   - player entry: west side, facing the room
 //   - service desk: south wall (z ≈ +5), normal variant
-//   - central glass case: (1.5, 0, 0), large enough to hold the whole desk
+//   - central glass case (1.5, 0): OBJECT PENDING CLASSIFICATION — four
+//     pieces of evidence and an empty plinth. E opens the one-answer exhibit
+//     (one-answer.html, framed like the Labyrinth). Solving it reclassifies
+//     the service desk: it reappears inside the case with the register open
+//     at BUTCH, and the telephone rings.
+//   - the Black Ticket stone: small, quiet, behind the pigment vials in the
+//     case's south-east corner, reached with the fire axe
 //   - archive corridor door: east wall (x = +8)
-//   - reclassified variant: desk inside the case, former footprint is a
-//     doorway in the south wall leading to a short unlit stub (Gate 6 site)
 
 import * as THREE from 'three';
 import { COLORS } from '../config.js';
-import { mat, emissiveMat, flatMat, box, plane, label, fluorescentFixture, displayCase, glassMat, hitProxy } from '../util/graybox.js';
+import { mat, box, plane, label, fluorescentFixture, displayCase, glassMat, hitProxy } from '../util/graybox.js';
 import { RoomReclassification } from '../systems/RoomReclassification.js';
 import { createMuseumMaterialLibrary } from '../assets/MuseumMaterials.js';
 import { loadMuseumModel } from '../assets/MuseumModelLoader.js';
-import { createLastTrainExhibitElements } from '../assets/ChapterExhibitElements.js';
-import { chapterExhibit, exhibitDialogue } from '../data/chapterExhibitCatalog.js';
-import { loadFinalBossPaperAsset } from '../assets/FinalBossPaperAssetLoader.js';
-import { createCentralJourneyDisplay } from '../assets/CentralJourneyDisplay.js';
+import { createChapterCaseObject } from '../assets/ChapterCaseObjects.js';
+import { MUSEUM_ACCESSION, MUSEUM_DATE } from '../data/chapterExhibitCatalog.js';
+import { CHAPTER05_DIRECTIONS } from '../directions/directionRegistry.js';
 import { magicStoneSnapshot, offerMagicStone } from '../../../shell/magicStones.js';
 import {
   addAcousticCeilingGrid,
-  createArchiveCart,
   createGuidePedestal,
   createPublicBench,
   createServiceDesk,
@@ -33,11 +35,39 @@ import {
 const WALL_H = 3.4;
 const WALL_T = 0.3;
 
-const LOCKED_GUIDE_LINE =
-  'This archive contains four independent directions: the Borrowed Grid, Echo City, the Painted Country, and the Labyrinth. Each must return here without being placed inside another.';
+// The Archivist's guide lines: one useful sentence each, keyed to what is
+// still left to do.
+export const LOBBY_GUIDE_LINES = Object.freeze({
+  welcome: [
+    'Welcome to the Museum of One Answer. Your journey has already been filed.',
+    'One object is still pending, in the case before you. One door remains open.',
+  ],
+  exhibitDone: ['The desk is evidence now. One door remains open, at the end of the wing.'],
+  labyrinthDone: ['One object is still pending, here in Room 101.'],
+  bothDone: ['This wing is being withdrawn.'],
+});
 
-const LOCKED_RECLASSIFY_LINE =
-  'The service desk has been reclassified as evidence. You may continue through its former location.';
+export const HOUSE_RULES_CARD = Object.freeze({
+  stamp: 'THE MUSEUM OF ONE ANSWER',
+  title: 'HOUSE RULES',
+  lines: ['Every object has one answer.', 'Contradictions are filed as errors.', 'The archive does not issue duplicates.'],
+});
+
+export const REGISTER_CARD = Object.freeze({
+  stamp: `VISITOR REGISTER · ${MUSEUM_DATE}`,
+  title: 'LAST ENTRY — BUTCH',
+  lines: ['Lost property, night service.', 'Purpose of visit: return one case.'],
+});
+
+// Case-local layout of the pending exhibit (the case is 5.4 × 2.8).
+const EVIDENCE_LAYOUT = Object.freeze([
+  Object.freeze({ id: 'borrowed-light', x: -1.95, z: -0.42 }),
+  Object.freeze({ id: 'echo-city', x: -0.95, z: -0.42 }),
+  Object.freeze({ id: 'night-service', x: -1.95, z: 0.5 }),
+  Object.freeze({ id: 'painted-country', x: -0.95, z: 0.5 }),
+]);
+export const BLACK_TICKET_STONE = Object.freeze({ x: 2.3, y: 1.105, z: 0.66, radius: 0.045 });
+const PIGMENT_VIALS = Object.freeze({ x: 2.28, z: 0.9 });
 
 export class ServiceLobby {
   constructor() {
@@ -55,35 +85,21 @@ export class ServiceLobby {
 
     // ---- shell -------------------------------------------------------------
     plane(g, { x: 0, z: 0, w: 16, h: 12, material: this.materials.carpet, name: 'floor' });
-    // darker traffic lanes
     plane(g, { x: 0, y: 0.005, z: 0, w: 16, h: 2.2, material: this.materials.carpetLane, name: 'lane-x' });
     plane(g, { x: -5.5, y: 0.005, z: 0, w: 2.2, h: 12, material: this.materials.carpetLane, name: 'lane-z' });
     plane(g, { x: 0, y: WALL_H, z: 0, w: 16, h: 12, material: this.materials.ceilingTile, rotationX: Math.PI / 2, name: 'ceiling' });
     addAcousticCeilingGrid(g, { width: 16, depth: 12, y: WALL_H - 0.012 });
 
     const wall = this.materials.wall;
-    // west (entry wall, solid)
     box(g, { x: -8, y: WALL_H / 2, z: 0, w: WALL_T, h: WALL_H, d: 12, material: wall, name: 'wall-west', collide: true, collisionWorld });
-    // north (solid)
     box(g, { x: 0, y: WALL_H / 2, z: -6, w: 16.6, h: WALL_H, d: WALL_T, material: wall, name: 'wall-north', collide: true, collisionWorld });
-    // east with corridor doorway z ∈ [-1.1, 1.1]
     box(g, { x: 8, y: WALL_H / 2, z: -3.55, w: WALL_T, h: WALL_H, d: 4.9, material: wall, name: 'wall-east-n', collide: true, collisionWorld });
     box(g, { x: 8, y: WALL_H / 2, z: 3.55, w: WALL_T, h: WALL_H, d: 4.9, material: wall, name: 'wall-east-s', collide: true, collisionWorld });
     box(g, { x: 8, y: 2.95, z: 0, w: WALL_T, h: 0.9, d: 2.2, material: wall, name: 'wall-east-lintel' });
-    // south wall — normal variant is solid; reclassified cuts a doorway at
-    // the former desk footprint (x ∈ [-1.1, 1.1]). Built as two swappable sets.
-    this._southSolid = new THREE.Group();
-    this._southDoorway = new THREE.Group();
-    g.add(this._southSolid, this._southDoorway);
-    box(this._southSolid, { x: 0, y: WALL_H / 2, z: 6, w: 16.6, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south-solid' });
-    box(this._southDoorway, { x: -4.4, y: WALL_H / 2, z: 6, w: 7.8, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south-w' });
-    box(this._southDoorway, { x: 4.4, y: WALL_H / 2, z: 6, w: 7.8, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south-e' });
-    box(this._southDoorway, { x: 0, y: 2.95, z: 6, w: 2.2, h: 0.9, d: WALL_T, material: wall, name: 'wall-south-lintel' });
+    // The south wall stays solid in both variants: the reclassified desk
+    // leaves only its worn footprint behind, not a corridor to nowhere.
+    box(g, { x: 0, y: WALL_H / 2, z: 6, w: 16.6, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south', collide: true, collisionWorld });
 
-    // Civic-museum wall finish: scrub-resistant olive wainscot below a metal
-    // chair rail, with woven contract vinyl above. Keep each finish attached
-    // to the wall variant it belongs to so the reclassified doorway remains
-    // a real opening instead of being crossed by a cosmetic strip.
     const dado = this.materials.oliveSteel;
     const lower = this.materials.wall;
     box(g, { x: 0, y: 0.63, z: -5.82, w: 15.7, h: 1.08, d: 0.05, material: lower, name: 'wainscot-north' });
@@ -97,25 +113,16 @@ export class ServiceLobby {
       box(g, { x: 7.86, y: 0.18, z, w: 0.08, h: 0.22, d: 4.55, material: dado, name: `baseboard-east-${id}` });
       box(g, { x: 7.86, y: 1.18, z, w: 0.08, h: 0.09, d: 4.55, material: dado, name: `chair-rail-east-${id}` });
     }
-    box(this._southSolid, { x: 0, y: 0.63, z: 5.82, w: 15.7, h: 1.08, d: 0.05, material: lower, name: 'wainscot-south-solid' });
-    box(this._southSolid, { x: 0, y: 0.18, z: 5.86, w: 15.7, h: 0.22, d: 0.08, material: dado, name: 'baseboard-south-solid' });
-    box(this._southSolid, { x: 0, y: 1.18, z: 5.86, w: 15.7, h: 0.09, d: 0.07, material: dado, name: 'chair-rail-south-solid' });
-    for (const x of [-4.4, 4.4]) {
-      box(this._southDoorway, { x, y: 0.63, z: 5.82, w: 7.5, h: 1.08, d: 0.05, material: lower, name: `wainscot-south-${x}` });
-      box(this._southDoorway, { x, y: 1.18, z: 5.86, w: 7.5, h: 0.09, d: 0.07, material: dado, name: `chair-rail-south-${x}` });
-    }
+    box(g, { x: 0, y: 0.63, z: 5.82, w: 15.7, h: 1.08, d: 0.05, material: lower, name: 'wainscot-south' });
+    box(g, { x: 0, y: 0.18, z: 5.86, w: 15.7, h: 0.22, d: 0.08, material: dado, name: 'baseboard-south' });
+    box(g, { x: 0, y: 1.18, z: 5.86, w: 15.7, h: 0.09, d: 0.07, material: dado, name: 'chair-rail-south' });
 
-    // fluorescent strips
-    for (const fx of [-4, 0, 4]) {
-      fluorescentFixture(g, { x: fx, z: 0, ceilingY: WALL_H, length: 3.2 });
-    }
+    for (const fx of [-4, 0, 4]) fluorescentFixture(g, { x: fx, z: 0, ceilingY: WALL_H, length: 3.2 });
 
-    // signage
+    // signage — one date, one claim
     label(g, 'ROOM 101 — SERVICE HALL', { x: -7.8, y: 2.3, z: 0, w: 2.4, h: 0.5, rotationY: Math.PI / 2 });
     label(g, 'ARCHIVE WING →', { x: 7.8, y: 2.4, z: -2.2, w: 2.0, h: 0.45, rotationY: -Math.PI / 2 });
-    label(g, 'EVACUATION OF OCTOBER 17\nFOUR DIRECTIONS · ONE ARCHIVE', {
-      x: 0, y: 2.5, z: -5.8, w: 4.2, h: 0.9,
-    });
+    label(g, `THE MUSEUM OF ONE ANSWER\nCLAIM 1978-0412 · ${MUSEUM_DATE}`, { x: 0, y: 2.5, z: -5.8, w: 4.2, h: 0.9 });
 
     const waitingBench = createPublicBench(this.materials);
     waitingBench.position.set(-5.8, 0, 4.9);
@@ -129,53 +136,8 @@ export class ServiceLobby {
     wasteBin.position.set(-7.2, 0, 4.8);
     g.add(wasteBin);
 
-    // Keep only the left-hand Chapter 1 ticket case. The right olive thread
-    // vitrine is removed so the central Black Knife route has clear sightlines.
-    this.lastTrainExhibit = chapterExhibit('last-train');
-    const caseA = displayCase(g, { x: -5.5, z: -5.2, w: 1.6, d: 1.0, name: 'wall-case-a', collisionWorld });
-    const ticketElements = createLastTrainExhibitElements();
-    ticketElements.name = 'chapter-01-ticket-case-elements';
-    ticketElements.scale.setScalar(0.82);
-    ticketElements.traverse((object) => {
-      if (/thread|spool|relay/.test(object.name)) object.visible = false;
-    });
-    caseA.add(ticketElements);
-    label(caseA, 'CHAPTER 01 · THE LAST TRAIN\nPUNCHED TICKET A-1017', {
-      x: 0, y: 0.88, z: 0.515, w: 1.34, h: 0.28,
-      fg: '#e6ddc5', bg: '#17140f', font: 'bold 25px Georgia, serif',
-    });
-    this.lastTrainTicketProxy = hitProxy(caseA, { x: 0, y: 1.35, z: 0.5, w: 1.5, h: 1.5, d: 0.2, name: 'chapter-01-ticket-case-proxy' });
-    label(g, 'ARCHIVE METHOD\nOBJECT · MEMORY · RECONSTRUCTION LAW', {
-      x: 0, y: 1.5, z: -5.82, w: 3.8, h: 0.58,
-      fg: '#d9c99d', bg: '#20231f', font: 'bold 29px Georgia, serif',
-    });
-
-    // Central case — two paper objects from two different chapters, both taken
-    // directly from George's ALL WORLDS AT ONCE final boss. They occupy the
-    // case until the room reclassifies the service desk as evidence.
-    this.centralCase = displayCase(g, {
-      x: 1.5, z: 0, w: 5.4, d: 2.8, plinthH: 1.0, glassH: 1.9,
-      name: 'central-case',
-    });
-    this.centralCaseColliderSize = { x: 1.5, z: 0, w: 5.4, d: 2.8 };
-    this.centralOriginalDisplay = new THREE.Group();
-    this.centralOriginalDisplay.name = 'central-final-boss-two-world-display';
-    this.centralCase.add(this.centralOriginalDisplay);
-    const supportingArchive = createCentralJourneyDisplay(this.materials);
-    this.centralJourneySupportingDisplay = supportingArchive.group;
-    this._updateCentralJourneyDisplay = supportingArchive.update;
-    this.centralOriginalDisplay.add(this.centralJourneySupportingDisplay);
-    this.centralOriginalModelIds = [];
-    this.centralOriginalModelFailures = [];
-    this.centralOriginalDisplayProxy = hitProxy(this.centralCase, {
-      x: -2.76, y: 1.74, z: 0, w: 0.12, h: 1.35, d: 2.58,
-      name: 'central-original-model-display-proxy',
-    });
-    this.centralNormalLabel = label(g, 'TWO WORLDS · ONE JOURNEY\n01 · NIGHT TRAIN / 04 · INDIGO', {
-      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2,
-      font: 'bold 25px Georgia, serif',
-    });
-    this._installCentralFinalBossAssets();
+    this._buildHouseRules(g);
+    this._buildPendingExhibit(g);
     this._buildLobbyEvidence();
 
     // guide receiver stand
@@ -194,8 +156,6 @@ export class ServiceLobby {
     this.deskGroup = this._buildDesk();
     this.deskGroup.position.set(0, 0, 5.0);
     this.normalGroup.add(this.deskGroup);
-
-    // punched ticket on the desk (small object gets a generous hit volume)
     this.ticketMesh = box(this.deskGroup, {
       x: -0.6, y: 1.14, z: -0.1, w: 0.22, h: 0.015, d: 0.1,
       material: mat(COLORS.paper), name: 'punched-ticket',
@@ -210,55 +170,31 @@ export class ServiceLobby {
     this.doorL = box(this.corridorDoors, { x: 0, y: 1.25, z: -0.55, w: 0.06, h: 2.5, d: 1.1, material: doorMat, name: 'door-l' });
     this.doorR = box(this.corridorDoors, { x: 0, y: 1.25, z: 0.55, w: 0.06, h: 2.5, d: 1.1, material: doorMat, name: 'door-r' });
 
-    // ---- reclassified variant ----------------------------------------------
+    // ---- reclassified variant: the lost desk --------------------------------
     this.reclassifiedGroup = new THREE.Group();
     this.reclassifiedGroup.name = 'lobby-reclassified';
     g.add(this.reclassifiedGroup);
-
-    // the desk reappears inside the central case (built separately so the
-    // normal desk can simply hide)
     this.casedDesk = this._buildDesk({ exhibit: true });
     this.casedDesk.position.set(1.5, 1.0, 0);
     this.casedDesk.rotation.y = Math.PI;
     this.reclassifiedGroup.add(this.casedDesk);
-    label(this.reclassifiedGroup, 'ACC. 17-1017\nSERVICE DESK · EVIDENCE', {
-      x: 1.5, y: 0.55, z: 1.65, w: 2.2, h: 0.5,
+    this.casedDeskProxy = hitProxy(this.reclassifiedGroup, { x: 1.5, y: 1.55, z: 0, w: 4.4, h: 1.1, d: 1.4, name: 'cased-desk-register-proxy' });
+    // The register itself lies above eye height on the plinth, so the case
+    // label says what it is open at, on both faces the player approaches.
+    const deskLabel = 'SERVICE DESK · ACC. 1978-0412 · 5\nREGISTER — LAST ENTRY: BUTCH';
+    label(this.reclassifiedGroup, deskLabel, {
+      x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5, font: 'bold 25px Georgia, serif',
     });
-
-    // former desk footprint: floor wear outline + open doorway into a stub
+    label(this.reclassifiedGroup, deskLabel, {
+      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2, font: 'bold 25px Georgia, serif',
+    });
+    // the desk's worn footprint on the carpet where it stood
     plane(this.reclassifiedGroup, {
       x: 0, y: 0.01, z: 5.0, w: 4.4, h: 1.2,
       material: mat(0x4e4438), name: 'desk-footprint-wear',
     });
-    const frame = mat(COLORS.doorFrame);
-    box(this.reclassifiedGroup, { x: -1.2, y: 1.25, z: 6, w: 0.2, h: 2.5, d: 0.5, material: frame, name: 'frame-w' });
-    box(this.reclassifiedGroup, { x: 1.2, y: 1.25, z: 6, w: 0.2, h: 2.5, d: 0.5, material: frame, name: 'frame-e' });
-    label(this.reclassifiedGroup, 'CORRIDOR 101-B', { x: 0, y: 2.75, z: 5.8, w: 1.6, h: 0.35 });
-
-    // stub corridor (Gate 6 site) beyond the former desk location
-    this.stub = new THREE.Group();
-    this.stub.name = 'collapse-stub';
-    g.add(this.stub);
-    plane(this.stub, { x: 0, z: 9, w: 2.4, h: 6.2, material: this.materials.rubberTile, name: 'stub-floor' });
-    plane(this.stub, { x: 0, y: 2.6, z: 9, w: 2.4, h: 6.2, material: flatMat(0x3a362e), rotationX: Math.PI / 2, name: 'stub-ceiling' });
-    box(this.stub, { x: -1.2, y: 1.3, z: 9, w: 0.2, h: 2.6, d: 6.2, material: mat(0x6b6252), name: 'stub-wall-w' });
-    box(this.stub, { x: 1.2, y: 1.3, z: 9, w: 0.2, h: 2.6, d: 6.2, material: mat(0x6b6252), name: 'stub-wall-e' });
-    box(this.stub, { x: 0, y: 1.3, z: 12, w: 2.6, h: 2.6, d: 0.2, material: mat(0x6b6252), name: 'stub-wall-end' });
-    label(this.stub, 'SEQUENCE NOT YET INSTALLED', { x: 0, y: 1.5, z: 11.85, w: 1.8, h: 0.4, rotationY: Math.PI });
-    // one bare flickering tube in the stub
-    box(this.stub, { x: 0, y: 2.5, z: 9, w: 0.25, h: 0.06, d: 1.6, material: emissiveMat(0xd8e0c8), name: 'stub-tube' });
-    this._archiveCartFallback = createArchiveCart(this.materials);
-    this._archiveCartFallback.position.set(0, 0, 10.55);
-    this._archiveCartFallback.rotation.y = Math.PI / 2;
-    this.stub.add(this._archiveCartFallback);
-    this._installArchiveCart();
 
     // ---- lights --------------------------------------------------------------
-    // Fluorescent fixtures now light the room as fixtures rather than relying
-    // on one omnidirectional bulb in the middle. The soft directional key is
-    // deliberately weak; it exists to give furniture and cases readable
-    // contact shadows under WebGL, while the three broad ceiling sources carry
-    // the institutional flatness of the reference room.
     g.add(new THREE.HemisphereLight(0xfff0d2, 0x40392f, 0.58));
     for (const fx of [-4, 0, 4]) {
       const fluorescent = new THREE.RectAreaLight(0xffedc4, 3.2, 0.48, 3.0);
@@ -285,7 +221,6 @@ export class ServiceLobby {
     this.deskLampLight.position.set(1.1, 2.2, 0.2);
     g.add(this.deskLampLight);
 
-    // ---- reclassification controller ----------------------------------------
     this.reclassification = new RoomReclassification({
       normalGroup: this.normalGroup,
       reclassifiedGroup: this.reclassifiedGroup,
@@ -293,12 +228,10 @@ export class ServiceLobby {
       registerColliders: (variant) => this._registerFurnitureColliders(variant),
     });
 
-    // wall colliders are permanent; variant colliders are re-registered.
     collisionWorld.addBoxFromCenterSize(-4.5, -3, 0.5, 0.5, 'guide-stand');
-    this._registerTriggers();
-
+    this._corridorZone = { minX: 7.0, maxX: 8.2, minZ: -1.1, maxZ: 1.1 };
     this._phoneTimer = 0;
-    this._reclassifyLinePlayed = false;
+    this._welcomePlayed = false;
 
     g.traverse((object) => {
       if (!object.isMesh) return;
@@ -318,14 +251,66 @@ export class ServiceLobby {
     return model.group;
   }
 
+  // The small wall case by the entry: the museum's house rules, read as a card.
+  _buildHouseRules(g) {
+    const rulesCase = displayCase(g, { x: -5.5, z: -5.2, w: 1.6, d: 1.0, name: 'house-rules-case', collisionWorld: this.ctx.collisionWorld });
+    const plaque = label(rulesCase, 'HOUSE RULES\nONE OBJECT · ONE ANSWER', {
+      x: 0, y: 1.32, z: 0, w: 1.2, h: 0.5,
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 34px Georgia, serif',
+    });
+    plaque.rotation.x = -0.5;
+    label(rulesCase, 'THE MUSEUM OF ONE ANSWER', {
+      x: 0, y: 0.88, z: 0.515, w: 1.34, h: 0.2,
+      fg: '#e6ddc5', bg: '#17140f', font: 'bold 25px Georgia, serif',
+    });
+    this.houseRulesProxy = hitProxy(rulesCase, { x: 0, y: 1.35, z: 0.5, w: 1.5, h: 1.5, d: 0.2, name: 'house-rules-proxy' });
+  }
+
+  // The central case before the reveal: four filed objects, an empty plinth,
+  // and the accession the whole chapter is about.
+  _buildPendingExhibit(g) {
+    this.centralCase = displayCase(g, {
+      x: 1.5, z: 0, w: 5.4, d: 2.8, plinthH: 1.0, glassH: 1.9,
+      name: 'central-case',
+    });
+    this.centralCaseColliderSize = { x: 1.5, z: 0, w: 5.4, d: 2.8 };
+    this.pendingExhibit = new THREE.Group();
+    this.pendingExhibit.name = 'object-pending-classification';
+    this.centralCase.add(this.pendingExhibit);
+    this.pendingEvidence = EVIDENCE_LAYOUT.map(({ id, x, z }) => {
+      const object = createChapterCaseObject(id, { small: true });
+      object.position.set(x, 1.24, z);
+      object.rotation.x = -0.72;
+      this.pendingExhibit.add(object);
+      return object;
+    });
+    // the empty plinth: the slot the museum saved for its one answer
+    const walnut = this.materials.walnutDark;
+    box(this.pendingExhibit, { x: 0.95, y: 1.13, z: 0, w: 1.1, h: 0.12, d: 0.8, material: walnut, name: 'pending-plinth' });
+    const tent = label(this.pendingExhibit, 'OBJECT PENDING\nCLASSIFICATION', {
+      x: 0.95, y: 1.34, z: 0.18, w: 0.78, h: 0.3,
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 44px Georgia, serif',
+    });
+    tent.rotation.x = -0.45;
+    this.pendingLabel = label(g, `OBJECT PENDING CLASSIFICATION\n${MUSEUM_ACCESSION}`, {
+      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2,
+      font: 'bold 25px Georgia, serif',
+    });
+    this.pendingLabelSouth = label(g, `OBJECT PENDING CLASSIFICATION\n${MUSEUM_ACCESSION}`, {
+      x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5,
+      font: 'bold 25px Georgia, serif',
+    });
+    // The case answers E, plinth and glass alike — all but its south-east
+    // corner, where the pigment vials (and what hides behind them) keep
+    // their own click.
+    this.pendingProxy = hitProxy(this.centralCase, { x: -0.43, y: 1.2, z: 0, w: 4.6, h: 2.2, d: 2.86, name: 'pending-exhibit-proxy' });
+  }
+
   _buildLobbyEvidence() {
-    // The axe is emergency hardware, not a freestanding gallery prop: it hangs
-    // in a red, wall-mounted fire-axe cabinet on the south wall.
+    // The axe is emergency hardware: it hangs in a red fire-axe cabinet on
+    // the east wall, clear of the ARCHIVE WING placard.
     this.fireAxeEvidence = new THREE.Group();
     this.fireAxeEvidence.name = 'lobby-fire-axe-evidence';
-    // East/north wall: clearly separate from the Black Knife case on the
-    // south side, and not occluded by that foreground glass.
-    // Keep clear of the nearby ARCHIVE WING placard.
     this.fireAxeEvidence.position.set(7.74, 0, -5.02);
     this.fireAxeEvidence.rotation.y = Math.PI / 2;
     this.root.add(this.fireAxeEvidence);
@@ -342,39 +327,32 @@ export class ServiceLobby {
     this.fireAxeProxy = hitProxy(this.fireAxeEvidence, { x: 0, y: 1.3, z: -0.17, w: 1.08, h: 1.72, d: 0.18, name: 'fire-axe-evidence-proxy' });
     this.fireAxeTaken = false;
 
-    // The fifth stone is a small, ordinary rough stone inside the central
-    // vitrine. It is intentionally quiet: no glow, pulse, or floating hint.
+    // The fifth stone — the Black Ticket (code id `black-knife`) — is a small,
+    // ordinary dark pebble tucked behind the pigment vials in the case's
+    // south-east corner. It is deliberately the quietest object here: no
+    // glow, no pulse, smaller than every vial.
     this.blackKnifeCase = this.centralCase;
+    this.pigmentVials = this._buildPigmentVials();
+    this.pigmentVials.position.set(PIGMENT_VIALS.x, 1.07, PIGMENT_VIALS.z);
+    this.blackKnifeCase.add(this.pigmentVials);
     this.blackKnifeStone = new THREE.Mesh(
-      new THREE.IcosahedronGeometry(0.13, 1),
-      new THREE.MeshStandardMaterial({ color: 0x585248, roughness: 1, metalness: 0, flatShading: true }),
+      new THREE.IcosahedronGeometry(BLACK_TICKET_STONE.radius, 1),
+      new THREE.MeshStandardMaterial({ color: 0x3a3632, roughness: 1, metalness: 0, flatShading: true }),
     );
-    this.blackKnifeStone.name = 'black-knife-magic-stone';
-    // Keep this in a genuinely empty strip along the accessible long side.
-    // The former coordinate shared depth with the pigment card and folded-paper
-    // study, so the stone existed but was fully hidden from the player-facing
-    // view. This spot stays quiet and normal-sized, but is not occluded by any
-    // other display asset.
-    this.blackKnifeStone.position.set(0.86, 1.22, 1.08);
+    this.blackKnifeStone.name = 'black-ticket-magic-stone';
+    this.blackKnifeStone.position.set(BLACK_TICKET_STONE.x, BLACK_TICKET_STONE.y, BLACK_TICKET_STONE.z);
     this.blackKnifeStone.rotation.z = Math.PI / 4;
+    this.blackKnifeStone.scale.set(1.2, 0.7, 1);
     this.blackKnifeCase.add(this.blackKnifeStone);
-    this.blackKnifeStoneLight = new THREE.PointLight(0x6b6254, 0, 1.1, 2);
-    this.blackKnifeStoneLight.position.set(0.86, 1.26, 1.08);
-    this.blackKnifeCase.add(this.blackKnifeStoneLight);
-    this.blackKnifeStoneProxy = hitProxy(this.blackKnifeCase, { x: 0.86, y: 1.22, z: 1.46, w: 0.48, h: 0.46, d: 0.1, name: 'black-knife-stone-click-proxy' });
-    // The player can start the break from anywhere along this visible long
-    // side. The actual stone remains a quiet, normal-sized object to aim at
-    // after the pane is gone.
-    this.blackKnifeBreakProxy = hitProxy(this.blackKnifeCase, { x: 0, y: 1.65, z: 1.46, w: 5.0, h: 1.3, d: 0.1, name: 'black-knife-long-side-glass-break-proxy' });
+    this.blackKnifeStoneProxy = hitProxy(this.blackKnifeCase, { x: BLACK_TICKET_STONE.x, y: 1.16, z: BLACK_TICKET_STONE.z + 0.1, w: 0.3, h: 0.3, d: 0.36, name: 'black-ticket-stone-click-proxy' });
+    // The player can start the break from anywhere along the visible south side.
+    this.blackKnifeBreakProxy = hitProxy(this.blackKnifeCase, { x: 0, y: 1.65, z: 1.46, w: 5.0, h: 1.3, d: 0.1, name: 'black-ticket-long-side-glass-break-proxy' });
     this.blackKnifeLongSideGlass = this.blackKnifeCase.getObjectByName('central-case-glass-front');
     this.blackKnifeGlassBroken = false;
-    if (magicStoneSnapshot().collected.includes('black-knife')) {
-      this.blackKnifeStone.visible = false;
-      this.blackKnifeStoneLight.intensity = 0;
-    }
+    if (magicStoneSnapshot().collected.includes('black-knife')) this.blackKnifeStone.visible = false;
 
     this.glassShardEvidence = new THREE.Group();
-    this.glassShardEvidence.name = 'black-knife-case-glass-shards';
+    this.glassShardEvidence.name = 'black-ticket-case-glass-shards';
     this.glassShardEvidence.position.set(0.14, 0.02, 1.62);
     this.root.add(this.glassShardEvidence);
     const shardMaterial = new THREE.MeshPhysicalMaterial({ color: 0xa9d8d7, transparent: true, opacity: 0.54, roughness: 0.08, metalness: 0.05, side: THREE.DoubleSide });
@@ -400,11 +378,25 @@ export class ServiceLobby {
     this.ctx.camera.add(this.heldFireAxe);
   }
 
+  // Three glass pigment vials (Chapter 4's colours) with ivory caps.
+  _buildPigmentVials() {
+    const group = new THREE.Group();
+    group.name = 'pigment-vials';
+    [[0x435d99, -0.1, 0.0], [0x8a2a1e, 0.0, -0.04], [0x35949a, 0.1, 0.01]].forEach(([color, x, z], index) => {
+      const glass = new THREE.MeshStandardMaterial({ color, roughness: 0.25, metalness: 0.05, transparent: true, opacity: 0.88 });
+      const h = 0.2 + index * 0.02;
+      const vial = new THREE.Mesh(new THREE.CylinderGeometry(0.042, 0.05, h, 14), glass);
+      vial.position.set(x, h / 2, z);
+      vial.name = `pigment-vial-${index}`;
+      group.add(vial);
+      box(group, { x, y: h + 0.016, z, w: 0.06, h: 0.032, d: 0.06, material: mat(0xd5c59f), name: `vial-cap-${index}` });
+    });
+    return group;
+  }
+
   async _installTelephone(placeholder, { exhibit = false } = {}) {
     try {
-      const phone = await loadMuseumModel('telephone', {
-        target: { x: 0.34, y: 0.2, z: 0.25 },
-      });
+      const phone = await loadMuseumModel('telephone', { target: { x: 0.34, y: 0.2, z: 0.25 } });
       phone.position.copy(placeholder.position);
       phone.rotation.y = Math.PI;
       placeholder.parent.add(phone);
@@ -418,60 +410,12 @@ export class ServiceLobby {
     }
   }
 
-  async _installArchiveCart() {
-    try {
-      const cart = await loadMuseumModel('archiveCart', {
-        target: { x: 1.15, y: 1.05, z: 0.66 },
-        tint: 0x8f927b,
-      });
-      cart.position.copy(this._archiveCartFallback.position);
-      cart.rotation.copy(this._archiveCartFallback.rotation);
-      this.stub.add(cart);
-      this._archiveCartFallback.visible = false;
-    } catch (error) {
-      console.warn('[museum3d] archive cart model unavailable; using fallback', error);
-    }
-  }
-
-  async _installCentralFinalBossAssets() {
-    const specs = [
-      {
-        id: 'chapter01-night-service-train',
-        width: 1.90,
-        position: [-0.90, 1.075, -0.58],
-        rotationX: -Math.PI / 2,
-      },
-      {
-        id: 'chapter04-indigo-pigment',
-        width: 1.00,
-        position: [-1.28, 1.079, 0.55],
-        rotationX: -Math.PI / 2,
-      },
-    ];
-    await Promise.all(specs.map(async (spec) => {
-      try {
-        const model = await loadFinalBossPaperAsset(spec.id, { width: spec.width });
-        model.position.set(...spec.position);
-        model.rotation.x = spec.rotationX;
-        this.centralOriginalDisplay.add(model);
-        this.centralOriginalModelIds.push(spec.id);
-      } catch (error) {
-        this.centralOriginalModelFailures.push(spec.id);
-        console.warn(`[museum3d] original model unavailable: ${spec.id}`, error);
-      }
-    }));
-  }
-
   getCentralDisplayState() {
     return {
-      visible: this.centralOriginalDisplay.visible,
-      modelIds: [...this.centralOriginalModelIds].sort(),
-      failures: [...this.centralOriginalModelFailures].sort(),
-      sourceChapters: ['chapter01', 'chapter04'],
-      sourceRuntime: 'final-boss-all-worlds-at-once',
-      usesOriginalRuntimeAssets: true,
-      paddingRatio: this.centralJourneySupportingDisplay?.userData.layout?.paddingRatio ?? null,
-      supportingItems: this.centralJourneySupportingDisplay?.userData.items?.map(({ id, medium }) => ({ id, medium })) ?? [],
+      pending: this.pendingExhibit.visible,
+      evidence: EVIDENCE_LAYOUT.map(({ id }) => id),
+      deskInCase: this.reclassifiedGroup.visible,
+      stone: { visible: this.blackKnifeStone.visible, radius: BLACK_TICKET_STONE.radius, behind: 'pigment-vials' },
     };
   }
 
@@ -479,41 +423,37 @@ export class ServiceLobby {
     const world = this.ctx.collisionWorld;
     world.removeById('service-desk');
     world.removeById('central-case');
-    world.removeById('wall-south-solid');
-    world.removeById('wall-south-w');
-    world.removeById('wall-south-e');
-    world.removeById('stub-wall-w');
-    world.removeById('stub-wall-e');
-    world.removeById('stub-wall-end');
     world.removeById('corridor-doors');
-
     const c = this.centralCaseColliderSize;
     world.addBoxFromCenterSize(c.x, c.z, c.w, c.d, 'central-case');
-
     if (variant === 'normal') {
       world.addBoxFromCenterSize(0, 5.0, 4, 0.7, 'service-desk');
-      world.addBoxFromCenterSize(0, 6, 16.6, WALL_T, 'wall-south-solid');
       if (!this.ctx.model.getSnapshot().ticket.carried) {
         world.addBoxFromCenterSize(8, 0, 0.4, 2.2, 'corridor-doors');
       }
-      this._southSolid.visible = true;
-      this._southDoorway.visible = false;
-      this.stub.visible = false;
-    } else {
-      world.addBoxFromCenterSize(-4.4, 6, 7.8, WALL_T, 'wall-south-w');
-      world.addBoxFromCenterSize(4.4, 6, 7.8, WALL_T, 'wall-south-e');
-      world.addBoxFromCenterSize(-1.2, 9, 0.2, 6.2, 'stub-wall-w');
-      world.addBoxFromCenterSize(1.2, 9, 0.2, 6.2, 'stub-wall-e');
-      world.addBoxFromCenterSize(0, 12, 2.6, 0.2, 'stub-wall-end');
-      this._southSolid.visible = false;
-      this._southDoorway.visible = true;
-      this.stub.visible = true;
     }
+  }
+
+  guideLines(snapshot = this.ctx.model.getSnapshot()) {
+    const labyrinth = snapshot.labyrinth?.complete === true;
+    const exhibit = snapshot.exhibit?.solved === true;
+    if (exhibit && labyrinth) return LOBBY_GUIDE_LINES.bothDone;
+    if (exhibit) return LOBBY_GUIDE_LINES.exhibitDone;
+    if (labyrinth) return LOBBY_GUIDE_LINES.labyrinthDone;
+    return LOBBY_GUIDE_LINES.welcome;
+  }
+
+  /** The first time the player takes control in the hall, the guide greets them. */
+  playWelcome() {
+    if (this._welcomePlayed) return;
+    this._welcomePlayed = true;
+    this.ctx.audioGuide.sayArchivist(this.guideLines());
   }
 
   // Re-registered by Museum3DApp each time this space becomes active.
   registerInteractions() {
     const { interaction, model, audioGuide, dialogue } = this.ctx;
+    const inLobby = () => ['lobby', 'return'].includes(model.getSnapshot().phase);
 
     interaction.register('punched-ticket', {
       mesh: this.ticketProxy,
@@ -521,21 +461,16 @@ export class ServiceLobby {
         const s = model.getSnapshot();
         return s.phase === 'lobby' && !s.ticket.carried && !s.lobby.deskReclassified;
       },
-      prompt: () => {
-        const s = model.getSnapshot();
-        return s.ticket.inspected ? 'E — CARRY THE PUNCHED TICKET' : 'E — INSPECT THE PUNCHED TICKET';
-      },
+      prompt: () => (model.getSnapshot().ticket.inspected ? 'E · CARRY THE PUNCHED TICKET' : 'E · INSPECT THE PUNCHED TICKET'),
       action: () => {
         const s = model.getSnapshot();
         if (!s.ticket.inspected) {
           model.dispatch({ type: 'inspectTicket' });
-          dialogue.play([
-            { speaker: null, text: 'A museum admission ticket, machine-punched: A-1017. The punch pattern matches no current issue.' },
-          ]);
+          dialogue.play([{ speaker: null, text: 'A museum admission ticket, punched once. Claim 1978-0412.' }]);
         } else {
           model.dispatch({ type: 'carryTicket' });
           this.ticketMesh.visible = false;
-          dialogue.play([{ speaker: null, text: 'You carry the ticket. The archive wing turnstile will read it.' }]);
+          dialogue.play([{ speaker: null, text: 'You carry the ticket. The archive wing doors will read it.' }]);
         }
       },
     });
@@ -543,58 +478,56 @@ export class ServiceLobby {
     interaction.register('guide-receiver', {
       mesh: this.guideStand,
       enabled: () => model.getSnapshot().phase === 'lobby',
-      prompt: 'E — LISTEN TO THE GUIDE RECEIVER',
-      action: () => {
-        audioGuide.sayArchivist([LOCKED_GUIDE_LINE]);
-      },
+      prompt: 'E · LISTEN TO THE GUIDE',
+      action: () => audioGuide.sayArchivist(this.guideLines()),
     });
 
-    interaction.register('central-original-model-display', {
-      mesh: this.centralOriginalDisplayProxy,
-      enabled: () => {
-        const s = model.getSnapshot();
-        return ['lobby', 'return'].includes(s.phase) && !s.lobby.deskReclassified;
-      },
-      prompt: 'E — INSPECT THE TWO-WORLD DISPLAY',
-      action: () => dialogue.play([
-        ...exhibitDialogue(chapterExhibit('last-train')),
-        ...exhibitDialogue(chapterExhibit('painted-country')),
-      ]),
+    interaction.register('house-rules', {
+      mesh: this.houseRulesProxy,
+      enabled: inLobby,
+      prompt: 'E · READ THE HOUSE RULES',
+      action: () => this.ctx.showCard(HOUSE_RULES_CARD),
+    });
+
+    interaction.register('pending-exhibit', {
+      mesh: this.pendingProxy,
+      enabled: () => model.getSnapshot().phase === 'lobby' && !model.getSnapshot().exhibit.solved,
+      prompt: 'E · CLASSIFY THE OBJECT',
+      action: () => this.ctx.openDirection(CHAPTER05_DIRECTIONS.ONE_ANSWER),
     });
 
     interaction.register('fire-axe-evidence', {
       mesh: this.fireAxeProxy,
-      enabled: () => ['lobby', 'return'].includes(model.getSnapshot().phase) && !this.fireAxeTaken,
-      prompt: 'E — TAKE THE FIRE AXE',
+      enabled: () => inLobby() && !this.fireAxeTaken,
+      prompt: 'E · TAKE THE FIRE AXE',
       action: () => {
         this.fireAxeTaken = true;
-        // Only the removable axe disappears; the emergency cabinet stays on
-        // the wall as evidence, now visibly empty.
+        // Only the removable axe disappears; the cabinet stays, visibly empty.
         this.fireAxeProxy.visible = false;
         this.fireAxeEvidence.getObjectByName('fire-axe-handle').visible = false;
         this.fireAxeEvidence.getObjectByName('fire-axe-head').visible = false;
         this.fireAxeEvidence.getObjectByName('fire-axe-neck').visible = false;
         this.heldFireAxe.visible = true;
-        dialogue.play([{ speaker: null, text: 'The axe is still sharp. One long side of the central vitrine can be opened from this side.' }]);
+        dialogue.play([{ speaker: null, text: 'The axe is still sharp. The long south pane of the central case would give.' }]);
       },
     });
 
-    interaction.register('black-knife-long-side-glass', {
+    interaction.register('black-ticket-long-side-glass', {
       mesh: this.blackKnifeBreakProxy,
-      enabled: () => ['lobby', 'return'].includes(model.getSnapshot().phase)
+      enabled: () => inLobby()
         && !magicStoneSnapshot().collected.includes('black-knife')
         && this.fireAxeTaken && !this.blackKnifeGlassBroken,
-      prompt: 'E — BREAK THE LONG SIDE GLASS',
+      prompt: 'E · BREAK THE SOUTH PANE',
       showWhenInactive: true,
       action: () => this.tryBreakBlackKnifeGlass(),
     });
 
-    interaction.register('black-knife-stone', {
+    interaction.register('black-ticket-stone', {
       mesh: this.blackKnifeStoneProxy,
-      enabled: () => ['lobby', 'return'].includes(model.getSnapshot().phase)
+      enabled: () => inLobby()
         && this.blackKnifeGlassBroken && !magicStoneSnapshot().collected.includes('black-knife')
         && !this._claimingBlackKnifeStone,
-      prompt: 'CLICK — TAKE THE BLACK KNIFE STONE',
+      prompt: 'CLICK · TAKE THE SMALL DARK STONE',
       pointerOnly: true,
       showWhenInactive: true,
       action: async () => {
@@ -603,53 +536,29 @@ export class ServiceLobby {
         this._claimingBlackKnifeStone = false;
         if (!taken) return;
         this.blackKnifeStone.visible = false;
-        this.blackKnifeStoneLight.intensity = 0;
-        dialogue.play([{ speaker: null, text: 'The shard is cold in your hand. The hidden route now has a key.' }]);
+        dialogue.play([{ speaker: null, text: 'The stone is cold, and lighter than it looks.' }]);
       },
     });
 
-    for (const [id, mesh] of [
-      ['chapter-01-ticket-case', this.lastTrainTicketProxy],
-    ]) {
-      interaction.register(id, {
-        mesh,
-        enabled: () => ['lobby', 'return'].includes(model.getSnapshot().phase),
-        prompt: 'E — READ CHAPTER 01 ACCESSION CARD',
-        action: () => dialogue.play(exhibitDialogue(this.lastTrainExhibit)),
-      });
-    }
-
-    interaction.register('cased-desk-phone', {
-      mesh: this.casedDesk,
+    interaction.register('cased-desk-register', {
+      mesh: this.casedDeskProxy,
       enabled: () => model.getSnapshot().lobby.deskReclassified,
-      prompt: 'E — READ THE OPEN REGISTER',
-      action: () => {
-        dialogue.play([
-          { speaker: null, text: 'The register is open to the last entry. The name written there is BUTCH. The telephone keeps ringing. No one is coming to answer it.' },
-        ]);
-      },
+      prompt: 'E · READ THE OPEN REGISTER',
+      action: () => this.ctx.showCard(REGISTER_CARD, {
+        onClose: () => dialogue.play([{ speaker: null, text: 'The telephone keeps ringing. No one is coming to answer it.' }]),
+      }),
     });
-  }
-
-  _registerTriggers() {
-    // walk-through trigger handled in update(): corridor doorway zone.
-    this._corridorZone = { minX: 7.0, maxX: 8.2, minZ: -1.1, maxZ: 1.1 };
-    this._stubEndZone = { minX: -1.0, maxX: 1.0, minZ: 11.0, maxZ: 12.0 };
-    this._doorHintCooldown = 0;
   }
 
   enter(snapshot) {
     const variant = this.reclassification.apply(snapshot);
-    this.centralOriginalDisplay.visible = variant === 'normal';
-    this.centralNormalLabel.visible = variant === 'normal';
+    this.pendingExhibit.visible = variant === 'normal';
+    this.pendingLabel.visible = variant === 'normal';
+    this.pendingLabelSouth.visible = variant === 'normal';
     this.ticketMesh.visible = !snapshot.ticket.carried && variant === 'normal';
     if (variant === 'reclassified') {
       this.deskLampLight.intensity = 9;
-      this._phoneTimer = 1.2;
-      if (!this._reclassifyLinePlayed) {
-        this._reclassifyLinePlayed = true;
-        this.ctx.audioGuide.sayArchivist([LOCKED_RECLASSIFY_LINE]);
-      }
+      this._phoneTimer = Math.min(this._phoneTimer || 1.2, 1.2);
     } else {
       this.deskLampLight.intensity = 0;
     }
@@ -679,7 +588,7 @@ export class ServiceLobby {
     const player = this.ctx.controller.position;
     return this.blackKnifeGlassBroken
       && ['lobby', 'return'].includes(this.ctx.model.getSnapshot().phase)
-      && player.x >= -0.25 && player.x <= 4.75
+      && player.x >= 1.75 && player.x <= 5.0
       && player.z >= 1.25 && player.z <= 3.25;
   }
 
@@ -688,47 +597,39 @@ export class ServiceLobby {
     this.blackKnifeGlassBroken = true;
     this.blackKnifeLongSideGlass.visible = false;
     this.glassShardEvidence.visible = true;
-    this.ctx.dialogue.play([{ speaker: null, text: 'Only the long side pane breaks. The stone is exposed behind the missing glass.' }]);
+    this.putAxeAway();
+    this.ctx.dialogue.play([{ speaker: null, text: 'The south pane gives. You set the axe down among the glass.' }]);
     return true;
+  }
+
+  /** Once used, or on leaving the hall, the axe is no longer in Butch's hand. */
+  putAxeAway() {
+    this.heldFireAxe.visible = false;
   }
 
   update(dt, snapshot) {
     const player = this.ctx.controller.position;
-    this._updateCentralJourneyDisplay?.(performance.now() / 1000);
 
-    // The case is large and its transparent surfaces make a precision
-    // centre-reticle ray unreliable at arm's length. Once the axe is held,
-    // proximity to the accessible long side intentionally supplies the break
-    // prompt; collecting the exposed stone still requires an exact click.
+    // Proximity supplies the break / take prompt along the case's south
+    // side: a centre-reticle ray through transparent panes is unreliable at
+    // arm's length. Collecting the stone still requires a deliberate click
+    // (the stone is pointerOnly: E never takes it), and the tag's CLICK
+    // works from anywhere within reach, not only dead on the hidden stone.
     const atBlackKnifeLongSide = this.canBreakBlackKnifeGlass();
-    const atExposedStone = this.canReachBlackKnifeStone();
+    const atExposedStone = this.canReachBlackKnifeStone() && !magicStoneSnapshot().collected.includes('black-knife');
     this.ctx.interaction.setFallback(
       this.fireAxeTaken && !this.blackKnifeGlassBroken && atBlackKnifeLongSide
-        ? 'black-knife-long-side-glass'
+        ? 'black-ticket-long-side-glass'
         : this.blackKnifeGlassBroken && atExposedStone
-          ? 'black-knife-stone'
+          ? 'black-ticket-stone'
           : null,
-      { promptOnly: this.blackKnifeGlassBroken && atExposedStone },
     );
 
-    // corridor doorway (normal route forward)
-    if (
-      snapshot.phase === 'lobby'
-      && snapshot.ticket.carried
-      && this._inZone(player, this._corridorZone)
-    ) {
+    if (snapshot.phase === 'lobby' && snapshot.ticket.carried && this._inZone(player, this._corridorZone)) {
       this.ctx.goToCorridor();
     }
 
-    // former desk location → collapse stub end (Gate 6 boundary)
-    if (snapshot.phase === 'return' && this._inZone(player, this._stubEndZone)) {
-      this.ctx.model.dispatch({ type: 'enterCollapse' });
-      this.ctx.dialogue.play([
-        { speaker: null, text: 'The corridor continues past the graybox. The collapse proof is built in Gate 6.' },
-      ]);
-    }
-
-    // reclassified desk: ringing telephone (visual pulse + periodic ring)
+    // the lost desk: its telephone keeps ringing
     if (snapshot.lobby.deskReclassified) {
       this._phoneTimer -= dt;
       if (this._phoneTimer <= 0) {
@@ -736,30 +637,22 @@ export class ServiceLobby {
         this.ctx.audioGuide.phoneRing();
       }
       const pulse = (Math.sin(performance.now() * 0.02) + 1) / 2;
-      if (this._ringingPhone) {
-        this._ringingPhone.position.y = this._ringingPhoneBaseY + pulse * 0.012;
-      } else if (this._handset) {
-        this._handset.position.y = 0.17 + pulse * 0.012;
-      }
-    }
-
-    // The stone stays still and unlit until the player deliberately notices it.
-
-    this._doorHintCooldown = Math.max(0, this._doorHintCooldown - dt);
-    if (
-      snapshot.phase === 'lobby' &&
-      !snapshot.ticket.carried &&
-      player.x > 6.2 && Math.abs(player.z) < 1.4 &&
-      this._doorHintCooldown === 0
-    ) {
-      this._doorHintCooldown = 6;
-      this.ctx.dialogue.play([
-        { speaker: null, text: 'The archive wing doors read the punched ticket. Inspect it at the service desk, then carry it.' },
-      ]);
+      if (this._ringingPhone) this._ringingPhone.position.y = this._ringingPhoneBaseY + pulse * 0.012;
+      else if (this._handset) this._handset.position.y = 0.17 + pulse * 0.012;
     }
   }
 
-  exit() {}
+  exit() {
+    // An unused axe goes back in its cabinet: it never follows Butch into
+    // the corridor or the collapse.
+    if (this.fireAxeTaken && !this.blackKnifeGlassBroken) {
+      this.fireAxeTaken = false;
+      this.fireAxeProxy.visible = true;
+      for (const part of ['fire-axe-handle', 'fire-axe-head', 'fire-axe-neck']) this.fireAxeEvidence.getObjectByName(part).visible = true;
+    }
+    this.putAxeAway();
+    this.ctx.interaction.setFallback(null);
+  }
 
   dispose() {
     this.root.clear();
