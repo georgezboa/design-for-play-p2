@@ -10,19 +10,20 @@ export const CHAPTER3_TIME_COSTS = Object.freeze({
   LONG_RECONSTRUCTION: 3,
 });
 
+// Authored story times. The clock is no longer shown to the player; it only
+// drives the day → dusk → night → dawn lighting.
 export const CHAPTER3_TIME_ANCHORS = Object.freeze({
   CHAPTER_START: Object.freeze({ day: 1, minuteOfDay: 14 * 60 + 20 }),
   TRAIN_DEPARTED: Object.freeze({ day: 1, minuteOfDay: 14 * 60 + 22 }),
   TRANSPORT_ENTERED: Object.freeze({ day: 1, minuteOfDay: 15 * 60 + 8 }),
-  BOSKO_SQUARE: Object.freeze({ day: 1, minuteOfDay: 16 * 60 + 20 }),
-  GROOVES_CONCLUDED: Object.freeze({ day: 1, minuteOfDay: 16 * 60 + 35 }),
-  MATERIAL_TIMELINE: Object.freeze({ day: 1, minuteOfDay: 17 * 60 + 20 }),
+  TICKET_BOARD_FILED: Object.freeze({ day: 1, minuteOfDay: 15 * 60 + 40 }),
+  // Crossing the market with Olek hands the city over to dusk.
+  MARKET_CROSSED: Object.freeze({ day: 1, minuteOfDay: 17 * 60 + 25 }),
   CUT_INTERFACE_COMPLETE: Object.freeze({ day: 1, minuteOfDay: 17 * 60 + 52 }),
   HOTEL_CHECK_IN: Object.freeze({ day: 1, minuteOfDay: 18 * 60 }),
   NIGHT_WAKE: Object.freeze({ day: 2, minuteOfDay: 0 * 60 + 40 }),
-  DAWN_RETURN: Object.freeze({ day: 2, minuteOfDay: 6 * 60 + 20 }),
   SUNRISE_OVERLOOK: Object.freeze({ day: 2, minuteOfDay: 6 * 60 + 42 }),
-  EASTBOUND_BOARDING: Object.freeze({ day: 2, minuteOfDay: 7 * 60 + 5 }),
+  NIGHT_SERVICE_BOARDING: Object.freeze({ day: 2, minuteOfDay: 7 * 60 + 5 }),
 });
 
 function clampMinute(value) {

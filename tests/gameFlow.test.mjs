@@ -43,9 +43,12 @@ test('every transition preloads its next chapter while the film is playing', () 
 
 test('the hidden title router gives Chapter 3 direct node access', () => {
   const title = source('src/shell/devRoutes.js');
-  assert.match(title, /id: '3\.1'[\s\S]*?CITY ENTRY · DAWN[\s\S]*?route: '\/car03-3d\.html'/);
-  assert.match(title, /id: '3\.2'[\s\S]*?DUSK CAMPFIRE/);
-  assert.match(title, /id: '3\.4'[\s\S]*?SUNRISE OVERLOOK/);
+  assert.match(title, /id: '3\.1'[\s\S]*?CITY ENTRY · THE PLATFORM[\s\S]*?route: '\/car03-3d\.html'/);
+  // 1.0 release: the campfire chatter and the overlook climb were cut; the
+  // nodes now open the ticket board, the scanners and the night fire.
+  assert.match(title, /id: '3\.2'[\s\S]*?TICKET 43 BOARD[\s\S]*?playtest=chapter3-board/);
+  assert.match(title, /id: '3\.4'[\s\S]*?DUSK · CUT FEED & ECHO STONE/);
+  assert.match(title, /id: '3\.6'[\s\S]*?STATION SCANNER · FINALE[\s\S]*?playtest=chapter3-station/);
 });
 
 test('the integrated preview preserves the Chapter 3 film preload across navigation', () => {

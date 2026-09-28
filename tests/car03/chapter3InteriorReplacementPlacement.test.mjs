@@ -261,7 +261,7 @@ describe('Chapter 3 interior replacement placement', () => {
     );
   });
 
-  it('opens traversed hotel doors around fixed side hinges while occupied guest doors stay shut', async () => {
+  it('opens traversed hotel doors around fixed side hinges; the occupied guest doors are scenery', async () => {
     const { createChapter3HotelHall } = await import('../../src/cars/presentCity3d/Chapter3HotelHall.js');
     const scene = new THREE.Scene();
     const hall = createChapter3HotelHall(scene);
@@ -274,7 +274,8 @@ describe('Chapter 3 interior replacement placement', () => {
     assert.equal(hall.stairDoorPortal.position.z, 0.06, 'dark stair portal covers the fused closed shell door when the leaf opens');
     assert.match(runtimeSource, /this\.hotelDoorPivot\.rotation\.y = this\.hotelDoorOpenAngle/, 'door animation rotates the hinge pivot');
     assert.match(runtimeSource, /stairDoorPivot, -Math\.PI \* 0\.5/, 'stair door swings out toward the stair landing');
-    assert.match(runtimeSource, /speaker: 'VOICE BEHIND DOOR'/, 'occupied guest-room interactions remain knocks, not implausible openings');
+    // Release cut: the eight occupied-room doors are no longer interactable.
+    assert.doesNotMatch(runtimeSource, /VOICE BEHIND DOOR|hotel-background-room-door/, 'occupied guest rooms are scenery, not knocks');
   });
 
   it('hides the old greybox corridor walls and background doors so only the shell walls remain', () => {
@@ -318,7 +319,7 @@ describe('Chapter 3 interior replacement placement', () => {
   });
 
   it('keeps the ministry queue and benches visible while hiding only the architectural envelope', () => {
-    const fallbackSource = runtimeSource.match(/const ministryFallback = [\s\S]*?;\s*const archiveFallback/s)?.[0] ?? '';
+    const fallbackSource = runtimeSource.match(/const ministryFallback = [\s\S]*?\);/s)?.[0] ?? '';
     assert.ok(fallbackSource.length > 0, 'ministryFallback source found');
 
     const keptNames = [

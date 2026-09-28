@@ -22,8 +22,8 @@ export const OUTER_CITY_GROUND = Object.freeze({
 });
 
 export const CAMERA_LIMITS = Object.freeze({
-  minZoom: 2.85,
-  maxZoom: 2.85,
+  minZoom: 3.6,
+  maxZoom: 3.6,
   minPolarDeg: 45,
   maxPolarDeg: 48,
   minAzimuthDeg: 41,
@@ -836,7 +836,7 @@ export const OBSTACLES = Object.freeze([
 export const CAMERA_HOME = Object.freeze({
   position: [52, 100, 65],
   target: [1.5, 0.8, 13],
-  zoom: 2.85,
+  zoom: 3.6,
 });
 
 export const CAMERA_FOCUS_TARGETS = Object.freeze({

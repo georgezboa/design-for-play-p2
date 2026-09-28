@@ -1,3 +1,6 @@
+import './fonts/fonts.css';
+import './shell/uiKit.css';
+import './cars/presentCity3d/chapter3Release.css';
 import { EchoCity3DPreview } from './cars/presentCity3d/EchoCity3DPreview.js';
 import { Chapter3OpeningRuntime } from './cars/presentCity3d/Chapter3OpeningRuntime.js';
 import { createChapter3OpeningModel } from './cars/presentCity3d/chapter3OpeningModel.js';
@@ -11,13 +14,19 @@ import { reducedMotionActive } from './shell/motion.js';
 
 installDevMenuReturnControl();
 // Escape opens the shared pause menu like every other chapter; leaving for
-// the title goes through its confirmation. An open evidence document still
-// closes first.
+// the title goes through its confirmation. An open evidence card or the
+// ticket board closes first.
 installPauseMenu({
   checkpointId: 'chapter-3-start',
   controls: CHAPTER_CONTROLS.echoCity,
   onEscape: () => {
-    const viewer = window.chapter3Runtime?.evidenceViewer;
+    const runtime = gameplayRuntime;
+    const board = runtime?.ticketBoard;
+    if (board?.active) {
+      board.close();
+      return true;
+    }
+    const viewer = runtime?.evidenceViewer;
     if (viewer?.active) {
       viewer.close();
       return true;
@@ -45,76 +54,45 @@ const preview = new EchoCity3DPreview({
   loadingFill: document.querySelector('#loading-fill'),
 });
 
-// ?playtest= jumps to one of the Chapter 3 QA states; dev builds only
-// (devParams() is empty in production, so a shipped city always opens at dawn).
+// ?playtest= jumps to one Chapter 3 beat; dev builds only (devParams() is
+// empty in production, so a shipped city always opens on the platform).
 const query = devParams();
 const playtest = query.get('playtest');
-const openingStart = playtest === 'chapter3-time-transition'
-  ? 'night-transition-qa'
-  : ['chapter3-campfire', 'chapter3-alley', 'chapter3-magic-stone'].includes(playtest) ? 'dusk-campfire-qa'
-  : playtest === 'chapter3-23'
-  ? 'interaction-23'
-  : playtest === 'chapter3-25' ? 'interaction-25'
-  : playtest === 'chapter3-corridor' ? 'hotel-corridor-qa'
-  : playtest === 'chapter3-26' ? 'interaction-26'
-  : playtest === 'chapter3-27' ? 'interaction-27'
-  : playtest === 'chapter3-lev-exit' ? 'lev-hotel-exit-qa'
-  : playtest === 'chapter3-night-hotel' ? 'night-hotel-qa'
-  : playtest === 'chapter3-night-lobby' ? 'night-lobby-qa'
-  : playtest === 'chapter3-night-exterior' ? 'night-exterior-qa'
-  : playtest === 'chapter3-npc-life' ? 'npc-life-qa'
-  : playtest === 'chapter3-29' ? 'interaction-29'
-  : playtest === 'chapter3-31' ? 'interaction-31'
-  : playtest === 'chapter3-morning-exterior' ? 'morning-exterior-qa'
-  : playtest === 'chapter3-sunrise' ? 'sunrise-overlook-qa'
-  : playtest === 'chapter3-32' ? 'interaction-32'
-  : playtest === 'chapter3-33' ? 'interaction-33'
-  : playtest === 'chapter3-22'
-  ? 'interaction-22'
-  : playtest === 'chapter3-21'
-    ? 'interaction-21'
-    : playtest === 'chapter3-15'
-      ? 'interaction-15'
-  : playtest === 'chapter3-14'
-      ? 'interaction-14'
-      : playtest === 'chapter3-13'
-    ? 'interaction-13'
-  : playtest === 'chapter3-08'
-      ? 'interaction-08'
-      : playtest === 'chapter3-07'
-        ? 'interaction-07'
-        : null;
+const PLAYTEST_STARTS = Object.freeze({
+  'chapter3-board': 'ticket-board',
+  'chapter3-market': 'market-scanner',
+  'chapter3-dusk': 'cut-interface',
+  'chapter3-magic-stone': 'cut-interface',
+  'chapter3-hotel': 'hotel',
+  'chapter3-night': 'night-fire',
+  'chapter3-wire': 'wire',
+  'chapter3-morning': 'morning',
+  'chapter3-station': 'station',
+});
+// Continue / Load at the mid-chapter save opens `?stage=dusk`. Production
+// honours it only when the active save unlocked that checkpoint, so a
+// hand-edited URL cannot skip ahead.
+const store = createSaveStore();
+const activeSave = store.readAll()[store.getActiveSlot()];
+const unlocked = [...(activeSave?.unlocked ?? []), activeSave?.checkpointId].filter(Boolean);
+const requestedStage = new URLSearchParams(window.location.search).get('stage');
+const resumeAtDusk = requestedStage === 'dusk' && (DEV_MODE || unlocked.includes('chapter-3-dusk'));
+window.addEventListener('nightfall:chapter3-checkpoint', (event) => {
+  if (event.detail?.id) store.markCheckpoint(event.detail.id);
+});
 const gameplayRuntime = new Chapter3OpeningRuntime({
-    preview,
-    model: createChapter3OpeningModel({ startAt: openingStart }),
-    elements: {
-      statusElement: document.querySelector('#runtime-status'),
-      flipClockElement: document.querySelector('#chapter-flip-clock'),
-      objectiveTitle: document.querySelector('#objective-title'),
-      objectiveDetail: document.querySelector('#objective-detail'),
-      interactionLabel: document.querySelector('#interaction-label'),
-      scannerReadout: document.querySelector('#scanner-readout'),
-      walkBark: document.querySelector('#walk-bark'),
-      blackout: document.querySelector('#chapter-blackout'),
-      sunriseTableau: document.querySelector('#sunrise-tableau'),
-      evidenceViewer: {
-        root: document.querySelector('#evidence-viewer'),
-        close: document.querySelector('#evidence-close'),
-        kicker: document.querySelector('#evidence-kicker'),
-        title: document.querySelector('#evidence-title'),
-        body: document.querySelector('#evidence-body'),
-        marks: document.querySelector('#evidence-marks'),
-        slot: document.querySelector('#evidence-slot'),
-      },
-      dialogue: {
-        panel: document.querySelector('#dialogue-panel'),
-        speaker: document.querySelector('#dialogue-speaker'),
-        text: document.querySelector('#dialogue-text'),
-        choices: document.querySelector('#dialogue-choices'),
-        hint: document.querySelector('#dialogue-hint'),
-      },
-    },
-  });
+  preview,
+  model: createChapter3OpeningModel({ startAt: PLAYTEST_STARTS[playtest] ?? (resumeAtDusk ? 'cut-interface' : null) }),
+  elements: {
+    statusElement: document.querySelector('#runtime-status'),
+    objectiveCard: document.querySelector('#objective-card'),
+    objectiveTitle: document.querySelector('#objective-title'),
+    blackout: document.querySelector('#chapter-blackout'),
+    sunriseTableau: document.querySelector('#sunrise-tableau'),
+    evidenceViewer: { root: document.querySelector('#evidence-viewer') },
+    caption: document.querySelector('#dialogue-caption'),
+  },
+});
 
 preview.attachGameplayRuntime(gameplayRuntime);
 
@@ -135,7 +113,7 @@ if (DEV_MODE) window.render_game_to_text = () => {
   const city = JSON.parse(preview.textState());
   return JSON.stringify({
     ...city,
-    chapterVersion: 'chapter3-temporary-final-v31-integrated-v35',
+    chapterVersion: 'chapter3-release-1.0-echo-city',
     gameplay: gameplayRuntime.initialized
       ? gameplayRuntime.textState()
       : { initialized: false, loading: true },
@@ -145,16 +123,14 @@ if (DEV_MODE) {
   window.advanceTime = (ms) => preview.advanceTime(ms);
   window.echoCity3D = preview;
   window.chapter3Runtime = gameplayRuntime;
-  window.chapter3Opening = gameplayRuntime;
 }
 
 preview.initialize()
   .then(() => {
     preview.start();
     if (playtest === 'chapter3-characters') {
-      // The rig lab tests character loading/deformation, not the 22 landmark
-      // GLBs. Skipping that unrelated stream keeps the bounded QA route fast
-      // and prevents city-asset state from hiding a character failure.
+      // The rig lab tests character loading/deformation, not the landmark
+      // GLBs, so it skips that unrelated stream.
       preview.modelsReady = true;
       preview.loadingFill.style.width = '100%';
       preview.loadingLabel.textContent = 'LOADING SHARED-RIG CAST';
@@ -165,10 +141,9 @@ preview.initialize()
   })
   .then(() => gameplayRuntime.initialize())
   .then(() => {
-    if (playtest !== 'chapter3-characters') return;
     preview.loadingPanel.classList.add('done');
   })
   .catch((error) => {
-    console.error('Failed to initialize Echo City 3D preview', error);
-    document.querySelector('#runtime-status').textContent = '3D INITIALIZATION FAILED';
+    console.error('Failed to initialize Echo City', error);
+    document.querySelector('#runtime-status').textContent = 'ECHO CITY FAILED TO START';
   });

@@ -12,13 +12,12 @@ export const DEV_ROUTES = Object.freeze([
   { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell and the one-line rule.', route: '/borrowed-light.html?section=A' },
   { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone and the hotel cut.', route: '/borrowed-light.html?section=B' },
   { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Eight-bell departure; the train remembers.', route: '/borrowed-light.html?section=C' },
-  { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · DAWN', detail: 'Main Echo City investigation start.', route: '/car03-3d.html' },
-  { id: '3.2', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'DUSK CAMPFIRE', detail: 'Campfire evidence and the Echo Stone route.', route: '/car03-3d.html?playtest=chapter3-campfire' },
-  // This node is the beginning of the Copper Heron sequence, not the
-  // already-asleep nightmare checkpoint.  Starting in the latter leaves
-  // Butch deliberately posed on the bed and skips the hotel interactions.
-  { id: '3.3', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'COPPER HERON · HOTEL', detail: 'Hotel lobby, check-in, and character encounters.', route: '/car03-3d.html?playtest=chapter3-25' },
-  { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'SUNRISE OVERLOOK', detail: 'Late-city overlook and exit setup.', route: '/car03-3d.html?playtest=chapter3-sunrise' },
+  { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · THE PLATFORM', detail: 'The night service drops Butch with the claim card.', route: '/car03-3d.html' },
+  { id: '3.2', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'TICKET 43 BOARD', detail: 'The lens, the stack and one punch: VENN is VELEZ.', route: '/car03-3d.html?playtest=chapter3-board' },
+  { id: '3.3', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'MARKET SCANNER · WALK BESIDE', detail: 'Cross the ward scanner in step with Olek.', route: '/car03-3d.html?playtest=chapter3-market' },
+  { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'DUSK · CUT FEED & ECHO STONE', detail: 'Petar’s cut, and Seline at the fire.', route: '/car03-3d.html?playtest=chapter3-magic-stone' },
+  { id: '3.5', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'COPPER HERON · NIGHT FIRE', detail: 'The wire into the clamp, on the next bell.', route: '/car03-3d.html?playtest=chapter3-wire' },
+  { id: '3.6', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'STATION SCANNER · FINALE', detail: 'Walk beside the Mara ahead; board the night service.', route: '/car03-3d.html?playtest=chapter3-station' },
   { id: '4.1', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'GALLERY · THE OPEN SHEET', detail: 'First painted-country gallery route.', route: '/painted-country.html' },
   { id: '4.2', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'DRAWING STUDIO · STILL LIFE', detail: 'Cabinet pigments and the canvas reconstruction.', route: '/painted-country.html?qa=drawing' },
   { id: '4.3', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'PIGMENT TRAIN · YARD', detail: 'Collect-six-colors train departure route.', route: '/painted-country.html?qa=pigments' },
