@@ -61,9 +61,10 @@ function launchChapter2() {
 const services = {
   audio,
   devMode: DEV_MODE,
-  // dev-only QA knob: headless software GL renders ~2 fps, so solve scripts
-  // allow bigger simulation steps (`?dtmax=250`). Production is fixed at 50.
-  maxDt: Math.min(500, Number(params.get('dtmax')) || 50),
+  // dev-only QA knob: headless software GL can render under 1 fps, so solve
+  // scripts pass `?dtmax=1000` to step the simulation (and tweens, below) in
+  // real time. Production is fixed at 50 ms with Phaser's smoothed delta.
+  maxDt: Math.min(2000, Number(params.get('dtmax')) || 50),
   onCheckpoint(id) {
     const slot = store.getActiveSlot();
     if (!store.readAll()[slot]) store.startNew(slot);
@@ -96,6 +97,7 @@ const game = new Phaser.Game({
   backgroundColor: '#0b0705',
   render: { antialias: true, pixelArt: false, roundPixels: false, powerPreference: 'high-performance' },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+  ...(params.has('dtmax') ? { fps: { smoothStep: false } } : {}),
   scene: [],
 });
 

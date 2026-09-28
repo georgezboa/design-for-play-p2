@@ -311,6 +311,29 @@ export function paperGrain(c, w, h, paper, alpha = 0.16) {
   c.restore();
 }
 
+/**
+ * The 1978 look (spec §5): a warm sepia grade applied to everything painted
+ * so far on this canvas, keeping its transparency (so live layers such as
+ * the drifting fields still show through the holes).
+ */
+export function sepia(c, { amount = 0.92, warmth = 0.1 } = {}) {
+  const canvas = c.canvas;
+  const tmp = document.createElement('canvas');
+  tmp.width = canvas.width;
+  tmp.height = canvas.height;
+  tmp.getContext('2d').drawImage(canvas, 0, 0);
+  c.save();
+  c.setTransform(1, 0, 0, 1, 0, 0);
+  c.clearRect(0, 0, canvas.width, canvas.height);
+  c.filter = `sepia(${amount}) saturate(0.8) contrast(0.94) brightness(1.04)`;
+  c.drawImage(tmp, 0, 0);
+  c.filter = 'none';
+  c.globalCompositeOperation = 'source-atop';
+  c.fillStyle = `rgba(255, 200, 130, ${warmth})`;
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.restore();
+}
+
 /** Per-panel vignette baked into a painting. */
 export function vignette(c, w, h, strength = 0.5) {
   c.save();

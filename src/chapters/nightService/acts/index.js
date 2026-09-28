@@ -3,11 +3,14 @@
 
 import { ACT1 } from './act1.js';
 import { ACT2_STUB, ACT3_STUB } from './stubAct.js';
+import { LAB_ACT } from './labAct.js';
 
 export const ACTS = Object.freeze({
   act1: ACT1,
   act2: ACT2_STUB,
   act3: ACT3_STUB,
+  // dev-only engine lab: reachable solely through the dev `?act=lab` route
+  lab: LAB_ACT,
 });
 
 export const ACT_ORDER = Object.freeze(['act1', 'act2', 'act3']);

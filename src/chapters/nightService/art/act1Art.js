@@ -7,7 +7,7 @@
 
 import {
   PAL, amberGlint, brassFill, brushTexture, glow, hgrad, ink, inkEllipse, inkLine, inkRect,
-  lightCone, paperGrain, parcel, rivet, rng, roundRectPath, speckle, vgrad, vignette, wood,
+  lightCone, paperGrain, parcel, rivet, rng, roundRectPath, sepia, speckle, vgrad, vignette, wood,
 } from './ink.js';
 
 export const FLOOR = 0.78;
@@ -161,15 +161,9 @@ function finish(c, env, { grain = 0.2, vig = 0.45 } = {}) {
   if (env.era === 'past') sepiaWash(c, env.w, env.h);
 }
 
-export function sepiaWash(c, w, h) {
-  c.save();
-  c.globalCompositeOperation = 'color';
-  c.fillStyle = 'rgba(150, 110, 60, 0.85)';
-  c.fillRect(-40, -40, w + 80, h + 80);
-  c.globalCompositeOperation = 'soft-light';
-  c.fillStyle = 'rgba(255, 210, 150, 0.35)';
-  c.fillRect(-40, -40, w + 80, h + 80);
-  c.restore();
+/** The 1978 grade: sepia over painted pixels only (transparency is kept). */
+export function sepiaWash(c) {
+  sepia(c);
 }
 
 // ---------------------------------------------------------------------------

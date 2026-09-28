@@ -195,6 +195,9 @@ export class PanelScene extends Phaser.Scene {
     this.bridgeFlash = new Map();
     this.textScale = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
 
+    // dev QA only (`?dtmax=`): let tweens take real-time steps on very slow
+    // headless renderers instead of Phaser's 33 ms lag-smoothing.
+    if ((this.services.maxDt ?? 50) > 50) { this.tweens.maxLag = 1e9; this.tweens.lagSkip = 1e9; }
     ensureSharedTextures(this);
     this.ensureUiTextures();
     this.worldKeys = {};
@@ -585,13 +588,9 @@ export class PanelScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: this.blackout, alpha: 0, delay: hold, duration: 800, ease: 'Sine.easeOut' });
     this.titleBox.y = this.layout.view.h / 2 + 8;
-    this.tweens.chain({
-      targets: this.titleBox,
-      tweens: [
-        { alpha: 1, y: this.layout.view.h / 2, duration: 700, delay: 200, ease: 'Sine.easeOut' },
-        { alpha: 1, duration: Math.max(200, hold - 500) },
-        { alpha: 0, duration: 700 },
-      ],
+    this.tweens.add({ targets: this.titleBox, alpha: 1, y: this.layout.view.h / 2, duration: 700, delay: 200, ease: 'Sine.easeOut' });
+    this.time.delayedCall(200 + 700 + Math.max(200, hold - 500), () => {
+      this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 700, ease: 'Sine.easeIn' });
     });
   }
 
@@ -1147,7 +1146,8 @@ export class PanelScene extends Phaser.Scene {
     if (this.keyboardMode) { this.keyboardMode = false; this.refreshSelection(); }
     if (this.fading) return;
     if (this.cardView || this.model.state.card) { this.model.closeCard(); return; }
-    if (this.caption) { this.advanceCaption(); return; }
+    // a spoken line takes the click; a passing caption never blocks play
+    if (this.caption && !this.caption.auto) { this.advanceCaption(); return; }
     if (p.rightButtonDown()) {
       const slot = this.slotAt(p.x, p.y);
       const tile = slot ? this.model.tileAt(slot.index) : null;
@@ -1311,7 +1311,7 @@ export class PanelScene extends Phaser.Scene {
       if (key === 'Enter' || key === ' ' || key === 'Escape') { m.closeCard(); return true; }
       return key === 'Tab';
     }
-    if (this.caption) {
+    if (this.caption && !this.caption.auto) {
       if (key === 'Enter' || key === ' ') { if (!event.repeat) this.advanceCaption(); return true; }
       return key === 'Tab';
     }
@@ -1592,7 +1592,7 @@ export class PanelScene extends Phaser.Scene {
     this.updateCaption(dt);
 
     // idle hint: 45 s without input on an unsolved step pulses the right thing
-    if (!this.model.isLocked() && !this.fading && !this.caption) {
+    if (!this.model.isLocked() && !this.fading && !(this.caption && !this.caption.auto)) {
       this.idleMs += dt;
       const step = this.model.currentStep();
       if (step?.hint && this.idleMs > IDLE_HINT_MS) {
