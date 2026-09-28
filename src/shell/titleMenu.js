@@ -321,7 +321,8 @@ export function createTitleMenu({ onStart, openCredits = false }) {
             src: CINEMATICS.opening,
             label: 'NIGHTFALL opening cinematic',
             preloadChapterId: 'chapter1',
-            onComplete: () => onStart('prologue-start'),
+            // Chapter 1 is its own page: the NIGHT SERVICE panel puzzle.
+            onComplete: () => window.location.assign('/night-service.html'),
           });
           return;
         }
@@ -396,6 +397,9 @@ export function createTitleMenu({ onStart, openCredits = false }) {
   // but slow down moment-to-moment playtests.  Dev build only: a shipped
   // title has no router, and typing 1111 there does nothing.
   const hiddenChapters = DEV_MODE ? [
+    { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-start', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
+    { id: 'II', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-act-2', title: 'ACT II · THE LUGGAGE CAR', detail: 'The punch-hole lens and the frame lift.', route: '/night-service.html?act=2' },
+    { id: 'III', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-act-3', title: 'ACT III · TWO TRUE THINGS', detail: 'The bridge through 1978 and the bell finale.', route: '/night-service.html?act=3' },
     { id: '1.1', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION I · THE PUNCH', detail: 'First carriage and opening timetable interaction.', route: '/?qa=phase1&state=entry' },
     { id: '1.2', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION II · CONTACT INTERLOCK', detail: 'Relay case, contactor and traction circuit.', route: '/?qa=phase2&state=entry' },
     { id: '1.3', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION III · AIR CIRCUIT', detail: 'Isolate, bleed and release the local air lock.', route: '/?qa=phase3&state=entry' },

@@ -4,7 +4,13 @@ export const SETTINGS_KEY = 'nightfall.settings.v1';
 export const ACTIVE_SLOT_KEY = 'nightfall.activeSlot.v1';
 
 export const CHECKPOINTS = Object.freeze([
-  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line wakes.', route: '/' },
+  // Chapter 1 is the NIGHT SERVICE panel puzzle (night-service.html). The page
+  // opens the act named by the active slot's checkpoint (`act`). The legacy
+  // `prologue-start` id stays first so older saves still load (as Act 1).
+  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line wakes.', route: '/night-service.html', act: 1, legacy: true },
+  { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'Act I · Lost property.', route: '/night-service.html', act: 1 },
+  { id: 'chapter-1-act-2', chapter: 1, title: 'NIGHT SERVICE · THE LUGGAGE CAR', detail: 'Act II · The punch and the lens.', route: '/night-service.html', act: 2 },
+  { id: 'chapter-1-act-3', chapter: 1, title: 'NIGHT SERVICE · TWO TRUE THINGS', detail: 'Act III · A bridge through 1978.', route: '/night-service.html', act: 3 },
   { id: 'chapter-2-start', chapter: 2, title: 'BORROWED GRID', detail: 'The cyberpunk safety test.', route: '/', launch: 'chapter-2' },
   { id: 'chapter-2-midpoint', chapter: 2, title: 'BORROWED GRID · MIDPOINT', detail: 'The route extension checkpoint.', route: '/', launch: 'chapter-2-midpoint' },
   { id: 'chapter-3-start', chapter: 3, title: 'ECHO CITY', detail: 'The Spanish civic city investigation.', route: '/car03-3d.html' },
@@ -45,8 +51,8 @@ export function createSaveStore(storage = globalThis.localStorage) {
     saves[index] = {
       version: SAVE_VERSION,
       slot: index,
-      checkpointId: 'prologue-start',
-      unlocked: ['prologue-start'],
+      checkpointId: 'chapter-1-start',
+      unlocked: ['chapter-1-start'],
       magicStones: [],
       createdAt: now,
       updatedAt: now,

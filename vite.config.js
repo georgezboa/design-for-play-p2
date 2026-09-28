@@ -68,6 +68,7 @@ export default defineConfig(({ command, mode }) => {
       rollupOptions: {
         input: {
           main: resolve(import.meta.dirname, 'index.html'),
+          nightService: resolve(import.meta.dirname, 'night-service.html'),
           // chapter01-opening.html is a dev-only storyboard preview (served by
           // `npm run dev`); it is intentionally not a production entry.
           chapter03: resolve(import.meta.dirname, 'car03-3d.html'),

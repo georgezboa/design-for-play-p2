@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NIGHTFALL — Night Service</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <meta name="theme-color" content="#0b0705" />
+    <meta name="description" content="NIGHTFALL — Chapter 1 · Night Service" />
+    <style>
+      /* The carriage wall is part of the picture, so the page around the
+         canvas is the same dark walnut. */
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #070504;
+        overflow: hidden;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #eadfc6;
+      }
+      #app { height: 100%; display: flex; align-items: center; justify-content: center; }
+      #game { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; }
+      #game canvas { display: block; max-width: 100vw; max-height: 100vh; outline: none; }
+    </style>
+  </head>
+  <body>
+    <div id="app"><div id="game"></div></div>
+    <script type="module" src="/src/nightService-main.js"></script>
+  </body>
+</html>

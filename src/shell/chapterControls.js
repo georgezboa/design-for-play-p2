@@ -12,6 +12,17 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['INTERACT', 'E'],
     ['PAUSE', 'ESC'],
   ),
+  // Chapter 1 panel puzzle (night-service.html). Mouse first; every verb
+  // also has a keyboard fallback.
+  nightServicePanels: list(
+    ['MOVE A WINDOW', 'DRAG IT · ARROWS + SPACE'],
+    ['LOOK CLOSER', 'CLICK A TAG · TAB + ENTER'],
+    ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · BACKSPACE'],
+    ['LIFT A FRAME', 'HOLD ITS EDGE · F'],
+    ['PUNCH-HOLE LENS', 'DRAG IT · L + ARROWS'],
+    ['CONTINUE / READ', 'CLICK · ENTER'],
+    ['PAUSE', 'ESC'],
+  ),
   borrowedGrid: list(
     ['MOVE', 'A / D · ← →'],
     ['JUMP', 'SPACE'],

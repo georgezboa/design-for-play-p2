@@ -30,6 +30,11 @@ const ACCENT = '#c9a227';
 // there is no need to start that car's own Vite config to reach it from here.
 const STANDALONE_SLICES = [
   {
+    label: 'CHAPTER 1  //  NIGHT SERVICE · PANELS',
+    detail: 'The panel-puzzle rebuild. Add ?act=2 or ?act=3 (and ?step=<id>) for later acts; N skips an act.',
+    href: '/night-service.html',
+  },
+  {
     label: 'CHAPTER 1  //  NIGHT SERVICE · ORANGE CARRIAGE',
     detail: 'Latest playable narrative interior: the Conductor, the power-restoration route, and the retro transit car.',
     href: '/?chapter=0',

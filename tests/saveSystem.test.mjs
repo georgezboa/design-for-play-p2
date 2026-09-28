@@ -14,7 +14,7 @@ test('three slots start independently and retain unlocked checkpoints', () => {
   store.markCheckpoint('chapter-2-start', { slot: 1 });
   assert.equal(store.readAll()[0], null);
   assert.equal(store.readAll()[1].checkpointId, 'chapter-2-start');
-  assert.deepEqual(store.readAll()[1].unlocked, ['prologue-start', 'chapter-2-start']);
+  assert.deepEqual(store.readAll()[1].unlocked, ['chapter-1-start', 'chapter-2-start']);
 });
 
 test('a locked or unknown checkpoint cannot be selected', () => {
