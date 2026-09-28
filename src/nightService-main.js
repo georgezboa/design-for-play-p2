@@ -13,7 +13,7 @@
 import Phaser from 'phaser';
 import './fonts/fonts.css';
 import { PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
-import { CHECKPOINT_ACTS, resolveActParam } from './chapters/nightService/acts/index.js';
+import { ACTS, CHECKPOINT_ACTS, resolveActParam } from './chapters/nightService/acts/index.js';
 import { createNightServiceAudio } from './chapters/nightService/audio.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
@@ -36,8 +36,10 @@ function savedAct() {
 }
 
 const params = devParams();
-const startAct = resolveActParam(params.get('act')) ?? savedAct();
 const startStep = params.get('step');
+// `?step=` alone opens whichever act owns that step id
+const stepAct = startStep ? Object.values(ACTS).find((act) => act.steps.some((step) => step.id === startStep))?.id : null;
+const startAct = resolveActParam(params.get('act')) ?? stepAct ?? savedAct();
 
 let scene = null;
 const pause = installPauseMenu({

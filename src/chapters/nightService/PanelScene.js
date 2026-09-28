@@ -223,6 +223,9 @@ export class PanelScene extends Phaser.Scene {
     this.bezelLayer.add(this.linkG);
     this.shadow = this.add.image(0, 0, 'nsv-shadow').setVisible(false).setAlpha(0);
     this.bezelLayer.add(this.shadow);
+    // where a carried window will land
+    this.targetG = this.add.graphics();
+    this.bezelLayer.add(this.targetG);
     this.crossLayer = this.add.container(0, 0);
 
     // ---------- tiles ----------
@@ -232,6 +235,7 @@ export class PanelScene extends Phaser.Scene {
     });
     this.bezelLayer.add(this.crossLayer);
     this.bezelLayer.bringToTop(this.linkG);
+    this.bezelLayer.bringToTop(this.targetG);
     this.bezelLayer.bringToTop(this.crossLayer);
     this.bezelCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'bezel');
     this.dragCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'drag');
@@ -393,15 +397,13 @@ export class PanelScene extends Phaser.Scene {
     // full-screen fade (under the act title, over everything else)
     this.blackout = this.add.rectangle(0, 0, W, H, 0x020101, 1).setOrigin(0, 0);
     this.topLayer.add(this.blackout);
-    // caption bar (dialogue)
-    const sill = this.wallInfo.sillY;
-    this.captionBox = this.add.container(W / 2, H - 66).setVisible(false).setAlpha(0);
-    void sill;
-    const bg = this.add.image(0, 0, 'nsv-caption');
-    this.captionSpeaker = this.add.text(-580, -46, '', { fontFamily: MONO, fontSize: '22px', color: '#e0a24a', fontStyle: 'bold' });
-    this.captionText = this.add.text(-580, -16, '', { fontFamily: SERIF, fontSize: '34px', color: '#eadfc6', wordWrap: { width: 1140 }, lineSpacing: 6 });
-    this.captionNext = this.add.text(592, 50, '▸', { fontFamily: SERIF, fontSize: '30px', color: '#e0a24a' }).setOrigin(1, 1);
-    this.captionBox.add([bg, this.captionSpeaker, this.captionText, this.captionNext]);
+    // caption bar (dialogue): anchored to the bottom edge, grows with Text Size
+    this.captionBox = this.add.container(W / 2, H - 10).setVisible(false).setAlpha(0);
+    this.captionBg = this.add.nineslice(0, 0, 'nsv-caption', null, 1240, 124, 26, 26, 26, 26).setOrigin(0.5, 1);
+    this.captionSpeaker = this.add.text(-580, -100, '', { fontFamily: MONO, fontSize: '22px', color: '#e0a24a', fontStyle: 'bold' });
+    this.captionText = this.add.text(-580, -68, '', { fontFamily: SERIF, fontSize: '34px', color: '#eadfc6', wordWrap: { width: 1150 }, lineSpacing: 6 });
+    this.captionNext = this.add.text(592, -10, '▸', { fontFamily: SERIF, fontSize: '30px', color: '#e0a24a' }).setOrigin(1, 1);
+    this.captionBox.add([this.captionBg, this.captionSpeaker, this.captionText, this.captionNext]);
     this.topLayer.add(this.captionBox);
     // archive card
     this.cardBox = this.add.container(W / 2, H / 2 - 30).setVisible(false);
@@ -423,9 +425,9 @@ export class PanelScene extends Phaser.Scene {
 
   relayoutText() {
     const s = clamp(this.textScale, 0.8, 1.6);
-    this.captionText?.setFontSize(Math.round(34 * s)).setWordWrapWidth(1140);
+    this.captionText?.setFontSize(Math.round(34 * s)).setWordWrapWidth(1150);
     this.captionSpeaker?.setFontSize(Math.round(22 * s));
-    this.captionBox?.setScale(Math.max(1, 0.85 + s * 0.15));
+    if (this.caption) this.layoutCaption(this.caption.text);
     this.cardTitle?.setFontSize(Math.round(44 * s));
     this.cardLines?.setFontSize(Math.round(30 * s));
     this.cardStamp?.setFontSize(Math.round(24 * s));
@@ -660,6 +662,7 @@ export class PanelScene extends Phaser.Scene {
     if (on) this.dragLayer.add(view.bezel); else this.bezelLayer.add(view.bezel);
     if (!on) {
       this.bezelLayer.bringToTop(this.linkG);
+      this.bezelLayer.bringToTop(this.targetG);
       this.bezelLayer.bringToTop(this.crossLayer);
     }
     this.orderCameras();
@@ -675,6 +678,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   onDragEnd({ tile, swapped, from, to }) {
+    this.showDropTarget(null);
     const view = this.views[tile];
     const reduce = reducedMotionActive();
     const target = this.layout.slots[to];
@@ -723,6 +727,16 @@ export class PanelScene extends Phaser.Scene {
         });
       }
     }
+  }
+
+  showDropTarget(slot) {
+    const g = this.targetG;
+    g.clear();
+    if (!slot) return;
+    g.lineStyle(10, 0xffc46a, 0.16);
+    g.strokeRoundedRect(slot.x - 20, slot.y - 20, slot.w + 40, slot.h + 40, 28);
+    g.lineStyle(3, 0xffd9a0, 0.75);
+    g.strokeRoundedRect(slot.x - 16, slot.y - 16, slot.w + 32, slot.h + 32, 24);
   }
 
   bumpBezel(view) {
@@ -897,13 +911,29 @@ export class PanelScene extends Phaser.Scene {
   showLine(line) {
     this.caption = { speaker: line.speaker ?? '', text: line.text ?? '', shown: 0, done: false, lastTick: 0 };
     this.captionSpeaker.setText(this.caption.speaker);
+    this.layoutCaption(this.caption.text);
     this.captionText.setText('');
     this.captionNext.setVisible(false);
+    // a spoken line always wins over a lingering act title
+    if (this.titleBox.alpha > 0) this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 200 });
     if (!this.captionBox.visible) {
       this.captionBox.setVisible(true).setAlpha(0);
       this.captionBox.y += 12;
       this.tweens.add({ targets: this.captionBox, alpha: 1, y: this.captionBox.y - 12, duration: 260, ease: 'Sine.easeOut' });
     }
+  }
+
+  /** Size the bar to the full line so the typewriter never reflows it. */
+  layoutCaption(fullText) {
+    const prev = this.captionText.text;
+    this.captionText.setText(fullText);
+    const textH = this.captionText.height;
+    this.captionText.setText(prev);
+    const speakerH = this.captionSpeaker.text ? this.captionSpeaker.height + 6 : 0;
+    const boxH = Math.max(116, Math.ceil(speakerH + textH + 44));
+    this.captionBg.setSize(1240, boxH);
+    this.captionSpeaker.setY(-boxH + 20);
+    this.captionText.setY(-boxH + 20 + speakerH);
   }
 
   showCaption({ text, speaker = '', ms = 3200 }) {
@@ -1210,6 +1240,8 @@ export class PanelScene extends Phaser.Scene {
         view.rect.rot = reducedMotionActive() ? 0 : clamp(this.drag.vx * 0.004, -0.019, 0.019);
         view.apply();
         this.shadow.setPosition(view.rect.x + view.w / 2 + 22, view.rect.y + view.h / 2 + 30).setDisplaySize(view.w * 1.2, view.h * 1.25);
+        const over = this.slotAt(view.rect.x + view.w / 2, view.rect.y + view.h / 2);
+        this.showDropTarget(over && over.index !== this.model.slotOf(this.drag.tile) ? over : null);
       }
       return;
     }
@@ -1437,6 +1469,7 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.killTweensOf(view.rect);
     this.tweens.add({ targets: view.rect, x: slot.x + 14, y: slot.y - 16, scale: 1.045, duration: 200, ease: 'Sine.easeOut', onUpdate: () => view.apply() });
     this.shadow.setPosition(slot.x + slot.w / 2 + 30, slot.y + slot.h / 2 + 20).setDisplaySize(view.w * 1.2, view.h * 1.25);
+    this.showDropTarget(target !== this.model.slotOf(tile) ? slot : null);
   }
 
   kbDrop() {
@@ -1598,6 +1631,7 @@ export class PanelScene extends Phaser.Scene {
       if (step?.hint && this.idleMs > IDLE_HINT_MS) {
         this.hintCooldown -= dt;
         if (this.hintCooldown <= 0) {
+          this.idleHints = (this.idleHints ?? 0) + 1;
           this.pulseHint(step.hint);
           this.hintCooldown = HINT_REPEAT_MS;
         }
@@ -1702,6 +1736,7 @@ export class PanelScene extends Phaser.Scene {
         textScale: this.textScale,
         reduceMotion: reducedMotionActive(),
         idleMs: Math.round(this.idleMs),
+        idleHints: this.idleHints ?? 0,
         audioUnlocked: Boolean(this.audio.unlocked),
       },
     };

@@ -152,7 +152,7 @@ export const ACT1 = defineAct({
       hint: { tile: 'lockers', hotspot: 'tagged' },
       do: [
         // a beat to see the ticket at the chute mouth (and the envelope's tag)
-        { wait: 900 },
+        { wait: 1300 },
         { fx: { name: 'ticketDrop', from: { tile: 'lockers', x: CHUTE_AT, y: 0.72 }, to: { tile: 'door', x: CHUTE_AT, y: SLOT_Y }, ms: 1500 } },
         { setFlag: 'ticketDropped' },
         { sfx: 'clack' },

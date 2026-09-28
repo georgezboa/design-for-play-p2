@@ -28,7 +28,12 @@ function drawPlaceholder(label, sub) {
       inkRect(c, cx, cy, cw, ch, { w: 2, color: '#5a4630' });
       c.fillStyle = '#3a2a1c';
       c.textAlign = 'center';
-      c.font = '700 30px Georgia, "Times New Roman", serif';
+      let size = 30;
+      c.font = `700 ${size}px Georgia, "Times New Roman", serif`;
+      while (c.measureText(label).width > cw - 48 && size > 14) {
+        size -= 1;
+        c.font = `700 ${size}px Georgia, "Times New Roman", serif`;
+      }
       c.fillText(label, w / 2, cy + ch * 0.42);
       c.font = '400 22px "Space Mono", monospace';
       c.fillStyle = '#6b2a22';
@@ -39,9 +44,13 @@ function drawPlaceholder(label, sub) {
   };
 }
 
-function drawQuiet(ctx) {
+function drawQuiet(index) {
+  return (ctx) => drawQuietView(ctx, index);
+}
+
+function drawQuietView(ctx, index) {
   const { w, h } = ctx;
-  ctx.fields(0, 0, w, h * 0.72, { speed: 14, offset: Math.round(w) });
+  ctx.fields(0, 0, w, h * 0.72, { speed: 14, offset: 700 + index * 900 });
   ctx.paint(`stub-quiet-${Math.round(w)}`, (c, env) => {
     c.fillStyle = vgrad(c, h * 0.72, h, [[0, '#2a1a10'], [1, '#150d08']]);
     c.fillRect(-20, h * 0.72, w + 40, h * 0.3 + 20);
@@ -75,7 +84,7 @@ export function makeStubAct({ id, number, title, grid, start, finish, checkpoint
             draw: drawPlaceholder(`ACT ${number} · ${title}`, 'in construction'),
             hotspots: [{ id: 'continue', kind: 'use', rect: [0.4, 0.58, 0.2, 0.14], tag: { x: 0.49, y: 0.64, angle: -0.2, scale: 1.6 }, do: finish }],
           }
-          : { draw: drawQuiet },
+          : { draw: drawQuiet(i) },
       },
     };
   }

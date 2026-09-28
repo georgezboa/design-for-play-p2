@@ -1540,3 +1540,11 @@ chapter after what it is, not after the slot it currently occupies.
 - Added a physical Echo Stone pickup beside the abandoned morning campfire. It appears only when morning has begun and the Chapter 3 stone was not collected from Seline at dusk, so a missed conversation can no longer permanently lose the required stone.
 - Focused Chapter 3 and magic-stone regression coverage passes 51/51, including new source-level checks for the five-second silent transitions and the morning pickup.
 - Per delivery cleanup request, removed rebuildable Windows/Web/desktop/dist artifacts and preserved only `release/NIGHTFALL Final Submission 2026-08-14/NIGHTFALL.app`. The preserved app is the previous build; fresh packages are intentionally deferred until these fixes finish live verification.
+
+## Chapter 1 · NIGHT SERVICE panel puzzle (2026-09-28)
+
+- New page `night-service.html` (`src/nightService-main.js`, 1920×1080 antialiased Phaser, FIT) replaces the side-scrolling Prologue in the New Game route: title → `start.mp4` → Act 1. The old Prologue code is untouched and still reachable in dev.
+- Engine in `src/chapters/nightService/`: pure `panelModel.js` (swaps, ±0.03 edge links, zoom stacks, frames/overlays, lens with past-era edges and hotspots, bell/time of day, actors walking across links, data-driven script) and `PanelScene.js` (one camera per window). Authoring guide: `src/chapters/nightService/README.md`.
+- Act 1 · LOST PROPERTY is complete (desk ↔ window floor link, pigeonhole zoom and chute, the Conductor's punch, bell #1, checkpoint `chapter-1-act-2`). Acts 2 and 3 are placeholder stubs; Act 3's stub saves `chapter-2-start` and plays `1-2.mp4` into the existing Chapter 2.
+- Checkpoints `chapter-1-start`, `chapter-1-act-2`, `chapter-1-act-3`; legacy `prologue-start` resumes Act 1. Dev routes `?act=1|2|3|lab`, `?step=<id>`, `?dtmax=`; production ignores them.
+- QA: model tests in `tests/nightService/` (scripted solves, BFS no-dead-end proof); headless pointer and keyboard-only solves of Act 1 pass.

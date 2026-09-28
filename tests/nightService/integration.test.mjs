@@ -43,7 +43,7 @@ test('production ignores ?act= and ?step= (dev params are empty outside the dev 
   assert.equal(resolveActParam(devParams('?act=3').get('act')), null);
   const main = read('src/nightService-main.js');
   assert.match(main, /const params = devParams\(\);/);
-  assert.match(main, /resolveActParam\(params\.get\('act'\)\) \?\? savedAct\(\)/);
+  assert.match(main, /resolveActParam\(params\.get\('act'\)\) \?\? stepAct \?\? savedAct\(\)/);
   assert.match(main, /if \(DEV_MODE\) \{\s*window\.render_game_to_text/);
 });
 
