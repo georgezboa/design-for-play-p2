@@ -602,6 +602,8 @@ export class PanelScene extends Phaser.Scene {
     this.titleBox.y = this.layout.view.h / 2 + 8;
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: this.layout.view.h / 2, duration: 700, delay: 200, ease: 'Sine.easeOut' });
     this.time.delayedCall(200 + 700 + Math.max(200, hold - 500), () => {
+      // a long frame can leave the fade-in still running: it must not win
+      this.tweens.killTweensOf(this.titleBox);
       this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 700, ease: 'Sine.easeIn' });
     });
   }
@@ -1219,6 +1221,13 @@ export class PanelScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // hints
 
+  /** A soft amber bloom for idle hints (top layer, screen coords). */
+  hintGlow(x, y, size) {
+    const glow = this.add.image(x, y, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(size, size).setAlpha(0);
+    this.topLayer.add(glow);
+    this.tweens.add({ targets: glow, alpha: 0.55, duration: 600, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
+  }
+
   pulseHint(hint) {
     if (hint?.actor) {
       // pulse where a walker is waiting, and the edge it is waiting at
@@ -1226,6 +1235,7 @@ export class PanelScene extends Phaser.Scene {
       const view = actor && this.views[actor.tile];
       if (!view) return;
       const pt = view.screen(actor.x, actor.y);
+      this.hintGlow(pt.x, pt.y - 30, 150);
       this.shimmer(pt.x, pt.y - 24);
       const target = actor.walk?.path?.[actor.walk.index];
       if (target && target.tile !== actor.tile) {
@@ -1236,7 +1246,14 @@ export class PanelScene extends Phaser.Scene {
       return;
     }
     if (hint?.lens && this.model.state.lens.enabled) {
+      // the lens rim swells and glows: this is the thing to move
+      const lens = this.model.state.lens;
       this.tweens.add({ targets: this.lensView, scale: 1.12, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
+      this.hintGlow(lens.x, lens.y, lens.r * 3);
+      [0, 1, 2, 3].forEach((i) => this.time.delayedCall(i * 110, () => {
+        const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
+        this.shimmer(lens.x + Math.cos(a) * lens.r, lens.y + Math.sin(a) * lens.r);
+      }));
     }
     if (!hint?.tile) return;
     const view = this.views[hint.tile];
