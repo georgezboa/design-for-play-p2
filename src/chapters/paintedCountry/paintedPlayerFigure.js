@@ -3,7 +3,9 @@ import { PAPER } from './paperPalette.js';
 // Shared Chapter 4 protagonist: the gallery's ink-and-paper silhouette. The
 // studio deliberately uses this same figure so the chapter never changes its
 // player character between rooms.
-export function drawPaintedPlayer(figure, walker, pointer) {
+// `pointer` is anything with worldX / worldY (the BrushInput); `tipColor` is
+// whatever the brush is holding.
+export function drawPaintedPlayer(figure, walker, pointer, tipColor = PAPER.indigo) {
   const x = Math.round(walker.x);
   figure.clear();
   const feetY = Math.round(walker.y + 29);
@@ -23,6 +25,6 @@ export function drawPaintedPlayer(figure, walker, pointer) {
   figure.moveTo(x + Math.cos(angle) * 8, shoulderY + Math.sin(angle) * 8);
   figure.lineTo(tipX, tipY);
   figure.strokePath();
-  figure.fillStyle(PAPER.indigo, 0.95);
+  figure.fillStyle(tipColor, 0.95);
   figure.fillCircle(tipX, tipY, 4.6);
 }

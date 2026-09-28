@@ -3,27 +3,31 @@ import {
   BAY_TITLES,
   CEILING_Y,
   CELL,
-  CORD_COLOURS,
   DOOR,
   FLOOR_ROW,
   FLOOR_SPANS,
   FLOOR_Y,
   FOLDS,
-  GLAZE_RECTS,
   GRID,
   JUMP_VELOCITY,
+  MARK_ART,
   MOVE_SPEED,
   PAINTINGS,
+  PIGMENT_ZONE,
+  PLATE_GRID,
   RACK_Y,
-  READ_RADIUS,
   REACH,
+  SEALED_RECTS,
   SIGN_ART,
+  SIGN_LABELS,
+  VARNISH_RECTS,
   VIEW,
   WAINSCOT_Y,
   WINDOWS,
   WORLD,
+  WRONG_ANSWER_LINES,
 } from './carLayout.js';
-import { colOf, createPaintedCar, idx, rowOf } from './paintedCarModel.js';
+import { colOf, createPaintedCar, idx, plateCell, rectPlateCells, rowOf } from './paintedCarModel.js';
 import { PAPER } from './paperPalette.js';
 import { drawPaintedPlayer } from './paintedPlayerFigure.js';
 import {
@@ -34,36 +38,61 @@ import {
   makeRandom,
   paintedFill,
 } from './paperSurface.js';
+import { BrushInput } from './brushInput.js';
+import {
+  ArchiveCard,
+  MONO,
+  PaperTag,
+  RestartHold,
+  SERIF,
+  UI,
+  drawGlintMarker,
+  noteAt,
+  px,
+  showTitleCard,
+} from './chapterUi.js';
+import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell } from './platePencil.js';
+import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
 
-// Chapter 4 // THE PAINTED COUNTRY — draw your own way through.
+// Chapter 4 // THE PAINTED COUNTRY — Part I, "Under the gouache".
 //
-// The player paints and washes anywhere they can reach. A tap places one paper
-// cell immediately; holding and dragging lays a continuous path. Three pictures are hung too high to
-// read from the floor, and the door at the end wants to know which sign was in
-// all of them.
+// The country is Rosa's childhood drawing of the orchard, painted over by the
+// archive in grey. PAINT (left mouse · SPACE · pad A) rebuilds what she
+// remembered; WASH (right mouse · SHIFT · pad B) strips the archive's grey and
+// shows the pencil underneath. Three plates hang too high to reach from the
+// floor; washing each one reveals a large mark and, somewhere else on it,
+// Mara's small hawthorn. The door asks which mark she left in all three.
 //
-// This file owns pixels and input only. Every rule lives in paintedCarModel.js.
+// No persistent HUD in Chapter 4: every prompt is a paper tag beside the thing
+// it is about. This file owns pixels and input only; every rule lives in
+// paintedCarModel.js.
 
 const DEPTH = {
   SHEET: 0,
   COUNTRY: 5,
   WALL: 10,
-  GLAZE: 14,
+  VARNISH: 14,
   FIXTURE: 18,
   DRAWING: 22,
   PAINT: 30,
   BLOCK: 32,
   PICTURE: 36,
-  BOARD: 37,
-  CORD: 39,
   DOOR: 40,
+  MARA: 43,
   FIGURE: 44,
   CURSOR: 48,
   GRAIN: 60,
   AIR: 70,
   HUD: 90,
 };
+
+// The plate viewer, in screen space.
+const VIEWER = Object.freeze({ x: 240, y: 104, w: PLATE_TEX.w, h: PLATE_TEX.h });
+// The notes: the three plates side by side.
+const NOTE_PLATE = Object.freeze({ w: 240, h: 140, y: 196, gap: 24 });
+
+const QA_ROUTES = ['door-view', 'bay-b', 'bay-c', 'plate-1', 'plate-2', 'plate-3', 'plates-done', 'door-open', 'intro'];
 
 export class PaintedCountryScene extends Phaser.Scene {
   constructor() {
@@ -72,12 +101,13 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   preload() {
     Object.entries(SIGN_ART).forEach(([sign, file]) => this.load.image(`sign-${sign}`, file));
+    Object.entries(MARK_ART).forEach(([sign, file]) => this.load.image(`mark-${sign}`, file));
     if (!this.cache.audio.exists('chapter4-drawing-music')) {
       this.load.audio('chapter4-drawing-music', '/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3');
     }
   }
 
-  create() {
+  create(data = {}) {
     // A missing or undecodable score file leaves the scene silent rather than
     // throwing from sound.add (Phaser only caches audio that loaded).
     this.music = this.cache.audio.exists('chapter4-drawing-music')
@@ -89,6 +119,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.input.once('pointerdown', playMusic);
     this.input.keyboard.once('keydown', playMusic);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music?.stop());
+
+    this.qa = devParam('qa');
     this.advancingToStudio = false;
     this.registry.set('chapter4Pigments', []);
     this.registry.remove('chapter4ArchiveAnswer');
@@ -98,12 +130,19 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.car = createPaintedCar();
     this.cellBodies = new Map();
     this.paintDirty = true;
+    this.platesDirty = true;
     this.lastBrushCell = null;
-    this.wasLeftDown = false;
+    this.lastPlateCell = null;
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
-    this.tutorialSeen = { bridge: false, wash: false };
+    this.tutorialSeen = { bridge: false, wash: false, varnish: false, pigment: false };
     this.activeTutorial = null;
+    this.noteThrottle = {};
+    this.hintedSmallMark = new Set();
+    this.notesPulse = false;
+    this.locked = false;
+    this.mara = null;
+    this.lastSafe = { x: 200, y: 360 };
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
@@ -113,8 +152,9 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildCountry();
     this.buildCarriage();
     this.buildGrid();
-    this.buildGlaze();
-    this.buildArchiveSymbolTextures();
+    this.buildVarnish();
+    this.buildSealed();
+    PAINTINGS.forEach((plate) => buildPlateTexture(this, plate));
     this.buildGallery();
     this.buildDoor();
     this.buildSolids();
@@ -123,48 +163,94 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.blockLayer = this.graphics(DEPTH.BLOCK);
     this.brushCursor = this.graphics(DEPTH.CURSOR);
     this.doorLayer = this.graphics(DEPTH.DOOR);
+    this.markerLayer = this.graphics(DEPTH.CURSOR - 1);
+    this.maraLayer = this.graphics(DEPTH.MARA);
 
     this.buildGrain();
     this.buildAir();
     this.buildHud();
     this.buildViewer();
-    this.applyQaRoute();
+
+    this.brush = new BrushInput(this, {
+      anchor: () => ({ x: this.walker.x, y: this.walker.y - 10 }),
+      radius: REACH + 30,
+    });
+    this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
+    this.tag = new PaperTag(this, { depth: DEPTH.HUD + 4 });
+    this.card = new ArchiveCard(this, { depth: DEPTH.HUD + 40 });
+    this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
 
     this.car.state.blocks.forEach((key) => this.addCellBody(key % GRID.w, Math.floor(key / GRID.w)));
     this.input.mouse?.disableContextMenu();
-    this.input.on('pointerdown', this.handlePointerDown, this);
-    this.input.on('pointermove', this.handleViewerPointerMove, this);
-    this.input.on('pointerup', this.handleViewerPointerUp, this);
 
     this.time.addEvent({
       delay: 1000 / 12,
       loop: true,
       callback: () => this.boilTargets.forEach((redraw) => redraw()),
     });
+
+    this.applyQaRoute();
+    if (!data.skipIntro && (!this.qa || this.qa === 'intro')) this.playIntro();
   }
 
   graphics(depth) {
     return this.add.graphics().setDepth(depth);
   }
 
+  // The chapter opens the way Chapter 1 opens an act: a title on the walnut
+  // band, then one short archive card.
+  playIntro() {
+    this.locked = true;
+    showTitleCard(this, {
+      kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
+      main: 'I · UNDER THE GOUACHE',
+      onDone: () => {
+        this.card.show({
+          stamp: 'CLAIM 1978-0412 · SECOND CLAIM',
+          title: 'Bellwether Orchard',
+          lines: ['Address not on file.', 'Contents: drawings (a child\'s), painted over for the record.'],
+          closeHint: `${this.brush.label('read')} · CLOSE`,
+        }, () => { this.locked = false; });
+      },
+    });
+  }
+
   applyQaRoute() {
-    // Dev-only: devParam() is null in production, so ?qa= cannot pre-solve a board.
-    const qa = devParam('qa');
-    if (qa === 'door-view') {
-      this.walker.setPosition(DOOR.x - 82, FLOOR_Y - 30);
-      this.cameras.main.centerOn(DOOR.x + DOOR.w / 2, VIEW.h / 2);
-      return;
+    // Dev-only: devParam() is null in production, so ?qa= cannot skip a thing.
+    const qa = this.qa;
+    if (!QA_ROUTES.includes(qa)) return;
+    const standAt = (x) => {
+      this.walker.setPosition(x, FLOOR_Y - 30);
+      this.cameras.main.centerOn(x, VIEW.h / 2);
+    };
+    if (qa === 'bay-b') standAt(1060);
+    if (qa === 'bay-c') standAt(1960);
+    if (qa === 'door-view') standAt(DOOR.x - 82);
+    const plateMatch = qa.match(/^plate-([123])$/);
+    if (plateMatch) {
+      const plate = PAINTINGS[Number(plateMatch[1]) - 1];
+      this.walker.setPosition(plate.x + plate.w / 2, FLOOR_Y - 30);
+      this.openPicture(plate);
     }
-    const match = qa?.match(/^archive-([123])(-solved)?$/);
-    if (!match) return;
-    const picture = PAINTINGS[Number(match[1]) - 1];
-    if (!picture) return;
-    if (match[2]) {
-      const board = this.car.boardSpec(picture.id);
-      const state = this.car.boardState(picture.id);
-      board.pairs.forEach((pair) => { state.cords[pair.id] = [pair.a, pair.b]; });
+    if (qa === 'plates-done' || qa === 'door-open') {
+      PAINTINGS.forEach((plate) => this.car.developPlate(plate.id));
+      this.car.drainEvents();
+      this.platesDirty = true;
+      standAt(DOOR.x - 82);
+      this.bridgeForQa();
+      if (qa === 'door-open') this.time.delayedCall(400, () => this.answerDoor(DOOR.correct));
     }
-    this.openPicture(picture);
+  }
+
+  // Dev only: lay the two floor gaps so a QA run can walk to the door.
+  bridgeForQa() {
+    for (let i = 0; i < FLOOR_SPANS.length - 1; i += 1) {
+      for (let cx = FLOOR_SPANS[i].to; cx < FLOOR_SPANS[i + 1].from; cx += 1) {
+        this.car.state.painted.add(idx(cx, FLOOR_ROW));
+        this.addCellBody(cx, FLOOR_ROW);
+      }
+    }
+    this.paintDirty = true;
   }
 
   // =========================================================== the sheet
@@ -182,12 +268,9 @@ export class PaintedCountryScene extends Phaser.Scene {
       g.fillStyle(PAPER.kraft, 0.3);
       g.fillRect(x - 8, WAINSCOT_Y - 34, 16, 78);
     });
-
   }
 
-  // The squared paper the child ruled before she drew anything. It sits above
-  // the carriage fills so it reads everywhere the player can actually build,
-  // and it is faint enough to be a guide rather than graph paper.
+  // The squared paper the child ruled before she drew anything.
   buildGrid() {
     const g = this.graphics(DEPTH.WALL + 2);
     g.lineStyle(1, PAPER.graphiteFaint, 0.13);
@@ -260,11 +343,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     );
 
     // The torn edges of the two holes.
-    const holes = [];
     for (let i = 0; i < FLOOR_SPANS.length - 1; i += 1) {
-      holes.push({ x: FLOOR_SPANS[i].to * CELL, w: (FLOOR_SPANS[i + 1].from - FLOOR_SPANS[i].to) * CELL });
-    }
-    holes.forEach((hole) => {
+      const hole = { x: FLOOR_SPANS[i].to * CELL, w: (FLOOR_SPANS[i + 1].from - FLOOR_SPANS[i].to) * CELL };
       const h = this.graphics(DEPTH.WALL + 1);
       h.fillStyle(PAPER.sheetHigh, 1);
       h.fillRect(hole.x, FLOOR_Y, hole.w, WORLD.h - FLOOR_Y);
@@ -272,361 +352,164 @@ export class PaintedCountryScene extends Phaser.Scene {
       [hole.x, hole.x + hole.w].forEach((x) =>
         draftLine(h, this.rnd, x, FLOOR_Y, x, WORLD.h, { overshoot: 0, jitter: 2.6, segments: 10 }),
       );
+    }
+
+    // Rosa's pencil under the long wall: an orchard row, only visible once
+    // the grey over it has been washed away.
+    const under = this.graphics(DEPTH.WALL + 3);
+    const wall = { x: 102 * CELL, y: CEILING_Y, w: 6 * CELL, h: FLOOR_Y - CEILING_Y };
+    const rnd = makeRandom(0x0dd1);
+    under.lineStyle(1.6, PAPER.graphite, 0.5);
+    [[wall.x + 30, 250], [wall.x + 90, 300]].forEach(([x, y]) => {
+      under.strokeCircle(x, y - 60, 26);
+      draftLine(under, rnd, x, y - 36, x, FLOOR_Y, { overshoot: 0, jitter: 1 });
+      under.fillStyle(0xb4453a, 0.4);
+      for (let i = 0; i < 4; i += 1) under.fillCircle(x - 14 + rnd() * 28, y - 74 + rnd() * 26, 3.5);
     });
+    under.lineStyle(1.2, PAPER.graphiteSoft, 0.55);
+    draftLine(under, rnd, wall.x, 160, wall.x + wall.w, 150, { overshoot: 0, jitter: 2 });
 
     const draw = this.graphics(DEPTH.DRAWING);
     const boil = () => {
-      const rnd = makeRandom(0x5eed + Math.floor(this.time.now / 83));
+      const r = makeRandom(0x5eed + Math.floor(this.time.now / 83));
       draw.clear();
       draw.lineStyle(1.9, PAPER.graphite, 0.94);
       [CEILING_Y, WAINSCOT_Y].forEach((y) =>
-        draftLine(draw, rnd, 0, y, WORLD.w, y, { overshoot: 0, jitter: 1.1, segments: 40 }),
+        draftLine(draw, r, 0, y, WORLD.w, y, { overshoot: 0, jitter: 1.1, segments: 40 }),
       );
       FLOOR_SPANS.forEach((span) =>
-        draftLine(draw, rnd, span.from * CELL, FLOOR_Y, span.to * CELL, FLOOR_Y, {
+        draftLine(draw, r, span.from * CELL, FLOOR_Y, span.to * CELL, FLOOR_Y, {
           overshoot: 0,
           jitter: 1.2,
           segments: 12,
         }),
       );
       draw.lineStyle(1.6, PAPER.graphite, 0.9);
-      WINDOWS.forEach((win) => draftRect(draw, rnd, win.x, win.y, win.w, win.h, { overshoot: 7, jitter: 0.8 }));
+      WINDOWS.forEach((win) => draftRect(draw, r, win.x, win.y, win.w, win.h, { overshoot: 7, jitter: 0.8 }));
       draw.lineStyle(1.3, PAPER.graphiteSoft, 0.9);
-      draftLine(draw, rnd, 20, RACK_Y, WORLD.w - 20, RACK_Y, { overshoot: 0, jitter: 0.8, segments: 40 });
+      draftLine(draw, r, 20, RACK_Y, WORLD.w - 20, RACK_Y, { overshoot: 0, jitter: 0.8, segments: 40 });
     };
     boil();
     this.boilTargets.push(boil);
   }
 
-  // Varnished paper: visibly glossy, and paint slides off it.
-  buildGlaze() {
-    const g = this.graphics(DEPTH.GLAZE);
-    GLAZE_RECTS.forEach((rect) => {
+  // "Official record": hard gloss over the air under the orchard plate, drawn
+  // per cell so it thins and vanishes as it is washed.
+  buildVarnish() {
+    this.varnishLayer = this.graphics(DEPTH.VARNISH);
+    this.varnishStamps = VARNISH_RECTS.map((rect) => this.add
+      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows / 2) * CELL, 'OFFICIAL RECORD', {
+        fontFamily: MONO, fontSize: '16px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 4,
+      })
+      .setOrigin(0.5)
+      .setAngle(-8)
+      .setAlpha(0.42)
+      .setDepth(DEPTH.VARNISH + 1));
+    this.varnishDirty = true;
+  }
+
+  redrawVarnish() {
+    const g = this.varnishLayer;
+    g.clear();
+    this.car.state.varnish.forEach((coats, key) => {
+      const x = (key % GRID.w) * CELL;
+      const y = Math.floor(key / GRID.w) * CELL;
+      g.fillStyle(0xfffaf0, 0.28 + 0.16 * coats).fillRect(x, y, CELL, CELL);
+      g.lineStyle(1, 0xc9bda3, 0.55).strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
+      g.lineStyle(1.4, 0xffffff, 0.75);
+      g.lineBetween(x + 3, y + CELL - 3, x + CELL - 3, y + 3);
+      if (coats > 1) g.lineBetween(x + 9, y + CELL - 2, x + CELL - 2, y + 9);
+    });
+    VARNISH_RECTS.forEach((rect, i) => {
+      let left = 0;
+      for (let cx = rect.col; cx < rect.col + rect.cols; cx += 1) {
+        for (let cy = rect.row; cy < rect.row + rect.rows; cy += 1) left += this.car.varnishAt(cx, cy) > 0 ? 1 : 0;
+      }
+      this.varnishStamps[i].setAlpha(0.42 * Math.min(1, left / (rect.cols * rect.rows) * 1.6));
+    });
+  }
+
+  // The door's own face: sealed, so the signs can never be painted over.
+  buildSealed() {
+    const g = this.graphics(DEPTH.VARNISH);
+    SEALED_RECTS.forEach((rect) => {
       const x = rect.col * CELL;
       const y = rect.row * CELL;
-      const w = rect.cols * CELL;
-      const h = rect.rows * CELL;
-      g.fillStyle(PAPER.sheetHigh, 0.55);
-      g.fillRect(x, y, w, h);
-      g.lineStyle(1.3, PAPER.deckle, 0.75);
-      draftRect(g, this.rnd, x, y, w, h, { overshoot: 4, jitter: 1.2 });
-      // Diagonal sheen, so it reads as varnish rather than as a wall.
-      g.lineStyle(2, PAPER.sheetHigh, 0.85);
-      for (let i = -h; i < w; i += 26) {
-        g.lineBetween(x + i, y + h, x + i + h, y);
-      }
-      g.lineStyle(1, PAPER.graphiteFaint, 0.3);
-      for (let i = -h; i < w; i += 26) {
-        g.lineBetween(x + i + 2, y + h, x + i + h + 2, y);
-      }
+      g.fillStyle(PAPER.sheetHigh, 0.4).fillRect(x, y, rect.cols * CELL, rect.rows * CELL);
     });
   }
 
   // =========================================================== the gallery
 
-  // The archive photographs came from a photorealistic visual language that
-  // fought the hand-drawn carriage. Redraw the clue as three distinct graphite
-  // marks, each carrying the same small moon seal. The final door asks for the
-  // repeated small seal, so the visual and narrative deductions agree.
-  buildArchiveSymbolTextures() {
-    const accents = [PAPER.bookCloth, PAPER.graphiteSoft, PAPER.cyan];
-    PAINTINGS.forEach((picture, index) => {
-      if (this.textures.exists(picture.key)) this.textures.remove(picture.key);
-      const g = this.add.graphics();
-      const w = 1200;
-      const h = 672;
-      const cx = w / 2;
-      const cy = h / 2;
-      const accent = accents[index] ?? PAPER.graphite;
-      g.fillStyle(PAPER.sheetHigh, 1).fillRect(0, 0, w, h);
-      g.lineStyle(9, PAPER.graphiteFaint, 0.2);
-      for (let y = 70; y < h; y += 86) g.lineBetween(76, y, w - 76, y + (index - 1) * 5);
-
-      g.lineStyle(18, accent, 0.92);
-      if (picture.primarySign === 'eye') {
-        // NAVE — a broad eye and pupil.
-        g.strokeEllipse(cx - 50, cy - 24, 500, 238);
-        g.lineStyle(13, PAPER.graphite, 0.94);
-        g.strokeEllipse(cx - 50, cy - 24, 205, 142);
-        g.fillStyle(accent, 0.96).fillCircle(cx - 50, cy - 24, 46);
-        g.lineStyle(7, PAPER.sheetHigh, 0.92).strokeCircle(cx - 64, cy - 38, 13);
-      } else if (picture.primarySign === 'heir') {
-        // LISTENING FIELD — a crowned heir, reduced to head, shoulders and crown.
-        g.strokeCircle(cx - 50, cy + 12, 86);
-        g.beginPath();
-        g.moveTo(cx - 225, cy + 190);
-        g.lineTo(cx - 174, cy + 102);
-        g.lineTo(cx - 50, cy + 82);
-        g.lineTo(cx + 74, cy + 102);
-        g.lineTo(cx + 125, cy + 190);
-        g.strokePath();
-        g.beginPath();
-        g.moveTo(cx - 155, cy - 100);
-        g.lineTo(cx - 120, cy - 205);
-        g.lineTo(cx - 52, cy - 132);
-        g.lineTo(cx + 12, cy - 215);
-        g.lineTo(cx + 58, cy - 100);
-        g.closePath().strokePath();
-      } else {
-        // LAST CITY — the rapture mark: a falling drop inside a radiating burst.
-        g.beginPath();
-        g.moveTo(cx - 50, cy - 190);
-        g.lineTo(cx - 145, cy + 10);
-        g.lineTo(cx - 50, cy + 125);
-        g.lineTo(cx + 45, cy + 10);
-        g.closePath().strokePath();
-        g.lineStyle(13, PAPER.graphite, 0.9);
-        for (let ray = 0; ray < 8; ray += 1) {
-          const a = (Math.PI * 2 * ray) / 8;
-          g.lineBetween(
-            cx - 50 + Math.cos(a) * 165,
-            cy - 25 + Math.sin(a) * 165,
-            cx - 50 + Math.cos(a) * 235,
-            cy - 25 + Math.sin(a) * 235,
-          );
-        }
-      }
-
-      // The shared clue is deliberately smaller and placed like an accession
-      // stamp, so it can repeat without making the three main images identical.
-      const sealX = w - 150;
-      const sealY = h - 136;
-      g.lineStyle(9, PAPER.graphiteSoft, 0.78).strokeCircle(sealX, sealY, 76);
-      g.fillStyle(PAPER.graphite, 0.9).fillCircle(sealX - 4, sealY, 48);
-      g.fillStyle(PAPER.sheetHigh, 1).fillCircle(sealX + 19, sealY - 12, 45);
-      g.generateTexture(picture.key, w, h);
-      g.destroy();
-    });
-  }
-
   buildGallery() {
     const g = this.graphics(DEPTH.PICTURE);
-    const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
-    this.pictureLabels = {};
-
+    this.pictureViews = {};
     PAINTINGS.forEach((picture) => {
       const inset = 8;
-      // The plate itself, cropped to sit inside its frame.
       const plate = this.add
-        .image(picture.x + picture.w / 2, picture.y + picture.h / 2, picture.key)
+        .image(picture.x + inset, picture.y + inset, picture.key)
+        .setOrigin(0)
         .setDepth(DEPTH.PICTURE)
-        .setDisplaySize(picture.w - inset * 2, picture.h - inset * 2)
-        .setVisible(false);
-      const cover = this.add
-        .rectangle(
-          picture.x + picture.w / 2,
-          picture.y + picture.h / 2,
-          picture.w - inset * 2,
-          picture.h - inset * 2,
-          PAPER.sheetHigh,
-          1,
-        )
-        .setStrokeStyle(1, PAPER.deckle, 0.8)
-        .setDepth(DEPTH.PICTURE + 0.5);
+        .setDisplaySize(picture.w - inset * 2, picture.h - inset * 2);
+      const cover = this.graphics(DEPTH.PICTURE + 0.5);
 
-      const makeInteractive = (object) => object
-        .setInteractive({ useHandCursor: true })
-        .on('pointerover', () => { this.hoveredPictureId = picture.id; })
-        .on('pointerout', () => {
-          if (this.hoveredPictureId === picture.id) this.hoveredPictureId = null;
-        })
-        .on('pointerdown', (_pointer, _localX, _localY, event) => this.tryOpenPicture(picture, event));
-      makeInteractive(plate);
-      makeInteractive(cover);
-
-      // Frame over the top of it.
       g.lineStyle(3, PAPER.graphite, 0.94);
       draftRect(g, this.rnd, picture.x, picture.y, picture.w, picture.h, { overshoot: 5, jitter: 0.6 });
-      g.lineStyle(1.2, PAPER.graphiteSoft, 0.7);
-      draftRect(g, this.rnd, picture.x + inset, picture.y + inset, picture.w - inset * 2, picture.h - inset * 2, {
-        overshoot: 2,
-        jitter: 0.5,
-      });
-      // Mount board around the plate.
       g.fillStyle(PAPER.sheetHigh, 1);
       g.fillRect(picture.x, picture.y, picture.w, inset);
       g.fillRect(picture.x, picture.y + picture.h - inset, picture.w, inset);
       g.fillRect(picture.x, picture.y, inset, picture.h);
       g.fillRect(picture.x + picture.w - inset, picture.y, inset, picture.h);
-
-      // The hanging wire.
+      g.lineStyle(1.2, PAPER.graphiteSoft, 0.7);
+      draftRect(g, this.rnd, picture.x + inset, picture.y + inset, picture.w - inset * 2, picture.h - inset * 2, {
+        overshoot: 2,
+        jitter: 0.5,
+      });
       g.lineStyle(1.1, PAPER.graphiteSoft, 0.8);
       g.lineBetween(picture.x + picture.w / 2, picture.y, picture.x + picture.w / 2 - 18, RACK_Y);
       g.lineBetween(picture.x + picture.w / 2, picture.y, picture.x + picture.w / 2 + 18, RACK_Y);
 
       this.add
         .text(picture.x + picture.w / 2, picture.y + picture.h + 8, picture.title, {
-          fontFamily: mono,
-          fontSize: '10px',
-          color: '#8d8579',
+          fontFamily: MONO,
+          fontSize: '11px',
+          color: '#6f675c',
           letterSpacing: 1.4,
         })
         .setOrigin(0.5, 0)
         .setDepth(DEPTH.PICTURE);
-
-      // The prompt that appears when the player has climbed close enough.
-      const hint = this.add
-        .text(picture.x + picture.w / 2, picture.y - 12, '', {
-          fontFamily: mono,
-          fontSize: '11px',
-          color: '#2f8c9e',
-          align: 'center',
-          letterSpacing: 1.4,
-        })
-        .setOrigin(0.5, 1)
-        .setDepth(DEPTH.PICTURE + 1);
-      hint.setPadding(6, 4, 6, 4).setBackgroundColor('#f7f4ec');
-      this.pictureLabels[picture.id] = { hint, plate, cover };
+      this.pictureViews[picture.id] = { plate, cover };
     });
   }
 
-  // ======================================================= the color-link board
-
-  cordColor(pairId) {
-    return CORD_COLOURS[pairId] ?? PAPER.fault;
-  }
-
-  boardLayout(pictureId) {
-    const board = this.car.boardSpec(pictureId);
-    const x = 584;
-    const y = 150;
-    const availableW = 276;
-    const availableH = 258;
-    const pad = 22;
-    const pitch = Math.min(
-      38,
-      (availableW - pad * 2) / Math.max(1, board.cols - 1),
-      (availableH - pad * 2) / Math.max(1, board.rows - 1),
-    );
-    const w = pad * 2 + (board.cols - 1) * pitch;
-    const h = pad * 2 + (board.rows - 1) * pitch;
-    return {
-      board,
-      x: x + (availableW - w) / 2,
-      y: y + (availableH - h) / 2,
-      w,
-      h,
-      pad,
-      pitch,
-    };
-  }
-
-  boardEyeletAt(layout, c, r) {
-    return {
-      x: layout.x + layout.pad + c * layout.pitch,
-      y: layout.y + layout.pad + r * layout.pitch,
-    };
-  }
-
-  boardCellAt(wx, wy) {
-    const picture = this.viewer?.picture;
-    if (!picture) return null;
-    const layout = this.boardLayout(picture.id);
-    if (wx < layout.x - 18 || wx > layout.x + layout.w + 18 || wy < layout.y - 18 || wy > layout.y + layout.h + 18) {
-      return null;
-    }
-    const c = Math.round((wx - layout.x - layout.pad) / layout.pitch);
-    const r = Math.round((wy - layout.y - layout.pad) / layout.pitch);
-    if (!this.car.inBoard(picture.id, c, r)) return null;
-    const at = this.boardEyeletAt(layout, c, r);
-    if (Phaser.Math.Distance.Between(wx, wy, at.x, at.y) > layout.pitch * 0.62) return null;
-    return { c, r };
-  }
-
-  drawViewerBoard() {
-    if (!this.viewer?.boardLayer || !this.viewer?.cordLayer) return;
-    const base = this.viewer.boardLayer;
-    const cords = this.viewer.cordLayer;
-    base.clear();
-    cords.clear();
-    const picture = this.viewer.picture;
-    if (!this.viewer.open || !picture) return;
-
-    const layout = this.boardLayout(picture.id);
-    const { board } = layout;
-    const current = this.car.boardState(picture.id);
-    const solved = this.car.boardSolved(picture.id);
-
-    base.fillStyle(PAPER.manilla, 0.98);
-    base.fillRect(layout.x - 18, layout.y - 18, layout.w + 36, layout.h + 36);
-    base.lineStyle(2, PAPER.graphite, 0.9);
-    draftRect(base, this.rnd, layout.x - 18, layout.y - 18, layout.w + 36, layout.h + 36, {
-      overshoot: 4,
-      jitter: 0.6,
-    });
-
-    for (let c = 0; c < board.cols; c += 1) {
-      for (let r = 0; r < board.rows; r += 1) {
-        const at = this.boardEyeletAt(layout, c, r);
-        if (this.car.isTorn(picture.id, c, r)) {
-          base.fillStyle(PAPER.sheetHigh, 1);
-          base.fillCircle(at.x, at.y, Math.max(7, layout.pitch * 0.27));
-          base.lineStyle(1.2, PAPER.deckle, 0.9);
-          for (let i = 0; i < 8; i += 1) {
-            const a0 = (i / 8) * Math.PI * 2;
-            const a1 = ((i + 1) / 8) * Math.PI * 2;
-            base.lineBetween(
-              at.x + Math.cos(a0) * layout.pitch * 0.25,
-              at.y + Math.sin(a0) * layout.pitch * 0.25,
-              at.x + Math.cos(a1) * layout.pitch * 0.25,
-              at.y + Math.sin(a1) * layout.pitch * 0.25,
-            );
-          }
-        } else {
-          base.lineStyle(1.2, PAPER.graphiteSoft, 0.8);
-          base.strokeCircle(at.x, at.y, Math.max(4.5, layout.pitch * 0.16));
+  redrawWallPlates() {
+    const inset = 8;
+    PAINTINGS.forEach((picture) => {
+      const view = this.pictureViews[picture.id];
+      const state = this.car.plateState(picture.id);
+      const g = view.cover;
+      g.clear();
+      if (state.developed) return;
+      const w = picture.w - inset * 2;
+      const h = picture.h - inset * 2;
+      const cw = w / PLATE_GRID.cols;
+      const ch = h / PLATE_GRID.rows;
+      for (let r = 0; r < PLATE_GRID.rows; r += 1) {
+        for (let c = 0; c < PLATE_GRID.cols; c += 1) {
+          const cell = plateCell(c, r);
+          if (!state.grey.has(cell)) continue;
+          g.fillStyle(0x8f8a82, 0.97).fillRect(picture.x + inset + c * cw, picture.y + inset + r * ch, cw + 0.6, ch + 0.6);
+          if (state.varnish.has(cell)) g.fillStyle(0xfffaf0, 0.35).fillRect(picture.x + inset + c * cw, picture.y + inset + r * ch, cw, ch);
         }
       }
-    }
-
-    board.pairs.forEach((pair) => {
-      [pair.a, pair.b].forEach(([c, r]) => {
-        const at = this.boardEyeletAt(layout, c, r);
-        base.fillStyle(this.cordColor(pair.id), 0.96);
-        base.fillCircle(at.x, at.y, Math.max(7, layout.pitch * 0.25));
-        base.lineStyle(1.2, PAPER.graphite, 0.85);
-        base.strokeCircle(at.x, at.y, Math.max(7, layout.pitch * 0.25));
-        base.fillStyle(PAPER.manilla, 1);
-        base.fillCircle(at.x, at.y, 2.2);
-      });
     });
-
-    board.pairs.forEach((pair) => {
-      const cord = current.cords[pair.id];
-      if (!cord || cord.length < 2) return;
-      const done = this.car.cordComplete(picture.id, pair.id);
-      const color = this.cordColor(pair.id);
-      cords.lineStyle(7, PAPER.graphite, 0.14);
-      cords.beginPath();
-      cord.forEach(([c, r], i) => {
-        const at = this.boardEyeletAt(layout, c, r);
-        if (i === 0) cords.moveTo(at.x, at.y + 2);
-        else cords.lineTo(at.x, at.y + 2);
-      });
-      cords.strokePath();
-      cords.lineStyle(done ? 5.5 : 4, color, done ? 0.95 : 0.76);
-      cords.beginPath();
-      cord.forEach(([c, r], i) => {
-        const at = this.boardEyeletAt(layout, c, r);
-        if (i === 0) cords.moveTo(at.x, at.y);
-        else cords.lineTo(at.x, at.y);
-      });
-      cords.strokePath();
-    });
-
-    if (solved) {
-      cords.lineStyle(2, PAPER.verdigris, 0.85);
-      draftRect(cords, makeRandom(0x77aa), layout.x - 12, layout.y - 12, layout.w + 24, layout.h + 24, {
-        overshoot: 3,
-        jitter: 0.8,
-      });
-    }
   }
 
   // ============================================================== the door
 
   buildDoor() {
     const g = this.graphics(DEPTH.DOOR - 1);
+    this.doorFace = g;
     g.fillStyle(PAPER.sheetMid, 1);
     g.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
     g.lineStyle(2.6, PAPER.graphite, 0.94);
@@ -636,79 +519,61 @@ export class PaintedCountryScene extends Phaser.Scene {
       alpha: 0.12,
     });
 
-    const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
-    this.add
-      .text(DOOR.x + DOOR.w / 2, DOOR.y - 12, DOOR.prompt, {
-        fontFamily: mono,
-        fontSize: '11px',
-        color: '#5c574f',
+    // The opening behind the door, shown when it swings: pencil light.
+    this.doorway = this.graphics(DEPTH.DOOR - 2);
+    this.doorway.fillStyle(PAPER.sheetHigh, 1).fillRect(DOOR.x + 6, DOOR.y + 6, DOOR.w - 12, DOOR.h - 6);
+    this.doorway.lineStyle(1.2, PAPER.graphiteFaint, 0.8);
+    for (let x = DOOR.x + 20; x < DOOR.x + DOOR.w; x += 24) this.doorway.lineBetween(x, DOOR.y + 10, x - 30, DOOR.y + DOOR.h);
+
+    this.doorPrompt = this.add
+      .text(DOOR.x + DOOR.w / 2, DOOR.y - 12, DOOR.prompt.replace(' IN ALL', '\nIN ALL'), {
+        fontFamily: MONO,
+        fontSize: '12px',
+        color: '#4a4640',
         align: 'center',
         lineSpacing: 4,
-        letterSpacing: 1.4,
+        letterSpacing: 1.2,
+        wordWrap: { width: DOOR.w + 20 },
       })
       .setOrigin(0.5, 1)
       .setDepth(DEPTH.DOOR);
 
-    // The five signs, as real plates screwed to the door.
     this.panelArt = {};
     this.panelLabels = {};
     DOOR.panels.forEach((panel) => {
-      const art = this.add
+      this.panelArt[panel.sign] = this.add
         .image(panel.x + panel.w / 2, panel.y + panel.h / 2, `sign-${panel.sign}`)
         .setDepth(DEPTH.DOOR + 1)
-        .setDisplaySize(panel.w - 10, panel.h - 10)
-        .setInteractive({ useHandCursor: true })
-        .on('pointerover', () => { this.hoveredDoorSign = panel.sign; })
-        .on('pointerout', () => {
-          if (this.hoveredDoorSign === panel.sign) this.hoveredDoorSign = null;
-        })
-        .on('pointerdown', (_pointer, _localX, _localY, event) => this.tryAnswerDoor(panel, event));
-      this.panelArt[panel.sign] = art;
+        .setDisplaySize(panel.w - 6, panel.h - 6);
       this.panelLabels[panel.sign] = this.add
-        .text(panel.x + panel.w / 2, panel.y + panel.h - 2, panel.sign.toUpperCase(), {
-          fontFamily: mono,
-          fontSize: '7px',
-          color: '#5c574f',
-          backgroundColor: '#f7f4ecdd',
-          padding: { x: 3, y: 1 },
-          letterSpacing: 0.8,
+        .text(panel.x + panel.w / 2, panel.y + panel.h + 3, SIGN_LABELS[panel.sign], {
+          fontFamily: MONO,
+          fontSize: '11px',
+          color: '#4a4640',
+          letterSpacing: 0.6,
         })
-        .setOrigin(0.5, 1)
+        .setOrigin(0.5, 0)
         .setDepth(DEPTH.DOOR + 2);
     });
-
-    this.doorHint = this.add
-      .text(DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h - 32, '', {
-        fontFamily: mono,
-        fontSize: '10px',
-        color: '#2f8c9e',
-        align: 'center',
-        lineSpacing: 3,
-        letterSpacing: 1.2,
-      })
-      .setOrigin(0.5, 0.5)
-      .setDepth(DEPTH.DOOR + 2);
-    this.doorHint.setPadding(6, 4, 6, 4).setBackgroundColor('#f7f4ec');
   }
 
   // ============================================================== physics
 
   buildSolids() {
     this.solids = this.add.group();
-
     const solid = (x, y, w, h) => {
       const object = this.add.rectangle(x + w / 2, y + h / 2, w, h, 0xffffff, 0);
       this.physics.add.existing(object, true);
       this.solids.add(object);
       return object;
     };
-
     FLOOR_SPANS.forEach((span) =>
       solid(span.from * CELL, FLOOR_Y, (span.to - span.from) * CELL, WORLD.h - FLOOR_Y),
     );
-    // The ends of the sheet are walls, not cliffs.
     solid(-24, -400, 24, WORLD.h + 500);
     solid(WORLD.w, -400, 24, WORLD.h + 500);
+    // The ceiling: nothing climbs over the long wall.
+    solid(0, CEILING_Y - 40, WORLD.w, 40);
   }
 
   addCellBody(cx, cy) {
@@ -738,18 +603,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
     this.cameras.main.setDeadzone(240, 160);
 
-    this.keys = this.input.keyboard.addKeys({
-      left: 'LEFT',
-      right: 'RIGHT',
-      a: 'A',
-      d: 'D',
-      up: 'UP',
-      w: 'W',
-      space: 'SPACE',
-      read: 'E',
-      restart: 'R',
-    });
-    this.input.keyboard.addCapture(['LEFT', 'RIGHT', 'UP', 'DOWN', 'SPACE', 'E', 'R']);
+    this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E', enter: 'ENTER' });
+    this.input.keyboard.addCapture(['SPACE', 'E', 'R', 'W']);
   }
 
   // ============================================================== surface
@@ -774,271 +629,182 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   buildHud() {
-    const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
-    const fixed = (x, y, text, color, size = 11, originX = 0, originY = 0) =>
-      this.add
-        .text(x, y, text, { fontFamily: mono, fontSize: `${size}px`, color, letterSpacing: 2 })
-        .setOrigin(originX, originY)
-        .setScrollFactor(0)
-        .setDepth(DEPTH.HUD);
-
-    // No persistent HUD in Chapter 4. The two mechanics are taught in place,
-    // exactly where the player first needs them.
+    // No persistent HUD in Chapter 4. The mechanics are taught in place, by a
+    // paper tag at the gap, the block, the varnish and the dry brush.
     this.hudBand = null;
-    this.controlLines = [];
-    this.objective = null;
     this.bayLabel = null;
-    this.flash = fixed(24, 86, '', '#b4453a', 12);
-    this.flash.setPadding(8, 5, 8, 5).setBackgroundColor('#f7f4ec').setAlpha(0);
-    this.notebook = null;
-    this.tutorialPrompt = fixed(VIEW.w / 2, VIEW.h - 74, '', '#35312c', 15, 0.5, 0.5);
-    this.tutorialPrompt.setPadding(14, 9, 14, 9).setBackgroundColor('#f7f4ec').setAlpha(0);
+    this.pigmentPot = this.graphics(DEPTH.FIGURE + 1);
+    this.pigmentLabel = this.add.text(0, 0, '', {
+      fontFamily: MONO, fontSize: '12px', color: UI.ink, fontStyle: 'bold',
+    }).setOrigin(0, 0.5).setDepth(DEPTH.FIGURE + 2).setVisible(false);
 
-    // Bay names belong to the world, painted under the floor line where there
-    // is nothing else to collide with.
+    // Bay names belong to the world, painted under the floor line.
     BAY_TITLES.forEach(({ x, title }) =>
       this.add
         .text(x + 28, FLOOR_Y + 22, title, {
-          fontFamily: mono,
-          fontSize: '11px',
-          color: '#a49c8d',
+          fontFamily: MONO,
+          fontSize: '12px',
+          color: '#8d8579',
           letterSpacing: 2,
         })
         .setDepth(DEPTH.WALL + 2),
     );
   }
 
-  // The archive viewer: the image stays large on the left while its color-link
-  // card stays live on the right. The signs in the supplied artwork are the
-  // clue, so the puzzle never covers or shrinks the image into a thumbnail.
+  // The plate viewer: the plate, taken down and held close, under its grey.
+  // The notes: the three plates side by side, as images, nothing written.
   buildViewer() {
-    const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace';
     const D = DEPTH.HUD + 10;
-    this.viewer = { open: false, picture: null, wasLeftDown: false };
+    const fixed = (object) => object.setScrollFactor(0).setDepth(D);
+    this.viewer = { open: false, mode: null, picture: null };
+    const v = this.viewer;
+    v.scrim = fixed(this.add.rectangle(0, 0, VIEW.w, VIEW.h, 0x1c130d, 0.78).setOrigin(0));
+    v.card = fixed(this.add.graphics());
+    v.card.fillStyle(0x000000, 0.3).fillRect(64, 36, VIEW.w - 120, VIEW.h - 64);
+    v.card.fillStyle(UI.paper, 1).fillRect(58, 30, VIEW.w - 116, VIEW.h - 64);
+    v.card.lineStyle(2, UI.brass, 0.9).strokeRect(58, 30, VIEW.w - 116, VIEW.h - 64);
+    v.card.fillStyle(0x050403, 0.85).fillCircle(VIEW.w - 92, 60, 10);
+    v.title = fixed(this.add.text(VIEW.w / 2, 52, '', {
+      fontFamily: MONO, fontSize: '14px', color: UI.ink, fontStyle: 'bold', letterSpacing: 3,
+    }).setOrigin(0.5, 0));
+    v.plate = fixed(this.add.image(VIEWER.x, VIEWER.y, PAINTINGS[0].key).setOrigin(0).setDepth(D + 1));
+    v.frame = fixed(this.add.graphics().setDepth(D + 1));
+    v.frame.lineStyle(3, PAPER.graphite, 0.9).strokeRect(VIEWER.x - 6, VIEWER.y - 6, VIEWER.w + 12, VIEWER.h + 12);
+    v.grey = fixed(this.add.graphics().setDepth(D + 2));
+    v.stamps = [0, 1].map(() => fixed(this.add.text(0, 0, 'OFFICIAL RECORD', {
+      fontFamily: MONO, fontSize: '14px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 3,
+    }).setOrigin(0.5).setAngle(-9).setAlpha(0.7).setDepth(D + 3)));
+    v.caption = fixed(this.add.text(VIEW.w / 2, VIEWER.y + VIEWER.h + 20, '', {
+      fontFamily: SERIF, fontSize: px(15), color: '#3a2a1c', align: 'center', lineSpacing: 5,
+      wordWrap: { width: 620 },
+    }).setOrigin(0.5, 0));
+    v.close = fixed(this.add.text(VIEW.w / 2, VIEW.h - 58, '', {
+      fontFamily: MONO, fontSize: '12px', color: UI.inkSoft, letterSpacing: 2,
+    }).setOrigin(0.5, 0));
 
-    this.viewer.scrim = this.add
-      .rectangle(0, 0, VIEW.w, VIEW.h, 0x2c2823, 0.72)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setDepth(D);
-
-    this.viewer.card = this.add
-      .rectangle(VIEW.w / 2, VIEW.h / 2, VIEW.w - 84, VIEW.h - 62, 0xf3efe4, 1)
-      .setScrollFactor(0)
-      .setDepth(D + 1);
-
-    this.viewer.imageFrame = this.add
-      .rectangle(306, 226, 506, 292)
-      .setStrokeStyle(1.5, 0xd8cfb9, 1)
-      .setFillStyle(0xf7f4ec, 1)
-      .setScrollFactor(0)
-      .setDepth(D + 2);
-    this.viewer.plate = this.add.image(306, 226, PAINTINGS[0].key).setScrollFactor(0).setDepth(D + 3);
-    this.viewer.imageCover = this.add
-      .rectangle(306, 226, 490, 276, PAPER.sheetHigh, 1)
-      .setStrokeStyle(1, PAPER.deckle, 0.8)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-    this.viewer.coverText = this.add
-      .text(306, 226, 'ARCHIVE SEALED\nSOLVE THE COLOR LINK TO REVEAL IT', {
-        fontFamily: mono,
-        fontSize: '12px',
-        color: '#8d8579',
-        align: 'center',
-        lineSpacing: 5,
-        letterSpacing: 1.4,
-      })
-      .setOrigin(0.5)
-      .setScrollFactor(0)
-      .setDepth(D + 5);
-    this.viewer.frame = this.add
-      .rectangle(VIEW.w / 2, VIEW.h / 2, VIEW.w - 84, VIEW.h - 62)
-      .setStrokeStyle(1.5, 0xd8cfb9, 1)
-      .setScrollFactor(0)
-      .setDepth(D + 5);
-
-    this.viewer.title = this.add
-      .text(VIEW.w / 2, 44, '', {
-        fontFamily: mono,
-        fontSize: '14px',
-        color: '#4a4640',
-        align: 'center',
-        letterSpacing: 2.4,
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-
-    this.viewer.caption = this.add
-      .text(62, 386, '', {
-        fontFamily: mono,
-        fontSize: '10px',
-        color: '#4a4640',
-        align: 'left',
-        lineSpacing: 4,
-        wordWrap: { width: 490 },
-      })
-      .setOrigin(0, 0)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-
-    this.viewer.boardCard = this.add
-      .rectangle(734, 294, 330, 420, PAPER.manilla, 0.96)
-      .setStrokeStyle(1.5, 0xd8cfb9, 1)
-      .setScrollFactor(0)
-      .setDepth(D + 2);
-    this.viewer.boardTitle = this.add
-      .text(734, 104, 'COLOR LINK', {
-        fontFamily: mono,
-        fontSize: '12px',
-        color: '#4a4640',
-        align: 'center',
-        letterSpacing: 2,
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-    this.viewer.boardStatus = this.add
-      .text(734, 484, '', {
-        fontFamily: mono,
-        fontSize: '9px',
-        color: '#2f8c9e',
-        align: 'center',
-        lineSpacing: 3,
-        letterSpacing: 1,
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-    this.viewer.boardLayer = this.add.graphics().setScrollFactor(0).setDepth(D + 3);
-    this.viewer.cordLayer = this.add.graphics().setScrollFactor(0).setDepth(D + 4);
-
-    this.viewer.close = this.add
-      .text(VIEW.w / 2, VIEW.h - 30, 'PRESS  E  TO PUT IT BACK', {
-        fontFamily: mono,
-        fontSize: '11px',
-        color: '#8d8579',
-        letterSpacing: 2,
-      })
-      .setOrigin(0.5, 0)
-      .setScrollFactor(0)
-      .setDepth(D + 4);
-
+    // notes
+    v.notePlates = PAINTINGS.map((picture, i) => {
+      const x = VIEW.w / 2 + (i - 1) * (NOTE_PLATE.w + NOTE_PLATE.gap) - NOTE_PLATE.w / 2;
+      const img = fixed(this.add.image(x, NOTE_PLATE.y, picture.key).setOrigin(0).setDisplaySize(NOTE_PLATE.w, NOTE_PLATE.h).setDepth(D + 1));
+      const label = fixed(this.add.text(x + NOTE_PLATE.w / 2, NOTE_PLATE.y + NOTE_PLATE.h + 12, picture.title, {
+        fontFamily: MONO, fontSize: '12px', color: UI.ink, fontStyle: 'bold', letterSpacing: 1,
+      }).setOrigin(0.5, 0).setDepth(D + 1));
+      return { picture, img, label, x };
+    });
+    v.noteLayer = fixed(this.add.graphics().setDepth(D + 2));
     this.setViewerVisible(false);
   }
 
-  setViewerVisible(on) {
-    this.viewer.open = on;
-    [
-      this.viewer.scrim,
-      this.viewer.card,
-      this.viewer.imageFrame,
-      this.viewer.frame,
-      this.viewer.plate,
-      this.viewer.imageCover,
-      this.viewer.coverText,
-      this.viewer.title,
-      this.viewer.caption,
-      this.viewer.boardCard,
-      this.viewer.boardTitle,
-      this.viewer.boardStatus,
-      this.viewer.close,
-    ].forEach((obj) => obj.setVisible(on));
-    this.viewer.boardLayer.setVisible(on && Boolean(this.viewer.picture));
-    this.viewer.cordLayer.setVisible(on && Boolean(this.viewer.picture));
-    // Everything else gets out of the way, so nothing shows through the sheet.
-    [this.objective, this.notebook, this.flash, this.bayLabel, this.hudBand, this.doorHint].forEach(
-      (obj) => obj && obj.setVisible(!on),
-    );
-    this.controlLines.forEach((obj) => obj.setVisible(!on));
-    Object.values(this.pictureLabels).forEach((entry) => entry.hint.setVisible(false));
-    if (on) this.brushCursor.clear();
-    if (!on) {
-      this.viewer.wasLeftDown = false;
-      this.viewer.boardLayer.clear();
-      this.viewer.cordLayer.clear();
+  viewerObjects() {
+    const v = this.viewer;
+    return [v.scrim, v.card, v.title, v.plate, v.frame, v.grey, ...v.stamps, v.caption, v.close, v.noteLayer,
+      ...v.notePlates.flatMap((n) => [n.img, n.label])];
+  }
+
+  setViewerVisible(on, mode = null) {
+    const v = this.viewer;
+    v.open = on;
+    v.mode = on ? mode : null;
+    this.viewerObjects().forEach((obj) => obj.setVisible(false));
+    if (on) {
+      [v.scrim, v.card, v.title, v.close].forEach((obj) => obj.setVisible(true));
+      if (mode === 'plate') [v.plate, v.frame, v.grey, v.caption].forEach((obj) => obj.setVisible(true));
+      if (mode === 'notes') {
+        v.noteLayer.setVisible(true);
+        v.notePlates.forEach((n) => { n.img.setVisible(true); n.label.setVisible(true); });
+      }
+      this.brushCursor.clear();
+      this.tag.hide();
+      this.brush.setAnchor(null);
+    } else {
+      v.picture = null;
+      this.lastPlateCell = null;
+      this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y - 10 }), REACH + 30);
     }
   }
 
   openPicture(picture) {
-    this.viewer.picture = picture;
-    this.viewer.wasLeftDown = false;
-    const archiveNumber = PAINTINGS.findIndex((candidate) => candidate.id === picture.id) + 1;
-    this.viewer.title.setText(`${picture.title}  ·  ${picture.primarySign.toUpperCase()} + SMALL SEAL`);
-    this.viewer.caption.setPosition(62, 386);
-
-    // Fit the full artwork into a deliberately generous image well without
-    // distorting it. At 1672×941 this renders at roughly 490×276 in the 960px
-    // game view, so the signs remain legible while the board stays visible.
-    const tex = this.textures.get(picture.key).getSourceImage();
-    const maxW = 490;
-    const maxH = 276;
-    const scale = Math.min(maxW / tex.width, maxH / tex.height);
-    this.viewer.plate
-      .setTexture(picture.key)
-      .setDisplaySize(tex.width * scale, tex.height * scale)
-      .setPosition(306, 82 + (tex.height * scale) / 2);
-
-    this.setViewerVisible(true);
-    this.viewer.imageFrame.setVisible(true);
-    this.viewer.boardTitle.setText(`COLOR LINK  ·  ${this.car.boardSpec(picture.id).pairs.length} PAIRS`);
-    this.updateViewerArchive();
-    this.drawViewerBoard();
+    const v = this.viewer;
+    this.setViewerVisible(true, 'plate');
+    v.picture = picture;
+    v.title.setText(picture.title);
+    v.plate.setTexture(picture.key).setDisplaySize(VIEWER.w, VIEWER.h);
+    v.close.setText(`${this.brush.label('wash')} · WASH THE GREY      ${this.brush.label('read')} · PUT IT BACK`);
+    picture.varnishRects.forEach((rect, i) => {
+      v.stamps[i]?.setPosition(VIEWER.x + (rect.c + rect.w / 2) * PLATE_CELL, VIEWER.y + (rect.r + rect.h / 2) * PLATE_CELL);
+    });
+    this.lastPlateCell = null;
+    this.drawViewerPlate();
   }
 
-  updateViewerArchive() {
-    const picture = this.viewer.picture;
+  drawViewerPlate() {
+    const v = this.viewer;
+    const picture = v.picture;
     if (!picture) return;
-    const solved = this.car.boardSolved(picture.id);
-    this.viewer.plate.setVisible(solved);
-    this.viewer.imageCover.setVisible(!solved);
-    this.viewer.coverText.setVisible(!solved);
-    this.viewer.caption.setText(
-      solved
-        ? picture.caption
-        : 'THE ARCHIVE IS SEALED.\nSOLVE THE COLOR LINK TO REVEAL THE IMAGE.',
-    );
-    this.viewer.boardStatus.setText(
-      solved
-        ? 'ARCHIVE DEVELOPED\nTHE CAPTION IS NOW IN YOUR NOTES.'
-        : picture.id === 'nave'
-          ? 'DRAG EACH COLOR STRAIGHT ACROSS\nTO ITS MATCH. THREE SEPARATE LINES.'
-          : 'DRAG FROM ONE COLORED DOT\nTO ITS MATCH. DO NOT SHARE A HOLE.',
-    ).setColor(solved ? '#6f9c8b' : '#8d8579');
+    const state = this.car.plateState(picture.id);
+    const g = v.grey;
+    g.clear();
+    for (let r = 0; r < PLATE_GRID.rows; r += 1) {
+      for (let c = 0; c < PLATE_GRID.cols; c += 1) {
+        const cell = plateCell(c, r);
+        if (!state.grey.has(cell) && !state.varnish.has(cell)) continue;
+        drawGreyCell(g, VIEWER.x + c * PLATE_CELL, VIEWER.y + r * PLATE_CELL, PLATE_CELL, 0x51a + cell * 7, {
+          varnish: state.varnish.get(cell) ?? 0,
+        });
+      }
+    }
+    picture.varnishRects.forEach((rect, i) => {
+      const left = rectPlateCells(rect).filter((cell) => state.varnish.has(cell)).length;
+      v.stamps[i]?.setVisible(v.open && v.mode === 'plate' && left > 0).setAlpha(0.3 + 0.4 * (left / (rect.w * rect.h)));
+    });
+    for (let i = picture.varnishRects.length; i < v.stamps.length; i += 1) v.stamps[i].setVisible(false);
+    v.caption.setText(state.developed ? picture.caption : '');
   }
 
-  // At the door, E brings up everything already read, so the answer is a matter
-  // of comparing rather than of remembering.
-  openNotes() {
-    const read = this.car.picturesRead();
-    this.viewer.picture = null;
-    this.viewer.wasLeftDown = false;
-    this.viewer.title.setText('COMPARE THE THREE SMALL SEALS');
-    this.viewer.plate.setVisible(false);
-    this.viewer.caption
-      .setText(
-        read.length
-          ? read.map((p) => `${p.title}\nLARGE ${p.primarySign.toUpperCase()}  +  SMALL ${p.sharedSign.toUpperCase()}`).join('\n\n')
-          : 'YOU HAVE NOT READ ANY OF THEM YET.',
-      )
-      .setPosition(62, 110);
-    this.setViewerVisible(true);
-    this.viewer.imageFrame.setVisible(false);
-    this.viewer.plate.setVisible(false);
-    this.viewer.imageCover.setVisible(false);
-    this.viewer.coverText.setVisible(false);
-    this.viewer.boardCard.setVisible(false);
-    this.viewer.boardTitle.setVisible(false);
-    this.viewer.boardStatus.setVisible(false);
-    this.viewer.boardLayer.setVisible(false);
-    this.viewer.cordLayer.setVisible(false);
+  // At the door, E lays the plates out side by side. Only pictures: the
+  // comparison is the player's, not the notebook's.
+  openNotes({ pulse = false } = {}) {
+    const v = this.viewer;
+    this.setViewerVisible(true, 'notes');
+    this.notesPulse = pulse;
+    v.title.setText('YOUR NOTES · THE THREE PLATES');
+    v.close.setText(`${this.brush.label('read')} · CLOSE`);
+    v.notePlates.forEach((n) => {
+      const developed = this.car.plateState(n.picture.id).developed;
+      n.img.setAlpha(developed ? 1 : 0.2);
+      n.label.setText(developed ? n.picture.title : `${n.picture.title}\n(STILL UNDER GREY)`);
+    });
+    this.drawNotes();
   }
 
-  flashMessage(text, color = '#b4453a') {
-    if (!this.flash) return;
-    this.tweens.killTweensOf(this.flash);
-    this.flash.setText(text).setColor(color).setAlpha(1);
-    this.tweens.add({ targets: this.flash, alpha: 0, delay: 1700, duration: 800 });
+  drawNotes() {
+    const v = this.viewer;
+    const g = v.noteLayer;
+    g.clear();
+    const scale = NOTE_PLATE.w / PLATE_TEX.w;
+    v.notePlates.forEach((n) => {
+      g.lineStyle(2.4, PAPER.graphite, 0.9).strokeRect(n.x - 4, NOTE_PLATE.y - 4, NOTE_PLATE.w + 8, NOTE_PLATE.h + 8);
+      if (!this.car.plateState(n.picture.id).developed) {
+        g.fillStyle(0x8f8a82, 0.9).fillRect(n.x, NOTE_PLATE.y, NOTE_PLATE.w, NOTE_PLATE.h);
+        return;
+      }
+      if (!this.notesPulse) return;
+      // Her mark, pulsing in her thread's cyan, after the second wrong answer.
+      const rect = n.picture.hawthornRect;
+      const t = this.time.now / 1000;
+      const k = 0.5 + 0.5 * Math.sin(t * 4);
+      const cx = n.x + (rect.c + rect.w / 2) * PLATE_CELL * scale;
+      const cy = NOTE_PLATE.y + (rect.r + rect.h / 2) * PLATE_CELL * scale;
+      g.lineStyle(3, PAPER.cyan, 0.5 + 0.45 * k).strokeCircle(cx, cy, 26 + k * 6);
+      g.lineStyle(1.5, PAPER.cyan, 0.35).strokeCircle(cx, cy, 36 + k * 8);
+    });
+  }
+
+  note(worldX, worldY, text, tone = 'info', key = text, gap = 1100) {
+    const now = this.time.now;
+    if (this.noteThrottle[key] && now - this.noteThrottle[key] < gap) return;
+    this.noteThrottle[key] = now;
+    noteAt(this, worldX, worldY, text, { tone });
   }
 
   // ================================================================= draw
@@ -1055,32 +821,26 @@ export class PaintedCountryScene extends Phaser.Scene {
       const cy = Math.floor(key / GRID.w) * CELL;
       paintedFill(g, rnd, cx, cy, CELL, CELL, PAPER.indigo, { alpha: 0.92 });
     });
-    // One pass of edge ink so a drawn shape reads as a made thing, not a blob.
     g.lineStyle(1.4, PAPER.boneBlack, 0.4);
     this.car.state.painted.forEach((key) => {
       const cx = (key % GRID.w);
       const cy = Math.floor(key / GRID.w);
       if (!this.car.isPainted(cx, cy - 1)) g.lineBetween(cx * CELL, cy * CELL, cx * CELL + CELL, cy * CELL);
-      if (!this.car.isPainted(cx, cy + 1)) {
-        g.lineBetween(cx * CELL, cy * CELL + CELL, cx * CELL + CELL, cy * CELL + CELL);
-      }
+      if (!this.car.isPainted(cx, cy + 1)) g.lineBetween(cx * CELL, cy * CELL + CELL, cx * CELL + CELL, cy * CELL + CELL);
       if (!this.car.isPainted(cx - 1, cy)) g.lineBetween(cx * CELL, cy * CELL, cx * CELL, cy * CELL + CELL);
-      if (!this.car.isPainted(cx + 1, cy)) {
-        g.lineBetween(cx * CELL + CELL, cy * CELL, cx * CELL + CELL, cy * CELL + CELL);
-      }
+      if (!this.car.isPainted(cx + 1, cy)) g.lineBetween(cx * CELL + CELL, cy * CELL, cx * CELL + CELL, cy * CELL + CELL);
     });
 
+    // The archive's grey gouache: flat, heavy, a little streaked.
     this.car.state.blocks.forEach((key) => {
       const cx = (key % GRID.w) * CELL;
       const cy = Math.floor(key / GRID.w) * CELL;
-      paintedFill(b, rnd, cx, cy, CELL, CELL, PAPER.boneBlack, { alpha: 0.88 });
-      b.lineStyle(1, PAPER.graphite, 0.5);
-      b.strokeRect(cx, cy, CELL, CELL);
+      drawGreyCell(b, cx, cy, CELL, key * 13);
     });
   }
 
   drawFigure() {
-    drawPaintedPlayer(this.figure, this.walker, this.input.activePointer);
+    drawPaintedPlayer(this.figure, this.walker, this.brush);
   }
 
   // The cursor is the whole tutorial: it shows the cell you would fill, and
@@ -1088,59 +848,70 @@ export class PaintedCountryScene extends Phaser.Scene {
   drawCursor() {
     const g = this.brushCursor;
     g.clear();
-    const pointer = this.input.activePointer;
-    const cx = colOf(pointer.worldX);
-    const cy = rowOf(pointer.worldY);
+    const bx = this.brush.worldX;
+    const by = this.brush.worldY;
+    const cx = colOf(bx);
+    const cy = rowOf(by);
     if (!this.car.inBounds(cx, cy)) return;
 
     const inReach = this.pointerInReach();
-    const panel = this.panelAt(pointer.worldX, pointer.worldY);
+    const panel = this.panelAt(bx, by);
 
-    // Always show the arm's limit, so "too far" is never a mystery.
     g.lineStyle(1, PAPER.graphiteFaint, inReach ? 0.18 : 0.4);
     g.strokeCircle(this.walker.x, this.walker.y, REACH);
 
     if (panel) {
-      g.lineStyle(2.4, inReach ? PAPER.cyan : PAPER.graphiteFaint, inReach ? 0.95 : 0.4);
+      g.lineStyle(2.4, inReach ? UI.amberInk : PAPER.graphiteFaint, inReach ? 0.95 : 0.4);
       g.strokeRect(panel.x - 4, panel.y - 4, panel.w + 8, panel.h + 8);
       return;
     }
+    if (this.pictureAt(bx, by)) return;
 
     const canPaint = this.car.canPaint(cx, cy);
     const canWash = this.car.canWash(cx, cy);
     const refusal = this.car.paintRefusal(cx, cy);
 
     let color = PAPER.graphiteFaint;
-    let alpha = 0.35;
-    if (!inReach) {
-      color = PAPER.graphiteFaint;
-      alpha = 0.3;
-    } else if (canWash) {
+    let alpha = 0.3;
+    if (inReach && canWash) {
       color = PAPER.bookCloth;
       alpha = 0.85;
-    } else if (canPaint) {
-      color = PAPER.cyan;
+    } else if (inReach && canPaint) {
+      color = UI.amberInk;
       alpha = 0.95;
-    } else if (refusal === 'varnished') {
+    } else if (inReach && (refusal === 'no-pigment' || refusal === 'sealed')) {
       color = PAPER.fault;
-      alpha = 0.7;
+      alpha = 0.6;
     }
-
     g.lineStyle(2.2, color, alpha);
     g.strokeRect(cx * CELL, cy * CELL, CELL, CELL);
     if (inReach && canPaint) {
-      g.fillStyle(PAPER.cyan, 0.16);
+      g.fillStyle(UI.amberInk, 0.16);
       g.fillRect(cx * CELL, cy * CELL, CELL, CELL);
     }
+  }
+
+  // An ink pot beside Butch in Bay C: the brush's pigment, next to the brush.
+  drawPigmentPot() {
+    const g = this.pigmentPot;
+    g.clear();
+    const inZone = colOf(this.walker.x) >= PIGMENT_ZONE.fromCol - 2;
+    this.pigmentLabel.setVisible(inZone && !this.viewer.open);
+    if (!inZone || this.viewer.open) return;
+    const x = this.walker.x + 16;
+    const y = this.walker.y - 52;
+    const amount = this.car.state.pigment;
+    g.fillStyle(UI.paper, 0.95).fillRoundedRect(x - 4, y - 11, 64, 22, 4);
+    g.lineStyle(1, 0x6b5640, 0.5).strokeRoundedRect(x - 4, y - 11, 64, 22, 4);
+    g.fillStyle(PAPER.boneBlack, 0.85).fillRoundedRect(x + 2, y - 6, 12, 13, 3);
+    g.fillStyle(amount > 0 ? PAPER.indigo : 0x8f8a82, 1).fillRect(x + 4, y - 1, 8, 6);
+    this.pigmentLabel.setPosition(x + 20, y).setText(`×${amount}`).setColor(amount > 0 ? UI.ink : UI.oxblood);
   }
 
   // ================================================================ input
 
   pointerInReach() {
-    const pointer = this.input.activePointer;
-    return (
-      Phaser.Math.Distance.Between(this.walker.x, this.walker.y, pointer.worldX, pointer.worldY) <= REACH
-    );
+    return Phaser.Math.Distance.Between(this.walker.x, this.walker.y, this.brush.worldX, this.brush.worldY) <= REACH;
   }
 
   panelAt(wx, wy) {
@@ -1155,45 +926,24 @@ export class PaintedCountryScene extends Phaser.Scene {
     ) ?? null;
   }
 
-  tryOpenPicture(picture, event) {
-    event?.stopPropagation?.();
-    if (this.viewer?.open) return;
-    const inRange = this.car.pictureInRange(this.walker.x, this.walker.y);
-    if (inRange?.id !== picture.id) {
-      this.flashMessage('BUILD CLOSER — THEN CLICK OR PRESS E TO OPEN THIS ARCHIVE.', '#c8892f');
-      return;
-    }
-    this.openPicture(picture);
-  }
-
-  tryAnswerDoor(panel, event) {
-    event?.stopPropagation?.();
-    if (this.viewer?.open) return;
-    if (!this.nearDoor()) {
-      this.flashMessage('STAND CLOSER TO THE SIGN WALL.', '#c8892f');
-      return;
-    }
-    this.answerDoor(panel.sign);
-  }
-
-  // Only the one cell the player is actually standing in is off limits. Being
-  // stricter than this meant a player at the very lip of a hole could not draw
-  // the first plank of their own bridge, because their toes were grazing it.
+  // Only the one cell the player is actually standing in is off limits.
   overlapsPlayer(cx, cy) {
     return (
-      this.walker.x >= cx * CELL &&
-      this.walker.x < cx * CELL + CELL &&
-      this.walker.y >= cy * CELL &&
-      this.walker.y < cy * CELL + CELL
+      this.walker.x >= cx * CELL
+      && this.walker.x < cx * CELL + CELL
+      && this.walker.y >= cy * CELL
+      && this.walker.y < cy * CELL + CELL
     );
   }
 
   applyBrush(cx, cy, wash) {
     if (!this.car.inBounds(cx, cy)) return;
     if (wash) {
+      const wasBlock = this.car.isBlock(cx, cy) || this.car.isPainted(cx, cy);
       if (this.car.wash(cx, cy)) {
-        this.removeCellBody(cx, cy);
+        if (wasBlock && !this.car.isBlock(cx, cy) && !this.car.isPainted(cx, cy)) this.removeCellBody(cx, cy);
         this.paintDirty = true;
+        this.varnishDirty = true;
         if (this.activeTutorial === 'wash') this.dismissTutorial('wash');
       }
       return;
@@ -1207,106 +957,117 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   stepBrush() {
-    const pointer = this.input.activePointer;
-    const left = pointer.leftButtonDown();
-    const right = pointer.rightButtonDown();
-    const freshLeft = left && !this.wasLeftDown;
-    const inReach = this.pointerInReach();
+    const brush = this.brush;
+    const bx = brush.worldX;
+    const by = brush.worldY;
 
-    // A left click on a door sign is an answer, never a brush stroke — and
-    // holding the button there must not nag about varnish either.
-    const panel = this.panelAt(pointer.worldX, pointer.worldY);
+    // A press on a door sign is an answer; on a plate in reach, a look.
+    const panel = this.panelAt(bx, by);
     if (panel) {
-      if (freshLeft && inReach) this.answerDoor(panel.sign);
-      this.wasLeftDown = left;
+      this.hoveredDoorSign = panel.sign;
+      if (brush.paintPressed) this.tryAnswerDoor(panel);
       this.lastBrushCell = null;
       return;
     }
-    this.wasLeftDown = left;
-
-    if (!left && !right) {
+    this.hoveredDoorSign = null;
+    const picture = this.pictureAt(bx, by);
+    this.hoveredPictureId = picture?.id ?? null;
+    if (picture && (brush.paintPressed || brush.washPressed)) {
+      this.tryOpenPicture(picture);
       this.lastBrushCell = null;
       return;
     }
-    if (!inReach) {
+    if (picture) return;
+
+    const paint = brush.paintDown;
+    const wash = brush.washDown;
+    const samples = brush.mode === 'mouse' ? brush.samples : [];
+    if (brush.paintPressed || brush.washPressed) this.lastBrushCell = null;
+    samples.forEach((sample) => this.strokeTo(sample.worldX, sample.worldY, sample.wash));
+    if (paint || wash) this.strokeTo(bx, by, wash);
+    else this.lastBrushCell = null;
+  }
+
+  // Walk the brush from the last cell to this point, so no stroke has gaps.
+  // Holding still does not scrub: varnish takes two separate passes.
+  strokeTo(wx, wy, wash) {
+    if (Phaser.Math.Distance.Between(this.walker.x, this.walker.y, wx, wy) > REACH) {
       this.lastBrushCell = null;
       return;
     }
-
-    const cx = colOf(pointer.worldX);
-    const cy = rowOf(pointer.worldY);
-
-    // Walk the line from the last cell so a fast drag leaves no gaps.
+    const cx = colOf(wx);
+    const cy = rowOf(wy);
     const from = this.lastBrushCell;
-    if (from && (from.cx !== cx || from.cy !== cy)) {
+    if (!from) {
+      this.applyBrush(cx, cy, wash);
+    } else if (from.cx !== cx || from.cy !== cy) {
       const steps = Math.max(Math.abs(cx - from.cx), Math.abs(cy - from.cy));
       for (let s = 1; s <= steps; s += 1) {
         const t = s / steps;
-        this.applyBrush(
-          Math.round(from.cx + (cx - from.cx) * t),
-          Math.round(from.cy + (cy - from.cy) * t),
-          right,
-        );
+        this.applyBrush(Math.round(from.cx + (cx - from.cx) * t), Math.round(from.cy + (cy - from.cy) * t), wash);
       }
-    } else {
-      this.applyBrush(cx, cy, right);
     }
     this.lastBrushCell = { cx, cy };
   }
 
-  stepViewerBoard() {
-    const picture = this.viewer.picture;
+  // Washing inside the plate viewer. Dragging leaves no gaps.
+  stepViewerBrush() {
+    const v = this.viewer;
+    const picture = v.picture;
+    const brush = this.brush;
     if (!picture) return;
-    const pointer = this.input.activePointer;
-    const left = pointer.leftButtonDown();
-
-    if (!left && this.car.boardState(picture.id).drawing) this.car.boardRelease(picture.id);
-    this.viewer.wasLeftDown = left;
+    const cellOf = (x, y) => ({ c: Math.floor((x - VIEWER.x) / PLATE_CELL), r: Math.floor((y - VIEWER.y) / PLATE_CELL) });
+    const onPlate = ({ c, r }) => c >= 0 && r >= 0 && c < PLATE_GRID.cols && r < PLATE_GRID.rows;
+    const here = cellOf(brush.x, brush.y);
+    const state = this.car.plateState(picture.id);
+    if (brush.paintPressed && onPlate(here) && !state.developed) {
+      noteAt(this, brush.x, brush.y - 10, `${brush.label('wash')} · WASH`, { screen: true, depth: DEPTH.HUD + 30, hold: 900 });
+    }
+    if (brush.washPressed) this.lastPlateCell = null;
+    let changed = false;
+    const washTo = (cell) => {
+      if (!onPlate(cell)) {
+        this.lastPlateCell = null;
+        return;
+      }
+      const from = this.lastPlateCell;
+      if (!from) {
+        changed = Boolean(this.car.washPlate(picture.id, cell.c, cell.r)) || changed;
+      } else if (from.c !== cell.c || from.r !== cell.r) {
+        const steps = Math.max(Math.abs(cell.c - from.c), Math.abs(cell.r - from.r));
+        for (let s = 1; s <= steps; s += 1) {
+          const t = s / steps;
+          changed = Boolean(this.car.washPlate(picture.id, Math.round(from.c + (cell.c - from.c) * t), Math.round(from.r + (cell.r - from.r) * t))) || changed;
+        }
+      }
+      this.lastPlateCell = { c: cell.c, r: cell.r };
+    };
+    (brush.mode === 'mouse' ? brush.samples : []).filter((p) => p.wash).forEach((p) => washTo(cellOf(p.x, p.y)));
+    if (brush.washDown) washTo(here);
+    else this.lastPlateCell = null;
+    if (changed) {
+      this.platesDirty = true;
+      this.drawViewerPlate();
+    }
   }
 
-  handlePointerDown(pointer) {
-    const picture = this.viewer?.picture;
-    if (this.viewer?.open) {
-      if (!picture) return;
-      const hole = this.boardCellAt(pointer.x, pointer.y);
-      if (!hole) return;
-      if (pointer.rightButtonDown()) this.car.boardClearAt(picture.id, hole.c, hole.r);
-      else this.car.boardBegin(picture.id, hole.c, hole.r);
-      this.viewer.wasLeftDown = pointer.leftButtonDown();
+  tryOpenPicture(picture) {
+    if (this.viewer.open) return;
+    const inRange = this.car.pictureInRange(this.walker.x, this.walker.y);
+    if (inRange?.id !== picture.id) {
+      this.note(picture.x + picture.w / 2, picture.y + picture.h + 30, 'TOO HIGH · BUILD UP TO IT', 'warn');
       return;
     }
-
-    // A quick click can begin and end between two update frames. Applying the
-    // first cell from the actual pointer-down event makes a tap just as reliable
-    // as a held stroke; stepBrush continues the same stroke while it is held.
-    const left = pointer.leftButtonDown();
-    const right = pointer.rightButtonDown();
-    if ((!left && !right) || this.advancingToStudio) return;
-    if (this.panelAt(pointer.worldX, pointer.worldY) || this.pictureAt(pointer.worldX, pointer.worldY)) return;
-    if (Phaser.Math.Distance.Between(this.walker.x, this.walker.y, pointer.worldX, pointer.worldY) > REACH) return;
-    const cx = colOf(pointer.worldX);
-    const cy = rowOf(pointer.worldY);
-    this.applyBrush(cx, cy, right);
-    this.lastBrushCell = { cx, cy };
-    this.wasLeftDown = left;
+    this.openPicture(picture);
   }
 
-  handleViewerPointerMove(pointer) {
-    const picture = this.viewer?.picture;
-    if (!this.viewer?.open || !picture || !pointer.leftButtonDown()) return;
-    const hole = this.boardCellAt(pointer.x, pointer.y);
-    if (hole) this.car.boardExtend(picture.id, hole.c, hole.r);
-  }
-
-  handleViewerPointerUp(pointer) {
-    const picture = this.viewer?.picture;
-    if (!picture) {
-      this.lastBrushCell = null;
-      this.wasLeftDown = false;
+  tryAnswerDoor(panel) {
+    if (this.viewer.open || this.car.state.door.solved) return;
+    if (!this.nearDoor()) {
+      this.note(panel.x + panel.w / 2, panel.y - 6, 'STAND AT THE DOOR', 'warn');
       return;
     }
-    this.car.boardRelease(picture.id);
-    this.viewer.wasLeftDown = false;
+    this.answerDoor(panel.sign);
   }
 
   answerDoor(sign) {
@@ -1314,86 +1075,68 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (result.ok && result.reason === 'correct') this.playCompletion();
   }
 
-  stepPlayer() {
-    if (this.advancingToStudio) {
-      this.walker.body.setVelocityX(0);
+  stepPlayer(move) {
+    const body = this.walker.body;
+    if (this.advancingToStudio || this.locked) {
+      body.setVelocityX(0);
       return;
     }
-    const k = this.keys;
-    const body = this.walker.body;
-    const left = k.left.isDown || k.a.isDown;
-    const right = k.right.isDown || k.d.isDown;
-    const jump = k.up.isDown || k.w.isDown || k.space.isDown;
+    body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
+    if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
 
-    body.setVelocityX(left && !right ? -MOVE_SPEED : right && !left ? MOVE_SPEED : 0);
-    if (jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
-
+    if (body.blocked.down) {
+      const below = this.car.isTerrain(colOf(this.walker.x), rowOf(this.walker.y + 34));
+      if (below) this.lastSafe = { x: this.walker.x, y: this.walker.y };
+    }
     // Falling through the paper costs nothing that was drawn.
     if (this.walker.y > VIEW.h + 120) {
       this.car.fell();
-      const bay = this.walker.x > 1920 ? 2120 : this.walker.x > 960 ? 1000 : 200;
-      this.walker.setPosition(bay, 360);
+      this.walker.setPosition(this.lastSafe.x, this.lastSafe.y - 10);
       body.setVelocity(0, 0);
     }
   }
 
-  // Retained for old QA routes. Normal fused play gives a recoverable refusal
-  // instead of erasing three archive puzzles.
-  playDeath(sign) {
-    if (this.dying) return;
-    this.dying = true;
-    this.flashMessage(`${String(sign).toUpperCase()} WAS NOT IT. THE INK TAKES THE CAR.`, '#b4453a');
-    // The flood is decoration; the restart is driven from update() on the
-    // scene clock, so it cannot be lost if a tween callback never lands.
-    this.deathFlood = this.add
-      .rectangle(0, 0, VIEW.w, VIEW.h, PAPER.boneBlack, 0)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.HUD + 30);
-    this.deathStartedAt = this.time.now;
-  }
-
-  stepDeath(time) {
-    if (!this.dying) return false;
-    const elapsed = time - this.deathStartedAt;
-    const k = Phaser.Math.Clamp(elapsed / 900, 0, 1);
-    if (this.deathFlood) this.deathFlood.setFillStyle(PAPER.boneBlack, k * k);
-    this.walker.body.setVelocityX(0);
-    if (elapsed >= 1100) {
-      this.dying = false;
-      this.scene.restart();
-      return true;
-    }
-    return true;
-  }
-
+  // The door opens, and someone is already walking through it: Mara, painted,
+  // seen from behind, her cyan thread trailing. Then the studio.
   playCompletion() {
     if (this.advancingToStudio) return;
     this.advancingToStudio = true;
-    const bloom = this.add
-      .rectangle(0, 0, VIEW.w, VIEW.h, PAPER.bookCloth, 0)
-      .setOrigin(0)
-      .setScrollFactor(0)
-      .setDepth(DEPTH.AIR + 1);
+    this.tag.hide();
+    this.tweens.add({ targets: [this.doorFace, ...Object.values(this.panelArt), ...Object.values(this.panelLabels)], alpha: 0, duration: 700, delay: 500 });
+    this.cameras.main.stopFollow();
+    this.cameras.main.pan(DOOR.x + DOOR.w / 2 - 60, VIEW.h / 2, 900, 'Sine.easeInOut');
+    this.mara = { x: DOOR.x + 30, alpha: 0, t: 0 };
+    this.tweens.add({ targets: this.mara, alpha: 1, duration: 700, delay: 1100 });
     this.tweens.add({
-      targets: bloom,
-      fillAlpha: { from: 0, to: 0.26 },
-      duration: 520,
-      yoyo: true,
-      hold: 900,
+      targets: this.mara,
+      x: DOOR.x + DOOR.w - 40,
+      duration: 3200,
+      delay: 1300,
       ease: 'Sine.easeInOut',
-      onComplete: () => {
-        bloom.destroy();
-        this.goToStudio();
-      },
+    });
+    this.tweens.add({ targets: this.mara, alpha: 0, duration: 900, delay: 3700 });
+    this.time.delayedCall(4700, () => this.goToStudio());
+  }
+
+  drawMara(dt) {
+    const g = this.maraLayer;
+    g.clear();
+    if (!this.mara) return;
+    this.mara.t += dt;
+    drawMaraSilhouette(g, {
+      feetX: this.mara.x,
+      feetY: DOOR.y + DOOR.h - 4,
+      t: this.mara.t,
+      alpha: this.mara.alpha,
+      scale: 1.05,
+      dir: 1,
+      thread: 70,
     });
   }
 
   goToStudio() {
-    // The gallery carries only the archive answer forward. Color begins in the
-    // second scene, so the first scene never draws or pre-fills the HUE ring.
     this.registry.set('chapter4Pigments', []);
-    this.registry.set('chapter4ArchiveAnswer', 'moon');
+    this.registry.set('chapter4ArchiveAnswer', DOOR.correct);
     if (this.music) this.tweens.add({ targets: this.music, volume: 0, duration: 360 });
     this.cameras.main.fadeOut(420, 247, 244, 236);
     this.time.delayedCall(450, () => this.scene.start('DrawingStudio'));
@@ -1405,64 +1148,50 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   objectiveText() {
     const car = this.car;
-    if (car.state.complete) return 'THE DOOR IS OPEN. IT WAS THE MOON.';
+    if (car.state.complete) return 'the door is open; someone went through ahead';
     const read = car.state.seen.size;
-    if (read < PAINTINGS.length) {
-      if (this.bayId() === 'A') return 'CLICK OR DRAG — PAPER APPEARS ANYWHERE WITHIN THE BRUSH CIRCLE.';
-      const nearby = car.pictureInRange(this.walker.x, this.walker.y);
-      if (nearby && !car.boardSolved(nearby.id)) return 'PRESS E — COLOR-LINK THE ARCHIVE BESIDE ITS IMAGE.';
-      return `BUILD UP TO THE PICTURES AND READ THEM — ${read} OF ${PAINTINGS.length} SO FAR.`;
-    }
-    if (!car.boardsSolved()) return 'FINISH THE COLOR LINKS — EACH ARCHIVE HAS ITS OWN CARD.';
-    return 'THE LARGE MARKS DIFFER — CHOOSE THE SMALL SEAL REPEATED IN ALL THREE.';
+    if (read < PAINTINGS.length) return `wash the grey off the three plates (${read} of ${PAINTINGS.length})`;
+    return 'compare the plates; choose the mark she left in all three';
   }
 
-  updateNotebook() {
-    if (!this.notebook) return;
-    const lines = PAINTINGS.map((p) => {
-      const seen = this.car.state.seen.has(p.id);
-      return `${seen ? '[x]' : '[ ]'}  ${p.title}${seen ? ` · ${p.primarySign.toUpperCase()} + ${p.sharedSign.toUpperCase()}` : ''}`;
-    });
-    this.notebook.setText(['THE GALLERY', ...lines].join('\n')).setAlpha(0.96);
-  }
-
-  showTutorial(id, text) {
-    if (this.tutorialSeen[id] || this.activeTutorial) return;
+  showTutorial(id, text, worldX, worldY) {
+    if (this.tutorialSeen[id]) return false;
+    if (this.activeTutorial && this.activeTutorial !== id) return false;
     this.activeTutorial = id;
-    this.tutorialPrompt.setText(text).setAlpha(1);
+    this.tag.show(text, worldX, worldY);
+    return true;
   }
 
   dismissTutorial(id) {
     if (this.activeTutorial !== id) return;
     this.tutorialSeen[id] = true;
     this.activeTutorial = null;
-    this.tweens.add({ targets: this.tutorialPrompt, alpha: 0, duration: 180 });
+    this.tag.hide();
   }
 
+  // Spatial prompts, not global instructions: the gap, the grey block.
   updateTutorials() {
-    // The first floor break is columns 20–31; the first removable paper wall
-    // begins at column 40. These are spatial prompts, not global instructions.
-    if (!this.tutorialSeen.bridge && this.walker.x >= 300) {
-      this.showTutorial('bridge', 'LEFT MOUSE · DRAW PAPER ACROSS THE GAP');
-    } else if (this.tutorialSeen.bridge && !this.tutorialSeen.wash && this.walker.x >= 710) {
-      this.showTutorial('wash', 'RIGHT MOUSE · ERASE THE PAPER BLOCK');
+    const b = this.brush;
+    if (!this.tutorialSeen.bridge && this.walker.x >= 300 && this.walker.x < 700) {
+      if (this.showTutorial('bridge', `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`, 25 * CELL, FLOOR_Y - 96)) return true;
+    } else if (this.activeTutorial === 'bridge' && this.walker.x >= 700) {
+      this.dismissTutorial('bridge');
     }
+    if (this.tutorialSeen.bridge && !this.tutorialSeen.wash && this.walker.x >= 620 && this.walker.x < 900) {
+      if (this.showTutorial('wash', `${b.label('wash')} · WASH THE ARCHIVE'S GREY AWAY`, 41.5 * CELL, 17 * CELL - 6)) return true;
+    }
+    if (this.activeTutorial === 'wash' && !this.car.isBlock(41, 20)) this.dismissTutorial('wash');
+    return Boolean(this.activeTutorial);
   }
 
   nearDoor() {
-    return (
-      Phaser.Math.Distance.Between(
-        this.walker.x,
-        this.walker.y,
-        DOOR.x + DOOR.w / 2,
-        DOOR.y + DOOR.h / 2,
-      ) <= 280
-    );
+    return Phaser.Math.Distance.Between(this.walker.x, this.walker.y, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h / 2) <= 280;
   }
 
   toggleViewer() {
     if (this.viewer.open) {
       this.setViewerVisible(false);
+      this.platesDirty = true;
       return;
     }
     const picture = this.car.pictureInRange(this.walker.x, this.walker.y);
@@ -1474,123 +1203,177 @@ export class PaintedCountryScene extends Phaser.Scene {
       this.openNotes();
       return;
     }
-    this.flashMessage('NOTHING TO READ HERE.', '#a49c8d');
+    this.note(this.walker.x, this.walker.y - 60, 'NOTHING TO READ HERE', 'info');
   }
 
-  updatePictureHints() {
-    const inRange = this.car.pictureInRange(this.walker.x, this.walker.y);
-    PAINTINGS.forEach((picture) => {
-      const entry = this.pictureLabels[picture.id];
-      if (!entry) return;
-      const here = inRange && inRange.id === picture.id;
-      const seen = this.car.state.seen.has(picture.id);
-      const hovered = this.hoveredPictureId === picture.id;
-      entry.hint.setVisible(here || hovered);
-      if (here || hovered) {
-        entry.hint.setText(
-          !here
-            ? 'BUILD CLOSER TO REACH THIS ARCHIVE'
-            : seen
-              ? 'CLICK OR PRESS E  ·  REVIEW'
-              : this.car.boardSolved(picture.id)
-                ? 'CLICK OR PRESS E  ·  READ'
-                : 'CLICK OR PRESS E  ·  OPEN COLOR LINK',
-        );
-      }
-      const revealed = seen || this.car.boardSolved(picture.id);
-      entry.plate.setVisible(revealed).setAlpha(revealed ? 1 : 0);
-      entry.cover
-        .setVisible(!revealed)
-        .setStrokeStyle(here || hovered ? 2.4 : 1, here || hovered ? PAPER.cyan : PAPER.deckle, here || hovered ? 0.95 : 0.8);
-    });
-
-    if (!this.doorHint) return;
-    const near = this.nearDoor();
-    this.doorHint.setVisible(near);
-    if (!near) return;
-    // Kept to two short lines so it always sits inside the door frame.
-    if (this.car.state.door.solved) this.doorHint.setText('OPEN');
-    else if (!this.car.boardsSolved()) {
-      const solved = PAINTINGS.filter((picture) => this.car.boardSolved(picture.id)).length;
-      this.doorHint.setText(`COLOR LINKS\n${solved} OF ${PAINTINGS.length} DONE`);
+  // The one tag on screen: whatever the brush or Butch is nearest to.
+  updateTag() {
+    if (this.viewer.open || this.advancingToStudio || this.locked) {
+      this.tag.hide();
+      return;
     }
-    else if (!this.car.allSeen()) {
-      this.doorHint.setText(`READ THE ARCHIVES\n${this.car.state.seen.size} OF 3`);
-    } else this.doorHint.setText('E · COMPARE SMALL SEALS\nCLICK THE REPEATED ONE');
+    if (this.updateTutorials()) return;
+    const b = this.brush;
+    const inRange = this.car.pictureInRange(this.walker.x, this.walker.y);
+    if (inRange) {
+      const developed = this.car.plateState(inRange.id).developed;
+      this.tag.show(`${b.label('read')} · ${developed ? 'LOOK AGAIN' : 'TAKE THE PLATE DOWN'}`, inRange.x + inRange.w / 2, inRange.y);
+      return;
+    }
+    const hovered = PAINTINGS.find((p) => p.id === this.hoveredPictureId);
+    if (hovered) {
+      this.tag.show('TOO HIGH · BUILD UP TO IT', hovered.x + hovered.w / 2, hovered.y);
+      return;
+    }
+    if (this.nearDoor() && !this.car.state.door.solved) {
+      const developed = PAINTINGS.filter((p) => this.car.plateState(p.id).developed).length;
+      if (developed < PAINTINGS.length) {
+        this.tag.show(`${developed} OF ${PAINTINGS.length} PLATES WASHED`, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h - 20);
+      } else if (this.hoveredDoorSign) {
+        const panel = DOOR.panels.find((p) => p.sign === this.hoveredDoorSign);
+        this.tag.show(`${b.label('paint')} · ${SIGN_LABELS[panel.sign]}`, panel.x + panel.w / 2, panel.y - 2);
+      } else {
+        this.tag.show(`${b.label('read')} · COMPARE THE PLATES`, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h - 20);
+      }
+      return;
+    }
+    // First steps into the pigment zone: the dry brush.
+    if (!this.tutorialSeen.pigment && colOf(this.walker.x) >= PIGMENT_ZONE.fromCol - 3 && this.car.state.pigment === 0) {
+      this.tag.show(`THE BRUSH IS DRY · ${b.label('wash')} THE GREY TO TAKE HER COLOUR BACK`, 102 * CELL, 16 * CELL);
+      return;
+    }
+    if (this.car.state.pigment > 0) this.tutorialSeen.pigment = true;
+    this.tag.hide();
+  }
+
+  // Glint markers on everything that is live but not yet in reach.
+  drawMarkers() {
+    const g = this.markerLayer;
+    g.clear();
+    if (this.viewer.open || this.advancingToStudio) return;
+    const t = this.time.now;
+    PAINTINGS.forEach((p) => {
+      if (!this.car.plateState(p.id).developed) drawGlintMarker(g, t, p.x + p.w - 6, p.y - 4);
+    });
+    if (!this.car.state.door.solved) drawGlintMarker(g, t, DOOR.x + DOOR.w - 6, DOOR.y - 4);
   }
 
   processCarEvents() {
     let events = this.car.drainEvents();
     while (events.length) {
-      events.forEach((event) => {
-        if (event.type === 'picture-read') {
-          this.flashMessage('ARCHIVE DEVELOPED · THE SYMBOLS ENTER YOUR NOTES.', '#2f8c9e');
-          if (this.viewer.picture?.id === event.id) this.updateViewerArchive();
-        } else if (event.type === 'cord-joined') {
-          this.flashMessage('THAT COLOR PAIR IS THREADED.', '#6f9c8b');
-        } else if (event.type === 'board-solved') {
-          this.flashMessage('COLOR LINK COMPLETE. THE ARCHIVE DEVELOPS.', '#6f9c8b');
-          this.car.readPicture(event.pictureId);
-          if (this.viewer.picture?.id === event.pictureId) this.updateViewerArchive();
-        } else if (event.type === 'cord-blocked') {
-          this.flashMessage('ANOTHER CORD IS ALREADY IN THAT HOLE.', '#c8892f');
-        } else if (event.type === 'door-dark') {
-          this.flashMessage('THE SIGNS ARE DARK — FINISH EVERY COLOR LINK FIRST.', '#c8892f');
-        } else if (event.type === 'door-silent') {
-          this.flashMessage(`THE DOOR STAYS SHUT — ${event.seen} OF ${event.of} ARCHIVES READ.`, '#c8892f');
-        } else if (event.type === 'door-refused') {
-          this.flashMessage(`${String(event.sign).toUpperCase()} IS NOT THE WORD IN THE NOTES.`, '#b4453a');
-        } else if (event.type === 'door-opened') {
-          this.flashMessage('THE MOON. THE DOOR OPENS.', '#6f9c8b');
-        } else if (event.type === 'paint-refused' && event.reason === 'varnished') {
-          this.flashMessage('THE PAPER IS VARNISHED HERE. PAINT WILL NOT TAKE.', '#c8892f');
-        }
-      });
+      events.forEach((event) => this.handleCarEvent(event));
       events = this.car.drainEvents();
+    }
+  }
+
+  handleCarEvent(event) {
+    const b = this.brush;
+    const at = (e) => ({ x: e.cx * CELL + CELL / 2, y: e.cy * CELL });
+    if (event.type === 'plate-developed') {
+      const v = this.viewer;
+      if (v.picture?.id === event.id) {
+        this.drawViewerPlate();
+        noteAt(this, VIEW.w / 2, VIEWER.y - 4, 'THE PLATE COMES CLEAR · IT GOES IN YOUR NOTES', { screen: true, tone: 'good', depth: DEPTH.HUD + 30, hold: 1800 });
+      }
+      this.platesDirty = true;
+    } else if (event.type === 'plate-mark-found') {
+      const plate = this.car.plateState(event.id);
+      if (!plate.hawthornFound && !this.hintedSmallMark.has(event.id)) {
+        this.hintedSmallMark.add(event.id);
+        noteAt(this, VIEW.w / 2, VIEWER.y + VIEWER.h + 44, 'SOMETHING SMALLER IS STILL UNDER THE GREY.', { screen: true, depth: DEPTH.HUD + 30, hold: 2200 });
+      }
+    } else if (event.type === 'plate-varnish-thinned') {
+      const p = { x: VIEWER.x + (event.c + 0.5) * PLATE_CELL, y: VIEWER.y + event.r * PLATE_CELL };
+      if (!this.noteThrottle.plateVarnish || this.time.now - this.noteThrottle.plateVarnish > 2500) {
+        this.noteThrottle.plateVarnish = this.time.now;
+        noteAt(this, p.x, p.y, 'OFFICIAL RECORD · ONE MORE WASH', { screen: true, tone: 'warn', depth: DEPTH.HUD + 30, hold: 1100 });
+      }
+    } else if (event.type === 'door-silent') {
+      this.note(DOOR.x + DOOR.w / 2, DOOR.y + 30, `THE DOOR WAITS · ${event.seen} OF ${event.of} PLATES WASHED`, 'warn');
+    } else if (event.type === 'door-refused') {
+      const line = event.hint === 'rosa' ? WRONG_ANSWER_LINES.rosa
+        : event.hint === 'gentle' ? WRONG_ANSWER_LINES.gentle(event.sign)
+          : WRONG_ANSWER_LINES.first;
+      // Under the door, on the floor line: beside the signs, never over them.
+      noteAt(this, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h + 56, line, { tone: event.hint === 'first' ? 'warn' : 'mara', hold: 2600 });
+      if (event.hint !== 'first') this.time.delayedCall(1400, () => { if (!this.viewer.open) this.openNotes({ pulse: true }); });
+    } else if (event.type === 'door-opened') {
+      noteAt(this, DOOR.x + DOOR.w / 2, DOOR.y - 30, 'THE HAWTHORN. THE DOOR OPENS.', { tone: 'good', hold: 2000 });
+    } else if (event.type === 'paint-refused') {
+      const p = at(event);
+      if (event.reason === 'varnished') {
+        const first = !this.tutorialSeen.varnish;
+        this.tutorialSeen.varnish = true;
+        this.note(p.x, p.y, first ? `OFFICIAL RECORD · ${b.label('wash')} IT TWICE, THEN PAINT` : 'VARNISHED · WASH IT TWICE', 'warn', 'varnish', first ? 2600 : 1400);
+      } else if (event.reason === 'no-pigment') {
+        this.note(this.walker.x, this.walker.y - 64, `DRY BRUSH · ${b.label('wash')} THE GREY FOR COLOUR`, 'no', 'dry', 1800);
+      } else if (event.reason === 'sealed') {
+        this.note(p.x, p.y, "THE DOOR'S OWN FACE", 'info', 'sealed', 1800);
+      }
+    } else if (event.type === 'varnish-thinned') {
+      const p = at(event);
+      this.note(p.x, p.y, 'ONE MORE WASH', 'info', 'thinned', 2200);
+    } else if (event.type === 'pigment-recovered') {
+      this.tutorialSeen.pigment = true;
     }
   }
 
   update(time, delta) {
     const dt = Math.min(delta, 50) / 1000;
-
-    if (Phaser.Input.Keyboard.JustDown(this.keys.restart)) {
-      this.scene.restart();
+    this.brush.update(dt);
+    this.restart.update(dt, this.brush.pad);
+    if (this.restart.blocking) {
+      this.walker.body.setVelocityX(0);
+      this.drawFigure();
       return;
     }
-    if (Phaser.Input.Keyboard.JustDown(this.keys.read)) this.toggleViewer();
+    const move = this.brush.readMove(this.keys);
 
-    // Dying takes the car away from the player for a moment, then starts over.
-    if (this.stepDeath(time)) {
+    if (this.card.open) {
+      this.walker.body.setVelocityX(0);
+      if (move.interactPressed || this.brush.paintPressed || Phaser.Input.Keyboard.JustDown(this.keys.enter)) this.card.dismiss();
       this.drawFigure();
       return;
     }
 
-    // With a plate in hand the car holds still.
-    if (this.viewer && this.viewer.open) {
+    if (move.interactPressed && !this.locked && !this.advancingToStudio) this.toggleViewer();
+
+    if (this.viewer.open) {
       this.walker.body.setVelocityX(0);
-      this.stepViewerBoard();
-      this.drawViewerBoard();
+      if (this.viewer.mode === 'plate') this.stepViewerBrush();
+      if (this.viewer.mode === 'notes') this.drawNotes();
+      this.brush.drawCursor({ screenSpace: true });
+      this.brush.cursor.setDepth(DEPTH.HUD + 20);
       this.processCarEvents();
-      this.updateNotebook();
-      this.updateViewerArchive();
       return;
     }
+    this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
 
-    this.stepBrush();
-    this.stepPlayer();
+    if (!this.locked && !this.advancingToStudio) this.stepBrush();
+    this.stepPlayer(move);
 
     if (this.paintDirty) {
       this.redrawPaint();
       this.paintDirty = false;
     }
+    if (this.varnishDirty) {
+      this.redrawVarnish();
+      this.varnishDirty = false;
+    }
+    if (this.platesDirty) {
+      this.redrawWallPlates();
+      this.platesDirty = false;
+    }
     this.drawFigure();
-    this.drawCursor();
+    if (!this.advancingToStudio) this.drawCursor();
+    else this.brushCursor.clear();
+    this.brush.drawCursor({ hidden: this.advancingToStudio || this.locked });
     this.drawDoorSigns();
+    this.drawMarkers();
+    this.drawPigmentPot();
+    this.drawMara(dt);
     this.processCarEvents();
-
-    this.updateNotebook();
-    this.updatePictureHints();
-    this.updateTutorials();
+    this.updateTag();
 
     this.motes.forEach((mote) => {
       mote.obj.x += mote.vx * dt;
@@ -1609,9 +1392,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     const g = this.doorLayer;
     g.clear();
     const opened = this.car.state.door.solved;
-    // Until the board is threaded the signs are unlit — visible as shapes, but
-    // plainly not yet askable.
-    const lit = this.car.boardsSolved();
+    if (opened && this.advancingToStudio) return;
+    const lit = this.car.platesDeveloped();
 
     DOOR.panels.forEach((panel) => {
       const chosen = this.car.state.door.chosen === panel.sign;
@@ -1620,12 +1402,10 @@ export class PaintedCountryScene extends Phaser.Scene {
       g.fillRect(panel.x, panel.y, panel.w, panel.h);
       g.lineStyle(right ? 2.6 : 1.6, right ? PAPER.verdigris : PAPER.graphite, lit ? 0.9 : 0.4);
       g.strokeRect(panel.x, panel.y, panel.w, panel.h);
-      const art = this.panelArt && this.panelArt[panel.sign];
-      if (art) art.setAlpha(lit ? 1 : 0.3);
-      const label = this.panelLabels && this.panelLabels[panel.sign];
-      if (label) label.setAlpha(lit ? 1 : 0.38);
-      if (this.hoveredDoorSign === panel.sign) {
-        g.lineStyle(2.6, PAPER.cyan, 0.96);
+      this.panelArt[panel.sign]?.setAlpha(lit ? 1 : 0.35);
+      this.panelLabels[panel.sign]?.setAlpha(lit ? 1 : 0.5);
+      if (this.hoveredDoorSign === panel.sign && lit) {
+        g.lineStyle(2.6, UI.amberInk, 0.96);
         g.strokeRect(panel.x - 4, panel.y - 4, panel.w + 8, panel.h + 8);
       }
       if (chosen && !right) {
@@ -1637,35 +1417,44 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   textState() {
-    const pointer = this.input.activePointer;
-    const cx = colOf(pointer.worldX);
-    const cy = rowOf(pointer.worldY);
+    const b = this.brush;
+    const cx = colOf(b.worldX);
+    const cy = rowOf(b.worldY);
     return {
       scene: 'PaintedCountry',
+      camera: { x: Math.round(this.cameras.main.worldView.x), y: Math.round(this.cameras.main.worldView.y) },
       bay: this.bayId(),
       objective: this.objectiveText(),
+      locked: this.locked,
+      cardOpen: this.card.open,
+      restartConfirm: this.restart.blocking,
       viewer: {
         open: Boolean(this.viewer?.open),
+        mode: this.viewer?.mode ?? null,
         picture: this.viewer?.picture?.id ?? null,
-        imageVisible: Boolean(this.viewer?.picture && this.car.boardSolved(this.viewer.picture.id)),
-        board: this.viewer?.picture ? this.car.snapshot().boards[this.viewer.picture.id] : null,
+        notesPulse: this.notesPulse,
       },
       ...this.car.snapshot(),
       pigmentRingVisible: false,
       advancingToStudio: this.advancingToStudio,
+      maraVisible: Boolean(this.mara && this.mara.alpha > 0.05),
+      tag: this.tag.visible ? this.tag.text : null,
       player: {
         x: Math.round(this.walker.x),
         y: Math.round(this.walker.y),
         onGround: this.walker.body.blocked.down,
       },
       pointer: {
-        x: Math.round(pointer.worldX),
-        y: Math.round(pointer.worldY),
+        mode: b.mode,
+        device: b.device,
+        x: Math.round(b.worldX),
+        y: Math.round(b.worldY),
+        screen: [Math.round(b.x), Math.round(b.y)],
         cell: [cx, cy],
         inReach: this.pointerInReach(),
         canPaint: this.car.canPaint(cx, cy),
         canWash: this.car.canWash(cx, cy),
-        overPanel: this.panelAt(pointer.worldX, pointer.worldY)?.sign ?? null,
+        overPanel: this.panelAt(b.worldX, b.worldY)?.sign ?? null,
       },
     };
   }

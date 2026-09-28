@@ -1,8 +1,22 @@
 // Chapter 4 // THE PAINTED COUNTRY — where everything physically is.
 //
-// The car is a grid of paper cells. The player paints and washes cells freely
-// rather than triggering fixed targets, so this file describes surfaces and
-// contents, never "the third barrier". The model turns it into rules.
+// Per docs/STORY_BIBLE.md the country is Rosa Velez's childhood drawings of
+// the Bellwether orchard, painted over by the archive in grey. The car is a
+// grid of paper cells. PAINT rebuilds what she remembered; WASH strips the
+// archive's grey and shows the pencil underneath (this chapter's version of
+// Chapter 1's 1978 lens).
+//
+// The three bays are a three-step escalation:
+//   A · THE COLD END   paint across a hole; wash a grey block away.
+//   B · THE GALLERY    varnished "official record" air: paint will not take
+//                      until it has been washed twice.
+//   C · THE LONG WALL  pigment runs out. Washing the archive's grey gives
+//                      Rosa's colour back to the brush; painting spends it.
+//                      The last plate hangs over a hole, so the two verbs feed
+//                      each other.
+//
+// This file describes surfaces and contents only. paintedCarModel.js turns it
+// into rules.
 
 export const CELL = 20;
 export const GRID = { w: 144, h: 30 }; // 2880 x 600
@@ -10,17 +24,17 @@ export const VIEW = { w: 960, h: 600 };
 export const WORLD = { w: GRID.w * CELL, h: GRID.h * CELL };
 
 export const CEILING_Y = 80;
+export const CEILING_ROW = CEILING_Y / CELL; // 4
 export const RACK_Y = 104;
 export const WAINSCOT_Y = 340;
 export const FLOOR_ROW = 22;
 export const FLOOR_Y = FLOOR_ROW * CELL; // 440
 
-// Solid floor, in grid columns [from, to). Everything else is a hole in the
-// sheet. Both holes are wider than a jump, so both must be painted across.
+// Solid floor, in grid columns [from, to). Both holes are wider than a jump.
 export const FLOOR_SPANS = [
   { from: 0, to: 20 }, // the cold end
-  { from: 32, to: 96 }, // across the first hole and the whole gallery
-  { from: 104, to: 144 }, // the long wall, the door
+  { from: 30, to: 112 }, // across the first hole, the gallery, the long wall
+  { from: 122, to: 144 }, // past the second hole: the door
 ];
 
 export const BAY_TITLES = [
@@ -34,211 +48,154 @@ export const FOLDS = [960, 1920];
 export const WINDOWS = [
   { x: 60, y: 120, w: 240, h: 170 },
   { x: 620, y: 120, w: 250, h: 170 },
-  { x: 2120, y: 120, w: 250, h: 170 },
+  { x: 1600, y: 120, w: 240, h: 170 },
 ];
 
-// Paper blocks: solid, and the only solid thing besides the player's own paint
-// that a wash can remove. Given in cell rectangles.
+// The archive's grey gouache, in cell rectangles. Solid, and the only solid
+// thing besides the player's own paint that a wash can remove.
 export const BLOCK_RECTS = [
-  // Bay A: a stack sealing the way into the gallery. Five cells tall, so it
-  // cannot be jumped — the player has to learn WASH to get past it.
+  // Bay A: five cells tall, so it cannot be jumped — WASH is taught here.
   { col: 40, row: 17, cols: 3, rows: 5 },
-  // Bay C: the long wall. A slab the player must open a hole through.
-  { col: 110, row: 13, cols: 5, rows: 9 },
+  // Bay C: the long wall, floor to ceiling. There is no way over it; washing
+  // through it is also where the brush gets its colour back.
+  { col: 102, row: CEILING_ROW, cols: 6, rows: FLOOR_ROW - CEILING_ROW },
 ];
 
-// ------------------------------------------------------------ the thread boards
-// Each archive has its own color-link card. The first card is the existing
-// three-pair teaching board; the later cards add turns and crossings. The
-// model owns the rules, while the scene places the active card inside the E
-// viewer beside the image it develops.
-export const BOARDS = [
-  {
-    id: 'board-nave',
-    cols: 5,
-    rows: 5,
-    // The first card is deliberately literal: three separate straight lines.
-    // It teaches dragging and releasing without looking like a dead end.
-    torn: [],
-    pairs: [
-      { id: 'amber', a: [0, 0], b: [4, 0] },
-      { id: 'cyan', a: [0, 2], b: [4, 2] },
-      { id: 'red', a: [0, 4], b: [4, 4] },
-    ],
-  },
-  {
-    id: 'board-field',
-    cols: 5,
-    rows: 7,
-    torn: [],
-    pairs: [
-      { id: 'amber', a: [0, 6], b: [3, 5] },
-      { id: 'orange', a: [3, 0], b: [0, 1] },
-      { id: 'green', a: [4, 0], b: [4, 6] },
-      { id: 'cyan', a: [3, 1], b: [0, 2] },
-      { id: 'violet', a: [2, 2], b: [2, 5] },
-      { id: 'pink', a: [3, 2], b: [1, 4] },
-    ],
-  },
-  {
-    id: 'board-city',
-    cols: 7,
-    rows: 7,
-    torn: [],
-    // Carved from a single path that covers every hole in the card, then cut
-    // into seven, so it is solvable by construction and every cord has to weave.
-    pairs: [
-      { id: 'green', a: [3, 1], b: [5, 3] },
-      { id: 'violet', a: [6, 3], b: [4, 4] },
-      { id: 'red', a: [4, 3], b: [4, 6] },
-      { id: 'amber', a: [3, 6], b: [1, 4] },
-      { id: 'cyan', a: [1, 5], b: [0, 2] },
-      { id: 'lime', a: [1, 2], b: [3, 0] },
-      { id: 'blue', a: [4, 0], b: [6, 2] },
-    ],
-  },
-];
+// "Official record": varnished air under the orchard plate. Paint slides off
+// it until it has been washed twice (VARNISH_COATS), then it is ordinary paper.
+export const VARNISH_COATS = 2;
+export const VARNISH_RECTS = [{ col: 63, row: 11, cols: 17, rows: 11 }];
 
-// Compatibility data for focused tests and old tooling. The first archive's
-// board is intentionally the easiest one.
-export const BOARD = Object.freeze({
-  ...BOARDS[0],
-  x: 0,
-  y: 0,
-  w: 192,
-  h: 192,
-  pad: 28,
-  pitch: 34,
-});
+// The door's own face. Nothing paints or washes it, so the signs stay legible.
+export const SEALED_RECTS = [{ col: 129, row: 8, cols: 15, rows: 14 }];
 
-export const eyeletAt = (c, r, board = BOARD) => ({
-  x: board.x + board.pad + c * board.pitch,
-  y: board.y + board.pad + r * board.pitch,
-});
+// Bay C: the brush is dry. Painting a cell here spends one pigment; washing
+// your own paint here gives it back; stripping a grey cell here recovers one.
+export const PIGMENT_ZONE = Object.freeze({ fromCol: 96, start: 0 });
 
-export const CORD_COLOURS = {
-  amber: 0xc8892f,
-  cyan: 0x2f8c9e,
-  red: 0xb4453a,
-  orange: 0xd4772f,
-  green: 0x4f9d5d,
-  violet: 0x8a5cc4,
-  pink: 0xd06ba8,
-  lime: 0xa8b83c,
-  blue: 0x3f7fc4,
-};
-
-// Varnished paper. Only the door face is protected. The former varnished patch
-// beneath The Last City made the archive look reachable while preventing the
-// player from placing the staircase the controls had taught them to build.
-export const GLAZE_RECTS = [
-  // The door face, so the signs can never be painted over.
-  { col: 129, row: 8, cols: 15, rows: 14 },
-];
-
+// ------------------------------------------------------------------- signs
 export const SIGN = Object.freeze({
-  MOON: 'moon',
-  EYE: 'eye',
-  HEIR: 'heir',
-  RAPTURE: 'rapture',
-  OEDON: 'oedon',
+  HAWTHORN: 'hawthorn',
+  TICKET: 'ticket',
+  LANTERN: 'lantern',
+  APPLE: 'apple',
+  ROSE: 'rose',
 });
 
-// The five signs cut into the vestibule door. Each archive has a different
-// large mark drawn from these signs, plus one smaller repeated seal. Comparing
-// all three pictures reveals the repeated seal without requiring guesswork.
-export const SIGN_ART = {
-  // Original project art, rendered by scripts/art/generate-chapter4-sign-icons.mjs.
-  [SIGN.MOON]: 'assets/chapter04/icons/sign-moon.webp',
-  [SIGN.EYE]: 'assets/chapter04/icons/sign-eye.webp',
-  [SIGN.HEIR]: 'assets/chapter04/icons/sign-heir.webp',
-  [SIGN.RAPTURE]: 'assets/chapter04/icons/sign-rapture.webp',
-  [SIGN.OEDON]: 'assets/chapter04/icons/sign-oedon.webp',
-};
+// Player-visible names for the sign ids.
+export const SIGN_LABELS = Object.freeze({
+  [SIGN.HAWTHORN]: 'HAWTHORN',
+  [SIGN.TICKET]: 'TICKET',
+  [SIGN.LANTERN]: 'LANTERN',
+  [SIGN.APPLE]: 'APPLE',
+  [SIGN.ROSE]: 'ROSE',
+});
 
-// The gallery. Hung high on purpose: the only way to read one is to build up
-// to it. The large marks are deliberately different; the small moon seal is
-// the only sign in all three, which is the answer the door is asking for.
-// Three pictures of the same institution, three ages apart — which is the whole
-// reason this car is on a train travelling backwards. Each one is hung too high
-// to read from the floor. Standing close enough lets the player press E and see
-// the plate full size with its archive caption underneath, and every caption
-// ends on the same word.
+// Original project art, rendered by scripts/art/generate-chapter4-sign-icons.mjs.
+// sign-* is the door plate; mark-* is the bare mark the gallery plates use.
+export const SIGN_ART = Object.freeze(Object.fromEntries(
+  Object.values(SIGN).map((sign) => [sign, `assets/chapter04/icons/sign-${sign}.webp`]),
+));
+export const MARK_ART = Object.freeze(Object.fromEntries(
+  Object.values(SIGN).map((sign) => [sign, `assets/chapter04/icons/mark-${sign}.webp`]),
+));
+
+// ------------------------------------------------------------------ plates
+// Three plates, hung too high to read from the floor. Each is under the
+// archive's grey: washing it (in the plate viewer) reveals the pencil beneath.
+// Every plate has a different large mark and, somewhere else on it, the same
+// small hawthorn — Mara's mark. Rosa's rose is on two of them, never three.
+//
+// A plate is a 12 × 7 grid of wash cells. Rects are in those cells.
+export const PLATE_GRID = Object.freeze({ cols: 12, rows: 7 });
+
 export const PAINTINGS = [
   {
-    id: 'nave',
-    board: 'board-nave',
-    key: 'plate-nave',
-    file: 'assets/chapter04/gallery/middleage.jpg',
-    title: 'YEAR ONE  ·  THE NAVE',
-    primarySign: SIGN.EYE,
-    sharedSign: SIGN.MOON,
+    id: 'city',
+    key: 'plate-city',
+    title: '1978 · CITY ROOM',
+    primarySign: SIGN.TICKET,
+    sharedSign: SIGN.HAWTHORN,
+    scene: 'city',
     x: 1000,
-    y: 240,
+    y: 236,
     w: 200,
     h: 112,
+    markRect: { c: 1, r: 1, w: 6, h: 4 },
+    hawthornRect: { c: 9, r: 4, w: 2, h: 2 },
+    roseRect: null,
+    varnishRects: [],
     caption:
-      'They pulled out the altar and set the instruments where it had stood, and they cut their eye into every banner in the hall.\n' +
-      'Nothing in the building ever answered them. The only thing that did came through the high window on a clear night, and the ledger for that year enters it under one word:\n' +
-      'LARGE MARK: EYE.  SMALL SEAL: MOON.',
+      'A rented room near the terminal, kept for the early shift.\n'
+      + 'The archive filed it as the first claim, collected, and painted it the colour of a filing cabinet.',
   },
   {
-    id: 'field',
-    board: 'board-field',
-    key: 'plate-field',
-    file: 'assets/chapter04/gallery/duga.jpg',
-    title: 'YEAR FORTY  ·  THE LISTENING FIELD',
-    primarySign: SIGN.HEIR,
-    sharedSign: SIGN.MOON,
+    id: 'orchard',
+    key: 'plate-orchard',
+    title: 'BELLWETHER ORCHARD',
+    primarySign: SIGN.LANTERN,
+    sharedSign: SIGN.HAWTHORN,
+    scene: 'orchard',
     x: 1320,
     y: 148,
     w: 200,
     h: 112,
+    markRect: { c: 5, r: 1, w: 3, h: 5 },
+    hawthornRect: { c: 0, r: 0, w: 2, h: 2 },
+    roseRect: { c: 10, r: 5, w: 2, h: 2 },
+    varnishRects: [{ c: 4, r: 0, w: 5, h: 3 }],
     caption:
-      'Three hundred metres of aerial pointed at everything, logging every signal that crossed the commune for forty years.\n' +
-      'Exactly one of them came back on schedule, every twenty-nine days. The duty officer was not permitted to write down what he believed it was, so he wrote:\n' +
-      'LARGE MARK: HEIR.  SMALL SEAL: MOON.',
+      'The orchard house, where she went home at weekends. Rosa drew it from the gate, porch lantern lit.\n'
+      + 'The archive wrote "second claim" across it and never sent anyone to the address.',
   },
   {
-    id: 'city',
-    board: 'board-city',
-    key: 'plate-city',
-    file: 'assets/chapter04/gallery/cyberpunk.jpg',
-    title: 'THE LAST CITY',
-    primarySign: SIGN.RAPTURE,
-    sharedSign: SIGN.MOON,
-    x: 1660,
-    y: 110,
+    id: 'drawing',
+    key: 'plate-drawing',
+    title: "ROSA'S DRAWING",
+    primarySign: SIGN.APPLE,
+    sharedSign: SIGN.HAWTHORN,
+    scene: 'drawing',
+    x: 2240,
+    y: 120,
     w: 200,
     h: 112,
+    markRect: { c: 1, r: 2, w: 4, h: 5 },
+    hawthornRect: { c: 7, r: 0, w: 2, h: 2 },
+    roseRect: { c: 10, r: 4, w: 2, h: 2 },
+    varnishRects: [{ c: 6, r: 0, w: 4, h: 3 }, { c: 0, r: 5, w: 3, h: 2 }],
     caption:
-      'Ninety storeys of him, with a world held up in each hand. Everyone agreed the right hand was the earth.\n' +
-      'Nobody could agree about the left, so the plaque stayed blank for eleven years — until somebody climbed up in the dark and finished it:\n' +
-      'LARGE MARK: RAPTURE.  SMALL SEAL: MOON.',
+      'Rosa Velez, age nine: "my sister coming home". Apples on every tree, because she wanted more of them.\n'
+      + 'She signed it the way she signed everything. So did her sister.',
   },
 ];
 
-// How close the player has to get before a picture counts as read. Small
-// enough that none of the three can be read from the floor.
+// How close the player has to get before a plate can be taken down. Small
+// enough that none of the three can be reached from the floor.
 export const READ_RADIUS = 100;
 
-// The vestibule door. Four signs; the player has to work out which one every
-// picture had in it.
+// The vestibule door: five signs, one question.
 export const DOOR = {
   x: 2600,
   y: 186,
   w: 260,
   h: 254,
-  correct: SIGN.MOON,
-  prompt: 'THE LARGE MARKS CHANGE.\nWHICH SMALL SEAL REPEATS?',
+  correct: SIGN.HAWTHORN,
+  prompt: 'WHICH MARK DID SHE LEAVE IN ALL THREE?',
   panels: [
-    { sign: SIGN.EYE, x: 2626, y: 238, w: 56, h: 56 },
-    { sign: SIGN.MOON, x: 2702, y: 238, w: 56, h: 56 },
-    { sign: SIGN.HEIR, x: 2778, y: 238, w: 56, h: 56 },
-    { sign: SIGN.RAPTURE, x: 2664, y: 318, w: 56, h: 56 },
-    { sign: SIGN.OEDON, x: 2740, y: 318, w: 56, h: 56 },
+    { sign: SIGN.LANTERN, x: 2626, y: 226, w: 56, h: 56 },
+    { sign: SIGN.ROSE, x: 2702, y: 226, w: 56, h: 56 },
+    { sign: SIGN.TICKET, x: 2778, y: 226, w: 56, h: 56 },
+    { sign: SIGN.HAWTHORN, x: 2664, y: 314, w: 56, h: 56 },
+    { sign: SIGN.APPLE, x: 2740, y: 314, w: 56, h: 56 },
   ],
 };
+
+// What the door says after a second wrong answer. The first miss only waits.
+export const WRONG_ANSWER_LINES = Object.freeze({
+  first: 'The door waits. Compare the three plates.',
+  rosa: "That's Rosa's. Mara signed with the hawthorn.",
+  gentle: (sign) => `The ${String(SIGN_LABELS[sign] ?? sign).toLowerCase()} is in only one of them. She left one small mark in all three.`,
+});
 
 // The brush reaches about a body and a half. Short enough that the player has
 // to climb what they build, long enough that building is never fiddly.
