@@ -8,7 +8,7 @@ export const MAGIC_STONES = Object.freeze([
   Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Night Service: zoom deep into the orchard case, beneath the unfinished letter to Rosa.' }),
   Object.freeze({ id: 'chapter-2', chapter: 2, name: 'GRID STONE', clue: 'Borrowed Light: a ledge above the roofs that shows only in the afterglow of a punched node.' }),
   Object.freeze({ id: 'chapter-3', chapter: 3, name: 'ECHO STONE', clue: 'Echo City: left in an unclaimed coat by the campfire.' }),
-  Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'The Painted Country: in the drawing studio, once every colour is back on the page.' }),
+  Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'The Painted Country: under the grey on the plate above the HOME door, in the painted-train yard.' }),
   Object.freeze({ id: 'black-knife', chapter: 5, name: 'BLACK TICKET STONE', clue: 'The Museum: behind the pigment vials in the pending case. Only broken glass reaches it.' }),
 ]);
 
