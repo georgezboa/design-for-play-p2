@@ -3,19 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1c130d" />
     <title>NIGHTFALL — The Painted Country</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <style>
-      /* The page is part of the art direction: the game sits on a sheet, not
-         on a black screen. */
-      :root { color-scheme: light; }
+      /* The page is part of the art direction: Rosa's sheet lies on the same
+         walnut as Chapter 1's carriage wall, inside a thin brass rule. */
+      :root { color-scheme: dark; }
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
         height: 100%;
-        background: #efece2;
-        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-        color: #8d8579;
+        background: #1c130d;
+        overflow: hidden;
+        font-family: Georgia, "Times New Roman", serif;
+        color: #eadfc6;
       }
       /* The car fills the window. Phaser is on Scale.FIT, so it scales the
          960x600 design up to whatever room it is given and letterboxes the
@@ -39,9 +41,10 @@
         display: block;
         max-width: 100vw;
         max-height: 100vh;
-        /* A sheet laid on a desk: a soft contact shadow, no glow. Dropped when
-           the canvas is the whole screen — there is no desk left to sit on. */
-        box-shadow: 0 1px 2px rgba(74, 70, 64, 0.14), 0 18px 44px rgba(74, 70, 64, 0.16);
+        outline: none;
+        /* A sheet laid on the walnut: a brass hairline and a warm lamp shadow.
+           Dropped when the canvas is the whole screen. */
+        box-shadow: 0 0 0 1px rgba(176, 138, 74, 0.55), 0 18px 60px rgba(0, 0, 0, 0.6), 0 0 120px rgba(224, 162, 74, 0.08);
       }
       :fullscreen #game canvas,
       :-webkit-full-screen #game canvas { box-shadow: none; }

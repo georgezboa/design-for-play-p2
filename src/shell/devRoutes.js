@@ -19,9 +19,10 @@ export const DEV_ROUTES = Object.freeze([
   // Butch deliberately posed on the bed and skips the hotel interactions.
   { id: '3.3', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'COPPER HERON · HOTEL', detail: 'Hotel lobby, check-in, and character encounters.', route: '/car03-3d.html?playtest=chapter3-25' },
   { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'SUNRISE OVERLOOK', detail: 'Late-city overlook and exit setup.', route: '/car03-3d.html?playtest=chapter3-sunrise' },
-  { id: '4.1', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'GALLERY · THE OPEN SHEET', detail: 'First painted-country gallery route.', route: '/painted-country.html' },
-  { id: '4.2', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'DRAWING STUDIO · STILL LIFE', detail: 'Cabinet pigments and the canvas reconstruction.', route: '/painted-country.html?qa=drawing' },
-  { id: '4.3', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'PIGMENT TRAIN · YARD', detail: 'Collect-six-colors train departure route.', route: '/painted-country.html?qa=pigments' },
+  { id: '4.1', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'GALLERY · UNDER THE GOUACHE', detail: 'Paint and wash the gallery car; three plates and the door.', route: '/painted-country.html' },
+  { id: '4.2', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'STUDIO · THE STILL LIFE', detail: 'Six colours, as Rosa remembered them.', route: '/painted-country.html?qa=drawing' },
+  { id: '4.3', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'PAINTED TRAIN · YARD', detail: 'Borrow six colours, paint the train, board it.', route: '/painted-country.html?qa=pigments' },
+  { id: '4.4', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'THE LINE AHEAD', detail: 'Paint the track ahead of the train on the four-second bell.', route: '/painted-country.html?qa=line' },
   { id: '5.1', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM LOBBY', detail: 'Service desk, exhibits and first direction.', route: '/museum-3d.html' },
   { id: '5.2', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'ARCHIVE CORRIDOR', detail: 'Choose a direction from the corridor.', route: '/museum-3d.html?beat=corridor' },
   { id: '5.3', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM ECHO CITY', detail: 'Echo-city reconstruction direction.', route: '/museum-3d.html?beat=echo&standalone=1' },
