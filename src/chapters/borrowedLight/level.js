@@ -59,9 +59,10 @@ export const PLATFORMS = Object.freeze([
 
   // ---- B · BLACKOUT ----------------------------------------------------
   roof('b-roof7', 8440, 860, 640, 'brick'),                     // section start, lamp
-  ledge('b-step1', 9420, 110, 620, 'ac', { hidden: true, h: 60 }),
-  ledge('b-step2', 9640, 120, 580, 'pipe', { hidden: true, h: 26 }),
-  ledge('b-step3', 9880, 110, 620, 'ac', { hidden: true, h: 60 }),
+  // Two wide, dark scaffold decks: any full running jump from the right half
+  // of one lands on the next. The challenge is seeing them, not precision.
+  ledge('b-step1', 9407, 240, 620, 'ledge', { hidden: true, h: 40 }),
+  ledge('b-step2', 9754, 240, 600, 'ledge', { hidden: true, h: 40 }),
   roof('b-roof8', 10100, 800, 640, 'tenement'),
   roof('b-roof9', 10900, 1000, 300, 'office'),
   ledge('b-stone-ledge', 11560, 220, -60, 'ledge', { hidden: true, h: 40 }),
@@ -91,7 +92,7 @@ export const MACHINES = Object.freeze([
   { id: 'a-fan', kind: 'fan', x: 7560, w: 280, yTop: -120, yBottom: 1260, duration: 5000, travel: 500, section: 'A' },
 
   // B
-  { id: 'b-sign', kind: 'sign', x: 9700, y: 420, w: 200, h: 70, duration: 4000, travel: 200, section: 'B', text: 'OPEN LATE', glow: 360 },
+  { id: 'b-sign', kind: 'sign', x: 9700, y: 380, w: 200, h: 70, duration: 4000, travel: 200, section: 'B', text: 'OPEN LATE', glow: 360 },
   { id: 'b-lift1', kind: 'lift', x: 10680, w: 220, y0: 640, y1: 300, duration: 5000, travel: 1300, section: 'B' },
   { id: 'b-lift2', kind: 'lift', x: 11340, w: 200, y0: 300, y1: -60, duration: 5000, travel: 1300, section: 'B' },
   { id: 'b-bridge', kind: 'bridge', x: 11900, y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true },
@@ -163,7 +164,7 @@ export const TRAIN = Object.freeze({
   end: Object.freeze({ x: 18260, y: 180, cars: 3 }),
 });
 
-export const MECHANIC = Object.freeze({ x: 1130, y: 760, talkRadius: 190 });
+export const MECHANIC = Object.freeze({ x: 1130, y: 760, talkRadius: 150 });
 export const HOTEL_WINDOW = Object.freeze({ x: 13420, y: -150, readRadius: 150 });
 export const BENCH = Object.freeze({ x: 15360, y: 520, readRadius: 150 });
 export const GRID_STONE = Object.freeze({ x: 11690, y: -60 });
@@ -172,8 +173,8 @@ export const BOARD_X = 18500;
 
 // Mara, always one roof ahead. Each sighting is a short authored run.
 export const MARA_SIGHTINGS = Object.freeze([
-  Object.freeze({ id: 'first', triggerX: 1050, section: 'A', path: [[2150, 760], [2860, 760]], leap: [3060, 330], waitMs: 700 }),
-  Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6200, section: 'A', path: [[7080, 260], [7470, 260]], leap: [7760, 20], waitMs: 1400 }),
+  Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2120, 760], [2560, 760]], leap: [2880, 380], waitMs: 1700, speed: 0.3 }),
+  Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6100, section: 'A', path: [[6980, 260], [7440, 260]], leap: [7780, 0], waitMs: 1600, speed: 0.32 }),
   Object.freeze({ id: 'hotel-roof', triggerX: 12450, section: 'B', path: [[13240, -150], [13940, -150]], leap: [14260, 80], waitMs: 600, lightningOnly: true }),
 ]);
 
@@ -189,7 +190,7 @@ export const SIGNS = Object.freeze([
   { x: 8120, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
   { x: 13500, y: -560, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'hotel', w: 520 },
   { x: 16100, y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
-  { x: 18700, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
+  { x: 18310, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));
 
 // Platform lamps along the evacuation platform, lit as the chain fires.
@@ -217,8 +218,7 @@ export const ROUTE = Object.freeze([
   { from: 'a-roof6', to: 'b-roof7', via: 'drop' },
   { from: 'b-roof7', to: 'b-step1', via: 'jump' },
   { from: 'b-step1', to: 'b-step2', via: 'jump' },
-  { from: 'b-step2', to: 'b-step3', via: 'jump' },
-  { from: 'b-step3', to: 'b-roof8', via: 'jump' },
+  { from: 'b-step2', to: 'b-roof8', via: 'jump' },
   { from: 'b-roof8', to: 'b-roof9', via: 'b-lift1' },
   { from: 'b-roof9', to: 'b-stone-ledge', via: 'b-lift2', optional: true },
   { from: 'b-roof9', to: 'b-roof10', via: 'b-bridge' },

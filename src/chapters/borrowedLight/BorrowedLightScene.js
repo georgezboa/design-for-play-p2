@@ -118,7 +118,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.stepAcc = 0;
 
     this.tt = createTimetable(timetableDefinition());
-    MACHINES.filter((m) => m.heldAtStart).forEach((m) => { this.tt.hold(m.id); this.tt.settle(m.id, 1); });
+    // The city holds some machines open; the node that holds it shows lit,
+    // so "punch its lit tag to cut" always points at something visible.
+    const holderNode = (machineId) => NODES.find((n) => n.machine === machineId)?.id ?? null;
+    this.holderNode = holderNode;
+    MACHINES.filter((m) => m.heldAtStart).forEach((m) => { this.tt.hold(m.id, holderNode(m.id)); this.tt.settle(m.id, 1); });
 
     const cam = this.cameras.main;
     cam.setBounds(-300, WORLD.top, WORLD.width + 300, WORLD.bottom - WORLD.top);
@@ -949,8 +953,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     let { vy } = out;
     if (this.onLiftId && grounded && !out.jumped) {
       const liftVy = this.machineViews.get(this.onLiftId)?.liftVy ?? 0;
-      vy = Math.max(vy, liftVy + 40);
-      if (liftVy < 0) vy = liftVy;
+      // Ride the lift: always press into it a touch so contact (and the
+      // grounded pose) holds while it moves.
+      vy = liftVy + 30;
     }
     body.setVelocity(out.vx, vy);
     this.player.pose = out.pose;
@@ -1027,7 +1032,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const seq = rememberedSequence(this.tt.history(this.departure.startBell), DEPARTURE_CHAIN);
     seq.forEach((machineId, i) => {
       this.time.delayedCall(650 * i + 400, () => {
-        this.tt.hold(machineId);
+        this.tt.hold(machineId, this.holderNode(machineId));
         NODES.filter((n) => n.machine === machineId).forEach((n) => { const v = this.nodeViews.get(n.id); if (v) v.pulse = 0; });
         this.lightPlatformLamp(machineId);
         sfx.machineOn(machineById(machineId).kind);
@@ -1358,7 +1363,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     if (m.phase === 'run') {
       const [tx, ty] = s.path[1];
-      m.x = Math.min(tx, m.x + 0.47 * dt);
+      m.x = Math.min(tx, m.x + (s.speed ?? 0.47) * dt);
       m.y = ty;
       m.run = ((m.run ?? 0) + dt / 560) % 1;
       if (m.x >= tx) { m.phase = 'wait'; m.phaseT = 0; }

@@ -252,9 +252,14 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
         g.lineStyle(2, 0x0d1012, 1);
         for (let my = y + 20; my < y + 300; my += 40) g.lineBetween(x - 16, my, x - 4, my + 40);
       }
-      g.fillStyle(0x1b1612, 1).fillRect(x - dir * 44 - (dir > 0 ? 0 : 0), y - 4, 44 * dir, 34);
-      g.fillStyle(0x0c0a08, 1).fillRect(x - dir * 44, y + 26, 44 * dir, 6);
-      g.lineStyle(1.6, INK_HEX, 0.5).strokeRect(Math.min(x, x - dir * 44), y - 4, 44, 34);
+      // Housing: a riveted brass-trimmed box with the line's lamp.
+      const hx = Math.min(x, x - dir * 44);
+      g.fillStyle(0x1b1612, 1).fillRect(hx, y - 4, 44, 34);
+      g.fillStyle(0x0c0a08, 1).fillRect(hx, y + 26, 44, 6);
+      g.lineStyle(1.6, 0xb08a4a, 0.75).strokeRect(hx, y - 4, 44, 34);
+      g.fillStyle(0x6d5227, 1).fillCircle(hx + 5, y + 1, 1.6).fillCircle(hx + 39, y + 1, 1.6).fillCircle(hx + 5, y + 24, 1.6).fillCircle(hx + 39, y + 24, 1.6);
+      g.fillStyle(0x07090a, 1).fillCircle(hx + 22, y + 12, 6);
+      g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(hx + 22, y + 12, 4.2);
       if (len > 2) {
         const x2 = x + dir * len;
         const xa = Math.min(x, x2);

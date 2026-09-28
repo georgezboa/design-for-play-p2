@@ -226,7 +226,13 @@ export class BorrowedLightHud {
   }
 
   // ---- caption bar ---------------------------------------------------------
+  clearTitle() {
+    this.scene.tweens.killTweensOf([this.titleBig, this.titleSmall, this.titleRule]);
+    this.scene.tweens.add({ targets: [this.titleBig, this.titleSmall, this.titleRule], alpha: 0, duration: 200 });
+  }
+
   openDialog(lines, onDone) {
+    this.clearTitle();
     this.dialog = { lines, index: 0, shown: 0, onDone };
     this.caption.setVisible(true);
     this.renderDialog();
@@ -274,6 +280,7 @@ export class BorrowedLightHud {
 
   // ---- cards ---------------------------------------------------------------
   openCard({ heading, subheading = '', lines, kind = 'archive' }, onClose) {
+    this.clearTitle();
     this.cardState = { onClose };
     this.cardOpenedAt = performance.now();
     const g = this.cardPaper;

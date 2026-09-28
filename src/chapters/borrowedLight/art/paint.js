@@ -574,7 +574,7 @@ function stationEdge(ctx, x0, top, w, h, r, style) {
   ctx.fillRect(x0, top + 12, w, 4);
   ctx.fillStyle = 'rgba(0,0,0,0.3)';
   for (let tx = x0; tx < x0 + w; tx += 36) ctx.fillRect(tx, top + 16, 1, 18);
-  if (style === 'concourse') {
+  if (style === 'concourse' || style === 'platform') {
     // Station arcade below: tall arches with warm waiting-room light.
     for (let ax = x0 + 40; ax < x0 + w - 150; ax += 210) {
       const arch = () => {
@@ -612,7 +612,8 @@ function stationEdge(ctx, x0, top, w, h, r, style) {
       ctx.restore();
       inkPath(ctx, Array.from({ length: 13 }, (_, i) => [ax + 75 + Math.cos(Math.PI + (i / 12) * Math.PI) * 76, top + 190 + Math.sin(Math.PI + (i / 12) * Math.PI) * 76]), { width: 1.4, alpha: 0.3, r });
     }
-  } else {
+  }
+  if (style === 'platform') {
     // Platform: canopy columns in the headroom.
     ctx.fillStyle = 'rgba(12,10,8,0.9)';
     for (let cx = x0 + 120; cx < x0 + w; cx += 300) {

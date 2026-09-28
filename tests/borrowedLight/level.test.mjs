@@ -90,6 +90,18 @@ test('route edges honour the jump arc: jumps are comfortable, machine gaps are n
   }
 });
 
+test('blackout scaffold decks: a full running jump from the right half of one lands on the next', () => {
+  const chain = ['b-roof7', 'b-step1', 'b-step2', 'b-roof8'].map(platformById);
+  for (let i = 0; i < chain.length - 1; i += 1) {
+    const from = chain[i];
+    const to = chain[i + 1];
+    for (const takeoff of [right(from), right(from) - from.w / 2 + 20].slice(0, from.kind === 'ledge' ? 2 : 1)) {
+      const land = takeoff + arc.reachAtRise(from.y - to.y) * 0.97;
+      assert.ok(land > to.x + 10 && land < to.x + to.w, `${from.id} → ${to.id}: lands at ${Math.round(land)} (target ${to.x}…${to.x + to.w})`);
+    }
+  }
+});
+
 test('hops off machines onto the next roof are comfortable', () => {
   const billboard = machineById('a-billboard');
   const stairhead = platformById('a-stairhead');
@@ -231,7 +243,7 @@ test('scripted solve · B: memory light, the stone lift, the held bridge cut and
   tt.punch('b-n1');
   p.waitBell();
   assert.equal(tt.afterglowOf('b-n1'), 1);
-  // Four hops across the dark stepping stones inside the 6 s afterglow.
+  // Three hops across the dark scaffold decks inside the 6 s afterglow.
   p.walkTo(10100);
   assert.ok(tt.afterglowOf('b-n1') > 0, 'the path stays lit while crossing');
   p.walkTo(10560);
