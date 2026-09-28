@@ -5,6 +5,7 @@ import { CHECKPOINTS, createSaveStore, formatSave } from '../../src/shell/saveSy
 import { MAGIC_STONES } from '../../src/shell/magicStones.js';
 import { CHAPTER_CONTROLS } from '../../src/shell/chapterControls.js';
 import { MARA_LETTER, MECHANIC_LINES } from '../../src/chapters/borrowedLight/story.js';
+import { resolveStartSection } from '../../src/chapters/borrowedLight/level.js';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 
@@ -31,6 +32,30 @@ test('Chapter 2 checkpoints route to borrowed-light.html by section, and old ids
   assert.match(formatSave(store.readAll()[0]).title, /BORROWED LIGHT/);
   store.markCheckpoint('chapter-2-platform', { slot: 0 });
   assert.equal(store.readAll()[0].checkpointId, 'chapter-2-platform');
+});
+
+test('an old chapter-2-midpoint save lands in section B in production', () => {
+  const storage = memoryStorage();
+  const now = new Date().toISOString();
+  const legacy = [
+    { version: 1, slot: 0, checkpointId: 'chapter-2-midpoint', unlocked: ['prologue-start', 'chapter-2-start', 'chapter-2-midpoint'], magicStones: [], createdAt: now, updatedAt: now, playSeconds: 0 },
+    // Hand-migrated saves sometimes sit on a checkpoint they never listed.
+    { version: 1, slot: 1, checkpointId: 'chapter-2-midpoint', unlocked: ['prologue-start'], magicStones: [], createdAt: now, updatedAt: now, playSeconds: 0 },
+    null,
+  ];
+  storage.setItem('nightfall.saves.v1', JSON.stringify(legacy));
+  const store = createSaveStore(storage);
+  const route = CHECKPOINTS.find((c) => c.id === 'chapter-2-midpoint').route;
+  const search = route.slice(route.indexOf('?'));
+  for (const save of store.readAll().slice(0, 2)) {
+    assert.equal(save.checkpointId, 'chapter-2-midpoint');
+    // The same inputs borrowedLight-main.js passes.
+    const unlocked = [...(save.unlocked ?? []), save.checkpointId].filter(Boolean);
+    assert.equal(resolveStartSection({ search, devMode: false, unlocked }), 'B', `slot ${save.slot}`);
+  }
+  assert.match(read('src/borrowedLight-main.js'), /unlocked: \[\.\.\.\(activeSave\?\.unlocked \?\? \[\]\), activeSave\?\.checkpointId\]\.filter\(Boolean\)/);
+  // Without that save, production ignores the ?section= request.
+  assert.equal(resolveStartSection({ search, devMode: false, unlocked: ['chapter-2-start'] }), 'A');
 });
 
 test('Chapter 1 hands off to the new page, and the 1→2 preload profile warms it', () => {

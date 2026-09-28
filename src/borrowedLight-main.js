@@ -27,10 +27,11 @@ installPauseMenu({ controls: CHAPTER_CONTROLS.borrowedLight });
 
 const store = createSaveStore();
 const activeSave = store.readAll()[store.getActiveSlot()];
+// An old save may sit on a checkpoint without listing it as unlocked.
 const section = resolveStartSection({
   search: window.location.search,
   devMode: DEV_MODE,
-  unlocked: activeSave?.unlocked ?? [],
+  unlocked: [...(activeSave?.unlocked ?? []), activeSave?.checkpointId].filter(Boolean),
 });
 const qaTimescale = DEV_MODE && devParam('timescale') !== null;
 const timescale = qaTimescale ? Number(devParam('timescale')) || 1 : 1;
