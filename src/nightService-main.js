@@ -20,7 +20,7 @@ import { installPauseMenu } from './shell/pauseMenu.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { installPhaserMotionGuard } from './shell/motion.js';
 import { DEV_MODE, devParams } from './devMode.js';
-import { applySettings, createSaveStore, readSettings } from './shell/saveSystem.js';
+import { applySettings, createSaveStore, launchCheckpoint, readSettings } from './shell/saveSystem.js';
 import { collectMagicStone } from './shell/magicStones.js';
 import { CINEMATICS, playCinematic } from './shell/gameFlow.js';
 
@@ -55,9 +55,8 @@ const audio = createNightServiceAudio();
 // Chapter 2 today is the existing parkour on the main page, launched the way
 // CHECKPOINTS does it (a pending launch read by BootScene).
 function launchChapter2() {
-  sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
-  sessionStorage.setItem('nightfall.pendingLaunch.v1', 'chapter-2');
-  window.location.assign(DEV_MODE ? '/?play=1&chapter=1' : '/?play=1');
+  // Chapter 2 · BORROWED LIGHT is its own page; the checkpoint owns the route.
+  launchCheckpoint('chapter-2-start');
 }
 
 const services = {

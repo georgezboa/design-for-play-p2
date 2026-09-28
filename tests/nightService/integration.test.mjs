@@ -23,7 +23,7 @@ test('Chapter 1 checkpoints route to night-service.html with an act', () => {
     assert.equal(CHECKPOINT_ACTS[id], `act${act}`);
   }
   assert.equal(byId['prologue-start'].legacy, true, 'legacy id kept so old saves still load');
-  assert.equal(byId['chapter-2-start'].launch, 'chapter-2', 'Chapter 2 still launches the existing parkour');
+  assert.equal(byId['chapter-2-start'].route, '/borrowed-light.html', 'Chapter 1 hands over to BORROWED LIGHT');
 });
 
 test('a new journey starts at chapter-1-start; an old prologue-start save still formats', () => {
@@ -75,8 +75,8 @@ test('the Ember Stone clue points at the orchard case in Act 2', () => {
   assert.match(ember.clue, /letter to Rosa/);
 });
 
-test('act end leads to chapter-2-start, the 1-2 film and the existing Chapter 2 launch', () => {
+test('act end leads to chapter-2-start, the 1-2 film and BORROWED LIGHT', () => {
   const main = read('src/nightService-main.js');
   assert.match(main, /onChapterEnd\(\) \{[\s\S]*?onCheckpoint\('chapter-2-start'\)[\s\S]*?CINEMATICS\.chapter1To2[\s\S]*?preloadChapterId: 'chapter2'[\s\S]*?onComplete: launchChapter2/);
-  assert.match(main, /pendingLaunch\.v1', 'chapter-2'\)/);
+  assert.match(main, /function launchChapter2\(\) \{[\s\S]*?launchCheckpoint\('chapter-2-start'\)/);
 });
