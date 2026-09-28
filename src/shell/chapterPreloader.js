@@ -72,7 +72,10 @@ const MUSEUM_TEXTURES = ['beige_wall_001', 'dark_wood', 'dirty_carpet', 'rubber_
 export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
   // Chapter 1 is night-service.html; its windows paint from the night fields.
   chapter1: Object.freeze({ route: '/night-service.html', assets: Object.freeze(CHAPTER1_WORLD) }),
-  chapter2: Object.freeze({ route: '/', assets: Object.freeze(CHAPTER2_WORLD) }),
+  chapter2: Object.freeze({
+    route: '/borrowed-light.html',
+    assets: Object.freeze([...CHAPTER2_WORLD, '/assets/music/ch1/1.3_neon_safety_test.mp3']),
+  }),
   chapter3: Object.freeze({
     route: '/car03-3d.html',
     concurrency: 6,

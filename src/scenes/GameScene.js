@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { createSaveStore } from '../shell/saveSystem.js';
+import { createSaveStore, launchCheckpoint } from '../shell/saveSystem.js';
 import { CINEMATICS, playCinematic } from '../shell/gameFlow.js';
 import {
   GAME_W,
@@ -1471,9 +1471,9 @@ export default class GameScene extends Phaser.Scene {
     this.player.setVelocity(0, 0);
     this.departureStreaks.forEach((streak) => streak.setVisible(true).setAlpha(0));
     this.game.events.emit('hud:prologue-transition', {
-      kicker: 'CHAPTER ONE',
-      title: 'THE SAFETY TEST',
-      subtitle: 'The train begins moving backward through its own explanations.',
+      kicker: 'CHAPTER 2',
+      title: 'BORROWED LIGHT',
+      subtitle: 'The next stop is a city that runs on time borrowed from the train.',
     });
     sfx.door();
 
@@ -1513,7 +1513,8 @@ export default class GameScene extends Phaser.Scene {
         src: CINEMATICS.chapter1To2,
         label: 'Chapter 1 to Chapter 2 transition',
         preloadChapterId: 'chapter2',
-        onComplete: () => this.scene.start('CyberpunkParkour'),
+        // Chapter 2 (BORROWED LIGHT) is its own page now.
+        onComplete: () => launchCheckpoint('chapter-2-start'),
       });
     });
   }

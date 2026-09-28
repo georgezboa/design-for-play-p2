@@ -23,6 +23,15 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['CONTINUE / READ', 'CLICK · ENTER'],
     ['PAUSE', 'ESC'],
   ),
+  borrowedLight: list(
+    ['MOVE', 'A / D · ← →'],
+    ['JUMP', 'SPACE · HOLD FOR HEIGHT'],
+    ['PUNCH NODE', 'F / LEFT CLICK'],
+    ['LISTEN (NEXT BELL)', 'HOLD Q'],
+    ['INTERACT / READ', 'E'],
+    ['GAMEPAD', 'STICK · A JUMP · X READ · RB PUNCH · LB LISTEN'],
+    ['PAUSE', 'ESC / START'],
+  ),
   borrowedGrid: list(
     ['MOVE', 'A / D · ← →'],
     ['JUMP', 'SPACE'],

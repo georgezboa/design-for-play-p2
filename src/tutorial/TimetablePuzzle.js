@@ -7947,9 +7947,9 @@ export default class TimetablePuzzle {
     if (qa === 'chapter-card') {
       this.scene.time.delayedCall(240, () => {
         this.scene.game.events.emit('hud:prologue-transition', {
-          kicker: 'CHAPTER ONE',
-          title: 'THE SAFETY TEST',
-          subtitle: 'The train begins moving backward through its own explanations.',
+          kicker: 'CHAPTER 2',
+          title: 'BORROWED LIGHT',
+          subtitle: 'The next stop is a city that runs on time borrowed from the train.',
           qa: true,
         });
       });

@@ -11,8 +11,11 @@ export const CHECKPOINTS = Object.freeze([
   { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'Act I · Lost property.', route: '/night-service.html', act: 1 },
   { id: 'chapter-1-act-2', chapter: 1, title: 'NIGHT SERVICE · THE LUGGAGE CAR', detail: 'Act II · The punch and the lens.', route: '/night-service.html', act: 2 },
   { id: 'chapter-1-act-3', chapter: 1, title: 'NIGHT SERVICE · TWO TRUE THINGS', detail: 'Act III · A bridge through 1978.', route: '/night-service.html', act: 3 },
-  { id: 'chapter-2-start', chapter: 2, title: 'BORROWED GRID', detail: 'The cyberpunk safety test.', route: '/', launch: 'chapter-2' },
-  { id: 'chapter-2-midpoint', chapter: 2, title: 'BORROWED GRID · MIDPOINT', detail: 'The route extension checkpoint.', route: '/', launch: 'chapter-2-midpoint' },
+  // Chapter 2 · BORROWED LIGHT (borrowed-light.html). The ids are kept so
+  // saves from the old parkour chapter load the new page.
+  { id: 'chapter-2-start', chapter: 2, title: 'BORROWED LIGHT', detail: 'Rain rooftops above the archived city.', route: '/borrowed-light.html' },
+  { id: 'chapter-2-midpoint', chapter: 2, title: 'BORROWED LIGHT · BLACKOUT', detail: 'The city takes its light back.', route: '/borrowed-light.html?section=B' },
+  { id: 'chapter-2-platform', chapter: 2, title: 'BORROWED LIGHT · EVACUATION PLATFORM', detail: 'Eight bells to departure.', route: '/borrowed-light.html?section=C' },
   { id: 'chapter-3-start', chapter: 3, title: 'ECHO CITY', detail: 'The Spanish civic city investigation.', route: '/car03-3d.html' },
   { id: 'chapter-4-start', chapter: 4, title: 'THE PAINTED COUNTRY', detail: 'Ink moves. Paper remembers.', route: '/painted-country.html' },
   { id: 'chapter-5-start', chapter: 5, title: 'THE MUSEUM OF ONE ANSWER', detail: 'The archive corridor and Labyrinth.', route: '/museum-3d.html' },

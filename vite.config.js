@@ -71,6 +71,7 @@ export default defineConfig(({ command, mode }) => {
           nightService: resolve(import.meta.dirname, 'night-service.html'),
           // chapter01-opening.html is a dev-only storyboard preview (served by
           // `npm run dev`); it is intentionally not a production entry.
+          chapter02: resolve(import.meta.dirname, 'borrowed-light.html'),
           chapter03: resolve(import.meta.dirname, 'car03-3d.html'),
           chapter04: resolve(import.meta.dirname, 'painted-country.html'),
           chapter05: resolve(import.meta.dirname, 'museum-3d.html'),

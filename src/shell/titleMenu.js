@@ -171,7 +171,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     worlds.className = 'nf-credit-worlds';
     worlds.innerHTML = `
       <article class="nf-credit-world nf-credit-style--night"><span>CAR 01</span><strong>NIGHT SERVICE</strong><small>BRASS · STEEL · AMBER MEMORY</small></article>
-      <article class="nf-credit-world nf-credit-style--grid"><span>CAR 02</span><strong>BORROWED GRID</strong><small>NEON · CURRENT · CYAN SIGNAL</small></article>
+      <article class="nf-credit-world nf-credit-style--grid"><span>CAR 02</span><strong>BORROWED LIGHT</strong><small>RAIN · BELL · BORROWED SIGNAL</small></article>
       <article class="nf-credit-world nf-credit-style--city"><span>CAR 03</span><strong>ECHO CITY</strong><small>STONE · FIRE · CIVIC RECORD</small></article>
       <article class="nf-credit-world nf-credit-style--paper"><span>CAR 04</span><strong>PAINTED COUNTRY</strong><small>PAPER · INK · LIVING COLOR</small></article>
     `;
@@ -406,8 +406,9 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     { id: '1.4', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION IV · THE FIRST WEIGHT', detail: 'Movable case and counterweight balance.', route: '/?qa=phase4&state=entry' },
     { id: '1.5', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION V · TWO TRUE THINGS', detail: 'Suspended cases and dual evidence route.', route: '/?qa=phase5&state=entry' },
     { id: '1.6', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION VI · THE TRAIN REMEMBERS', detail: 'Final train-load replay and departure.', route: '/?qa=phase6&state=entry' },
-    { id: '2.1', group: 'CHAPTER 2 · BORROWED GRID', checkpoint: 'chapter-2-start', title: 'ROOF ROUTE · START', detail: 'Full parkour route from the first roof.', launch: 'chapter-2' },
-    { id: '2.2', group: 'CHAPTER 2 · BORROWED GRID', checkpoint: 'chapter-2-midpoint', title: 'ROOF ROUTE · MIDPOINT', detail: 'Second half after the route-extension checkpoint.', launch: 'chapter-2-midpoint' },
+    { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell and the one-line rule.', route: '/borrowed-light.html?section=A' },
+    { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone and the hotel cut.', route: '/borrowed-light.html?section=B' },
+    { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Eight-bell departure; the train remembers.', route: '/borrowed-light.html?section=C' },
     { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · DAWN', detail: 'Main Echo City investigation start.', route: '/car03-3d.html' },
     { id: '3.2', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'DUSK CAMPFIRE', detail: 'Campfire evidence and the Echo Stone route.', route: '/car03-3d.html?playtest=chapter3-campfire' },
     // This node is the beginning of the Copper Heron sequence, not the
@@ -425,7 +426,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     { id: '5.5', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'BORROWED GRID · SERVICE SHIFT', detail: 'Three-round public-power node.', route: '/borrowed-grid.html' },
     { id: '5.6', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM COLLAPSE', detail: 'Final Archive collapse and boss handoff.', route: '/museum-3d.html?beat=collapse' },
     { id: '6.1', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR I · NIGHT SERVICE', detail: 'Thrown-departures movement and suitcase memories.', route: '/final-boss.html?qa=conductor-1' },
-    { id: '6.2', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR II · BORROWED GRID', detail: 'Grid runner movement, blocks and ladder strike.', route: '/final-boss.html?qa=conductor-2' },
+    { id: '6.2', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR II · BORROWED LIGHT', detail: 'Grid runner movement, blocks and ladder strike.', route: '/final-boss.html?qa=conductor-2' },
     { id: '6.3', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR III · ECHO CITY', detail: 'Truth-dialogue movement and civic-record pressure.', route: '/final-boss.html?qa=conductor-3' },
     { id: '6.4', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR IV · PAINTED COUNTRY', detail: 'Pigment collection, paint return and Mara finale.', route: '/final-boss.html?qa=conductor-4' },
     { id: '6.5', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'BLACK KNIFE · HIDDEN FINALE', detail: 'Five-stone hidden boss direct entry.', preload: 'hiddenBoss', route: '/hidden-final-boss.html?easter-egg=1' },

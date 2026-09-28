@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const chapter1 = read('src/prologueNarrativeProps.js');
-const chapter2 = read('src/cars/cyberpunkParkour/CyberpunkParkourScene.js');
+const chapter2 = read('src/chapters/borrowedLight/BorrowedLightScene.js');
+const chapter2Level = read('src/chapters/borrowedLight/level.js');
 const chapter3 = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
 const chapter4 = read('src/chapters/paintedCountry/DrawingStudioScene.js');
 const museum = read('src/chapters/museum3d/Museum3DApp.js');
@@ -17,7 +18,7 @@ test('every stone is an authored world pickup rather than a completion offer', (
   assert.match(chapter1, /completedScriptId === 'phase-iv-envelope'/);
   assert.match(chapter1, /envelopeReadComplete/);
   assert.match(chapter1, /collectMagicStone\('chapter-1'\)/);
-  assert.match(chapter2, /GRID_STONE = Object\.freeze\(\{ x: 6370, y: 445 \}\)/);
+  assert.match(chapter2Level, /GRID_STONE = Object\.freeze\(\{ x: 11690, y: -60 \}\)/);
   assert.match(chapter2, /collectMagicStone\('chapter-2'\)/);
   assert.match(chapter3, /id: 'campfire-seline'/);
   assert.match(chapter3, /openCampfireSelineDialogue\(\)/);

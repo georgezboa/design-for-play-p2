@@ -40,9 +40,19 @@ const STANDALONE_SLICES = [
     href: '/?chapter=0',
   },
   {
-    label: 'CHAPTER 2  //  CYBERPUNK PARKOUR',
-    detail: 'Direct development route for the movable-route, ladder and flying-car slice.',
-    href: '/?chapter=cyberpunk',
+    label: 'CHAPTER 2  //  BORROWED LIGHT · A ROOFTOPS',
+    detail: 'Side-scrolling timetable chapter: punch nodes, wait for the bell, cross.',
+    href: '/borrowed-light.html?section=A',
+  },
+  {
+    label: 'CHAPTER 2  //  BORROWED LIGHT · B BLACKOUT',
+    detail: 'Memory light, the Grid Stone ledge and the held-bridge cut.',
+    href: '/borrowed-light.html?section=B',
+  },
+  {
+    label: 'CHAPTER 2  //  BORROWED LIGHT · C PLATFORM',
+    detail: 'Eight-bell departure countdown; the train remembers.',
+    href: '/borrowed-light.html?section=C',
   },
   {
     label: 'CHAPTER 3  //  ECHO CITY 3D',
