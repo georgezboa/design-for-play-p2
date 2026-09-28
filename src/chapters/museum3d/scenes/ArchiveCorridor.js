@@ -230,10 +230,12 @@ export class ArchiveCorridor {
     // nearest legal standing position. A deep box reaches into the collision
     // boundary and lets the camera end up *inside* the proxy; Three's default
     // front-face raycast then cannot see a way back out of it.
-    return hitProxy(g, {
+    const proxy = hitProxy(g, {
       x, y: 1.35, z: -1.82, w: 2.4, h: 2.3, d: 0.12,
       name: `${id}-interaction-proxy`,
     });
+    proxy.userData.tagAnchor = 0.97; // over the door panel, above the numeral frame
+    return proxy;
   }
 
   // A former sealed shutter, now a glass-fronted filing cabinet: drawers of
@@ -273,6 +275,7 @@ export class ArchiveCorridor {
     light.position.set(0, 2.1, 0.4);
     group.add(light);
     const proxy = hitProxy(group, { x: 0, y: 1.2, z: 0.24, w: 1.8, h: 2.1, d: 0.1, name: `${claim.id}-interaction-proxy` });
+    proxy.userData.tagAnchor = 1; // above the vitrine, never on the claim card
     return { id: claim.id, claim, group, proxy };
   }
 
@@ -295,14 +298,18 @@ export class ArchiveCorridor {
     light.position.set(0, 1.6, -0.55);
     group.add(light);
     const proxy = hitProxy(group, { x: 0, y: 1.42, z: -0.32, w: 2.25, h: 1.54, d: 0.12, name: `${id}-niche-interaction-proxy` });
+    // the cases hang on the south wall: their labels face north, into the corridor
     label(group, `${exhibit.chapter} · ${exhibit.title}\n${exhibit.object}`, {
-      x: 0, y: 0.54, z: -0.255, w: 2.05, h: 0.36,
+      x: 0, y: 0.54, z: -0.255, w: 2.05, h: 0.36, rotationY: Math.PI,
       fg: '#eee4cb', bg: '#090b0c', font: 'bold 25px Georgia, serif',
     });
+    // the accession plate sits under the chapter label, leaving the case's
+    // top edge to the interaction tag
     label(group, exhibit.accession, {
-      x: 0, y: 2.31, z: -0.255, w: 1.18, h: 0.18,
+      x: 0, y: 0.25, z: -0.255, w: 1.18, h: 0.16, rotationY: Math.PI,
       fg: '#c9b681', bg: '#15120d', font: 'bold 26px Georgia, serif',
     });
+    proxy.userData.tagAnchor = 1; // on the case's top edge, clear of every label
     return { group, artifact, exhibit, light, glass, proxy, displayed: true, shattered: false };
   }
 

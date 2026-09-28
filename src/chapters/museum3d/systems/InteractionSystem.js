@@ -131,37 +131,44 @@ export class InteractionSystem {
     this._placeTag(entry.mesh);
   }
 
-  // Pin the tag just above the object's on-screen centre, kept inside the
-  // viewport and a little above the reticle so it never covers what you aim at.
+  // Where the paper tag hangs:
+  //   - an object may pin it (userData.tagAnchor: 0 = foot, 1 = top of its
+  //     box), chosen so the tag clears its own cards and plaques;
+  //   - otherwise, an object that fills the view (a door face-on) takes it in
+  //     the lower third, above the caption bar;
+  //   - otherwise it hangs three-quarters up the object, above the reticle.
+  // Always inside the viewport.
   _placeTag(mesh) {
     if (typeof window === 'undefined') return;
     const w = window.innerWidth;
     const h = window.innerHeight;
     let x = w / 2;
     let y = h * 0.44;
-    let fills = false;
+    let mode = 'default';
     try {
       this._box.setFromObject(mesh, true);
       if (!this._box.isEmpty()) {
         this._box.getCenter(this._anchor);
-        // An object that fills the view (a door, a case face-on) carries its
-        // plaques up where the tag would go: pin it in the lower third,
-        // above the caption bar.
+        const pinned = mesh.userData?.tagAnchor;
         const top = this._anchor.clone().setY(this._box.max.y).project(this.camera);
         const bottom = this._anchor.clone().setY(this._box.min.y).project(this.camera);
-        fills = top.z < 1 && bottom.z < 1 && (top.y > 0.9 || top.y - bottom.y > 1.1);
-        this._anchor.y = Math.min(this._box.max.y, this._anchor.y + (this._box.max.y - this._anchor.y) * 0.5);
+        const fills = top.z < 1 && bottom.z < 1 && (top.y > 0.9 || top.y - bottom.y > 1.1);
+        mode = typeof pinned === 'number' ? 'pinned' : fills ? 'fills' : 'default';
+        const along = mode === 'pinned' ? pinned : 0.75;
+        this._anchor.y = this._box.min.y + (this._box.max.y - this._box.min.y) * along;
         this._anchor.project(this.camera);
-        if (fills) {
-          x = w / 2;
-        } else if (this._anchor.z < 1 && Math.abs(this._anchor.x) < 1.2 && Math.abs(this._anchor.y) < 1.2) {
+        if (mode === 'fills') {
+          y = h * 0.76;
+        } else if (this._anchor.z < 1 && (mode === 'pinned' || (Math.abs(this._anchor.x) < 1.2 && Math.abs(this._anchor.y) < 1.2))) {
           x = (this._anchor.x * 0.5 + 0.5) * w;
           y = (-this._anchor.y * 0.5 + 0.5) * h;
         }
       }
     } catch { /* keep the centre fallback */ }
     x = Math.max(140, Math.min(w - 140, x));
-    y = fills ? Math.round(h * 0.76) : Math.max(60, Math.min(h * 0.46, y));
+    y = mode === 'fills' ? Math.round(y)
+      : mode === 'pinned' ? Math.max(60, Math.min(h * 0.8, y))
+        : Math.max(60, Math.min(h * 0.46, y));
     this.promptEl.style.left = `${Math.round(x)}px`;
     this.promptEl.style.top = `${Math.round(y)}px`;
   }
