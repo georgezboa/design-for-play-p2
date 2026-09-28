@@ -439,6 +439,15 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
 
   wetStreaks(ctx, x0, top, w, facadeH, r, 0.06);
 
+  // Fade the lowest floors into the plain wall below (and the mist).
+  if (!platform.bottom) {
+    const fade = ctx.createLinearGradient(0, top + facadeH - 200, 0, top + facadeH);
+    fade.addColorStop(0, 'rgba(0,0,0,0)');
+    fade.addColorStop(1, st.bottom);
+    ctx.fillStyle = fade;
+    ctx.fillRect(x0 - 8, top + facadeH - 200, w + 16, 200);
+  }
+
   // Cornice / parapet.
   const corniceH = ['gantry', 'platform', 'concourse'].includes(platform.style) ? 10 : 18;
   ctx.fillStyle = st.trim;
@@ -673,14 +682,10 @@ export function paintWallTile(style, seed = 3) {
   grain(ctx, 256, 256, r, { alpha: 0.06 });
   ctx.fillStyle = 'rgba(0,0,0,0.2)';
   for (let yy = 8; yy < 256; yy += 16) ctx.fillRect(0, yy, 256, 1);
-  // A dim unlit window row so the wall keeps its rhythm into the mist.
-  for (let wx = 20; wx < 256; wx += 76) {
-    ctx.fillStyle = 'rgba(5,8,10,0.8)';
-    ctx.fillRect(wx, 70, 44, 60);
-    if (r() < 0.2) {
-      ctx.fillStyle = 'rgba(160,96,40,0.35)';
-      ctx.fillRect(wx + 3, 73, 38, 54);
-    }
+  // Very faint window ghosts: the wall keeps a rhythm without a seam.
+  for (let wx = 26; wx < 256; wx += 64) {
+    ctx.fillStyle = 'rgba(0,0,0,0.18)';
+    ctx.fillRect(wx, 80, 30, 46);
   }
   return canvas;
 }
@@ -812,6 +817,12 @@ export function paintFog({ width = 1024, height = 256, seed = 9 } = {}) {
   const r = rng(seed);
   const canvas = makeCanvas(width, height);
   const ctx = canvas.getContext('2d');
+  // A soft base that thickens downward, so the mist has no hard top.
+  const base = ctx.createLinearGradient(0, 0, 0, height);
+  base.addColorStop(0, 'rgba(120,142,152,0)');
+  base.addColorStop(1, 'rgba(120,142,152,0.35)');
+  ctx.fillStyle = base;
+  ctx.fillRect(0, 0, width, height);
   for (let i = 0; i < 70; i += 1) {
     const x = r() * width;
     const y = height * (0.3 + r() * 0.7);
@@ -824,6 +835,14 @@ export function paintFog({ width = 1024, height = 256, seed = 9 } = {}) {
       ctx.fillRect(x + ox - rad, y - rad, rad * 2, rad * 2);
     }
   }
+  // Feather the top edge.
+  ctx.globalCompositeOperation = 'destination-in';
+  const feather = ctx.createLinearGradient(0, 0, 0, height);
+  feather.addColorStop(0, 'rgba(0,0,0,0)');
+  feather.addColorStop(0.45, 'rgba(0,0,0,1)');
+  ctx.fillStyle = feather;
+  ctx.fillRect(0, 0, width, height);
+  ctx.globalCompositeOperation = 'source-over';
   return canvas;
 }
 

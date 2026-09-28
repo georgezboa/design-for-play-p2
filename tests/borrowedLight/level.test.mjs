@@ -13,6 +13,7 @@ import {
   ROUTE,
   SECTIONS,
   SECTION_CHECKPOINTS,
+  SIGNS,
   WORLD,
   cableFor,
   machineById,
@@ -311,6 +312,16 @@ test('start section: dev honours ?section=, production only honours an unlocked 
   assert.equal(resolveStartSection({ search: '?section=C', devMode: false, unlocked: ['chapter-2-platform'] }), 'C');
   assert.equal(resolveStartSection({ search: '', devMode: false, unlocked: ['chapter-2-platform'] }), 'A');
   assert.deepEqual(SECTION_CHECKPOINTS, { A: 'chapter-2-start', B: 'chapter-2-midpoint', C: 'chapter-2-platform' });
+});
+
+test('hanging signs clear Butch\'s head wherever he can walk under them', () => {
+  for (const sign of SIGNS) {
+    const h = sign.layer === 'hotel' ? 110 : 60;
+    const under = PLATFORMS.filter((p) => sign.x + sign.w / 2 > p.x && sign.x - sign.w / 2 < p.x + p.w && p.y > sign.y);
+    for (const roof of under) {
+      assert.ok(sign.y + h <= roof.y - 124, `${sign.text} hangs into head height over ${roof.id}`);
+    }
+  }
 });
 
 test('world bounds leave room for every roof, lift top and the mist', () => {

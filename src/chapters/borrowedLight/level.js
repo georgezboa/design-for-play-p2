@@ -51,8 +51,8 @@ export const PLATFORMS = Object.freeze([
   roof('a-roof2', 2900, 800, 400, 'office'),                    // 2: reached by the lift
   roof('a-roof3', 3700, 1000, 760, 'brick'),                    // 3: drop down, lift + bridge
   roof('a-roof4', 5160, 820, 460, 'tenement'),                  // 4: the one-line rule
-  ledge('a-ac', 5590, 110, 390, 'ac', { h: 70 }),               //    AC unit: step onto the stair head
-  roof('a-stairhead', 5700, 180, 300, 'stairhead', { bottom: 460 }),
+  ledge('a-ac', 5540, 100, 390, 'ac', { h: 70 }),               //    AC unit: step onto the stair head
+  roof('a-stairhead', 5640, 240, 300, 'stairhead', { bottom: 460 }),
   roof('a-view', 6440, 220, 460, 'watertower'),                 //    dead-end lookout (bridge route)
   roof('a-roof5', 6840, 660, 260, 'office'),                    // 5: vent updraft
   roof('a-roof6', 7900, 540, 160, 'tenement'),                  //    top of the updraft, hotel sign ahead
@@ -174,7 +174,7 @@ export const BOARD_X = 18500;
 export const MARA_SIGHTINGS = Object.freeze([
   Object.freeze({ id: 'first', triggerX: 1050, section: 'A', path: [[2150, 760], [2860, 760]], leap: [3060, 330], waitMs: 700 }),
   Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6200, section: 'A', path: [[7080, 260], [7470, 260]], leap: [7760, 20], waitMs: 1400 }),
-  Object.freeze({ id: 'hotel-roof', triggerX: 12400, section: 'B', path: [[13640, -150], [13960, -150]], leap: [14240, 60], waitMs: 600, lightningOnly: true }),
+  Object.freeze({ id: 'hotel-roof', triggerX: 12450, section: 'B', path: [[13240, -150], [13940, -150]], leap: [14260, 80], waitMs: 600, lightningOnly: true }),
 ]);
 
 // Neon: low saturation, amber / teal / rose only. `layer` 'mid' signs sit on
@@ -182,11 +182,11 @@ export const MARA_SIGHTINGS = Object.freeze([
 // dies when the blackout starts.
 export const SIGNS = Object.freeze([
   { x: 330, y: 548, text: 'CITY TERMINAL', color: 'amber', layer: 'near', w: 300 },
-  { x: 3260, y: 250, text: 'TICKETS', color: 'teal', layer: 'near', w: 170 },
-  { x: 4000, y: 600, text: 'LAUNDRY', color: 'rose', layer: 'near', w: 170 },
-  { x: 5260, y: 320, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
-  { x: 7020, y: 140, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
-  { x: 8120, y: 60, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
+  { x: 3260, y: 196, text: 'TICKETS', color: 'teal', layer: 'near', w: 170 },
+  { x: 4000, y: 556, text: 'LAUNDRY', color: 'rose', layer: 'near', w: 170 },
+  { x: 5240, y: 236, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
+  { x: 7020, y: 56, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
+  { x: 8120, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
   { x: 13500, y: -560, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'hotel', w: 520 },
   { x: 16100, y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
   { x: 18700, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },

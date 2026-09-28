@@ -160,7 +160,13 @@ export class BorrowedLightScene extends Phaser.Scene {
     sfx.installAudio();
     this.physics.world.on(Phaser.Physics.Arcade.Events.WORLD_STEP, this.fixedStep, this);
 
-    this.onSettings = () => this.hud.applyTextScale();
+    this.onSettings = () => {
+      this.hud.applyTextScale();
+      const k = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
+      this.promptText.setFontSize(`${Math.round(16 * k)}px`);
+      this.hintText.setFontSize(`${Math.round(14 * k)}px`);
+    };
+    this.onSettings();
     window.addEventListener('nightfall:settings', this.onSettings);
     this.events.once('shutdown', () => {
       window.removeEventListener('nightfall:settings', this.onSettings);
@@ -700,9 +706,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     const node = NODES.find((n) => n.id === nodeId);
     if (!node) return;
     const head = nodeHead(node);
-    this.hintText.setText(text).setColor(color).setPosition(head.x, head.y - 40).setAlpha(1);
+    this.hintText.setText(text).setColor(color).setPosition(head.x, head.y - 78).setAlpha(1);
     this.tweens.killTweensOf(this.hintText);
-    this.tweens.add({ targets: this.hintText, alpha: 0, y: head.y - 70, delay: ms, duration: 500 });
+    this.tweens.add({ targets: this.hintText, alpha: 0, y: head.y - 104, delay: ms, duration: 500 });
   }
 
   interactTarget() {
@@ -774,6 +780,17 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.controlPlayer(dt);
     this.checkWorld();
     this.onLiftId = null;
+    // Arcade clears contact flags only on a frame's first step. When a slow
+    // frame runs several steps, stale "blocked.down" would read as grounded
+    // mid-jump and cancel it, so clear them for the next step ourselves.
+    const { body } = this.player;
+    for (const flags of [body.blocked, body.touching]) {
+      flags.none = true;
+      flags.up = false;
+      flags.down = false;
+      flags.left = false;
+      flags.right = false;
+    }
   }
 
   onModelEvent(event) {
@@ -1145,7 +1162,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     const facing = this.player.ctrl.facing;
     this.camLook = Phaser.Math.Linear(this.camLook ?? 220, facing * 230, 1 - Math.exp(-dt / 700));
     let tx = this.feetX + this.camLook;
-    let ty = this.feetY - 150;
+    // A fall is not followed into the depths: Butch drops out of frame into
+    // the mist and the respawn fade takes over.
+    let ty = Math.min(this.feetY - 150, 720);
     // Vertical dead zone.
     if (Math.abs(ty - this.camY) > 90) this.camY = Phaser.Math.Linear(this.camY, ty - Math.sign(ty - this.camY) * 90, 1 - Math.exp(-dt / 180));
     ty = this.camY;
@@ -1551,7 +1570,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         y: Math.round(this.feetY),
         vx: Math.round(body.velocity.x),
         vy: Math.round(body.velocity.y),
-        grounded: body.blocked.down || body.touching.down,
+        grounded: this.player.ctrl.grounded,
         pose: this.player.pose,
         facing: this.player.ctrl.facing,
       },

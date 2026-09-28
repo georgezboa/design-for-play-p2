@@ -364,8 +364,10 @@ export function buildWeather(scene) {
   const far = scene.add.tileSprite(0, 0, VIEW_W, VIEW_H, 'bl-rain-far').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.rainFar).setAlpha(0.7);
   const mid = scene.add.tileSprite(0, 0, VIEW_W, VIEW_H, 'bl-rain-mid').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.rainMid).setAlpha(0.65);
   const near = scene.add.tileSprite(0, 0, VIEW_W, VIEW_H, 'bl-rain-near').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.rainNear).setAlpha(0.5);
-  const mistBack = scene.add.tileSprite(-600, WORLD.mistY - 160, WORLD.width + 1200, 520, 'bl-fog').setOrigin(0).setDepth(DEPTH.mistBack).setAlpha(0.75).setTileScale(1.6, 2);
-  const mistFront = scene.add.tileSprite(-600, WORLD.mistY + 20, WORLD.width + 1200, 480, 'bl-fog').setOrigin(0).setDepth(DEPTH.mistFront).setAlpha(0.9).setTileScale(2.2, 1.8);
+  // Each mist band is exactly one texture period tall, so the feathered top
+  // never repeats inside the band.
+  const mistBack = scene.add.tileSprite(-600, WORLD.mistY - 180, WORLD.width + 1200, 512, 'bl-fog').setOrigin(0).setDepth(DEPTH.mistBack).setAlpha(0.8).setTileScale(1.6, 2);
+  const mistFront = scene.add.tileSprite(-600, WORLD.mistY + 10, WORLD.width + 1200, 460, 'bl-fog').setOrigin(0).setDepth(DEPTH.mistFront).setAlpha(0.95).setTileScale(2.2, 1.8);
   // A dark floor under the mist so the alleys read as a drop, not a void.
   const floor = scene.add.image(-600, WORLD.mistY + 100, 'bl-px').setOrigin(0).setDisplaySize(WORLD.width + 1200, 800).setTint(0x0a1115).setDepth(DEPTH.mistBack - 0.5);
   const splashes = [];

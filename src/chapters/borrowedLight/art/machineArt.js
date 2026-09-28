@@ -206,13 +206,13 @@ export function createMachineView(scene, machine) {
   if (machine.kind === 'fan') {
     const streaks = makeCanvas(64, 256);
     const ctx = streaks.getContext('2d');
-    for (let i = 0; i < 26; i += 1) {
+    for (let i = 0; i < 34; i += 1) {
       const x = Math.random() * 64;
       const y = Math.random() * 256;
-      const l = 20 + Math.random() * 50;
+      const l = 30 + Math.random() * 70;
       const gr = ctx.createLinearGradient(x, y, x, y + l);
       gr.addColorStop(0, 'rgba(220,230,232,0)');
-      gr.addColorStop(0.5, `rgba(220,230,232,${0.15 + Math.random() * 0.25})`);
+      gr.addColorStop(0.5, `rgba(220,230,232,${0.3 + Math.random() * 0.4})`);
       gr.addColorStop(1, 'rgba(220,230,232,0)');
       ctx.fillStyle = gr;
       ctx.fillRect(x, y, 1.5, l);
@@ -366,10 +366,24 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
         const a = view.spin + (i * TAU) / 6;
         g.lineBetween(cx, yBottom - 50, cx + Math.cos(a) * (w / 2 - 22), yBottom - 50 + Math.sin(a) * 9);
       }
-      // Vent grille marks on the walls either side.
+      // The column of moving air: faint walls and rising chevrons.
       g.lineStyle(1.2, INK_HEX, 0.12 + 0.2 * level);
       g.lineBetween(x, yTop + 40, x, yBottom - 60);
       g.lineBetween(x + w, yTop + 40, x + w, yBottom - 60);
+      if (level > 0.02) {
+        const k = level * (on > 0 ? 1 : 0.4);
+        g.fillStyle(color.hex, 0.06 * k).fillRect(x, yTop, w, yBottom - yTop);
+        g.lineStyle(2, color.glow, 0.35 * k);
+        g.lineBetween(x + 2, yTop + 20, x + 2, yBottom - 60);
+        g.lineBetween(x + w - 2, yTop + 20, x + w - 2, yBottom - 60);
+        g.lineStyle(3, color.glow, 0.55 * k);
+        for (let c = 0; c < 7; c += 1) {
+          const cy = yBottom - 80 - ((t * 360 + c * 200) % (yBottom - yTop - 100));
+          const cx = x + w / 2;
+          g.lineBetween(cx - 22, cy + 16, cx, cy);
+          g.lineBetween(cx + 22, cy + 16, cx, cy);
+        }
+      }
       if (images.draft) {
         images.draft.setAlpha(0.8 * level * (on > 0 ? 1 : 0.5));
         images.draft.tilePositionY += 18 * level;
