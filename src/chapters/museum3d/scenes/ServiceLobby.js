@@ -179,8 +179,14 @@ export class ServiceLobby {
     this.casedDesk.rotation.y = Math.PI;
     this.reclassifiedGroup.add(this.casedDesk);
     this.casedDeskProxy = hitProxy(this.reclassifiedGroup, { x: 1.5, y: 1.55, z: 0, w: 4.4, h: 1.1, d: 1.4, name: 'cased-desk-register-proxy' });
-    label(this.reclassifiedGroup, 'ACC. 1978-0412 · 5\nSERVICE DESK · EVIDENCE', {
-      x: 1.5, y: 0.55, z: 1.415, w: 2.2, h: 0.5,
+    // The register itself lies above eye height on the plinth, so the case
+    // label says what it is open at, on both faces the player approaches.
+    const deskLabel = 'SERVICE DESK · ACC. 1978-0412 · 5\nREGISTER — LAST ENTRY: BUTCH';
+    label(this.reclassifiedGroup, deskLabel, {
+      x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5, font: 'bold 25px Georgia, serif',
+    });
+    label(this.reclassifiedGroup, deskLabel, {
+      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2, font: 'bold 25px Georgia, serif',
     });
     // the desk's worn footprint on the carpet where it stood
     plane(this.reclassifiedGroup, {
@@ -606,7 +612,9 @@ export class ServiceLobby {
 
     // Proximity supplies the break / take prompt along the case's south
     // side: a centre-reticle ray through transparent panes is unreliable at
-    // arm's length. Collecting the stone still requires a deliberate click.
+    // arm's length. Collecting the stone still requires a deliberate click
+    // (the stone is pointerOnly: E never takes it), and the tag's CLICK
+    // works from anywhere within reach, not only dead on the hidden stone.
     const atBlackKnifeLongSide = this.canBreakBlackKnifeGlass();
     const atExposedStone = this.canReachBlackKnifeStone() && !magicStoneSnapshot().collected.includes('black-knife');
     this.ctx.interaction.setFallback(
@@ -615,7 +623,6 @@ export class ServiceLobby {
         : this.blackKnifeGlassBroken && atExposedStone
           ? 'black-ticket-stone'
           : null,
-      { promptOnly: this.blackKnifeGlassBroken && atExposedStone },
     );
 
     if (snapshot.phase === 'lobby' && snapshot.ticket.carried && this._inZone(player, this._corridorZone)) {

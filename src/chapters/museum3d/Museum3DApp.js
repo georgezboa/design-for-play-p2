@@ -624,6 +624,13 @@ export class Museum3DApp {
       const snapshot = this.model.getSnapshot();
       this._syncChapterScore();
       this.interaction.hidden = this.cards.isOpen || this.directionExhibit.opened;
+      // A framed exhibit covers the whole view with an opaque bezel: stop
+      // drawing the museum behind it so the framed page gets the frame budget.
+      if (this.directionExhibit.opened) {
+        this.interaction.update(); // applies `hidden`: no tag over the frame
+        this.dialogue.update(dt);
+        return;
+      }
       this.controller.update(dt);
       this._syncRuntimeCoordinates(snapshot);
       const active = this.getActiveScene();

@@ -13,6 +13,8 @@
 
 import * as THREE from 'three';
 
+// the lobby's pending case lays all four out on one plinth, about a metre apart
+const SMALL_SCALE = 0.88;
 const INK = '#2a1d14';
 const PAPER = '#efe4cc';
 const OXBLOOD = '#8a2a1e';
@@ -154,7 +156,7 @@ function orchardCase({ small = false } = {}) {
   string.rotation.z = 1.15;
   group.add(string);
   group.userData.swing = tag;
-  if (small) group.scale.setScalar(0.62);
+  if (small) group.scale.setScalar(SMALL_SCALE);
   return group;
 }
 
@@ -192,7 +194,7 @@ function ticketStub({ small = false } = {}) {
   const ledge = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.014, 0.05), brass);
   ledge.position.set(0, -0.11, 0.02);
   group.add(ledge);
-  if (small) group.scale.setScalar(0.62);
+  if (small) group.scale.setScalar(SMALL_SCALE);
   return group;
 }
 
@@ -245,7 +247,7 @@ function duplicateReservation({ small = false } = {}) {
   slip.position.set(0.06, -0.03, 0.004);
   slip.rotation.z = -0.07;
   group.add(slip);
-  if (small) group.scale.setScalar(0.62);
+  if (small) group.scale.setScalar(SMALL_SCALE);
   return group;
 }
 
@@ -300,7 +302,7 @@ function rosaPlate({ small = false } = {}) {
   const print = paperMesh('plate-iv-print', 0.5, 0.36, paperTexture(500, 360, (c, w, h) => drawRosaDrawing(c, w, h)));
   print.position.z = 0.017;
   group.add(print);
-  if (small) group.scale.setScalar(0.62);
+  if (small) group.scale.setScalar(SMALL_SCALE);
   return group;
 }
 
