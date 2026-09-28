@@ -158,8 +158,9 @@ export const LAMPS = Object.freeze([
 // ---------------------------------------------------------------------------
 // Story props.
 export const TRAIN = Object.freeze({
-  start: Object.freeze({ x: -260, y: 760, doorX: 560, cars: 3 }),
-  end: Object.freeze({ x: 18260, y: 180, doorX: 18520, cars: 3 }),
+  // Two cars fit the rooftop terminal (-400 … 1500); the door is on the rear car.
+  start: Object.freeze({ x: -380, y: 760, cars: 2 }),
+  end: Object.freeze({ x: 18260, y: 180, cars: 3 }),
 });
 
 export const MECHANIC = Object.freeze({ x: 1130, y: 760, talkRadius: 190 });

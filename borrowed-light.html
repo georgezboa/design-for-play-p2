@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NIGHTFALL — Borrowed Light</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <style>
+      /* Chapter 2 is night rain on the roofs: the page around the canvas is
+         the same wet dark, so FIT letterboxing reads as night, not a frame. */
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #030507;
+        overflow: hidden;
+      }
+      #game {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #game canvas {
+        display: block;
+        max-width: 100vw;
+        max-height: 100vh;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game"></div>
+    <script type="module" src="/src/borrowedLight-main.js"></script>
+  </body>
+</html>
