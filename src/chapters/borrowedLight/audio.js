@@ -168,6 +168,16 @@ export function machineOff(kind = 'bridge') {
   noise(c, t + 0.02, 0.16, { peak: 0.14, freq: 260, q: 0.7 });
 }
 
+// The clunk of a bridge locking out / a lift arriving.
+export function clunk(kind = 'bridge') {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  const low = { lift: 70, drawbridge: 55, points: 90 }[kind] ?? 80;
+  osc(c, 'triangle', low * 2, t, 0.09, { peak: 0.3, to: low });
+  noise(c, t, 0.08, { peak: 0.24, freq: 700, q: 1.2 });
+  noise(c, t + 0.05, 0.05, { peak: 0.12, freq: 3200, q: 2 });
+}
+
 export function flickerTick() {
   const c = live(); if (!c) return;
   const t = c.currentTime;
