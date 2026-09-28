@@ -83,14 +83,15 @@ export const CHAPTER_CONTROLS = Object.freeze({
   ),
   blackKnife: list(
     ['MOVE', 'WASD / ARROWS'],
-    ['SHOOT', 'Z / SPACE / LEFT CLICK'],
-    ['SHIELD ×3', 'X / C'],
+    ['PUNCH', 'Z / SPACE / LEFT CLICK'],
+    ['SHIELD ×3 (ON THE BELL: KEEPS ITS CHARGE)', 'X / C'],
     ['BOOST', 'SHIFT'],
     ['BATTLE PAUSE', 'P'],
     ['MENU', 'ESC'],
   ),
   trueEnding: list(
-    ['CONTINUE', 'ENTER / SPACE'],
+    ['SKIP THE REVEAL', 'HOLD SPACE / ENTER / MOUSE'],
+    ['CONTINUE (AFTER THE REVEAL)', 'ENTER / SPACE / CLICK'],
     ['PAUSE', 'ESC'],
   ),
 });

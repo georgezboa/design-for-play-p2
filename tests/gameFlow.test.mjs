@@ -74,8 +74,12 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(boss, /get\('from'\) === 'chapter5'/);
   assert.match(boss, /CINEMATICS\.ending/);
   assert.match(boss, /preserveBlackout: true[\s\S]*showEndCredits\(\)/);
-  assert.match(source('src/shell/endCredits.js'), /CREDIT_TEAM\.map\(\(\{ name \}\) => name\)/);
-  assert.match(source('src/shell/endCredits.js'), /music\.play\('end-credits'/);
+  // Both endings hand over to the title menu's full credit roll, which plays
+  // the credits track; the normal ending shows its archive card first.
+  assert.match(source('src/shell/endCredits.js'), /END_CREDITS_ROUTE = '\/\?credits=1'/);
+  assert.match(boss, /onComplete: \(\) => showNormalEndingCard\(\)\.then\(\(\) => showEndCredits\(\)\)/);
+  assert.match(boss, /CLAIM 1978-0412 · STATUS: OPEN/);
+  assert.match(source('src/shell/titleMenu.js'), /new Audio\(CREDIT_MUSIC\[0\]\.localFile\)/);
   // The ending returns to /?credits=1; the legacy /?play=1 entry resumes
   // the active checkpoint instead of booting a game on index.html.
   assert.match(source('src/main.js'), /params\.get\('credits'\) === '1'[\s\S]*?createTitleMenu\(\{ openCredits: true \}\)/);

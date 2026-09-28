@@ -45,13 +45,26 @@ test('both frozen route cinematics are present in the integrated public build', 
   )));
 });
 
-test('the false boss uses Verdi only for movements I–II, then changes to the authored classical cues', async () => {
+test('every Conductor movement plays a cleared cue: no Verdi, no uncleared recording', async () => {
   const source = await readFile(new URL('../src/chapters/finalBoss/spectacleBattle.js', import.meta.url), 'utf8');
-  assert.match(source, /5\.7_verdi_dies_irae\.mp3/);
-  assert.doesNotMatch(source, /6\.1_threshold_modern\.mp3/);
-  assert.doesNotMatch(source, /6\.2_grid_modern\.mp3/);
-  assert.match(source, /false-boss-verdi-dies-irae/);
+  assert.doesNotMatch(source, /\bverdi\b|_verdi_|dies_irae|dies-irae|5\.7_/i);
+  // I and II: the project-owned renders; III and IV: the public-domain Musopen cues.
+  assert.match(source, /6\.1_threshold_modern\.mp3/);
+  assert.match(source, /6\.2_grid_modern\.mp3/);
   assert.match(source, /echo-city-new-world-fire/);
   assert.match(source, /mussorgsky-kiev-gate/);
-  assert.match(source, /this\.falseBossScoreLocked = false/);
+  await Promise.all(['6.1_threshold_modern', '6.2_grid_modern', '6.3_dvorak_new_world_mvt4_theme', '6.4_mussorgsky_kiev_gate', '6.5_night_train_departure']
+    .map((name) => access(new URL(`../public/assets/music/ch6/${name}.mp3`, import.meta.url))));
+});
+
+test('the Conductor loads only the Chapter 3 models it draws, and its preload matches', async () => {
+  const source = await readFile(new URL('../src/chapters/finalBoss/spectacleBattle.js', import.meta.url), 'utf8');
+  const preload = await readFile(new URL('../src/shell/chapterPreloader.js', import.meta.url), 'utf8');
+  const profile = preload.slice(preload.indexOf('chapter6:'), preload.indexOf('hiddenBoss:'));
+  const models = [...source.matchAll(/'(\/assets\/chapter03-3d\/[^']+\.glb)'/g)].map((match) => match[1]);
+  assert.deepEqual(models.sort(), [...profile.matchAll(/'(\/assets\/chapter03-3d\/[^']+\.glb)'/g)].map((match) => match[1]).sort());
+  for (const unused of ['ch03_open_air_station', 'clock_tower_web', 'old_municipal_archive_web', 'ch03_perimeter_tenement', 'ch03_perimeter_workers_hall', 'ch03_shop_bakery_tenement', 'ch03_shop_printworks_rowhouse', 'municipal_tram_web', 'reunion_fountain_web']) {
+    assert.doesNotMatch(source, new RegExp(unused));
+    assert.doesNotMatch(profile, new RegExp(unused));
+  }
 });

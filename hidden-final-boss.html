@@ -3,36 +3,64 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#070208" />
-    <title>NIGHTFALL — Black Knife</title>
+    <meta name="theme-color" content="#0b0806" />
+    <title>NIGHTFALL — The Black Ticket</title>
     <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="stylesheet" href="/src/chapters/blackKnifeFinal/style.css" />
   </head>
-  <body>
+  <body class="nf-finale">
     <main class="game-shell">
-      <header>
-        <div><span class="eyebrow">CHAPTER 6 · THE INFINITY TRAIN</span><h1>THE CONDUCTOR</h1></div>
-        <div class="header-buttons"><button id="pause" class="icon-button" type="button">⏸ PAUSE</button><button id="mute" class="icon-button" type="button">SOUND ON</button></div>
-      </header>
-      <section class="stage-wrap" aria-label="Black Knife hidden boss battle">
+      <section class="stage-wrap" aria-label="The Black Ticket">
         <div id="game"></div>
-        <div id="menu" class="overlay">
-          <div class="menu-card">
-            <p class="kicker">THE FIVE STONES ANSWER</p>
-            <h2>THE <span>CONDUCTOR</span></h2>
-            <p class="intro">The Infinity Train's last stop. Wear the Conductor's health bar down to zero across five phases. You have four lives, three shields, and the true ending waits beyond the fight.</p>
-            <div class="settings">
-              <fieldset><legend>CAMERA SHAKE</legend><div class="segmented" id="shake"><button class="active" data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
-              <fieldset><legend>FLASHING LIGHTS</legend><div class="segmented" id="flash"><button data-value="on" type="button">ON</button><button class="active" data-value="off" type="button">OFF</button></div></fieldset>
+        <div class="nf-bt-corner"><button id="pause" class="nf-bt-chip" type="button">P · PAUSE</button><button id="mute" class="nf-bt-chip" type="button">SOUND ON</button></div>
+        <div id="menu" class="nf-overlay">
+          <div class="nf-board">
+            <p class="nf-board__kicker">THE LAST CARRIAGE · ALL FIVE STONES</p>
+            <h1 class="nf-board__title">THE BLACK TICKET</h1>
+            <div class="nf-board__rule"></div>
+            <p class="nf-board__intro">The Conductor's true form: the ticket that never gets punched, the line that never ends. Five phases, one for every stone. Raise your shield on the bell and it keeps its charge.</p>
+            <div class="nf-board__settings">
+              <fieldset><legend>CAMERA SHAKE</legend><div class="nf-segmented" id="shake"><button class="active" data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
+              <fieldset><legend>FLASHING</legend><div class="nf-segmented" id="flash"><button data-value="on" type="button">ON</button><button class="active" data-value="off" type="button">OFF</button></div></fieldset>
             </div>
-            <button id="start" class="start-button" type="button">ALL ABOARD <span>→</span></button>
-            <p class="controls"><b>MOVE</b> WASD / ARROWS <i></i> <b>SHOOT</b> Z / SPACE / CLICK <i></i> <b>SHIELD ×3</b> X / C <i></i> <b>BOOST</b> SHIFT <i></i> <b>PAUSE</b> P <i></i> <b>MENU</b> ESC</p>
+            <button id="start" class="nf-ticket-button" type="button">DEPART <span>→</span></button>
+            <p class="nf-board__controls"><b>MOVE</b> WASD / ARROWS <i></i> <b>PUNCH</b> Z / SPACE / CLICK <i></i> <b>SHIELD</b> X / C <i></i> <b>BOOST</b> SHIFT <i></i> <b>PAUSE</b> P · ESC</p>
+            <p class="nf-board__controls" style="margin-top:6px;opacity:.7">ORIGINAL FIGHT BY MATHIAS</p>
           </div>
         </div>
-        <div id="result" class="overlay hidden"><div class="result-card"><p id="result-kicker" class="kicker"></p><h2 id="result-title"></h2><p id="result-copy"></p><button id="again" class="start-button" type="button">RIDE AGAIN <span>↻</span></button><button id="ending" class="start-button hidden" type="button">UNSEAL THE TRUE ENDING <span>→</span></button></div></div>
-        <div id="pause-overlay" class="overlay hidden"><div class="result-card"><p class="kicker">PAUSED</p><h2>TAKE A<br>BREATH</h2><div class="settings pause-settings"><fieldset><legend>CAMERA SHAKE</legend><div class="segmented" id="pause-shake"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset><fieldset><legend>FLASHING LIGHTS</legend><div class="segmented" id="pause-flash"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset></div><button id="resume" class="start-button" type="button">RESUME <span>→</span></button><button id="quit" class="icon-button quit-button" type="button">RESTART BATTLE</button><button id="title-exit" class="icon-button quit-button" type="button">RETURN TO TITLE</button></div></div>
+        <div id="result" class="nf-overlay hidden">
+          <div class="nf-board">
+            <p id="result-kicker" class="nf-board__kicker"></p>
+            <h2 id="result-title" class="nf-board__title nf-board__title--serif"></h2>
+            <div class="nf-board__rule"></div>
+            <p id="result-copy" class="nf-board__intro"></p>
+            <div id="assist-offer" class="nf-board__settings hidden">
+              <fieldset><legend>ASSIST</legend><div class="nf-segmented"><button data-assist type="button">ASSIST<small>slower bullets · six lives</small></button></div></fieldset>
+            </div>
+            <div class="nf-board__actions">
+              <button id="retry-phase" class="nf-ticket-button hidden" type="button"><b>RETRY FROM PHASE</b> <span>↻</span></button>
+              <button id="again" class="nf-ticket-button nf-ticket-button--quiet" type="button">FROM THE TOP <span>↺</span></button>
+              <button id="ending" class="nf-ticket-button hidden" type="button">THE UNFILED ENDING <span>→</span></button>
+            </div>
+          </div>
+        </div>
+        <div id="pause-overlay" class="nf-overlay hidden">
+          <div class="nf-board">
+            <p class="nf-board__kicker">PAUSED</p>
+            <h2 class="nf-board__title">TAKE A BREATH</h2>
+            <div class="nf-board__rule"></div>
+            <div class="nf-board__settings">
+              <fieldset><legend>CAMERA SHAKE</legend><div class="nf-segmented" id="pause-shake"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
+              <fieldset><legend>FLASHING</legend><div class="nf-segmented" id="pause-flash"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
+            </div>
+            <div class="nf-board__actions">
+              <button id="resume" class="nf-ticket-button" type="button">RESUME <span>→</span></button>
+              <button id="quit" class="nf-ticket-button nf-ticket-button--quiet" type="button">RESTART THE FIGHT <span>↺</span></button>
+              <button id="title-exit" class="nf-ticket-button nf-ticket-button--quiet" type="button">RETURN TO TITLE <span>⌂</span></button>
+            </div>
+          </div>
+        </div>
       </section>
-      <footer><span>BLACK KNIFE · FIVE-STONE TRUE ENDING ROUTE</span><span>ORIGINAL BOSS FIGHT BY MATHIAS · INTEGRATED INTO NIGHTFALL</span></footer>
     </main>
     <script type="module" src="/src/chapters/blackKnifeFinal/main.js"></script>
   </body>

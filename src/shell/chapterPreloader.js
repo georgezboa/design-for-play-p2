@@ -97,17 +97,12 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
       '/assets/music/ch6/6.3_dvorak_new_world_mvt4_theme.mp3',
       '/assets/music/ch6/6.4_mussorgsky_kiev_gate.mp3',
       '/assets/music/ch6/6.5_night_train_departure.mp3',
+      // Only what the fight draws (spectacleBattle.js FINAL_BOSS_MODEL_URLS):
+      // the Movement III rigs, their animation library and the three props
+      // the Conductor throws there.
       '/assets/chapter03-3d/characters/male_municipal_shared_rig.glb',
       '/assets/chapter03-3d/characters/butch_shared_rig.glb',
-      '/assets/chapter03-3d/models/municipal_tram_web.glb',
-      '/assets/chapter03-3d/models/ch03_open_air_station.glb',
-      '/assets/chapter03-3d/models/reunion_fountain_web.glb',
-      '/assets/chapter03-3d/models/clock_tower_web.glb',
-      '/assets/chapter03-3d/models/old_municipal_archive_web.glb',
-      '/assets/chapter03-3d/models/ch03_perimeter_tenement.glb',
-      '/assets/chapter03-3d/models/ch03_perimeter_workers_hall.glb',
-      '/assets/chapter03-3d/models/ch03_shop_bakery_tenement.glb',
-      '/assets/chapter03-3d/models/ch03_shop_printworks_rowhouse.glb',
+      '/assets/chapter03-3d/animations/quaternius_ual1_standard.glb',
       '/assets/chapter03-3d/models/ch03_crushed_trash_can.glb',
       '/assets/chapter03-3d/models/ch03_fountain_bench.glb',
       '/assets/chapter03-3d/models/ch03_pa_speaker.glb',

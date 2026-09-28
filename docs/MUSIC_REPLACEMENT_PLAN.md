@@ -76,15 +76,14 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files (the 2026-09-2
   1. The same Musopen *Pictures at an Exhibition* series on Commons (`…_-_catacombae…ogg`, possibly joined with `cum mortuis in lingua mortua`).
   2. The Musopen.org Mussorgsky page, Public Domain filter.
 
-### 4. Dies irae (Chapter 5 collapse and Chapter 6 false-boss movements I–II)
+### 4. Dies irae (Chapter 5 collapse)
 
 - **Piece:** Giuseppe Verdi, *Messa da Requiem* (1874), II. *Sequentia*, opening *Dies irae* chorus.
 - **Target file:** `public/assets/music/ch5/5.7_verdi_dies_irae.mp3`
 - **Current:** 2:02.122 (122.12 s), MP3 VBR ~226 kbps, **−15.6 LUFS**, TP +0.1 dBTP.
 - **Used at:**
   - `src/chapters/museum3d/chapter05Score.js:29-34` (`collapse`, id `ch5-dies-irae`), played from `Museum3DApp.js:478-489`. Loops. Fade in 1.2 s, fade out 1.2 s, volume 0.42, duck −7 dB.
-  - `src/chapters/finalBoss/spectacleBattle.js:77` (path) and `:183-187` (`BOSS_SCORE.falseBossVerdi`), played in `playMusic()` around `:2659-2679`. **Not looped** (`loop: false`). Fade in 0.9 s, fade out 1.8 s, volume 0.42, duck −9 dB. When the file reaches `ended`, the runtime chains into the Echo City cue (`then: 'false-boss-after-verdi'`). `tests/finalBossRoute.test.mjs:50` asserts the filename.
-- **Length matters here.** Because the false-boss cue plays once and then hands off, a replacement should run about **1:50–2:10** to cover movements I–II as it does now. A full-length *Dies irae* sequence (≈ 2:10–2:30 for the opening chorus alone) can be trimmed at a phrase end with a short natural decay (no fade longer than 1 s). If the file is missing, the false boss is silent until movement III starts the Dvořák cue.
+  - Chapter 6 no longer uses it (2026-09-28): the Conductor's movements I and II play the project-owned `6.1_threshold_modern.mp3` and `6.2_grid_modern.mp3`.
 - **Look for (to verify):**
   1. Wikimedia Commons, *Messa da Requiem (Verdi)* audio category: a public-domain, CC0, CC BY or CC BY-SA *Dies irae* (for example, a university or community choir upload). Record the performer and licence version exactly.
   2. U.S. military band recordings. Works of the U.S. Marine Band or U.S. Army Field Band are public domain as federal-government works. These would be wind-band arrangements, so check the arrangement credit too.
@@ -117,7 +116,7 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files (the 2026-09-2
 - **Piece:** unknown. The file is titled "Face the Fear" and has no composer or performer metadata. It is an electronic action track, not a classical work, so both the composition and the recording need clearing. It is not enough to find another recording of the same piece.
 - **Target file:** `public/assets/black-knife/audio/face-the-fear.mp3` (keep the filename, or change `src/chapters/blackKnifeFinal/assets.js:30`).
 - **Current:** 3:26.916 (206.92 s), 135 kbps, **−8.3 LUFS** (very loud, LRA 1.3), TP +2.1 dBTP.
-- **Used at:** `src/chapters/blackKnifeFinal/assets.js:30` (`music-battle`), loaded by `scenes/PreloadScene.js:25-27`, and played in `scenes/BossScene.js:123-128` only if `cache.audio.exists('music-battle')`. That scene pauses and resumes it at `:62` / `:71`, sets `setRate(1.18)` when the boss is enraged (`:856`), and stops it at `:887`, `:905` and `:929`. Page: `hidden-final-boss.html`.
+- **Used at:** `src/chapters/blackKnifeFinal/assets.js` (`music-battle`), loaded by `scenes/PreloadScene.js`, and played by `BossScene.startMusic()` only if `cache.audio.exists('music-battle')`. The scene pauses and resumes it with the battle pause, sets `setRate(1.18)` in the last phase, and stops it on a win, a failure or a reset. Page: `hidden-final-boss.html` (THE BLACK TICKET).
 - **Behaviour:** Phaser sound, `loop: true`, volume 0.5, with no fade in or out. Because the playback rate goes to 1.18× when enraged, the track should still sound acceptable sped up. A driving 120–150 BPM loop with a clean loop seam is ideal.
 - **Replacement options (to verify):**
   1. **Project-owned render** (preferred: no attribution and no licence risk). Chapters 1 and 6 already credit project-rendered cues. Note that the renderers named in `public/assets/music/ch1/ASSET_MANIFEST.md` and `ch6/ASSET_MANIFEST.md` (`scripts/audio/render_*.mjs`) are **not in this repository**. Recover them first if a matching cue is wanted.
@@ -131,11 +130,10 @@ Measured with `ffmpeg -af ebur128=peak=true` on the current files (the 2026-09-2
 | 1 | `ch5/5.1_mussorgsky_promenade.mp3` | Mussorgsky, *Pictures*: Promenade | 1:40.7 | yes | −13.5 |
 | 2 | `ch5/5.3_mussorgsky_old_castle.mp3` | Mussorgsky, *Pictures*: The Old Castle | 4:44.8 | yes | −30.4 |
 | 3 | `ch5/5.4_mussorgsky_catacombae.mp3` | Mussorgsky, *Pictures*: Catacombae | 1:53.2 | yes | −15.6 |
-| 4 | `ch5/5.7_verdi_dies_irae.mp3` | Verdi, *Requiem*: Dies irae | 2:02.1 | ch5 yes / ch6 **no, chains** | −15.6 |
+| 4 | `ch5/5.7_verdi_dies_irae.mp3` | Verdi, *Requiem*: Dies irae | 2:02.1 | yes | −15.6 |
 | 5 | `ch4/4.2_debussy_snow_is_dancing.mp3` | Debussy, *Children's Corner* IV | 2:22.0 | yes | −22.0 |
 | 6 | `ch4/4.3_debussy_reflets_dans_leau.mp3` | Debussy, *Images* I/1 | 5:32.9 | yes | −29.2 |
 | 7 | `black-knife/audio/face-the-fear.mp3` | unknown electronic track | 3:26.9 | yes (rate 1.18× when enraged) | −8.3 → target −14 |
 
 All paths are under `public/assets/`. Lengths are those of the current files.
-The runtime doesn't need a replacement to match them, except cue 4 in the
-false boss.
+The runtime doesn't need a replacement to match them.

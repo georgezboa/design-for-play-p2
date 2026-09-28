@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, PLAYER, DEPTHS } from '../constants.js';
 
-// The player's small ship (Cuphead plane-style). Abilities:
+// The passenger: a punched ticket flying the last carriage. Abilities:
 //  - Move (WASD / arrows)
 //  - Fire bullets (hold Z / J / click)
 //  - Shield: brief 1.5s invulnerability bubble (C / L), with cooldown
@@ -11,7 +11,7 @@ export default class Player {
     this.scene = scene;
     this.x = W * 0.22;
     this.y = H * 0.5;
-    this.lives = PLAYER.lives;
+    this.lives = scene.maxLives ?? PLAYER.lives;
     this.invuln = 0;
     this.shieldTime = 0;
     this.shieldCd = 0;
@@ -34,6 +34,8 @@ export default class Player {
   tryShield() {
     if (this.dead || this.shieldCd > 0 || this.shieldTime > 0) return false;
     if (this.shieldCharges <= 0) { this.scene.playSfx('no-shield', 0.7); return false; }
+    // Spent here; the scene hands it straight back when this lands on the
+    // bell (the parry, BossScene.onShieldRaised).
     this.shieldCharges -= 1;
     this.shieldTime = PLAYER.shieldDuration;
     this.shieldCd = PLAYER.shieldRearm + PLAYER.shieldDuration;

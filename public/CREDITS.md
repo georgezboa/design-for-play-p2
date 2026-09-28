@@ -20,6 +20,8 @@ This register covers the production categories represented by the current integr
 - **Jason — Visual & Cinematic Lead:** shared visual treatment, compositing, cinematics and final capture
 - **Mathias — Chapter 5 / Labyrinth:** Museum Labyrinth chapter work
 
+The hidden final fight, *The Black Ticket*, is built on Mathias's original boss battle and its hand-drawn Conductor frames, recoloured for the finale.
+
 ## Music
 
 ### Credits music
@@ -55,21 +57,23 @@ Chapter 3 also uses these public-domain / CC0 recordings (credit given voluntari
 
 ### Chapter 6 — All Worlds at Once
 
-- *Symphony No. 9 “From the New World”*, IV *Allegro con fuoco* (Antonín Dvořák), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Antonin_Dvorak_-_symphony_no._9_in_e_minor_%27from_the_new_world%27,_op._95_-_iv._allegro_con_fuoco.ogg (runtime edit starts at source 00:10).
-- *Pictures at an Exhibition*, X *The Great Gate of Kyiv* (Modest Mussorgsky), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_x._la_grande_porte_de_kiev_-_allegro_alla_breve._maestoso._con_grandezza.ogg
-- *Modern Industrial Pulse*, *Electro Grid Chase* and *Night Train Departure*: original project-owned cues. Details: `/assets/music/ch6/ASSET_MANIFEST.md`.
+- Movements I and II (*Lost Property*, *On the Bell*): *Modern Industrial Pulse* and *Electro Grid Chase*, original project-owned cues.
+- Movement III (*Two True Things*): *Symphony No. 9 “From the New World”*, IV *Allegro con fuoco* (Antonín Dvořák), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Antonin_Dvorak_-_symphony_no._9_in_e_minor_%27from_the_new_world%27,_op._95_-_iv._allegro_con_fuoco.ogg (runtime edit starts at source 00:10).
+- Movement IV (*The Painted Country*): *Pictures at an Exhibition*, X *The Great Gate of Kyiv* (Modest Mussorgsky), Musopen, public domain — https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_x._la_grande_porte_de_kiev_-_allegro_alla_breve._maestoso._con_grandezza.ogg
+- The departure: *Night Train Departure*, an original project-owned cue. Details for all three project cues: `/assets/music/ch6/ASSET_MANIFEST.md`.
+- The Unfiled Ending plays the credits music, *Last And First Light* (above).
 
-### Prologue and Chapter One
+### Chapters 1 and 2 — Night Service and Borrowed Light
 
-*Train Undertow*, *Train Resonance* and *Neon Safety Test* are original project-owned cues. Details: `/assets/music/ch1/ASSET_MANIFEST.md`.
+*Train Undertow*, *Train Resonance* and *Neon Safety Test* are original project-owned cues (Night Service plays *Train Undertow*; Borrowed Light plays the other two). Details: `/assets/music/ch1/ASSET_MANIFEST.md`.
 
 ### Recordings with unresolved provenance (to be replaced before public release)
 
 The following runtime recordings are external performances of public-domain works, but **no performer, source or licence is recorded** for any of them. They are not credited here because their rights holders are unknown; they are scheduled for replacement (the replacement plan is `docs/MUSIC_REPLACEMENT_PLAN.md` in the source repository):
 
 - Chapter 4: Debussy, *The Snow Is Dancing* (`/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3`) and *Reflets dans l'eau* (`/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3`).
-- Chapter 5: Mussorgsky, *Promenade*, *The Old Castle* and *Catacombae*; Verdi, *Requiem*, *Dies irae* (`/assets/music/ch5/5.1`, `5.3`, `5.4`, `5.7`; see `/assets/music/ch5/ASSET_MANIFEST.md`). The Verdi cue is also used in the Chapter 6 false-boss movements I–II.
-- Hidden final boss: *Face the Fear* (`/assets/black-knife/audio/face-the-fear.mp3`); composer and performer unknown.
+- Chapter 5: Mussorgsky, *Promenade*, *The Old Castle* and *Catacombae*; Verdi, *Requiem*, *Dies irae* (`/assets/music/ch5/5.1`, `5.3`, `5.4`, `5.7`; see `/assets/music/ch5/ASSET_MANIFEST.md`).
+- The hidden final fight, *The Black Ticket*: *Face the Fear* (`/assets/black-knife/audio/face-the-fear.mp3`); composer and performer unknown.
 
 Sound effects, room tones and some ambience are synthesized in-engine by project-authored Web Audio code rather than taken from third-party recordings.
 
@@ -78,8 +82,7 @@ Sound effects, room tones and some ambience are synthesized in-engine by project
 - **Tencent Hunyuan 3D 3.0 / 3.1:** generated 3D source meshes for Echo City, the Museum reconstruction, environments, props and characters. Runtime assets were selected, edited, retopologized or optimized by the team. Chapter 3 per-asset details: `/assets/chapter03-3d/ASSET_MANIFEST.json` and `/assets/chapter03-3d/replacements/manifest.json`.
 - **OpenAI image generation:** title and visual-direction imagery, world panoramas, shared painterly textures, Chapter 3 surface sources and selected production reference art. Shared painterly details: `../src/assets/shared/painterly/ASSET_MANIFEST.md` in the source repository.
 - **MiniMax Hailuo H3:** opening and transition animation production sources. Shot-level records (source repository, not shipped): `docs/archive/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V01.json` and `docs/archive/chapter01-opening/MINIMAX_H3_GENERATION_MANIFEST_V02.json`.
-- **Synthetic character voices:** generated English voice performances are present in Chapters 3 and 5, and Chapter 6 reuses selected Chapter 3 lines. Their current manifests enumerate every runtime line but do not record the provider. This missing provenance is disclosed rather than guessed: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
-- **Chapter 6 poetry-duel voices:** 61 spoken Shakespeare prompt and choice lines (`src/chapters/finalBoss/assets/voice/poetry/` in the source repository). No manifest records whether they are generated or recorded, or by whom; this is disclosed as unknown.
+- **Synthetic character voices:** generated English voice performances are present in Chapters 3 and 5, and Chapter 6 reuses selected Chapter 3 lines for the argument about Mara. Their current manifests enumerate every runtime line but do not record the provider. This missing provenance is disclosed rather than guessed: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
 - **AI-assisted development:** OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under human direction.
 
 ## Licensed source material
@@ -88,7 +91,6 @@ Sound effects, room tones and some ambience are synthesized in-engine by project
 - **Quaternius Downtown City MegaKit (Standard):** `T_Concrete_Asphalt_BaseColor.png`, source of the dark back-street paving `dark-city-cobbles.webp`; CC0 1.0. Record: `/assets/chapter03-3d/ASSET_MANIFEST.json`.
 - **Poly Haven:** `beige_wall_001`, `dirty_carpet`, `wood_table_001`, `rubber_tiles`, and `dark_wood`; CC0 1.0.
 - **ambientCG:** `Fingerprints001` (museum glass fingerprints); CC0 1.0.
-- **Unsplash:** the eighteen Chapter 6 verification-screen photos are low-resolution derivatives of Unsplash photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee, used under the Unsplash License (https://unsplash.com/license). Per-photo IDs: `src/chapters/finalBoss/assets/captcha/SOURCES.md` in the source repository.
 
 ## Provenance rule
 
