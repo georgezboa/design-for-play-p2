@@ -7,19 +7,23 @@ export const CHECKPOINTS = Object.freeze([
   // Chapter 1 is the NIGHT SERVICE panel puzzle (night-service.html). The page
   // opens the act named by the active slot's checkpoint (`act`). The legacy
   // `prologue-start` id stays first so older saves still load (as Act 1).
-  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line wakes.', route: '/night-service.html', act: 1, legacy: true },
-  { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'Act I · Lost property.', route: '/night-service.html', act: 1 },
+  // Detail strings follow docs/STORY_BIBLE.md (player-visible names).
+  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line. Returning the orchard case.', route: '/night-service.html', act: 1, legacy: true },
+  { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'Act I · Lost property. Claim 1978-0412.', route: '/night-service.html', act: 1 },
   { id: 'chapter-1-act-2', chapter: 1, title: 'NIGHT SERVICE · THE LUGGAGE CAR', detail: 'Act II · The punch and the lens.', route: '/night-service.html', act: 2 },
-  { id: 'chapter-1-act-3', chapter: 1, title: 'NIGHT SERVICE · TWO TRUE THINGS', detail: 'Act III · A bridge through 1978.', route: '/night-service.html', act: 3 },
+  { id: 'chapter-1-act-3', chapter: 1, title: 'NIGHT SERVICE · TWO TRUE THINGS', detail: 'Act III · Two true things.', route: '/night-service.html', act: 3 },
   // Chapter 2 · BORROWED LIGHT (borrowed-light.html). The ids are kept so
   // saves from the old parkour chapter load the new page.
-  { id: 'chapter-2-start', chapter: 2, title: 'BORROWED LIGHT', detail: 'Rain rooftops above the archived city.', route: '/borrowed-light.html' },
+  { id: 'chapter-2-start', chapter: 2, title: 'BORROWED LIGHT', detail: 'The city runs on light borrowed from the train.', route: '/borrowed-light.html' },
   { id: 'chapter-2-midpoint', chapter: 2, title: 'BORROWED LIGHT · BLACKOUT', detail: 'The city takes its light back.', route: '/borrowed-light.html?section=B' },
-  { id: 'chapter-2-platform', chapter: 2, title: 'BORROWED LIGHT · EVACUATION PLATFORM', detail: 'Eight bells to departure.', route: '/borrowed-light.html?section=C' },
-  { id: 'chapter-3-start', chapter: 3, title: 'ECHO CITY', detail: 'The Spanish civic city investigation.', route: '/car03-3d.html' },
-  { id: 'chapter-4-start', chapter: 4, title: 'THE PAINTED COUNTRY', detail: 'Ink moves. Paper remembers.', route: '/painted-country.html' },
-  { id: 'chapter-5-start', chapter: 5, title: 'THE MUSEUM OF ONE ANSWER', detail: 'The archive corridor and Labyrinth.', route: '/museum-3d.html' },
-  { id: 'chapter-6-start', chapter: 6, title: 'ALL WORLDS AT ONCE', detail: 'The Conductor’s last platform.', route: '/final-boss.html' },
+  { id: 'chapter-2-platform', chapter: 2, title: 'BORROWED LIGHT · EVACUATION PLATFORM', detail: 'Eight bells to departure. Keep moving.', route: '/borrowed-light.html?section=C' },
+  { id: 'chapter-3-start', chapter: 3, title: 'ECHO CITY', detail: 'The duplicate ticket. M. Venn. Move as one.', route: '/car03-3d.html' },
+  // Saved when Butch crosses the market scanner beside Olek; the page honours
+  // `stage=dusk` only for a save that unlocked it.
+  { id: 'chapter-3-dusk', chapter: 3, title: 'ECHO CITY · DUSK', detail: 'Two tickets filed as one. Another mark waits in the square.', route: '/car03-3d.html?stage=dusk' },
+  { id: 'chapter-4-start', chapter: 4, title: 'THE PAINTED COUNTRY', detail: 'Rosa’s orchard, painted over by the archive.', route: '/painted-country.html' },
+  { id: 'chapter-5-start', chapter: 5, title: 'THE MUSEUM OF ONE ANSWER', detail: 'The archive wants one clean answer about Mara.', route: '/museum-3d.html' },
+  { id: 'chapter-6-start', chapter: 6, title: 'ALL WORLDS AT ONCE', detail: 'The Conductor keeps the line running.', route: '/final-boss.html' },
 ]);
 
 export const DEFAULT_SETTINGS = Object.freeze({

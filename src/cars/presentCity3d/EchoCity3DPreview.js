@@ -1403,11 +1403,9 @@ export class EchoCity3DPreview {
     if (this.gameplayRuntime?.handleKeyDown(event)) return;
     if (event.key.toLowerCase() === 'r') this.resetCamera();
     // The full-map developer camera is URL-only (`?dev=1`, dev builds only). It must never be
-    // opened accidentally by pressing D during a normal playthrough.
-    if (event.key.toLowerCase() === 'f') {
-      if (!document.fullscreenElement) this.container.requestFullscreen?.();
-      else document.exitFullscreen?.();
-    }
+    // opened accidentally by pressing D during a normal playthrough. F is
+    // deliberately unbound: Chapter 2 taught it as the punch, and the desktop
+    // bridge owns fullscreen (F11).
   }
 
   onKeyUp(event) {
