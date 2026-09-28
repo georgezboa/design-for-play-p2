@@ -1,103 +1,87 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  REQUIRED_CELLS,
+  STILL_LIFE_REGIONS,
   STUDIO_PIGMENTS,
   STUDIO_SOURCES,
   createDrawingStudio,
 } from '../../src/chapters/paintedCountry/drawingStudioModel.js';
 
-test('the cabinet has eighteen miniature colored objects and one finite object for every brush mark', () => {
-  assert.equal(STUDIO_SOURCES.length, 18);
-  assert.equal(STUDIO_SOURCES.length, REQUIRED_CELLS.length);
-  assert.equal(STUDIO_PIGMENTS.length, 6);
-  assert.equal(STUDIO_SOURCES.every((source) => STUDIO_PIGMENTS.some(({ id }) => id === source.pigment)), true);
-  assert.equal(new Set(REQUIRED_CELLS.map(({ cell }) => cell)).size, REQUIRED_CELLS.length);
-  assert.equal(new Set(STUDIO_SOURCES.map(({ id }) => id)).size, STUDIO_SOURCES.length);
+// Chapter 4 · Part II, the still life (release 1.0): six fills, each a real
+// colour choice. Wrong colours are accepted, look wrong, and wash off. There
+// is no free canvas and no stone here any more.
+
+const sourceFor = (pigment) => STUDIO_SOURCES.find((s) => s.pigment === pigment).id;
+const paintRight = (studio) => STILL_LIFE_REGIONS.forEach((region) => {
+  studio.take(sourceFor(region.wants));
+  studio.apply(region.id);
 });
 
-test('the player accumulates several source colors in a carried palette', () => {
-  const studio = createDrawingStudio();
-  assert.equal(studio.extract('red-cup'), true);
-  assert.equal(studio.extract('red-apple'), true);
-  assert.deepEqual(studio.snapshot().palette, ['red-cup', 'red-apple']);
-  assert.equal(studio.snapshot().sources.find(({ id }) => id === 'red-cup').drained, true);
+test('six places in the drawing, seven colours on the shelf, one of them the archive grey', () => {
+  assert.equal(STILL_LIFE_REGIONS.length, 6);
+  assert.equal(STUDIO_SOURCES.length, 7);
+  assert.equal(STUDIO_PIGMENTS.length, 7);
+  assert.ok(STUDIO_PIGMENTS.some((p) => p.id === 'grey'));
+  assert.equal(STILL_LIFE_REGIONS.some((r) => r.wants === 'grey'), false, 'the archive grey is never right');
+  assert.equal(new Set(STILL_LIFE_REGIONS.map((r) => r.wants)).size, 6, 'every place wants a different colour');
+  STILL_LIFE_REGIONS.forEach((r) => assert.ok(STUDIO_SOURCES.some((s) => s.pigment === r.wants), r.id));
 });
 
-test('a required brush mark accepts the matching color, not one unique prop', () => {
+test('the brush holds the colour last taken; objects are never used up', () => {
   const studio = createDrawingStudio();
-  studio.extract('red-cup');
-  assert.equal(studio.placeRequired('6,1'), false);
-  assert.deepEqual(studio.snapshot().palette, ['red-cup']);
-  assert.equal(studio.placeRequired('2,1'), true);
-  assert.deepEqual(studio.snapshot().palette, []);
+  assert.equal(studio.snapshot().brush, null);
+  studio.take('red-cup');
+  studio.take('blue-jug');
+  assert.equal(studio.snapshot().brush, 'blue');
+  studio.apply('sky');
+  studio.apply('sun');
+  assert.equal(studio.snapshot().fills.sun, 'blue', 'the same colour can be used twice');
 });
 
-test('using a color on the free canvas blocks the required copy', () => {
+test('a dry brush is refused, a wrong colour is accepted and looks wrong', () => {
   const studio = createDrawingStudio();
-  studio.extract(STUDIO_SOURCES[0].id);
-  studio.placeFree('0,0');
-  STUDIO_SOURCES.slice(1).forEach((item) => {
-    studio.extract(item.id);
-    studio.placeRequired(item.targetCell);
+  assert.deepEqual(studio.apply('apple'), { ok: false, reason: 'dry-brush' });
+  studio.take('blue-jug');
+  assert.deepEqual(studio.apply('apple'), { ok: true, right: false });
+  assert.deepEqual(studio.snapshot().wrong, ['apple']);
+  assert.deepEqual(studio.apply('apple'), { ok: false, reason: 'already-painted' });
+});
+
+test('the door opens only when the drawing is as she remembered it', () => {
+  const studio = createDrawingStudio();
+  STILL_LIFE_REGIONS.forEach((region, i) => {
+    studio.take(sourceFor(i === 0 ? 'grey' : region.wants));
+    studio.apply(region.id);
   });
+  assert.equal(studio.allFilled(), true);
   assert.equal(studio.isComplete(), false);
-  assert.equal(studio.snapshot().free['0,0'], STUDIO_SOURCES[0].id);
-});
-
-test('lifting a free square returns the exact pigment and restores solvability', () => {
-  const studio = createDrawingStudio();
-  studio.extract(STUDIO_SOURCES[0].id);
-  studio.placeFree('3,3');
-  assert.equal(studio.liftFree('3,3'), true);
-  assert.equal(studio.snapshot().held, STUDIO_SOURCES[0].id);
-  assert.equal(studio.placeRequired(STUDIO_SOURCES[0].targetCell), true);
-});
-
-test('completing the recognizable still life drains every miniature object and unlocks the shelf reward', () => {
-  const studio = createDrawingStudio();
-  STUDIO_SOURCES.forEach((item) => {
-    studio.extract(item.id);
-    studio.placeRequired(item.targetCell);
-  });
+  assert.ok(studio.drainEvents().some((e) => e.type === 'still-life-looks-wrong'));
+  assert.equal(studio.wash(STILL_LIFE_REGIONS[0].id), true);
+  studio.take(sourceFor(STILL_LIFE_REGIONS[0].wants));
+  studio.apply(STILL_LIFE_REGIONS[0].id);
   assert.equal(studio.isComplete(), true);
-  assert.equal(studio.snapshot().sources.every(({ drained }) => drained), true);
-  assert.equal(studio.allSourcesDrained(), true);
-  assert.equal(studio.snapshot().held, null);
-  assert.deepEqual(studio.snapshot().free, {});
+  assert.ok(studio.drainEvents().some((e) => e.type === 'still-life-complete'));
 });
 
-test('lifting every cabinet object reveals its reward before the carried palette is spent', () => {
-  const studio = createDrawingStudio();
-  STUDIO_SOURCES.forEach((item) => studio.extract(item.id));
-  assert.equal(studio.allSourcesExtracted(), true);
-  assert.equal(studio.allSourcesDrained(), false);
-  assert.equal(studio.snapshot().allSourcesExtracted, true);
+test('no dead ends: from any painting, washing and repainting reaches the finished still life', () => {
+  // Try every wrong assignment for each region: wash always recovers.
+  for (const region of STILL_LIFE_REGIONS) {
+    for (const pigment of STUDIO_PIGMENTS) {
+      const studio = createDrawingStudio();
+      studio.take(sourceFor(pigment.id));
+      STILL_LIFE_REGIONS.forEach((r) => studio.apply(r.id));
+      STILL_LIFE_REGIONS.forEach((r) => { if (!studio.isRight(r.id)) studio.wash(r.id); });
+      paintRight(studio);
+      assert.equal(studio.isComplete(), true, `${region.id} / ${pigment.id}`);
+    }
+  }
 });
 
-test('dismantling the framed vase makes the exit unavailable until restored', () => {
+test('washing a finished region closes the door again', () => {
   const studio = createDrawingStudio();
-  STUDIO_SOURCES.forEach((item) => {
-    studio.extract(item.id);
-    studio.placeRequired(item.targetCell);
-  });
-  assert.equal(studio.liftRequired(STUDIO_SOURCES[0].targetCell), true);
+  paintRight(studio);
+  studio.drainEvents();
+  studio.wash('fox');
   assert.equal(studio.isComplete(), false);
-  assert.equal(studio.placeFree('4,0'), true);
-  assert.equal(studio.isComplete(), false);
-  studio.liftFree('4,0');
-  studio.placeRequired(STUDIO_SOURCES[0].targetCell);
-  assert.equal(studio.isComplete(), true);
-});
-
-test('color is conserved through every move', () => {
-  const studio = createDrawingStudio();
-  assert.equal(studio.tokenLocationCount(), STUDIO_SOURCES.length);
-  studio.extract(STUDIO_SOURCES[0].id);
-  assert.equal(studio.tokenLocationCount(), STUDIO_SOURCES.length);
-  studio.placeFree('0,0');
-  assert.equal(studio.tokenLocationCount(), STUDIO_SOURCES.length);
-  studio.liftFree('0,0');
-  studio.placeRequired(STUDIO_SOURCES[0].targetCell);
-  assert.equal(studio.tokenLocationCount(), STUDIO_SOURCES.length);
+  assert.deepEqual(studio.drainEvents().map((e) => e.type), ['region-washed', 'still-life-opened-again']);
 });

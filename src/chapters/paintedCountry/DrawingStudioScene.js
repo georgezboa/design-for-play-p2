@@ -1,11 +1,10 @@
 import Phaser from 'phaser';
 import {
-  REQUIRED_CELLS,
+  STILL_LIFE_REGIONS,
   STUDIO_PIGMENTS,
   STUDIO_SOURCES,
   createDrawingStudio,
 } from './drawingStudioModel.js';
-import { drawPigmentHalo, haloPointToward } from './pigmentHalo.js';
 import { PAPER } from './paperPalette.js';
 import { drawPaintedPlayer } from './paintedPlayerFigure.js';
 import {
@@ -16,44 +15,76 @@ import {
   makeRandom,
   paintedFill,
 } from './paperSurface.js';
-import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { BrushInput } from './brushInput.js';
+import {
+  HOLD_SECONDS,
+  MONO,
+  PaperTag,
+  RestartHold,
+  UI,
+  drawGlintMarker,
+  noteAt,
+  showTitleCard,
+} from './chapterUi.js';
+import { devParam } from '../../devMode.js';
+
+// Chapter 4 // THE PAINTED COUNTRY — Part II, the still life.
+//
+// A short room with one real choice, made six times: which colour did Rosa
+// remember here? The brush holds one colour at a time. RIGHT-HOLD an object on
+// the shelf to take its colour; LEFT-HOLD a place in her drawing to paint it;
+// RIGHT-HOLD a painted place to wash it off. A wrong colour is accepted and
+// simply looks wrong. The door opens when the drawing is as she remembered it.
 
 const VIEW = Object.freeze({ w: 960, h: 600 });
-const WORLD = Object.freeze({ w: 2500, h: 600 });
+const WORLD = Object.freeze({ w: 1640, h: 600 });
 const FLOOR_Y = 486;
 const MOVE_SPEED = 210;
 const JUMP_VELOCITY = -620;
-const HOLD_SECONDS = 0.18;
-const MONO = 'ui-monospace, SFMono-Regular, Menlo, monospace';
+const REACH = 300;
 const DEPTH = Object.freeze({ BACK: 0, ROOM: 6, OBJECT: 14, PAINT: 18, BOARD: 23, FIGURE: 30, PROMPT: 48, GRAIN: 70 });
 
+// Rosa's easel. Regions are in canvas-local pixels.
+const CANVAS = Object.freeze({ x: 830, y: 140, w: 330, h: 250 });
+const SHELF = Object.freeze({ x: 380, y: 356, w: 390 });
+const EXIT = Object.freeze({ x: 1470, y: 300, w: 80, h: FLOOR_Y - 300 });
+
 const SOURCE_LAYOUT = Object.freeze(STUDIO_SOURCES.map((source, index) => {
-  const compartment = Math.floor(index / 3);
-  const row = Math.floor(compartment / 2);
-  const side = compartment % 2;
-  const slot = index % 3;
-  const x = 648 + side * 170 + slot * 55;
-  const y = 269 + row * 84;
-  return {
-    id: source.id,
-    x,
-    y,
-    kind: source.kind,
-    rect: { x: x - 22, y: y - 47, w: 44, h: 48 },
-  };
+  const x = SHELF.x + 30 + index * 55;
+  const y = SHELF.y;
+  return { id: source.id, kind: source.kind, x, y, rect: { x: x - 24, y: y - 50, w: 48, h: 52 } };
 }));
 
-// Match Part I's 20px ruled-paper cells while keeping the easels themselves
-// large enough to read and click: more cells, not a physically tiny canvas.
-const CANVAS_CELL = 18;
-const REFERENCE = Object.freeze({ x: 1050, y: 174, cell: CANVAS_CELL, cols: 9, rows: 9 });
-const REQUIRED = Object.freeze({ x: 1290, y: 174, cell: CANVAS_CELL, cols: 9, rows: 9 });
-const FREE = Object.freeze({ x: 1630, y: 174, cell: CANVAS_CELL, cols: 12, rows: 9 });
-const EXIT_X = 2360;
-const PIGMENT_STONE = Object.freeze({ x: 790, y: 426 });
+// Hit shapes, most specific first (the apple sits in the leaves, the sun in
+// the sky).
+const REGION_SHAPES = Object.freeze({
+  apple: { type: 'circle', x: 118, y: 120, r: 17 },
+  sun: { type: 'circle', x: 280, y: 44, r: 28 },
+  plums: { type: 'circles', circles: [{ x: 214, y: 204, r: 14 }, { x: 240, y: 208, r: 14 }, { x: 227, y: 188, r: 14 }] },
+  fox: { type: 'fox', x: 62, y: 214 },
+  leaves: { type: 'circles', circles: [{ x: 96, y: 108, r: 52 }, { x: 60, y: 96, r: 30 }, { x: 136, y: 90, r: 30 }] },
+  sky: { type: 'rect', x: 0, y: 0, w: CANVAS.w, h: 74 },
+});
+const REGION_ORDER = ['apple', 'sun', 'plums', 'fox', 'leaves', 'sky'];
 
 const colorCss = (value) => `#${value.toString(16).padStart(6, '0')}`;
-const cellKey = (col, row) => `${col},${row}`;
+
+function insideRegion(id, lx, ly) {
+  const s = REGION_SHAPES[id];
+  if (s.type === 'circle') return Math.hypot(lx - s.x, ly - s.y) <= s.r;
+  if (s.type === 'circles') return s.circles.some((c) => Math.hypot(lx - c.x, ly - c.y) <= c.r);
+  if (s.type === 'rect') return lx >= s.x && lx <= s.x + s.w && ly >= s.y && ly <= s.y + s.h;
+  if (s.type === 'fox') return Math.abs(lx - s.x) <= 42 && Math.abs(ly - s.y) <= 20;
+  return false;
+}
+
+function regionCentre(id) {
+  const s = REGION_SHAPES[id];
+  if (s.type === 'circle') return { x: s.x, y: s.y };
+  if (s.type === 'circles') return { x: s.circles[0].x, y: s.circles[0].y };
+  if (s.type === 'rect') return { x: s.x + s.w * 0.35, y: s.y + s.h / 2 };
+  return { x: s.x, y: s.y };
+}
 
 export class DrawingStudioScene extends Phaser.Scene {
   constructor() {
@@ -64,39 +95,45 @@ export class DrawingStudioScene extends Phaser.Scene {
     if (!this.cache.audio.exists('chapter4-drawing-music')) {
       this.load.audio('chapter4-drawing-music', '/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3');
     }
-    if (!this.cache.audio.exists('chapter4-consequence-music')) {
-      this.load.audio('chapter4-consequence-music', '/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3');
-    }
   }
 
-  create() {
+  create(data = {}) {
     this.rnd = makeRandom(0xd4a7);
     this.studio = createDrawingStudio();
-    this.selected = null;
-    this.currentInteraction = null;
-    this.hoverSourceId = null;
     this.hold = { key: null, progress: 0 };
+    this.hoverSourceId = null;
+    this.hoverRegionId = null;
     this.playerFacing = 1;
     this.playerAnimation = 'idle';
     this.frameReveal = 0;
     this.transitioning = false;
-    this.tutorialSeen = { extract: false, select: false, fill: false, lift: false, exit: false };
+    this.locked = false;
+    this.tutorialSeen = { take: false, apply: false, wash: false, exit: false };
+    this.qa = devParam('qa');
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
     this.physics.world.setBounds(0, 0, WORLD.w, WORLD.h);
 
     this.buildRoom();
-    this.buildMagicStone();
     this.buildSources();
-    this.buildBoards();
+    this.buildCanvas();
     this.buildPlayer();
-    this.buildPrompt();
     this.buildGrain();
     this.bindInput();
     this.startMusic();
     this.applyQaState();
     this.redrawAll();
+
+    if (!data.skipIntro && (!this.qa || this.qa === 'drawing')) {
+      this.locked = true;
+      showTitleCard(this, {
+        kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
+        main: 'II · THE STILL LIFE',
+        hold: 1600,
+        onDone: () => { this.locked = false; },
+      });
+    }
   }
 
   graphics(depth) {
@@ -106,18 +143,14 @@ export class DrawingStudioScene extends Phaser.Scene {
   buildRoom() {
     const g = this.graphics(DEPTH.BACK);
     g.fillStyle(PAPER.sheet, 1).fillRect(0, 0, WORLD.w, WORLD.h);
+    g.fillStyle(PAPER.sheetLow, 1).fillRect(0, 0, WORLD.w, 52);
     g.fillStyle(PAPER.sheetHigh, 0.92).fillRect(0, 92, WORLD.w, 266);
     g.fillStyle(PAPER.sheetMid, 0.8).fillRect(0, 358, WORLD.w, FLOOR_Y - 358);
     g.fillStyle(PAPER.sheetLow, 1).fillRect(0, FLOOR_Y, WORLD.w, WORLD.h - FLOOR_Y);
     hatchRect(g, this.rnd, 0, FLOOR_Y, WORLD.w, 70, { spacing: 17, alpha: 0.18, flip: true });
 
-    // Preserve Part I's strongest background: the warm paper windows and
-    // folded hills continue through the studio instead of disappearing here.
-    const windows = [
-      { x: 54, w: 330 }, { x: 452, w: 350 }, { x: 870, w: 350 },
-      { x: 1288, w: 350 }, { x: 1706, w: 360 }, { x: 2134, w: 300 },
-    ];
-    windows.forEach(({ x, w }, index) => {
+    // Part I's warm paper windows and folded hills continue through the room.
+    [{ x: 54, w: 280 }, { x: 1230, w: 200 }].forEach(({ x, w }, index) => {
       g.fillStyle(PAPER.sheetHigh, 0.96).fillRect(x, 118, w, 196);
       g.lineStyle(1.5, PAPER.graphiteSoft, 0.72);
       draftRect(g, this.rnd, x, 118, w, 196, { overshoot: 7, jitter: 0.7 });
@@ -132,24 +165,21 @@ export class DrawingStudioScene extends Phaser.Scene {
     draftLine(g, this.rnd, 0, 358, WORLD.w, 358, { overshoot: 0, jitter: 0.8, segments: 50 });
     draftLine(g, this.rnd, 0, FLOOR_Y, WORLD.w, FLOOR_Y, { overshoot: 0, jitter: 0.9, segments: 55 });
 
-    // Eighteen miniature keepsakes share six compartments. Their color is the
-    // finite paint supply, while their varied silhouettes make the cabinet
-    // read as a lived-in collection instead of six puzzle buttons.
+    // The shelf.
     const room = this.graphics(DEPTH.ROOM);
+    room.fillStyle(PAPER.kraft, 0.5).fillRect(SHELF.x, SHELF.y, SHELF.w, 12);
     room.lineStyle(1.7, PAPER.graphite, 0.82);
-    room.fillStyle(PAPER.sheetMid, 0.9).fillRect(610, 188, 360, 270);
-    draftRect(room, this.rnd, 610, 188, 360, 270, { overshoot: 7 });
-    [278, 362, 446].forEach((y) => draftLine(room, this.rnd, 620, y, 960, y, { overshoot: 4 }));
-    draftLine(room, this.rnd, 790, 196, 790, 446, { overshoot: 3 });
-    draftLine(room, this.rnd, 632, 458, 632, FLOOR_Y, { overshoot: 3 });
-    draftLine(room, this.rnd, 948, 458, 948, FLOOR_Y, { overshoot: 3 });
+    draftRect(room, this.rnd, SHELF.x, SHELF.y, SHELF.w, 12, { overshoot: 5 });
+    draftLine(room, this.rnd, SHELF.x + 20, SHELF.y + 12, SHELF.x + 20, FLOOR_Y, { overshoot: 2 });
+    draftLine(room, this.rnd, SHELF.x + SHELF.w - 20, SHELF.y + 12, SHELF.x + SHELF.w - 20, FLOOR_Y, { overshoot: 2 });
 
-    this.add.text(66, 112, 'THE OPEN SHEET  ·  COLOR ROOM', {
+    // The title strip: the room's name lives up here, where no tag can land.
+    this.add.text(24, 26, "THE STUDIO  ·  ROSA'S STILL LIFE", {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
-    }).setDepth(DEPTH.ROOM + 1);
-    this.add.text(1035, 112, 'OBSERVE THE VASE.  BORROW COLOR FROM THE SMALL OBJECTS TO PAINT IT.', {
-      fontFamily: MONO, fontSize: '10px', color: '#8d8579', letterSpacing: 1.5,
-    }).setDepth(DEPTH.ROOM + 1);
+    }).setOrigin(0, 0.5).setDepth(DEPTH.ROOM + 1);
+    this.add.text(SHELF.x + SHELF.w / 2, SHELF.y + 26, 'THINGS FROM THE ORCHARD HOUSE', {
+      fontFamily: MONO, fontSize: '11px', color: '#8d8579', letterSpacing: 1.4,
+    }).setOrigin(0.5, 0).setDepth(DEPTH.ROOM + 1);
 
     const floor = this.add.rectangle(WORLD.w / 2, FLOOR_Y + 52, WORLD.w, 104, 0xffffff, 0);
     this.physics.add.existing(floor, true);
@@ -157,112 +187,42 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   buildSources() {
-    this.sourceArt = new Map();
-    SOURCE_LAYOUT.forEach((layout) => {
-      const art = this.graphics(DEPTH.PAINT);
-      this.sourceArt.set(layout.id, art);
-    });
-    this.sourceFocusArt = this.graphics(DEPTH.PAINT + 2);
-    this.suctionArt = this.graphics(DEPTH.PROMPT - 2);
+    this.sourceArt = this.graphics(DEPTH.PAINT);
+    this.focusArt = this.graphics(DEPTH.PAINT + 2);
+    this.streamArt = this.graphics(DEPTH.PROMPT - 2);
+    this.markerArt = this.graphics(DEPTH.PROMPT - 3);
   }
 
-  buildMagicStone() {
-    this.pigmentStoneCollected = magicStoneSnapshot().collected.includes('chapter-4');
-    this.magicStoneArt = this.graphics(DEPTH.OBJECT + 3);
-    this.magicStoneLabel = this.add.text(PIGMENT_STONE.x - 2, PIGMENT_STONE.y - 48, 'COLOR STONE', {
-      fontFamily: MONO, fontSize: '8px', color: '#8d8579', letterSpacing: 1.2,
-    }).setOrigin(0.5).setDepth(DEPTH.OBJECT + 4).setVisible(false);
-    this.redrawMagicStone();
-  }
-
-  redrawMagicStone(time = 0) {
-    const g = this.magicStoneArt;
-    g.clear();
-    const unlocked = this.studio?.allSourcesExtracted();
-    this.magicStoneLabel?.setVisible(Boolean(unlocked && !this.pigmentStoneCollected));
-    if (this.pigmentStoneCollected || !unlocked) return;
-    const { x, y } = PIGMENT_STONE;
-    g.fillStyle(PAPER.graphite, 0.52).fillRect(x - 33, y - 25, 66, 36);
-    g.fillStyle(PAPER.cyan, 0.13 + Math.sin(time / 420) * 0.04).fillCircle(x, y - 5, 30);
-    g.fillStyle(0x7fdfe9, 1);
-    g.lineStyle(1.8, PAPER.graphite, 0.82);
-    g.beginPath();
-    g.moveTo(x, y - 28);
-    g.lineTo(x + 14, y - 12);
-    g.lineTo(x + 9, y + 13);
-    g.lineTo(x, y + 22);
-    g.lineTo(x - 9, y + 13);
-    g.lineTo(x - 14, y - 12);
-    g.closePath();
-    g.fillPath();
-    g.strokePath();
-    g.fillStyle(PAPER.sheetHigh, 0.96);
-    g.fillTriangle(x - 40, y - 34, x + 34, y - 31, x + 30, y + 5);
-    g.lineStyle(1.5, PAPER.graphiteSoft, 0.78);
-    draftLine(g, this.rnd, x - 40, y - 34, x + 34, y - 31, { overshoot: 5 });
-    draftLine(g, this.rnd, x + 34, y - 31, x + 30, y + 5, { overshoot: 3 });
-  }
-
-  tryCollectMagicStone() {
-    if (this.pigmentStoneCollected || !this.studio.allSourcesExtracted()
-      || Math.abs(this.walker.x - PIGMENT_STONE.x) > 48) return;
-    collectMagicStone('chapter-4');
-    this.pigmentStoneCollected = true;
-    this.magicStoneArt.clear();
-    this.magicStoneLabel.setVisible(false);
-    const snapshot = magicStoneSnapshot();
-    this.localFeedback(`PIGMENT STONE FOUND\n${snapshot.count} / ${snapshot.total}`, PAPER.cyan);
-    this.cameras.main.flash(240, 118, 225, 235);
-  }
-
-  buildBoards() {
+  buildCanvas() {
     const g = this.graphics(DEPTH.BOARD - 2);
-    this.drawEasel(g, REFERENCE, 'STILL LIFE  ·  VASE + FLOWERS', 0.86);
-    this.drawEasel(g, REQUIRED, 'YOUR PAINTING', 1);
-    this.drawEasel(g, FREE, 'YOUR OWN DRAWING', 1);
-    this.referenceArt = this.graphics(DEPTH.BOARD);
-    this.requiredArt = this.graphics(DEPTH.BOARD);
-    this.freeArt = this.graphics(DEPTH.BOARD);
+    const { x, y, w, h } = CANVAS;
+    g.fillStyle(PAPER.sheetHigh, 1).fillRect(x - 14, y - 14, w + 28, h + 28);
+    g.lineStyle(1.8, PAPER.graphite, 0.8);
+    draftRect(g, this.rnd, x - 14, y - 14, w + 28, h + 28, { overshoot: 7, jitter: 0.8 });
+    draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 - 70, FLOOR_Y, { overshoot: 5 });
+    draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 + 70, FLOOR_Y, { overshoot: 5 });
+    this.add.text(x + w / 2, y + h + 22, '"THE ORCHARD IN SUMMER" · ROSA, 9', {
+      fontFamily: MONO, fontSize: '11px', color: '#5c574f', letterSpacing: 1.2,
+    }).setOrigin(0.5, 0).setDepth(DEPTH.BOARD);
+    this.fillArt = this.graphics(DEPTH.BOARD);
+    this.pencilArt = this.graphics(DEPTH.BOARD + 1);
     this.selectionArt = this.graphics(DEPTH.BOARD + 2);
     this.frameArt = this.graphics(DEPTH.BOARD + 3);
     this.doorArt = this.graphics(DEPTH.BOARD);
-  }
-
-  drawEasel(g, board, title, alpha) {
-    const w = board.cols * board.cell;
-    const h = board.rows * board.cell;
-    g.fillStyle(PAPER.sheetHigh, alpha).fillRect(board.x - 12, board.y - 12, w + 24, h + 24);
-    g.lineStyle(1.8, PAPER.graphite, 0.8);
-    draftRect(g, this.rnd, board.x - 12, board.y - 12, w + 24, h + 24, { overshoot: 7, jitter: 0.8 });
-    draftLine(g, this.rnd, board.x + w * 0.5, board.y + h + 12, board.x + w * 0.5 - 54, FLOOR_Y, { overshoot: 5 });
-    draftLine(g, this.rnd, board.x + w * 0.5, board.y + h + 12, board.x + w * 0.5 + 54, FLOOR_Y, { overshoot: 5 });
-    this.add.text(board.x + w / 2, board.y - 35, title, {
-      fontFamily: MONO, fontSize: '9px', color: '#5c574f', letterSpacing: 1.4,
-    }).setOrigin(0.5).setDepth(DEPTH.BOARD);
+    this.doorLabel = this.add.text(EXIT.x + EXIT.w / 2, EXIT.y - 18, 'TO THE PAINTED TRAIN', {
+      fontFamily: MONO, fontSize: '11px', color: '#8d8579', letterSpacing: 1.3,
+    }).setOrigin(0.5, 1).setDepth(DEPTH.BOARD);
+    this.drawPencil();
   }
 
   buildPlayer() {
-    this.walker = this.add.rectangle(500, 414, 18, 62, 0xffffff, 0);
+    this.walker = this.add.rectangle(220, 414, 18, 62, 0xffffff, 0);
     this.physics.add.existing(this.walker);
     this.physics.add.collider(this.walker, this.floor);
     this.walker.body.setCollideWorldBounds(true);
     this.figure = this.add.graphics().setDepth(DEPTH.FIGURE);
-    this.heldArt = this.graphics(DEPTH.FIGURE + 1);
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
     this.cameras.main.setDeadzone(280, 190);
-  }
-
-  buildPrompt() {
-    this.promptFrame = this.graphics(DEPTH.PROMPT);
-    this.promptText = this.add.text(0, 0, '', {
-      fontFamily: MONO,
-      fontSize: '10px',
-      color: '#4a4640',
-      align: 'center',
-      lineSpacing: 4,
-      letterSpacing: 1.1,
-      padding: { x: 9, y: 7 },
-    }).setOrigin(0.5, 1).setDepth(DEPTH.PROMPT + 1).setVisible(false);
   }
 
   buildGrain() {
@@ -272,20 +232,20 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   bindInput() {
-    this.keys = this.input.keyboard.addKeys({ left: 'LEFT', right: 'RIGHT', up: 'UP', a: 'A', d: 'D', w: 'W', space: 'SPACE' });
-    this.input.keyboard.addCapture(['LEFT', 'RIGHT', 'UP', 'SPACE']);
+    this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
+    this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.input.keyboard.on('keydown-R', () => this.scene.restart());
     this.input.keyboard.on('keydown-F', () => {
       if (this.scale.isFullscreen) this.scale.stopFullscreen();
       else this.scale.startFullscreen();
     });
-    this.input.on('pointerdown', this.selectBoardCell, this);
+    this.brush = new BrushInput(this, { anchor: null });
+    this.brush.cursor.setDepth(DEPTH.PROMPT + 5);
+    this.tag = new PaperTag(this, { depth: DEPTH.PROMPT + 4 });
+    this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
   }
 
   startMusic() {
-    // A missing or undecodable score file leaves the scene silent rather than
-    // throwing from sound.add (Phaser only caches audio that loaded).
     this.music = this.cache.audio.exists('chapter4-drawing-music')
       ? this.sound.add('chapter4-drawing-music', { loop: true, volume: 0.38 })
       : null;
@@ -298,121 +258,71 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   applyQaState() {
-    if (!import.meta.env.DEV) return;
-    const qa = new URLSearchParams(window.location.search).get('qa');
-    if (!['drawing-start', 'drawing-ready', 'drawing-free', 'drawing-magic-stone'].includes(qa)) return;
-    if (qa === 'drawing-start') {
-      this.walker.setPosition(500, 414);
-      return;
-    }
-    if (qa === 'drawing-magic-stone') {
-      // Visual QA must be able to inspect the reveal even if this browser's
-      // persistent save already collected the optional Chapter 4 stone.
-      this.pigmentStoneCollected = false;
-      STUDIO_SOURCES.forEach((source) => {
-        this.studio.extract(source.id);
-        this.studio.placeRequired(source.targetCell);
+    // Dev-only: devParam() is null in production.
+    const qa = this.qa;
+    if (qa === 'drawing-start') return;
+    if (qa === 'drawing-wrong') {
+      STILL_LIFE_REGIONS.forEach((region, i) => {
+        this.studio.take(STUDIO_SOURCES.find((s) => s.pigment === (i === 3 ? 'blue' : region.wants)).id);
+        this.studio.apply(region.id);
       });
-      this.walker.setPosition(PIGMENT_STONE.x - 94, 414);
-      this.studio.drainEvents();
-      return;
-    }
-    if (qa === 'drawing-free') {
-      STUDIO_SOURCES.forEach((source) => {
-        this.studio.extract(source.id);
-        this.studio.placeRequired(source.targetCell);
+      this.walker.setPosition(CANVAS.x - 60, 414);
+    } else if (qa === 'drawing-ready') {
+      STILL_LIFE_REGIONS.slice(0, -1).forEach((region) => {
+        this.studio.take(STUDIO_SOURCES.find((s) => s.pigment === region.wants).id);
+        this.studio.apply(region.id);
       });
-      const last = STUDIO_SOURCES.at(-1);
-      this.studio.liftRequired(last.targetCell);
-      this.selected = { board: 'free', cell: '2,2' };
-      this.walker.setPosition(FREE.x + 40, 414);
-      this.studio.drainEvents();
-      return;
+      this.studio.take('marigold-jar');
+      this.walker.setPosition(CANVAS.x - 60, 414);
+    } else if (qa === 'drawing-done') {
+      STILL_LIFE_REGIONS.forEach((region) => {
+        this.studio.take(STUDIO_SOURCES.find((s) => s.pigment === region.wants).id);
+        this.studio.apply(region.id);
+      });
+      this.frameReveal = 1;
+      this.walker.setPosition(EXIT.x - 60, 414);
     }
-    STUDIO_SOURCES.slice(0, -1).forEach((source) => {
-      this.studio.extract(source.id);
-      this.studio.placeRequired(source.targetCell);
-    });
-    const last = STUDIO_SOURCES.at(-1);
-    this.studio.extract(last.id);
-    this.selected = { board: 'required', cell: last.targetCell };
-    this.walker.setPosition(REQUIRED.x - 70, 414);
     this.studio.drainEvents();
   }
 
   redrawAll() {
     this.redrawSources();
-    this.redrawBoards();
+    this.redrawCanvas();
     this.redrawDoor();
-    this.redrawMagicStone();
   }
 
-  paintPatch(g, x, y, w, h, color, live) {
-    if (!live) return;
-    paintedFill(g, this.rnd, x, y, w, h, color, { alpha: 0.8, inset: 2 });
-    g.lineStyle(1.1, color, 0.45);
-    for (let yy = y + 6; yy < y + h - 2; yy += 7) {
-      draftLine(g, this.rnd, x + 4, yy, x + w - 4, yy + (this.rnd() - 0.5) * 4, {
-        overshoot: 0, jitter: 1.3, segments: 4,
-      });
-    }
-  }
-
+  // Seven keepsakes from the orchard house, one per colour. Taking a colour
+  // does not use the object up.
   redrawSources() {
+    const g = this.sourceArt;
+    g.clear();
     SOURCE_LAYOUT.forEach((layout) => {
-      const g = this.sourceArt.get(layout.id);
       const item = this.studio.source(layout.id);
       const pigment = this.studio.pigment(item.pigment);
-      const live = !item.drained;
-      g.clear();
-      if (!live) {
-        g.fillStyle(PAPER.graphiteFaint, 0.11).fillEllipse(layout.x, layout.y - 2, 29, 5);
-        return;
-      }
-      const suctionProgress = this.hold.key === `source:${layout.id}`
-        ? Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1)
-        : 0;
-      g.setAlpha(1 - suctionProgress * 0.72);
-      g.lineStyle(1.35, PAPER.graphite, 0.86);
-      g.fillStyle(pigment.color, 0.84);
+      const pulling = this.hold.key === `take:${layout.id}` ? Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1) : 0;
       const { x, y } = layout;
+      g.lineStyle(1.5, PAPER.graphite, 0.86);
+      g.fillStyle(pigment.color, 0.88 - pulling * 0.3);
       if (layout.kind === 'cup') {
         g.fillRoundedRect(x - 12, y - 25, 23, 22, 3).strokeRoundedRect(x - 12, y - 25, 23, 22, 3);
         g.strokeCircle(x + 13, y - 15, 7);
-      } else if (layout.kind === 'ball' || layout.kind === 'clock') {
-        g.fillCircle(x, y - 17, 13).strokeCircle(x, y - 17, 13);
-        if (layout.kind === 'clock') {
-          g.lineBetween(x, y - 17, x, y - 25);
-          g.lineBetween(x, y - 17, x + 7, y - 14);
-        }
-      } else if (layout.kind === 'book' || layout.kind === 'box' || layout.kind === 'cushion') {
-        const h = layout.kind === 'book' ? 12 : 22;
-        g.fillRoundedRect(x - 16, y - h - 3, 32, h, 3).strokeRoundedRect(x - 16, y - h - 3, 32, h, 3);
-        if (layout.kind === 'book') g.lineBetween(x - 11, y - 12, x + 11, y - 12);
-      } else if (layout.kind === 'spool' || layout.kind === 'tin' || layout.kind === 'jar') {
+      } else if (layout.kind === 'book') {
+        g.fillRoundedRect(x - 16, y - 16, 32, 13, 3).strokeRoundedRect(x - 16, y - 16, 32, 13, 3);
+        g.fillRoundedRect(x - 14, y - 28, 28, 12, 3).strokeRoundedRect(x - 14, y - 28, 28, 12, 3);
+      } else if (layout.kind === 'tin' || layout.kind === 'jar') {
         g.fillRect(x - 11, y - 27, 22, 24).strokeRect(x - 11, y - 27, 22, 24);
         g.strokeEllipse(x, y - 27, 22, 6);
         g.strokeEllipse(x, y - 3, 22, 6);
+        if (layout.kind === 'tin') {
+          g.lineStyle(1, PAPER.graphite, 0.6).lineBetween(x - 7, y - 16, x + 7, y - 16);
+        }
       } else if (layout.kind === 'bottle') {
         g.fillRoundedRect(x - 9, y - 28, 18, 25, 5).strokeRoundedRect(x - 9, y - 28, 18, 25, 5);
         g.fillRect(x - 4, y - 37, 8, 10).strokeRect(x - 4, y - 37, 8, 10);
-      } else if (layout.kind === 'plant' || layout.kind === 'leaf') {
-        g.fillStyle(pigment.color, 0.76);
-        g.fillEllipse(x - 7, y - 27, 16, 10).strokeEllipse(x - 7, y - 27, 16, 10);
-        g.fillEllipse(x + 8, y - 34, 17, 11).strokeEllipse(x + 8, y - 34, 17, 11);
-        g.lineBetween(x, y - 4, x, y - 31);
-        if (layout.kind === 'plant') g.fillRect(x - 10, y - 13, 20, 10).strokeRect(x - 10, y - 13, 20, 10);
-      } else if (layout.kind === 'phone') {
-        g.fillRoundedRect(x - 15, y - 22, 30, 19, 4).strokeRoundedRect(x - 15, y - 22, 30, 19, 4);
-        g.strokeCircle(x, y - 12, 6);
-        g.lineBetween(x - 16, y - 27, x + 16, y - 27);
-      } else if (layout.kind === 'vase' || layout.kind === 'kettle') {
+      } else if (layout.kind === 'vase') {
         g.fillEllipse(x, y - 17, 27, 29).strokeEllipse(x, y - 17, 27, 29);
         g.lineBetween(x - 7, y - 33, x + 7, y - 33);
-        if (layout.kind === 'kettle') {
-          g.lineBetween(x + 13, y - 22, x + 20, y - 28);
-          g.strokeCircle(x - 13, y - 20, 7);
-        }
+        g.strokeCircle(x + 15, y - 20, 6);
       } else if (layout.kind === 'ribbon') {
         g.fillTriangle(x, y - 17, x - 18, y - 29, x - 14, y - 9);
         g.fillTriangle(x, y - 17, x + 18, y - 29, x + 14, y - 9);
@@ -423,16 +333,124 @@ export class DrawingStudioScene extends Phaser.Scene {
     });
   }
 
-  sourceAt(x, y) {
-    return SOURCE_LAYOUT.find((layout) => Phaser.Geom.Rectangle.Contains(
-      new Phaser.Geom.Rectangle(layout.rect.x, layout.rect.y, layout.rect.w, layout.rect.h),
-      x,
-      y,
-    )) ?? null;
+  // Rosa's pencil: always on top, whatever colour is under it.
+  drawPencil() {
+    const g = this.pencilArt;
+    const ox = CANVAS.x;
+    const oy = CANVAS.y;
+    const rnd = makeRandom(0x5711);
+    g.clear();
+    g.lineStyle(2, PAPER.graphite, 0.78);
+    draftLine(g, rnd, ox, oy + 74, ox + CANVAS.w, oy + 70, { overshoot: 0, jitter: 1.4, segments: 10 });
+    draftLine(g, rnd, ox, oy + 228, ox + CANVAS.w, oy + 222, { overshoot: 0, jitter: 1.6, segments: 10 });
+    // the tree
+    REGION_SHAPES.leaves.circles.forEach((c) => g.strokeCircle(ox + c.x, oy + c.y, c.r));
+    g.lineStyle(3, PAPER.graphite, 0.7);
+    draftLine(g, rnd, ox + 96, oy + 150, ox + 96, oy + 226, { overshoot: 0, jitter: 1 });
+    g.lineStyle(2, PAPER.graphite, 0.8);
+    const apple = REGION_SHAPES.apple;
+    g.strokeCircle(ox + apple.x, oy + apple.y, apple.r);
+    g.lineBetween(ox + apple.x, oy + apple.y - apple.r, ox + apple.x + 3, oy + apple.y - apple.r - 7);
+    const sun = REGION_SHAPES.sun;
+    g.strokeCircle(ox + sun.x, oy + sun.y, sun.r);
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2;
+      g.lineBetween(ox + sun.x + Math.cos(a) * (sun.r + 5), oy + sun.y + Math.sin(a) * (sun.r + 5), ox + sun.x + Math.cos(a) * (sun.r + 13), oy + sun.y + Math.sin(a) * (sun.r + 13));
+    }
+    // the bowl of plums
+    REGION_SHAPES.plums.circles.forEach((c) => g.strokeCircle(ox + c.x, oy + c.y, c.r));
+    g.beginPath();
+    g.arc(ox + 227, oy + 208, 34, 0.1, Math.PI - 0.1, false);
+    g.strokePath();
+    g.lineBetween(ox + 193, oy + 212, ox + 261, oy + 212);
+    // the fox by the gate
+    const fox = REGION_SHAPES.fox;
+    g.strokeEllipse(ox + fox.x, oy + fox.y, 64, 26);
+    g.strokeTriangle(ox + fox.x + 30, oy + fox.y - 20, ox + fox.x + 48, oy + fox.y - 8, ox + fox.x + 30, oy + fox.y + 2);
+    g.lineBetween(ox + fox.x + 34, oy + fox.y - 20, ox + fox.x + 38, oy + fox.y - 30);
+    g.lineBetween(ox + fox.x - 32, oy + fox.y, ox + fox.x - 46, oy + fox.y - 16);
+    [-20, -8, 10, 22].forEach((dx) => g.lineBetween(ox + fox.x + dx, oy + fox.y + 12, ox + fox.x + dx, oy + fox.y + 24));
+    // a gate, and the path up to it
+    g.lineStyle(1.4, PAPER.graphiteSoft, 0.8);
+    [288, 302, 316].forEach((xx) => g.lineBetween(ox + xx, oy + 190, ox + xx, oy + 226));
+    g.lineBetween(ox + 282, oy + 198, ox + 322, oy + 198);
   }
 
-  pointerWorld(pointer = this.input.activePointer) {
-    return this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+  paintRegion(g, id, pigmentId, alpha = 0.82) {
+    const pigment = this.studio.pigment(pigmentId);
+    if (!pigment) return;
+    const s = REGION_SHAPES[id];
+    const ox = CANVAS.x;
+    const oy = CANVAS.y;
+    g.fillStyle(pigment.color, alpha);
+    if (s.type === 'circle') g.fillCircle(ox + s.x, oy + s.y, s.r - 1);
+    else if (s.type === 'circles') s.circles.forEach((c) => g.fillCircle(ox + c.x, oy + c.y, c.r - 1));
+    else if (s.type === 'rect') paintedFill(g, this.rnd, ox + s.x + 2, oy + s.y + 2, s.w - 4, s.h - 4, pigment.color, { alpha, inset: 1 });
+    else if (s.type === 'fox') {
+      g.fillEllipse(ox + s.x, oy + s.y, 62, 24);
+      g.fillTriangle(ox + s.x + 30, oy + s.y - 20, ox + s.x + 48, oy + s.y - 8, ox + s.x + 30, oy + s.y + 2);
+    }
+  }
+
+  redrawCanvas() {
+    const g = this.fillArt;
+    g.clear();
+    this.selectionArt.clear();
+    this.frameArt.clear();
+    const snapshot = this.studio.snapshot();
+    // the sky first, so the sun sits in it; the leaves before the apple
+    ['sky', 'sun', 'leaves', 'apple', 'plums', 'fox'].forEach((id) => {
+      if (snapshot.fills[id]) this.paintRegion(g, id, snapshot.fills[id]);
+    });
+    if (this.hoverRegionId) {
+      const c = regionCentre(this.hoverRegionId);
+      this.selectionArt.lineStyle(2.4, UI.amberInk, 0.9).strokeCircle(CANVAS.x + c.x, CANVAS.y + c.y, 12);
+    }
+    if (snapshot.complete || this.frameReveal > 0.01) this.drawCompletionFrame(snapshot.complete ? Math.max(this.frameReveal, 0.2) : this.frameReveal);
+  }
+
+  drawCompletionFrame(amount) {
+    const g = this.frameArt;
+    const { x, y, w, h } = CANVAS;
+    const pad = 20 + 8 * amount;
+    g.lineStyle(2.8, PAPER.bookCloth, 0.9 * amount);
+    draftRect(g, makeRandom(0x5150), x - pad, y - pad, w + pad * 2, h + pad * 2, { overshoot: 8, jitter: 1.1 });
+    g.lineStyle(1.4, PAPER.graphite, 0.72 * amount);
+    draftRect(g, makeRandom(0x5151), x - pad + 7, y - pad + 7, w + (pad - 7) * 2, h + (pad - 7) * 2, { overshoot: 5, jitter: 0.7 });
+  }
+
+  redrawDoor() {
+    const g = this.doorArt;
+    g.clear();
+    const complete = this.studio.isComplete();
+    g.fillStyle(complete ? PAPER.sheetHigh : PAPER.sheetMid, complete ? 1 : 0.72).fillRect(EXIT.x, EXIT.y, EXIT.w, EXIT.h);
+    g.lineStyle(2, complete ? PAPER.graphite : PAPER.graphiteSoft, complete ? 0.9 : 0.62);
+    draftRect(g, makeRandom(0x9955), EXIT.x, EXIT.y, EXIT.w, EXIT.h, { overshoot: 6, jitter: 0.8 });
+    g.strokeCircle(EXIT.x + EXIT.w - 14, EXIT.y + 88, 4);
+    if (complete) {
+      g.lineStyle(1.2, PAPER.graphiteFaint, 0.8);
+      for (let x = EXIT.x + 14; x < EXIT.x + EXIT.w; x += 18) g.lineBetween(x, EXIT.y + 6, x - 24, EXIT.y + EXIT.h);
+    }
+  }
+
+  sourceAt(x, y) {
+    return SOURCE_LAYOUT.find((l) => x >= l.rect.x && x <= l.rect.x + l.rect.w && y >= l.rect.y && y <= l.rect.y + l.rect.h) ?? null;
+  }
+
+  regionAt(x, y) {
+    const lx = x - CANVAS.x;
+    const ly = y - CANVAS.y;
+    if (lx < 0 || ly < 0 || lx > CANVAS.w || ly > CANVAS.h) return null;
+    return REGION_ORDER.find((id) => insideRegion(id, lx, ly)) ?? null;
+  }
+
+  inReach(x) {
+    return Math.abs(this.walker.x - x) <= REACH;
+  }
+
+  atExit(x, y) {
+    return this.studio.isComplete() && x >= EXIT.x - 10 && x <= EXIT.x + EXIT.w + 10 && y >= EXIT.y - 10 && y <= FLOOR_Y
+      && Math.abs(this.walker.x - (EXIT.x + EXIT.w / 2)) <= 160;
   }
 
   setHold(key, dt) {
@@ -442,460 +460,186 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   resetHold() {
-    if (this.hold.key) {
-      this.hold = { key: null, progress: 0 };
-      this.redrawSources();
-    }
+    if (this.hold.key) this.hold = { key: null, progress: 0 };
   }
 
-  boardInteractionAt(x, y) {
-    for (const [name, board] of [['required', REQUIRED], ['free', FREE]]) {
-      const cell = this.cellAt(board, x, y);
-      const centre = board.x + board.cols * board.cell / 2;
-      if (cell && Math.abs(this.walker.x - centre) <= 270) return { name, board, cell };
-    }
-    return null;
-  }
+  stepInteraction(dt, move) {
+    const b = this.brush;
+    const x = b.worldX;
+    const y = b.worldY;
+    const source = this.sourceAt(x, y);
+    const region = source ? null : this.regionAt(x, y);
+    this.hoverSourceId = source && this.inReach(source.x) ? source.id : null;
+    this.hoverRegionId = region && this.inReach(CANVAS.x + CANVAS.w / 2) ? region : null;
 
-  exitInteractionAt(x, y) {
-    if (!this.studio.isComplete() || Math.abs(this.walker.x - EXIT_X) > 140) return null;
-    const rect = new Phaser.Geom.Rectangle(EXIT_X - 55, 290, 100, FLOOR_Y - 290);
-    return Phaser.Geom.Rectangle.Contains(rect, x, y) ? { rect } : null;
-  }
-
-  occupiedSourceId(boardName, cell, snapshot = this.studio.snapshot()) {
-    return boardName === 'required' ? snapshot.required[cell] : snapshot.free[cell];
-  }
-
-  stepSuction(dt) {
-    const pointer = this.input.activePointer;
-    const world = this.pointerWorld(pointer);
-    const pointed = this.sourceAt(world.x, world.y);
-    const available = pointed && !this.studio.source(pointed.id).drained;
-    this.hoverSourceId = available ? pointed.id : null;
-
-    if (available && pointer.rightButtonDown()) {
-      if (this.setHold(`source:${pointed.id}`, dt)) {
-        if (this.studio.extract(pointed.id)) this.tutorialSeen.extract = true;
-        this.hold = { key: null, progress: 0 };
+    if (this.hoverSourceId && b.washDown) {
+      if (this.setHold(`take:${source.id}`, dt)) {
+        this.studio.take(source.id);
+        this.tutorialSeen.take = true;
+        this.resetHold();
         this.handleEvents();
-        this.redrawAll();
-      } else {
-        this.redrawSources();
+      }
+      this.redrawSources();
+      return;
+    }
+    if (this.hoverRegionId && b.paintDown) {
+      if (this.setHold(`apply:${region}`, dt)) {
+        this.studio.apply(region);
+        this.resetHold();
+        this.handleEvents();
       }
       return;
     }
-
-    const boardHit = this.boardInteractionAt(world.x, world.y);
-    if (boardHit) {
-      this.selected = { board: boardHit.name, cell: boardHit.cell };
-      const snapshot = this.studio.snapshot();
-      const occupied = this.occupiedSourceId(boardHit.name, boardHit.cell, snapshot);
-      if (occupied && pointer.rightButtonDown()) {
-        if (this.setHold(`lift:${boardHit.name}:${boardHit.cell}`, dt)) {
-          const lifted = boardHit.name === 'required'
-            ? this.studio.liftRequired(boardHit.cell)
-            : this.studio.liftFree(boardHit.cell);
-          if (lifted) this.tutorialSeen.lift = true;
-          this.hold = { key: null, progress: 0 };
-          this.handleEvents();
-          this.redrawAll();
-        }
-        return;
+    if (this.hoverRegionId && b.washDown && this.studio.state.fills[region]) {
+      if (this.setHold(`wash:${region}`, dt)) {
+        this.studio.wash(region);
+        this.tutorialSeen.wash = true;
+        this.resetHold();
+        this.handleEvents();
       }
-      if (!occupied && snapshot.palette.length && pointer.leftButtonDown()) {
-        if (this.setHold(`fill:${boardHit.name}:${boardHit.cell}`, dt)) {
-          const placed = boardHit.name === 'required'
-            ? this.studio.placeRequired(boardHit.cell)
-            : this.studio.placeFree(boardHit.cell);
-          if (placed) this.tutorialSeen.fill = true;
-          this.hold = { key: null, progress: 0 };
-          this.handleEvents();
-          this.redrawAll();
-        }
-        return;
-      }
+      return;
     }
-
-    const exit = this.exitInteractionAt(world.x, world.y);
-    if (exit && pointer.leftButtonDown()) {
-      if (this.setHold('exit', dt)) {
+    const nearExit = this.studio.isComplete() && Math.abs(this.walker.x - (EXIT.x + EXIT.w / 2)) <= 160;
+    if ((this.atExit(x, y) && b.paintDown) || (nearExit && move.interactPressed)) {
+      if (move.interactPressed || this.setHold('exit', dt)) {
         this.tutorialSeen.exit = true;
-        this.hold = { key: null, progress: 0 };
+        this.resetHold();
         this.goToTrain();
       }
       return;
     }
-    this.resetHold();
-  }
-
-  drawSuction() {
-    const focus = this.sourceFocusArt;
-    const stream = this.suctionArt;
-    focus.clear();
-    stream.clear();
-    const source = SOURCE_LAYOUT.find(({ id }) => id === this.hoverSourceId);
-    if (source) {
-      const pigment = this.studio.pigment(this.studio.source(source.id).pigment);
-      focus.lineStyle(2.2, pigment.color, 0.95);
-      draftRect(focus, makeRandom(0x5157 + source.x), source.rect.x - 4, source.rect.y - 4, source.rect.w + 8, source.rect.h + 8, {
-        overshoot: 4,
-        jitter: 0.8,
-      });
+    if (this.hold.key) {
+      this.resetHold();
+      this.redrawSources();
     }
-
-    if (!this.hold.key || this.hold.key === 'exit') return;
-    const progress = Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1);
-    const head = { x: this.walker.x, y: this.walker.y - 50 };
-    let start = null;
-    let finish = null;
-    let color = PAPER.cyan;
-
-    if (this.hold.key.startsWith('source:') && source) {
-      const pigment = this.studio.pigment(this.studio.source(source.id).pigment);
-      color = pigment.color;
-      start = { x: source.rect.x + source.rect.w / 2, y: source.rect.y + source.rect.h / 2 };
-      finish = haloPointToward(head.x, head.y, start.x, start.y, 36);
-    } else if (this.hold.key.startsWith('lift:') || this.hold.key.startsWith('fill:')) {
-      const [, boardName, cell] = this.hold.key.split(':');
-      const board = this.boardByName(boardName);
-      const [col, row] = cell.split(',').map(Number);
-      const cellCentre = { x: board.x + (col + 0.5) * board.cell, y: board.y + (row + 0.5) * board.cell };
-      const snapshot = this.studio.snapshot();
-      const sourceId = this.hold.key.startsWith('lift:')
-        ? this.occupiedSourceId(boardName, cell, snapshot)
-        : snapshot.held;
-      if (!sourceId) return;
-      color = this.studio.pigment(this.studio.source(sourceId).pigment).color;
-      const edge = haloPointToward(head.x, head.y, cellCentre.x, cellCentre.y, 36);
-      start = this.hold.key.startsWith('lift:') ? cellCentre : edge;
-      finish = this.hold.key.startsWith('lift:') ? edge : cellCentre;
-    }
-    if (!start || !finish) return;
-    const end = { x: Phaser.Math.Linear(start.x, finish.x, progress), y: Phaser.Math.Linear(start.y, finish.y, progress) };
-    stream.lineStyle(2.4, color, 0.68);
-    [-2.5, 2.5].forEach((offset) => {
-      draftLine(stream, makeRandom(0x6300 + offset), start.x, start.y + offset, end.x, end.y + offset * 0.25, {
-        overshoot: 0,
-        jitter: 1.2,
-        segments: 9,
-      });
-    });
-  }
-
-  boardRect(board) {
-    return new Phaser.Geom.Rectangle(board.x, board.y, board.cols * board.cell, board.rows * board.cell);
-  }
-
-  cellAt(board, x, y) {
-    if (!Phaser.Geom.Rectangle.Contains(this.boardRect(board), x, y)) return null;
-    return cellKey(Math.floor((x - board.x) / board.cell), Math.floor((y - board.y) / board.cell));
-  }
-
-  boardByName(name) {
-    return name === 'required' ? REQUIRED : FREE;
-  }
-
-  selectBoardCell(pointer) {
-    if (this.transitioning) return;
-    const { x, y } = this.pointerWorld(pointer);
-    for (const [name, board] of [['required', REQUIRED], ['free', FREE]]) {
-      const cell = this.cellAt(board, x, y);
-      const centre = board.x + board.cols * board.cell / 2;
-      if (!cell || Math.abs(this.walker.x - centre) > 270) continue;
-      this.selected = { board: name, cell };
-      this.tutorialSeen.select = true;
-      this.redrawBoards();
-      return;
-    }
-  }
-
-  drawGrid(g, board) {
-    g.lineStyle(1.15, PAPER.graphiteSoft, 0.48);
-    for (let col = 0; col <= board.cols; col += 1) {
-      draftLine(g, this.rnd, board.x + col * board.cell, board.y, board.x + col * board.cell, board.y + board.rows * board.cell, {
-        overshoot: 1, jitter: 0.45, segments: board.rows * 2,
-      });
-    }
-    for (let row = 0; row <= board.rows; row += 1) {
-      draftLine(g, this.rnd, board.x, board.y + row * board.cell, board.x + board.cols * board.cell, board.y + row * board.cell, {
-        overshoot: 1, jitter: 0.45, segments: board.cols * 2,
-      });
-    }
-  }
-
-  drawStillLifeGuide(g, board, alpha = 0.34) {
-    const cx = (col) => board.x + (col + 0.5) * board.cell;
-    const cy = (row) => board.y + (row + 0.5) * board.cell;
-    g.lineStyle(1.45, PAPER.graphite, alpha);
-
-    // Two flower heads, then four stems converging into one visible vase.
-    [[2, 2], [6, 2]].forEach(([col, row]) => {
-      g.strokeCircle(cx(col), cy(row), board.cell * 1.12);
-      g.strokeCircle(cx(col), cy(row), board.cell * 0.42);
-    });
-    [[2, 2], [6, 2], [3, 3], [5, 3]].forEach(([col, row]) => {
-      draftLine(g, this.rnd, cx(col), cy(row) + 5, cx(4), cy(5), {
-        overshoot: 0, jitter: 0.55, segments: 6,
-      });
-    });
-    g.strokeEllipse(cx(3), cy(3), board.cell * 1.35, board.cell * 0.62);
-    g.strokeEllipse(cx(6), cy(3), board.cell * 1.35, board.cell * 0.62);
-
-    g.beginPath();
-    g.moveTo(cx(3) - 5, cy(5) - 8);
-    g.lineTo(cx(5) + 5, cy(5) - 8);
-    g.lineTo(cx(5) + 13, cy(7) + 5);
-    g.lineTo(cx(4), cy(8) + 8);
-    g.lineTo(cx(3) - 13, cy(7) + 5);
-    g.closePath();
-    g.strokePath();
-    g.strokeEllipse(cx(4), cy(5) - 8, board.cell * 2.7, 8);
-  }
-
-  fillCell(g, board, key, pigmentId, alpha = 0.82) {
-    const [col, row] = key.split(',').map(Number);
-    const pigment = this.studio.pigment(pigmentId);
-    if (!pigment) return;
-    paintedFill(g, this.rnd, board.x + col * board.cell + 2, board.y + row * board.cell + 2, board.cell - 4, board.cell - 4, pigment.color, {
-      alpha, inset: 2,
-    });
-    g.lineStyle(1.1, pigment.color, 0.46);
-    for (let yy = 9; yy < board.cell - 5; yy += 8) {
-      draftLine(g, this.rnd, board.x + col * board.cell + 7, board.y + row * board.cell + yy,
-        board.x + (col + 1) * board.cell - 7, board.y + row * board.cell + yy + 2, {
-          overshoot: 0, jitter: 1.2, segments: 4,
-        });
-    }
-  }
-
-  redrawBoards() {
-    this.referenceArt.clear();
-    this.requiredArt.clear();
-    this.freeArt.clear();
-    this.selectionArt.clear();
-    this.frameArt.clear();
-    this.drawStillLifeGuide(this.referenceArt, REFERENCE, 0.5);
-    this.drawStillLifeGuide(this.requiredArt, REQUIRED, 0.24);
-    this.drawGrid(this.referenceArt, REFERENCE);
-    this.drawGrid(this.requiredArt, REQUIRED);
-    this.drawGrid(this.freeArt, FREE);
-    REQUIRED_CELLS.forEach(({ cell, pigment }) => this.fillCell(this.referenceArt, REFERENCE, cell, pigment, 0.68));
-
-    const snapshot = this.studio.snapshot();
-    Object.entries(snapshot.required).forEach(([cell, token]) => {
-      this.fillCell(this.requiredArt, REQUIRED, cell, this.studio.source(token).pigment);
-    });
-    Object.entries(snapshot.free).forEach(([cell, token]) => {
-      this.fillCell(this.freeArt, FREE, cell, this.studio.source(token).pigment);
-    });
-
-    if (this.selected) {
-      const board = this.boardByName(this.selected.board);
-      const [col, row] = this.selected.cell.split(',').map(Number);
-      this.selectionArt.lineStyle(2.4, PAPER.cyan, 0.9);
-      this.selectionArt.strokeRect(board.x + col * board.cell + 3, board.y + row * board.cell + 3, board.cell - 6, board.cell - 6);
-    }
-    if (snapshot.complete || this.frameReveal > 0.01) this.drawCompletionFrame(snapshot.complete ? Math.max(this.frameReveal, 0.2) : this.frameReveal);
-  }
-
-  drawCompletionFrame(amount) {
-    const g = this.frameArt;
-    const w = REQUIRED.cols * REQUIRED.cell;
-    const h = REQUIRED.rows * REQUIRED.cell;
-    const pad = 18 + 8 * amount;
-    g.lineStyle(2.8, PAPER.bookCloth, 0.9 * amount);
-    draftRect(g, makeRandom(0x5150), REQUIRED.x - pad, REQUIRED.y - pad, w + pad * 2, h + pad * 2, { overshoot: 8, jitter: 1.1 });
-    g.lineStyle(1.4, PAPER.graphite, 0.72 * amount);
-    draftRect(g, makeRandom(0x5151), REQUIRED.x - pad + 7, REQUIRED.y - pad + 7, w + (pad - 7) * 2, h + (pad - 7) * 2, { overshoot: 5, jitter: 0.7 });
-    g.fillStyle(PAPER.bookCloth, 0.88 * amount).fillCircle(REQUIRED.x + w + pad - 10, REQUIRED.y + h + pad - 8, 20 * amount);
-    g.lineStyle(3, PAPER.sheetHigh, 0.9 * amount);
-    g.lineBetween(REQUIRED.x + w + pad - 20, REQUIRED.y + h + pad - 8, REQUIRED.x + w + pad - 12, REQUIRED.y + h + pad);
-    g.lineBetween(REQUIRED.x + w + pad - 12, REQUIRED.y + h + pad, REQUIRED.x + w + pad + 2, REQUIRED.y + h + pad - 17);
-  }
-
-  redrawDoor() {
-    const g = this.doorArt;
-    g.clear();
-    const complete = this.studio.isComplete();
-    g.fillStyle(complete ? PAPER.cyan : PAPER.sheetMid, complete ? 0.2 : 0.72).fillRect(EXIT_X - 42, 302, 74, FLOOR_Y - 302);
-    g.lineStyle(2, complete ? PAPER.cyan : PAPER.graphiteSoft, complete ? 0.9 : 0.62);
-    draftRect(g, makeRandom(0x9955), EXIT_X - 42, 302, 74, FLOOR_Y - 302, { overshoot: 6, jitter: 0.8 });
-    g.strokeCircle(EXIT_X + 12, 388, 4);
-    this.addedDoorLabel ??= this.add.text(EXIT_X - 5, 276, 'TO THE BORROWED TRAIN', {
-      fontFamily: MONO, fontSize: '9px', color: '#8d8579', letterSpacing: 1.3,
-    }).setOrigin(0.5).setDepth(DEPTH.BOARD);
-  }
-
-  interactionForPlayer() {
-    const source = SOURCE_LAYOUT.find(({ id }) => id === this.hoverSourceId);
-    if (source) return { type: 'source', id: source.id, x: source.x, y: source.y };
-    const requiredCentre = REQUIRED.x + REQUIRED.cols * REQUIRED.cell / 2;
-    if (Math.abs(this.walker.x - requiredCentre) <= 260) return { type: 'board', board: 'required', x: requiredCentre, y: REQUIRED.y };
-    const freeCentre = FREE.x + FREE.cols * FREE.cell / 2;
-    if (Math.abs(this.walker.x - freeCentre) <= 270) return { type: 'board', board: 'free', x: freeCentre, y: FREE.y };
-    if (this.studio.isComplete() && Math.abs(this.walker.x - EXIT_X) <= 105) return { type: 'exit', x: EXIT_X, y: 300 };
-    return null;
-  }
-
-  promptFor(interaction) {
-    if (!interaction) return null;
-    if (interaction.type === 'source') {
-      const item = this.studio.source(interaction.id);
-      const pigment = this.studio.pigment(item.pigment);
-      return {
-        text: this.tutorialSeen.extract
-          ? `${item.object}\nRIGHT-HOLD TO ADD ${pigment.name}`
-          : 'POINT AT A SMALL OBJECT\nRIGHT-HOLD TO ADD ITS COLOR TO YOUR PALETTE',
-        color: pigment.color,
-        x: interaction.x,
-        y: interaction.y - 115,
-      };
-    }
-    if (interaction.type === 'exit') {
-      return { text: this.tutorialSeen.exit ? 'THE NEXT ROOM OPENS' : 'POINT AT THE DOOR\nLEFT-HOLD TO CARRY THE FRAMED VASE FORWARD', color: PAPER.cyan, x: EXIT_X, y: 286 };
-    }
-    if (!this.selected || this.selected.board !== interaction.board) {
-      return {
-        text: this.tutorialSeen.select ? 'CHOOSE ANOTHER SQUARE' : 'CLICK A SQUARE\nON THIS CANVAS',
-        color: PAPER.cyan,
-        x: interaction.x,
-        y: interaction.y - 22,
-      };
-    }
-    const snapshot = this.studio.snapshot();
-    const occupied = interaction.board === 'required'
-      ? snapshot.required[this.selected.cell]
-      : snapshot.free[this.selected.cell];
-    if (occupied && snapshot.palette.length === 0) {
-      const pigment = this.studio.pigment(this.studio.source(occupied).pigment);
-      return {
-        text: this.tutorialSeen.lift ? `RIGHT-HOLD TO LIFT\n${pigment.name}` : 'RIGHT-HOLD THIS SQUARE\nTO LIFT THE COLOR BACK OUT',
-        color: pigment.color,
-        x: interaction.x,
-        y: interaction.y - 22,
-      };
-    }
-    if (snapshot.palette.length && !occupied) {
-      return {
-        text: this.tutorialSeen.fill ? 'LEFT-HOLD TO PAINT\nTHE MATCHING COLOR' : 'LEFT-HOLD THIS SQUARE\nTO PAINT THE MATCHING COLOR',
-        color: PAPER.cyan,
-        x: interaction.x,
-        y: interaction.y - 22,
-      };
-    }
-    return { text: 'THE CHOSEN SQUARE\nIS WAITING FOR COLOR', color: PAPER.graphiteSoft, x: interaction.x, y: interaction.y - 22 };
-  }
-
-  showPrompt(spec) {
-    this.promptFrame.clear();
-    if (!spec) {
-      this.promptText.setVisible(false);
-      return;
-    }
-    this.promptText.setText(spec.text).setPosition(spec.x, spec.y).setColor(colorCss(spec.color)).setVisible(true);
-    const bounds = this.promptText.getBounds();
-    this.promptFrame.fillStyle(PAPER.sheetHigh, 0.95).fillRoundedRect(bounds.x - 5, bounds.y - 4, bounds.width + 10, bounds.height + 8, 3);
-    this.promptFrame.lineStyle(1.5, PAPER.graphiteSoft, 0.82);
-    draftRect(this.promptFrame, makeRandom(Math.floor(spec.x * 31 + spec.y)), bounds.x - 5, bounds.y - 4, bounds.width + 10, bounds.height + 8, {
-      overshoot: 3, jitter: 0.7,
-    });
-    this.promptFrame.lineStyle(2.4, spec.color, 0.84);
-    draftLine(this.promptFrame, makeRandom(Math.floor(spec.x * 13)), bounds.x + 8, bounds.y + bounds.height + 1, bounds.x + bounds.width - 8, bounds.y + bounds.height + 1, {
-      overshoot: 0, jitter: 1, segments: 5,
-    });
   }
 
   handleEvents() {
+    const cx = CANVAS.x + CANVAS.w / 2;
     this.studio.drainEvents().forEach((event) => {
-      if (event.type === 'wrong-required-color') {
-        const wanted = this.studio.pigment(event.wanted);
-        this.localFeedback(`THE REFERENCE NEEDS\n${wanted.name} HERE`, wanted.color);
-      } else if (event.type === 'copy-complete') {
+      if (event.type === 'color-taken') {
+        const pigment = this.studio.pigment(event.pigment);
+        const layout = SOURCE_LAYOUT.find((l) => l.id === event.source);
+        noteAt(this, layout.x, layout.rect.y - 4, pigment.name, { tone: 'info', hold: 700 });
+      } else if (event.type === 'region-painted') {
+        this.tutorialSeen.apply = true;
+      } else if (event.type === 'apply-refused' && event.reason === 'dry-brush') {
+        noteAt(this, cx, CANVAS.y - 20, `THE BRUSH IS DRY · ${this.brush.label('washHold')} A THING ON THE SHELF`, { tone: 'warn' });
+      } else if (event.type === 'apply-refused' && event.reason === 'already-painted') {
+        noteAt(this, cx, CANVAS.y - 20, `ALREADY PAINTED · ${this.brush.label('washHold')} TO WASH IT OFF`, { tone: 'warn' });
+      } else if (event.type === 'still-life-complete') {
         this.frameReveal = 0;
         this.tweens.add({ targets: this, frameReveal: 1, duration: 720, ease: 'Back.easeOut' });
-        this.localFeedback('THE STILL LIFE IS COMPLETE.\nSOMETHING SHINES BEHIND THE EMPTY SHELF.', PAPER.bookCloth);
-      } else if (event.type === 'copy-opened-again') {
+        noteAt(this, cx, CANVAS.y - 26, 'AS SHE REMEMBERED IT. THE DOOR IS OPEN.', { tone: 'good', hold: 2200 });
+      } else if (event.type === 'still-life-looks-wrong') {
+        noteAt(this, cx, CANVAS.y - 26, "IT ISN'T AS ROSA REMEMBERED IT.\nWASH OFF WHAT LOOKS WRONG.", { tone: 'warn', hold: 2600 });
+      } else if (event.type === 'still-life-opened-again') {
         this.frameReveal = 0;
-        this.localFeedback('THE FRAME OPENS.\nTHE EXIT CLOSES.', PAPER.fault);
       }
     });
+    this.redrawAll();
   }
 
-  localFeedback(text, color) {
-    const note = this.add.text(this.walker.x, this.walker.y - 90, text, {
-      fontFamily: MONO, fontSize: '10px', color: colorCss(color), align: 'center', lineSpacing: 4,
-      backgroundColor: '#fdfcf8ee', padding: { x: 10, y: 8 },
-    }).setOrigin(0.5, 1).setDepth(DEPTH.PROMPT + 3);
-    this.tweens.add({ targets: note, y: note.y - 12, alpha: 0, delay: 900, duration: 650, onComplete: () => note.destroy() });
-  }
-
-  drawHeld(time) {
-    this.heldArt.clear();
+  // One tag, beside whatever the brush is on; glints on what is still waiting.
+  updateTag() {
+    const b = this.brush;
     const snapshot = this.studio.snapshot();
-    const paletteSources = snapshot.palette.map((id) => this.studio.source(id)).filter(Boolean);
-    let progressId = null;
-    if (this.hold.key?.startsWith('source:')) {
-      const sourceId = this.hold.key.slice('source:'.length);
-      progressId = this.studio.source(sourceId)?.pigment ?? null;
-    } else if (this.hold.key?.startsWith('lift:')) {
-      const [, boardName, cell] = this.hold.key.split(':');
-      const sourceId = this.occupiedSourceId(boardName, cell, snapshot);
-      progressId = sourceId ? this.studio.source(sourceId)?.pigment : null;
+    const progress = this.hold.key ? this.hold.progress / HOLD_SECONDS : 0;
+    if (this.locked || this.transitioning) {
+      this.tag.hide();
+      return;
     }
-    if (!paletteSources.length && !progressId) return;
-    drawPigmentHalo(this.heldArt, {
-      x: this.walker.x,
-      y: this.walker.y - 50,
-      pigments: STUDIO_PIGMENTS,
-      activeIds: paletteSources.map((source) => source.pigment),
-      selectedId: null,
-      progressId,
-      progress: this.hold.progress / HOLD_SECONDS,
-      time,
-    });
+    if (this.hoverSourceId) {
+      const layout = SOURCE_LAYOUT.find((l) => l.id === this.hoverSourceId);
+      const item = this.studio.source(layout.id);
+      this.tag.show(`${b.label('washHold')} · TAKE ${this.studio.pigment(item.pigment).name}`, layout.x, layout.rect.y - 4, { progress });
+      return;
+    }
+    if (this.hoverRegionId) {
+      const region = this.studio.region(this.hoverRegionId);
+      const c = regionCentre(region.id);
+      const filled = snapshot.fills[region.id];
+      const text = filled
+        ? `${b.label('washHold')} · WASH ${region.label} OFF`
+        : snapshot.brush
+          ? `${b.label('paintHold')} · PAINT ${region.label} ${this.studio.pigment(snapshot.brush).name}`
+          : `${region.label} · TAKE A COLOUR FROM THE SHELF`;
+      this.tag.show(text, CANVAS.x + c.x, CANVAS.y + c.y - 16, { progress });
+      return;
+    }
+    const exitCentre = EXIT.x + EXIT.w / 2;
+    if (snapshot.complete && Math.abs(this.walker.x - exitCentre) <= 200) {
+      this.tag.show(`${b.label('read')} · THROUGH TO THE PAINTED TRAIN`, exitCentre, EXIT.y - 30, { progress: this.hold.key === 'exit' ? progress : 0 });
+      return;
+    }
+    if (!this.tutorialSeen.take && this.walker.x < SHELF.x + SHELF.w + 60) {
+      this.tag.show(`AIM WITH THE ${b.label('aim')} · ${b.label('washHold')} A THING TO TAKE ITS COLOUR`, SHELF.x + SHELF.w / 2, SHELF.y - 60);
+      return;
+    }
+    this.tag.hide();
   }
 
-  stepPlayer() {
-    if (this.transitioning) {
+  drawMarkers() {
+    const g = this.markerArt;
+    g.clear();
+    const t = this.time.now;
+    const snapshot = this.studio.snapshot();
+    STILL_LIFE_REGIONS.forEach((region) => {
+      if (snapshot.fills[region.id] && this.studio.isRight(region.id)) return;
+      const c = regionCentre(region.id);
+      drawGlintMarker(g, t, CANVAS.x + c.x + 14, CANVAS.y + c.y - 12, { alpha: snapshot.fills[region.id] ? 0.5 : 1 });
+    });
+    if (snapshot.complete) drawGlintMarker(g, t, EXIT.x + EXIT.w - 4, EXIT.y - 6);
+  }
+
+  drawStream() {
+    const g = this.streamArt;
+    g.clear();
+    if (!this.hold.key) return;
+    const progress = Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1);
+    const [kind, id] = this.hold.key.split(':');
+    const tip = { x: this.walker.x, y: this.walker.y - 20 };
+    let from = null;
+    let color = UI.amberInk;
+    if (kind === 'take') {
+      const layout = SOURCE_LAYOUT.find((l) => l.id === id);
+      from = { x: layout.x, y: layout.y - 18 };
+      color = this.studio.pigment(this.studio.source(id).pigment).color;
+    } else if (kind === 'apply' || kind === 'wash') {
+      const c = regionCentre(id);
+      from = { x: CANVAS.x + c.x, y: CANVAS.y + c.y };
+      const pid = kind === 'apply' ? this.studio.state.brush : this.studio.state.fills[id];
+      color = this.studio.pigment(pid)?.color ?? UI.amberInk;
+    }
+    if (!from) return;
+    const start = kind === 'apply' ? tip : from;
+    const finish = kind === 'apply' ? from : tip;
+    const end = { x: Phaser.Math.Linear(start.x, finish.x, progress), y: Phaser.Math.Linear(start.y, finish.y, progress) };
+    g.lineStyle(2.6, color, 0.72);
+    [-2.5, 2.5].forEach((o) => draftLine(g, makeRandom(0x6300 + o), start.x, start.y + o, end.x, end.y + o * 0.25, { overshoot: 0, jitter: 1.2, segments: 9 }));
+  }
+
+  stepPlayer(move) {
+    if (this.transitioning || this.locked) {
       this.walker.body.setVelocityX(0);
       return;
     }
-    const left = this.keys.left.isDown || this.keys.a.isDown;
-    const right = this.keys.right.isDown || this.keys.d.isDown;
-    const jump = this.keys.up.isDown || this.keys.w.isDown || this.keys.space.isDown;
-    this.walker.body.setVelocityX(left && !right ? -MOVE_SPEED : right && !left ? MOVE_SPEED : 0);
-    if (jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
+    this.walker.body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
+    if (move.jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
   }
 
-  updateFigure(time) {
+  updateFigure() {
     const moving = Math.abs(this.walker.body.velocity.x) > 8;
     if (this.walker.body.velocity.x < -8) this.playerFacing = -1;
     if (this.walker.body.velocity.x > 8) this.playerFacing = 1;
     this.playerAnimation = moving ? 'walk' : 'idle';
-    const pointer = this.input.activePointer;
-    drawPaintedPlayer(this.figure, this.walker, pointer);
-  }
-
-  seedStrokes() {
-    const map = { red: 'red', orange: 'orange', pink: 'red', yellow: 'yellow', green: 'green', teal: 'blue', blue: 'blue', violet: 'violet' };
-    return REQUIRED_CELLS.map(({ cell, pigment }) => {
-      const [col, row] = cell.split(',').map(Number);
-      return {
-        color: map[pigment],
-        points: [
-          { x: 80 + col * 125, y: 50 + row * 88 },
-          { x: 150 + col * 125, y: 100 + row * 88 },
-        ],
-      };
-    });
+    const held = this.studio.pigment(this.studio.state.brush);
+    drawPaintedPlayer(this.figure, this.walker, this.brush, held?.color ?? PAPER.indigo);
   }
 
   goToTrain() {
+    if (this.transitioning) return;
     this.transitioning = true;
-    this.registry.set('chapter4Drawing', this.seedStrokes());
-    // Part III always begins before the six world colors. The studio teaches
-    // the ring, but its finite room colors do not skip the train-yard pickups.
     this.registry.set('chapter4Pigments', []);
     if (this.music) this.tweens.add({ targets: this.music, volume: 0, duration: 420 });
     this.cameras.main.fadeOut(420, 247, 244, 236);
@@ -903,26 +647,31 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   objectiveText() {
-    const snapshot = this.studio.snapshot();
-    if (snapshot.complete && !this.pigmentStoneCollected) return 'the vase is finished; return to the empty cabinet for the revealed color stone';
-    if (snapshot.complete) return 'the vase is framed and the color stone is collected; continue to the train';
-    if (Object.keys(snapshot.free).length) return 'a borrowed color is on the practice canvas; lift it back to finish the vase';
-    if (snapshot.palette.length) return 'the carried palette will match a collected color to each outlined square';
-    return `borrow colors from the miniature objects and paint the still life (${Object.keys(snapshot.required).length} / ${REQUIRED_CELLS.length})`;
+    const s = this.studio.snapshot();
+    if (s.complete) return 'the still life is as Rosa remembered it; the door to the painted train is open';
+    if (s.filled === STILL_LIFE_REGIONS.length) return 'every place is painted but something looks wrong; wash it off and repaint';
+    return `take colours from the shelf and paint Rosa's still life (${s.filled} / ${STILL_LIFE_REGIONS.length})`;
   }
 
   update(time, delta) {
     const dt = Math.min(delta, 50) / 1000;
-    this.stepPlayer();
-    this.stepSuction(dt);
-    this.updateFigure(time);
-    this.tryCollectMagicStone();
-    this.redrawMagicStone(time);
-    this.drawHeld(time);
-    this.drawSuction();
-    this.currentInteraction = this.interactionForPlayer();
-    this.showPrompt(this.promptFor(this.currentInteraction));
-    if (this.frameReveal > 0 && this.frameReveal < 1) this.redrawBoards();
+    this.brush.update(dt);
+    this.restart.update(dt, this.brush.pad);
+    if (this.restart.blocking) {
+      this.walker.body.setVelocityX(0);
+      return;
+    }
+    const move = this.brush.readMove(this.keys);
+    this.stepPlayer(move);
+    if (!this.locked && !this.transitioning) this.stepInteraction(dt, move);
+    this.updateFigure();
+    this.drawStream();
+    this.drawMarkers();
+    this.updateTag();
+    this.brush.drawCursor({ hidden: this.transitioning });
+    if (this.frameReveal > 0 && this.frameReveal < 1) this.redrawCanvas();
+    else if (this.hoverRegionId !== this.lastHoverRegion) this.redrawCanvas();
+    this.lastHoverRegion = this.hoverRegionId;
     this.grain.tilePositionX = this.cameras.main.scrollX * 0.34 + Math.sin(time / 5200) * 4;
   }
 
@@ -930,8 +679,10 @@ export class DrawingStudioScene extends Phaser.Scene {
     const snapshot = this.studio.snapshot();
     return {
       scene: 'DrawingStudio',
+      camera: { x: Math.round(this.cameras.main.worldView.x), y: Math.round(this.cameras.main.worldView.y) },
       coordinateSystem: 'world pixels; origin top-left; x right; y down',
       objective: this.objectiveText(),
+      locked: this.locked,
       player: {
         x: Math.round(this.walker.x),
         y: Math.round(this.walker.y),
@@ -939,28 +690,21 @@ export class DrawingStudioScene extends Phaser.Scene {
         facing: this.playerFacing < 0 ? 'left' : 'right',
         animation: this.playerAnimation,
       },
-      selected: this.selected,
-      interaction: this.currentInteraction,
-      pointerSelection: {
-        source: this.hoverSourceId,
-        suctionProgress: Number((this.hold.progress / HOLD_SECONDS).toFixed(2)),
-      },
+      pointer: { mode: this.brush.mode, x: Math.round(this.brush.worldX), y: Math.round(this.brush.worldY) },
+      hover: { source: this.hoverSourceId, region: this.hoverRegionId },
+      hold: { key: this.hold.key, progress: Number((this.hold.progress / HOLD_SECONDS).toFixed(2)) },
+      holdSeconds: HOLD_SECONDS,
+      tag: this.tag.visible ? this.tag.text : null,
       tutorialSeen: { ...this.tutorialSeen },
-      canvasGrid: {
-        cell: CANVAS_CELL,
-        reference: { cols: REFERENCE.cols, rows: REFERENCE.rows },
-        copy: { cols: REQUIRED.cols, rows: REQUIRED.rows },
-        free: { cols: FREE.cols, rows: FREE.rows },
-      },
-      magicStone: {
-        id: 'chapter-4',
-        x: PIGMENT_STONE.x,
-        y: PIGMENT_STONE.y,
-        collected: this.pigmentStoneCollected,
-        unlocked: snapshot.allSourcesExtracted,
-        visible: snapshot.allSourcesExtracted && !this.pigmentStoneCollected,
-      },
+      regions: Object.fromEntries(STILL_LIFE_REGIONS.map((r) => [r.id, {
+        centre: { x: CANVAS.x + regionCentre(r.id).x, y: CANVAS.y + regionCentre(r.id).y },
+        wants: r.wants,
+      }])),
+      sources: Object.fromEntries(SOURCE_LAYOUT.map((l) => [l.id, { x: l.x, y: l.y - 20 }])),
+      exit: { x: EXIT.x + EXIT.w / 2, y: EXIT.y + 60 },
+      freeCanvas: false,
       ...snapshot,
+      palette: STUDIO_PIGMENTS.map((p) => p.id),
       music: { playing: Boolean(this.music?.isPlaying), volume: Number((this.music?.volume ?? 0).toFixed(2)) },
     };
   }
