@@ -45,7 +45,10 @@ export const COLORS = {
   nightSky: 0x758395,
 };
 
-export const VERSION = 'P0 ECHO CITY AUTHORITY v0.5.0';
+export const VERSION = 'MUSEUM OF ONE ANSWER · release 1.0';
 
-// Debug beat entry points (?beat=lobby|corridor|echo|return) — Gate 1 task 5.
-export const DEBUG_BEATS = ['lobby', 'corridor', 'echo', 'return', 'collapse'];
+// Dev-only beat entry points (museum-3d.html?beat=…); production ignores them.
+//   reveal         — the exhibit is solved: the lost desk stands in the case
+//   labyrinth-done — back in the corridor holding the Labyrinth's eight keys
+//   echo           — the sealed Echo City reconstruction (dev preview only)
+export const DEBUG_BEATS = ['lobby', 'corridor', 'reveal', 'labyrinth-done', 'echo', 'collapse'];

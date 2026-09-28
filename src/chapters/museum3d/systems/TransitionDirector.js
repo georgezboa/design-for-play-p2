@@ -1,7 +1,9 @@
 // The only system allowed to move the player between spaces. Sequence:
 // fade out → exit current scene → swap root → enter next with the model
 // snapshot → place the player → fade in → release pointer lock and wait for
-// a fresh user gesture (CLICK TO RESUME).
+// a fresh user gesture (CLICK TO RESUME). `preserveControl: true` skips that
+// last step so a walked threshold (lobby ⇄ corridor, the collapse start)
+// keeps the mouse; `occlude: false` skips the fade.
 
 import { canTransition } from '../state/chapter05Model.js';
 

@@ -1,47 +1,56 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {
   CHAPTER_EXHIBIT_CATALOG,
   CHAPTER_EXHIBIT_ORDER,
+  FILED_CLAIMS,
+  MUSEUM_ACCESSION,
+  MUSEUM_DATE,
   chapterExhibit,
-  exhibitDialogue,
+  exhibitCard,
 } from '../../src/chapters/museum3d/data/chapterExhibitCatalog.js';
+import { CHAPTER_CASE_OBJECT_IDS } from '../../src/chapters/museum3d/assets/ChapterCaseObjects.js';
 
-test('the Museum contains one coherent evidence dossier for every chapter', () => {
-  assert.deepEqual(CHAPTER_EXHIBIT_ORDER, [
-    'last-train',
-    'borrowed-grid',
-    'echo-city',
-    'painted-country',
-    'labyrinth',
-  ]);
-  assert.equal(Object.keys(CHAPTER_EXHIBIT_CATALOG).length, 5);
-  assert.deepEqual(
-    CHAPTER_EXHIBIT_ORDER.map((id) => chapterExhibit(id).chapter),
-    ['CHAPTER 01', 'CHAPTER 02', 'CHAPTER 03', 'CHAPTER 04', 'CHAPTER 05'],
-  );
-  assert.equal(new Set(CHAPTER_EXHIBIT_ORDER.map((id) => chapterExhibit(id).accession)).size, 5);
+const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8');
+
+test('one case per earlier chapter, Chapter 1 → 4, under the new chapter names', () => {
+  assert.deepEqual(CHAPTER_EXHIBIT_ORDER, ['night-service', 'borrowed-light', 'echo-city', 'painted-country']);
+  assert.equal(Object.keys(CHAPTER_EXHIBIT_CATALOG).length, 4);
+  assert.deepEqual(CHAPTER_EXHIBIT_ORDER.map((id) => chapterExhibit(id).chapter), ['CHAPTER 01', 'CHAPTER 02', 'CHAPTER 03', 'CHAPTER 04']);
+  assert.deepEqual(CHAPTER_EXHIBIT_ORDER.map((id) => chapterExhibit(id).title), ['NIGHT SERVICE', 'BORROWED LIGHT', 'ECHO CITY', 'THE PAINTED COUNTRY']);
+  assert.equal(chapterExhibit('night-service').object, 'THE ORCHARD CASE');
+  assert.match(chapterExhibit('borrowed-light').object, /TICKET STUB · CITY LINE/);
+  assert.match(chapterExhibit('echo-city').object, /M\. VENN/);
+  assert.match(chapterExhibit('echo-city').archiveRecord, /Nika/);
+  assert.match(chapterExhibit('painted-country').butchReading, /Rosa drew it\. The hawthorn is Mara’s mark\./);
+  assert.deepEqual([...CHAPTER_CASE_OBJECT_IDS].sort(), [...CHAPTER_EXHIBIT_ORDER].sort(), 'every case has its object');
 });
 
-test('every accession card separates object, personal meaning, and reconstruction law', () => {
-  for (const id of CHAPTER_EXHIBIT_ORDER) {
-    const exhibit = chapterExhibit(id);
-    for (const field of ['object', 'archiveRecord', 'butchReading', 'mode', 'reconstructionLaw']) {
-      assert.ok(exhibit[field]?.length > (field === 'mode' ? 5 : 12), `${id} is missing ${field}`);
-    }
-    const dialogue = exhibitDialogue(exhibit);
-    assert.deepEqual(dialogue.map(({ speaker }) => speaker), ['ARCHIVIST', 'BUTCH', 'ARCHIVE']);
-    assert.match(dialogue[0].text, new RegExp(exhibit.accession.replace('.', '\\.')));
-    assert.match(dialogue[2].text, new RegExp(exhibit.mode));
+test('the old chapters are gone from every card', () => {
+  const all = JSON.stringify([CHAPTER_EXHIBIT_CATALOG, FILED_CLAIMS]);
+  for (const stale of ['THE LAST TRAIN', 'cyan promise thread', 'CYAN PROMISE THREAD', 'NEON ROOFTOPS', 'BYPASS COIL', 'bypass coil', 'LOOKING FRAGMENT', 'Infinity Train', 'Black Knife']) {
+    assert.ok(!all.includes(stale), `stale copy: ${stale}`);
   }
 });
 
-test('genre shifts are justified by distinct memory laws instead of unexplained mode changes', () => {
-  assert.deepEqual(
-    CHAPTER_EXHIBIT_ORDER.map((id) => chapterExhibit(id).mode),
-    ['RESTORATION RECORD', 'TRAVERSAL RECORD', 'INVESTIGATION RECORD', 'MATERIAL RECORD', 'GAZE RECORD'],
-  );
-  const labyrinth = chapterExhibit('labyrinth');
-  assert.match(labyrinth.ingress, /rebuilds that memory as a space/i);
-  assert.match(labyrinth.egress, /returns control to the Museum/i);
+test('one accession, one date: every case is filed under claim 1978-0412 on 17 OCT 1978', () => {
+  assert.equal(MUSEUM_ACCESSION, 'ACC. 1978-0412 · VELEZ, M. · PENDING');
+  assert.equal(MUSEUM_DATE, '17 OCT 1978');
+  CHAPTER_EXHIBIT_ORDER.forEach((id, index) => assert.equal(chapterExhibit(id).accession, `ACC. 1978-0412 · ${index + 1}`));
+  FILED_CLAIMS.forEach((claim) => assert.equal(claim.stamp, 'FILED · 17 OCT 1978'));
+  const museumCopy = [read('../../src/chapters/museum3d/scenes/ServiceLobby.js'), read('../../src/chapters/museum3d/scenes/ArchiveCorridor.js')].join('\n');
+  for (const stale of ['ACC. 17-', 'OCTOBER 17', 'FOUR DIRECTIONS', 'A-1017']) assert.ok(!museumCopy.includes(stale), stale);
+});
+
+test('cards stay short: two or three lines, the museum\'s reading then Butch\'s', () => {
+  for (const id of CHAPTER_EXHIBIT_ORDER) {
+    const card = exhibitCard(chapterExhibit(id));
+    assert.ok(card.lines.length >= 2 && card.lines.length <= 3, id);
+    assert.match(card.lines.at(-1), /^BUTCH — /);
+    assert.ok(card.lines.every((line) => line.length <= 90), `${id} has a long line`);
+  }
+  for (const claim of FILED_CLAIMS) assert.ok(claim.lines.length <= 3);
+  assert.deepEqual(FILED_CLAIMS.map(({ title }) => title), ['CITY CASE — COLLECTED', 'ORCHARD CASE — UNCLAIMED', 'SECOND CLAIM — DISCARDED']);
+  assert.match(FILED_CLAIMS[2].lines.join(' '), /The archive does not issue duplicates\./);
 });

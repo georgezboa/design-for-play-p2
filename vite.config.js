@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { createReadStream, statSync } from 'node:fs';
+import { createReadStream, rmSync, statSync } from 'node:fs';
 import { extname, resolve, sep } from 'node:path';
 
 // The Chapter 1 opening storyboard, PDFs, QA frames and preview film are
@@ -30,6 +30,26 @@ function serveOpeningArchiveInDev() {
   };
 }
 
+// Chapter 5's Echo City reconstruction is a dev-only preview
+// (museum-3d.html?beat=echo in `npm run dev`): the shipping museum never
+// builds, preloads or requests it, so its public/museum3d/echo-city models
+// (~43 MB) stay out of dist/ and the packaged game.
+const DEV_ONLY_PUBLIC_DIRS = ['museum3d/echo-city'];
+
+function dropDevOnlyPublicAssets() {
+  let outDir = 'dist';
+  return {
+    name: 'nightfall-drop-dev-only-public-assets',
+    apply: 'build',
+    configResolved(config) { outDir = config.build.outDir; },
+    closeBundle() {
+      for (const dir of DEV_ONLY_PUBLIC_DIRS) {
+        rmSync(resolve(import.meta.dirname, outDir, dir), { recursive: true, force: true });
+      }
+    },
+  };
+}
+
 // `command` and `mode` are the only two inputs that decide whether this build
 // may skip ahead. `npm run dev` serves in development mode and gets the
 // chapter select; `npm run prod` serves the same code in production mode and
@@ -40,7 +60,7 @@ export default defineConfig(({ command, mode }) => {
   const devMode = command === 'serve' && mode !== 'production';
 
   return {
-    plugins: [serveOpeningArchiveInDev()],
+    plugins: [serveOpeningArchiveInDev(), dropDevOnlyPublicAssets()],
     define: {
       __DEV_MODE__: JSON.stringify(devMode),
     },
@@ -78,8 +98,9 @@ export default defineConfig(({ command, mode }) => {
           finalBoss: resolve(import.meta.dirname, 'final-boss.html'),
           hiddenFinalBoss: resolve(import.meta.dirname, 'hidden-final-boss.html'),
           trueEnding: resolve(import.meta.dirname, 'true-ending.html'),
-          borrowedGrid: resolve(import.meta.dirname, 'borrowed-grid.html'),
           labyrinth: resolve(import.meta.dirname, 'labyrinth.html'),
+          // Chapter 5's lobby exhibit, framed like the Labyrinth.
+          oneAnswer: resolve(import.meta.dirname, 'one-answer.html'),
           chapter05PaintedCountry: resolve(import.meta.dirname, 'chapter05-painted-country.html'),
         },
       },

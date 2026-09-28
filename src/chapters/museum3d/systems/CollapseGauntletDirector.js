@@ -46,12 +46,24 @@ export const COLLAPSE_DOOR_PATTERN = Object.freeze([
   Object.freeze({ x: 40.12, z: 2.48, type: 'city-stone', scale: 2.05, radius: 0.66 }),
 ]);
 
+// The chapter cases die in the order the player walks past them.
 const GALLERY_THRESHOLDS = Object.freeze([
-  ['painted-country', 14],
-  ['borrowed-grid', 20.5],
+  ['night-service', 14],
+  ['borrowed-light', 20.5],
   ['echo-city', 28.5],
-  ['labyrinth', 36.5],
+  ['painted-country', 36.5],
 ]);
+
+// Settled debris slides toward the nearer wall so its collider never reaches
+// the middle lane: holding W straight down the centre never sticks. The impact
+// itself still lands on the authored marker (that is where it can hit you).
+export const COLLAPSE_CLEAR_LANE_HALF_WIDTH = 0.12;
+const PLAYER_RADIUS = 0.35;
+export function settledDebrisZ(z, radius) {
+  const minAbs = radius + PLAYER_RADIUS + COLLAPSE_CLEAR_LANE_HALF_WIDTH;
+  const side = z < 0 ? -1 : 1;
+  return side * Math.max(Math.abs(z), minAbs);
+}
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -113,18 +125,20 @@ function makeHazardMesh(type, scale = 1) {
 
 function makeDangerMarker(size = 0.65) {
   const group = new THREE.Group();
-  const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xff3b20, transparent: true, opacity: 0.96, side: THREE.DoubleSide, depthWrite: false });
+  // Amber and ivory, not red: the room itself pulses red during the collapse,
+  // so a red marker disappeared into it. Amber is the game's "act on this".
+  const ringMaterial = new THREE.MeshBasicMaterial({ color: 0xffb347, transparent: true, opacity: 0.96, side: THREE.DoubleSide, depthWrite: false });
   const ring = new THREE.Mesh(new THREE.RingGeometry(size * 0.72, size, 3), ringMaterial);
   ring.rotation.x = -Math.PI / 2;
   ring.rotation.z = Math.PI / 6;
   ring.position.y = 0.025;
   group.add(ring);
-  const outerMaterial = new THREE.MeshBasicMaterial({ color: 0xff3b20, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false });
+  const outerMaterial = new THREE.MeshBasicMaterial({ color: 0xffe2a8, transparent: true, opacity: 0.28, side: THREE.DoubleSide, depthWrite: false });
   const outer = new THREE.Mesh(new THREE.RingGeometry(size * 1.05, size * 1.18, 32), outerMaterial);
   outer.rotation.x = -Math.PI / 2;
   outer.position.y = 0.021;
   group.add(outer);
-  const barMaterial = new THREE.MeshBasicMaterial({ color: 0xffd06a, side: THREE.DoubleSide, depthWrite: false });
+  const barMaterial = new THREE.MeshBasicMaterial({ color: 0xf6ecd6, side: THREE.DoubleSide, depthWrite: false });
   const bar = new THREE.Mesh(new THREE.PlaneGeometry(size * 0.13, size * 0.58), barMaterial);
   bar.rotation.x = -Math.PI / 2;
   bar.position.set(0, 0.035, -size * 0.06);
@@ -149,7 +163,7 @@ function makeCracks({ ceiling = false, radius = 0.9 } = {}) {
     );
   }
   const geometry = new THREE.BufferGeometry().setFromPoints(points);
-  const material = new THREE.LineBasicMaterial({ color: ceiling ? 0x211a16 : 0xff4a2c, transparent: true, opacity: 0.92, depthWrite: false });
+  const material = new THREE.LineBasicMaterial({ color: ceiling ? 0x211a16 : 0xffc46a, transparent: true, opacity: 0.92, depthWrite: false });
   const lines = new THREE.LineSegments(geometry, material);
   lines.name = ceiling ? 'ceiling-fracture-warning' : 'floor-fracture-warning';
   return lines;
@@ -290,7 +304,6 @@ export class CollapseGauntletDirector {
       if (light.userData.calmColor == null) light.userData.calmColor = light.color?.getHex?.();
     }
     if (!this._blockade) this._buildWestBlockade();
-    this._shatterCase('labyrinth');
     this.ctx.audioGuide.startCollapseScore();
     if (!this._storyStarted) {
       this._storyStarted = true;
@@ -412,6 +425,8 @@ export class CollapseGauntletDirector {
 
   _impact(hazard, player) {
     hazard.phase = 'settled';
+    hazard.settleZ = settledDebrisZ(hazard.z, hazard.radius ?? 0.45);
+    hazard.settleAge = 0;
     hazard.mesh.position.y = hazard.type === 'city-stone' || hazard.type === 'wall-chunk' ? 0.26 : 0.14;
     hazard.mesh.rotation.x += 0.34;
     hazard.mesh.rotation.z += 0.22;
@@ -423,7 +438,7 @@ export class CollapseGauntletDirector {
     this._spawnImpactBurst(hazard);
     this.ctx.audioGuide.collapseImpact({ metallic: hazard.metallic === true, weight: hazard.weight });
     this.trauma = this._reducedMotion ? 0 : Math.max(this.trauma, hazard.weight === 'heavy' ? 0.78 : 0.45);
-    this.ctx.collisionWorld.addCircle(hazard.x, hazard.z, hazard.radius ?? 0.45, hazard.id, { minY: 0, maxY: 0.82 });
+    this.ctx.collisionWorld.addCircle(hazard.x, hazard.settleZ, hazard.radius ?? 0.45, hazard.id, { minY: 0, maxY: 0.82 });
     const distance = Math.hypot(player.x - hazard.x, player.z - hazard.z);
     if (distance <= (hazard.radius ?? 0.55) + 0.38 && this.invulnerable <= 0) this._takeHit();
   }
@@ -771,6 +786,8 @@ export class CollapseGauntletDirector {
     this.keyInsertionRig.userData.key.rotation.y = THREE.MathUtils.lerp(0.58, 0, alignKey);
     if (!animation.audioFired && t >= 0.55) {
       animation.audioFired = true;
+      // the ticket punch "clack" of Ch1/Ch2: one key, one punched hole
+      this.ctx.audioGuide.punchClack();
       this.ctx.audioGuide.archiveKeyTurn(animation.targetCount);
     }
     if (!animation.committed && t >= 0.68) {
@@ -841,7 +858,11 @@ export class CollapseGauntletDirector {
     this.invulnerable = Math.max(0, this.invulnerable - dt);
     this.hitDip = Math.max(0, this.hitDip - dt);
     const zone = this._zoneForX(player.x);
-    if (zone > collapse.zoneReached) this.ctx.model.dispatch({ type: 'collapseReachZone', zone });
+    if (zone > collapse.zoneReached) {
+      this.ctx.model.dispatch({ type: 'collapseReachZone', zone });
+      // each collapse zone rings the night service's bell (Ch1/Ch2's 4 s bell)
+      this.ctx.audioGuide.trainBell();
+    }
     this.ctx.audioGuide.setCollapseIntensity(zone, player.x >= COLLAPSE_DOOR_PRESSURE_X);
     this._updateLighting(dt, player.x, zone);
     for (const [id, threshold] of GALLERY_THRESHOLDS) {
@@ -850,7 +871,16 @@ export class CollapseGauntletDirector {
     if (!collapse.doorOpen && !this.qaHazardsDisabled) this._updateAuthoredEvents(player, dt);
 
     for (const hazard of this.hazards) {
-      if (hazard.phase === 'settled') continue;
+      if (hazard.phase === 'settled') {
+        if (hazard.settleAge < 1) {
+          // tumble off the lane toward the wall
+          hazard.settleAge = Math.min(1, hazard.settleAge + dt / 0.35);
+          const k = 1 - Math.pow(1 - hazard.settleAge, 3);
+          hazard.mesh.position.z = THREE.MathUtils.lerp(hazard.z, hazard.settleZ, k);
+          hazard.mesh.rotation.x += dt * 2.2 * (1 - k);
+        }
+        continue;
+      }
       if (hazard.phase === 'open') {
         this._testHole(hazard, player);
         continue;

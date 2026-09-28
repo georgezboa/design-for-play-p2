@@ -1,14 +1,12 @@
 import { CHAPTER05_DIRECTIONS } from './directionRegistry.js';
 
-// Every numbered door shares one physical entry band. The band sits just in
-// front of the north wall, before the solid door panels stop the player.
+// Door 4 is the only doorway in the archive corridor. Its band sits in the
+// north half of the corridor, in front of the door panel: close enough that
+// the collision body stopping against the panel is still inside, but never
+// reaching the south wall, where the Chapter 4 case at x≈38 must keep its
+// own E (the old band spanned the whole corridor width and stole it).
 export const DIRECTION_DOORWAYS = Object.freeze([
-  Object.freeze({ id: 'sealed-record-1', minX: 13.05, maxX: 14.95, minZ: -1.68, maxZ: -1.18 }),
-  Object.freeze({ id: CHAPTER05_DIRECTIONS.BORROWED_GRID, minX: 21.05, maxX: 22.95, minZ: -1.68, maxZ: -1.18 }),
-  Object.freeze({ id: CHAPTER05_DIRECTIONS.ECHO_CITY, minX: 29.05, maxX: 30.95, minZ: -1.68, maxZ: -1.18 }),
-  // Door 4 must remain active from the whole final approach, including the
-  // camera-close position where the collision body stops against the panel.
-  Object.freeze({ id: CHAPTER05_DIRECTIONS.LABYRINTH, minX: 36.45, maxX: 39.55, minZ: -1.92, maxZ: 0.95 }),
+  Object.freeze({ id: CHAPTER05_DIRECTIONS.LABYRINTH, minX: 36.95, maxX: 39.05, minZ: -1.92, maxZ: -0.55 }),
 ]);
 
 export function directionAtDoorway(position) {

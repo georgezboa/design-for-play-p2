@@ -6,12 +6,15 @@
     <link rel="icon" type="image/png" href="/favicon.png" />
     <title>NIGHTFALL — The Museum of One Answer</title>
     <style>
+      /* Shared language: src/shell/uiKit.css (.nf-caption, .nf-card, .nf-tag),
+         imported by the page script. This sheet only places the museum's
+         own layers: reticle, entry overlay, fade, and the framed exhibit. */
       html, body {
         margin: 0;
         padding: 0;
         background: #0b0b0d;
         overflow: hidden;
-        font-family: "Courier New", ui-monospace, monospace;
+        font-family: Georgia, 'Times New Roman', serif;
       }
       #app { position: fixed; inset: 0; }
       #app canvas { display: block; }
@@ -20,20 +23,15 @@
 
       #version-label {
         top: 10px; left: 12px;
-        color: #8f8f8f; font-size: 11px; letter-spacing: 0.08em;
+        color: #8f8f8f; font: 11px 'Space Mono', monospace; letter-spacing: 0.08em;
       }
-
       #runtime-coordinates {
         top: 30px; left: 12px;
         padding: 7px 9px;
         color: #c2cad2; background: rgba(5, 8, 11, 0.82);
         border: 1px solid rgba(151, 166, 179, 0.34);
-        font: 700 11px/1.45 "Courier New", ui-monospace, monospace;
+        font: 700 11px/1.45 'Space Mono', monospace;
         letter-spacing: 0.04em; white-space: pre-line;
-      }
-      #runtime-coordinates[data-door-ready="true"] {
-        color: #ffe6a1; border-color: #d2ab54;
-        box-shadow: 0 0 18px rgba(210, 171, 84, 0.22);
       }
 
       #reticle {
@@ -44,120 +42,48 @@
         box-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
       }
 
-      #prompt {
-        top: 56%; left: 50%; transform: translateX(-50%);
-        color: #f2efe4; font-size: 15px; letter-spacing: 0.06em;
-        background: rgba(12, 12, 14, 0.72);
-        border: 1px solid rgba(240, 240, 230, 0.35);
-        padding: 6px 14px;
-        display: none;
-        white-space: nowrap;
-      }
+      /* the interactable's paper tag: placed by InteractionSystem */
+      #prompt.nf-tag { left: 50%; top: 44%; white-space: nowrap; transition: left 60ms linear, top 60ms linear; }
+      #prompt[hidden] { display: none; }
 
-      #subtitle {
-        bottom: 7%; left: 50%; transform: translateX(-50%);
-        max-width: 72ch; text-align: center;
-        color: #f5f2e8; font-size: 17px; line-height: 1.5;
-        background: rgba(10, 10, 12, 0.78);
-        padding: 10px 18px;
-        display: none;
-      }
-      #subtitle .speaker { color: #9fd8de; letter-spacing: 0.1em; }
-      #subtitle .dialogue-choices {
-        display: flex; gap: 10px; justify-content: center; align-items: center;
-        flex-wrap: wrap; margin-top: 9px; font-size: 14px;
-      }
-      #subtitle .dialogue-choice {
-        display: inline-block; padding: 5px 9px;
-        border: 1px solid rgba(240, 240, 230, 0.28);
-        background: rgba(28, 31, 32, 0.82);
-      }
-      #subtitle .dialogue-choice b { color: #e4bd72; margin-right: 4px; }
-      #subtitle .dialogue-silence { color: #aaa79d; font-size: 12px; }
+      /* dialogue captions: DialogueSystem toggles display */
+      #subtitle.nf-caption { display: none; pointer-events: none; }
+      #subtitle .nf-caption__choice b { color: var(--nf-amber); margin-right: 6px; }
+      #subtitle .nf-caption__silence { color: #9d927c; font: calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.08em; align-self: center; }
+
+      .nf-card-backdrop[hidden] { display: none; }
+      .museum-card-backdrop { background: rgba(5, 4, 3, 0.5); }
 
       #echo-minimap {
-        top: 42px; right: 18px;
-        width: 190px;
-        max-width: 190px;
-        position: fixed;
-        z-index: 16;
-        overflow: hidden;
-        contain: layout paint;
-        pointer-events: none;
+        top: 42px; right: 18px; width: 190px; max-width: 190px;
+        position: fixed; z-index: 16; overflow: hidden; pointer-events: none;
         color: #d7c59d;
-        filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.45));
       }
       #echo-minimap[hidden] { display: none; }
-      #echo-minimap .map-title {
-        margin: 0 0 5px 2px;
-        font-size: 10px;
-        letter-spacing: 0.13em;
-        text-shadow: 0 1px 3px #000;
-      }
-      #echo-minimap canvas {
-        width: 190px !important;
-        height: 158px !important;
-        max-width: 190px !important;
-        max-height: 158px !important;
-        display: block;
-      }
+      #echo-minimap .map-title { margin: 0 0 5px 2px; font: 10px 'Space Mono', monospace; letter-spacing: 0.13em; }
+      #echo-minimap canvas { width: 190px !important; height: 158px !important; display: block; }
 
-      #echo-work-card {
-        left: 18px; bottom: 20px;
-        display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
-        padding: 8px 10px;
-        border: 1px solid rgba(184, 153, 91, 0.42);
-        background: rgba(7, 10, 11, 0.74);
-        color: #77766f;
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.42);
-        transition: opacity 180ms ease;
-      }
-      #echo-work-card[hidden] { display: none; }
-      .echo-work-row { display: flex; align-items: center; gap: 7px; }
-      .echo-work-next {
-        padding-left: 1px;
-        color: #d8d1bc;
-        font-size: 10px;
-        letter-spacing: 0.09em;
-      }
-      .echo-work-step {
-        display: flex; align-items: center; gap: 5px;
-        font-size: 10px; letter-spacing: 0.08em;
-      }
-      .echo-work-step::before {
-        content: ''; width: 7px; height: 7px;
-        border: 1px solid #65665f; border-radius: 50%;
-        background: #15191a;
-      }
-      .echo-work-step + .echo-work-step::after {
-        content: ''; width: 11px; height: 1px; background: #4c4c47;
-        order: -1; margin-right: 1px;
-      }
-      .echo-work-step.done { color: #8ec9c3; }
-      .echo-work-step.done::before { background: #69b9b1; border-color: #a6d8d2; }
-      .echo-work-step.current { color: #e2c47e; }
-      .echo-work-step.current::before {
-        background: #c89a42; border-color: #f1d08a;
-        box-shadow: 0 0 10px rgba(224, 176, 79, 0.72);
-        animation: echo-current-duty 1.4s ease-in-out infinite;
-      }
-      @keyframes echo-current-duty { 50% { opacity: 0.48; transform: scale(0.82); } }
-
+      /* entry / resume overlay: a title card on the carriage wall */
       #lock-overlay {
         position: fixed; inset: 0; z-index: 20;
         display: flex; align-items: center; justify-content: center;
-        background: rgba(8, 8, 10, 0.62);
+        background: radial-gradient(circle at 50% 45%, rgba(40, 27, 16, 0.55), rgba(5, 4, 3, 0.86) 70%);
         cursor: pointer;
       }
       #lock-overlay .inner {
-        color: #f2efe4; text-align: center;
-        border: 1px solid rgba(240, 240, 230, 0.4);
-        background: rgba(14, 14, 16, 0.85);
-        padding: 26px 42px;
+        color: var(--nf-ivory); text-align: center;
+        padding: 30px 48px 26px;
+        border: 2px solid var(--nf-brass); border-radius: 10px;
+        background: linear-gradient(180deg, rgba(28, 19, 13, 0.95), rgba(20, 13, 9, 0.96));
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 20px 60px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(217, 181, 110, 0.25);
       }
-      #lock-overlay .title { font-size: 20px; letter-spacing: 0.22em; margin-bottom: 12px; }
-      #lock-overlay .hint { font-size: 13px; color: #b9b4a4; line-height: 1.7; }
-      #lock-overlay.resume .inner { padding: 16px 26px; }
+      #lock-overlay .kicker { font: calc(14px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.4em; color: var(--nf-amber); margin: 0 0 10px; }
+      #lock-overlay .title { font: calc(44px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; margin-bottom: 14px; }
+      #lock-overlay .rule { width: 300px; height: 2px; margin: 0 auto 16px; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
+      #lock-overlay .hint { font: calc(13px * var(--nightfall-text-scale, 1)) / 1.9 var(--nf-mono); letter-spacing: 0.08em; color: #cdbf9f; }
+      #lock-overlay .hint b { color: var(--nf-amber); letter-spacing: 0.2em; }
+      #lock-overlay.resume .inner { padding: 18px 30px; }
+      #lock-overlay.resume .kicker, #lock-overlay.resume .rule { display: none; }
       #lock-overlay.hidden { display: none; }
 
       #fade {
@@ -171,105 +97,108 @@
         position: absolute; inset: 0;
         display: flex; flex-direction: column; align-items: center; justify-content: center;
         gap: 14px; padding: 8vw; box-sizing: border-box;
-        color: #eee8d9; text-align: center; opacity: 0;
+        color: var(--nf-ivory); text-align: center; opacity: 0;
         transition: opacity 0.45s ease;
       }
       #fade .chapter-completion.visible { opacity: 1; }
-      #fade .chapter-completion div { color: #aaa394; font-size: 14px; letter-spacing: 0.08em; }
-      #fade .chapter-completion strong { font-size: clamp(18px, 2.5vw, 32px); letter-spacing: 0.16em; }
-      #fade .chapter-completion small { color: #79756d; font-size: 12px; }
+      #fade .chapter-completion div { color: #c9bb9a; font: calc(20px * var(--nf-scale)) var(--nf-serif); font-style: italic; }
+      #fade .chapter-completion strong { font: calc(clamp(20px, 2.6vw, 34px) * var(--nf-scale)) var(--nf-display); letter-spacing: 0.1em; }
+      #fade .chapter-completion small { color: var(--nf-amber); font: calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.12em; }
 
+      /* ---- the framed exhibit: a carriage window set into the walnut wall ---- */
       #direction-exhibit {
         position: fixed; inset: 0; z-index: 50;
         display: none; align-items: center; justify-content: center;
-        background: rgba(6, 8, 10, 0.96);
-        color: #eee7d4;
+        background:
+          radial-gradient(circle at 50% 0%, rgba(224, 162, 74, 0.14), transparent 45%),
+          repeating-linear-gradient(90deg, #1c130d 0 38px, #20160f 38px 41px, #1a110b 41px 80px),
+          #1c130d;
+        color: var(--nf-ivory);
       }
       #direction-exhibit.open { display: flex; }
       #direction-shell {
         position: relative;
-        width: min(94vw, 1320px);
-        height: min(88vh, 840px);
-        padding: 54px 22px 22px;
-        border: 14px solid #59432f;
-        outline: 2px solid #a78a55;
-        background: #161a1d;
-        box-shadow: 0 24px 90px rgba(0, 0, 0, 0.78), inset 0 0 0 2px #252c30;
+        width: min(94vw, calc((100vh - 60px) * 1.7778 + 40px), 1400px);
+        aspect-ratio: 16 / 9.4;
+        max-height: calc(100vh - 36px);
+        padding: 44px 20px 20px;
         box-sizing: border-box;
+        border-radius: 26px;
+        background: linear-gradient(180deg, #2c1d13, #1c130d 60%, #150e09);
+        box-shadow:
+          0 0 0 3px #5e4522, 0 0 0 6px #b08a4a, 0 0 0 9px #3d2c15,
+          0 30px 90px rgba(0, 0, 0, 0.8), inset 0 2px 0 rgba(217, 181, 110, 0.18);
+      }
+      /* brass rivets round the bezel */
+      #direction-shell::before {
+        content: ''; position: absolute; inset: 12px; border-radius: 18px; pointer-events: none;
+        background:
+          radial-gradient(circle, #e3c27e 0 3px, #5e4522 4px, transparent 5px) 0 0 / 64px 64px repeat-x,
+          radial-gradient(circle, #e3c27e 0 3px, #5e4522 4px, transparent 5px) 0 100% / 64px 64px repeat-x;
+        background-size: 64px 10px, 64px 10px;
+        background-position: 20px 0, 20px 100%;
+        opacity: 0.8;
       }
       #direction-title {
-        position: absolute; left: 22px; top: 17px;
-        color: #d7c59d; font-size: 13px; letter-spacing: 0.12em;
+        position: absolute; left: 50%; top: 12px; transform: translateX(-50%);
+        padding: 4px 18px; border-radius: 4px;
+        background: linear-gradient(180deg, #e3c27e, #b08a4a 45%, #8a6934);
+        color: #2a1d14; font: 700 calc(12px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.18em;
+        white-space: nowrap; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
       }
       #direction-frame {
-        width: 100%; height: 100%; border: 1px solid #69767b;
-        background: #07070a; display: block;
+        width: 100%; height: 100%; display: block; border: 0;
+        border-radius: 16px; background: #0b0705;
+        box-shadow: inset 0 0 0 2px #5e4522, 0 0 0 2px #b08a4a;
       }
       #direction-close {
-        position: absolute; right: 18px; top: 12px;
-        border: 1px solid #8e7952; background: #252321; color: #eee7d4;
-        padding: 8px 12px; font: 13px "Courier New", monospace;
-        cursor: pointer;
+        position: absolute; right: 22px; top: 8px;
+        width: 30px; height: 30px; border-radius: 50%;
+        border: 1px solid #b08a4a; background: #2a1d14; color: var(--nf-ivory);
+        font: 16px var(--nf-serif); cursor: pointer; line-height: 1;
       }
+      #direction-close:hover, #direction-close:focus-visible { border-color: var(--nf-amber); outline: none; }
       #direction-status {
-        position: absolute; left: 22px; bottom: -34px;
-        font-size: 12px; letter-spacing: 0.1em; color: #aaa18d;
+        position: absolute; left: 26px; top: 14px;
+        font: calc(11px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.14em; color: #b9a583;
       }
-      #direction-exhibit.complete #direction-status { color: #9fd8de; }
       #direction-translation {
-        position: absolute; inset: 54px 22px 22px; z-index: 3;
-        display: flex; flex-direction: column; align-items: center; justify-content: center;
-        padding: clamp(28px, 6vw, 84px); box-sizing: border-box;
-        background:
-          radial-gradient(circle at 50% 42%, rgba(109, 82, 50, 0.24), transparent 38%),
-          linear-gradient(180deg, #101315 0%, #070809 100%);
-        color: #e9e0ca; text-align: center;
+        position: absolute; inset: 44px 20px 20px; z-index: 3;
+        display: grid; place-items: center; border-radius: 16px;
+        background: radial-gradient(circle at 50% 40%, rgba(60, 40, 24, 0.9), rgba(12, 8, 5, 0.96));
         opacity: 0; pointer-events: none; transition: opacity 260ms ease;
       }
       #direction-exhibit.translating #direction-translation { opacity: 1; pointer-events: auto; }
       #direction-exhibit.translating #direction-frame { pointer-events: none; }
-      #direction-mode {
-        color: #d7b86d; font: bold clamp(13px, 1.4vw, 18px) Georgia, serif;
-        letter-spacing: 0.22em; text-transform: uppercase;
-      }
-      #direction-copy {
-        max-width: 760px; margin: 24px 0 30px;
-        color: #d2ccbd; font: clamp(16px, 2vw, 25px)/1.65 Georgia, serif;
-      }
+      #direction-translation .nf-card { text-align: left; }
       #direction-begin {
-        border: 1px solid #b99b5c; background: #241f17; color: #f1e7cc;
-        padding: 12px 22px; font: bold 12px "Courier New", monospace;
-        letter-spacing: 0.16em; cursor: pointer;
+        margin-top: 18px; padding: 10px 18px;
+        border: 1px solid #6b5640; border-radius: 4px; background: #2a1d14; color: var(--nf-ivory);
+        font: 700 calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.16em; cursor: pointer;
       }
-      #direction-begin:hover, #direction-begin:focus-visible { background: #443721; outline: 2px solid #d8be7a; }
-
-      /* TEXT SIZE setting (title / pause menu) scales prompts and subtitles. */
-      #prompt { font-size: calc(15px * var(--nightfall-text-scale, 1)); }
-      #subtitle { font-size: calc(17px * var(--nightfall-text-scale, 1)); }
-      #subtitle .dialogue-choices { font-size: calc(14px * var(--nightfall-text-scale, 1)); }
-      #subtitle .dialogue-silence { font-size: calc(12px * var(--nightfall-text-scale, 1)); }
-      #lock-overlay .hint { font-size: calc(13px * var(--nightfall-text-scale, 1)); }
+      #direction-begin:hover, #direction-begin:focus-visible { border-color: var(--nf-amber); background: #3a2718; outline: none; }
     </style>
   </head>
   <body>
     <div id="app"></div>
-    <div id="version-label" class="hud" hidden>CH05 DREAMCORE MUSEUM — ECHO CITY AUTHORITY v0.5.0</div>
+    <div id="version-label" class="hud" hidden>MUSEUM OF ONE ANSWER · DEV</div>
     <div id="runtime-coordinates" class="hud" hidden aria-live="off">X 0.00 · MAP-Y(Z) 0.00 · LOADING</div>
     <div id="reticle" class="hud"></div>
-    <div id="prompt" class="hud"></div>
-    <div id="subtitle" class="hud"></div>
-    <aside id="echo-minimap" class="hud" hidden aria-label="Echo City night round map">
-      <div class="map-title">ECHO CITY · NIGHT ROUND</div>
+    <div id="prompt" class="nf-tag" hidden></div>
+    <div id="subtitle" class="nf-caption" aria-live="polite"></div>
+    <aside id="echo-minimap" class="hud" hidden aria-label="Echo City map (dev preview)">
+      <div class="map-title">ECHO CITY · DEV PREVIEW</div>
       <canvas id="echo-minimap-canvas" width="190" height="158"></canvas>
     </aside>
-    <div id="echo-work-card" class="hud" hidden aria-label="Night round physical work progress"></div>
     <div id="lock-overlay">
       <div class="inner">
+        <p class="kicker">CHAPTER 5</p>
         <div class="title">THE MUSEUM OF ONE ANSWER</div>
+        <div class="rule"></div>
         <div class="hint">
-          CLICK TO ENTER<br />
-          WASD / ARROWS — MOVE &nbsp;·&nbsp; SPACE — JUMP &nbsp;·&nbsp; MOUSE / DRAG — LOOK<br />
-          E / ENTER — INTERACT &nbsp;·&nbsp; ESC — RELEASE MOUSE / PAUSE
+          <b>CLICK TO ENTER</b><br />
+          WASD — WALK · MOUSE — LOOK · SPACE — JUMP<br />
+          E — INTERACT · ESC — PAUSE
         </div>
       </div>
     </div>
@@ -277,16 +206,18 @@
     <section id="direction-exhibit" aria-hidden="true">
       <div id="direction-shell">
         <div id="direction-title">ARCHIVAL RECONSTRUCTION</div>
-        <button id="direction-close" type="button" aria-label="Return to corridor">×</button>
-        <iframe id="direction-frame" title="Chapter 5 parallel direction"></iframe>
-        <div id="direction-translation" aria-hidden="true">
-          <div id="direction-mode">GAZE RECORD</div>
-          <div id="direction-copy">The archive is translating this memory into an interaction law.</div>
-          <button id="direction-begin" type="button">BEGIN RECONSTRUCTION</button>
-        </div>
         <div id="direction-status">ESC</div>
+        <button id="direction-close" type="button" aria-label="Return to the museum">×</button>
+        <iframe id="direction-frame" title="Chapter 5 framed exhibit"></iframe>
+        <div id="direction-translation" aria-hidden="true">
+          <div class="nf-card">
+            <p class="nf-card__stamp" id="direction-mode">THE MUSEUM OF ONE ANSWER</p>
+            <p class="nf-card__lines" id="direction-copy"></p>
+            <button id="direction-begin" type="button">BEGIN</button>
+          </div>
+        </div>
       </div>
     </section>
-    <script type="module" src="/src/chapters/museum3d/museum3d-main.js?v=central-two-world-boss-assets-20260813-5"></script>
+    <script type="module" src="/src/chapters/museum3d/museum3d-main.js"></script>
   </body>
 </html>

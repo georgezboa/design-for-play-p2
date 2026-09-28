@@ -126,7 +126,7 @@ test('gameplay shake and flash sites consult the shared reduced-motion check', (
     'src/paintedCountry-main.js',
     'src/chapters/museum/labyrinth/labyrinth-main.js',
     'src/chapters/blackKnifeFinal/main.js',
-    'src/chapters/borrowedGrid/borrowed-grid-main.js',
+    'src/chapters/museum3d/oneAnswer/oneAnswer-main.js',
     'src/chapters/paintedCountry/painted-country-main.js',
   ]) assert.match(read(entry), /^installPhaserMotionGuard\(Phaser\);$/m, entry);
   const museum = read('src/chapters/museum3d/systems/CollapseGauntletDirector.js');

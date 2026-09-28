@@ -160,25 +160,50 @@ test('Echo City can return to the archive without opening the finale', () => {
   assert.equal(model.getSnapshot().lobby.deskReclassified, false);
 });
 
-test('the outer four-direction gate unlocks the finale only from the archive corridor', () => {
-  const model = new Chapter05Model();
-  assert.equal(model.dispatch({ type: 'unlockFinale' }).changed, false);
-  model.dispatch({ type: 'inspectTicket' });
-  model.dispatch({ type: 'carryTicket' });
+function museumEntry() {
+  return new Chapter05Model(createMuseumEntryState());
+}
+
+test('the collapse needs both the lobby exhibit and the Labyrinth: exhibit first', () => {
+  const model = museumEntry();
+  assert.equal(model.dispatch({ type: 'startCollapse' }).changed, false);
+  let reclassified = 0;
+  model.on('lobby.deskReclassified', () => reclassified++);
+  assert.equal(model.dispatch({ type: 'solveExhibit' }).changed, true);
+  assert.equal(model.getSnapshot().exhibit.solved, true);
+  assert.equal(model.getSnapshot().lobby.deskReclassified, true, 'the lost desk appears after the exhibit');
+  assert.equal(reclassified, 1);
+  assert.equal(model.dispatch({ type: 'solveExhibit' }).changed, false, 'classified once');
+  assert.equal(model.dispatch({ type: 'startCollapse' }).changed, false, 'the Labyrinth still holds its keys');
   model.dispatch({ type: 'enterCorridor' });
-  assert.equal(model.dispatch({ type: 'unlockFinale' }).changed, true);
-  assert.equal(model.getSnapshot().phase, 'return');
-  assert.equal(model.getSnapshot().lobby.deskReclassified, true);
+  assert.equal(model.dispatch({ type: 'labyrinthComplete' }).changed, true);
+  assert.deepEqual(model.availableActions().includes('startCollapse'), true);
+  assert.equal(model.dispatch({ type: 'startCollapse' }).changed, true);
+  const s = model.getSnapshot();
+  assert.equal(s.phase, 'collapse');
+  assert.equal(s.collapse.started, true);
+  assert.equal(s.collapse.labyrinthKeys, 8);
 });
 
-test('corridor loops exactly once and moves the guide stand', () => {
-  const model = new Chapter05Model();
-  model.dispatch({ type: 'inspectTicket' });
-  model.dispatch({ type: 'carryTicket' });
+test('the collapse needs both halves: Labyrinth first, then the exhibit starts it from the lobby', () => {
+  const model = museumEntry();
   model.dispatch({ type: 'enterCorridor' });
-  assert.equal(model.dispatch({ type: 'corridorLoop' }).changed, true);
-  assert.equal(model.getSnapshot().corridor.guideStandSide, 'north');
-  assert.equal(model.dispatch({ type: 'corridorLoop' }).changed, false);
+  assert.equal(model.dispatch({ type: 'labyrinthComplete' }).changed, true);
+  assert.equal(model.dispatch({ type: 'labyrinthComplete' }).changed, false, 'filed once');
+  assert.equal(model.dispatch({ type: 'startCollapse' }).changed, false, 'the exhibit is still pending');
+  assert.equal(model.getSnapshot().lobby.deskReclassified, false);
+  model.dispatch({ type: 'leaveCorridor' });
+  assert.equal(model.dispatch({ type: 'solveExhibit' }).changed, true);
+  assert.equal(model.dispatch({ type: 'startCollapse' }).changed, true);
+  assert.equal(model.getSnapshot().phase, 'collapse');
+});
+
+test('the exhibit is only solvable in the lobby and the Labyrinth only returns to the corridor', () => {
+  const model = museumEntry();
+  assert.equal(model.dispatch({ type: 'labyrinthComplete' }).changed, false);
+  model.dispatch({ type: 'enterCorridor' });
+  assert.equal(model.dispatch({ type: 'solveExhibit' }).changed, false);
+  assert.equal(model.dispatch({ type: 'corridorLoop' }).changed, false, 'the corridor loop is cut');
 });
 
 test('the player can walk back from the archive corridor to the front lobby', () => {

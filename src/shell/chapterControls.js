@@ -25,13 +25,6 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['GAMEPAD', 'STICK · A JUMP · X READ · RB PUNCH · LB LISTEN'],
     ['PAUSE', 'ESC / START'],
   ),
-  borrowedGrid: list(
-    ['MOVE', 'A / D · ← →'],
-    ['JUMP', 'SPACE'],
-    ['INTERACT', 'E'],
-    ['RESTART FROM CHECKPOINT', 'R'],
-    ['PAUSE', 'ESC'],
-  ),
   echoCity: list(
     ['WALK', 'CLICK THE GROUND'],
     ['TALK / INSPECT', 'CLICK A PERSON OR OBJECT · E / ENTER'],
@@ -50,18 +43,34 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['RESTART', 'R'],
     ['PAUSE', 'ESC'],
   ),
+  // Chapter 5 · the Museum (first person). Space is jump here and does
+  // nothing in the Labyrinth; E is the one "act on this" key everywhere.
   museum: list(
-    ['MOVE', 'WASD / ARROWS'],
-    ['LOOK', 'MOUSE (CLICK TO CAPTURE)'],
+    ['WALK', 'WASD / ARROWS'],
+    ['LOOK', 'MOUSE (CLICK TO TAKE THE MOUSE)'],
     ['JUMP', 'SPACE'],
-    ['INTERACT', 'E / ENTER / LEFT CLICK'],
-    ['RELEASE MOUSE', 'ESC'],
-    ['PAUSE', 'ESC AGAIN'],
+    ['INTERACT / READ', 'E / ENTER / LEFT CLICK'],
+    ['SLOT THE KEYS', 'HOLD E'],
+    ['PAUSE', 'ESC'],
   ),
+  // Chapter 5 · the one-answer exhibit (one-answer.html): the Chapter 1
+  // panel verbs, framed in the lobby's central case.
+  oneAnswer: list(
+    ['MOVE A WINDOW', 'DRAG IT · ARROWS + SPACE'],
+    ['LOOK CLOSER', 'CLICK A TAG · TAB + ENTER'],
+    ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · BACKSPACE'],
+    ['PUNCH-HOLE LENS', 'DRAG IT · L + ARROWS'],
+    ['CONTINUE / READ', 'CLICK · ENTER'],
+    ['BACK TO THE MUSEUM', 'ESC'],
+  ),
+  // Chapter 5 · Door 4, the Labyrinth.
   labyrinth: list(
     ['MOVE', 'WASD / ARROWS'],
-    ['SHIELD', 'SPACE'],
-    ['RESTART', 'R'],
+    ['AIM YOUR GAZE', 'MOUSE'],
+    ['HOLD YOUR GAZE', 'HOLD Q'],
+    ['SHIELD', 'SHIFT'],
+    ['STAIRS / TAKE', 'E'],
+    ['REBUILD THE MAZE', 'HOLD R'],
     ['PAUSE', 'ESC'],
   ),
   blackKnife: list(

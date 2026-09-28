@@ -18,13 +18,13 @@ export const COLLAPSE_ZONES = Object.freeze([
 ]);
 
 export const COLLAPSE_STRINGS = Object.freeze({
-  exitDoorPlaqueLocked: 'FINAL ARCHIVE — EIGHT RECORDS, ONE DOOR',
+  exitDoorPlaqueLocked: 'FINAL ARCHIVE — EIGHT KEYS FROM THE LABYRINTH',
   exitDoorPlaqueOpen: 'FINAL ARCHIVE — THE RECORD ADMITS ITS KEEPER',
-  exitDoorSealedNote: 'Eight keyholes. The museum hid its own keys in the basement and sealed the stairs behind them.',
+  exitDoorSealedNote: 'Eight keyholes. The eight keys are in the Labyrinth, behind Door 4.',
   keyRingCaption: 'YOU WALKED OUT WITH EVERY KEY. The door at the end of the corridor is counting.',
   archivistCollapse: 'THIS WING IS BEING WITHDRAWN. PROCEED TO THE FINAL ARCHIVE.',
-  promptSlotKey: '[E] HOLD TO SLOT THE KEYS',
-  promptJump: '[E] STEP THROUGH',
+  promptSlotKey: 'HOLD E · SLOT THE KEYS',
+  promptJump: 'E · STEP THROUGH',
   deathLine: 'The archive catches you. It files you back at the beginning of the hall.',
   completeLine: 'You filed nothing. You kept everything.',
   chapterComplete: 'CHAPTER 5 COMPLETE — THE MUSEUM OF ONE ANSWER',

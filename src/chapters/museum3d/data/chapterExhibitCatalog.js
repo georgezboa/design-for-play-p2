@@ -1,76 +1,92 @@
-// One editorial system for every chapter object in the Museum.
+// One editorial system for every chapter object in the Museum
+// (docs/STORY_BIBLE.md: the museum "has already filed Butch's journey").
 //
-// The archive record names the physical evidence. Butch's reading restores
-// the human meaning that the institution strips away. The reconstruction law
-// explains why that memory becomes a different kind of game when entered.
+// Each case is filed under the one claim the whole game is about,
+// ACC. 1978-0412. The accession card is the museum's cold reading; Butch's
+// line is the human one. Cards stay at two or three short lines.
+
+export const MUSEUM_ACCESSION = 'ACC. 1978-0412 · VELEZ, M. · PENDING';
+export const MUSEUM_DATE = '17 OCT 1978';
 
 export const CHAPTER_EXHIBIT_CATALOG = Object.freeze({
-  'last-train': Object.freeze({
-    id: 'last-train',
+  'night-service': Object.freeze({
+    id: 'night-service',
     chapter: 'CHAPTER 01',
-    title: 'THE LAST TRAIN',
-    accession: 'ACC. 17-1017',
-    object: 'PUNCHED TICKET A-1017 · CYAN PROMISE THREAD',
-    archiveRecord: 'Recovered from the last night-service carriage after its power relay failed.',
-    butchReading: 'A ticket says where I was sent. The thread says why I kept moving.',
-    mode: 'RESTORATION RECORD',
-    reconstructionLaw: 'A broken memory is rebuilt as repair, conversation, and choice: restore the carriage to make the past move again.',
+    title: 'NIGHT SERVICE',
+    accession: 'ACC. 1978-0412 · 1',
+    object: 'THE ORCHARD CASE',
+    archiveRecord: 'Brown case, tag BELLWETHER. Left on the night service. Unclaimed.',
+    butchReading: 'I set it on the Bellwether bench. The archive came back for it.',
   }),
-  'borrowed-grid': Object.freeze({
-    id: 'borrowed-grid',
+  'borrowed-light': Object.freeze({
+    id: 'borrowed-light',
     chapter: 'CHAPTER 02',
-    title: 'NEON ROOFTOPS',
-    accession: 'ACC. 17-2014',
-    object: 'BYPASS COIL · LADDER RUNG · ROOFTOP TRANSIT MARKER',
-    archiveRecord: 'Unauthorized transit hardware recovered from the elevated districts.',
-    butchReading: 'The city measured every gap. I remember only the next handhold and the lights chasing me.',
-    mode: 'TRAVERSAL RECORD',
-    reconstructionLaw: 'Flight is stored as momentum: the archive turns danger into a route that can only be understood by crossing it.',
+    title: 'BORROWED LIGHT',
+    accession: 'ACC. 1978-0412 · 2',
+    object: 'TICKET STUB · CITY LINE',
+    archiveRecord: 'City-line stub, punched once. Holder: VELEZ, M.',
+    butchReading: '“Keep moving,” her letter said. So I did.',
   }),
   'echo-city': Object.freeze({
     id: 'echo-city',
     chapter: 'CHAPTER 03',
     title: 'ECHO CITY',
-    accession: 'ACC. 17-3041',
-    object: 'WITNESS CASSETTE · OIL-SEAM MAP · WORK ORDER C-441',
-    archiveRecord: 'Conflicting civic testimony filed beside a maintenance route marked in oil.',
-    butchReading: 'A city is not one statement. It is every person who points somewhere different and still expects you to listen.',
-    mode: 'INVESTIGATION RECORD',
-    reconstructionLaw: 'Contradiction is stored as evidence: explore freely, compare testimony, and assemble a route no single witness can provide.',
+    accession: 'ACC. 1978-0412 · 3',
+    object: 'DUPLICATE RESERVATION · M. VENN',
+    archiveRecord: 'Reservation 43, printed twice. Surname cut short. Nika’s torn page behind it.',
+    butchReading: 'The terminal shortened her name. The archive kept the short one.',
   }),
   'painted-country': Object.freeze({
     id: 'painted-country',
     chapter: 'CHAPTER 04',
     title: 'THE PAINTED COUNTRY',
-    accession: 'ACC. 17-4076',
-    object: 'COMMON FOLD · PIGMENT KEYS · TRAIN-WHEEL STUDY',
-    archiveRecord: 'Paper, mineral pigment, and a wheel sketch recovered from a country with unstable material rules.',
-    butchReading: 'It was never unfinished. It changed whenever I learned how to see its colors.',
-    mode: 'MATERIAL RECORD',
-    reconstructionLaw: 'Color is stored as physics: changing the palette changes what is solid, what can move, and which path exists.',
-  }),
-  labyrinth: Object.freeze({
-    id: 'labyrinth',
-    chapter: 'CHAPTER 05',
-    title: 'THE LABYRINTH',
-    accession: 'ACC. 17-5008',
-    object: 'LOOKING FRAGMENT · EIGHT-KEY RING · GAZE INDEX',
-    archiveRecord: 'A broken stone observer catalogued with eight keys from an unbounded gallery.',
-    butchReading: 'It did not follow me because it was alive. It followed whenever I stopped seeing it.',
-    mode: 'GAZE RECORD',
-    reconstructionLaw: 'Being watched is stored as a law of sight: what remains in view must stop; what leaves the frame is free to move.',
-    ingress: 'The archive cannot preserve the feeling of being watched as a document. It rebuilds that memory as a space governed by sight.',
-    egress: 'The stone becomes an object again. Sight releases the body, and the reconstruction returns control to the Museum.',
+    accession: 'ACC. 1978-0412 · 4',
+    object: 'PLATE IV · A CHILD’S DRAWING',
+    archiveRecord: 'Orchard lane, hawthorn, one figure walking. Artist: unknown.',
+    butchReading: 'Rosa drew it. The hawthorn is Mara’s mark.',
   }),
 });
 
+// Walking east down the archive corridor: Chapter 1 first.
 export const CHAPTER_EXHIBIT_ORDER = Object.freeze([
-  'last-train',
-  'borrowed-grid',
+  'night-service',
+  'borrowed-light',
   'echo-city',
   'painted-country',
-  'labyrinth',
 ]);
+
+// The three bays that used to be sealed shutters are the archive's own filed
+// claims: the one clean answer the lobby exhibit asks the player to refuse.
+export const FILED_CLAIMS = Object.freeze([
+  Object.freeze({
+    id: 'filed-city',
+    stamp: `FILED · ${MUSEUM_DATE}`,
+    title: 'CITY CASE — COLLECTED',
+    lines: ['Owner: VELEZ, M. · a rented room near the terminal.', 'Claim closed.'],
+  }),
+  Object.freeze({
+    id: 'filed-orchard',
+    stamp: `FILED · ${MUSEUM_DATE}`,
+    title: 'ORCHARD CASE — UNCLAIMED',
+    lines: ['Tag reads BELLWETHER. No forwarding address on file.', 'Held as lost property.'],
+  }),
+  Object.freeze({
+    id: 'filed-duplicate',
+    stamp: `FILED · ${MUSEUM_DATE}`,
+    title: 'SECOND CLAIM — DISCARDED',
+    lines: ['One person, one claim.', 'The archive does not issue duplicates.'],
+  }),
+]);
+
+// The Labyrinth is not a case: Door 4 still opens. Its framed-exhibit card
+// explains the sight rule once before the player enters.
+export const LABYRINTH_EXHIBIT = Object.freeze({
+  id: 'labyrinth',
+  title: 'THE LABYRINTH',
+  mode: 'THE LABYRINTH · EIGHT KEYS',
+  ingress: 'The statues move only while you are not looking. Face them, keep them in your light, and bring out all eight keys.',
+  egress: 'EIGHT KEYS FILED',
+});
 
 export function chapterExhibit(id) {
   const exhibit = CHAPTER_EXHIBIT_CATALOG[id];
@@ -78,10 +94,11 @@ export function chapterExhibit(id) {
   return exhibit;
 }
 
-export function exhibitDialogue(exhibit) {
-  return [
-    { speaker: 'ARCHIVIST', text: `${exhibit.chapter} · ${exhibit.accession}. ${exhibit.object}. ${exhibit.archiveRecord}` },
-    { speaker: 'BUTCH', text: exhibit.butchReading },
-    { speaker: 'ARCHIVE', text: `${exhibit.mode}: ${exhibit.reconstructionLaw}` },
-  ];
+/** An accession case as a short archive card (`.nf-card`). */
+export function exhibitCard(exhibit) {
+  return {
+    stamp: `${exhibit.chapter} · ${exhibit.title} · ${exhibit.accession}`,
+    title: exhibit.object,
+    lines: [exhibit.archiveRecord, `BUTCH — ${exhibit.butchReading}`],
+  };
 }

@@ -23,9 +23,13 @@ test('Echo City transition is a black threshold, never a white loading frame', (
   assert.doesNotMatch(html, /#fade[\s\S]{0,180}background:\s*#e8e4d8/);
 });
 
-test('the physical Echo City threshold swaps preloaded roots without a full-screen fade or relock', () => {
+// The Echo City reconstruction is a dev-only preview since the Museum cut it
+// from the shipping route (?beat=echo in dev). It is built on demand, never
+// preloaded, and it has no return threshold into the Museum any more.
+test('the dev-only Echo City threshold is built on demand and enters without a fade or relock', () => {
+  assert.match(app, /this\.includeEchoCity = DEV_MODE && includeEchoCity === true;/);
   assert.match(app, /toPhase: 'echo-city',[\s\S]{0,220}occlude: false,[\s\S]{0,80}preserveControl: true/);
-  assert.match(app, /fromPhase: 'echo-city',[\s\S]{0,260}occlude: false,[\s\S]{0,80}preserveControl: true/);
+  assert.doesNotMatch(app, /fromPhase: 'echo-city'/, 'no shipping return from Echo City');
   assert.match(director, /if \(occlude\) await this\._fade\(true\)/);
   assert.match(director, /if \(!preserveControl\)/);
 });
