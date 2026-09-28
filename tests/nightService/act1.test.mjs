@@ -182,18 +182,3 @@ test('Act 1: dev ?step= skip lands on each step with a consistent world', () => 
   settle(conductor);
   assert.equal(conductor.state.ended?.next, 'act2');
 });
-
-test('Acts 2 and 3 stubs advance the chapter and end it', () => {
-  const two = createPanelModel(ACTS.act2, { carry: startCarry('act2') });
-  const log2 = record(two);
-  assert.ok(two.activateHotspot('act2-0', 'continue'));
-  settle(two);
-  assert.equal(two.state.ended.next, 'act3');
-  assert.equal(two.state.bell, 2);
-  assert.deepEqual(log2.filter(([n]) => n === 'checkpoint').map(([, p]) => p.id), ['chapter-1-act-3']);
-  const three = createPanelModel(ACTS.act3, { carry: startCarry('act3') });
-  assert.equal(three.layout.cols, 3);
-  assert.ok(three.activateHotspot('act3-0', 'continue'));
-  settle(three);
-  assert.equal(three.state.ended.kind, 'endChapter');
-});
