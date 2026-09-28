@@ -210,13 +210,16 @@ export function createMachineView(scene, machine) {
       const x = Math.random() * 64;
       const y = Math.random() * 256;
       const l = 30 + Math.random() * 70;
-      const gr = ctx.createLinearGradient(x, y, x, y + l);
-      gr.addColorStop(0, 'rgba(220,230,232,0)');
-      gr.addColorStop(0.5, `rgba(220,230,232,${0.3 + Math.random() * 0.4})`);
-      gr.addColorStop(1, 'rgba(220,230,232,0)');
-      ctx.fillStyle = gr;
-      ctx.fillRect(x, y, 1.5, l);
-      ctx.fillRect(x, y - 256, 1.5, l);
+      const a = 0.3 + Math.random() * 0.4;
+      // Draw each streak twice, 256 px apart, so it wraps seamlessly.
+      for (const oy of [0, -256]) {
+        const gr = ctx.createLinearGradient(x, y + oy, x, y + oy + l);
+        gr.addColorStop(0, 'rgba(220,230,232,0)');
+        gr.addColorStop(0.5, `rgba(220,230,232,${a})`);
+        gr.addColorStop(1, 'rgba(220,230,232,0)');
+        ctx.fillStyle = gr;
+        ctx.fillRect(x, y + oy, 1.5, l);
+      }
     }
     const key = addCanvasTexture(scene, `bl-updraft-${machine.id}`, streaks);
     view.images.draft = scene.add.tileSprite(machine.x, machine.yTop, machine.w, machine.yBottom - machine.yTop, key).setOrigin(0).setDepth(DEPTH.fx - 0.4).setAlpha(0).setBlendMode(Phaser.BlendModes.ADD);
