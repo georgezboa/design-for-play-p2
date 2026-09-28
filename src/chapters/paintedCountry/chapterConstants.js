@@ -40,4 +40,3 @@ export const clampToSafe = (x, y, w, h) => ({
   x: clamp(x, SAFE.left + w / 2, SAFE.right - w / 2),
   y: clamp(y, SAFE.top + h, SAFE.bottom),
 });
-
