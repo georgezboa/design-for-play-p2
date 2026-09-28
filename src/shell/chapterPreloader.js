@@ -21,37 +21,20 @@ const CHAPTER03_MODELS = [
   'ch03_landmark_civic_night_arcade.glb', 'ch03_cliff_overlook_platform.glb',
 ].map((file) => `/assets/chapter03-3d/models/${file}`);
 
-const CHAPTER03_CHARACTERS = [
-  'butch_shared_rig.glb', 'lev_shared_rig.glb', 'female_civic_shared_rig.glb',
-  'female_civilian_shared_rig.glb', 'female_market_shared_rig.glb',
-  'male_labor_shared_rig.glb', 'male_municipal_shared_rig.glb',
+// Echo City gates only what the platform needs at start: the city itself,
+// Butch and Lev, the shared animation library, the paving materials and the
+// arrival score. The market cast, the interior sets and the later music
+// stream in during play (Chapter3OpeningRuntime.streamDeferredAssets).
+const CHAPTER03_START_CHARACTERS = [
+  'butch_shared_rig.glb', 'lev_shared_rig.glb',
 ].map((file) => `/assets/chapter03-3d/characters/${file}`);
-
-const CHAPTER03_STATIC_CHARACTERS = [
-  'pavel_drunk_static.glb', 'recovery_gangster_static.glb',
-].map((file) => `/assets/chapter03-3d/characters/${file}`);
-
-const CHAPTER03_REPLACEMENTS = [
-  'env-eda-oil-stall', 'env-flower-stall', 'env-service-alley-kit', 'env-campfire-props',
-  'env-ministry-shell', 'env-ministry-furniture', 'env-archive-shell', 'env-archive-furniture',
-  'env-hotel-lobby-shell', 'env-hotel-lobby-furniture', 'env-hotel-corridor-shell',
-  'env-butch-room-shell', 'env-butch-room-furniture', 'env-doorless-carriage',
-  'env-single-train-door', 'prop-oil-container-set', 'prop-solvent-bottle',
-  'prop-terminal-printer', 'prop-petar-toolbox', 'prop-hotel-register-key', 'prop-cut-connector-set',
-].map((file) => `/assets/chapter03-3d/replacements/${file}.glb`);
 
 const CHAPTER03_MATERIALS = [
   'worn-limestone-albedo.webp', 'worn-limestone-height.webp',
   'worn-limestone-roughness.webp', 'worn-limestone-dark-albedo.webp', 'dark-city-cobbles.webp',
 ].map((file) => `/assets/chapter03-3d/materials/${file}`);
 
-const CHAPTER03_MUSIC = [
-  '3.1_satie_gnossienne_no1.mp3', '3.2_dvorak_humoresque_no7.mp3',
-  '3.3_sousa_washington_post_march.mp3', '3.4_beethoven_pathetique_mvt2.mp3',
-  '3.5_beethoven_moonlight_mvt1.mp3', '3.6_chopin_prelude_op28_no4.mp3',
-  '3.7_chopin_nocturne_op27_no2.mp3', '3.8_beethoven_sym7_mvt2_allegretto_cello.mp3',
-  '3.9_dvorak_new_world_largo.mp3',
-].map((file) => `/assets/music/ch3/${file}`);
+const CHAPTER03_START_MUSIC = ['/assets/music/ch3/3.1_satie_gnossienne_no1.mp3'];
 
 const CHAPTER1_WORLD = Object.values(import.meta.glob('../assets/generated/worlds/world-01-tutorial/*.jpg', {
   eager: true,
@@ -81,11 +64,9 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
     concurrency: 6,
     assets: Object.freeze([
       ...CHAPTER03_MODELS,
-      ...CHAPTER03_CHARACTERS,
-      ...CHAPTER03_STATIC_CHARACTERS,
-      ...CHAPTER03_REPLACEMENTS,
+      ...CHAPTER03_START_CHARACTERS,
       ...CHAPTER03_MATERIALS,
-      ...CHAPTER03_MUSIC,
+      ...CHAPTER03_START_MUSIC,
       '/assets/chapter03-3d/animations/quaternius_ual1_standard.glb',
     ]),
   }),
