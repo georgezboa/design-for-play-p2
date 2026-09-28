@@ -62,21 +62,44 @@ function buildButch(scene) {
   const armFront = scene.add.container(3, -52);
   armFront.add(img(scene, 'butch', P, 'arm', 0, 0));
   const lamp = img(scene, 'butch', P, 'lamp', 9, -30);
+  const ticket = img(scene, 'butch', P, 'ticket', 0, 23).setVisible(false);
+  const carried = img(scene, 'butch', P, 'case', 8, -34).setVisible(false);
   const glow = glowImage(scene, 9, -24, 70, 0xffc070, 0.5);
   legBack.list.forEach((part) => part.setTint?.(0xb8b8c0));
   armBack.list[0].setTint(0xa8b0b8);
-  body.add([armBack, legBack, legFront, torso, head, armFront, lamp, glow]);
+  armFront.add(ticket);
+  body.add([armBack, legBack, legFront, torso, head, carried, armFront, lamp, glow]);
   const shadow = scene.add.ellipse(0, 0, 34, 6, 0x000000, 0.35);
   root.addAt(shadow, 0);
 
   let phase = 0;
+  let wasCarrying = false;
+  let stagger = 0;
   const rig = {
     root,
     height: 70,
     glow,
-    update(dt, { pose, moving, time }) {
+    update(dt, { pose, moving, time, carrying }) {
       const t = time / 1000;
-      if (pose === 'sit') {
+      const holding = carrying === 'case';
+      // "the first weight": a stagger the moment the case lands in his arms
+      if (holding && !wasCarrying) stagger = 1;
+      wasCarrying = holding;
+      stagger = Math.max(0, stagger - dt / 1400);
+      carried.setVisible(holding);
+      ticket.setVisible(pose === 'ticket');
+      body.rotation = stagger ? Math.sin(stagger * 18) * 0.12 * stagger + 0.06 * stagger : 0;
+      if (pose === 'ticket') {
+        body.y = 0;
+        legFront.rotation = 0.04; legFront.knee.rotation = 0;
+        legBack.rotation = -0.04; legBack.knee.rotation = 0;
+        armFront.rotation = -2.1 + Math.sin(t * 1.8) * 0.05;
+        armBack.rotation = -0.05;
+        torso.rotation = 0;
+        head.rotation = -0.12;
+        head.y = -54;
+        ticket.rotation = 1.9;
+      } else if (pose === 'sit') {
         body.y = 7;
         legFront.rotation = -1.35; legFront.knee.rotation = 1.3;
         legBack.rotation = -1.25; legBack.knee.rotation = 1.25;
@@ -111,6 +134,13 @@ function buildButch(scene) {
         head.y = -54 - breathe * 0.4;
         head.rotation = Math.sin(t * 0.5) * 0.03;
         lamp.rotation = Math.sin(t * 1.4) * 0.05;
+      }
+      if (holding) {
+        armFront.rotation = -1.15 + Math.sin(t * 2) * 0.03;
+        armBack.rotation = -1.0;
+        body.y += stagger * 3;
+        legFront.knee.rotation = Math.max(legFront.knee.rotation, stagger * 0.5);
+        legBack.knee.rotation = Math.max(legBack.knee.rotation, stagger * 0.5);
       }
       glow.alpha = 0.42 + Math.sin(t * 13) * 0.03 + Math.sin(t * 3.1) * 0.04;
     },

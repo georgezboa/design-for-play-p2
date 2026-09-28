@@ -1,16 +1,14 @@
-// The act registry for Chapter 1. Replace a stub by importing the real act
-// definition here; nothing else in the engine needs to change.
+// The act registry for Chapter 1. Register an act definition here; nothing
+// else in the engine needs to change.
 
 import { ACT1 } from './act1.js';
-import { ACT2_STUB, ACT3_STUB } from './stubAct.js';
-import { LAB_ACT } from './labAct.js';
+import { ACT2 } from './act2.js';
+import { ACT3 } from './act3.js';
 
 export const ACTS = Object.freeze({
   act1: ACT1,
-  act2: ACT2_STUB,
-  act3: ACT3_STUB,
-  // dev-only engine lab: reachable solely through the dev `?act=lab` route
-  lab: LAB_ACT,
+  act2: ACT2,
+  act3: ACT3,
 });
 
 export const ACT_ORDER = Object.freeze(['act1', 'act2', 'act3']);

@@ -20,6 +20,7 @@ import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art
 import { PAL, brassFill, ink, roundRectPath, paperGrain } from './art/ink.js';
 import { PAPER_URL, WORLDS } from './worldAssets.js';
 import { reducedMotionActive } from '../../shell/motion.js';
+import { magicStoneSnapshot } from '../../shell/magicStones.js';
 
 export const PANEL_SCENE = 'NightServicePanels';
 
@@ -208,7 +209,9 @@ export class PanelScene extends Phaser.Scene {
     });
     this.env = {
       paper: this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null,
-      images: {},
+      images: Object.fromEntries(Object.values(WORLDS).flatMap((world) => world.chunks)
+        .filter(({ key }) => this.textures.exists(key))
+        .map(({ key }) => [key, this.textures.get(key).getSourceImage()])),
       worlds: this.worldKeys,
       reduceMotion: () => reducedMotionActive(),
     };
@@ -256,7 +259,11 @@ export class PanelScene extends Phaser.Scene {
     this.rigs = {};
     Object.entries(this.act.actors ?? {}).forEach(([id, def]) => {
       const rig = buildRig(this, def.rig ?? id);
-      this.rigs[id] = { rig, kind: def.rig ?? id, parent: null, stepClock: 0 };
+      if (def.tint !== undefined) {
+        const tintAll = (obj) => { obj.setTint?.(def.tint); obj.list?.forEach(tintAll); };
+        tintAll(rig.root);
+      }
+      this.rigs[id] = { rig, kind: def.rig ?? id, parent: null, stepClock: 0, scale: def.scale ?? 1 };
     });
 
     // ---------- lens ----------
@@ -286,6 +293,7 @@ export class PanelScene extends Phaser.Scene {
       window.removeEventListener('keyup', this.onKeyUp, true);
     });
 
+    this.buildSockets();
     this.introduce();
   }
 
@@ -486,7 +494,9 @@ export class PanelScene extends Phaser.Scene {
       const layer = hotspot.era === 'past' ? past ?? present : root;
       const holder = this.add.container(hotspot.tag.x * view.w, hotspot.tag.y * view.h);
       const tag = this.add.image(0, 0, 'nsv-tag').setOrigin(0.12, 0.2).setScale(0.5 * (hotspot.tag.scale ?? 1));
-      const glint = this.add.image(38 * (hotspot.tag.scale ?? 1), -8, 'nsv-glint').setScale(0.55).setBlendMode('ADD');
+      const glintOnly = Boolean(hotspot.tag.glintOnly);
+      const glint = this.add.image(glintOnly ? 0 : 38 * (hotspot.tag.scale ?? 1), glintOnly ? 0 : -8, 'nsv-glint').setScale(0.55).setBlendMode('ADD');
+      if (glintOnly) tag.setVisible(false);
       holder.add([tag, glint]);
       holder.setRotation(hotspot.tag.angle ?? 0);
       holder.setVisible(false);
@@ -562,7 +572,7 @@ export class PanelScene extends Phaser.Scene {
     m.on('fx', (params) => this.runFx(params));
     m.on('sfx', ({ name }) => this.audio.play(name));
     m.on('item', ({ item, held }) => { if (held) this.audio.play('glint'); void item; });
-    m.on('stone', ({ id }) => { this.audio.play('stone'); this.services.onStone?.(id); });
+    m.on('stone', ({ id }) => { this.audio.play('stone'); this.services.onStone?.(id); this.refreshSockets(true); });
     m.on('checkpoint', ({ id }) => this.services.onCheckpoint?.(id));
     m.on('hotspot', ({ kind }) => { if (kind === 'read') this.audio.play('paper'); else if (kind !== 'zoom') this.audio.play('clack'); });
     m.on('walk:blocked', ({ actor }) => { if (actor === 'butch') this.flashBlocked(); });
@@ -592,6 +602,8 @@ export class PanelScene extends Phaser.Scene {
     this.titleBox.y = this.layout.view.h / 2 + 8;
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: this.layout.view.h / 2, duration: 700, delay: 200, ease: 'Sine.easeOut' });
     this.time.delayedCall(200 + 700 + Math.max(200, hold - 500), () => {
+      // a long frame can leave the fade-in still running: it must not win
+      this.tweens.killTweensOf(this.titleBox);
       this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 700, ease: 'Sine.easeIn' });
     });
   }
@@ -980,15 +992,106 @@ export class PanelScene extends Phaser.Scene {
   showCard(card) {
     if (!card) return;
     this.cardStamp.setText(card.stamp ?? '');
-    this.cardTitle.setText(card.title ?? '');
+    this.cardTitle.setText(card.title ?? '').setFontSize(44);
+    // long titles shrink to fit the card
+    if (this.cardTitle.width > 560) this.cardTitle.setFontSize(Math.floor(44 * (560 / this.cardTitle.width)));
     this.cardLines.setText((card.lines ?? []).join('\n'));
     this.cardBox.setVisible(true).setAlpha(0).setAngle(-3);
     this.cardBox.y = this.layout.view.h / 2 - 10;
     this.tweens.add({ targets: this.cardBox, alpha: 1, angle: -1, y: this.layout.view.h / 2 - 30, duration: 320, ease: 'Back.easeOut' });
     this.audio.play('paper');
+    this.strikeCardLine(card);
+  }
+
+  /** The Archivist's red pencil: strike one line of the open card. */
+  strikeCardLine(card) {
+    const lines = card.lines ?? [];
+    const index = card.strike;
+    if (index === undefined || !lines[index]) return;
+    const text = this.cardLines;
+    const counts = lines.map((line) => Math.max(1, text.getWrappedText(line).length));
+    const total = counts.reduce((a, b) => a + b, 0);
+    const lineH = text.height / Math.max(1, total);
+    const before = counts.slice(0, index).reduce((a, b) => a + b, 0);
+    const scratch = document.createElement('canvas').getContext('2d');
+    scratch.font = `${text.style.fontSize} ${text.style.fontFamily}`;
+    const wrapped = text.getWrappedText(lines[index]);
+    const g = this.add.graphics();
+    this.cardBox.add(g);
+    this.cardStrike = g;
+    const rows = wrapped.map((row, i) => ({ y: text.y + (before + i + 0.55) * lineH, w: scratch.measureText(row).width }));
+    const run = { t: 0 };
+    this.time.delayedCall(card.strikeDelay ?? 1100, () => {
+      if (!this.cardBox.visible) return;
+      this.audio.play('scratch');
+      this.tweens.add({
+        targets: run,
+        t: 1,
+        duration: 700,
+        ease: 'Sine.easeInOut',
+        onUpdate: () => {
+          g.clear();
+          rows.forEach((row, i) => {
+            const k = Math.max(0, Math.min(1, run.t * rows.length - i));
+            if (!k) return;
+            g.lineStyle(4, 0xb3261e, 0.85);
+            g.beginPath();
+            g.moveTo(text.x - 8, row.y + 2);
+            const end = text.x - 8 + (row.w + 20) * k;
+            for (let x = text.x - 8; x <= end; x += 14) g.lineTo(x, row.y + Math.sin(x * 0.07) * 1.6 + 2);
+            g.strokePath();
+          });
+        },
+      });
+    });
+  }
+
+  buildSockets() {
+    // five stone sockets on the brass trim under the windows (Act 2 on)
+    const cx = this.layout.x + this.layout.w / 2;
+    const y = this.layout.y + this.layout.h + 30;
+    this.sockets = this.add.container(cx, y).setVisible(false);
+    this.bezelLayer.add(this.sockets);
+    this.socketGems = [];
+    for (let i = 0; i < 5; i += 1) {
+      const x = (i - 2) * 34;
+      const ring = this.add.circle(x, 0, 11, 0x1c130d).setStrokeStyle(3, 0xb08a4a);
+      const gem = this.add.circle(x, 0, 7, 0xff7a3a).setVisible(false);
+      const glow = this.add.image(x, 0, 'nsv-radial').setBlendMode('ADD').setTint(0xff8a40).setDisplaySize(46, 46).setVisible(false);
+      this.sockets.add([ring, glow, gem]);
+      this.socketGems.push({ gem, glow });
+    }
+    this.refreshSockets(false);
+  }
+
+  refreshSockets(animate) {
+    let count = 0;
+    try { count = magicStoneSnapshot().count; } catch { count = 0; }
+    if (this.model.state.flags.some((flag) => flag.startsWith('stone:'))) count = Math.max(1, count);
+    if (!count) return;
+    const wasHidden = !this.sockets.visible;
+    this.sockets.setVisible(true);
+    if (animate && wasHidden) {
+      this.sockets.setAlpha(0);
+      this.tweens.add({ targets: this.sockets, alpha: 1, duration: 700 });
+    }
+    this.socketGems.forEach(({ gem, glow }, i) => {
+      const on = i < count;
+      if (on && animate && !gem.visible) {
+        gem.setVisible(true).setScale(0);
+        glow.setVisible(true).setAlpha(0);
+        this.tweens.add({ targets: gem, scale: 1, duration: 500, delay: 700, ease: 'Back.easeOut' });
+        this.tweens.add({ targets: glow, alpha: 0.8, duration: 600, delay: 700 });
+      } else {
+        gem.setVisible(on);
+        glow.setVisible(on).setAlpha(0.7);
+      }
+    });
   }
 
   hideCard() {
+    this.cardStrike?.destroy();
+    this.cardStrike = null;
     this.audio.play('paper');
     this.tweens.add({ targets: this.cardBox, alpha: 0, y: this.cardBox.y + 30, duration: 220, onComplete: () => this.cardBox.setVisible(false) });
   }
@@ -1002,6 +1105,7 @@ export class PanelScene extends Phaser.Scene {
       scene,
       model: this.model,
       audio: this.audio,
+      top: this.topLayer,
       reduceMotion: () => reducedMotionActive(),
       screen: (tile, u, v) => this.views[tile].screen(u, v),
       zoomScale: () => 1,
@@ -1037,7 +1141,7 @@ export class PanelScene extends Phaser.Scene {
           this.tweens.add({ targets: spark, x: x + Math.cos(a) * 34, y: y + Math.sin(a) * 34, alpha: 0, scale: 0.1, duration: 620, ease: 'Sine.easeOut', onComplete: () => spark.destroy() });
         }
       },
-      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a } = {}) => {
+      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a, trail: trailMax = 14 } = {}) => {
         const dot = this.add.image(points[0].x, points[0].y, 'nsv-radial').setBlendMode('ADD').setTint(color).setDisplaySize(70, 70).setAlpha(0);
         const core = this.add.image(points[0].x, points[0].y, 'nsv-dot').setBlendMode('ADD').setScale(1.2).setAlpha(0);
         this.topLayer.add([dot, core]);
@@ -1068,7 +1172,7 @@ export class PanelScene extends Phaser.Scene {
             core.setPosition(x, y);
             const fade = Math.sin(run.t * Math.PI);
             dot.setAlpha(0.9 * fade + 0.1);
-            if (trail.length < 14 && Math.random() < 0.6) {
+            if (trail.length < trailMax && Math.random() < 0.6) {
               const bit = this.add.image(x, y, 'nsv-dot').setBlendMode('ADD').setTint(color).setScale(0.8).setAlpha(0.7);
               this.topLayer.add(bit);
               trail.push(bit);
@@ -1087,7 +1191,12 @@ export class PanelScene extends Phaser.Scene {
     if (custom) { custom(this.fxApi(), params); return; }
     if (params.name === 'fadeAll') this.fadeAll(params.ms ?? 1600);
     else if (params.name === 'pulse') this.pulseHint(params.hint ?? params);
-    else if (params.name === 'drift') { this.model.driftRate = params.rate ?? 1; this.audio.setRailRate(params.rate ?? 1); }
+    else if (params.name === 'drift') {
+      const rate = params.rate ?? 1;
+      const holder = { r: this.model.driftRate ?? 1 };
+      this.tweens.add({ targets: holder, r: rate, duration: params.ease ?? 1800, ease: 'Sine.easeInOut', onUpdate: () => { this.model.driftRate = holder.r; } });
+      this.audio.setRailRate(Math.max(0.25, rate));
+    }
     else if (params.name === 'shake') this.cameras.main.shake(params.ms ?? 300, 0.003);
   }
 
@@ -1112,10 +1221,60 @@ export class PanelScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // hints
 
+  /** A soft amber bloom for idle hints (top layer, screen coords). */
+  hintGlow(x, y, size) {
+    const glow = this.add.image(x, y, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(size, size).setAlpha(0);
+    this.topLayer.add(glow);
+    this.tweens.add({ targets: glow, alpha: 0.55, duration: 600, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
+  }
+
   pulseHint(hint) {
+    if (hint?.actor) {
+      // pulse where a walker is waiting, and the edge it is waiting at
+      const actor = this.model.state.actors[hint.actor];
+      const view = actor && this.views[actor.tile];
+      if (!view) return;
+      const pt = view.screen(actor.x, actor.y);
+      this.hintGlow(pt.x, pt.y - 30, 150);
+      this.shimmer(pt.x, pt.y - 24);
+      const target = actor.walk?.path?.[actor.walk.index];
+      if (target && target.tile !== actor.tile) {
+        const edgePt = view.screen(Math.min(1, Math.max(0, target.x === 0 ? 1 : target.x)), actor.y);
+        this.time.delayedCall(300, () => this.shimmer(edgePt.x, edgePt.y));
+      }
+      if (hint.tile) this.pulseHint({ ...hint, actor: null });
+      return;
+    }
+    if (hint?.lens && this.model.state.lens.enabled) {
+      // the lens rim swells and glows: this is the thing to move
+      const lens = this.model.state.lens;
+      this.tweens.add({ targets: this.lensView, scale: 1.12, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
+      this.hintGlow(lens.x, lens.y, lens.r * 3);
+      [0, 1, 2, 3].forEach((i) => this.time.delayedCall(i * 110, () => {
+        const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
+        this.shimmer(lens.x + Math.cos(a) * lens.r, lens.y + Math.sin(a) * lens.r);
+      }));
+    }
     if (!hint?.tile) return;
     const view = this.views[hint.tile];
     if (!view) return;
+    if (hint.hotspots) {
+      const live = this.model.hotspots(hint.tile).find((h) => h.enabled && hint.hotspots.includes(h.id));
+      if (live) this.pulseHint({ tile: hint.tile, hotspot: live.id });
+      return;
+    }
+    if (hint.frame) {
+      // the frame's edge breathes: this is the thing you can lift
+      const g = this.add.graphics();
+      view.fxLayer.add(g);
+      const state = { a: 0 };
+      this.tweens.add({
+        targets: state, a: 1, duration: 520, yoyo: true, repeat: 1,
+        onUpdate: () => { g.clear(); g.lineStyle(10, 0xffc46a, 0.45 * state.a); g.strokeRoundedRect(14, 14, view.w - 28, view.h - 28, 22); },
+        onComplete: () => g.destroy(),
+      });
+      [[0.5, 0.02], [0.02, 0.5], [0.98, 0.5], [0.5, 0.98]].forEach(([u, v], i) => this.time.delayedCall(i * 120, () => { const p = view.screen(u, v); this.shimmer(p.x, p.y); }));
+    }
     if (hint.hotspot) {
       const entry = view.current?.tags.find((tag) => tag.hotspot.id === hint.hotspot);
       if (entry?.holder.visible) {
@@ -1677,7 +1836,7 @@ export class PanelScene extends Phaser.Scene {
       if (!view) { rig.root.setVisible(false); return; }
       const tileState = this.model.state.tiles[actor.tile].state;
       const sceneDef = this.model.sceneOf(actor.tile, tileState);
-      const scale = sceneDef?.actorScale ?? 1;
+      const scale = (sceneDef?.actorScale ?? 1) * entry.scale;
       const moving = Boolean(actor.walk) && !actor.blocked;
       if (actor.crossing) {
         if (entry.parent !== this.crossLayer) { this.crossLayer.add(rig.root); entry.parent = this.crossLayer; }
@@ -1694,7 +1853,7 @@ export class PanelScene extends Phaser.Scene {
         rig.root.setVisible(visible);
         rig.root.setScale(actor.facing * scale, scale);
       }
-      rig.update(dt, { pose: actor.pose, moving, time: this.clock });
+      rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying });
       if (moving && id === 'butch') {
         entry.stepClock += dt;
         if (entry.stepClock > 300) { entry.stepClock = 0; this.audio.play('step'); }

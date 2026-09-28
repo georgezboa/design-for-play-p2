@@ -124,6 +124,11 @@ export function createNightServiceAudio({ music = true } = {}) {
       [[392, 0.34, 4.5], [784, 0.14, 3.2], [941, 0.1, 2.6], [1176, 0.07, 2.2], [1568, 0.05, 1.6], [2090, 0.03, 1.1], [196, 0.12, 5]].forEach(([f, p, d]) => tone(f, { peak: p, decay: d, attack: 0.004 }));
       burst({ dur: 0.05, peak: 0.2, freq: 2400, q: 1 });
     },
+    scratch() { for (let i = 0; i < 6; i += 1) burst({ t: i * 0.1, dur: 0.09, peak: 0.12, filter: 'bandpass', freq: 2600 + (i % 2) * 700, q: 2 }); },
+    brake() { burst({ dur: 1.6, peak: 0.07, filter: 'bandpass', freq: 3400, to: 1800, q: 12, attack: 0.3 }); tone(1900, { type: 'sawtooth', peak: 0.012, decay: 1.4, to: 1500, attack: 0.3 }); },
+    thud() { tone(90, { type: 'triangle', peak: 0.35, decay: 0.25, to: 50 }); burst({ dur: 0.12, peak: 0.25, freq: 400, q: 1 }); },
+    whistle() { [740, 988].forEach((f) => tone(f, { type: 'triangle', peak: 0.06, decay: 1.3, attack: 0.08 })); tone(740, { type: 'sine', t: 1.1, peak: 0.05, decay: 0.8, attack: 0.05 }); },
+    reveal() { [392, 494, 587, 784].forEach((f, i) => tone(f, { t: i * 0.16, peak: 0.07, decay: 2.2 })); },
     stone() { [523, 784, 1046, 1568].forEach((f, i) => tone(f, { t: i * 0.09, peak: 0.07, decay: 1.4 })); },
   };
 

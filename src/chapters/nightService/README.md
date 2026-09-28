@@ -10,8 +10,8 @@ Chapter 1 is a Gorogoa-style panel puzzle on its own page (`night-service.html`
 | `painter.js` | The `ctx` handed to `draw(ctx)` functions. |
 | `actorRig.js`, `art/figures.js` | Jointed Butch / Conductor / Mara / train. |
 | `art/ink.js`, `art/wallArt.js` | Canvas kit: jittered ink, wood, brass, paper tags, sepia, the carriage wall. |
-| `acts/*.js` | Act definitions. `acts/index.js` is the registry (replace a stub there). |
-| `acts/labAct.js` | Dev-only 3×2 lab using frame lift, lens and train. Copy from it. |
+| `acts/*.js` | Act 1 (2×2 intro), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
+| `art/actNArt.js`, `art/actNFx.js` | Each act's drawings and custom presentation effects. |
 | `audio.js` | Synth SFX on the SFX bus, rail ambience, quiet music loop. |
 
 ## Authoring an act
@@ -64,6 +64,7 @@ rack: {
         do: [effects],              // run on click
         requires: cond, once: true, pulseOnce: true,
         tag: { x, y, angle, scale },// draws the paper tag + amber glint for you
+                                    // (glintOnly: true = glint, no paper)
       }],
     },
   },
@@ -80,8 +81,10 @@ mismatch shimmer. `when` gates an edge on any condition.
 ### Steps, conditions and effects
 
 Steps run in order. The current step fires once its `when` holds, then its
-`do` effects run in sequence. `hint` is pulsed after 45 s idle
-(`{ tile, hotspot }` or `{ tile, edge: { side, at } }`). `skip` lists the
+`do` effects run in sequence. `hint` is pulsed after 45 s idle:
+`{ tile, hotspot }` · `{ tile, hotspots: [ids] }` (first enabled one) ·
+`{ tile, edge: { side, at } }` · `{ tile, frame: true }` (the liftable frame) ·
+`{ tile, lens: true }` (the lens rim) · `{ actor }` (the actor and the edge it waits at). `skip` lists the
 state changes a dev `?step=` jump applies instead of the blocking effects.
 
 Conditions (single-key objects, combinable): `link {a,b,type}` · `state {tile,is}` ·
@@ -91,18 +94,20 @@ Conditions (single-key objects, combinable): `link {a,b,type}` · `state {tile,i
 `all [...]` · `any [...]` · `not cond` · `true`.
 
 Effects: `setState {tile,state}` · `setFlag` / `clearFlag` · `giveItem` / `takeItem` ·
-`showCard id` · `dialogue [{speaker,text}]` (blocks, click to advance) ·
+`showCard id` (cards: `{stamp,title,lines,strike?,strikeDelay?}`; `strike` is
+the line index the Archivist's red pencil crosses out) · `dialogue [{speaker,text}]` (blocks, click to advance) ·
 `caption {text,ms}` · `wait ms` · `fx {name,…,ms?}` · `sfx name` · `ringBell` ·
 `walkButch {id,path,speed,await}` / `walk {actor,…}` / `playTrain {id,path}` ·
-`placeActor {actor,tile,state,x,y,visible,pose,facing}` · `actorPose` ·
-`zoomTo {tile,to,rect}` · `zoomOut tile` · `enableLens {x,y,r}` / `disableLens` ·
+`placeActor {actor,tile,state,x,y,visible,pose,facing,carrying}` · `actorPose` ·
+`zoomTo {tile,to,rect}` · `zoomOut tile` · `enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
 `returnFrame id` · `unlockDrag` / `lockTile` · `lockInput` / `unlockInput` ·
 `grantStone id` · `checkpoint id` · `nextAct id` · `endChapter`.
 
 **Walk paths** are waypoint lists `{ tile, x, y, via?, requires?, pose?, state? }`.
 Moving to a waypoint on another tile needs an active link between the two tiles
 (of type `via` if given); `requires` makes the actor wait for a condition (e.g.
-`lensOver` for Act 3's viaduct). A broken link stops the actor at the edge, and
+`lensOver` for Act 3's viaduct); `retreat: {x, y}` backs it off to a safe spot
+while the condition fails. A broken link stops the actor at the edge, and
 mid-gutter it steps back; it resumes by itself when the link returns.
 
 An open archive card pauses the script (reading is never rushed). `lockInput`
@@ -116,7 +121,9 @@ fn, x, y, opts)` · `ctx.glow(x, y, size, {color, alpha, flicker})` ·
 `ctx.dust(x, y, w, h)` · `ctx.rain(x, y, w, h)` (off under Reduce Motion) ·
 `ctx.fields(x, y, w, h, {world:'fields'|'city'|'memory', speed, crop, zoom, offset})`
 painted panorama, drifting · `ctx.image(key, …)` · `ctx.animate((time, dt) => …)` ·
-`ctx.flag(name)` · `ctx.item(name)`. In `art/ink.js`: `ink`, `inkRect`,
+`ctx.flag(name)` · `ctx.item(name)`. `env.images[key]` gives the loaded panorama
+chunks (`nsv-w07-0`, `nsv-w01-2`, …) for exact crops — see `crop`/`cropFull` in
+`art/act2Art.js`; linked panels must share crop edges so they line up. In `art/ink.js`: `ink`, `inkRect`,
 `inkEllipse`, `wood`, `brassFill`, `rivet`, `paperTag`, `amberGlint`, `glow`,
 `lightCone`, `paperGrain`, `vignette`, `sepia` (the 1978 grade).
 
@@ -125,18 +132,23 @@ painted panorama, drifting · `ctx.image(key, …)` · `ctx.animate((time, dt) =
 `act.fx[name](api, params)` runs for `{ fx: { name } }`. The api offers
 `screen(tile,u,v)`, `topSprite(key,x,y)`, `flash(tile,u,v,opts)`,
 `sparkle(x,y)`, `lightRun(points,opts)`, `rig(id)`, `rigPoint(id,lx,ly)`,
-`audio.play(name)`, `scene` (Phaser) and `model`. Built-ins: `fadeAll`,
+`audio.play(name)`, `top` (the overlay container), `scene` (Phaser) and `model`. Built-ins: `fadeAll`,
 `pulse`, `drift {rate}` (slows the fields and the rail clack), `shake`.
+
+**Actors** take `scale` and `tint` (e.g. Act 3's far train). **Stone sockets**
+(five, bezel bottom) appear once any stone is held and light on `grantStone`.
 
 ## Testing
 
 Pure-model tests live in `tests/nightService/`. `helpers.mjs` has `settle()`
 (runs waits/walks/dialogue), `availableActions()` and a BFS `solveBfs()` used
-for the "no dead ends" proof — add the same tests for each new act.
+for the "no dead ends" proof — add the same tests for each new act. When the
+state space is too big for BFS (Act 3: 720 layouts), drive a goal-directed
+solver from random states instead (`act3.test.mjs`).
 
 ## Dev routes (DEV_MODE only; production ignores them)
 
-`?act=1|2|3|lab`, `?step=<step id>` (alone it finds the act), `?dtmax=1000`
+`?act=1|2|3`, `?step=<step id>` (alone it finds the act), `?dtmax=1000`
 (real-time steps for slow headless renderers), `N` skips the act.
 `window.render_game_to_text()` returns the model state plus screen positions
 of slots, enabled hotspots and zoom-out glyphs.

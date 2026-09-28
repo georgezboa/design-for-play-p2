@@ -108,6 +108,30 @@ export const BUTCH_PARTS = {
     c.beginPath(); c.arc(4.5, 22.5, 2.8, 0, Math.PI * 2); c.fill();
     ink(c, [[1, 1.5], [2, 20], [7, 20], [8, 1.5]], { w: 1.1, jitter: 0.15, bleed: false });
   }),
+  // the ticket he holds up in Act 2 (punched: a real hole)
+  ticket: part(14, 9, [2, 4.5], (c) => {
+    c.fillStyle = '#e8c27a';
+    c.fillRect(1, 1, 12, 7);
+    c.fillStyle = 'rgba(107, 42, 34, 0.9)';
+    c.fillRect(1, 1, 3, 7);
+    ink(c, [[1, 1], [13, 1], [13, 8], [1, 8]], { w: 0.8, closed: true, bleed: false, jitter: 0.1 });
+  }),
+  // the orchard case, carried in both arms (Acts 2–3)
+  case: part(42, 30, [21, 15], (c) => {
+    c.scale(1.4, 1.36);
+    c.fillStyle = '#6d4a2c';
+    c.fillRect(2, 4, 26, 16);
+    c.fillStyle = 'rgba(255, 220, 170, 0.12)';
+    c.fillRect(2, 4, 26, 4);
+    c.fillStyle = PAL.brass;
+    c.fillRect(6, 4, 3, 16); c.fillRect(21, 4, 3, 16);
+    c.fillRect(12, 1, 6, 3);
+    c.fillStyle = '#e6dcc2';
+    c.beginPath(); c.moveTo(24, 10); c.lineTo(28, 8); c.lineTo(30, 12); c.lineTo(26, 14); c.closePath(); c.fill();
+    c.fillStyle = '#4f6b3a';
+    c.beginPath(); c.ellipse(27, 11, 1.6, 1, 0.5, 0, Math.PI * 2); c.fill();
+    ink(c, [[2, 4], [28, 4], [28, 20], [2, 20]], { w: 1.2, closed: true, bleed: false, jitter: 0.15 });
+  }),
   lamp: part(10, 14, [5, 1], (c) => {
     c.strokeStyle = PAL.brass;
     c.lineWidth = 1;
@@ -242,6 +266,11 @@ export const TRAIN_PARTS = {
     c.fillRect(74, 8, 72, 26);
     c.fillStyle = '#ffd98a';
     [82, 98, 114, 130].forEach((x) => c.fillRect(x, 13, 10, 8));
+    // a passenger in the second window: cap, shoulders, a case on his knees
+    c.fillStyle = 'rgba(30, 22, 16, 0.85)';
+    c.beginPath(); c.arc(103, 16.5, 2, 0, Math.PI * 2); c.fill();
+    c.fillRect(100.5, 14, 5, 1.2);
+    c.fillRect(100, 18.5, 6, 2.5);
     c.fillStyle = '#20252f';
     c.fillRect(46, 2, 20, 10);
     c.fillRect(12, 4, 7, 7);

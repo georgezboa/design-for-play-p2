@@ -316,7 +316,7 @@ export function paperGrain(c, w, h, paper, alpha = 0.16) {
  * so far on this canvas, keeping its transparency (so live layers such as
  * the drifting fields still show through the holes).
  */
-export function sepia(c, { amount = 0.92, warmth = 0.1 } = {}) {
+export function sepia(c, { amount = 1, warmth = 0.17 } = {}) {
   const canvas = c.canvas;
   const tmp = document.createElement('canvas');
   tmp.width = canvas.width;
@@ -325,7 +325,8 @@ export function sepia(c, { amount = 0.92, warmth = 0.1 } = {}) {
   c.save();
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, canvas.width, canvas.height);
-  c.filter = `sepia(${amount}) saturate(0.8) contrast(0.94) brightness(1.04)`;
+  // warm, lamp-lit and a little brighter than the present: 1978 must read at a glance
+  c.filter = `sepia(${amount}) saturate(1.35) contrast(0.92) brightness(1.24)`;
   c.drawImage(tmp, 0, 0);
   c.filter = 'none';
   c.globalCompositeOperation = 'source-atop';
