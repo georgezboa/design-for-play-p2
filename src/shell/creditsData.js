@@ -93,7 +93,7 @@ export const CREDIT_MUSIC = Object.freeze([
   {
     title: 'NEW WORLD SYMPHONY IV · GREAT GATE OF KYIV',
     creator: 'MUSOPEN',
-    use: 'CHAPTER 6 · ECHO CITY AND PAINTED COUNTRY',
+    use: 'CHAPTER 6 · MOVEMENTS III AND IV',
     license: 'PUBLIC DOMAIN',
     source: 'https://commons.wikimedia.org/wiki/File:Antonin_Dvorak_-_symphony_no._9_in_e_minor_%27from_the_new_world%27,_op._95_-_iv._allegro_con_fuoco.ogg',
     licenseUrl: 'https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_x._la_grande_porte_de_kiev_-_allegro_alla_breve._maestoso._con_grandezza.ogg',
@@ -123,7 +123,7 @@ export const CREDIT_GENERATIVE = Object.freeze([
   },
   {
     label: 'SYNTHETIC CHARACTER VOICES',
-    detail: 'Chapter 3 and Chapter 5 use generated English voice performances, and Chapter 6 reuses selected Chapter 3 lines. The audio manifests do not record the provider, and the source of the Chapter 6 poetry-duel voices is not recorded; attribution remains explicitly marked as incomplete.',
+    detail: 'Chapter 3 and Chapter 5 use generated English voice performances, and Chapter 6 reuses selected Chapter 3 lines for the argument about Mara. The audio manifests do not record the provider; attribution remains explicitly marked as incomplete.',
   },
 ]);
 
@@ -147,10 +147,5 @@ export const CREDIT_EXTERNAL = Object.freeze([
     label: 'QUATERNIUS DOWNTOWN CITY MEGAKIT',
     detail: 'Concrete asphalt texture behind the Echo City back-street paving · CC0 1.0',
     source: 'https://quaternius.com/',
-  },
-  {
-    label: 'UNSPLASH',
-    detail: 'Chapter 6 verification-screen photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O\'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee · Unsplash License',
-    source: 'https://unsplash.com/license',
   },
 ]);

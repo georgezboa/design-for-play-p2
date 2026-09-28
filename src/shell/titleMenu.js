@@ -172,7 +172,9 @@ export function createTitleMenu({ openCredits = false } = {}) {
       <article class="nf-credit-world nf-credit-style--night"><span>CAR 01</span><strong>NIGHT SERVICE</strong><small>BRASS · STEEL · AMBER MEMORY</small></article>
       <article class="nf-credit-world nf-credit-style--grid"><span>CAR 02</span><strong>BORROWED LIGHT</strong><small>RAIN · BELL · BORROWED SIGNAL</small></article>
       <article class="nf-credit-world nf-credit-style--city"><span>CAR 03</span><strong>ECHO CITY</strong><small>STONE · FIRE · CIVIC RECORD</small></article>
-      <article class="nf-credit-world nf-credit-style--paper"><span>CAR 04</span><strong>PAINTED COUNTRY</strong><small>PAPER · INK · LIVING COLOR</small></article>
+      <article class="nf-credit-world nf-credit-style--paper"><span>CAR 04</span><strong>THE PAINTED COUNTRY</strong><small>PAPER · INK · THE HAWTHORN</small></article>
+      <article class="nf-credit-world nf-credit-style--night"><span>CAR 05</span><strong>THE MUSEUM OF ONE ANSWER</strong><small>GLASS · LEDGER · ONE CLEAN ANSWER</small></article>
+      <article class="nf-credit-world nf-credit-style--city"><span>CAR 06</span><strong>ALL WORLDS AT ONCE</strong><small>THE CONDUCTOR · THE BLACK TICKET</small></article>
     `;
     roll.append(worlds);
 
