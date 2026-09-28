@@ -3,13 +3,13 @@
 
 import { ACT1 } from './act1.js';
 import { ACT2 } from './act2.js';
-import { ACT3_STUB } from './stubAct.js';
+import { ACT3 } from './act3.js';
 import { LAB_ACT } from './labAct.js';
 
 export const ACTS = Object.freeze({
   act1: ACT1,
   act2: ACT2,
-  act3: ACT3_STUB,
+  act3: ACT3,
   // dev-only engine lab: reachable solely through the dev `?act=lab` route
   lab: LAB_ACT,
 });
