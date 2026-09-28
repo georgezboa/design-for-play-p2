@@ -70,8 +70,10 @@ test('keyboard and gamepad drive the same brush: arrows / right stick aim, Space
   const brush = sources['brushInput.js'];
   assert.match(brush, /up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', paint: 'SPACE', wash: 'SHIFT'/);
   assert.match(brush, /pad\.axes\[2\]\.getValue\(\)/);
-  assert.match(brush, /this\.keys\.paint\.isDown \|\| Boolean\(pad\?\.A\)/);
-  assert.match(brush, /this\.keys\.wash\.isDown \|\| Boolean\(pad\?\.B\)/);
+  assert.match(brush, /this\.keys\.paint\.isDown \|\| this\.tapped\.paint \|\| Boolean\(pad\?\.A\)/);
+  assert.match(brush, /this\.keys\.wash\.isDown \|\| this\.tapped\.wash \|\| Boolean\(pad\?\.B\)/);
+  // quick taps are latched from the raw keydown so a slow frame cannot eat them
+  assert.match(brush, /scene\.input\.keyboard\.on\('keydown', this\.onKeyDown\)/);
   assert.match(main, /input: \{ gamepad: true \}/);
   const keys = CHAPTER_CONTROLS.paintedCountry.map(([, k]) => k).join(' ');
   for (const needle of ['LEFT MOUSE', 'RIGHT MOUSE', 'ARROW KEYS', 'RIGHT STICK', 'SPACE', 'SHIFT', 'PAD A', 'PAD B', 'HOLD R']) {

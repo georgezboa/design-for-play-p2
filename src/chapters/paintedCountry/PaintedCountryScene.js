@@ -1332,7 +1332,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     if (this.card.open) {
       this.walker.body.setVelocityX(0);
-      if (move.interactPressed || this.brush.paintPressed || Phaser.Input.Keyboard.JustDown(this.keys.enter)) this.card.dismiss();
+      if (move.interactPressed || move.enterPressed || this.brush.paintPressed) this.card.dismiss();
       this.drawFigure();
       return;
     }

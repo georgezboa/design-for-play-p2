@@ -65,6 +65,19 @@ export class BrushInput {
       }
     };
     scene.input.on('pointermove', this.onPointerMove);
+    // Phaser forgets a key whose down and up both land between two frames
+    // (Key.onUp clears _justDown). On a slow machine that eats quick taps, so
+    // the taps that matter are latched from the raw keydown event instead.
+    this.tapped = { e: false, w: false, enter: false, paint: false, wash: false };
+    this.onKeyDown = (event) => {
+      if (event.repeat) return;
+      if (event.code === 'KeyE') this.tapped.e = true;
+      else if (event.code === 'KeyW') this.tapped.w = true;
+      else if (event.code === 'Enter') this.tapped.enter = true;
+      else if (event.code === 'Space') this.tapped.paint = true;
+      else if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') this.tapped.wash = true;
+    };
+    scene.input.keyboard.on('keydown', this.onKeyDown);
     this.cursor = scene.add.graphics().setDepth(95);
   }
 
@@ -83,9 +96,13 @@ export class BrushInput {
     const pad = this.pad;
     let left = keys.a.isDown;
     let right = keys.d.isDown;
-    let jump = keys.w.isDown;
-    let interactPressed = Phaser.Input.Keyboard.JustDown(keys.e);
-    let jumpPressed = Phaser.Input.Keyboard.JustDown(keys.w);
+    let jump = keys.w.isDown || this.tapped.w;
+    let interactPressed = this.tapped.e;
+    let jumpPressed = this.tapped.w;
+    const enterPressed = this.tapped.enter;
+    this.tapped.e = false;
+    this.tapped.w = false;
+    this.tapped.enter = false;
     if (pad) {
       const ax = pad.axes.length ? pad.axes[0].getValue() : 0;
       left = left || ax < -0.35 || pad.left;
@@ -98,7 +115,7 @@ export class BrushInput {
       const start = pad.buttons[9]?.pressed;
       if (this.padEdge('start', start)) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
     }
-    return { left, right, jump, jumpPressed, interactPressed };
+    return { left, right, jump, jumpPressed, interactPressed, enterPressed };
   }
 
   update(dt) {
@@ -132,10 +149,12 @@ export class BrushInput {
       }
     }
     const moving = Math.hypot(ax, ay) > 0.01;
-    const keyPaint = this.keys.paint.isDown || Boolean(pad?.A);
-    const keyWash = this.keys.wash.isDown || Boolean(pad?.B);
+    const keyPaint = this.keys.paint.isDown || this.tapped.paint || Boolean(pad?.A);
+    const keyWash = this.keys.wash.isDown || this.tapped.wash || Boolean(pad?.B);
     if (pad && (pad.A || pad.B)) this.device = 'pad';
-    else if (this.keys.paint.isDown || this.keys.wash.isDown) this.device = 'keys';
+    else if (this.keys.paint.isDown || this.keys.wash.isDown || this.tapped.paint || this.tapped.wash) this.device = 'keys';
+    this.tapped.paint = false;
+    this.tapped.wash = false;
     // Aiming with the arrows / stick, or painting from the keyboard / pad,
     // hands the brush to the virtual cursor, starting where the mouse was.
     if (moving || keyPaint || keyWash) {
@@ -291,6 +310,7 @@ export class BrushInput {
   destroy() {
     this.scene.input.off('pointerdown', this.onPointerDown);
     this.scene.input.off('pointermove', this.onPointerMove);
+    this.scene.input.keyboard?.off('keydown', this.onKeyDown);
     this.cursor.destroy();
   }
 }
