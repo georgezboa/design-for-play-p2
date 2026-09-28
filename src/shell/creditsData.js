@@ -7,7 +7,7 @@ export const CREDIT_TEAM = Object.freeze([
     featured: true,
   },
   { name: 'CARL', role: 'CHAPTER 4 OWNER', stamp: 'PAINTED COUNTRY', style: 'paper' },
-  { name: 'JACK', role: 'CHAPTER 2 BUILDER', stamp: 'BORROWED GRID', style: 'grid' },
+  { name: 'JACK', role: 'CHAPTER 2 BUILDER', stamp: 'BORROWED LIGHT', style: 'grid' },
   { name: 'JASON', role: 'VISUAL & CINEMATIC LEAD', stamp: 'VISUAL WORLDS', style: 'city' },
   { name: 'MATHIAS', role: 'CHAPTER 5 / LABYRINTH', stamp: 'THE MUSEUM', style: 'night' },
 ]);

@@ -188,7 +188,7 @@ BOSS_SCORE.falseBossVerdi = {
 };
 const PHASES = [
   { id: 'night', title: 'I · NIGHT SERVICE', world: 'THROWN DEPARTURES', form: 'PASSENGER', color: AMBER, music: BOSS_SCORE.falseBossVerdi, verb: 'SPACE' },
-  { id: 'borrowed', title: 'II · BORROWED GRID', world: 'CUT THE CURRENT', form: 'RUNNER', color: CYAN, music: BOSS_SCORE.falseBossVerdi, verb: 'SPACE' },
+  { id: 'borrowed', title: 'II · BORROWED LIGHT', world: 'CUT THE CURRENT', form: 'RUNNER', color: CYAN, music: BOSS_SCORE.falseBossVerdi, verb: 'SPACE' },
   { id: 'echo', title: 'III · ECHO CITY', world: 'WORDS LEAVE MARKS', form: 'BUTCH', color: CYAN, music: BOSS_SCORE.echoCity, verb: 'SPACE' },
   { id: 'painted', title: 'IV · PAINTED COUNTRY', world: 'TAKE BACK THE COLOR', form: 'INK FIGURE', color: 0xff806f, music: BOSS_SCORE.allLines, verb: 'SPACE' },
 ];
