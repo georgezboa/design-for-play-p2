@@ -156,24 +156,8 @@ export function applySettings(settings = readSettings()) {
 export function launchCheckpoint(checkpointId, { replace = false, route = null } = {}) {
   const base = checkpointById(checkpointId) ?? CHECKPOINTS[0];
   const checkpoint = route ? { ...base, route } : base;
-  sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
-  if (checkpoint.launch) sessionStorage.setItem('nightfall.pendingLaunch.v1', checkpoint.launch);
-  if (checkpoint.route === '/' && window.location.pathname === '/') {
-    window.location.assign('/?play=1');
-    return;
-  }
   const navigate = replace ? window.location.replace.bind(window.location) : window.location.assign.bind(window.location);
   navigate(checkpoint.route);
-}
-
-export function consumePendingLaunch(storage = globalThis.sessionStorage) {
-  const launch = storage?.getItem('nightfall.pendingLaunch.v1') ?? null;
-  storage?.removeItem('nightfall.pendingLaunch.v1');
-  return launch;
-}
-
-export function hasDismissedTitle(storage = globalThis.sessionStorage) {
-  return storage?.getItem('nightfall.titleDismissed.v1') === '1';
 }
 
 // The window a title exit should navigate: the top-level page when this one
@@ -187,8 +171,6 @@ export function titleNavigationTarget(win = globalThis.window) {
 }
 
 export function returnToTitle(storage = globalThis.sessionStorage) {
-  storage?.removeItem('nightfall.titleDismissed.v1');
-  storage?.removeItem('nightfall.pendingLaunch.v1');
   storage?.removeItem('nightfall.hidden-router.v1');
   titleNavigationTarget(window).location.assign('/');
 }

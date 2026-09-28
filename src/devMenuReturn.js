@@ -12,7 +12,6 @@ const PRODUCTION_CHECKPOINTS = Object.freeze({
   '/car03-3d.html': 'chapter-3-start',
   '/painted-country.html': 'chapter-4-start',
   '/museum-3d.html': 'chapter-5-start',
-  '/car06.html': 'chapter-6-start',
   '/final-boss.html': 'chapter-6-start',
 });
 

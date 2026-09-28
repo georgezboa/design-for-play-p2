@@ -44,7 +44,7 @@ const startAct = resolveActParam(params.get('act')) ?? stepAct ?? savedAct();
 let scene = null;
 const pause = installPauseMenu({
   checkpointId: 'chapter-1-start',
-  controls: CHAPTER_CONTROLS.nightServicePanels ?? CHAPTER_CONTROLS.nightService,
+  controls: CHAPTER_CONTROLS.nightServicePanels,
   // Escape first backs out of whatever is in the player's hands.
   onEscape: () => (scene?.sys?.isActive() ? scene.escape() : false),
 });
@@ -52,10 +52,8 @@ void pause;
 
 const audio = createNightServiceAudio();
 
-// Chapter 2 today is the existing parkour on the main page, launched the way
-// CHECKPOINTS does it (a pending launch read by BootScene).
+// Chapter 2 · BORROWED LIGHT is its own page; the checkpoint owns the route.
 function launchChapter2() {
-  // Chapter 2 · BORROWED LIGHT is its own page; the checkpoint owns the route.
   launchCheckpoint('chapter-2-start');
 }
 

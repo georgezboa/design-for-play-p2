@@ -14,7 +14,7 @@ test('every delivered film is preserved as a production runtime asset', () => {
 });
 
 test('the completed chapter route owns all four film handoffs', () => {
-  assert.match(source('src/scenes/GameScene.js'), /CINEMATICS\.chapter1To2/);
+  assert.match(source('src/nightService-main.js'), /CINEMATICS\.chapter1To2/);
   assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /CINEMATICS\.chapter2To3/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /nightfall:chapter3-complete/);
   assert.match(source('src/car03-3d-main.js'), /CINEMATICS\.chapter3To4/);
@@ -22,15 +22,14 @@ test('the completed chapter route owns all four film handoffs', () => {
 });
 
 test('Chapter One releases its score before the 1→2 film begins', () => {
-  const chapter1 = source('src/scenes/GameScene.js');
-  assert.match(chapter1, /this\.prologueScoreReleased = true;[\s\S]*?music\.stop\(\{ fade: 1\.4 \}\)/);
-  assert.match(chapter1, /if \(this\.prologueScoreReleased \|\| this\.prologueTransitionActive \|\| this\.skipPrologue/);
+  const chapter1 = source('src/nightService-main.js');
+  assert.match(chapter1, /onChapterEnd\(\) \{[\s\S]*?audio\.destroy\(\);\s*playCinematic\(\{/);
 });
 
 test('every transition preloads its next chapter while the film is playing', () => {
   const flow = source('src/shell/gameFlow.js');
   const title = source('src/shell/titleMenu.js');
-  const chapter1 = source('src/scenes/GameScene.js');
+  const chapter1 = source('src/nightService-main.js');
   const chapter2 = source('src/chapters/borrowedLight/BorrowedLightScene.js');
   const chapter3 = source('src/car03-3d-main.js');
   const chapter4 = source('src/chapters/paintedCountry/PigmentTrainScene.js');
@@ -43,7 +42,7 @@ test('every transition preloads its next chapter while the film is playing', () 
 });
 
 test('the hidden title router gives Chapter 3 direct node access', () => {
-  const title = source('src/shell/titleMenu.js');
+  const title = source('src/shell/devRoutes.js');
   assert.match(title, /id: '3\.1'[\s\S]*?CITY ENTRY · DAWN[\s\S]*?route: '\/car03-3d\.html'/);
   assert.match(title, /id: '3\.2'[\s\S]*?DUSK CAMPFIRE/);
   assert.match(title, /id: '3\.4'[\s\S]*?SUNRISE OVERLOOK/);
@@ -73,10 +72,12 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(boss, /preserveBlackout: true[\s\S]*showEndCredits\(\)/);
   assert.match(source('src/shell/endCredits.js'), /CREDIT_TEAM\.map\(\(\{ name \}\) => name\)/);
   assert.match(source('src/shell/endCredits.js'), /music\.play\('end-credits'/);
-  assert.match(source('src/main.js'), /DEV_MODE \|\| playRequested/);
-  assert.match(source('src/shell/saveSystem.js'), /window\.location\.assign\('\/\?play=1'\)/);
-  assert.match(source('src/scenes/GameScene.js'), /music\.play\(`prologue-\$\{cue\}`/);
-  assert.match(source('src/cars/cyberpunkParkour/CyberpunkParkourScene.js'), /chapter-two-neon-safety-test/);
+  // The ending returns to /?credits=1; the legacy /?play=1 entry resumes
+  // the active checkpoint instead of booting a game on index.html.
+  assert.match(source('src/main.js'), /params\.get\('credits'\) === '1'[\s\S]*?createTitleMenu\(\{ openCredits: true \}\)/);
+  assert.match(source('src/main.js'), /params\.get\('play'\) === '1'[\s\S]*?resumeActiveCheckpoint\(\)/);
+  assert.match(source('src/chapters/nightService/audio.js'), /1\.1_train_undertow\.mp3/);
+  assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /music\.play\('chapter-two-borrowed-light'/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /c3-\$\{cue\}/);
   assert.match(source('src/chapters/museum3d/Museum3DApp.js'), /CHAPTER5_SCORE/);
   assert.match(source('src/chapters/museum3d/chapter05Score.js'), /ch5-dies-irae/);
@@ -101,10 +102,11 @@ test('the shared ESC pause menu exposes resume, settings and a confirmed title e
 });
 
 test('the dev-only 1111 title code opens every chapter’s named test nodes', () => {
-  const title = source('src/shell/titleMenu.js');
+  const titleMenu = source('src/shell/titleMenu.js');
+  const title = source('src/shell/devRoutes.js');
   const devMode = source('src/devMode.js');
-  assert.match(title, /hiddenChapterSequence === '1111'/);
-  assert.match(title, /SELECT TEST NODE/);
+  assert.match(titleMenu, /hiddenChapterSequence === '1111'/);
+  assert.match(titleMenu, /SELECT TEST NODE/);
   for (const group of [
     'CHAPTER 1 · NIGHT SERVICE',
     'CHAPTER 2 · BORROWED LIGHT',
@@ -115,18 +117,18 @@ test('the dev-only 1111 title code opens every chapter’s named test nodes', ()
   ]) {
     assert.match(title, new RegExp(group));
   }
-  for (const phase of [1, 2, 3, 4, 5, 6]) assert.match(title, new RegExp(`\\?qa=phase${phase}&state=entry`));
+  for (const act of [1, 2, 3]) assert.match(title, new RegExp(`night-service\\.html\\?act=${act}`));
+  assert.doesNotMatch(title, /\?qa=phase|route: '\/\?(chapter|qa|world)=/);
   assert.match(title, /chapter-2-midpoint/);
   assert.match(title, /painted-country\.html\?qa=drawing/);
   assert.match(title, /museum-3d\.html\?beat=corridor/);
   assert.match(title, /museum-3d\.html\?beat=collapse/);
   for (const movement of [1, 2, 3, 4]) assert.match(title, new RegExp(`CONDUCTOR ${['I', 'II', 'III', 'IV'][movement - 1]}[\\s\\S]*final-boss\\.html\\?qa=conductor-${movement}`));
   assert.match(title, /BLACK KNIFE · HIDDEN FINALE[\s\S]*hidden-final-boss\.html\?easter-egg=1/);
-  assert.match(title, /preload: 'hiddenBoss'/);
   // Release 1.0: the router and its key listener exist only in dev builds,
   // and the session flag it sets no longer unlocks dev routes in production.
-  assert.match(title, /const hiddenChapters = DEV_MODE \? \[/);
-  assert.match(title, /if \(DEV_MODE && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
+  assert.match(titleMenu, /const hiddenChapters = DEV_MODE \? DEV_ROUTES : \[\]/);
+  assert.match(titleMenu, /if \(DEV_MODE && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
   assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE;\n\}/);
   assert.doesNotMatch(devMode, /DEV_MODE \|\| hiddenRouterActive\(\)/);
 });

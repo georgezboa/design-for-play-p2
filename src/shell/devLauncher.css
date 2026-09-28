@@ -1,0 +1,80 @@
+/* Development-only chapter launcher (index.html under `npm run dev`). */
+html:has(#nightfall-dev-launcher),
+body:has(#nightfall-dev-launcher) {
+  overflow: auto;
+}
+
+#nightfall-dev-launcher {
+  box-sizing: border-box;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 40px 24px 64px;
+  color: #d7e2ee;
+  font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+#nightfall-dev-launcher h1 {
+  margin: 4px 0 6px;
+  font-size: 22px;
+  letter-spacing: .18em;
+}
+
+#nightfall-dev-launcher .nf-dev-kicker,
+#nightfall-dev-launcher .nf-dev-hint {
+  margin: 0;
+  color: #7d8896;
+  letter-spacing: .1em;
+}
+
+#nightfall-dev-launcher .nf-dev-note {
+  margin: 14px 0 0;
+  padding: 8px 12px;
+  border: 1px solid #c9a227;
+  color: #f0d164;
+}
+
+#nightfall-dev-launcher nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 18px 28px;
+  margin-top: 28px;
+}
+
+#nightfall-dev-launcher h2 {
+  margin: 0 0 6px;
+  color: #c9a227;
+  font-size: 11px;
+  letter-spacing: .16em;
+}
+
+#nightfall-dev-launcher ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+#nightfall-dev-launcher a {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 0 8px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  color: inherit;
+  text-decoration: none;
+}
+
+#nightfall-dev-launcher a span {
+  grid-row: span 2;
+  color: #7d8896;
+}
+
+#nightfall-dev-launcher a small {
+  color: #7d8896;
+}
+
+#nightfall-dev-launcher a:hover,
+#nightfall-dev-launcher a:focus-visible {
+  border-color: #c9a227;
+  background: #0d141d;
+  outline: none;
+}

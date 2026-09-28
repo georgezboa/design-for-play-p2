@@ -50,7 +50,7 @@ test('production ignores ?act= and ?step= (dev params are empty outside the dev 
 test('title New Game plays the opening film then opens night-service.html', () => {
   const title = read('src/shell/titleMenu.js');
   assert.match(title, /id: 'opening',[\s\S]{0,300}onComplete: \(\) => window\.location\.assign\('\/night-service\.html'\)/);
-  assert.match(title, /route: '\/night-service\.html\?act=1'/, 'dev 1111 router lists the acts');
+  assert.match(read('src/shell/devRoutes.js'), /route: '\/night-service\.html\?act=1'/, 'dev routes list the acts');
 });
 
 test('the page is a build input with its own title and favicon', () => {

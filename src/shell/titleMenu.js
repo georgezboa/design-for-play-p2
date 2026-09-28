@@ -15,11 +15,10 @@ import {
   CREDIT_TEAM,
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
-import { installPauseMenu } from './pauseMenu.js';
 import { DEV_MODE, activateHiddenRouter } from '../devMode.js';
 import { quitGame, toggleFullscreen } from './desktopBridge.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
-import { mainGameControls } from './chapterControls.js';
+import { DEV_ROUTES } from './devRoutes.js';
 import { resolveCheckpointRoute } from './finalBossRoute.js';
 
 const store = createSaveStore();
@@ -42,7 +41,7 @@ function button(label, action, className = '', description = '') {
   return element;
 }
 
-export function createTitleMenu({ onStart, openCredits = false }) {
+export function createTitleMenu({ openCredits = false } = {}) {
   applySettings(readSettings());
   const root = document.createElement('main');
   root.id = 'nightfall-title';
@@ -306,16 +305,9 @@ export function createTitleMenu({ onStart, openCredits = false }) {
         if (mode === 'new') {
           if (save && !window.confirm(`Overwrite Slot ${index + 1}?`)) return;
           store.startNew(index);
-          sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
           status.textContent = `SLOT ${index + 1} · NIGHT SERVICE AWAKENING`;
           closeDialog();
           root.remove();
-          installPauseMenu({
-            checkpointId: () => globalThis.game?.scene?.getScene('CyberpunkParkour')?.sys?.isActive()
-              ? 'chapter-2-start'
-              : 'prologue-start',
-            controls: () => mainGameControls(),
-          });
           playCinematic({
             id: 'opening',
             src: CINEMATICS.opening,
@@ -392,69 +384,18 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     panel.querySelector('input, button')?.focus();
   };
 
-  // The 1111 router deliberately names playable test nodes, not just broad
-  // chapters.  Keep these direct: films are useful for transition testing,
-  // but slow down moment-to-moment playtests.  Dev build only: a shipped
-  // title has no router, and typing 1111 there does nothing.
-  const hiddenChapters = DEV_MODE ? [
-    { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-start', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
-    { id: 'II', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-act-2', title: 'ACT II · THE LUGGAGE CAR', detail: 'The punch-hole lens and the frame lift.', route: '/night-service.html?act=2' },
-    { id: 'III', group: 'CHAPTER 1 · NIGHT SERVICE · PANELS', checkpoint: 'chapter-1-act-3', title: 'ACT III · TWO TRUE THINGS', detail: 'The bridge through 1978 and the bell finale.', route: '/night-service.html?act=3' },
-    { id: '1.1', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION I · THE PUNCH', detail: 'First carriage and opening timetable interaction.', route: '/?qa=phase1&state=entry' },
-    { id: '1.2', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION II · CONTACT INTERLOCK', detail: 'Relay case, contactor and traction circuit.', route: '/?qa=phase2&state=entry' },
-    { id: '1.3', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION III · AIR CIRCUIT', detail: 'Isolate, bleed and release the local air lock.', route: '/?qa=phase3&state=entry' },
-    { id: '1.4', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION IV · THE FIRST WEIGHT', detail: 'Movable case and counterweight balance.', route: '/?qa=phase4&state=entry' },
-    { id: '1.5', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION V · TWO TRUE THINGS', detail: 'Suspended cases and dual evidence route.', route: '/?qa=phase5&state=entry' },
-    { id: '1.6', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'prologue-start', title: 'JUNCTION VI · THE TRAIN REMEMBERS', detail: 'Final train-load replay and departure.', route: '/?qa=phase6&state=entry' },
-    { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell and the one-line rule.', route: '/borrowed-light.html?section=A' },
-    { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone and the hotel cut.', route: '/borrowed-light.html?section=B' },
-    { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Eight-bell departure; the train remembers.', route: '/borrowed-light.html?section=C' },
-    { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · DAWN', detail: 'Main Echo City investigation start.', route: '/car03-3d.html' },
-    { id: '3.2', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'DUSK CAMPFIRE', detail: 'Campfire evidence and the Echo Stone route.', route: '/car03-3d.html?playtest=chapter3-campfire' },
-    // This node is the beginning of the Copper Heron sequence, not the
-    // already-asleep nightmare checkpoint.  Starting in the latter leaves
-    // Butch deliberately posed on the bed and skips the hotel interactions.
-    { id: '3.3', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'COPPER HERON · HOTEL', detail: 'Hotel lobby, check-in, and character encounters.', route: '/car03-3d.html?playtest=chapter3-25' },
-    { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'SUNRISE OVERLOOK', detail: 'Late-city overlook and exit setup.', route: '/car03-3d.html?playtest=chapter3-sunrise' },
-    { id: '4.1', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'GALLERY · THE OPEN SHEET', detail: 'First painted-country gallery route.', route: '/painted-country.html' },
-    { id: '4.2', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'DRAWING STUDIO · STILL LIFE', detail: 'Cabinet pigments and the canvas reconstruction.', route: '/painted-country.html?qa=drawing' },
-    { id: '4.3', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'PIGMENT TRAIN · YARD', detail: 'Collect-six-colors train departure route.', route: '/painted-country.html?qa=pigments' },
-    { id: '5.1', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM LOBBY', detail: 'Service desk, exhibits and first direction.', route: '/museum-3d.html' },
-    { id: '5.2', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'ARCHIVE CORRIDOR', detail: 'Choose a direction from the corridor.', route: '/museum-3d.html?beat=corridor' },
-    { id: '5.3', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM ECHO CITY', detail: 'Echo-city reconstruction direction.', route: '/museum-3d.html?beat=echo&standalone=1' },
-    { id: '5.4', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'LABYRINTH', detail: 'Eight-key statue chase.', route: '/labyrinth.html' },
-    { id: '5.5', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'BORROWED GRID · SERVICE SHIFT', detail: 'Three-round public-power node.', route: '/borrowed-grid.html' },
-    { id: '5.6', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM COLLAPSE', detail: 'Final Archive collapse and boss handoff.', route: '/museum-3d.html?beat=collapse' },
-    { id: '6.1', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR I · NIGHT SERVICE', detail: 'Thrown-departures movement and suitcase memories.', route: '/final-boss.html?qa=conductor-1' },
-    { id: '6.2', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR II · BORROWED LIGHT', detail: 'Grid runner movement, blocks and ladder strike.', route: '/final-boss.html?qa=conductor-2' },
-    { id: '6.3', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR III · ECHO CITY', detail: 'Truth-dialogue movement and civic-record pressure.', route: '/final-boss.html?qa=conductor-3' },
-    { id: '6.4', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR IV · PAINTED COUNTRY', detail: 'Pigment collection, paint return and Mara finale.', route: '/final-boss.html?qa=conductor-4' },
-    { id: '6.5', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'BLACK KNIFE · HIDDEN FINALE', detail: 'Five-stone hidden boss direct entry.', preload: 'hiddenBoss', route: '/hidden-final-boss.html?easter-egg=1' },
-    { id: '6.6', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'TRUE ENDING', detail: 'Ending presentation and credits return.', route: '/true-ending.html' },
-  ] : [];
+  // The 1111 router names playable test nodes, not just broad chapters, and
+  // opens them directly: films are useful for transition testing but slow
+  // down moment-to-moment playtests. Dev build only: a shipped title has no
+  // router, and typing 1111 there does nothing. The list lives in
+  // devRoutes.js, shared with the dev launcher.
+  const hiddenChapters = DEV_MODE ? DEV_ROUTES : [];
 
   const launchHiddenChapter = (chapter) => {
     activateHiddenRouter();
-    sessionStorage.setItem('nightfall.titleDismissed.v1', '1');
     closeDialog();
     root.remove();
-    installPauseMenu({ checkpointId: chapter.checkpoint, controls: () => mainGameControls() });
-    const arrive = () => {
-      if (chapter.launch) {
-        if (chapter.launch !== 'prologue-start') sessionStorage.setItem('nightfall.pendingLaunch.v1', chapter.launch);
-        return onStart(chapter.launch);
-      }
-      window.location.assign(chapter.route);
-    };
-    if (!chapter.cinematic) return arrive();
-    return playCinematic({
-      id: `chapter-select-${chapter.number}`,
-      src: chapter.cinematic,
-      label: `NIGHTFALL Chapter ${chapter.number} transition`,
-      preloadChapterId: chapter.preload,
-      requirePreloadReady: chapter.requirePreloadReady,
-      onComplete: arrive,
-    });
+    window.location.assign(chapter.route);
   };
 
   const renderHiddenChapterSelect = () => {
@@ -589,7 +530,7 @@ export function createTitleMenu({ onStart, openCredits = false }) {
     dialog: dialog.open ? panel.querySelector('h2')?.textContent ?? 'dialog' : null,
     chapterSelect: root.dataset.chapterSelect === 'open' && dialog.open,
     chapterEntries: root.dataset.chapterSelect === 'open' && dialog.open
-      ? hiddenChapters.map(({ id, group, title, route, launch }) => ({ id, group, title, route: route ?? null, launch: launch ?? null }))
+      ? hiddenChapters.map(({ id, group, title, route }) => ({ id, group, title, route }))
       : [],
     credits: panel.classList.contains('nf-credits-panel')
       ? {

@@ -121,12 +121,14 @@ test('controls list the chapter\'s verbs, including Listen and the gamepad', () 
 });
 
 test('player-visible chapter name is BORROWED LIGHT in the router, credits and chapter select', () => {
-  const title = read('src/shell/titleMenu.js');
-  assert.match(title, /CHAPTER 2 · BORROWED LIGHT/);
-  assert.match(title, /borrowed-light\.html\?section=B/);
-  assert.match(title, /<strong>BORROWED LIGHT<\/strong>/);
+  // One route list feeds both the dev launcher and the title's 1111 router.
+  const routes = read('src/shell/devRoutes.js');
+  assert.match(routes, /CHAPTER 2 · BORROWED LIGHT/);
+  assert.match(routes, /borrowed-light\.html\?section=B/);
+  assert.match(routes, /BORROWED LIGHT[\s\S]*borrowed-light\.html\?section=C/);
+  assert.match(read('src/shell/titleMenu.js'), /<strong>BORROWED LIGHT<\/strong>/);
   assert.match(read('src/shell/creditsData.js'), /stamp: 'BORROWED LIGHT'/);
-  assert.match(read('src/scenes/DevMenuScene.js'), /BORROWED LIGHT[\s\S]*borrowed-light\.html\?section=C/);
+  assert.match(read('src/shell/devLauncher.js'), /DEV_ROUTES/);
 });
 
 test('reduced motion is respected: no heavy rain streaks, no lightning flash, no camera shake', () => {
