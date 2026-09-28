@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v37', () => {
+describe('Chapter 3 integrated final lock v38', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -47,14 +47,24 @@ describe('Chapter 3 integrated final lock v37', () => {
       'src/car03-3d-main.js',
       ...filesBelow('src/cars/presentCity3d', (file) => /\.(?:js|png)$/.test(file)),
     ];
-    assert.equal(sourceFiles.length, 24);
-    // Reopened for the 1.0 release: QA routes/hooks became dev-only (DEV_MODE),
-    // car03-3d.html got its release <title>/favicon, Escape opens the shared
-    // pause menu, the city freezes while paused, camera shake honours REDUCE
-    // MOTION and TEXT SIZE scales dialogue. Gameplay itself is unchanged.
+    // v38 (release/1.0 Echo City pass, 2026-09-28, George's review): reopened
+    // for gameplay. Lev's theory rounds became the Ticket 43 board (lens,
+    // stack, one punch: VENN is VELEZ); "walk beside" was added at the market
+    // and station scanners; the wire became a drag into the clamp on the next
+    // train bell; the fire letters were restyled; the hotel guests, alley
+    // men, campfire chatter, sunrise climb, inner voices, archive interior,
+    // flip clock and legacy ending runtime were cut; captions, tags and cards
+    // use the shared UI kit; interiors and late cast stream in after start.
+    // Files: -5 (Chapter3ArchiveHall, Chapter3EndingRuntime, Chapter3FlipClock,
+    // chapter3EndingModel, chapter3FinalContent) +6 (Chapter3BellClamp,
+    // Chapter3Caption, Chapter3ScannerField, Chapter3TicketBoard,
+    // chapter3SceneBuilders, chapter3WalkBesideModel): 24 -> 25.
+    // v37 note kept: QA routes/hooks are dev-only (DEV_MODE), Escape opens the
+    // shared pause menu, REDUCE MOTION and TEXT SIZE are honoured.
+    assert.equal(sourceFiles.length, 25);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '39ca9afc5c773d6c07867cbd02d4b94cb9cb397edf315528873358eb534965c7',
+      'ed00fc3ec0cb4c82d710fa11f45378eef64184b83004f4be6e9750804cdba9a0',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

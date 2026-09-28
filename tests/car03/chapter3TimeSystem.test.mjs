@@ -52,33 +52,25 @@ describe('Chapter 3 authored clock', () => {
     assert.equal(clock.lastCostMinutes, 0);
   });
 
-  it('keeps direct playtest anchors deterministic and exposes a one-topic night threshold route', () => {
-    assert.equal(createChapter3OpeningModel({ startAt: 'interaction-15' }).snapshot().clock.time, 'DAY 1 · 16:35');
-    assert.equal(createChapter3OpeningModel({ startAt: 'interaction-21' }).snapshot().clock.time, 'DAY 1 · 17:20');
-    assert.equal(createChapter3OpeningModel({ startAt: 'interaction-22' }).snapshot().clock.time, 'DAY 1 · 17:24');
-
-    const threshold = createChapter3OpeningModel({ startAt: 'night-transition-qa' });
-    assert.equal(threshold.snapshot().clock.time, 'DAY 1 · 21:29');
-    assert.equal(threshold.snapshot().clock.period, CHAPTER3_PERIODS.DUSK);
-    assert.equal(threshold.observeCutInterface('cut'), true);
-    assert.equal(threshold.snapshot().clock.time, 'DAY 1 · 21:30');
-    assert.equal(threshold.snapshot().clock.period, CHAPTER3_PERIODS.NIGHT);
+  it('keeps direct playtest anchors deterministic', () => {
+    assert.equal(createChapter3OpeningModel({ startAt: 'ticket-board' }).snapshot().clock.time, 'DAY 1 · 15:10');
+    assert.equal(createChapter3OpeningModel({ startAt: 'market-scanner' }).snapshot().clock.time, 'DAY 1 · 15:41');
+    assert.equal(createChapter3OpeningModel({ startAt: 'cut-interface' }).snapshot().clock.time, 'DAY 1 · 17:25');
+    assert.equal(createChapter3OpeningModel({ startAt: 'night-fire' }).snapshot().clock.time, 'DAY 2 · 00:40');
+    assert.equal(createChapter3OpeningModel({ startAt: 'station' }).snapshot().clock.time, 'DAY 2 · 07:05');
   });
 
-  it('charges the archive material reconstruction exactly three dialogue minutes', () => {
-    const model = createChapter3OpeningModel({ startAt: 'interaction-15' });
-    model.reachArchiveEntrance();
-    model.enterArchive();
-    model.inspectArchiveMap();
-    model.inspectMaintenanceOrder();
-    for (const topic of ['instruction', 'route', 'surface-view', 'cleaning']) model.notePetarTopic(topic);
-    model.completePetarInterview();
-    const spentBefore = model.snapshot().clock.dialogueMinutesSpent;
-    assert.equal(model.inspectMaterialTimeline(), true);
-    const state = model.snapshot();
-    assert.equal(state.clock.dialogueMinutesSpent - spentBefore, 3);
-    assert.equal(state.clock.time, 'DAY 1 · 17:20');
-    assert.equal(state.clock.period, CHAPTER3_PERIODS.DUSK);
+  it('charges one minute per topic and lets the market crossing hand the city to dusk', () => {
+    const model = createChapter3OpeningModel({ startAt: 'market-scanner' });
+    const before = model.snapshot().clock;
+    assert.equal(before.period, CHAPTER3_PERIODS.AFTERNOON);
+    assert.equal(model.passScanner('market'), true);
+    const after = model.snapshot().clock;
+    assert.equal(after.time, 'DAY 1 · 17:25');
+    assert.equal(after.period, CHAPTER3_PERIODS.DUSK);
+    const spent = after.dialogueMinutesSpent;
+    model.observeCutInterface('cut');
+    assert.equal(model.snapshot().clock.dialogueMinutesSpent - spent, 1);
   });
 
   it('crossfades lighting and an aligned optional night environment root without moving it', () => {

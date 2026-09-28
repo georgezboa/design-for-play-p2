@@ -118,7 +118,9 @@ describe('Chapter 3 enclosing city boundary', () => {
       cameraLimits: CAMERA_LIMITS,
     };
     const signature = createHash('sha256').update(JSON.stringify(structuralSnapshot)).digest('hex');
-    assert.equal(signature, '1b414e52dec59f6c04d8ab1468279a0b0527e04e8fe74aaa7ba04aeedb564110');
+    // 1.0 release: the only change is the closer street camera (zoom 2.85 → 3.6)
+    // so the cast reads at least ~48 px tall at 1080p; geometry is untouched.
+    assert.equal(signature, 'e64893bf6fc98f5d5bcf465a7402d782727f3111fdad3fd97e9c2f31ec303178');
   });
 
   it('uses five new Hunyuan buildings plus three legacy prototypes in dense street walls', () => {
@@ -421,9 +423,9 @@ describe('Chapter 3 enclosing city boundary', () => {
   });
 
   it('uses a closer bounded player-follow camera instead of a static full-map overview', () => {
-    assert.equal(CAMERA_HOME.zoom, 2.85);
-    assert.equal(CAMERA_LIMITS.minZoom, 2.85);
-    assert.equal(CAMERA_LIMITS.maxZoom, 2.85, 'production zoom must be locked');
+    assert.equal(CAMERA_HOME.zoom, 3.6);
+    assert.equal(CAMERA_LIMITS.minZoom, 3.6);
+    assert.equal(CAMERA_LIMITS.maxZoom, 3.6, 'production zoom must be locked');
     assert.ok(CAMERA_HOME.position[1] >= 95, 'the camera must be raised to reveal the street network');
     assert.ok(CAMERA_LIMITS.minPolarDeg >= 45);
     assert.ok(CAMERA_LIMITS.maxPolarDeg <= 48);

@@ -33,12 +33,17 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['PAUSE', 'ESC'],
   ),
   echoCity: list(
+    // Echo City: click-to-walk streets; scanner fields switch to direct
+    // movement. F is free (fullscreen is the desktop bridge's F11).
     ['WALK', 'CLICK THE GROUND'],
-    ['TALK / INSPECT', 'CLICK A PERSON OR OBJECT · E / ENTER'],
+    ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
     ['CONTINUE DIALOGUE', 'CLICK · E / ENTER'],
-    ['SHOW INTERACTABLES', 'HOLD TAB'],
+    ['SHOW WHAT MATTERS', 'HOLD TAB'],
+    ['SCANNER FIELDS', 'WASD / ARROWS · OR HOLD THE MOUSE'],
+    ['WALK BESIDE · LET GO', 'E NEXT TO A LIT WALKER'],
+    ['TICKET BOARD', 'DRAG CARDS AND LENS · CLICK TO PUNCH'],
+    ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · SPACE PUNCH'],
     ['RESET CAMERA', 'R'],
-    ['FULLSCREEN', 'F'],
     ['PAUSE', 'ESC'],
   ),
   paintedCountry: list(

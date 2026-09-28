@@ -15,11 +15,15 @@ test('Chapter 3 sleep edits hold a silent five-second blackout in both direction
   assert.doesNotMatch(runtime, /car03Audio\.morningWake\(/);
 });
 
-test('an uncollected Echo Stone becomes a physical morning campfire pickup', () => {
+test('the Echo Stone has two paths: Seline at dusk, the cold ashes at dawn', () => {
+  assert.match(runtime, /id: 'campfire-seline'/);
+  assert.match(runtime, /CAMPFIRE_SELINE_STONE_DIALOGUE/);
   assert.match(runtime, /makeMorningCampfireEchoStone/);
   assert.match(runtime, /id: 'morning-campfire-echo-stone'/);
-  assert.match(runtime, /state\.morningStarted/);
+  assert.match(runtime, /state\.morningStarted && state\.sunriseViewed/);
   assert.match(runtime, /!magicStoneSnapshot\(\)\.collected\.includes\('chapter-3'\)/);
   assert.match(runtime, /collectMagicStone\('chapter-3'\)/);
-  assert.match(runtime, /source: this\.model\.snapshot\(\)\.morningStarted\s*\? 'morning-campfire-physical-pickup'/);
+  assert.match(runtime, /sources: \{ selineAtDusk: this\.campfireGatheringVisible\(\), morningAshes: this\.morningCampfireStoneAvailable\(\) \}/);
+  // The campfire chatter was cut; only Seline speaks by the fire.
+  assert.doesNotMatch(runtime, /id: 'campfire-(?:rada|miro|kettle)', label/);
 });
