@@ -35,7 +35,10 @@ import { buildLayout, worldToCell } from './mazeGenerator.js';
 import { cloneWalls, playerCanReachTargets, stateWouldCrush } from './wingMechanics.js';
 import { StatueNPC } from './StatueNPC.js';
 import { applyWingEntryRules, choosePrimaryHunterId, statueCanDamage } from './labyrinthEncounterRules.js';
-import { keysLostOnGameOver, markSeen, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
+import { cellKey, keysLostOnGameOver, markSeen, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
+
+// unsurveyed cells on the survey map: darker than the surveyed floor
+const MINIMAP_FOG = 0x0a2230;
 import { sfx } from '../../../sfx.js';
 import { labyrinthCues } from './labyrinthCues.js';
 import * as chaseMusic from './chaseMusic.js';
@@ -141,8 +144,8 @@ export class LabyrinthScene extends Phaser.Scene {
     this.state = 'playing';
     this.restartHeldMs = 0;
     this.lastLostKeys = 0;
-    // fog of war for the survey map: cells Butch's light has touched
-    this.seenCells = new Set();
+    // fog of war for the survey map: cells Butch's light has touched, per floor
+    this.seenByFloor = [new Set(), new Set()];
     this.caption = { text: '', until: 0 };
     this.artifactReady = false;
     this.artifactTaken = false;
@@ -794,25 +797,37 @@ export class LabyrinthScene extends Phaser.Scene {
     this.redrawMinimapWalls();
   }
 
+  get seenCells() {
+    return this.seenByFloor?.[this.activeFloor ?? 0] ?? new Set();
+  }
+
+  // Fog of war: the survey starts blank and fills in cell by cell as the
+  // light reaches it (markSeen → paintMinimapCell).
   redrawMinimapWalls() {
     const mm = this.minimap;
     if (!mm) return;
     mm.wallsBake.clear();
-    mm.wallsBake.fill(PAL.mapBackground, 1);
-    for (let gy = 0; gy < GRID_H; gy += 1) {
-      for (let gx = 0; gx < GRID_W; gx += 1) {
-        if (!this.layout.walls[gy][gx]) continue;
-        mm.wallsBake.fill(PAL.mapWall, 0.96, gx * CELL * mm.scale, gy * CELL * mm.scale, Math.ceil(CELL * mm.scale), Math.ceil(CELL * mm.scale));
-      }
+    mm.wallsBake.fill(MINIMAP_FOG, 1);
+    for (const key of this.seenCells) {
+      const [gx, gy] = key.split(',').map(Number);
+      this.paintMinimapCell(gx, gy);
     }
     mm.label.setText(`SURVEY · FLOOR ${this.activeFloor === 0 ? 'I' : 'II'}`);
+  }
+
+  paintMinimapCell(gx, gy) {
+    const mm = this.minimap;
+    if (!mm) return;
+    const size = Math.ceil(CELL * mm.scale);
+    const solid = this.layout.walls[gy]?.[gx];
+    mm.wallsBake.fill(solid ? PAL.mapWall : PAL.mapBackground, solid ? 0.96 : 1, gx * CELL * mm.scale, gy * CELL * mm.scale, size, size);
   }
 
   // Punches a wing gate open on the survey map the moment it unlocks, so
   // the map stays truthful instead of still showing a wall that's gone.
   openGateOnMinimap(gate) {
     const mm = this.minimap;
-    if (!mm) return;
+    if (!mm || !this.seenCells.has(cellKey(gate.cell.x, gate.cell.y))) return;
     mm.wallsBake.fill(
       PAL.mapBackground, 1,
       gate.cell.x * CELL * mm.scale, gate.cell.y * CELL * mm.scale,
@@ -1282,7 +1297,7 @@ export class LabyrinthScene extends Phaser.Scene {
     const lightRadius = this.currentWingId === 0
       ? TUNING.flashlightRadius
       : (this.player.torchLit ? TUNING.carriedTorchRadius : TUNING.darkVisionRadius);
-    markSeen(this.seenCells, { x: this.playerSprite.x, y: this.playerSprite.y }, lightRadius);
+    markSeen(this.seenCells, { x: this.playerSprite.x, y: this.playerSprite.y }, lightRadius, (gx, gy) => this.paintMinimapCell(gx, gy));
     this.drawVisionCone(time);
 
     // Active-shield aura: track the player, hidden when not up.

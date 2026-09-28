@@ -5,7 +5,8 @@
 //                 he walks; holding Q keeps the current facing). The statues
 //                 already freeze inside that facing's cone.
 //   vision cone   the cone the statues test, clipped by walls, for drawing
-//   fog of war    the survey map only marks keys / the exit on seen cells
+//   fog of war    the survey map draws only seen cells, and marks keys /
+//                 the exit only there
 //   game over     costs the keys found in the current wing
 //   restart       R rebuilds the maze only from game over, or after a 1.5 s
 //                 hold and a confirm
@@ -77,8 +78,11 @@ export function visionConePoints(walls, player, facing, { range, coneDeg = TUNIN
 
 export const cellKey = (x, y) => `${x},${y}`;
 
-/** Mark every cell whose centre lies inside Butch's light as seen. */
-export function markSeen(seen, player, radius) {
+/**
+ * Mark every cell whose centre lies inside Butch's light as seen;
+ * `onNew(x, y)` hears each newly seen cell (the survey map paints it).
+ */
+export function markSeen(seen, player, radius, onNew = null) {
   const r = Math.ceil(radius / CELL);
   const px = Math.floor(player.x / CELL);
   const py = Math.floor(player.y / CELL);
@@ -90,7 +94,7 @@ export function markSeen(seen, player, radius) {
       const cy = y * CELL + CELL / 2;
       if (Math.hypot(cx - player.x, cy - player.y) > radius) continue;
       const key = cellKey(x, y);
-      if (!seen.has(key)) { seen.add(key); added += 1; }
+      if (!seen.has(key)) { seen.add(key); added += 1; onNew?.(x, y); }
     }
   }
   return added;

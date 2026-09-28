@@ -76,6 +76,14 @@ test('fog of war: the survey only marks what Butch\'s light has touched', () => 
   assert.ok(!seenAt(seen, layout.exit.x, layout.exit.y), 'so does the exit');
   assert.match(scene, /if \(!seenAt\(this\.seenCells, k\.x, k\.y\)\) continue;/);
   assert.match(scene, /allKeys && exitSeen/);
+  // the maze itself starts blank and is painted in cell by cell
+  const painted = [];
+  const again = new Set();
+  markSeen(again, start, TUNING.flashlightRadius, (x, y) => painted.push(`${x},${y}`));
+  assert.deepEqual(painted.sort(), [...again].sort());
+  markSeen(again, start, TUNING.flashlightRadius, () => assert.fail('a seen cell is painted once'));
+  assert.match(scene, /mm\.wallsBake\.fill\(MINIMAP_FOG, 1\);/);
+  assert.match(scene, /this\.seenByFloor = \[new Set\(\), new Set\(\)\];/, 'each floor is surveyed on its own');
 });
 
 test('a game over costs the keys found in the current wing, and only those', () => {
