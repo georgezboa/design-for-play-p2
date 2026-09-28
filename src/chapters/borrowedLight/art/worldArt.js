@@ -204,9 +204,12 @@ function paintLedge(platform) {
     ctx.beginPath(); ctx.moveTo(x0 + 20, h); ctx.lineTo(x0 + 40, h + 28); ctx.lineTo(x0 + 48, h); ctx.fill();
     ctx.beginPath(); ctx.moveTo(x0 + w - 20, h); ctx.lineTo(x0 + w - 40, h + 28); ctx.lineTo(x0 + w - 48, h); ctx.fill();
   }
-  inkLine(ctx, x0, 1.5, x0 + w, 1.5, { width: 2.4, alpha: 0.85, r });
-  inkLine(ctx, x0, 2, x0, h * 0.8, { width: 1.4, alpha: 0.45, r });
-  inkLine(ctx, x0 + w, 2, x0 + w, h * 0.8, { width: 1.4, alpha: 0.45, r });
+  // Hidden decks keep only a whisper of rim: in the blackout they are found
+  // by light, not by outline.
+  const rim = platform.hidden ? 0.4 : 1;
+  inkLine(ctx, x0, 1.5, x0 + w, 1.5, { width: 2.4, alpha: 0.85 * rim, r });
+  inkLine(ctx, x0, 2, x0, h * 0.8, { width: 1.4, alpha: 0.45 * rim, r });
+  inkLine(ctx, x0 + w, 2, x0 + w, h * 0.8, { width: 1.4, alpha: 0.45 * rim, r });
   return { canvas, originX: 4, originY: 0 };
 }
 
@@ -256,9 +259,9 @@ export function buildSigns(scene, signs) {
   return signs.map((sign) => {
     const color = LINE_COLORS[sign.color];
     const h = sign.layer === 'hotel' ? 110 : 60;
-    const onKey = addCanvasTexture(scene, `bl-sign-on-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: true }));
-    const offKey = addCanvasTexture(scene, `bl-sign-off-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: false }));
-    const depth = DEPTH.sign;
+    const onKey = addCanvasTexture(scene, `bl-sign-on-${sign.layer}-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: true }));
+    const offKey = addCanvasTexture(scene, `bl-sign-off-${sign.layer}-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: false }));
+    const depth = sign.scroll ? DEPTH.mid + 0.5 : DEPTH.sign;
     const glow = scene.add.image(sign.x, sign.y + h / 2 + 30, 'bl-glow').setDepth(depth - 0.2).setTint(color.hex).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(sign.w * 1.9, h * 3.4).setAlpha(0.35);
     const img = scene.add.image(sign.x, sign.y, onKey).setOrigin(0.5, 0).setDepth(depth);
     // Hanging brackets.
@@ -266,7 +269,12 @@ export function buildSigns(scene, signs) {
     g.lineStyle(3, 0x0b0907, 1);
     g.lineBetween(sign.x - sign.w * 0.35, sign.y + 30, sign.x - sign.w * 0.35, sign.y - 40);
     g.lineBetween(sign.x + sign.w * 0.35, sign.y + 30, sign.x + sign.w * 0.35, sign.y - 40);
-    return { ...sign, img, glow, g, onKey, offKey, lit: true, x0: sign.x - sign.w, x1: sign.x + sign.w, flickerSeed: hashString(sign.text) % 100 };
+    if (sign.scroll) {
+      [img, glow, g].forEach((o) => o.setScrollFactor(sign.scroll, sign.scroll * 0.35));
+      img.setScale(0.8);
+      glow.setAlpha(0.45);
+    }
+    return { ...sign, img, glow, g, onKey, offKey, lit: true, x0: sign.x - sign.w, x1: sign.x + sign.w, flickerSeed: hashString(sign.text + sign.layer) % 100 };
   });
 }
 

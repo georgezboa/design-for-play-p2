@@ -139,7 +139,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.buildPlatforms();
     this.buildForegroundWires();
     this.signs = buildSigns(this, SIGNS);
-    this.signs.forEach((sign) => this.addCull([sign.img, sign.glow, sign.g], sign.x0, sign.x1));
+    this.signs.filter((sign) => !sign.scroll).forEach((sign) => this.addCull([sign.img, sign.glow, sign.g], sign.x0, sign.x1));
     this.puddles = buildPuddles(this, PLATFORMS);
     this.puddles.forEach((p) => this.addCull([p.img], p.x0, p.x1));
     this.lamps = LAMPS.map((lamp) => buildLamp(this, lamp));
@@ -287,7 +287,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     for (const fx of [hx - 180, hx + 180]) hg.lineBetween(fx + 80, hy - 302, fx + 80, hy - 420);
     this.hotelG = hg;
     this.stub = this.add.graphics().setDepth(DEPTH.building + 0.7);
-    this.addCull([hg, this.stub], hx - 700, hx + 700);
+    this.stubGlow = this.add.image(hx - 7, hy - 158, 'bl-glow').setDisplaySize(150, 150).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.35).setDepth(DEPTH.building + 0.65);
+    this.addCull([hg, this.stub, this.stubGlow], hx - 700, hx + 700);
 
     // The plant room's doorway (behind the shutter): a dark passage with posts.
     const plant = PLATFORMS.find((p) => p.id === 'b-plant');
@@ -996,7 +997,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     });
 
     // Grid Stone.
-    if (!this.stoneTaken && Math.abs(x - GRID_STONE.x) < 60 && Math.abs(y - GRID_STONE.y) < 90) this.takeStone();
+    if (!this.stoneTaken && Math.abs(x - GRID_STONE.x) < 80 && Math.abs(y - GRID_STONE.y) < 90) this.takeStone();
 
     // Departure: reading the letter starts it; walking past the bench does too.
     if (this.section === 'C' && !this.departure.started && x >= DEPARTURE_TRIGGER_X && !this.hud.cardOpen) this.startDeparture();
@@ -1474,7 +1475,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.nodeViews.forEach((view, id) => {
       const head = nodeHead(view.node);
       const glow = this.tt.afterglowOf(id);
-      light(head.x, head.y, 70, 0.7);
+      const st = this.tt.nodeStatus(id);
+      // A lit (queued / powering) node is a small lamp of its own.
+      light(head.x, head.y + 10, st.queued || st.powering ? 130 : 70, st.queued || st.powering ? 1 : 0.7);
       if (glow > 0) light(head.x, head.y + 40, 620 * (0.55 + 0.45 * Math.sqrt(glow)), Math.min(1, 0.35 + glow));
     });
     // Powered machines light their surroundings.
@@ -1487,8 +1490,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       const r = m.kind === 'sign' ? m.glow : Math.min(420, Math.max(160, b.w * 0.6));
       light(b.x + b.w / 2, b.y + Math.min(b.h, 200) / 2, r, 0.8 * on);
     });
-    // The hotel sign glows faintly (the one sign the city leaves).
-    if (this.section === 'B') light(HOTEL_WINDOW.x, HOTEL_WINDOW.y - 120, 140, 0.35);
+    // Mara's ticket stub catches what light there is: the one bright thing
+    // in the hotel's dark window.
+    if (this.section === 'B') light(HOTEL_WINDOW.x - 7, HOTEL_WINDOW.y - 158, 110, 0.75);
     // Blackout rims + nodes' glints stay above the dark.
     const rd = d.rimDyn;
     rd.clear();

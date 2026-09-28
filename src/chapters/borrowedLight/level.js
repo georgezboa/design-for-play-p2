@@ -17,7 +17,7 @@ export const WORLD = Object.freeze({
   width: 19800,
   top: -760,
   bottom: 1480,
-  killY: 1330,      // below this Butch is in the rain mist → respawn
+  killY: 990,       // below every roof: Butch is falling into the mist → respawn
   mistY: 1160,      // where the mist starts to thicken (visual)
   view: { w: 1920, h: 1080 },
 });
@@ -173,7 +173,7 @@ export const BOARD_X = 18500;
 
 // Mara, always one roof ahead. Each sighting is a short authored run.
 export const MARA_SIGHTINGS = Object.freeze([
-  Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2120, 760], [2560, 760]], leap: [2880, 380], waitMs: 1700, speed: 0.3 }),
+  Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2060, 760], [2390, 760]], leap: [2770, 420], waitMs: 1800, speed: 0.3 }),
   Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6100, section: 'A', path: [[6980, 260], [7440, 260]], leap: [7780, 0], waitMs: 1600, speed: 0.32 }),
   Object.freeze({ id: 'hotel-roof', triggerX: 12450, section: 'B', path: [[13240, -150], [13940, -150]], leap: [14260, 80], waitMs: 600, lightningOnly: true }),
 ]);
@@ -189,6 +189,9 @@ export const SIGNS = Object.freeze([
   { x: 7020, y: 56, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
   { x: 8120, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
   { x: 13500, y: -560, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'hotel', w: 520 },
+  // The goal for section A: the hotel's sign far off across the roofs, on
+  // the mid skyline (scroll 0.5). It dies with the rest of the city.
+  { x: 4520, y: 250, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'far', w: 400, scroll: 0.5 },
   { x: 16100, y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
   { x: 18310, y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));

@@ -327,7 +327,7 @@ test('start section: dev honours ?section=, production only honours an unlocked 
 });
 
 test('hanging signs clear Butch\'s head wherever he can walk under them', () => {
-  for (const sign of SIGNS) {
+  for (const sign of SIGNS.filter((s) => !s.scroll)) {
     const h = sign.layer === 'hotel' ? 110 : 60;
     const under = PLATFORMS.filter((p) => sign.x + sign.w / 2 > p.x && sign.x - sign.w / 2 < p.x + p.w && p.y > sign.y);
     for (const roof of under) {
@@ -339,7 +339,17 @@ test('hanging signs clear Butch\'s head wherever he can walk under them', () => 
 test('world bounds leave room for every roof, lift top and the mist', () => {
   for (const platform of PLATFORMS) assert.ok(platform.y > WORLD.top + 200, platform.id);
   for (const machine of MACHINES) if (machine.kind === 'lift') assert.ok(machine.y1 > WORLD.top + 200);
-  assert.ok(WORLD.killY > Math.max(...PLATFORMS.map((p) => p.y)) + 300);
+  // The respawn line sits just below the lowest roof, so a fall from the
+  // highest roof (the hotel) still respawns inside two seconds.
+  const lowest = Math.max(...PLATFORMS.map((p) => p.y));
+  const highest = Math.min(...PLATFORMS.map((p) => p.y), ...MACHINES.filter((m) => m.kind === 'lift').map((m) => m.y1));
+  assert.ok(WORLD.killY > lowest + 200, 'no roof is near the respawn line');
   assert.ok(WORLD.killY < WORLD.bottom);
+  const fall = WORLD.killY - highest;
+  const g = CONTROLLER.gravity * CONTROLLER.fallGravityScale;
+  const tMax = CONTROLLER.maxFall / g;
+  const dMax = 0.5 * g * tMax * tMax;
+  const tFall = fall <= dMax ? Math.sqrt((2 * fall) / g) : tMax + (fall - dMax) / CONTROLLER.maxFall;
+  assert.ok(tFall + 0.6 < 2, `worst fall ${tFall.toFixed(2)} s + 0.6 s fade`);
   assert.equal(BELL_MS, 4000);
 });
