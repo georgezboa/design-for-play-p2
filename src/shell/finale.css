@@ -80,6 +80,11 @@
 .nf-ticket-button--quiet::before { background: rgba(234, 223, 198, 0.35); }
 .nf-ticket-button--quiet span { color: var(--nf-amber); }
 .nf-ticket-button--quiet:hover, .nf-ticket-button--quiet:focus-visible { background: rgba(224, 162, 74, 0.14); }
+.nf-card .nf-ticket-button { box-shadow: 0 6px 16px rgba(42, 29, 20, 0.35), inset 0 0 0 1px rgba(42, 29, 20, 0.35); }
+.nf-card .nf-ticket-button--quiet { color: var(--nf-paper-ink); background: rgba(42, 29, 20, 0.06); box-shadow: inset 0 0 0 1.5px rgba(42, 29, 20, 0.5); }
+.nf-card .nf-ticket-button--quiet::before { background: rgba(42, 29, 20, 0.55); }
+.nf-card .nf-ticket-button--quiet span { color: var(--nf-oxblood); }
+.nf-card .nf-ticket-button:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 3px; }
 .nf-board__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 14px; margin-top: 8px; }
 .nf-board__actions .nf-ticket-button + .nf-ticket-button { margin-left: 0; }
 

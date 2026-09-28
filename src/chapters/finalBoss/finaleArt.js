@@ -476,7 +476,7 @@ export function paintRainFigure({ spec = BUTCH_SPEC, pose = 'idle', phase = 0, s
   const g = graphicsShim(c);
   const drawPose = pose === 'punch' ? 'talk' : pose === 'hurt' ? 'land' : pose;
   if (lit) inkGlow(c, W / 2, H - spec.height * 0.55, spec.height * 1.4, 'rgba(201, 128, 136, 0.9)', 0.35);
-  drawFigure(g, spec, { x: W / 2, y: H - 8, facing, pose: drawPose, phase, t: 1.2, rim: 0.7 });
+  drawFigure(g, spec, { x: W / 2, y: H - 8, facing, pose: drawPose, phase, t: 1.2, rim: spec === BUTCH_SPEC ? 0.7 : 0.32 });
   return canvas;
 }
 
