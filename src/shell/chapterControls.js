@@ -5,13 +5,6 @@
 const list = (...rows) => Object.freeze(rows.map((row) => Object.freeze(row)));
 
 export const CHAPTER_CONTROLS = Object.freeze({
-  nightService: list(
-    ['MOVE', 'A / D · ← →'],
-    ['JUMP', 'SPACE'],
-    ['RUN', 'HOLD SHIFT'],
-    ['INTERACT', 'E'],
-    ['PAUSE', 'ESC'],
-  ),
   // Chapter 1 panel puzzle (night-service.html). Mouse first; every verb
   // also has a keyboard fallback.
   nightServicePanels: list(
@@ -84,10 +77,3 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['PAUSE', 'ESC'],
   ),
 });
-
-// The Prologue and Chapter 2 share one Phaser game and one pause menu.
-export function mainGameControls(game = globalThis.game) {
-  return game?.scene?.getScene?.('CyberpunkParkour')?.sys?.isActive?.()
-    ? CHAPTER_CONTROLS.borrowedGrid
-    : CHAPTER_CONTROLS.nightService;
-}

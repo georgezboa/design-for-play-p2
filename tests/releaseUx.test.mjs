@@ -15,7 +15,7 @@ import {
 import { SETTINGS_CONTROLS } from '../src/shell/settingsControls.js';
 import { osPrefersReducedMotion, reducedMotionActive } from '../src/shell/motion.js';
 import { createHoldGesture, isSkipKey, SKIP_HOLD_MS } from '../src/shell/holdToSkip.js';
-import { CHAPTER_CONTROLS, mainGameControls } from '../src/shell/chapterControls.js';
+import { CHAPTER_CONTROLS } from '../src/shell/chapterControls.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 
@@ -121,7 +121,8 @@ test('gameplay shake and flash sites consult the shared reduced-motion check', (
   assert.match(guard, /reducedMotionActive\(\) \? 0 : intensity/);
   assert.match(guard, /Flash\.prototype\.start/);
   for (const entry of [
-    'src/main.js',
+    'src/nightService-main.js',
+    'src/borrowedLight-main.js',
     'src/paintedCountry-main.js',
     'src/chapters/museum/labyrinth/labyrinth-main.js',
     'src/chapters/blackKnifeFinal/main.js',
@@ -230,10 +231,11 @@ test('each chapter passes its own controls list to the pause menu', () => {
   assert.match(read('src/paintedCountry-main.js'), /CHAPTER_CONTROLS\.paintedCountry/);
   assert.match(read('src/chapters/museum3d/museum3d-main.js'), /CHAPTER_CONTROLS\.museum/);
   assert.match(read('src/chapters/finalBoss/spectacleBattle.js'), /controls: \[/);
-  assert.match(read('src/main.js'), /controls: \(\) => mainGameControls\(game\)/);
+  assert.match(read('src/nightService-main.js'), /controls: CHAPTER_CONTROLS\.nightServicePanels/);
+  assert.match(read('src/borrowedLight-main.js'), /CHAPTER_CONTROLS\.borrowedLight/);
   assert.match(CHAPTER_CONTROLS.echoCity[0][1], /CLICK/);
   assert.match(CHAPTER_CONTROLS.paintedCountry.map(([, keys]) => keys).join(' '), /RIGHT MOUSE/);
-  const parkour = { scene: { getScene: () => ({ sys: { isActive: () => true } }) } };
-  assert.equal(mainGameControls(parkour), CHAPTER_CONTROLS.borrowedGrid);
-  assert.equal(mainGameControls(null), CHAPTER_CONTROLS.nightService);
+  // index.html runs no chapter, so it has no pause menu or controls list.
+  assert.doesNotMatch(read('src/main.js'), /installPauseMenu|CHAPTER_CONTROLS/);
+  assert.doesNotMatch(read('src/shell/titleMenu.js'), /installPauseMenu/);
 });

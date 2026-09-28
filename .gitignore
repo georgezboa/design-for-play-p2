@@ -17,7 +17,6 @@ release/
 __pycache__/
 *.tripo.json
 screenshots/
-dist-car03/
 dist-painted-country/
 dist-museum3d/
 dist-car03-3d/

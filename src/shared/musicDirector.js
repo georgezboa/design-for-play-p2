@@ -1,8 +1,8 @@
 // NIGHTFALL — shared music director (V02 tracklist integration, 2026-08-12).
 //
 // One HTMLAudio-based singleton every chapter entry can drive. Deliberately
-// independent of Phaser's sound system so it works identically in car03,
-// car04, painted-country, the museum rooms and the labyrinth, and so tracks
+// independent of Phaser's sound system so it works identically in Echo City,
+// Borrowed Light, the painted country, the museum rooms and the labyrinth, and so tracks
 // STREAM (the V02 recordings are 2–17 MB each — preloading them through the
 // Phaser loader would stall every boot).
 //

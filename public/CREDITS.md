@@ -88,7 +88,6 @@ Sound effects, room tones and some ambience are synthesized in-engine by project
 - **Quaternius Downtown City MegaKit (Standard):** `T_Concrete_Asphalt_BaseColor.png`, source of the dark back-street paving `dark-city-cobbles.webp`; CC0 1.0. Record: `/assets/chapter03-3d/ASSET_MANIFEST.json`.
 - **Poly Haven:** `beige_wall_001`, `dirty_carpet`, `wood_table_001`, `rubber_tiles`, and `dark_wood`; CC0 1.0.
 - **ambientCG:** `Fingerprints001` (museum glass fingerprints); CC0 1.0.
-- **OpenGameArt — Clint Bellanger:** *16x16 Pipe Tileset* (https://opengameart.org/content/16x16-pipe-tileset), used for the Prologue mechanical-table pipe fittings; CC0. A second CC0 sheet, *Industrial Traps 2D* by Balmer (https://opengameart.org/content/industrial-traps-2d-sidescroller), is kept in the source repository as reference and is not used by the shipped build. Record: `src/assets/tutorial/mechanical-table/ASSET_PROVENANCE.md` in the source repository.
 - **Unsplash:** the eighteen Chapter 6 verification-screen photos are low-resolution derivatives of Unsplash photos by Wolfgang Weiser, Matt L, Casey Horner, Benjamin Chambon, Sean Stratton, freestocks, Rafaëlla Waasdorp, Caroline O'Brien, Dixit Dhinakaran, Decry.Yae, Patrick Hendry, Lukáš Lehotský, Eddie Mark Blair, Lucie Hošová, Charlie Deets, Daniil Smirnov, Jason Charters and Hwan Lee, used under the Unsplash License (https://unsplash.com/license). Per-photo IDs: `src/chapters/finalBoss/assets/captcha/SOURCES.md` in the source repository.
 
 ## Provenance rule

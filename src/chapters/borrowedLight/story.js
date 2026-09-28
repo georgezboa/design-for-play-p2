@@ -1,7 +1,7 @@
 // Chapter 2 · BORROWED LIGHT — words.
 //
-// The mechanic's lines and Mara's letter are carried over from the old
-// chapter (src/cars/cyberpunkParkour/CyberpunkParkourScene.js); the letter is
+// The mechanic's lines and Mara's letter are carried over from the retired
+// Phaser parkour version of this chapter; the letter is
 // kept word for word. Nothing here defines Butch's relation to Mara.
 
 export const CHAPTER_TITLE = 'BORROWED LIGHT';

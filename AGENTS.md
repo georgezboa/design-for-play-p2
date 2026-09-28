@@ -4,7 +4,7 @@ These instructions apply to the entire repository.
 
 ## Role
 
-Codex is the implementation engineer for the Infinity Train game. Product
+Codex is the implementation engineer for the NIGHTFALL game. Product
 direction belongs to the user and the product lead working through
 `CLAUDE.md`. Codex turns an approved, testable product task into a working
 Phaser build.
@@ -34,8 +34,8 @@ Phaser build.
 - `npm run assets:check`
 - `npm run build`
 - `git diff --check`
-- `npm run prod` still opens on the first frame of the Prologue, with
-  `?chapter=`, `?world=`, `?qa=` and `?artState=` in the URL ignored.
+- `npm run prod` still opens on the title screen, and every chapter page
+  ignores its dev-only query routes (`?act=`, `?section=`, `?qa=`, `?beat=`, …).
 - Exercise every changed interaction from cause through outcome.
 - Confirm `window.render_game_to_text()` matches the visible game state.
 

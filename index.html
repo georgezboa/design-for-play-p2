@@ -19,29 +19,9 @@
         color: #6b7684;
         overflow: hidden;
       }
-      #app {
-        min-height: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 0;
-        padding: 18px;
-      }
-      body:has(#nightfall-title) #app { visibility: hidden; }
-      #game canvas {
-        display: block;
-        border-radius: 0;
-        image-rendering: pixelated;
-        image-rendering: crisp-edges;
-        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
-      }
     </style>
   </head>
   <body>
-    <div id="app">
-      <div id="game"></div>
-    </div>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

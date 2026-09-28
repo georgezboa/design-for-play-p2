@@ -36,7 +36,7 @@
       </section>
       <div class="handoff">
         <span id="status">The preview is muted by default. Enable sound in the player controls.</span>
-        <a href="/?chapter=0">ENTER CHAPTER 1</a>
+        <a href="/night-service.html">ENTER CHAPTER 1</a>
       </div>
     </main>
     <script type="module">
@@ -51,7 +51,7 @@
       if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
         page: 'chapter-01-opening-preview',
         video: { currentTime: Number(opening.currentTime.toFixed(2)), duration: Number(opening.duration.toFixed(2)) || null, ended: opening.ended, muted: opening.muted },
-        handoff: '/?chapter=0',
+        handoff: '/night-service.html',
       });
     </script>
   </body>
