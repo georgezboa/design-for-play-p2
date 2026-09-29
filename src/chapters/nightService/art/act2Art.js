@@ -198,13 +198,13 @@ export function drawRack(ctx, variant = 'rack') {
     let k = ctx.flag('caseAtEdge') ? 1 : 0;
     // the waiting edge: once the case is at the drop point, the rack's bottom
     // edge there glows until a pair of arms is below it
-    const edge = ctx.glow(end, h, 210, { color: 0xffb860, alpha: 0 });
+    const edge = ctx.glow(end, h, 290, { color: 0xffb860, alpha: 0 });
     const lip = ctx.glow(end, h * RACK_Y + 10, 90, { color: 0xffd9a0, alpha: 0 });
     ctx.animate((time, dt) => {
       const waiting = ctx.flag('caseAtEdge') && !ctx.flag('caseInArms') && !ctx.flag('caseFalling');
       const reduce = ctx.reduceMotion();
       const pulse = 0.5 + Math.sin(time / (reduce ? 700 : 380)) * 0.5;
-      edge.setAlpha(waiting && k >= 1 ? 0.28 + pulse * (reduce ? 0.18 : 0.42) : 0);
+      edge.setAlpha(waiting && k >= 1 ? 0.4 + pulse * (reduce ? 0.2 : 0.5) : 0);
       lip.setAlpha(waiting && k >= 1 ? 0.2 + pulse * 0.3 : 0);
       if (ctx.flag('caseInArms') || ctx.flag('caseFalling')) { sprite.setVisible(false); return; }
       if (ctx.flag('caseAtEdge')) k = Math.min(1, k + dt / 900);

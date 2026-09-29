@@ -45,7 +45,8 @@ export const ACT0 = defineAct({
             {
               id: 'bell', kind: 'zoom', to: 'bell', rect: BELL_HIT, zoomRect: BELL_ZOOM,
               requires: { notFlag: 'rung' },
-              tag: { x: BELL_HIT[0] + 0.045, y: BELL_HIT[1] - 0.02, angle: -0.5, scale: 1.1 },
+              // tied to the plunger, hanging up and to the left (clear of the claim spike)
+              tag: { x: BELL_HIT[0] + 0.024, y: BELL_HIT[1] + 0.02, angle: -2.5, scale: 1.1 },
             },
             {
               id: 'ticket', kind: 'zoom', to: 'ticket', rect: SPIKE_HIT, zoomRect: SPIKE_ZOOM,

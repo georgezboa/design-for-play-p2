@@ -102,9 +102,9 @@ function buildButch(scene) {
         legBack.rotation = -1.25; legBack.knee.rotation = 1.25;
         torso.rotation = 0.34 + breath * 0.025;
         torso.scaleY = (1 + breath * 0.018) / RES;
-        head.x = 14;
-        head.y = -47 + breath * 0.6;
-        head.rotation = 0.62 + breath * 0.03;
+        head.x = 13;
+        head.y = -44 + breath * 0.6;
+        head.rotation = 0.95 + breath * 0.03;
         armFront.setPosition(13, -48);
         armBack.setPosition(8, -49);
         armFront.rotation = -0.55;

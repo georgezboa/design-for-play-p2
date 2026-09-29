@@ -44,6 +44,9 @@ export const ACT05 = defineAct({
   fx: ACT05_FX,
   // the wall grows from Act 0's one window: the office carries on as the desk
   growFrom: { act: 'act0', keep: { desk: 'office' } },
+  // the act always ends desk | stores (its last step needs that floor link);
+  // the dev `?from=act05` route grows Act 1 from here
+  endSlots: ['desk', 'door'],
   tiles: {
     door: {
       state: 'locked',
