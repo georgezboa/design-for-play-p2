@@ -6,6 +6,7 @@ import {
   FIRST_USE_MS, HINT_TIERS, PULSE_REPEAT_MS, createHintDirector, pickGesture, resolveDrag, stepVerb,
 } from '../../src/chapters/nightService/hints.js';
 import { HINT_LINES, hintLine } from '../../src/chapters/nightService/hintLines.js';
+import { ONE_ANSWER_ACT } from '../../src/chapters/nightService/acts/oneAnswer.js';
 import { settle } from './helpers.mjs';
 
 /** Advance a director in 100 ms frames; return [{ at, event }]. */
@@ -130,6 +131,19 @@ test('every hinted step in acts 0–3 resolves a gesture at its start', () => {
       if (gesture) assert.ok(stepVerb(model, current), `${actId}:${step.id} verb`);
     });
   }
+});
+
+test('the Museum exhibit (oneAnswer.js) gets the same ghost-hand gestures', () => {
+  const carry = { bell: 0, items: [], flags: [], linkHistory: [], ...ONE_ANSWER_ACT.start };
+  for (const id of ['punch', 'unfile', 'plate', 'tag', 'route']) {
+    const model = createPanelModel(ONE_ANSWER_ACT, { carry, step: id });
+    settle(model);
+    if (model.currentStep()?.id !== id) continue;
+    assert.ok(pickGesture(model), `oneAnswer:${id} has a gesture`);
+  }
+  const unfile = createPanelModel(ONE_ANSWER_ACT, { carry, step: 'unfile' });
+  settle(unfile);
+  assert.equal(pickGesture(unfile).verb, 'lensClick');
 });
 
 test('the gestures match the verbs of the lessons', () => {
