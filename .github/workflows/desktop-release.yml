@@ -1,0 +1,64 @@
+# Builds the NIGHTFALL desktop packages on GitHub's own macOS, Windows and
+# Linux runners, so nobody needs a local toolchain for every platform.
+# Trigger: any push to a release/* branch, a v* tag, or "Run workflow" in the
+# Actions tab. Results: Actions → the run → Artifacts (kept 14 days).
+#
+# macOS builds are ad-hoc signed (identity "-") so they open on Apple Silicon
+# after "right-click → Open". For a notarized build add APPLE_ID,
+# APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID and CSC_LINK / CSC_KEY_PASSWORD
+# repository secrets and drop the identity override (see desktop/README.md).
+name: desktop-release
+
+on:
+  push:
+    branches: ['release/**']
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: desktop-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-14
+            script: npx electron-builder --mac --universal --publish never -c.mac.identity=-
+            artifact: nightfall-macos
+            files: |
+              release/desktop/*.dmg
+              release/desktop/*-mac*.zip
+          - os: windows-latest
+            script: npx electron-builder --win --x64 --publish never
+            artifact: nightfall-windows
+            files: |
+              release/desktop/*-win-setup.exe
+              release/desktop/*-win-x64.zip
+          - os: ubuntu-latest
+            script: npx electron-builder --linux --x64 --publish never
+            artifact: nightfall-linux
+            files: |
+              release/desktop/*.AppImage
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/desktop/*.test.mjs
+      - run: npm run build
+      - run: ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.files }}
+          retention-days: 14
+          compression-level: 0
