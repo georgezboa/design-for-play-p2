@@ -25,19 +25,24 @@ function solveAct1(model) {
 test('Act 1 definition is valid and registered', () => {
   assert.deepEqual(validateAct(ACT1), []);
   assert.equal(ACTS.act1, ACT1);
-  assert.deepEqual(ACT_ORDER, ['act1', 'act2', 'act3']);
-  assert.equal(CHECKPOINT_ACTS['prologue-start'], 'act1', 'legacy saves resume Act 1');
+  assert.deepEqual(ACT_ORDER, ['act0', 'act05', 'act1', 'act2', 'act3']);
+  assert.equal(CHECKPOINT_ACTS['prologue-start'], 'act0', 'legacy saves resume at the chapter start');
+  assert.equal(CHECKPOINT_ACTS['chapter-1-act-1'], 'act1');
+  assert.equal(ACT1.checkpoint, 'chapter-1-act-1');
   assert.equal(CHECKPOINT_ACTS['chapter-1-act-3'], 'act3');
   assert.equal(resolveActParam('2'), 'act2');
   assert.equal(resolveActParam('act3'), 'act3');
   assert.equal(resolveActParam('9'), null);
+  assert.equal(resolveActParam('0'), 'act0');
+  assert.equal(resolveActParam('0.5'), 'act05');
   assert.deepEqual(startCarry('act2').items, ['punch']);
 });
 
 test('Act 1: scripted solution reaches the Conductor, bell #1 and the act-2 checkpoint', () => {
   const model = createPanelModel(ACT1);
   assert.equal(model.textState().step, 'floor-link');
-  assert.equal(model.state.actors.butch.pose, 'sit');
+  // awake and standing at the desk: Act 0.5 brought him home
+  assert.equal(model.state.actors.butch.pose, 'idle');
   const log = solveAct1(model);
   assert.ok(model.hasFlag('ticketDropped'));
   assert.equal(model.state.tiles.door.state, 'conductor');

@@ -196,13 +196,24 @@ export function drawRack(ctx, variant = 'rack') {
     const start = sprite.x;
     const end = w * DROP_AT;
     let k = ctx.flag('caseAtEdge') ? 1 : 0;
+    // the waiting edge: once the case is at the drop point, the rack's bottom
+    // edge there glows until a pair of arms is below it
+    const edge = ctx.glow(end, h, 210, { color: 0xffb860, alpha: 0 });
+    const lip = ctx.glow(end, h * RACK_Y + 10, 90, { color: 0xffd9a0, alpha: 0 });
     ctx.animate((time, dt) => {
+      const waiting = ctx.flag('caseAtEdge') && !ctx.flag('caseInArms') && !ctx.flag('caseFalling');
+      const reduce = ctx.reduceMotion();
+      const pulse = 0.5 + Math.sin(time / (reduce ? 700 : 380)) * 0.5;
+      edge.setAlpha(waiting && k >= 1 ? 0.28 + pulse * (reduce ? 0.18 : 0.42) : 0);
+      lip.setAlpha(waiting && k >= 1 ? 0.2 + pulse * 0.3 : 0);
       if (ctx.flag('caseInArms') || ctx.flag('caseFalling')) { sprite.setVisible(false); return; }
       if (ctx.flag('caseAtEdge')) k = Math.min(1, k + dt / 900);
       const e = k * k;
-      sprite.x = start + (end - start) * e;
-      sprite.y = h * CASE_TOP + caseH / 2 - 4 + (1 - Math.cos(e * Math.PI)) * 4;
-      sprite.rotation = -0.05 - e * 0.1;
+      // at the edge it teeters over the drop, rocking on the rack's lip
+      const teeter = k >= 1 ? Math.sin(time / (reduce ? 520 : 210)) * (reduce ? 0.03 : 0.085) + (Math.sin(time / 1300) > 0.7 ? 0.05 : 0) : 0;
+      sprite.x = start + (end - start) * e + (k >= 1 ? Math.sin(time / 210) * (reduce ? 0.5 : 2.2) : 0);
+      sprite.y = h * CASE_TOP + caseH / 2 - 4 + (1 - Math.cos(e * Math.PI)) * 4 + (k >= 1 ? Math.abs(teeter) * 18 : 0);
+      sprite.rotation = -0.05 - e * 0.1 - teeter - (k >= 1 ? 0.08 : 0);
     });
   }
   ctx.glow(w * 0.28, 44, 180, { color: 0xffc070, alpha: 0.2, flicker: 0.06 });
@@ -470,6 +481,13 @@ export function drawAisle(ctx) {
   });
   ctx.glow(w * 0.25, h * 0.35, 200, { color: 0xffb870, alpha: 0.12, flicker: 0.05 });
   ctx.dust(w * 0.1, h * 0.12, w * 0.3, h * 0.6, { count: 10 });
+  // the ceiling hatch answers the waiting case: this is where it can come down
+  const hatch = ctx.glow(w * DROP_AT, 0, 190, { color: 0xffb860, alpha: 0 });
+  ctx.animate((time) => {
+    const waiting = ctx.flag('caseAtEdge') && !ctx.flag('caseInArms') && !ctx.flag('caseFalling');
+    const pulse = 0.5 + Math.sin(time / (ctx.reduceMotion() ? 700 : 380) + 1.2) * 0.5;
+    hatch.setAlpha(waiting ? 0.18 + pulse * 0.3 : 0);
+  });
 }
 
 export function drawAislePast(ctx) {
@@ -627,7 +645,10 @@ export function drawBeneath(ctx) {
 
 export const STOPS = Object.freeze(['CITY TERMINAL', 'RIVER JUNCTION', 'MILL ROAD', 'HALFWAY HOUSE', 'BELLWETHER']);
 
-function boardBase(c, env, w, h, { past = false, arrived = false }) {
+/** The big REQUEST STOP plate on the timetable board (1978: punch it through the lens). */
+export const REQUEST_STOP = Object.freeze([0.6, 0.57, 0.22, 0.22]);
+
+function boardBase(c, env, w, h, { past = false, requested = false, arrived = false }) {
   backWall(c, w, h, h, { seed: 281, tone: past ? ['#2e2217', '#3a2a1c'] : ['#132126', '#1b2f35'] });
   wainscot(c, w, h, h * 0.84, h + 20, { seed: 282 });
   const bx = w * 0.14;
@@ -652,51 +673,82 @@ function boardBase(c, env, w, h, { past = false, arrived = false }) {
   const rowH = bh / (STOPS.length + 0.6);
   ink(c, [[bx + 40, by + rowH * 0.8], [bx + 40, by + rowH * (STOPS.length - 0.2)]], { w: 3, color: past ? '#2b2118' : '#8a8274', bleed: false });
   let nameEnd = 0;
+  let lastY = 0;
   STOPS.forEach((stop, i) => {
     const y = by + rowH * (i + 0.8);
     const last = i === STOPS.length - 1;
     const lit = !last || past || arrived;
-    const text = past ? (last ? '#8e2b1f' : '#2b2118') : last ? (arrived ? PAL.amberHot : '#4f4a44') : '#d8ccb0';
-    c.fillStyle = past ? text : last && arrived ? PAL.amberHot : lit ? '#d8ccb0' : '#4a4640';
+    const text = past ? (last ? '#8e2b1f' : '#2b2118') : last ? (arrived ? PAL.amberHot : requested ? '#b08a5a' : '#4f4a44') : '#d8ccb0';
+    c.fillStyle = past ? text : last && (arrived || requested) ? PAL.amberHot : lit ? '#d8ccb0' : '#4a4640';
     c.beginPath(); c.arc(bx + 40, y, last ? 9 : 7, 0, Math.PI * 2); c.fill();
     c.font = `700 ${last ? 30 : 26}px "Space Mono", monospace`;
     c.fillStyle = text;
     c.fillText(stop, bx + 70, y + 9);
-    if (last) nameEnd = bx + 70 + c.measureText(stop).width;
+    if (last) { nameEnd = bx + 70 + c.measureText(stop).width; lastY = y; }
     if (last && arrived) glow(c, bx + 200, y, 180, 'rgba(255, 200, 110, 0.9)', 0.35);
+    if (last && requested && !past) glow(c, bx + 40, y, 40, 'rgba(255, 190, 90, 0.95)', 0.7);
   });
-  // the request-stop plate right beside BELLWETHER (inside one lens view)
-  const ry = by + rowH * (STOPS.length - 0.2);
-  const rx = nameEnd + 22;
-  c.fillStyle = past ? '#8e2b1f' : arrived ? '#6b2a22' : '#2a2420';
-  roundRectPath(c, rx, ry - 26, 138, 34, 6); c.fill();
-  c.fillStyle = past || arrived ? '#ffe6c0' : '#5a524a';
-  c.font = '700 15px "Space Mono", monospace';
-  c.fillText('REQUEST STOP', rx + 12, ry - 4);
-  if (arrived) glow(c, rx + 65, ry - 9, 90, 'rgba(255, 120, 80, 0.9)', 0.35);
   if (past) {
-    // a pencilled tick and "Sat." beside it: someone got off here every week
-    ink(c, [[rx + 150, ry - 12], [rx + 158, ry - 2], [rx + 176, ry - 28]], { w: 2.4, color: '#2b2118', bleed: false });
+    // a pencilled tick and "Sat." beside BELLWETHER: someone got off here every week
+    ink(c, [[nameEnd + 12, lastY - 6], [nameEnd + 20, lastY + 4], [nameEnd + 36, lastY - 20]], { w: 2.4, color: '#2b2118', bleed: false });
     c.font = 'italic 16px Georgia, serif';
     c.fillStyle = '#2b2118';
-    c.fillText('Sat.', rx + 180, ry - 6);
+    c.fillText('Sat.', nameEnd + 8, lastY + 24);
   }
+  // the REQUEST STOP plate: a big enamel push-plate with a brass button
+  const [rx0, ry0, rw0, rh0] = REQUEST_STOP;
+  const rx = rx0 * w;
+  const ry = ry0 * h;
+  const rw = rw0 * w;
+  const rh = rh0 * h;
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 10; c.shadowOffsetY = 4;
+  c.fillStyle = past ? '#8e2b1f' : arrived ? '#5a2219' : '#221d1a';
+  roundRectPath(c, rx, ry, rw, rh, 12); c.fill();
+  c.restore();
+  c.save();
+  c.lineWidth = 4;
+  c.strokeStyle = brassFill(c, rx, ry, rw, rh);
+  roundRectPath(c, rx + 2, ry + 2, rw - 4, rh - 4, 10); c.stroke();
+  c.restore();
+  const knobX = rx + rh * 0.5;
+  const knobY = ry + rh * 0.5;
+  c.fillStyle = brassFill(c, knobX - 22, knobY - 22, 44, 44);
+  c.beginPath(); c.arc(knobX, knobY, 21, 0, Math.PI * 2); c.fill();
+  c.fillStyle = past ? '#f2e2bc' : '#4a4038';
+  c.beginPath(); c.arc(knobX, knobY, 13, 0, Math.PI * 2); c.fill();
+  inkEllipse(c, knobX, knobY, 21, 21, { w: 1.6 });
+  c.fillStyle = past ? '#ffe6c0' : arrived ? '#d8a070' : '#4a433c';
+  c.font = '700 20px "Space Mono", monospace';
+  c.fillText('REQUEST', knobX + 30, knobY - 5);
+  c.fillText('STOP', knobX + 30, knobY + 21);
+  ink(c, [[rx, ry], [rx + rw, ry], [rx + rw, ry + rh], [rx, ry + rh]], { w: 1.6, closed: true, alpha: 0.7 });
+  if (past && requested) {
+    // punched: a clean round hole through the enamel, the paper-card board behind
+    c.fillStyle = '#1a120c';
+    c.beginPath(); c.arc(knobX, knobY, 8, 0, Math.PI * 2); c.fill();
+    inkEllipse(c, knobX, knobY, 9, 9, { w: 1.4, color: '#3a2a1c', bleed: false });
+    glow(c, knobX, knobY, 70, 'rgba(255, 200, 110, 0.9)', 0.4);
+  }
+  if (arrived) glow(c, rx + rw * 0.5, ry + rh * 0.5, 110, 'rgba(255, 120, 80, 0.9)', 0.3);
+  if (requested && !past && !arrived) glow(c, knobX, knobY, 50, 'rgba(255, 190, 90, 0.9)', 0.35);
 }
 
 export function drawBoard(ctx, variant = 'default') {
   const { w, h } = ctx;
   ctx.paint(`act2-board-${variant}`, (c, env) => {
-    boardBase(c, env, w, h, { arrived: variant === 'arrived' });
+    boardBase(c, env, w, h, { requested: variant !== 'default', arrived: variant === 'arrived' });
     finish(c, env);
   });
   if (variant === 'arrived') ctx.glow(w * 0.5, h * 0.72, 260, { color: 0xffb060, alpha: 0.2, flicker: 0.12 });
+  if (variant === 'requested') ctx.glow(w * 0.19, h * 0.7, 80, { color: 0xffb060, alpha: 0.3, flicker: 0.2 });
   ctx.dust(w * 0.1, h * 0.1, w * 0.8, h * 0.7, { count: 8 });
 }
 
-export function drawBoardPast(ctx) {
+export function drawBoardPast(ctx, variant = 'default') {
   const { w, h } = ctx;
-  ctx.paint('act2-board-past', (c, env) => {
-    boardBase(c, env, w, h, { past: true });
+  ctx.paint(`act2-board-past-${variant}`, (c, env) => {
+    boardBase(c, env, w, h, { past: true, requested: variant !== 'default' });
     finish(c, env);
   });
 }
