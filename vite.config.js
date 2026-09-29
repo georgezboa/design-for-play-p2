@@ -63,6 +63,8 @@ export default defineConfig(({ command, mode }) => {
     plugins: [serveOpeningArchiveInDev(), dropDevOnlyPublicAssets()],
     define: {
       __DEV_MODE__: JSON.stringify(devMode),
+      // Playtest builds keep the 1111 router; `npm run build:release` turns it off.
+      __PLAYTEST_MODE__: JSON.stringify(process.env.NIGHTFALL_RELEASE !== '1'),
     },
     server: {
       port: devMode ? 5180 : 5181,

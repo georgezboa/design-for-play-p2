@@ -113,6 +113,7 @@ test('the dev-only 1111 title code opens every chapter’s named test nodes', ()
   const titleMenu = source('src/shell/titleMenu.js');
   const title = source('src/shell/devRoutes.js');
   const devMode = source('src/devMode.js');
+  const viteConfig = source('vite.config.js');
   assert.match(titleMenu, /hiddenChapterSequence === '1111'/);
   assert.match(titleMenu, /SELECT TEST NODE/);
   for (const group of [
@@ -133,15 +134,16 @@ test('the dev-only 1111 title code opens every chapter’s named test nodes', ()
   assert.match(title, /museum-3d\.html\?beat=collapse/);
   for (const movement of [1, 2, 3, 4]) assert.match(title, new RegExp(`CONDUCTOR ${['I', 'II', 'III', 'IV'][movement - 1]}[\\s\\S]*final-boss\\.html\\?qa=conductor-${movement}`));
   assert.match(title, /BLACK KNIFE · HIDDEN FINALE[\s\S]*hidden-final-boss\.html\?easter-egg=1/);
-  // Release 1.0: the router and its key listener exist only in dev builds,
-  // and the session flag it sets no longer unlocks dev routes in production.
-  assert.match(titleMenu, /const hiddenChapters = DEV_MODE \? DEV_ROUTES : \[\]/);
-  assert.match(titleMenu, /if \(DEV_MODE && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
-  assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE;\n\}/);
-  assert.doesNotMatch(devMode, /DEV_MODE \|\| hiddenRouterActive\(\)/);
+  // The router and its key listener exist in dev and playtest builds only; a
+  // release build (PLAYTEST_MODE false) has neither, and the session flag it
+  // sets unlocks dev routes only while PLAYTEST_MODE is on.
+  assert.match(titleMenu, /const hiddenChapters = \(DEV_MODE \|\| PLAYTEST_MODE\) \? DEV_ROUTES : \[\]/);
+  assert.match(titleMenu, /if \(\(DEV_MODE \|\| PLAYTEST_MODE\) && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
+  assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE \|\| \(PLAYTEST_MODE && hiddenRouterActive\(\)\);\n\}/);
+  assert.match(viteConfig, /__PLAYTEST_MODE__: JSON\.stringify\(process\.env\.NIGHTFALL_RELEASE !== '1'\)/);
 });
 
-test('a stale hidden-router session flag cannot open dev routes outside dev mode', async () => {
+test('a stale hidden-router session flag cannot open dev routes in a release build', async () => {
   const previous = globalThis.sessionStorage;
   const values = new Map([['nightfall.hidden-router.v1', '1']]);
   globalThis.sessionStorage = {

@@ -15,7 +15,7 @@ import {
   CREDIT_TEAM,
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
-import { DEV_MODE, activateHiddenRouter } from '../devMode.js';
+import { DEV_MODE, PLAYTEST_MODE, activateHiddenRouter } from '../devMode.js';
 import { quitGame, toggleFullscreen } from './desktopBridge.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
 import { DEV_ROUTES } from './devRoutes.js';
@@ -390,7 +390,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   // down moment-to-moment playtests. Dev build only: a shipped title has no
   // router, and typing 1111 there does nothing. The list lives in
   // devRoutes.js, shared with the dev launcher.
-  const hiddenChapters = DEV_MODE ? DEV_ROUTES : [];
+  const hiddenChapters = (DEV_MODE || PLAYTEST_MODE) ? DEV_ROUTES : [];
 
   const launchHiddenChapter = (chapter) => {
     activateHiddenRouter();
@@ -506,7 +506,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
     options[cycleIndex(options.indexOf(document.activeElement), options.length, event.key === 'ArrowDown' ? 'next' : 'prev')]?.focus();
   });
   const handleGlobalKey = async (event) => {
-    if (DEV_MODE && !dialog.open && !event.repeat && event.key === '1') {
+    if ((DEV_MODE || PLAYTEST_MODE) && !dialog.open && !event.repeat && event.key === '1') {
       hiddenChapterSequence = `${hiddenChapterSequence}1`.slice(-4);
       window.clearTimeout(hiddenChapterTimer);
       hiddenChapterTimer = window.setTimeout(() => { hiddenChapterSequence = ''; }, 1800);

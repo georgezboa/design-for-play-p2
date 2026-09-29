@@ -18,12 +18,21 @@
 export const DEV_MODE = typeof __DEV_MODE__ === 'undefined'
   ? Boolean(import.meta.env?.DEV)
   : __DEV_MODE__;
+// Playtest builds (the default for now) keep the title's hidden 1111 test-node
+// router in production so George and the team can jump straight to any act.
+// The shipped release is built with `npm run build:release`
+// (NIGHTFALL_RELEASE=1), which compiles PLAYTEST_MODE to false and removes the
+// router and every dev route again. Under plain node (tests) it is false.
+export const PLAYTEST_MODE = typeof __PLAYTEST_MODE__ === 'undefined'
+  ? false
+  : __PLAYTEST_MODE__;
 const HIDDEN_ROUTER_KEY = 'nightfall.hidden-router.v1';
 
-// The title's 1111 test-node router exists only in the dev build. It still
-// records this session flag there, but the flag is never an input to
-// devRoutesEnabled(): a shipped build has no way to turn dev routes on, even
-// if a stale flag is left in sessionStorage.
+// The title's 1111 test-node router exists in dev and playtest builds. In a
+// playtest build, choosing a node records this session flag, which unlocks the
+// per-page dev routes for that tab. In a release build (PLAYTEST_MODE false)
+// the flag is never an input: a shipped build has no way to turn dev routes
+// on, even if a stale flag is left in sessionStorage.
 export function hiddenRouterActive(storage = globalThis.sessionStorage) {
   return storage?.getItem(HIDDEN_ROUTER_KEY) === '1';
 }
@@ -37,7 +46,7 @@ export function clearHiddenRouter(storage = globalThis.sessionStorage) {
 }
 
 export function devRoutesEnabled() {
-  return DEV_MODE;
+  return DEV_MODE || (PLAYTEST_MODE && hiddenRouterActive());
 }
 
 // Every query key that can move the game away from a clean run. Reading them

@@ -19,6 +19,7 @@
     "prod": "vite --mode production",
     "prebuild": "npm run assets:check",
     "build": "vite build",
+    "build:release": "npm run assets:check && node scripts/build-release.mjs",
     "dev:chapter03": "vite --config vite.car03-3d.config.js",
     "build:chapter03": "vite build --config vite.car03-3d.config.js",
     "test:chapter03": "node --test tests/car03/*.test.mjs",
