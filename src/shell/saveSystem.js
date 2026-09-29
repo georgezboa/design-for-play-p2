@@ -6,10 +6,13 @@ export const ACTIVE_SLOT_KEY = 'nightfall.activeSlot.v1';
 export const CHECKPOINTS = Object.freeze([
   // Chapter 1 is the NIGHT SERVICE panel puzzle (night-service.html). The page
   // opens the act named by the active slot's checkpoint (`act`). The legacy
-  // `prologue-start` id stays first so older saves still load (as Act 1).
+  // `prologue-start` id stays first so older saves still load (at the
+  // chapter's start, which is now Act 0 · ONE WINDOW).
   // Detail strings follow docs/STORY_BIBLE.md (player-visible names).
-  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line. Returning the orchard case.', route: '/night-service.html', act: 1, legacy: true },
-  { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'Act I · Lost property. Claim 1978-0412.', route: '/night-service.html', act: 1 },
+  { id: 'prologue-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'The last archive line. Returning the orchard case.', route: '/night-service.html', act: 0, legacy: true },
+  { id: 'chapter-1-start', chapter: 1, title: 'NIGHT SERVICE', detail: 'One window. The desk bell and claim 1978-0412.', route: '/night-service.html', act: 0 },
+  { id: 'chapter-1-act-05', chapter: 1, title: 'NIGHT SERVICE · TWO WINDOWS', detail: 'The stores door and the key line.', route: '/night-service.html', act: 0.5 },
+  { id: 'chapter-1-act-1', chapter: 1, title: 'NIGHT SERVICE · LOST PROPERTY', detail: 'Act I · Lost property. The pigeonholes and the Conductor.', route: '/night-service.html', act: 1 },
   { id: 'chapter-1-act-2', chapter: 1, title: 'NIGHT SERVICE · THE LUGGAGE CAR', detail: 'Act II · The punch and the lens.', route: '/night-service.html', act: 2 },
   { id: 'chapter-1-act-3', chapter: 1, title: 'NIGHT SERVICE · TWO TRUE THINGS', detail: 'Act III · Two true things.', route: '/night-service.html', act: 3 },
   // Chapter 2 · BORROWED LIGHT (borrowed-light.html). The ids are kept so

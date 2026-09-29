@@ -7,7 +7,9 @@
 // directly, skipping any transition film. `devOnly` marks a page that is not
 // a production build input at all.
 export const DEV_ROUTES = Object.freeze([
-  { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-start', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
+  { id: '0', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-start', title: 'ACT 0 · ONE WINDOW', detail: 'Zoom with one picture: the desk bell, the stub, the porthole.', route: '/night-service.html?act=0' },
+  { id: '0.5', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-05', title: 'ACT 0.5 · TWO WINDOWS', detail: 'Swap two windows; zoom decides which edges meet.', route: '/night-service.html?act=0.5' },
+  { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-1', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
   { id: 'II', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-2', title: 'ACT II · THE LUGGAGE CAR', detail: 'The punch-hole lens and the frame lift.', route: '/night-service.html?act=2' },
   { id: 'III', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-3', title: 'ACT III · TWO TRUE THINGS', detail: 'The bridge through 1978 and the bell finale.', route: '/night-service.html?act=3' },
   { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell and the one-line rule.', route: '/borrowed-light.html?section=A' },

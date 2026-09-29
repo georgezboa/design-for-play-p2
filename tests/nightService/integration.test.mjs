@@ -16,12 +16,20 @@ function memoryStorage() {
 
 test('Chapter 1 checkpoints route to night-service.html with an act', () => {
   const byId = Object.fromEntries(CHECKPOINTS.map((c) => [c.id, c]));
-  for (const [id, act] of [['chapter-1-start', 1], ['chapter-1-act-2', 2], ['chapter-1-act-3', 3], ['prologue-start', 1]]) {
+  for (const [id, act, actId] of [
+    ['chapter-1-start', 0, 'act0'], ['chapter-1-act-05', 0.5, 'act05'], ['chapter-1-act-1', 1, 'act1'],
+    ['chapter-1-act-2', 2, 'act2'], ['chapter-1-act-3', 3, 'act3'], ['prologue-start', 0, 'act0'],
+  ]) {
     assert.equal(byId[id].route, '/night-service.html', id);
     assert.equal(byId[id].act, act, id);
     assert.equal(byId[id].chapter, 1);
-    assert.equal(CHECKPOINT_ACTS[id], `act${act}`);
+    assert.equal(CHECKPOINT_ACTS[id], actId);
   }
+  // story order: the new acts sit between the chapter start and Act 2
+  const order = CHECKPOINTS.map((c) => c.id);
+  assert.ok(order.indexOf('chapter-1-start') < order.indexOf('chapter-1-act-05'));
+  assert.ok(order.indexOf('chapter-1-act-05') < order.indexOf('chapter-1-act-1'));
+  assert.ok(order.indexOf('chapter-1-act-1') < order.indexOf('chapter-1-act-2'));
   assert.equal(byId['prologue-start'].legacy, true, 'legacy id kept so old saves still load');
   assert.equal(byId['chapter-2-start'].route, '/borrowed-light.html', 'Chapter 1 hands over to BORROWED LIGHT');
 });

@@ -62,6 +62,9 @@ export function installPauseMenu({
   allowEmbedded = false,
   onEscape = null,
   controls = DEFAULT_PAUSE_CONTROLS,
+  // Chapter-specific actions listed after RESUME, as [{ label, onSelect }].
+  // Selecting one resumes play first, then runs it (e.g. Chapter 1's SHOW ME).
+  extraActions = [],
 } = {}) {
   if (typeof window === 'undefined' || (!allowEmbedded && window.top !== window) || document.getElementById(PAUSE_ID)) return null;
   applySettings(readSettings());
@@ -255,6 +258,7 @@ export function installPauseMenu({
 
   actions.append(
     action('RESUME', close),
+    ...extraActions.map(({ label, onSelect }) => action(label, () => { close(); onSelect?.(); })),
     action('SETTINGS', showSettings),
     action('RETURN TO TITLE', showConfirm, 'is-danger'),
   );
