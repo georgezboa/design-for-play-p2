@@ -9,11 +9,18 @@
 // UI cameras on top draw bezels, the lens, captions and cards:
 //
 //   main (wall) → tile cameras → bezel cam → lifted tile cams → drag cam → top cam
+//
+// Also here: the wordless hint tiers (hints.js decides when; this draws the
+// pulse, the ghost hand and the Conductor's line) and the grid growth between
+// Acts 0 → 0.5 → 1 (the carriage wall slides open around the kept windows).
 
 import Phaser from 'phaser';
-import { edgePoint, tilePoint } from './panelModel.js';
+import { edgePoint, planGrowth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
-import { actById, startCarry } from './acts/index.js';
+import { ACTS, actById, startCarry } from './acts/index.js';
+import { createHintDirector, pickGesture, stepVerb } from './hints.js';
+import { HINT_SPEAKER, hintLine } from './hintLines.js';
+import { GHOST_HAND, paintGhostHand, paintShutter } from './art/hintArt.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
@@ -27,8 +34,7 @@ export const PANEL_SCENE = 'NightServicePanels';
 const WORLD_ORIGIN = 40000;
 const WORLD_GAP = 4000;
 const ZOOM_MS = 460;
-const IDLE_HINT_MS = 45000;
-const HINT_REPEAT_MS = 9000;
+const GHOST_ALPHA = 0.72;
 const GRADES = {
   dusk: [0xe0a24a, 0.05],
   evening: [0x5a3050, 0.1],
@@ -104,7 +110,9 @@ class TileView {
     this.select.strokeRoundedRect(-w / 2 - BEZEL - 8, -h / 2 - BEZEL - 8, w + BEZEL * 2 + 16, h + BEZEL * 2 + 16, 28);
     this.select.setVisible(false);
     this.glyph = s.add.image(w / 2 - 12, -h / 2 + 12, 'nsv-zoomout').setScale(0.5).setVisible(false);
-    this.bezel.add([this.vignette, this.cover, this.ring, this.select, this.glyph]);
+    // the glyph's cue when stepping back is the lesson (Act 0)
+    this.glyphGlow = s.add.image(w / 2 - 12, -h / 2 + 12, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(96, 96).setAlpha(0).setVisible(false);
+    this.bezel.add([this.vignette, this.cover, this.ring, this.select, this.glyphGlow, this.glyph]);
     s.bezelLayer.add(this.bezel);
   }
 
@@ -205,6 +213,15 @@ export class PanelScene extends Phaser.Scene {
     this.pulses = [];
     this.bridgeFlash = new Map();
     this.textScale = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
+    this.growing = false;
+    this.ghost = null;
+    this.idleHints = 0;
+    this.ghostCount = 0;
+    this.hintCaptions = 0;
+    // verbs the ghost hand has shown, shared by every act of this page
+    this.hintSeen = this.services.hintSeen ?? new Set();
+    this.services.hintSeen = this.hintSeen;
+    this.hints = createHintDirector({ seen: this.hintSeen });
 
     // dev QA only (`?dtmax=`): let tweens take real-time steps on very slow
     // headless renderers instead of Phaser's 33 ms lag-smoothing.
@@ -297,13 +314,23 @@ export class PanelScene extends Phaser.Scene {
       this.relayoutText();
     };
     window.addEventListener('nightfall:settings', onSettings);
+    // the pause menu's SHOW ME (and H): the ghost hand, now. The menu resumes
+    // the scene on Phaser's next step, so a request made while still paused
+    // waits for the resume.
+    const onHint = () => {
+      if (this.sys.isActive()) { this.requestHint(); return; }
+      this.events.once('resume', () => this.time.delayedCall(80, () => this.requestHint()));
+    };
+    window.addEventListener('nightfall:hint', onHint);
     this.events.once('shutdown', () => {
       window.removeEventListener('nightfall:settings', onSettings);
+      window.removeEventListener('nightfall:hint', onHint);
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
     });
 
     this.buildSockets();
+    this.growth = this.planGrowthIntro();
     this.introduce();
   }
 
@@ -331,6 +358,10 @@ export class PanelScene extends Phaser.Scene {
         c.moveTo(36 + sx * 15, 36 + sy * 8); c.lineTo(36 + sx * 15, 36 + sy * 15); c.lineTo(36 + sx * 8, 36 + sy * 15);
         c.stroke();
       });
+    });
+    make('nsv-ghost-hand', GHOST_HAND.w * 3, GHOST_HAND.h * 3, (c) => {
+      c.scale(3, 3);
+      paintGhostHand(c, this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null);
     });
     make('nsv-shadow', 400, 240, (c) => {
       c.filter = 'blur(18px)';
@@ -513,7 +544,26 @@ export class PanelScene extends Phaser.Scene {
       layer.add(holder);
       tags.push({ hotspot, holder, tag, glint, shown: false, seed: Math.random() * 10 });
     });
-    return { stateId, root, present, past, animators, tags };
+    // clear affordances: a pulsing amber ring around every 1978 interactable
+    // (seen only through the lens) and around any required glint-only target
+    const rings = [];
+    (sceneDef?.hotspots ?? []).forEach((hotspot) => {
+      const era = hotspot.era ?? 'present';
+      if (!(hotspot.tag?.ring ?? (era === 'past' || Boolean(hotspot.tag?.glintOnly)))) return;
+      const g = this.add.graphics();
+      (era === 'past' ? past ?? present : root).add(g);
+      rings.push({ kind: 'hotspot', hotspot, g });
+    });
+    if (past) {
+      Object.entries(sceneDef.edges ?? {}).forEach(([side, list]) => (Array.isArray(list) ? list : [list]).forEach((edge) => {
+        if (edge.era !== 'past') return;
+        const [u, v] = edge.lensAt ?? (side === 'left' ? [0, edge.at] : side === 'right' ? [1, edge.at] : side === 'top' ? [edge.at, 0] : [edge.at, 1]);
+        const g = this.add.graphics();
+        past.add(g);
+        rings.push({ kind: 'edge', edge, u, v, g });
+      }));
+    }
+    return { stateId, root, present, past, animators, tags, rings };
   }
 
   rebuildState(view, { instant = false } = {}) {
@@ -598,7 +648,108 @@ export class PanelScene extends Phaser.Scene {
     this.scene.restart({ actId: next, carry, services: this.services, fromAct: this.actId });
   }
 
+  // ---------------------------------------------------------------------------
+  // grid growth (Acts 0 → 0.5 → 1): the carriage wall slides open
+
+  /** The growth plan when this act continues the previous act's wall, else null. */
+  planGrowthIntro() {
+    const grow = this.act.growFrom;
+    const from = this.fromAct ? ACTS[this.fromAct] : null;
+    if (!grow || !from || grow.act !== this.fromAct || this.startStep) return null;
+    return planGrowth(from, this.act, { fromSlots: this.carryIn?.slots ?? null, toSlots: this.model.state.slots });
+  }
+
+  /** One sliding wall panel (two leaves) over a window about to open. */
+  makeShutter(rect, index) {
+    const pad = BEZEL + 6;
+    const x = rect.x - pad;
+    const y = rect.y - pad;
+    const w = rect.w + pad * 2;
+    const h = rect.h + pad * 2;
+    const half = Math.ceil(w / 2);
+    const leaves = ['L', 'R'].map((side, i) => {
+      const key = `nsv-shutter-${side}-${half}x${h}`;
+      if (!this.textures.exists(key)) {
+        const tex = this.textures.createCanvas(key, half, h);
+        paintShutter(tex.getContext(), half, h, side, index * 2 + i);
+        tex.refresh();
+      }
+      const leaf = this.add.image(x + i * half, y, key).setOrigin(0, 0);
+      this.bezelLayer.add(leaf);
+      return leaf;
+    });
+    const maskG = this.make.graphics({ add: false });
+    maskG.fillStyle(0xffffff, 1);
+    maskG.fillRect(x, y, w, h);
+    const mask = maskG.createGeometryMask();
+    leaves.forEach((leaf) => leaf.setMask(mask));
+    const seam = this.add.image(x + w / 2, y + h / 2, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(60, h * 1.1).setAlpha(0);
+    this.bezelLayer.add(seam);
+    return {
+      leaves, seam, x, w, half,
+      destroy: () => { leaves.forEach((leaf) => leaf.destroy()); seam.destroy(); maskG.destroy(); },
+    };
+  }
+
+  growIntro(plan) {
+    const reduce = reducedMotionActive();
+    this.growing = true;
+    this.blackout.setAlpha(0);
+    const slideDelay = 350;
+    const slideMs = reduce ? 450 : 1000;
+    const openDelay = slideDelay + (reduce ? 250 : 650);
+    const openMs = reduce ? 550 : 1250;
+    // the old, smaller wall panel fades into the new one while the windows move
+    const oldKey = `nsv-wall-${plan.from.cols}x${plan.from.rows}-${plan.from.tileW}`;
+    if (this.textures.exists(oldKey)) {
+      const oldWall = this.add.image(0, 0, oldKey).setOrigin(0, 0);
+      this.wallLayer.add(oldWall);
+      this.tweens.add({ targets: oldWall, alpha: 0, delay: slideDelay, duration: slideMs + 400, ease: 'Sine.easeInOut', onComplete: () => oldWall.destroy() });
+    }
+    const shutters = [];
+    plan.windows.forEach((win, i) => {
+      const view = this.views[win.tile];
+      view.cover.setAlpha(0);
+      if (win.kind === 'keep') {
+        view.setRect(win.from);
+        view.moving = true;
+        this.tweens.add({
+          targets: view.rect,
+          x: win.to.x,
+          y: win.to.y,
+          delay: slideDelay,
+          duration: slideMs,
+          ease: 'Sine.easeInOut',
+          onUpdate: () => view.apply(),
+          onComplete: () => { view.moving = false; view.setRect(win.to); },
+        });
+      } else {
+        const shutter = this.makeShutter(win.to, i);
+        shutters.push(shutter);
+        // a line of lamplight in the seam, then the leaves part into the wall
+        this.tweens.add({ targets: shutter.seam, alpha: 0.7, delay: openDelay - 250, duration: 250, yoyo: true, hold: 200 });
+        this.tweens.add({ targets: shutter.leaves[0], x: shutter.x - shutter.half - 6, delay: openDelay, duration: openMs, ease: 'Cubic.easeInOut' });
+        this.tweens.add({ targets: shutter.leaves[1], x: shutter.x + shutter.w + 6, delay: openDelay, duration: openMs, ease: 'Cubic.easeInOut' });
+      }
+    });
+    if (shutters.length) this.time.delayedCall(openDelay, () => this.audio.play('shutter'));
+    // the act's name, small, on the sill below the grown wall
+    const act = this.act;
+    this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
+    this.titleMain.setText(act.heading ?? `${ROMAN[act.number] ?? act.number} · ${act.title}`);
+    const titleY = Math.min(this.layout.view.h - 58, this.layout.y + this.layout.h + 96);
+    this.titleBox.setScale(0.7).setAlpha(0).setY(titleY + 8);
+    this.tweens.add({ targets: this.titleBox, alpha: 1, y: titleY, delay: openDelay + openMs * 0.5, duration: 600, ease: 'Sine.easeOut' });
+    this.tweens.add({ targets: this.titleBox, alpha: 0, delay: openDelay + openMs * 0.5 + 2600, duration: 700, ease: 'Sine.easeIn', onComplete: () => this.titleBox.setScale(1) });
+    this.time.delayedCall(openDelay + openMs + 120, () => {
+      shutters.forEach((shutter) => shutter.destroy());
+      this.growing = false;
+      Object.values(this.views).forEach((view) => { view.moving = false; view.setRect(this.model.slotRect(view.id)); });
+    });
+  }
+
   introduce() {
+    if (this.growth) { this.growIntro(this.growth); return; }
     const reduce = reducedMotionActive();
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
@@ -668,6 +819,9 @@ export class PanelScene extends Phaser.Scene {
         view.vignette.setAlpha(1);
         view.zooming = false;
         view.apply();
+        // the script may have changed the state while the zoom ran (a door
+        // opening right after a forced zoom-out): show what the model holds
+        if (this.model.state.tiles[view.id].state !== next.stateId) this.rebuildState(view);
       },
     });
   }
@@ -1235,7 +1389,8 @@ export class PanelScene extends Phaser.Scene {
   hintGlow(x, y, size) {
     const glow = this.add.image(x, y, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(size, size).setAlpha(0);
     this.topLayer.add(glow);
-    this.tweens.add({ targets: glow, alpha: 0.55, duration: 600, yoyo: true, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
+    // soft, but long enough to be seen: three slow breaths
+    this.tweens.add({ targets: glow, alpha: 0.6, duration: 750, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
   }
 
   pulseHint(hint) {
@@ -1258,7 +1413,7 @@ export class PanelScene extends Phaser.Scene {
     if (hint?.lens && this.model.state.lens.enabled) {
       // the lens rim swells and glows: this is the thing to move
       const lens = this.model.state.lens;
-      this.tweens.add({ targets: this.lensView, scale: 1.12, duration: 260, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
+      this.tweens.add({ targets: this.lensView, scale: reducedMotionActive() ? 1.04 : 1.12, duration: 380, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
       this.hintGlow(lens.x, lens.y, lens.r * 3);
       [0, 1, 2, 3].forEach((i) => this.time.delayedCall(i * 110, () => {
         const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
@@ -1268,6 +1423,15 @@ export class PanelScene extends Phaser.Scene {
     if (!hint?.tile) return;
     const view = this.views[hint.tile];
     if (!view) return;
+    if (hint.zoomOut) {
+      // the ⤢ glyph swells: stepping back is the thing to do
+      if (this.model.canZoomOut(hint.tile)) {
+        const slot = this.model.slotRect(hint.tile);
+        this.tweens.add({ targets: view.glyph, scale: 0.72, duration: 240, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => view.glyph.setScale(0.5) });
+        this.hintGlow(slot.x + slot.w - 12, slot.y + 12, 150);
+      }
+      return;
+    }
     if (hint.hotspots) {
       const live = this.model.hotspots(hint.tile).find((h) => h.enabled && hint.hotspots.includes(h.id));
       if (live) this.pulseHint({ tile: hint.tile, hotspot: live.id });
@@ -1308,6 +1472,206 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: view.ring, alpha: { from: 1, to: 0.7 }, duration: 500, yoyo: true });
   }
 
+  /** Tier 1: pulse whatever the ghost hand would point at (or the step's own hint). */
+  pulseForStep(step) {
+    const g = pickGesture(this.model, step);
+    if (!g) { this.pulseHint(step?.hint); return; }
+    if (g.kind === 'click') this.pulseHint({ tile: g.tile, hotspot: g.hotspot });
+    else if (g.kind === 'zoomOut') this.pulseHint({ tile: g.tile, zoomOut: true });
+    else if (g.kind === 'frame') this.pulseHint({ tile: g.from, frame: true });
+    else if (g.kind === 'lens') {
+      this.pulseHint({ lens: true });
+      const p = this.views[g.tile].screen(g.u, g.v);
+      this.time.delayedCall(420, () => this.hintGlow(p.x, p.y, 170));
+    } else if (g.kind === 'drag') {
+      this.pulseHint(step?.hint?.edge || step?.hint?.actor ? step.hint : { tile: g.tile });
+      const slot = this.layout.slots[g.to];
+      this.time.delayedCall(360, () => this.hintGlow(slot.x + slot.w / 2, slot.y + slot.h / 2, Math.min(slot.w, slot.h) * 1.1));
+    }
+  }
+
+  /** Tier 3: one line from the Conductor (never over a spoken line). */
+  hintCaption(step) {
+    const text = hintLine(this.act.id, step?.id, this.model);
+    if (!text || (this.caption && !this.caption.auto)) return false;
+    this.hintCaptions += 1;
+    this.showCaption({ speaker: HINT_SPEAKER, text, ms: 6500 });
+    return true;
+  }
+
+  /** SHOW ME: tier 2 at once (pause menu → `nightfall:hint`, or H). */
+  requestHint() {
+    if (!this.sys?.isActive() || !this.model) return false;
+    const step = this.model.currentStep();
+    if (!step?.hint || this.model.isLocked() || this.fading || this.growing) return false;
+    this.hints.request();
+    const gesture = pickGesture(this.model, step);
+    if (gesture) return this.playGhost(gesture, 'request');
+    this.pulseForStep(step);
+    return true;
+  }
+
+  updateHints(dt) {
+    const m = this.model;
+    const step = m.currentStep();
+    const key = step?.hint ? `${this.act.id}:${step.id}` : null;
+    if (!this.hints.setStep(key, key ? stepVerb(m, step) : null) && key && !this.hints.verb) {
+      // a step whose gesture only resolves once its beat has finished (the
+      // lens appears after the punch): learn its verb as soon as it does
+      this.hints.refineVerb(stepVerb(m, step));
+    }
+    const active = Boolean(key) && !m.isLocked() && !this.fading && !this.growing && !m.state.blocking && !m.state.queue.length
+      && !m.state.card && !(this.caption && !this.caption.auto) && !this.ghost && !this.drag && !this.floating;
+    this.hints.update(dt, { active }).forEach((event) => {
+      if (event === 'pulse') { this.idleHints += 1; this.pulseForStep(step); }
+      else if (event === 'ghost' || event === 'first') this.playGhost(pickGesture(m, step), event);
+      else if (event === 'caption') this.hintCaption(step);
+    });
+  }
+
+  // ---------- the ghost hand (tier 2) ----------
+
+  /** Screen points for a gesture (computed at play time from the live layout). */
+  gesturePoints(g) {
+    const m = this.model;
+    const slotCentre = (index) => { const slot = this.layout.slots[index]; return { x: slot.x + slot.w / 2, y: slot.y + slot.h / 2 }; };
+    if (g.kind === 'click') return { at: this.views[g.tile].screen(g.u, g.v) };
+    if (g.kind === 'zoomOut') { const slot = m.slotRect(g.tile); return { at: { x: slot.x + slot.w - 12, y: slot.y + 12 } }; }
+    if (g.kind === 'drag') return { from: slotCentre(g.from), to: slotCentre(g.to), slot: this.layout.slots[g.from] };
+    if (g.kind === 'frame') {
+      const from = m.slotRect(g.from);
+      const to = m.slotRect(g.to) ?? from;
+      return { from: { x: from.x + from.w / 2, y: from.y + 10 }, to: { x: to.x + to.w / 2, y: to.y + 10 }, slot: from };
+    }
+    if (g.kind === 'lens') {
+      const lens = m.state.lens;
+      return { from: { x: lens.x, y: lens.y }, to: this.views[g.tile].screen(g.u, g.v) };
+    }
+    return null;
+  }
+
+  cancelGhost() {
+    const ghost = this.ghost;
+    if (!ghost) return;
+    this.ghost = null;
+    ghost.chain?.stop();
+    this.tweens.add({ targets: ghost.layer, alpha: 0, duration: 160, onComplete: () => ghost.layer.destroy() });
+  }
+
+  /**
+   * Tier 2: a translucent paper-glove hand performs the gesture once, then
+   * fades. Under Reduce Motion it does not travel: it appears at each end in
+   * turn, with a dotted ink path between them.
+   */
+  playGhost(gesture, reason = 'ghost') {
+    if (!gesture) return false;
+    const pts = this.gesturePoints(gesture);
+    if (!pts) return false;
+    this.cancelGhost();
+    const reduce = reducedMotionActive();
+    const layer = this.add.container(0, 0);
+    this.topLayer.addAt(layer, this.topLayer.getIndex(this.lensView) + 1);
+    const hand = this.add.image(0, 0, 'nsv-ghost-hand')
+      .setOrigin(GHOST_HAND.tip[0] / GHOST_HAND.w, GHOST_HAND.tip[1] / GHOST_HAND.h)
+      .setScale(1 / 3)
+      .setAlpha(0);
+    const proxy = { x: 0, y: 0, a: 0, s: 1 };
+    let carried = null;
+    let carriedA = 0;
+    const apply = () => {
+      hand.setPosition(proxy.x, proxy.y).setAlpha(proxy.a).setScale((1 / 3) * proxy.s);
+      if (carried) carried.setPosition(proxy.x + carried.offX, proxy.y + carried.offY).setAlpha(proxy.a * carriedA);
+    };
+    const ripple = (x, y) => {
+      const g = this.add.graphics();
+      layer.add(g);
+      const st = { r: 6, a: 0.9 };
+      this.tweens.add({
+        targets: st, r: reduce ? 26 : 42, a: 0, duration: 520, ease: 'Sine.easeOut',
+        onUpdate: () => { g.clear(); g.lineStyle(3, 0xffd9a0, st.a); g.strokeCircle(x, y, st.r); },
+        onComplete: () => g.destroy(),
+      });
+    };
+    const path = (a, b) => {
+      // Reduce Motion: a dotted ink trail says where the hand went
+      const g = this.add.graphics();
+      layer.addAt(g, 0);
+      const n = Math.max(4, Math.round(Math.hypot(b.x - a.x, b.y - a.y) / 22));
+      for (let i = 1; i < n; i += 1) {
+        const t = i / n;
+        g.fillStyle(0xeadfc6, 0.75);
+        g.fillCircle(lerp(a.x, b.x, t), lerp(a.y, b.y, t), 3.2);
+      }
+    };
+    const move = (p, ms) => (reduce
+      ? [{ a: 0, duration: 180 }, { x: p.x, y: p.y, duration: 1 }, { a: GHOST_ALPHA, duration: 220 }]
+      : [{ x: p.x, y: p.y, duration: ms, ease: 'Sine.easeInOut' }]);
+    const press = (p) => ({ s: 0.84, duration: 130, ease: 'Sine.easeOut', onStart: () => ripple(p.x, p.y) });
+    const release = { s: 1, duration: 150, ease: 'Sine.easeOut' };
+    const hold = (ms) => ({ a: GHOST_ALPHA, duration: ms });
+    const first = pts.at ?? pts.from;
+    proxy.x = first.x + 130;
+    proxy.y = first.y + 110;
+    const tweens = [{ a: GHOST_ALPHA, duration: 280 }];
+    if (gesture.kind === 'click' || gesture.kind === 'zoomOut') {
+      tweens.push(...move(pts.at, 760), press(pts.at), release, hold(420));
+    } else if (gesture.kind === 'drag' || gesture.kind === 'frame') {
+      // carry a ghost of the window (or of its brass frame) to where it goes
+      const frame = gesture.kind === 'frame';
+      const slot = pts.slot;
+      const g = this.add.graphics();
+      if (!frame) { g.fillStyle(0xffc46a, 0.08); g.fillRoundedRect(-slot.w / 2, -slot.h / 2, slot.w, slot.h, 16); }
+      g.lineStyle(frame ? 10 : 4, frame ? 0xb08a4a : 0xffd9a0, 0.9);
+      g.strokeRoundedRect(-slot.w / 2, -slot.h / 2, slot.w, slot.h, 16);
+      layer.add(g);
+      carried = g;
+      carried.offX = 0;
+      carried.offY = frame ? slot.h / 2 - 10 : 0;
+      carried.setAlpha(0);
+      tweens.push(...move(pts.from, 700), press(pts.from));
+      if (frame) {
+        // press-and-hold: a ring fills around the fingertip before the lift
+        const ring = this.add.graphics();
+        layer.add(ring);
+        const st = { k: 0 };
+        tweens.push({
+          s: 0.84,
+          duration: 480,
+          onStart: () => this.tweens.add({
+            targets: st, k: 1, duration: 460,
+            onUpdate: () => { ring.clear(); ring.lineStyle(4, 0xffd9a0, 0.9); ring.beginPath(); ring.arc(pts.from.x, pts.from.y, 22, -Math.PI / 2, -Math.PI / 2 + st.k * Math.PI * 2); ring.strokePath(); },
+            onComplete: () => ring.destroy(),
+          }),
+        });
+      }
+      tweens.push({ s: 0.84, duration: 60, onStart: () => { carriedA = 0.9; if (reduce) path(pts.from, pts.to); } });
+      tweens.push(...move(pts.to, 1150), { ...release, onStart: () => { carriedA = 0.45; ripple(pts.to.x, pts.to.y); } }, hold(380));
+    } else if (gesture.kind === 'lens') {
+      // take hold of the lens, carry its ghost onto the target, then click through it
+      const ghostLens = this.add.image(0, 0, 'nsv-lens-rim');
+      layer.add(ghostLens);
+      carried = ghostLens;
+      carried.offX = 0;
+      carried.offY = 0;
+      carried.setAlpha(0);
+      tweens.push(...move(pts.from, 700), press(pts.from), { s: 0.84, duration: 60, onStart: () => { carriedA = 0.7; if (reduce) path(pts.from, pts.to); } });
+      tweens.push(...move(pts.to, 1150), release, hold(260));
+      if (gesture.click) tweens.push(press(pts.to), release, hold(420));
+      else tweens.push({ ...hold(900), onStart: () => ripple(pts.to.x, pts.to.y) });
+    }
+    tweens.push({ a: 0, duration: 520, ease: 'Sine.easeIn' });
+    layer.add(hand);
+    apply();
+    const chain = this.tweens.chain({
+      targets: proxy,
+      tweens: tweens.map((t) => ({ ...t, onUpdate: apply })),
+      onComplete: () => { if (this.ghost?.layer === layer) { this.ghost = null; layer.destroy(); } },
+    });
+    this.ghostCount += 1;
+    this.ghost = { layer, chain, gesture, reason };
+    return true;
+  }
+
   // ---------------------------------------------------------------------------
   // input
 
@@ -1318,7 +1682,8 @@ export class PanelScene extends Phaser.Scene {
     this.input.on('pointerup', (p) => this.onPointerUp(p));
     this.input.on('pointerupoutside', (p) => this.onPointerUp(p));
     this.input.on('wheel', (p, _objs, _dx, dy) => {
-      if (dy > 0) {
+      this.userInput();
+      if (dy > 0 && !this.growing) {
         const slot = this.slotAt(p.x, p.y);
         const tile = slot ? this.model.tileAt(slot.index) : null;
         if (tile && this.model.canZoomOut(tile) && !this.views[tile].zooming) this.model.zoomOut(tile);
@@ -1337,13 +1702,16 @@ export class PanelScene extends Phaser.Scene {
 
   userInput() {
     this.idleMs = 0;
+    // any meaningful input restarts the hint clock and clears a demonstration
+    this.hints?.input();
+    if (this.ghost) this.cancelGhost();
     this.audio.unlock();
   }
 
   onPointerDown(p) {
     this.userInput();
     if (this.keyboardMode) { this.keyboardMode = false; this.refreshSelection(); }
-    if (this.fading) return;
+    if (this.fading || this.growing) return;
     if (this.cardView || this.model.state.card) { this.model.closeCard(); return; }
     // a spoken line takes the click; a passing caption never blocks play
     if (this.caption && !this.caption.auto) { this.advanceCaption(); return; }
@@ -1503,7 +1871,7 @@ export class PanelScene extends Phaser.Scene {
     const key = event.key;
     const m = this.model;
     this.userInput();
-    if (this.fading) return ['Tab', ' ', 'Enter'].includes(key);
+    if (this.fading || this.growing) return ['Tab', ' ', 'Enter'].includes(key);
     if (this.services.devMode && (key === 'n' || key === 'N') && !event.repeat) {
       this.devSkip();
       return true;
@@ -1593,6 +1961,11 @@ export class PanelScene extends Phaser.Scene {
       case 'L':
         if (m.state.lens.enabled) this.lensFocus = !this.lensFocus;
         return true;
+      case 'h':
+      case 'H':
+        // SHOW ME (also in the pause menu)
+        if (!event.repeat) this.requestHint();
+        return true;
       default:
         return false;
     }
@@ -1669,8 +2042,10 @@ export class PanelScene extends Phaser.Scene {
       m.update(0);
       return;
     }
-    m.state.queue.push({ checkpoint: this.act.id === 'act1' ? 'chapter-1-act-2' : this.act.id === 'act2' ? 'chapter-1-act-3' : 'chapter-2-start' });
-    m.state.queue.push(this.act.id === 'act3' ? { endChapter: true } : { nextAct: this.act.next ?? (this.act.id === 'act1' ? 'act2' : 'act3') });
+    // skip to the next act (its checkpoint first), or out of the chapter after Act 3
+    const next = this.act.next ?? null;
+    m.state.queue.push({ checkpoint: next ? actById(next).checkpoint : 'chapter-2-start' });
+    m.state.queue.push(next ? { nextAct: next } : { endChapter: true });
     m.update(0);
   }
 
@@ -1740,6 +2115,8 @@ export class PanelScene extends Phaser.Scene {
     });
 
     const lens = this.model.state.lens;
+    const cueStep = this.model.currentStep();
+    const zoomOutCue = cueStep?.hint?.zoomOut ? cueStep.hint.tile : null;
     Object.values(this.views).forEach((view) => {
       const run = (list) => list?.forEach((fn) => fn(this.clock, dt));
       run(view.current?.animators);
@@ -1759,7 +2136,16 @@ export class PanelScene extends Phaser.Scene {
         }
       }
       this.updateTags(view);
-      view.glyph.setVisible(this.model.canZoomOut(view.id) && !view.zooming);
+      const canOut = this.model.canZoomOut(view.id) && !view.zooming;
+      view.glyph.setVisible(canOut);
+      // when stepping back is the lesson, the glyph keeps breathing
+      const cue = canOut && zoomOutCue === view.id;
+      view.glyphGlow.setVisible(cue);
+      if (cue) {
+        const k = 0.5 + Math.sin(this.clock / (reduce ? 700 : 300)) * 0.5;
+        view.glyphGlow.setAlpha(0.25 + k * 0.45);
+        if (!this.tweens.isTweening(view.glyph)) view.glyph.setScale(reduce ? 0.5 : 0.5 + k * 0.08);
+      } else if (!this.tweens.isTweening(view.glyph) && view.glyph.scale !== 0.5) view.glyph.setScale(0.5);
     });
 
     // hover shimmer over the hotspot under the pointer (or keyboard focus)
@@ -1783,7 +2169,8 @@ export class PanelScene extends Phaser.Scene {
     this.lensView.setVisible(lens.enabled);
     if (lens.enabled) {
       this.lensView.setPosition(lens.x, lens.y);
-      this.lensView.setScale(1 + (this.lensFocus ? Math.sin(this.clock / 200) * 0.015 : 0));
+      // (a hint pulse tweens the rim's scale: leave it alone meanwhile)
+      if (!this.tweens.isTweening(this.lensView)) this.lensView.setScale(1 + (this.lensFocus ? Math.sin(this.clock / 200) * 0.015 : 0));
       if (this.lensFocus && this.keysDown.size) {
         const speed = 0.45 * dt;
         let dx = 0;
@@ -1799,26 +2186,43 @@ export class PanelScene extends Phaser.Scene {
     if (this.floating?.holder.animators) this.floating.holder.animators.forEach((fn) => fn(this.clock, dt));
     this.updateCaption(dt);
 
-    // idle hint: 45 s without input on an unsolved step pulses the right thing
-    if (!this.model.isLocked() && !this.fading && !(this.caption && !this.caption.auto)) {
-      this.idleMs += dt;
-      const step = this.model.currentStep();
-      if (step?.hint && this.idleMs > IDLE_HINT_MS) {
-        this.hintCooldown -= dt;
-        if (this.hintCooldown <= 0) {
-          this.idleHints = (this.idleHints ?? 0) + 1;
-          this.pulseHint(step.hint);
-          this.hintCooldown = HINT_REPEAT_MS;
-        }
-      }
-    }
+    // progressive, wordless hints (hints.js): pulse → ghost hand → a line
+    if (!this.model.isLocked() && !this.fading) this.idleMs += dt;
+    this.updateHints(dt);
     void reduce;
+  }
+
+  /** A pulsing amber ring around an interactable (hotspot or 1978 edge anchor). */
+  drawRing(view, ring, live, current) {
+    const g = ring.g;
+    g.clear();
+    const on = current && !view.zooming && (ring.kind === 'edge' || Boolean(live.get(ring.hotspot.id)?.enabled));
+    if (!on) return;
+    const reduce = reducedMotionActive();
+    const k = 0.5 + Math.sin(this.clock / (reduce ? 900 : 380) + (ring.kind === 'edge' ? 1.3 : 0)) * 0.5;
+    let cx; let cy; let rx; let ry;
+    if (ring.kind === 'edge') {
+      cx = ring.u * view.w; cy = ring.v * view.h; rx = 30; ry = 30;
+    } else {
+      const [x, y, w, h] = ring.hotspot.rect;
+      cx = (x + w / 2) * view.w; cy = (y + h / 2) * view.h;
+      rx = Math.max(22, (w * view.w) / 2 + 10); ry = Math.max(22, (h * view.h) / 2 + 10);
+    }
+    const grow = reduce ? 0 : k * 7;
+    g.lineStyle(12, 0xffa640, 0.1 + k * 0.14);
+    g.strokeEllipse(cx, cy, (rx + grow + 5) * 2, (ry + grow + 5) * 2);
+    g.lineStyle(3.5, 0xffc46a, 0.5 + k * 0.45);
+    g.strokeEllipse(cx, cy, (rx + grow) * 2, (ry + grow) * 2);
+    g.lineStyle(1.4, 0xfff0d0, 0.35 + k * 0.3);
+    g.strokeEllipse(cx, cy, (rx + grow - 5) * 2, (ry + grow - 5) * 2);
   }
 
   updateTags(view) {
     const state = view.current;
-    if (!state?.tags.length) return;
+    if (!state?.tags.length && !state?.rings?.length) return;
     const live = new Map(this.model.hotspots(view.id).map((h) => [h.id, h]));
+    const current = state.stateId === this.model.state.tiles[view.id].state;
+    state.rings?.forEach((ring) => this.drawRing(view, ring, live, current));
     state.tags.forEach((entry) => {
       const h = live.get(entry.hotspot.id);
       const on = Boolean(h?.enabled) && state.stateId === this.model.state.tiles[view.id].state && !view.zooming;
@@ -1912,6 +2316,17 @@ export class PanelScene extends Phaser.Scene {
         reduceMotion: reducedMotionActive(),
         idleMs: Math.round(this.idleMs),
         idleHints: this.idleHints ?? 0,
+        hints: {
+          idleMs: Math.round(this.hints.idle),
+          tier: this.hints.tier,
+          step: this.hints.step,
+          verb: this.hints.verb,
+          seen: [...this.hintSeen],
+          ghost: this.ghost ? { kind: this.ghost.gesture.kind, verb: this.ghost.gesture.verb, reason: this.ghost.reason } : null,
+          ghosts: this.ghostCount,
+          captions: this.hintCaptions,
+        },
+        growing: this.growing,
         audioUnlocked: Boolean(this.audio.unlocked),
       },
     };
