@@ -99,3 +99,14 @@
 @keyframes nf-title { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .nf-caption__next, .nf-tag::after { animation: none; } }
 :root[data-reduced-motion='true'] .nf-caption__next, :root[data-reduced-motion='true'] .nf-tag::after { animation: none; }
+
+/* ---------- leaving for the title (shell/titleReturn.js) ---------- */
+.nf-title-return {
+  position: fixed; inset: 0; z-index: 2147483000; display: grid; place-content: center; justify-items: center; gap: 16px;
+  background: #050403; color: var(--nf-ivory); animation: nf-title-return 0.16s ease-out both; cursor: progress;
+}
+.nf-title-return__text { margin: 0; font: calc(16px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.4em; color: var(--nf-amber); text-transform: uppercase; }
+.nf-title-return__rule { width: 280px; height: 2px; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
+@keyframes nf-title-return { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .nf-title-return { animation: none; } }
+:root[data-reduced-motion='true'] .nf-title-return { animation: none; }

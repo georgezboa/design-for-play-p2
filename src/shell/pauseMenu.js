@@ -7,13 +7,18 @@ import {
   applySettings,
   createSaveStore,
   readSettings,
-  returnToTitle,
   writeSettings,
 } from './saveSystem.js';
 import { getActiveCinematic } from './gameFlow.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
 import { MAGIC_STONE_MEANING, magicStoneRowHtml, magicStoneSnapshot } from './magicStones.js';
 import { createMenuGamepadPoll, cycleIndex, menuKeyAction } from './menuNavigation.js';
+import { installAudioRegistry, leaveForTitle } from './titleReturn.js';
+import { installFramePacing } from './framePacing.js';
+
+// Before any chapter code creates its renderer or asks for a frame (this
+// module is imported ahead of every chapter's main body): see framePacing.js.
+installFramePacing(globalThis.window);
 
 const PAUSE_ID = 'nightfall-pause-menu';
 
@@ -60,6 +65,8 @@ export function installPauseMenu({
 } = {}) {
   if (typeof window === 'undefined' || (!allowEmbedded && window.top !== window) || document.getElementById(PAUSE_ID)) return null;
   applySettings(readSettings());
+  // So a confirmed return to the title can silence every sound on the page.
+  installAudioRegistry(window);
 
   const root = document.createElement('aside');
   root.id = PAUSE_ID;
@@ -208,7 +215,8 @@ export function installPauseMenu({
     confirmPanel.querySelector('.nf-pause-confirm-actions button:last-child')?.focus();
   };
   confirmPanel.querySelector('.nf-pause-confirm-actions').append(
-    action('RETURN TO TITLE', () => returnToTitle(), 'is-danger'),
+    // Fade to black at once, stop the page's frames and sound, then go.
+    action('RETURN TO TITLE', () => leaveForTitle(), 'is-danger'),
     action('CANCEL', showMain),
   );
 
