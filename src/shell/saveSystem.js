@@ -39,6 +39,26 @@ export const DEFAULT_SETTINGS = Object.freeze({
 const MUSIC_BUS_GAIN = 1.15;
 
 const checkpointById = (id) => CHECKPOINTS.find((checkpoint) => checkpoint.id === id);
+
+// The rows LOAD / CHECKPOINTS lists for a save: its unlocked checkpoints in
+// story order, minus any `legacy: true` id when the save also holds a current
+// checkpoint for the same chapter and act (a save that unlocked both
+// `prologue-start` and `chapter-1-start` would otherwise list two identical
+// "CHAPTER 1 · NIGHT SERVICE" rows). `selected` marks the row Continue
+// resumes, which is the current twin when the save still points at the
+// hidden legacy id.
+export function loadListCheckpoints(save) {
+  const unlocked = new Set(save?.unlocked ?? []);
+  const sameSpot = (a, b) => a.chapter === b.chapter && (a.act ?? null) === (b.act ?? null);
+  const rows = CHECKPOINTS.filter((checkpoint) => unlocked.has(checkpoint.id));
+  const shown = rows.filter((checkpoint) => !checkpoint.legacy
+    || !rows.some((other) => !other.legacy && sameSpot(other, checkpoint)));
+  const current = checkpointById(save?.checkpointId);
+  const selectedId = shown.some(({ id }) => id === current?.id)
+    ? current.id
+    : shown.find((checkpoint) => current?.legacy && !checkpoint.legacy && sameSpot(checkpoint, current))?.id ?? null;
+  return shown.map((checkpoint) => ({ checkpoint, selected: checkpoint.id === selectedId }));
+}
 const safeParse = (value, fallback) => {
   try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
 };

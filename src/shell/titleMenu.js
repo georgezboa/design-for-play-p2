@@ -1,9 +1,9 @@
 import {
-  CHECKPOINTS,
   applySettings,
   createSaveStore,
   formatSave,
   launchCheckpoint,
+  loadListCheckpoints,
   readSettings,
   volumeForChannel,
   writeSettings,
@@ -340,9 +340,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
     const save = store.readAll()[index];
     panel.innerHTML = `<p class="nf-eyebrow">SLOT ${index + 1}</p><h2>CHECKPOINTS</h2>`;
     if (!save) panel.insertAdjacentHTML('beforeend', '<p class="nf-empty">This slot has no journey.</p>');
-    CHECKPOINTS.forEach((checkpoint) => {
-      if (!(save?.unlocked ?? []).includes(checkpoint.id)) return;
-      const selected = checkpoint.id === save.checkpointId;
+    loadListCheckpoints(save).forEach(({ checkpoint, selected }) => {
       const row = button(`${selected ? '◆' : '◇'}  CHAPTER ${checkpoint.chapter} · ${checkpoint.title}`, () => {
         store.selectCheckpoint(index, checkpoint.id);
         launchCheckpoint(checkpoint.id, { route: resolveCheckpointRoute(checkpoint.id, { slot: index }) });

@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createSaveStore, DEFAULT_SETTINGS, readSettings, volumeForChannel, writeSettings } from '../src/shell/saveSystem.js';
 
 function memoryStorage() {
@@ -51,4 +52,30 @@ test('magic stones belong to one save slot and are idempotent', () => {
   store.collectMagicStone('chapter-3', { slot: 0 });
   assert.deepEqual(store.readAll()[0].magicStones, ['chapter-1', 'chapter-3']);
   assert.deepEqual(store.readAll()[1].magicStones, []);
+});
+
+test('Load hides a legacy checkpoint the save also holds as a current one', async () => {
+  const { loadListCheckpoints, CHECKPOINTS } = await import('../src/shell/saveSystem.js');
+  const rows = (save) => loadListCheckpoints(save).map(({ checkpoint, selected }) => `${selected ? '◆' : '◇'} ${checkpoint.id}`);
+  // A legacy save that reached Act I under both ids: one CHAPTER 1 row, not two.
+  assert.deepEqual(rows({ checkpointId: 'chapter-2-start', unlocked: ['prologue-start', 'chapter-1-start', 'chapter-2-start'] }), ['◇ chapter-1-start', '◆ chapter-2-start']);
+  // Still pointing at the legacy id: its current twin carries the marker.
+  assert.deepEqual(rows({ checkpointId: 'prologue-start', unlocked: ['prologue-start', 'chapter-1-start'] }), ['◆ chapter-1-start']);
+  // A legacy id with no current twin still loads.
+  assert.deepEqual(rows({ checkpointId: 'prologue-start', unlocked: ['prologue-start'] }), ['◆ prologue-start']);
+  // A later act of the same chapter is not a twin of the legacy Act I id.
+  assert.deepEqual(rows({ checkpointId: 'chapter-1-act-2', unlocked: ['prologue-start', 'chapter-1-act-2'] }), ['◇ prologue-start', '◆ chapter-1-act-2']);
+  assert.deepEqual(loadListCheckpoints(null), []);
+  // Story order is kept and nothing else is hidden.
+  const everything = { checkpointId: 'chapter-6-start', unlocked: CHECKPOINTS.map(({ id }) => id) };
+  assert.deepEqual(loadListCheckpoints(everything).map(({ checkpoint }) => checkpoint.id), CHECKPOINTS.filter(({ legacy }) => !legacy).map(({ id }) => id));
+  // Every legacy id has a current twin: same chapter, same act.
+  CHECKPOINTS.filter(({ legacy }) => legacy).forEach((legacy) => {
+    assert.ok(CHECKPOINTS.some((c) => !c.legacy && c.chapter === legacy.chapter && (c.act ?? null) === (legacy.act ?? null)), legacy.id);
+  });
+});
+
+test('the title Load panel lists loadListCheckpoints()', () => {
+  const title = readFileSync(new URL('../src/shell/titleMenu.js', import.meta.url), 'utf8');
+  assert.match(title, /loadListCheckpoints\(save\)\.forEach\(\(\{ checkpoint, selected \}\) =>/);
 });
