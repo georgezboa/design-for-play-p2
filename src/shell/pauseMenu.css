@@ -43,3 +43,10 @@
 .nf-pause-stones { display: flex; align-items: center; justify-content: center; gap: 12px; margin: -10px 0 22px; font-size: calc(10px * var(--nightfall-text-scale, 1)); letter-spacing: .16em; }
 .nf-pause-stones__label { color: #8d8474; }
 .nf-pause-stones__count { color: #b9a583; }
+
+/* Keyboard / gamepad focus (root[data-nav] is set by ↑ ↓, W S and the D-pad):
+   the same highlight as hover, also for a gamepad move that does not trigger
+   :focus-visible, and the whole row for a focused slider or checkbox. */
+#nightfall-pause-menu[data-nav] .nf-pause-action:focus { outline: 0; border-color: #45d9e3; color: #f1dfbd; background: rgba(30, 101, 108, .2); }
+.nf-pause-setting:focus-within { background: rgba(30, 101, 108, .16); box-shadow: inset 2px 0 0 #45d9e3; }
+.nf-pause-setting input:focus-visible, #nightfall-pause-menu[data-nav] .nf-pause-setting input:focus { outline: 1px solid #45d9e3; outline-offset: 3px; }

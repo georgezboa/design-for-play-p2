@@ -13,6 +13,7 @@ import {
 import { getActiveCinematic } from './gameFlow.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
 import { MAGIC_STONE_MEANING, magicStoneRowHtml, magicStoneSnapshot } from './magicStones.js';
+import { createMenuGamepadPoll, cycleIndex, menuKeyAction } from './menuNavigation.js';
 
 const PAUSE_ID = 'nightfall-pause-menu';
 
@@ -127,6 +128,41 @@ export function installPauseMenu({
     window.dispatchEvent(new CustomEvent('nightfall:pause', { detail: { paused: next } }));
   };
 
+  // The controls ↑ ↓ / W S / the D-pad move through: the visible panel's
+  // buttons (and, in SETTINGS, its sliders and checkboxes).
+  const navigable = () => {
+    const panel = inConfirm ? confirmPanel : inSettings ? settingsPanel : actions;
+    return [...panel.querySelectorAll('button, input')].filter((element) => !element.disabled && element.getClientRects().length > 0);
+  };
+  const moveFocus = (direction) => {
+    const items = navigable();
+    const next = items[cycleIndex(items.indexOf(document.activeElement), items.length, direction)];
+    next?.focus();
+  };
+  const activateFocused = () => {
+    const items = navigable();
+    const target = items.includes(document.activeElement) ? document.activeElement : null;
+    if (!target) { items[0]?.focus(); return; }
+    // A slider has nothing to press: ← → (or the mouse) set it.
+    if (target.type === 'range') return;
+    target.click();
+  };
+  const back = () => {
+    if (inSettings || inConfirm) showMain();
+    else close();
+  };
+  const menuAction = (action) => {
+    if (!paused) return;
+    root.dataset.nav = 'keys';
+    if (action === 'prev' || action === 'next') moveFocus(action);
+    else if (action === 'activate') activateFocused();
+    else if (action === 'back') back();
+  };
+  // No shared gamepad poll exists in the shell (Phaser chapters poll their
+  // own pads, and pause with the menu), so the menu reads the D-pad and A / B
+  // itself, only while it is open.
+  const padPoll = createMenuGamepadPoll(menuAction);
+
   const showMain = () => {
     inSettings = false;
     inConfirm = false;
@@ -145,6 +181,8 @@ export function installPauseMenu({
     confirmPanel.hidden = true;
     actions.hidden = false;
     status.textContent = '';
+    padPoll.stop();
+    delete root.dataset.nav;
     setRuntimePaused(false);
     priorFocus?.focus?.();
   };
@@ -157,6 +195,7 @@ export function installPauseMenu({
     renderStones();
     setRuntimePaused(true);
     actions.querySelector('button')?.focus();
+    padPoll.start();
   };
 
   const showConfirm = () => {
@@ -220,6 +259,28 @@ export function installPauseMenu({
     showConfirm();
   });
 
+  // While the menu is open it owns ↑ ↓ / W S / Enter / Space: they never
+  // reach the paused game underneath. The key-up of a key it consumed is
+  // swallowed too, so Space never also "clicks" the next focused button.
+  const consumed = new Set();
+  window.addEventListener('keydown', (event) => {
+    if (!paused || event.key === 'Escape') return;
+    const navAction = menuKeyAction(event);
+    if (!navAction) return;
+    // ← → still adjust a focused slider natively; ↑ ↓ always move focus.
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    consumed.add(event.code || event.key);
+    if (navAction === 'activate' && event.repeat) return;
+    menuAction(navAction);
+  }, true);
+  window.addEventListener('keyup', (event) => {
+    if (!consumed.delete(event.code || event.key)) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+  root.addEventListener('pointermove', () => { delete root.dataset.nav; });
+
   window.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape' || event.repeat) return;
     // Films own Escape (hold to skip) while they are on screen.
@@ -232,8 +293,7 @@ export function installPauseMenu({
       if (onEscape() !== false) return;
     }
     if (!paused) open();
-    else if (inSettings || inConfirm) showMain();
-    else close();
+    else back();
   }, true);
 
   root.open = open;

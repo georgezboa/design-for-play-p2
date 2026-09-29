@@ -20,6 +20,7 @@ import { quitGame, toggleFullscreen } from './desktopBridge.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
 import { DEV_ROUTES } from './devRoutes.js';
 import { resolveCheckpointRoute } from './finalBossRoute.js';
+import { cycleIndex } from './menuNavigation.js';
 
 const store = createSaveStore();
 
@@ -504,9 +505,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
     if (dialog.open || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
     event.preventDefault();
     const options = focusActions();
-    const current = Math.max(0, options.indexOf(document.activeElement));
-    const offset = event.key === 'ArrowDown' ? 1 : -1;
-    options[(current + offset + options.length) % options.length]?.focus();
+    options[cycleIndex(options.indexOf(document.activeElement), options.length, event.key === 'ArrowDown' ? 'next' : 'prev')]?.focus();
   });
   const handleGlobalKey = async (event) => {
     if (DEV_MODE && !dialog.open && !event.repeat && event.key === '1') {
