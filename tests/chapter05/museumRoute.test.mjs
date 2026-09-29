@@ -103,3 +103,14 @@ test('one visual language: paper tags, caption bar, archive cards and a carriage
   assert.match(main, /import '\.\.\/\.\.\/shell\/uiKit\.css';/);
   assert.doesNotMatch(html, /door-4-direct-interact|echo-work-card/);
 });
+
+test('the Painted Country revisit is dev-only: unreachable from the Museum, not built', () => {
+  const registry = fs.readFileSync(new URL('../../src/chapters/museum3d/directions/directionRegistry.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(registry, /painted-country/i, 'no Museum direction opens it');
+  const rootVite = fs.readFileSync(new URL('../../vite.config.js', import.meta.url), 'utf8');
+  const inputs = rootVite.slice(rootVite.indexOf('input: {'), rootVite.indexOf('},', rootVite.indexOf('input: {')));
+  assert.doesNotMatch(inputs, /resolve\([^)]*chapter05-painted-country\.html/);
+  // The page and its scene stay for the Chapter 4 owner, behind the dev launcher.
+  assert.ok(fs.existsSync(new URL('../../chapter05-painted-country.html', import.meta.url)));
+  assert.match(fs.readFileSync(new URL('../../src/shell/devRoutes.js', import.meta.url), 'utf8'), /route: '\/chapter05-painted-country\.html'/);
+});

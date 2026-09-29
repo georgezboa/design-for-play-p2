@@ -9,7 +9,7 @@ between chapters.
 npm install
 npm run dev      # http://localhost:5180 — dev launcher + dev-only QA routes
 npm run prod     # http://localhost:5181 — the real run, no skipping
-npm run build    # -> dist/ (every page below is a build input)
+npm run build    # -> dist/ (every page below except the dev-only revisit)
 npm run preview  # serve dist/
 node --test $(find tests -name '*.test.mjs')
 ```
@@ -29,7 +29,7 @@ panoramas*).
 | 5 | THE MUSEUM OF ONE ANSWER | `museum-3d.html` | `src/chapters/museum3d/`, `public/museum3d/` |
 | 5 | · Door 4 — Labyrinth | `labyrinth.html` | `src/chapters/museum/labyrinth/` |
 | 5 | · Object Pending Classification (lobby exhibit) | `one-answer.html` | `src/chapters/nightService/acts/oneAnswer.js`, `src/chapters/museum3d/oneAnswer/` |
-| 5 | · Painted Country revisit (unreachable in production; kept for the Chapter 4 owner) | `chapter05-painted-country.html` | `src/chapters/paintedCountry/painted-country-main.js` |
+| 5 | · Painted Country revisit (dev only: not a production build input, since the Museum no longer opens it; kept for the Chapter 4 owner) | `chapter05-painted-country.html` | `src/chapters/paintedCountry/painted-country-main.js` |
 | 6 | ALL WORLDS AT ONCE — the Conductor | `final-boss.html` | `src/chapters/finalBoss/` |
 | 6 | BLACK KNIFE — hidden finale (all five stones) | `hidden-final-boss.html` | `src/chapters/blackKnifeFinal/` |
 | — | The Unfiled Ending | `true-ending.html` | `src/trueEnding-main.js` |
@@ -87,7 +87,9 @@ Standalone dev servers exist for the heavy chapters: `npm run dev:chapter03`,
 `dev:chapter05`, `dev:final-boss`, `dev:hidden-final-boss` (plus
 `vite.labyrinth.config.js` and `vite.painted-country.config.js`). The main dev
 server already serves every page, so they are only needed for isolated builds.
-`chapter01-opening.html` is a dev-only storyboard preview of the opening film.
+`chapter01-opening.html` is a dev-only storyboard preview of the opening film,
+and `chapter05-painted-country.html` a dev-only page for the Museum's retired
+Painted Country revisit; neither is built into `dist/`.
 
 ## World panoramas
 

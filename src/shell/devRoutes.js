@@ -4,7 +4,8 @@
 // (shell/titleMenu.js). Neither exists in a production build.
 //
 // `checkpoint` is the save id the node belongs to; `route` is opened
-// directly, skipping any transition film.
+// directly, skipping any transition film. `devOnly` marks a page that is not
+// a production build input at all.
 export const DEV_ROUTES = Object.freeze([
   { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-start', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
   { id: 'II', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-2', title: 'ACT II · THE LUGGAGE CAR', detail: 'The punch-hole lens and the frame lift.', route: '/night-service.html?act=2' },
@@ -27,7 +28,7 @@ export const DEV_ROUTES = Object.freeze([
   { id: '5.3', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM ECHO CITY (DEV ONLY)', detail: 'The sealed Echo City reconstruction; never in the shipping route.', route: '/museum-3d.html?beat=echo&standalone=1' },
   { id: '5.4', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'LABYRINTH', detail: 'Eight-key statue chase.', route: '/labyrinth.html' },
   { id: '5.5', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'OBJECT PENDING CLASSIFICATION', detail: 'The lobby exhibit: four evidence windows (panel engine).', route: '/one-answer.html' },
-  { id: '5.6', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'PAINTED COUNTRY REVISIT', detail: 'The Chapter 5 inflation of the painted country.', route: '/chapter05-painted-country.html' },
+  { id: '5.6', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'PAINTED COUNTRY REVISIT', detail: 'Dev-only page: the retired Chapter 5 inflation of the painted country (not in production).', route: '/chapter05-painted-country.html', devOnly: true },
   { id: '5.7', group: 'CHAPTER 5 · MUSEUM OF ONE ANSWER', checkpoint: 'chapter-5-start', title: 'MUSEUM COLLAPSE', detail: 'Final Archive collapse and boss handoff.', route: '/museum-3d.html?beat=collapse' },
   { id: '6.1', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR I · NIGHT SERVICE', detail: 'Thrown-departures movement and suitcase memories.', route: '/final-boss.html?qa=conductor-1' },
   { id: '6.2', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR II · BORROWED LIGHT', detail: 'Grid runner movement, blocks and ladder strike.', route: '/final-boss.html?qa=conductor-2' },

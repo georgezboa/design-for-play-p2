@@ -101,7 +101,11 @@ export default defineConfig(({ command, mode }) => {
           labyrinth: resolve(import.meta.dirname, 'labyrinth.html'),
           // Chapter 5's lobby exhibit, framed like the Labyrinth.
           oneAnswer: resolve(import.meta.dirname, 'one-answer.html'),
-          chapter05PaintedCountry: resolve(import.meta.dirname, 'chapter05-painted-country.html'),
+          // chapter05-painted-country.html (the Museum's old Painted Country
+          // revisit) is dev-only: the shipping Museum opens only the lobby
+          // case and Door 4 (museum3d/directions/directionRegistry.js), so
+          // nothing in a production run links to it. Its scene lives with the
+          // Chapter 4 code and stays reachable from the dev launcher.
         },
       },
     },

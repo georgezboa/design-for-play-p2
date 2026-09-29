@@ -19,10 +19,13 @@ test('every dev route opens a page that exists, with a known checkpoint', () => 
   }
 });
 
-test('every chapter route in the dev list is a production build input', () => {
+test('every chapter route in the dev list is a production build input, except the dev-only pages', () => {
   for (const entry of DEV_ROUTES) {
-    assert.match(viteConfig, new RegExp(`'${page(entry.route).replace('.', '\\.')}'`), entry.route);
+    const input = new RegExp(`resolve\\([^)]*'${page(entry.route).replace('.', '\\.')}'`);
+    if (entry.devOnly) assert.doesNotMatch(viteConfig, input, entry.route);
+    else assert.match(viteConfig, input, entry.route);
   }
+  assert.deepEqual(DEV_ROUTES.filter((entry) => entry.devOnly).map((entry) => entry.route), ['/chapter05-painted-country.html']);
 });
 
 test('every checkpoint, legacy ids included, resumes on a production page', () => {
