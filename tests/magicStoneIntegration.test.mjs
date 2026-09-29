@@ -58,3 +58,11 @@ test('Chapter 3 and every other chapter transition wait for the complete preload
   assert.match(flow, /await preloadPromise/);
   assert.match(flow, /PREPARING EVERY OBJECT · PLEASE WAIT/);
 });
+
+test('hidden-final-boss.html checks the stones before it loads the fight', () => {
+  const entry = read('src/chapters/blackKnifeFinal/entry.js');
+  assert.match(read('hidden-final-boss.html'), /<script type="module" src="\/src\/chapters\/blackKnifeFinal\/entry\.js"><\/script>/);
+  // No static import of the fight (Phaser, the score): only the gate's own needs.
+  assert.deepEqual([...entry.matchAll(/^import .* from '([^']+)';$/gm)].map((match) => match[1]), ['../../shell/magicStones.js', '../../devMode.js']);
+  assert.match(entry, /if \(!unlocked && !magicStoneSnapshot\(\)\.allCollected\) \{\n  window\.location\.replace\('\/final-boss\.html\?from=chapter5'\);\n\} else \{\n  import\('\.\/main\.js'\);\n\}/);
+});
