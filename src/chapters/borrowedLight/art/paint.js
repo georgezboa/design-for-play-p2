@@ -1060,9 +1060,14 @@ export function paintFog({ width = 1024, height = 256, seed = 9 } = {}) {
     const x = r() * width;
     const y = height * (0.3 + r() * 0.7);
     const rad = 60 + r() * 160;
+    // One density per blob for all three copies, so a blob across the edge
+    // matches its wrapped half and the tile repeats without a seam. (Three
+    // draws are still taken, keeping the rest of the layout as it was; the
+    // centre copy's is the one that was always in view.)
+    const alpha = [r(), r(), r()][1];
     for (const ox of [-width, 0, width]) {
       const g = ctx.createRadialGradient(x + ox, y, 0, x + ox, y, rad);
-      g.addColorStop(0, `rgba(120,142,152,${0.12 + r() * 0.12})`);
+      g.addColorStop(0, `rgba(120,142,152,${0.12 + alpha * 0.12})`);
       g.addColorStop(1, 'rgba(120,142,152,0)');
       ctx.fillStyle = g;
       ctx.fillRect(x + ox - rad, y - rad, rad * 2, rad * 2);
