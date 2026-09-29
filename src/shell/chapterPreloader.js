@@ -48,6 +48,19 @@ const CHAPTER2_WORLD = Object.values(import.meta.glob('../assets/generated/world
   import: 'default',
 }));
 
+// Chapter 6 paints Movements I and II from the Chapter 1 kit: the paper
+// grain and the night-fields chunks (world-01, as Chapter 1), plus the
+// Painted Country paper cut-outs of Movement IV. Warming them during the
+// 5→6 film lets the fight's background painting start without a network wait.
+const FINALE_ART = [
+  ...Object.values(import.meta.glob('../assets/shared/painterly/paper-texture-ivory-v01.png', { eager: true, query: '?url', import: 'default' })),
+  ...Object.values(import.meta.glob([
+    '../chapters/finalBoss/assets/paper/ch4-butch-walk-*.png',
+    '../chapters/finalBoss/assets/paper/ch4-conductor.png',
+    '../chapters/finalBoss/assets/paper/ch4-pigment-*.png',
+  ], { eager: true, query: '?url', import: 'default' })),
+];
+
 const MUSEUM_TEXTURES = ['beige_wall_001', 'dark_wood', 'dirty_carpet', 'rubber_tiles', 'wood_table_001']
   .flatMap((folder) => ['diffuse.jpg', 'normal_gl.jpg', 'roughness.jpg']
     .map((file) => `/museum3d/textures/${folder}/${file}`));
@@ -106,6 +119,8 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
       '/assets/chapter03-3d/models/ch03_crushed_trash_can.glb',
       '/assets/chapter03-3d/models/ch03_fountain_bench.glb',
       '/assets/chapter03-3d/models/ch03_pa_speaker.glb',
+      ...FINALE_ART,
+      ...CHAPTER1_WORLD,
     ]),
   }),
   hiddenBoss: Object.freeze({

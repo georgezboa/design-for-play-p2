@@ -48,9 +48,9 @@ import {
 } from './finaleModel.js';
 import { ECHO_EXCHANGES } from './echoExchanges.js';
 import {
-  CONDUCTOR_RAIN_SPEC, LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, paintBillboardFace, paintBridgeDeck,
+  CONDUCTOR_RAIN_SPEC, LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
   paintClaimCase, paintConductorCarBackdrop, paintInkButch, paintInkConductor, paintInkTrain, paintInkTrainFront, paintLampNode,
-  paintGapWall, paintLensRimCanvas, paintLostPropertyFloor, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
+  paintGapWall, paintLensRimCanvas, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
 } from './finaleArt.js';
 
 // Runtime files under public/ are referenced by their served path rather than
@@ -159,12 +159,71 @@ function paperMaterial(color, map = null) {
   return new THREE.MeshStandardMaterial({ color, map, emissiveIntensity: 0.12, roughness: 0.96, metalness: 0, side: THREE.DoubleSide });
 }
 
+// Textures made while a movement's art is painted, collected so they can be
+// uploaded to the GPU one per slice instead of all on the next frame.
+let textureSink = null;
+
+// Large paintings bring their own mip chain, halved on the (software) canvas
+// they were painted on. The GPU's generateMipmap on an sRGB texture is the
+// slowest part of an upload on software GL: ~200 ms for the 2400 px floor,
+// against ~40 ms for this chain plus its upload.
+const CPU_MIPMAP_MIN_SIZE = 1024;
+
+function mipChain(canvas) {
+  const chain = [canvas];
+  let { width, height } = canvas;
+  while (width > 1 || height > 1) {
+    width = Math.max(1, width >> 1);
+    height = Math.max(1, height >> 1);
+    const level = document.createElement('canvas');
+    level.width = width;
+    level.height = height;
+    const c = level.getContext('2d', { willReadFrequently: true });
+    c.imageSmoothingQuality = 'high';
+    c.drawImage(chain[chain.length - 1], 0, 0, width, height);
+    chain.push(level);
+  }
+  return chain;
+}
+
 function canvasTexture(canvas, { repeat = false } = {}) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.anisotropy = 8;
   if (repeat) texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+  if (Math.max(canvas.width, canvas.height) >= CPU_MIPMAP_MIN_SIZE) {
+    texture.mipmaps = mipChain(canvas);
+    texture.generateMipmaps = false;
+  }
+  textureSink?.push(texture);
   return texture;
+}
+
+// Hand the main thread back between slices of work, so the menu and the
+// fight keep taking input and drawing frames while the next movement loads.
+// Background priority: a slice only runs when nothing else is waiting (input,
+// network callbacks, timers), unlike scheduler.yield(), whose continuations
+// jump ahead of ordinary tasks.
+function yieldToMain() {
+  if (typeof globalThis.scheduler?.postTask === 'function') return globalThis.scheduler.postTask(() => {}, { priority: 'background' });
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+// Run a step generator (each `yield` ends one slice), giving the main thread
+// back whenever a slice has used its budget. Resolves with the generator's
+// return value.
+async function runSliced(steps, { budgetMs = 12, sink = null } = {}) {
+  let deadline = performance.now() + budgetMs;
+  for (;;) {
+    textureSink = sink;
+    let step;
+    try { step = steps.next(); } finally { textureSink = null; }
+    if (step.done) return step.value;
+    if (performance.now() >= deadline) {
+      await yieldToMain();
+      deadline = performance.now() + budgetMs;
+    }
+  }
 }
 
 // Painted art is shown as painted: unlit, not tone-mapped.
@@ -218,35 +277,47 @@ class PaperActor {
     this.action = 'idle';
     this.phase = 0;
     this.form = PHASES[0].form;
-    this.cards = definitions.map((definition) => {
-      const group = new THREE.Group();
-      if (!definition) { this.root.add(group); group.visible = false; return { group, definition: null }; }
-      const maps = Object.fromEntries(Object.entries(definition.frames).map(([key, source]) => {
-        const map = typeof source === 'string' ? loader.load(source) : canvasTexture(source);
-        map.colorSpace = THREE.SRGBColorSpace;
-        return [key, map];
-      }));
-      const geometry = new THREE.PlaneGeometry(definition.width, definition.height);
-      let face;
-      let edge = null;
-      if (definition.painted) {
-        face = new THREE.Mesh(geometry, paintedMaterial(maps.idle));
-      } else {
-        edge = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x08090a, map: maps.idle, alphaMap: maps.idle, alphaTest: 0.08, transparent: true, side: THREE.DoubleSide }));
-        edge.scale.set(1.1, 1.07, 1);
-        edge.position.z = -0.055;
-        face = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff, map: maps.idle, alphaTest: 0.08, transparent: true, roughness: 0.95, metalness: 0, side: THREE.DoubleSide }));
-        face.castShadow = true;
-        group.add(edge);
-      }
-      face.position.z = 0.025;
-      group.add(face);
-      group.position.y = definition.height * 0.5 + (definition.lift ?? 0);
-      group.visible = false;
-      this.root.add(group);
-      return { group, face, edge, maps, definition };
-    });
+    this.loader = loader;
+    this.cards = definitions.map((definition) => this.buildCard(definition));
     this.setForm(0, true);
+  }
+
+  // A form painted later: each movement's art is painted when that movement
+  // is next, so the Borrowed Light cards arrive after the Night Service ones.
+  setCard(index, definition) {
+    if (this.cards[index]) this.root.remove(this.cards[index].group);
+    this.cards[index] = this.buildCard(definition);
+    if (index === this.phase) this.setForm(this.phase, true);
+  }
+
+  buildCard(definition) {
+    const loader = this.loader;
+    const group = new THREE.Group();
+    if (!definition) { this.root.add(group); group.visible = false; return { group, definition: null }; }
+    const maps = Object.fromEntries(Object.entries(definition.frames).map(([key, source]) => {
+      const map = typeof source === 'string' ? loader.load(source) : canvasTexture(source);
+      map.colorSpace = THREE.SRGBColorSpace;
+      return [key, map];
+    }));
+    const geometry = new THREE.PlaneGeometry(definition.width, definition.height);
+    let face;
+    let edge = null;
+    if (definition.painted) {
+      face = new THREE.Mesh(geometry, paintedMaterial(maps.idle));
+    } else {
+      edge = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: 0x08090a, map: maps.idle, alphaMap: maps.idle, alphaTest: 0.08, transparent: true, side: THREE.DoubleSide }));
+      edge.scale.set(1.1, 1.07, 1);
+      edge.position.z = -0.055;
+      face = new THREE.Mesh(geometry, new THREE.MeshStandardMaterial({ color: 0xffffff, map: maps.idle, alphaTest: 0.08, transparent: true, roughness: 0.95, metalness: 0, side: THREE.DoubleSide }));
+      face.castShadow = true;
+      group.add(edge);
+    }
+    face.position.z = 0.025;
+    group.add(face);
+    group.position.y = definition.height * 0.5 + (definition.lift ?? 0);
+    group.visible = false;
+    this.root.add(group);
+    return { group, face, edge, maps, definition };
   }
 
   setForm(phase, immediate = false) {
@@ -402,6 +473,8 @@ class SpectacleBattle {
     this.assets = new Map();
     this.assetErrors = [];
     this.assetsReady = false;
+    this.movementPrep = new Map();
+    this.readyMovements = new Set();
     this.worldRoots = [];
     this.hazards = [];
     this.projectiles = [];
@@ -714,78 +787,72 @@ class SpectacleBattle {
     this.scene.add(this.departureTrain);
   }
 
-  // Painted actors, floors and props. Called once the paper grain and the
-  // panorama chunks have loaded (and the fonts, for the claim names).
-  paintWorldArt(sources) {
-    const lostFront = paintLostPropertyFloor({ arena: ARENA, seams: PANEL_SEAMS, era: 'present', ...sources });
-    const lostPast = paintLostPropertyFloor({ arena: ARENA, seams: PANEL_SEAMS, era: 'past', ...sources });
+  // Movement I art: the carriage-wall floor (present and 1978), the lens rim,
+  // the Conductor's car, the ink trains and claim cases, and the paper actors
+  // (their Night Service and Painted Country forms). A step generator: every
+  // `yield` is a point where runSliced may hand the main thread back.
+  // Called once the paper grain and the panorama chunks have loaded (and the
+  // fonts, for the claim names).
+  *lostPropertyArt(sources) {
+    const floor = (era) => lostPropertyFloorSteps({ arena: ARENA, seams: PANEL_SEAMS, era, ...sources });
+    const lostFront = yield* floor('present');
+    const lostPast = yield* floor('past');
     this.lostFloor.material.dispose();
     this.lostFloor.material = lensFloorMaterial(canvasTexture(lostFront.canvas), canvasTexture(lostPast.canvas));
+    yield;
     const rim = paintLensRimCanvas(140);
     this.lensRim.material.map = canvasTexture(rim);
     this.lensRim.material.needsUpdate = true;
     const rimScale = (LENS_RADIUS * 2) * (rim.width / 280);
     this.lensRim.scale.set(rimScale, rimScale, 1);
+    yield;
     const backdrop = paintConductorCarBackdrop(sources);
     this.lostBackdrop.material.map = canvasTexture(backdrop);
     this.lostBackdrop.material.color.setHex(0x9a8a78);
     this.lostBackdrop.material.needsUpdate = true;
+    yield;
     this.trainArt = {
       side: canvasTexture(paintInkTrain({ era: 'present' })),
       sidePast: canvasTexture(paintInkTrain({ era: 'past' })),
       front: canvasTexture(paintInkTrainFront({ era: 'present' })),
       frontPast: canvasTexture(paintInkTrainFront({ era: 'past' })),
     };
-    this.caseArt = CLAIMS.map((claim, index) => ({
-      claim,
-      present: canvasTexture(paintClaimCase({ era: 'present', claim, seed: index + 3, tone: ['#6d4a2c', '#5b3a24', '#7a5a3a', '#4a3a30'][index % 4] })),
-      past: canvasTexture(paintClaimCase({ era: 'past', claim, seed: index + 3, tone: ['#6d4a2c', '#5b3a24', '#7a5a3a', '#4a3a30'][index % 4] })),
-    }));
-    // II
-    const pools = BELL_ARENA.nodes.map((node) => ({ x: node.x, z: node.z + 0.4, r: 3.4, alpha: 0.36, color: node.line === 'rose' ? 'rgba(230, 170, 150, 0.9)' : 'rgba(255, 190, 110, 0.9)' }));
-    const setMap = (mesh, canvas) => { mesh.material.map = canvasTexture(canvas); mesh.material.color.setHex(0xffffff); mesh.material.needsUpdate = true; };
-    setMap(this.rainRoofNear, paintRoofSection({ z0: BELL_ARENA.gapNearZ, z1: 10, lanes: LANE_X, lights: pools, rim: 'top', seed: 5 }));
-    setMap(this.rainRoofFar, paintRoofSection({ z0: CONDUCTOR_Z - 6, z1: BELL_ARENA.gapFarZ, lanes: LANE_X, lights: Object.values(LANE_X).map((x) => ({ x, z: CONDUCTOR_Z + 2, r: 4, alpha: 0.22 })), rim: 'bottom', seed: 9 }));
-    setMap(this.rainStreet, paintStreetBelow({ width: RAIN_FLOOR.x1 - RAIN_FLOOR.x0 + 30, depth: BELL_ARENA.gapNearZ - BELL_ARENA.gapFarZ + 2 }));
-    this.rainGapWalls.forEach((wall, index) => setMap(wall, paintGapWall({ width: RAIN_FLOOR.x1 - RAIN_FLOOR.x0 + 30, height: 7, seed: 4 + index })));
-    this.rainSkyline.material.map = canvasTexture(paintRainSkyline());
-    this.rainSkyline.material.color.setHex(0xffffff);
-    this.rainSkyline.material.needsUpdate = true;
-    const deck = canvasTexture(paintBridgeDeck(400, 150));
-    Object.values(this.bridgeMeshes).forEach(({ deck: mesh }) => { mesh.material.map = deck; mesh.material.needsUpdate = true; });
-    this.billboardArt = { dark: canvasTexture(paintBillboardFace(false)), lit: canvasTexture(paintBillboardFace(true)) };
-    Object.values(this.boardMeshes).forEach(({ face }) => { face.material.map = this.billboardArt.dark; face.material.color.setHex(0xffffff); face.material.needsUpdate = true; });
-    this.nodeArt = {};
-    ['amber', 'teal', 'rose'].forEach((line) => {
-      this.nodeArt[line] = Object.fromEntries(['idle', 'queued', 'powering'].map((state) => [state, canvasTexture(paintLampNode({ line, state }))]));
-    });
-    this.syncNodeArt(true);
-    // Actors
-    const butchInk = {
-      idle: paintInkButch({ pose: 'idle' }),
-      walk0: paintInkButch({ pose: 'walk', phase: 0 }), walk1: paintInkButch({ pose: 'walk', phase: 0.25 }),
-      walk2: paintInkButch({ pose: 'walk', phase: 0.5 }), walk3: paintInkButch({ pose: 'walk', phase: 0.75 }),
-      punch: paintInkButch({ pose: 'punch' }), hurt: paintInkButch({ pose: 'hurt' }), jump: paintInkButch({ pose: 'walk', phase: 0.12 }),
-    };
-    const butchRain = {
-      idle: paintRainFigure({ pose: 'idle' }),
-      walk0: paintRainFigure({ pose: 'run', phase: 0 }), walk1: paintRainFigure({ pose: 'run', phase: 0.25 }),
-      walk2: paintRainFigure({ pose: 'run', phase: 0.5 }), walk3: paintRainFigure({ pose: 'run', phase: 0.75 }),
-      punch: paintRainFigure({ pose: 'punch' }), hurt: paintRainFigure({ pose: 'hurt' }), jump: paintRainFigure({ pose: 'jump' }),
-    };
+    yield;
+    const caseArt = [];
+    for (const [index, claim] of CLAIMS.entries()) {
+      const tone = ['#6d4a2c', '#5b3a24', '#7a5a3a', '#4a3a30'][index % 4];
+      caseArt.push({
+        claim,
+        present: canvasTexture(paintClaimCase({ era: 'present', claim, seed: index + 3, tone })),
+        past: canvasTexture(paintClaimCase({ era: 'past', claim, seed: index + 3, tone })),
+      });
+      yield;
+    }
+    this.caseArt = caseArt;
+    // Actors: the Night Service ink forms now; the Borrowed Light rain forms
+    // are added by borrowedLightArt().
+    const butchInk = { idle: paintInkButch({ pose: 'idle' }) };
+    yield;
+    for (const [key, options] of [
+      ['walk0', { pose: 'walk', phase: 0 }], ['walk1', { pose: 'walk', phase: 0.25 }],
+      ['walk2', { pose: 'walk', phase: 0.5 }], ['walk3', { pose: 'walk', phase: 0.75 }],
+      ['punch', { pose: 'punch' }], ['hurt', { pose: 'hurt' }], ['jump', { pose: 'walk', phase: 0.12 }],
+    ]) {
+      butchInk[key] = paintInkButch(options);
+      yield;
+    }
     this.puppet = new PaperActor(this.textureLoader, [
       { painted: true, width: 2.4 * (64 / 86), height: 2.4, frames: butchInk },
-      { painted: true, width: 2.6 * (butchRain.idle.width / butchRain.idle.height), height: 2.6, frames: butchRain, lift: -0.1 },
+      null,
       null,
       { width: 1.5, height: 2.5, frames: { idle: ch4ButchIdleUrl, walk0: ch4ButchIdleUrl, walk1: ch4ButchWalk1Url, walk2: ch4ButchWalk2Url, walk3: ch4ButchWalk3Url, jump: ch4ButchWalk1Url } },
     ]);
     this.playerRoot.add(this.puppet.root);
-    const conductorRain = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4 });
-    const conductorRainLit = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4, lit: true });
+    yield;
     const conductorInk = paintInkConductor({});
     this.conductorPaper = new PaperActor(this.textureLoader, [
       { painted: true, width: 3.8 * (conductorInk.width / conductorInk.height), height: 3.8, frames: { idle: conductorInk } },
-      { painted: true, width: 3.9 * (conductorRain.width / conductorRain.height), height: 3.9, frames: { idle: conductorRain, punch: conductorRainLit, hurt: conductorRainLit } },
+      null,
       null,
       { width: 1.75, height: 3.8, frames: { idle: ch4ConductorUrl } },
     ]);
@@ -803,12 +870,65 @@ class SpectacleBattle {
         diffuseColor.rgb = mix(diffuseColor.rgb, paintColor, paintEdge * 0.82);`);
     };
     paintedConductorFace.material.customProgramCacheKey = () => 'paint-creep-v1';
-    // He stands far back: keep the fog off his painted cards so he reads.
-    this.conductorPaper.cards.forEach((card) => { if (card.face?.material) card.face.material.fog = false; });
+    this.keepConductorOutOfFog();
     this.conductorRoot.add(this.conductorPaper.root);
     this.setConductorWorld(this.phase, true);
     this.puppet.setForm(this.phase, true);
     this.puppet.root.visible = this.phase !== 2;
+  }
+
+  // He stands far back: keep the fog off his painted cards so he reads.
+  keepConductorOutOfFog() {
+    this.conductorPaper?.cards.forEach((card) => { if (card.face?.material) card.face.material.fog = false; });
+  }
+
+  // Movement II art: wet roofs over the street gap, the skyline, bridges,
+  // billboards, the lamp nodes and the rain forms of Butch and the Conductor.
+  *borrowedLightArt() {
+    const pools = BELL_ARENA.nodes.map((node) => ({ x: node.x, z: node.z + 0.4, r: 3.4, alpha: 0.36, color: node.line === 'rose' ? 'rgba(230, 170, 150, 0.9)' : 'rgba(255, 190, 110, 0.9)' }));
+    const setMap = (mesh, canvas) => { mesh.material.map = canvasTexture(canvas); mesh.material.color.setHex(0xffffff); mesh.material.needsUpdate = true; };
+    setMap(this.rainRoofNear, paintRoofSection({ z0: BELL_ARENA.gapNearZ, z1: 10, lanes: LANE_X, lights: pools, rim: 'top', seed: 5 }));
+    yield;
+    setMap(this.rainRoofFar, paintRoofSection({ z0: CONDUCTOR_Z - 6, z1: BELL_ARENA.gapFarZ, lanes: LANE_X, lights: Object.values(LANE_X).map((x) => ({ x, z: CONDUCTOR_Z + 2, r: 4, alpha: 0.22 })), rim: 'bottom', seed: 9 }));
+    yield;
+    setMap(this.rainStreet, paintStreetBelow({ width: RAIN_FLOOR.x1 - RAIN_FLOOR.x0 + 30, depth: BELL_ARENA.gapNearZ - BELL_ARENA.gapFarZ + 2 }));
+    yield;
+    for (const [index, wall] of this.rainGapWalls.entries()) {
+      setMap(wall, paintGapWall({ width: RAIN_FLOOR.x1 - RAIN_FLOOR.x0 + 30, height: 7, seed: 4 + index }));
+      yield;
+    }
+    this.rainSkyline.material.map = canvasTexture(paintRainSkyline());
+    this.rainSkyline.material.color.setHex(0xffffff);
+    this.rainSkyline.material.needsUpdate = true;
+    yield;
+    const deck = canvasTexture(paintBridgeDeck(400, 150));
+    Object.values(this.bridgeMeshes).forEach(({ deck: mesh }) => { mesh.material.map = deck; mesh.material.needsUpdate = true; });
+    this.billboardArt = { dark: canvasTexture(paintBillboardFace(false)), lit: canvasTexture(paintBillboardFace(true)) };
+    Object.values(this.boardMeshes).forEach(({ face }) => { face.material.map = this.billboardArt.dark; face.material.color.setHex(0xffffff); face.material.needsUpdate = true; });
+    yield;
+    const nodeArt = {};
+    for (const line of ['amber', 'teal', 'rose']) {
+      nodeArt[line] = Object.fromEntries(['idle', 'queued', 'powering'].map((state) => [state, canvasTexture(paintLampNode({ line, state }))]));
+      yield;
+    }
+    this.nodeArt = nodeArt;
+    this.syncNodeArt(true);
+    const butchRain = {};
+    for (const [key, options] of [
+      ['idle', { pose: 'idle' }],
+      ['walk0', { pose: 'run', phase: 0 }], ['walk1', { pose: 'run', phase: 0.25 }],
+      ['walk2', { pose: 'run', phase: 0.5 }], ['walk3', { pose: 'run', phase: 0.75 }],
+      ['punch', { pose: 'punch' }], ['hurt', { pose: 'hurt' }], ['jump', { pose: 'jump' }],
+    ]) {
+      butchRain[key] = paintRainFigure(options);
+      yield;
+    }
+    this.puppet.setCard(1, { painted: true, width: 2.6 * (butchRain.idle.width / butchRain.idle.height), height: 2.6, frames: butchRain, lift: -0.1 });
+    const conductorRain = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4 });
+    const conductorRainLit = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4, lit: true });
+    this.conductorPaper.setCard(1, { painted: true, width: 3.9 * (conductorRain.width / conductorRain.height), height: 3.9, frames: { idle: conductorRain, punch: conductorRainLit, hurt: conductorRainLit } });
+    this.keepConductorOutOfFog();
+    this.setConductorWorld(this.phase, true);
   }
 
   buildHud() {
@@ -939,24 +1059,75 @@ class SpectacleBattle {
     return true;
   }
 
+  // Nothing heavy runs before the menu is on screen and taking input. Then
+  // each movement's art and models are prepared in order, in short slices
+  // (runSliced), while the player reads the board or fights the movement
+  // before it. begin() and the world transitions wait on prepareMovement(),
+  // so a movement never opens on unpainted placeholders.
   async loadAssets() {
-    const artPromise = loadFinaleArtSources().then(async (sources) => {
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    for (let index = 0; index < PHASES.length; index += 1) await this.prepareMovement(index);
+    this.assetsReady = true;
+  }
+
+  // Resolves when movement `index` (and every movement before it) is ready.
+  prepareMovement(index) {
+    const target = THREE.MathUtils.clamp(Math.round(index), 0, PHASES.length - 1);
+    if (!this.movementPrep.has(target)) {
+      const previous = target > 0 ? this.prepareMovement(target - 1) : Promise.resolve();
+      this.movementPrep.set(target, previous.then(() => this.buildMovementAssets(target)).catch((error) => {
+        this.assetErrors.push({ id: `movement-${target}`, message: error?.message || String(error) });
+      }).finally(() => this.readyMovements.add(target)));
+    }
+    return this.movementPrep.get(target);
+  }
+
+  movementReady(index) {
+    return this.readyMovements.has(index);
+  }
+
+  async buildMovementAssets(index) {
+    const uploads = [];
+    if (index === 0) {
+      const sources = await loadFinaleArtSources();
       await (document.fonts?.ready ?? Promise.resolve());
-      this.paintWorldArt(sources);
-    }).catch((error) => this.assetErrors.push({ id: 'finale-art', message: error?.message || String(error) }));
+      await runSliced(this.lostPropertyArt(sources), { sink: uploads });
+    } else if (index === 1) {
+      await runSliced(this.borrowedLightArt(), { sink: uploads });
+    } else if (index === 2) {
+      await this.loadEchoCityModels();
+    }
+    // Upload the new textures now, one per slice, rather than all at once on
+    // the first frame that shows them.
+    await runSliced((function* upload(renderer) {
+      for (const texture of uploads) { renderer.initTexture(texture); yield; }
+    }(this.renderer)), { budgetMs: 8 });
+  }
+
+  // Movement III draws the two Chapter 3 rigs, their animation library and
+  // the three civic props the Conductor throws.
+  async loadEchoCityModels() {
     await MeshoptDecoder.ready;
     const urls = { conductor: PUBLIC_ASSETS.conductorUrl, butch: PUBLIC_ASSETS.butchUrl, chapter3Animations: PUBLIC_ASSETS.chapter3AnimationsUrl, trash: PUBLIC_ASSETS.trashUrl, bench: PUBLIC_ASSETS.benchUrl, speaker: PUBLIC_ASSETS.speakerUrl };
-    await Promise.all([artPromise, ...Object.entries(urls).map(async ([id, url]) => {
+    // Fetch together (the 5→6 film's preloader has usually cached them),
+    // then parse one model per slice.
+    const bytes = Object.fromEntries(Object.entries(urls).map(([id, url]) => [id, fetch(url).then((response) => {
+      if (!response.ok) throw new Error(`${response.status} ${url}`);
+      return response.arrayBuffer();
+    })]));
+    Object.values(bytes).forEach((promise) => promise.catch(() => {}));
+    for (const [id, url] of Object.entries(urls)) {
       try {
-        const gltf = await this.loader.loadAsync(url);
+        const gltf = await this.loader.parseAsync(await bytes[id], THREE.LoaderUtils.extractUrlBase(url));
         this.assets.set(id, { root: shadows(gltf.scene), animations: gltf.animations });
       } catch (error) {
         this.assetErrors.push({ id, message: error?.message || String(error) });
       }
-    })]);
+      await yieldToMain();
+    }
     this.installConductor();
+    await yieldToMain();
     this.installButch();
-    this.assetsReady = true;
   }
 
   cloneAsset(id, height, width = Infinity) {
@@ -1988,8 +2159,13 @@ class SpectacleBattle {
   updateTransition(dt) {
     if (!this.transition) return false;
     const tr = this.transition;
+    // A world never opens before its art and models are ready: hold the
+    // ticket inspection, or the fall just before the switch, until they are.
+    const nextReady = this.movementReady(tr.nextPhase);
+    if (!nextReady) this.prepareMovement(tr.nextPhase);
     if (tr.kind === 'verified') {
       tr.time += dt;
+      if (!nextReady) tr.time = Math.min(tr.time, tr.duration - 0.001);
       const ticket = this.stampScene?.querySelector('.nf-stamp-ticket');
       if (tr.time > 1.6 && ticket && !ticket.classList.contains('is-punched')) { ticket.classList.add('is-punched'); bellAudio.punchClack(); }
       const stamp = this.stampScene?.querySelector('.nf-stamp');
@@ -1998,6 +2174,7 @@ class SpectacleBattle {
       return true;
     }
     tr.time += dt;
+    if (!nextReady && !tr.switched) tr.time = Math.min(tr.time, tr.duration * 0.54);
     const t = Math.min(1, tr.time / tr.duration);
     if (t < 0.42) {
       const open = THREE.MathUtils.smootherstep(t, 0, 0.42);
@@ -2642,6 +2819,12 @@ class SpectacleBattle {
     this.lastFrame = now;
     if (globalThis.NIGHTFALL_PAUSED) { this.render(0); return; }
     this.update(dt);
+    // Behind the departure board the stage is dimmed and still: redraw it
+    // at a quarter rate there, leaving the GPU to the movements' uploads.
+    if (this.mode === 'menu') {
+      this.menuFrame = ((this.menuFrame ?? -1) + 1) % 4;
+      if (this.menuFrame !== 0) return;
+    }
     this.render(dt);
   }
 
@@ -2736,10 +2919,23 @@ installPauseMenu({
 createSaveStore().markCheckpoint('chapter-6-start');
 
 const menu = document.querySelector('#menu');
+const startButton = document.querySelector('#start');
+let departing = false;
+// The board is interactive as soon as it is drawn; Movement I's art is
+// painted in the background meanwhile. A very quick DEPART waits on it with
+// the button saying so, rather than opening on placeholders.
 const startFight = () => {
-  if (game.mode !== 'menu') return;
-  menu.classList.add('hidden');
-  game.assetsPromise.finally(() => game.begin());
+  if (game.mode !== 'menu' || departing) return;
+  departing = true;
+  if (!game.movementReady(0) && startButton) {
+    startButton.disabled = true;
+    startButton.setAttribute('aria-busy', 'true');
+    startButton.firstChild.textContent = 'PREPARING THE CARRIAGE… ';
+  }
+  game.prepareMovement(0).finally(() => {
+    menu.classList.add('hidden');
+    game.begin();
+  });
 };
 
 // Arriving from Chapter 5 (the Museum's collapse film ends on black): the
@@ -2750,20 +2946,22 @@ if (new URLSearchParams(window.location.search).get('from') === 'chapter5') {
   curtain.className = 'nf-entry-blackout';
   curtain.innerHTML = '<span>THE LAST CARRIAGE</span><small>THE CONDUCTOR IS WAITING</small>';
   document.body.append(curtain);
-  game.assetsPromise.finally(() => {
-    requestAnimationFrame(() => requestAnimationFrame(() => curtain.classList.add('is-revealed')));
+  // Lift as soon as the board has been drawn: the fight's art keeps loading
+  // behind it (SpectacleBattle.loadAssets).
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    curtain.classList.add('is-revealed');
     window.setTimeout(() => curtain.remove(), 1400);
-    document.querySelector('#start')?.focus({ preventScroll: true });
-  });
+    startButton?.focus({ preventScroll: true });
+  }));
 } else if (conductorTestMovement !== null) {
   menu.classList.add('hidden');
-  game.assetsPromise.finally(() => game.begin({ movement: conductorTestMovement }));
+  game.prepareMovement(conductorTestMovement).finally(() => game.begin({ movement: conductorTestMovement }));
 }
 
 window.addEventListener('keydown', (event) => {
   if (event.code === 'Enter' && game.mode === 'menu' && !menu.classList.contains('hidden') && !globalThis.NIGHTFALL_PAUSED) startFight();
 });
-document.querySelector('#start').addEventListener('click', startFight);
+startButton.addEventListener('click', startFight);
 
 document.querySelectorAll('.nf-segmented').forEach((group) => group.addEventListener('click', (event) => {
   const button = event.target.closest('button');
