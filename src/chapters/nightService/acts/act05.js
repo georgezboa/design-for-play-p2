@@ -86,7 +86,8 @@ export const ACT05 = defineAct({
           hotspots: [{
             id: 'keys', kind: 'zoom', to: 'keys', rect: [0.27, 0.34, 0.08, 0.14], zoomRect: KEY_ZOOM,
             requires: wireLive,
-            tag: { x: 0.335, y: 0.42, angle: 0.5, scale: 1.1 },
+            // hangs to the left of the key, clear of the desk bell below
+            tag: { x: 0.296, y: 0.425, angle: 2.75, scale: 1.1 },
           }],
         },
         keys: {

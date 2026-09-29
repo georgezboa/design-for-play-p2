@@ -1459,7 +1459,7 @@ export class PanelScene extends Phaser.Scene {
       if (h) {
         const glow = this.add.image((h.rect[0] + h.rect[2] / 2) * view.w, (h.rect[1] + h.rect[3] / 2) * view.h, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(h.rect[2] * view.w * 2, h.rect[3] * view.h * 2).setAlpha(0);
         view.fxLayer.add(glow);
-        this.tweens.add({ targets: glow, alpha: 0.5, duration: 600, yoyo: true, onComplete: () => glow.destroy() });
+        this.tweens.add({ targets: glow, alpha: 0.65, duration: 700, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
       }
     } else if (hint.edge) {
       const { side, at } = hint.edge;
@@ -1620,9 +1620,11 @@ export class PanelScene extends Phaser.Scene {
       const frame = gesture.kind === 'frame';
       const slot = pts.slot;
       const g = this.add.graphics();
-      if (!frame) { g.fillStyle(0xffc46a, 0.08); g.fillRoundedRect(-slot.w / 2, -slot.h / 2, slot.w, slot.h, 16); }
-      g.lineStyle(frame ? 10 : 4, frame ? 0xb08a4a : 0xffd9a0, 0.9);
-      g.strokeRoundedRect(-slot.w / 2, -slot.h / 2, slot.w, slot.h, 16);
+      // a translucent ghost of the window, inset so it never hides in the bezel
+      const inset = frame ? 0 : 14;
+      if (!frame) { g.fillStyle(0xffc46a, 0.16); g.fillRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14); }
+      g.lineStyle(frame ? 10 : 4, frame ? 0xb08a4a : 0xffd9a0, 0.95);
+      g.strokeRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14);
       layer.add(g);
       carried = g;
       carried.offX = 0;
