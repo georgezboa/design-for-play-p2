@@ -31,11 +31,13 @@ panoramas*).
 | 5 | · Object Pending Classification (lobby exhibit) | `one-answer.html` | `src/chapters/nightService/acts/oneAnswer.js`, `src/chapters/museum3d/oneAnswer/` |
 | 5 | · Painted Country revisit (dev only: not a production build input, since the Museum no longer opens it; kept for the Chapter 4 owner) | `chapter05-painted-country.html` | `src/chapters/paintedCountry/painted-country-main.js` |
 | 6 | ALL WORLDS AT ONCE — the Conductor | `final-boss.html` | `src/chapters/finalBoss/` |
-| 6 | BLACK KNIFE — hidden finale (all five stones) | `hidden-final-boss.html` | `src/chapters/blackKnifeFinal/` |
+| 6 | THE BLACK TICKET — hidden finale, the Conductor's true form (all five stones; code ids keep `black-knife`) | `hidden-final-boss.html` | `src/chapters/blackKnifeFinal/` |
 | — | The Unfiled Ending | `true-ending.html` | `src/trueEnding-main.js` |
 
 Shared pieces: `src/shell/` (title menu, save slots and checkpoints, pause
-menu, settings, cinematics and chapter preloading, magic stones, credits),
+menu with keyboard and gamepad navigation, the return-to-title fade, frame
+pacing for the 3D pages, settings, cinematics and chapter preloading, magic
+stones, credits),
 `src/shared/` (music director, audio focus), `src/fonts/`, and the transition
 films in `public/cinematics/`. Chapter 3's runtime is locked by
 `tests/car03/chapter3TemporaryFinalLock.test.mjs`; reopen the lock before
