@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACT3 } from '../../src/chapters/nightService/acts/act3.js';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
-import { RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
+import { HEDGE, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
 import { createPanelModel, validateAct } from '../../src/chapters/nightService/panelModel.js';
 import { apply, availableActions, record, settle } from './helpers.mjs';
 
@@ -12,6 +12,12 @@ const fresh = () => createPanelModel(ACT3, { carry: startCarry('act3') });
 function lensOnGap(model) {
   const r = model.slotRect('gap');
   model.moveLens(r.x + r.w * 0.5, r.y + r.h * RAIL_AT);
+}
+
+/** Hold 1978 over the lane's joint (the hedge is an open gate there). */
+function lensOnHedge(model) {
+  const r = model.slotRect('hawthorn');
+  model.moveLens(r.x + r.w * HEDGE.lens[0], r.y + r.h * HEDGE.lens[1]);
 }
 
 function arrange(model, target = TARGET) {
@@ -41,6 +47,10 @@ function solveAct3(model) {
     arrange(model);
     if (model.state.tiles.orchard.state === 'house') model.zoomOut('orchard');
     settle(model);
+    if (!model.evaluate({ arrived: 'lane' }) && model.state.stepIndex > 0) {
+      lensOnHedge(model);
+      settle(model, { maxMs: 120000 });
+    }
     lensOnGap(model);
     settle(model, { maxMs: 120000 });
   }
@@ -88,17 +98,24 @@ test('Act 3: overlaying the frame on the house from the hill does nothing until 
   assert.equal(model.textState().step, 'windows');
   assert.ok(model.zoomIn('orchard', 'house'));
   settle(model);
-  assert.equal(model.textState().step, 'lane');
+  assert.equal(model.textState().step, 'hedge');
 });
 
 test('Act 3: Mara follows the lane only in city → hawthorn → orchard order, and only from the hill', () => {
-  const model = createPanelModel(ACT3, { carry: startCarry('act3'), step: 'lane' });
+  const model = createPanelModel(ACT3, { carry: startCarry('act3'), step: 'hedge' });
   settle(model);
   const mara = model.state.actors.mara;
   assert.equal(mara.tile, 'city');
   assert.ok(mara.blocked, 'the city room is not left of the lane yet');
   // city | hawthorn | orchard across the top, but the orchard still close-up
   arrange(model, ['city', 'hawthorn', 'orchard', 'gap', 'platform', 'carriage']);
+  assert.equal(mara.tile, 'hawthorn');
+  assert.ok(mara.blocked, 'the hedge: today the lane stops here');
+  assert.ok(Math.abs(mara.x - HEDGE.wait) < 1e-6);
+  assert.equal(model.textState().step, 'lane');
+  assert.equal(model.findLink('hawthorn', 'orchard', 'path'), null, 'no lane from the close-up house, nor in the present');
+  lensOnHedge(model);
+  settle(model);
   assert.equal(mara.tile, 'hawthorn');
   assert.ok(mara.blocked, 'the close-up house has no lane: zoom out');
   model.zoomOut('orchard');
@@ -112,6 +129,31 @@ test('Act 3: Mara follows the lane only in city → hawthorn → orchard order, 
   settle(model);
   assert.ok(model.findLink('orchard', 'platform', 'stair'));
   assert.ok(model.evaluate({ arrived: 'lane' }));
+});
+
+test('Act 3: the hedge is a 1978 edge — Mara crosses only while the lens holds the joint', () => {
+  const model = createPanelModel(ACT3, { carry: startCarry('act3'), step: 'hedge' });
+  arrange(model);
+  model.zoomOut('orchard');
+  settle(model);
+  const mara = model.state.actors.mara;
+  assert.equal(mara.tile, 'hawthorn');
+  assert.ok(mara.blocked);
+  // the past-era edge lives only under the lens
+  assert.equal(model.findLink('hawthorn', 'orchard', 'path'), null);
+  lensOnHedge(model);
+  assert.equal(model.findLink('hawthorn', 'orchard', 'path')?.era, 'past');
+  // take the lens away mid-hedge: she steps back to the gap in the hedge
+  for (let i = 0; i < 400 && mara.x < HEDGE.x + 0.05; i += 1) model.update(50);
+  assert.equal(mara.tile, 'hawthorn');
+  model.moveLens(200, 900);
+  for (let i = 0; i < 200; i += 1) model.update(50);
+  assert.ok(mara.blocked);
+  assert.ok(Math.abs(mara.x - HEDGE.wait) < 1e-6, `she backs off to the hedge (x ${mara.x})`);
+  lensOnHedge(model);
+  settle(model, { maxMs: 60000 });
+  assert.ok(model.evaluate({ arrived: 'lane' }));
+  assert.equal(model.textState().step, 'bridge');
 });
 
 test('Act 3: the rail links only through the lens; the train stops safely if it moves', () => {

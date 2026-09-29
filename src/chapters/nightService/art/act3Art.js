@@ -191,24 +191,94 @@ function hawthornTree(c, x, y, s, seed) {
   }
 }
 
+/** Where the lane meets the next window: overgrown today, open in 1978. */
+export const HEDGE = Object.freeze({ x: 0.8, lens: [0.9, PATH_AT], wait: 0.68 });
+
+function hedge(c, w, h, seed) {
+  // today the lane's far end is a hawthorn hedge grown right across it
+  const random = rng(seed);
+  const x0 = w * HEDGE.x;
+  const y = h * PATH_AT;
+  c.fillStyle = '#10180f';
+  c.beginPath();
+  c.moveTo(x0, y + 22);
+  for (let k = 0; k <= 12; k += 1) {
+    const t = k / 12;
+    c.lineTo(x0 + (w + 30 - x0) * t, y - 60 - Math.sin(t * 9 + seed) * 10 - random() * 14);
+  }
+  c.lineTo(w + 30, y + 22);
+  c.closePath();
+  c.fill();
+  for (let i = 0; i < 90; i += 1) {
+    const bx = x0 + random() * (w - x0 + 20);
+    const by = y - 62 + random() * 80;
+    c.fillStyle = random() > 0.5 ? '#223320' : '#1a2818';
+    c.beginPath(); c.ellipse(bx, by, 6 + random() * 9, 4 + random() * 6, random() * 3, 0, Math.PI * 2); c.fill();
+  }
+  // thorns and bare twigs, inked
+  for (let i = 0; i < 26; i += 1) {
+    const bx = x0 + random() * (w - x0 + 10);
+    const by = y - 50 + random() * 60;
+    ink(c, [[bx, by], [bx + (random() - 0.5) * 22, by - 6 - random() * 14], [bx + (random() - 0.5) * 30, by - 12 - random() * 18]], { w: 1.1, alpha: 0.55, jitter: 0.8, bleed: false });
+  }
+  // may blossom, pale in the night
+  for (let i = 0; i < 40; i += 1) {
+    c.fillStyle = 'rgba(235, 228, 210, 0.55)';
+    c.beginPath(); c.arc(x0 + random() * (w - x0), y - 58 + random() * 60, 1 + random() * 1.4, 0, Math.PI * 2); c.fill();
+  }
+  ink(c, [[x0 - 4, y + 20], [x0 + 6, y - 40], [x0 + 30, y - 62]], { w: 1.8, alpha: 0.7 });
+}
+
+function openGate(c, w, h) {
+  // 1978: the lane runs on through an open five-bar gate
+  const gx = w * 0.86;
+  const y = h * PATH_AT;
+  ink(c, [[gx, y + 6], [gx, y - 58]], { w: 4, color: '#3a2a18', bleed: false });
+  ink(c, [[gx, y + 6], [gx, y - 58]], { w: 1.6 });
+  c.save();
+  c.translate(gx, y - 52);
+  c.transform(0.45, -0.18, 0, 1, 0, 0);
+  for (let k = 0; k < 5; k += 1) ink(c, [[0, k * 11], [-90, k * 11]], { w: 2.4, color: '#5a4228', bleed: false });
+  ink(c, [[0, 0], [-90, 44]], { w: 2, color: '#5a4228', bleed: false });
+  c.restore();
+  // a lamp hung on the gatepost for whoever comes home late
+  c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(gx + 8, y - 62, 5, 0, Math.PI * 2); c.fill();
+  glow(c, gx + 8, y - 62, 70, 'rgba(255, 210, 130, 0.95)', 0.6);
+}
+
+function hawthornBase(c, env, w, h) {
+  cropFull(c, env, 'nsv-w07-1', [2130, 150, 670, 517], w, h);
+  c.save();
+  c.globalCompositeOperation = 'soft-light';
+  c.fillStyle = 'rgba(255, 170, 120, 0.3)';
+  c.fillRect(-30, -30, w + 60, h + 60);
+  c.restore();
+  lane(c, w, h, { seed: 311, past: PAST(env) });
+  hawthornTree(c, w * 0.2, h * PATH_AT + 4, 1.25, 312);
+  // a low dry-stone wall behind the lane
+  c.fillStyle = '#4a4436';
+  for (let x = w * 0.36; x < w + 20; x += 22) { c.fillRect(x, h * PATH_AT - 22 + (x % 3), 20, 18); }
+  ink(c, [[w * 0.36, h * PATH_AT - 24], [w + 10, h * PATH_AT - 24]], { w: 1.6, alpha: 0.8 });
+  if (PAST(env)) openGate(c, w, h);
+  else hedge(c, w, h, 313);
+}
+
 export function drawHawthorn(ctx) {
   const { w, h } = ctx;
   ctx.paint('act3-hawthorn', (c, env) => {
-    cropFull(c, env, 'nsv-w07-1', [2130, 150, 670, 517], w, h);
-    c.save();
-    c.globalCompositeOperation = 'soft-light';
-    c.fillStyle = 'rgba(255, 170, 120, 0.3)';
-    c.fillRect(-30, -30, w + 60, h + 60);
-    c.restore();
-    lane(c, w, h, { seed: 311, past: PAST(env) });
-    hawthornTree(c, w * 0.2, h * PATH_AT + 4, 1.25, 312);
-    // a low dry-stone wall behind the lane
-    c.fillStyle = '#4a4436';
-    for (let x = w * 0.36; x < w + 20; x += 22) { c.fillRect(x, h * PATH_AT - 22 + (x % 3), 20, 18); }
-    ink(c, [[w * 0.36, h * PATH_AT - 24], [w + 10, h * PATH_AT - 24]], { w: 1.6, alpha: 0.8 });
+    hawthornBase(c, env, w, h);
     finish(c, env, { vig: 0.45 });
   });
   ctx.dust(0, h * 0.2, w, h * 0.45, { count: 14, color: 0xffe8c0 });
+}
+
+export function drawHawthornPast(ctx) {
+  const { w, h } = ctx;
+  ctx.paint('act3-hawthorn-past', (c, env) => {
+    hawthornBase(c, env, w, h);
+    finish(c, env, { vig: 0.45 });
+  });
+  ctx.glow(w * 0.87, h * PATH_AT - h * 0.15, 120, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
 }
 
 // ---------------------------------------------------------------------------

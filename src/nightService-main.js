@@ -5,15 +5,16 @@
 // settings, reduce motion, text size, saves, magic stones and cinematics.
 //
 // Which act opens:
-//   production — the active save slot's checkpoint (chapter-1-start → Act 1,
+//   production — the active save slot's checkpoint (chapter-1-start → Act 0,
+//                chapter-1-act-05 → Act 0.5, chapter-1-act-1 → Act 1,
 //                chapter-1-act-2 → Act 2, chapter-1-act-3 → Act 3; the legacy
-//                prologue-start resumes Act 1). URL parameters are ignored.
-//   development — `?act=1|2|3` and `?step=<step id>` override the save.
+//                prologue-start resumes Act 0). URL parameters are ignored.
+//   development — `?act=0|0.5|1|2|3` and `?step=<step id>` override the save.
 
 import Phaser from 'phaser';
 import './fonts/fonts.css';
 import { PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
-import { ACTS, CHECKPOINT_ACTS, resolveActParam } from './chapters/nightService/acts/index.js';
+import { ACTS, CHECKPOINT_ACTS, FIRST_ACT, resolveActParam, startCarry } from './chapters/nightService/acts/index.js';
 import { createNightServiceAudio } from './chapters/nightService/audio.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
@@ -32,7 +33,7 @@ const store = createSaveStore();
 
 function savedAct() {
   const save = store.readAll()[store.getActiveSlot()];
-  return CHECKPOINT_ACTS[save?.checkpointId] ?? 'act1';
+  return CHECKPOINT_ACTS[save?.checkpointId] ?? FIRST_ACT;
 }
 
 const params = devParams();
@@ -45,6 +46,8 @@ let scene = null;
 const pause = installPauseMenu({
   checkpointId: 'chapter-1-start',
   controls: CHAPTER_CONTROLS.nightServicePanels,
+  // SHOW ME: the ghost hand performs the current step's gesture once (tier 2)
+  extraActions: [{ label: 'SHOW ME', onSelect: () => window.dispatchEvent(new CustomEvent('nightfall:hint')) }],
   // Escape first backs out of whatever is in the player's hands.
   onEscape: () => (scene?.sys?.isActive() ? scene.escape() : false),
 });
@@ -113,7 +116,11 @@ const boot = async () => {
   // captions use the bundled Space Mono; wait briefly so the first line never
   // renders in a fallback face
   try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
-  game.scene.add(PANEL_SCENE, PanelScene, true, { actId: startAct, step: startStep, services });
+  // dev only: `?from=act0` opens the act as if the previous one just ended
+  // (so the carriage wall grows in place) — params are empty in production
+  const fromAct = ACTS[params.get('from')] ? params.get('from') : null;
+  const carry = fromAct ? { ...startCarry(startAct), slots: ACTS[fromAct].endSlots ?? ACTS[fromAct].slots } : undefined;
+  game.scene.add(PANEL_SCENE, PanelScene, true, { actId: startAct, step: startStep, services, fromAct, carry });
   scene = game.scene.getScene(PANEL_SCENE);
   document.documentElement.dataset.nightServiceAct = startAct;
 };

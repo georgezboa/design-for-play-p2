@@ -14,6 +14,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['LIFT A FRAME', 'HOLD ITS EDGE · F'],
     ['PUNCH-HOLE LENS', 'DRAG IT · L + ARROWS'],
     ['CONTINUE / READ', 'CLICK · ENTER'],
+    ['SHOW ME (A HINT)', 'PAUSE → SHOW ME · H'],
     ['PAUSE', 'ESC'],
   ),
   borrowedLight: list(

@@ -130,6 +130,20 @@ export function createNightServiceAudio({ music = true } = {}) {
     whistle() { [740, 988].forEach((f) => tone(f, { type: 'triangle', peak: 0.06, decay: 1.3, attack: 0.08 })); tone(740, { type: 'sine', t: 1.1, peak: 0.05, decay: 0.8, attack: 0.05 }); },
     reveal() { [392, 494, 587, 784].forEach((f, i) => tone(f, { t: i * 0.16, peak: 0.07, decay: 2.2 })); },
     stone() { [523, 784, 1046, 1568].forEach((f, i) => tone(f, { t: i * 0.09, peak: 0.07, decay: 1.4 })); },
+    // Act 0 / 0.5: the brass desk bell (a small, bright ting), the sliding wall,
+    // the key line's carrier and the stores lock
+    deskBell() {
+      [[2093, 0.12, 1.6], [2637, 0.06, 1.2], [4186, 0.03, 0.7], [1046, 0.04, 1.9]].forEach(([f, p, d]) => tone(f, { peak: p, decay: d, attack: 0.002 }));
+      burst({ dur: 0.02, peak: 0.12, freq: 5200, q: 2 });
+    },
+    shutter() {
+      burst({ dur: 1.1, peak: 0.07, freq: 380, to: 220, q: 1.4, attack: 0.2 });
+      tone(62, { type: 'triangle', peak: 0.12, decay: 0.9, attack: 0.25, to: 48 });
+      burst({ t: 1.15, dur: 0.08, peak: 0.2, freq: 700, q: 1 });
+      tone(96, { type: 'triangle', t: 1.15, peak: 0.16, decay: 0.2, to: 60 });
+    },
+    carrier() { burst({ dur: 0.9, peak: 0.08, freq: 1800, to: 3800, q: 6, attack: 0.05 }); tone(880, { type: 'sine', peak: 0.02, decay: 0.8, to: 1320, attack: 0.05 }); },
+    lock() { burst({ dur: 0.03, peak: 0.4, freq: 2600, q: 3 }); tone(220, { type: 'triangle', peak: 0.18, decay: 0.08, to: 140 }); burst({ t: 0.18, dur: 0.04, peak: 0.3, freq: 1900, q: 3 }); tone(160, { type: 'triangle', t: 0.18, peak: 0.16, decay: 0.1, to: 90 }); },
   };
 
   function play(name) {

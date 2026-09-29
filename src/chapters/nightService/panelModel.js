@@ -62,6 +62,51 @@ export function layoutGrid(grid, view = VIEW) {
   return { cols, rows, gutter, tileW, tileH, x: x0, y: y0, w: totalW, h: totalH, view, slots };
 }
 
+/**
+ * The carriage-window size every small grid shares (the 2×2 window), so the
+ * wall can grow from one window to two to four without repainting a panel:
+ * Acts 0 and 0.5 pass it as `grid.tile`.
+ */
+export const CARRIAGE_TILE = Object.freeze((() => {
+  const two = layoutGrid({ cols: 2, rows: 2 });
+  return { w: two.tileW, h: two.tileH };
+})());
+
+/**
+ * Grid growth between two acts (the carriage wall slides open): where each
+ * window of the new act starts and ends. `keep` maps a new tile id to the old
+ * tile it continues (it slides from the old slot to its new one); every other
+ * tile of the new act opens in place behind a sliding wall panel.
+ *
+ * @param {object} fromAct   the act that just ended
+ * @param {object} toAct     the act that is starting
+ * @param {object} [o]
+ * @param {Array}  [o.fromSlots]  the old act's final slot order (defaults to its start)
+ * @param {Array}  [o.toSlots]    the new act's slot order (defaults to its start)
+ * @returns {{from: object, to: object, windows: Array<{tile, kind, from, to}>}}
+ */
+export function planGrowth(fromAct, toAct, { fromSlots = null, toSlots = null, keep = null, view = VIEW } = {}) {
+  const from = layoutGrid(fromAct.grid ?? {}, view);
+  const to = layoutGrid(toAct.grid ?? {}, view);
+  const oldSlots = fromSlots ?? fromAct.slots;
+  const newSlots = toSlots ?? toAct.slots;
+  const map = keep ?? toAct.growFrom?.keep ?? {};
+  const windows = [];
+  newSlots.forEach((tile, index) => {
+    if (!tile) return;
+    const dest = to.slots[index];
+    const oldTile = map[tile];
+    const oldIndex = oldTile ? oldSlots.indexOf(oldTile) : -1;
+    if (oldIndex >= 0) {
+      const src = from.slots[oldIndex];
+      windows.push({ tile, kind: 'keep', continues: oldTile, from: { x: src.x, y: src.y, w: src.w, h: src.h }, to: { x: dest.x, y: dest.y, w: dest.w, h: dest.h } });
+    } else {
+      windows.push({ tile, kind: 'open', from: { x: dest.x, y: dest.y, w: dest.w, h: dest.h }, to: { x: dest.x, y: dest.y, w: dest.w, h: dest.h } });
+    }
+  });
+  return { from, to, windows };
+}
+
 /** Screen point of an edge anchor on a slot rectangle. */
 export function edgePoint(slot, side, at) {
   if (side === 'left') return { x: slot.x, y: slot.y + at * slot.h };
@@ -255,6 +300,12 @@ export function createPanelModel(act, options = {}) {
       }
       case 'bell': return s.bell >= arg;
       case 'dragging': return s.dragging === arg;
+      case 'actorAt': {
+        const actor = s.actors[arg.actor ?? 'butch'];
+        if (!actor || actor.tile !== arg.tile) return false;
+        if (arg.minX !== undefined && actor.x < arg.minX) return false;
+        return arg.maxX === undefined || actor.x <= arg.maxX;
+      }
       default: throw new Error(`[nightService] unknown condition "${kind}"`);
     }
   }
@@ -510,6 +561,12 @@ export function createPanelModel(act, options = {}) {
         break;
       }
       case 'disableLens': s.lens.enabled = false; events.emit('lens', { ...s.lens }); break;
+      case 'setSlots': {
+        // dev jumps (`skip`): put the windows where the skipped steps left them
+        s.slots = [...arg];
+        events.emit('restore', null);
+        break;
+      }
       case 'returnFrame': {
         const frame = s.frames[arg];
         frame.host = frame.origin;
@@ -737,7 +794,9 @@ export function createPanelModel(act, options = {}) {
 
   function canZoomOut(tileId) {
     const tile = s.tiles[tileId];
-    return Boolean(tile?.zoomStack.length) && scene(tileId)?.zoomOut !== false && !lockedOut();
+    const sceneDef = scene(tileId);
+    // `zoomOut: false` is one-way; `zoomOutWhen` holds the player in a close-up until it is done
+    return Boolean(tile?.zoomStack.length) && sceneDef?.zoomOut !== false && evaluate(sceneDef?.zoomOutWhen) && !lockedOut();
   }
 
   function zoomOut(tileId, { forced = false } = {}) {
@@ -760,7 +819,7 @@ export function createPanelModel(act, options = {}) {
     const key = `${tileId}.${hotspot.id}`;
     if (!s.used.includes(key)) s.used.push(key);
     events.emit('hotspot', { tile: tileId, id: hotspot.id, kind: hotspot.kind });
-    if (hotspot.kind === 'zoom') return zoomIn(tileId, hotspot.to, hotspot.rect);
+    if (hotspot.kind === 'zoom') return zoomIn(tileId, hotspot.to, hotspot.zoomRect ?? hotspot.rect);
     if (hotspot.kind === 'read' && hotspot.card) s.queue.push({ showCard: hotspot.card });
     if (hotspot.kind === 'pickup' && hotspot.item) s.queue.push({ giveItem: hotspot.item });
     s.queue.push(...clone(hotspot.do ?? []));
@@ -871,7 +930,14 @@ export function createPanelModel(act, options = {}) {
 
   /** Chapter state that follows the player into the next act. */
   function carry() {
-    return { bell: s.bell, items: [...s.items], flags: s.flags.filter((flag) => flag.startsWith('stone:') || flag.startsWith('chapter:')), linkHistory: clone(s.linkHistory) };
+    return {
+      bell: s.bell,
+      items: [...s.items],
+      flags: s.flags.filter((flag) => flag.startsWith('stone:') || flag.startsWith('chapter:')),
+      linkHistory: clone(s.linkHistory),
+      // where the windows stood when the act ended (the next act's wall grows from it)
+      slots: [...s.slots],
+    };
   }
 
   function snapshot() { return clone(s); }

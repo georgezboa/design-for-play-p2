@@ -1,4 +1,7 @@
-// Act 1 · LOST PROPERTY (2×2). Teaches drag, then zoom. Spec §6 Act 1.
+// Act 1 · LOST PROPERTY (2×2). Drag and zoom, together, in the full wall.
+// Spec §6 Act 1. The wall has just grown from Act 0.5's two windows (the
+// office and, through the stores door, the pigeonholes): Butch is already
+// awake, standing at his desk after the counter bell called him back.
 //
 //   TL desk      TR lockers          step 1: swap desk ↔ window, so the desk's
 //   BL window    BR door             corridor floor meets the door's threshold;
@@ -13,6 +16,7 @@ import {
   drawWindow, taggedCubbyZoomRect, cubbyRect, TAGGED_CUBBY,
 } from '../art/act1Art.js';
 import { ACT1_FX } from '../art/act1Fx.js';
+import { BUTCH_HOME } from './act05.js';
 
 const cubby = cubbyRect(756, 420, TAGGED_CUBBY.col, TAGGED_CUBBY.row);
 const cubbyTag = { x: (cubby.x + cubby.w * 0.56) / 756, y: (cubby.y + cubby.h * 0.5) / 420 };
@@ -22,8 +26,10 @@ export const ACT1 = defineAct({
   id: 'act1',
   number: 1,
   title: 'LOST PROPERTY',
-  checkpoint: 'chapter-1-start',
+  checkpoint: 'chapter-1-act-1',
   next: 'act2',
+  // two more windows open below the office and the stores
+  growFrom: { act: 'act05', keep: { desk: 'desk', lockers: 'door' } },
   grid: { cols: 2, rows: 2 },
   // row-major: [TL, TR, BL, BR]
   slots: ['desk', 'lockers', 'window', 'door'],
@@ -114,23 +120,23 @@ export const ACT1 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', tile: 'desk', x: 0.53, y: FLOOR, pose: 'sit', facing: -1 },
+    // awake, home at the desk (where Act 0.5 left him)
+    butch: { rig: 'butch', tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y, pose: 'idle', facing: -1 },
     conductor: { rig: 'conductor', tile: 'door', state: 'conductor', x: 0.6, y: 0.84, facing: -1, pose: 'idle' },
   },
   steps: [
     {
       id: 'floor-link',
       when: { link: { a: 'desk', b: 'door', type: 'floor' } },
-      hint: { tile: 'desk', edge: { side: 'right', at: FLOOR } },
+      hint: { tile: 'desk', edge: { side: 'right', at: FLOOR }, ghost: { drag: { tile: 'desk', leftOf: 'door' } } },
       do: [
-        { actorPose: { actor: 'butch', pose: 'stand', facing: 1 } },
-        { sfx: 'stool' },
-        { wait: 450 },
+        { actorPose: { actor: 'butch', pose: 'idle', facing: 1 } },
+        { wait: 300 },
         {
           walkButch: {
             id: 'toDoor',
             path: [
-              { tile: 'desk', x: 0.6, y: FLOOR },
+              { tile: 'desk', x: 0.7, y: FLOOR },
               { tile: 'desk', x: 1, y: FLOOR },
               { tile: 'door', x: 0, y: FLOOR, via: 'floor' },
               { tile: 'door', x: DOOR_WAIT_X, y: FLOOR },
@@ -149,7 +155,14 @@ export const ACT1 = defineAct({
     {
       id: 'ticket-chute',
       when: { all: [{ flag: 'butchAtDoor' }, { link: { a: 'lockers', b: 'door', type: 'chute' } }] },
-      hint: { tile: 'lockers', hotspot: 'tagged' },
+      hint: {
+        tile: 'lockers',
+        hotspot: 'tagged',
+        ghost: [
+          { click: { tile: 'lockers', hotspot: 'tagged' } },
+          { drag: { tile: 'lockers', above: 'door' } },
+        ],
+      },
       do: [
         // a beat to see the ticket at the chute mouth (and the envelope's tag)
         { wait: 1300 },

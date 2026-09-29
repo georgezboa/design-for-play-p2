@@ -10,7 +10,8 @@ Chapter 1 is a Gorogoa-style panel puzzle on its own page (`night-service.html`
 | `painter.js` | The `ctx` handed to `draw(ctx)` functions. |
 | `actorRig.js`, `art/figures.js` | Jointed Butch / Conductor / Mara / train. |
 | `art/ink.js`, `art/wallArt.js` | Canvas kit: jittered ink, wood, brass, paper tags, sepia, the carriage wall. |
-| `acts/*.js` | Act 1 (2×2 intro), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
+| `acts/*.js` | Act 0 (1×1, zoom), Act 0.5 (1×2, swap; zoom + swap), Act 1 (2×2), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
+| `hints.js`, `hintLines.js`, `art/hintArt.js` | The wordless hint tiers (when, and which gesture), the Conductor's tier-3 lines, the ghost hand and the sliding wall panels. |
 | `art/actNArt.js`, `art/actNFx.js` | Each act's drawings and custom presentation effects. |
 | `audio.js` | Synth SFX on the SFX bus, rail ambience, quiet music loop. |
 
@@ -22,6 +23,8 @@ import { defineAct } from '../panelModel.js';
 export const ACT2 = defineAct({
   id: 'act2', number: 2, title: 'THE LUGGAGE CAR',
   grid: { cols: 2, rows: 2 },            // 3×2 works too; layout is automatic
+                                         // (1×1 / 1×2 pass `tile: CARRIAGE_TILE` so the wall can grow)
+  growFrom: { act: 'act0', keep: { desk: 'office' } }, // optional: grow in place from the previous act
   slots: ['rack', 'window', 'aisle', 'board'],   // row-major starting layout
   start: { bell: 1, items: ['punch'] },  // chapter state when starting here fresh
   assets: ['fields', 'memory'],          // panoramas to load (worldAssets.js)
@@ -60,6 +63,7 @@ rack: {
       drawPast(ctx) {},             // optional 1978 layer, seen only through the lens
       actorScale: 1,                // figure size in this state (zoomed rooms: ~1.9)
       zoomOut: true,                // false: a one-way zoom (e.g. the Conductor's car)
+      zoomOutWhen: cond,            // hold the player in a close-up until cond (Act 0's bell)
       edges: {
         bottom: [{ type: 'drop', at: 0.25, when: { state: { tile: 'rack', is: 'tilting' } } }],
         right: [{ type: 'rail', at: 0.85, era: 'past', lensAt: [0.5, 0.85] }],
@@ -71,8 +75,11 @@ rack: {
         card: 'A2', item: 'lens',   // read / pickup
         do: [effects],              // run on click
         requires: cond, once: true, pulseOnce: true,
+        zoomRect: [x, y, w, h],     // zoom square, when it differs from the click rect
         tag: { x, y, angle, scale },// draws the paper tag + amber glint for you
-                                    // (glintOnly: true = glint, no paper)
+                                    // (glintOnly: true = glint, no paper; a glint-only
+                                    // or past-era hotspot also gets a pulsing amber
+                                    // ring — seen through the lens for 1978 — unless ring: false)
       }],
     },
   },
@@ -89,7 +96,14 @@ mismatch shimmer. `when` gates an edge on any condition.
 ### Steps, conditions and effects
 
 Steps run in order. The current step fires once its `when` holds, then its
-`do` effects run in sequence. `hint` is pulsed after 45 s idle:
+`do` effects run in sequence. `hint` drives the three wordless tiers (`hints.js`):
+a pulse at 25 s idle, the ghost hand at 60 s, the Conductor's line from
+`hintLines.js` at 120 s; a verb's first appearance is demonstrated after 8 s;
+the pause menu's SHOW ME (`nightfall:hint`, or `H`) plays the ghost hand at once.
+`hint.ghost` lists the gestures, first applicable wins, each with an optional `when`:
+`{ drag: { tile, leftOf|rightOf|above|below|slot } }` (or a list) · `{ click: { tile, hotspot(s) } }` ·
+`{ zoomOut: tile }` · `{ frame: { from, to } }` · `{ lens: { tile, u, v } | { tile, hotspot }, click }`.
+Without `ghost`, a hotspot hint clicks it and `zoomOut: true` taps the glyph. The pulse keys are:
 `{ tile, hotspot }` · `{ tile, hotspots: [ids] }` (first enabled one) ·
 `{ tile, edge: { side, at } }` · `{ tile, frame: true }` (the liftable frame) ·
 `{ tile, lens: true }` (the lens rim) · `{ actor }` (the actor and the edge it waits at). `skip` lists the
@@ -98,7 +112,7 @@ state changes a dev `?step=` jump applies instead of the blocking effects.
 Conditions (single-key objects, combinable): `link {a,b,type}` · `state {tile,is}` ·
 `overlay {frame,onto,ontoState}` · `hotspot 'tile.id'` · `butchArrived id` /
 `arrived id` · `item` / `notItem` · `flag` / `notFlag` · `lensOver {tile,x,y}` ·
-`slot {tile,index}` · `above {a,b}` · `leftOf {a,b}` · `bell n` · `lens bool` ·
+`slot {tile,index}` · `above {a,b}` · `leftOf {a,b}` · `actorAt {actor,tile,minX?,maxX?}` · `bell n` · `lens bool` ·
 `all [...]` · `any [...]` · `not cond` · `true`.
 
 Effects: `setState {tile,state}` · `setFlag` / `clearFlag` · `giveItem` / `takeItem` ·
@@ -109,7 +123,7 @@ the line index the Archivist's red pencil crosses out) · `dialogue [{speaker,te
 `placeActor {actor,tile,state,x,y,visible,pose,facing,carrying}` · `actorPose` ·
 `zoomTo {tile,to,rect}` · `zoomOut tile` · `enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
 `returnFrame id` · `unlockDrag` / `lockTile` · `lockInput` / `unlockInput` ·
-`grantStone id` · `checkpoint id` · `nextAct id` · `endChapter`.
+`grantStone id` · `checkpoint id` · `nextAct id` · `endChapter` · `setSlots [..]` (dev `skip` only).
 
 **Walk paths** are waypoint lists `{ tile, x, y, via?, requires?, pose?, state? }`.
 Moving to a waypoint on another tile needs an active link between the two tiles
@@ -156,7 +170,8 @@ solver from random states instead (`act3.test.mjs`).
 
 ## Dev routes (DEV_MODE only; production ignores them)
 
-`?act=1|2|3`, `?step=<step id>` (alone it finds the act), `?dtmax=1000`
+`?act=0|0.5|1|2|3`, `?step=<step id>` (alone it finds the act), `?from=act0`
+(open the act as if that act just ended, so the wall grows in), `?dtmax=1000`
 (real-time steps for slow headless renderers), `N` skips the act.
 `window.render_game_to_text()` returns the model state plus screen positions
 of slots, enabled hotspots and zoom-out glyphs.

@@ -198,7 +198,8 @@ export const ONE_ANSWER_ACT = defineAct({
     {
       id: 'unfile',
       when: { hotspot: 'duplicate.seal' },
-      hint: { tile: 'duplicate', lens: true },
+      // the ghost hand (hints.js): carry the lens onto the seal, click through it
+      hint: { tile: 'duplicate', lens: true, ghost: { click: { tile: 'duplicate', hotspot: 'seal' } } },
       do: [
         { lockInput: true },
         { sfx: 'scratch' },
@@ -243,13 +244,20 @@ export const ONE_ANSWER_ACT = defineAct({
           { link: { a: 'plate', b: 'tag', type: 'route' } },
         ],
       },
-      hint: { tile: 'duplicate', lens: true },
+      hint: {
+        tile: 'duplicate',
+        lens: true,
+        ghost: [
+          { drag: [{ tile: 'stub', slot: 0 }, { tile: 'duplicate', slot: 1 }, { tile: 'plate', slot: 3 }, { tile: 'tag', slot: 2 }] },
+          { lens: { tile: 'duplicate', u: OFFICE_LENS_AT[0], v: OFFICE_LENS_AT[1] } },
+        ],
+      },
       do: [{ sfx: 'chime' }],
     },
     {
       id: 'arrive',
       when: { arrived: 'route' },
-      hint: { actor: 'mara' },
+      hint: { actor: 'mara', ghost: { when: { not: lensOverOffice }, lens: { tile: 'duplicate', u: OFFICE_LENS_AT[0], v: OFFICE_LENS_AT[1] } } },
       do: [
         { lockInput: true },
         { actorPose: { actor: 'mara', pose: 'idle', facing: -1 } },

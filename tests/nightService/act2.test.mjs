@@ -19,6 +19,14 @@ function punch(model) {
   settle(model);
 }
 
+/** The first lens click: REQUEST STOP on the 1978 board. */
+function requestStop(model) {
+  const h = model.hotspots('board').find((x) => x.id === 'request');
+  lensAt(model, 'board', h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2);
+  assert.ok(model.activateHotspot('board', 'request'));
+  settle(model);
+}
+
 function markThroughLens(model) {
   const h = model.hotspots('rack').find((x) => x.id === 'bellwether');
   lensAt(model, 'rack', h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2);
@@ -65,17 +73,38 @@ test('Act 2: punching the ticket makes the lens (bell #2); the only new act is t
   const lens = model.state.lens;
   const aisle = model.slotRect('aisle');
   assert.ok(lens.y > aisle.y && lens.x > aisle.x);
+  // the lens-click lesson comes first, on the big REQUEST STOP plate
   const hot = availableActions(model).filter((a) => a.kind === 'hotspot');
-  assert.deepEqual(hot.map((a) => `${a.tile}.${a.id}`), ['rack.bellwether']);
+  assert.deepEqual(hot.map((a) => `${a.tile}.${a.id}`), ['board.request']);
+  const plate = model.hotspots('board').find((x) => x.id === 'request');
+  assert.equal(model.clickTile('board', plate.rect[0] + 0.05, plate.rect[1] + 0.05), false, 'only in 1978 light');
+  requestStop(model);
+  assert.ok(model.hasFlag('stopRequested'));
+  assert.equal(model.state.tiles.board.state, 'requested');
+  // then the second use of the verb: the BELLWETHER tag
+  const next = availableActions(model).filter((a) => a.kind === 'hotspot');
+  assert.deepEqual(next.map((a) => `${a.tile}.${a.id}`), ['rack.bellwether']);
   // present click on the tag does nothing: it is only readable in 1978
   const h = model.hotspots('rack').find((x) => x.id === 'bellwether');
   assert.equal(model.clickTile('rack', h.rect[0] + 0.05, h.rect[1] + 0.05), false);
+});
+
+test('Act 2: the frame over the orchard is not an arrival until the stop is requested', () => {
+  const model = createPanelModel(ACT2, { carry: startCarry('act2'), step: 'orchard' });
+  // a dev jump past the request would set it; clear it to test the gate itself
+  model.state.flags = model.state.flags.filter((f) => f !== 'stopRequested');
+  toOrchard(model);
+  frameOntoOrchard(model);
+  assert.equal(model.hasFlag('caseAtEdge'), false);
+  assert.equal(model.textState().step, 'arrive');
+  assert.equal(model.evaluate({ overlay: { frame: 'windowFrame', onto: 'rack', ontoState: 'orchard' } }), true);
 });
 
 test('Act 2: full scripted solution through to the act-3 checkpoint (without the stone)', () => {
   const model = fresh();
   const log = record(model);
   punch(model);
+  requestStop(model);
   markThroughLens(model);
   assert.ok(model.hasFlag('orchardMarked'));
   assert.equal(model.canLiftFrame('windowFrame'), false, 'the frame waits for the orchard');
@@ -100,7 +129,7 @@ test('Act 2: full scripted solution through to the act-3 checkpoint (without the
   assert.deepEqual(model.state.ended, { kind: 'nextAct', next: 'act3' });
   assert.deepEqual(log.filter(([n]) => n === 'checkpoint').map(([, p]) => p.id), ['chapter-1-act-3']);
   const fx = log.filter(([n]) => n === 'fx').map(([, p]) => p.name);
-  ['punchPop', 'markCase', 'arrive', 'drift', 'caseDrop', 'fadeAll'].forEach((name) => assert.ok(fx.includes(name), name));
+  ['punchPop', 'requestStop', 'markCase', 'arrive', 'drift', 'caseDrop', 'fadeAll'].forEach((name) => assert.ok(fx.includes(name), name));
   assert.deepEqual(model.carry().items, ['punch', 'lens']);
   assert.equal(model.carry().bell, 3);
 });
@@ -108,6 +137,7 @@ test('Act 2: full scripted solution through to the act-3 checkpoint (without the
 test('Act 2: the case waits at the drop point until the rack is above the aisle', () => {
   const model = fresh();
   punch(model);
+  requestStop(model);
   markThroughLens(model);
   toOrchard(model);
   // move the aisle away from under the rack before the train stops
@@ -125,6 +155,7 @@ test('Act 2: the case waits at the drop point until the rack is above the aisle'
 test('Act 2: the frame dropped early elsewhere, or on the tag, still works when the orchard shows', () => {
   const model = fresh();
   punch(model);
+  requestStop(model);
   markThroughLens(model);
   toOrchard(model);
   model.liftFrame('windowFrame');
@@ -168,7 +199,7 @@ test('Act 2: the optional Ember Stone — open case, letter A2, beneath the lett
 });
 
 test('Act 2: dev ?step= jumps produce consistent worlds', () => {
-  for (const step of ['mark', 'orchard', 'arrive', 'firstWeight', 'end']) {
+  for (const step of ['stop', 'mark', 'orchard', 'arrive', 'firstWeight', 'end']) {
     const model = createPanelModel(ACT2, { carry: startCarry('act2'), step });
     // a jump may run straight on when its trigger already holds (firstWeight)
     const at = ACT2.steps.findIndex((x) => x.id === step);

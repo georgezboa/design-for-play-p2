@@ -1548,3 +1548,12 @@ chapter after what it is, not after the slot it currently occupies.
 - Act 1 · LOST PROPERTY is complete (desk ↔ window floor link, pigeonhole zoom and chute, the Conductor's punch, bell #1, checkpoint `chapter-1-act-2`). Acts 2 and 3 are placeholder stubs; Act 3's stub saves `chapter-2-start` and plays `1-2.mp4` into the existing Chapter 2.
 - Checkpoints `chapter-1-start`, `chapter-1-act-2`, `chapter-1-act-3`; legacy `prologue-start` resumes Act 1. Dev routes `?act=1|2|3|lab`, `?step=<id>`, `?dtmax=`; production ignores them.
 - QA: model tests in `tests/nightService/` (scripted solves, BFS no-dead-end proof); headless pointer and keyboard-only solves of Act 1 pass.
+
+## Chapter 1 · NIGHT SERVICE v2: one window first, wordless hints (2026-09-29)
+
+- After George's Mac playtest ("make this part longer, and start with only ONE panel"; stuck on Act 2's glint-only BELLWETHER tag). Spec v2: `docs/CH1_NIGHT_SERVICE_PANELS_SPEC.md` §3, §6.
+- New Act 0 · ONE WINDOW (1×1: desk bell → the Conductor's lantern in its curve → zoom out → stub 1978-0412 → punch hole → porthole → the whole carriage) and Act 0.5 · TWO WINDOWS (1×2: swap; then zoom + swap on the office's key line; swap home). The carriage wall grows 1×1 → 1×2 → 2×2 in place with sliding panels (`planGrowth`, `growFrom`).
+- Act 1 opens with Butch awake. Act 2 teaches the lens click on a big 1978 REQUEST STOP first (the frame's arrival needs it), then the BELLWETHER tag; the waiting case teeters over a glowing edge. Act 3 adds the hawthorn hedge, a low-stakes past-era edge before the viaduct.
+- Every past-era interactable is ringed in amber inside the lens; required glint-only targets get the ring too. The 45 s pulse became three tiers (25 s pulse, 60 s ghost hand, 120 s Conductor line), first-use demos at 8 s, and SHOW ME in the pause menu (`nightfall:hint`, `H`); all respect Reduce Motion.
+- Checkpoints `chapter-1-start` (Act 0), `chapter-1-act-05`, `chapter-1-act-1`, `chapter-1-act-2`, `chapter-1-act-3`; legacy `prologue-start` resumes Act 0. Dev routes and `?act=0|0.5`.
+- QA: model tests for every act (scripted solves, BFS / goal-directed no-dead-end proofs), hint timing and grid growth; headless real-pointer solves of Acts 0, 0.5 and the changed parts of 2 and 3 with screenshots of every step and each hint tier.

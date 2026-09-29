@@ -6,22 +6,42 @@
 //
 //   1 lift the city window onto the orchard house (close): two windows become
 //     one; Mara appears in it, turns and leaves. Card A3, the red pencil. Bell #4
-//   2 order the top row city → hawthorn → orchard, and zoom the orchard out to
-//     the hill: Mara walks the lane to the stair above the platform
-//   3 order the bottom row carriage → gap → platform and hold the lens on the
-//     broken viaduct: in 1978 it is whole; the train crosses. Bell #5
+//   2 order the top row city → hawthorn → orchard: Mara walks into the lane
+//     and stops at the hedge. The lane's last stretch exists only in 1978:
+//     hold the lens on the joint and her silhouette crosses (the first,
+//     low-stakes past-era EDGE); zoom the orchard out to the hill and she
+//     walks on to the stair above the platform
+//   3 the finale escalates the idea: order the bottom row carriage → gap →
+//     platform and hold the lens on the broken viaduct: in 1978 it is whole;
+//     the train crosses (and backs off if the lens moves). Bell #5
 //   4 Mara boards the other train as ours arrives; the case on the bench;
 //     the Conductor's last line; chapter-2-start and the 1-2 film
 
 import { defineAct } from '../panelModel.js';
 import {
-  OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
-  drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHouse, drawOverlook, drawPlatform,
+  HEDGE, OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
+  drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook, drawPlatform,
   drawPlatformPast,
 } from '../art/act3Art.js';
 import { ACT3_FX } from '../art/act3Fx.js';
 
 const lensOverGap = { lensOver: { tile: 'gap', x: 0.5, y: RAIL_AT } };
+const lensOverHedge = { lensOver: { tile: 'hawthorn', x: HEDGE.lens[0], y: HEDGE.lens[1] } };
+
+/** Mara's first stretch: out of the city room, into the lane, up to the hedge. */
+const TO_HEDGE = [
+  { tile: 'city', x: 1, y: PATH_AT },
+  { tile: 'hawthorn', x: 0, y: PATH_AT, via: 'path' },
+  { tile: 'hawthorn', x: HEDGE.wait, y: PATH_AT },
+];
+/** Through the hedge (1978 only), to the hill and the stair above the platform. */
+const THROUGH_HEDGE = [
+  { tile: 'hawthorn', x: 1, y: PATH_AT, requires: lensOverHedge, retreat: { x: HEDGE.wait } },
+  { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
+  { tile: 'orchard', x: 0.44, y: PATH_AT },
+  { tile: 'orchard', x: 0.5, y: 0.68, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
+  { tile: 'orchard', x: STAIR_AT, y: 0.97 },
+];
 const TRAIN_Y = RAIL_AT - 0.004;
 // the present viaduct is missing between ~0.35 and ~0.65; the train is ~0.26 wide
 const SAFE_NEAR = 0.2;
@@ -64,7 +84,12 @@ export const ACT3 = defineAct({
       states: {
         default: {
           draw: drawHawthorn,
-          edges: { left: [{ type: 'path', at: PATH_AT }], right: [{ type: 'path', at: PATH_AT }] },
+          drawPast: drawHawthornPast,
+          edges: {
+            left: [{ type: 'path', at: PATH_AT }],
+            // today a hedge; in 1978 the lane ran on through an open gate
+            right: [{ type: 'path', at: PATH_AT, era: 'past', lensAt: [...HEDGE.lens] }],
+          },
         },
       },
     },
@@ -118,7 +143,14 @@ export const ACT3 = defineAct({
     {
       id: 'windows',
       when: { overlay: { frame: 'cityWindow', onto: 'orchard', ontoState: 'house' } },
-      hint: { tile: 'city', frame: true },
+      hint: {
+        tile: 'city',
+        frame: true,
+        ghost: [
+          { when: { state: { tile: 'orchard', is: 'house' } }, frame: { from: 'city', to: 'orchard' } },
+          { click: { tile: 'orchard', hotspot: 'house' } },
+        ],
+      },
       do: [
         { lockInput: true },
         // the pause before the reveal
@@ -133,51 +165,56 @@ export const ACT3 = defineAct({
         { sfx: 'settle' },
         { placeActor: { actor: 'mara', tile: 'city', x: 0.6, y: PATH_AT, visible: true, pose: 'walk', facing: 1 } },
         { unlockInput: true },
-        {
-          walk: {
-            actor: 'mara', id: 'lane', speed: 95, await: false,
-            path: [
-              { tile: 'city', x: 1, y: PATH_AT },
-              { tile: 'hawthorn', x: 0, y: PATH_AT, via: 'path' },
-              { tile: 'hawthorn', x: 1, y: PATH_AT },
-              { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
-              { tile: 'orchard', x: 0.44, y: PATH_AT },
-              { tile: 'orchard', x: 0.5, y: 0.68, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
-              { tile: 'orchard', x: STAIR_AT, y: 0.97 },
-            ],
-          },
-        },
+        { walk: { actor: 'mara', id: 'toHedge', speed: 95, await: false, path: TO_HEDGE } },
       ],
       skip: [
         { ringBell: true },
         { placeActor: { actor: 'mara', tile: 'city', x: 0.6, y: PATH_AT, visible: true, pose: 'walk', facing: 1 } },
-        {
-          walk: {
-            actor: 'mara', id: 'lane', speed: 95, await: false,
-            path: [
-              { tile: 'city', x: 1, y: PATH_AT },
-              { tile: 'hawthorn', x: 0, y: PATH_AT, via: 'path' },
-              { tile: 'hawthorn', x: 1, y: PATH_AT },
-              { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
-              { tile: 'orchard', x: 0.44, y: PATH_AT },
-              { tile: 'orchard', x: 0.5, y: 0.68, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
-              { tile: 'orchard', x: STAIR_AT, y: 0.97 },
-            ],
-          },
-        },
+        { walk: { actor: 'mara', id: 'toHedge', speed: 95, await: false, path: TO_HEDGE } },
+      ],
+    },
+    {
+      id: 'hedge',
+      when: { arrived: 'toHedge' },
+      hint: { actor: 'mara', tile: 'hawthorn', ghost: { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }] } },
+      do: [
+        { actorPose: { actor: 'mara', pose: 'idle' } },
+        { sfx: 'settle' },
+        // she waits at the hedge; the lens is the way through
+        { walk: { actor: 'mara', id: 'lane', speed: 95, await: false, path: THROUGH_HEDGE } },
+      ],
+      skip: [
+        { placeActor: { actor: 'mara', tile: 'hawthorn', x: HEDGE.wait, y: PATH_AT, visible: true, pose: 'idle', facing: 1 } },
+        { walk: { actor: 'mara', id: 'lane', speed: 95, await: false, path: THROUGH_HEDGE } },
       ],
     },
     {
       id: 'lane',
       when: { arrived: 'lane' },
-      hint: { actor: 'mara', tile: 'orchard' },
+      hint: {
+        actor: 'mara',
+        tile: 'hawthorn',
+        ghost: [
+          { when: { all: [{ actorAt: { actor: 'mara', tile: 'hawthorn' } }, { not: lensOverHedge }] }, lens: { tile: 'hawthorn', u: HEDGE.lens[0], v: HEDGE.lens[1] } },
+          { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }, { tile: 'orchard', slot: 2 }] },
+          { zoomOut: 'orchard' },
+          { drag: { tile: 'platform', slot: 5 } },
+        ],
+      },
       do: [{ sfx: 'chime' }, { actorPose: { actor: 'mara', pose: 'idle' } }, { wait: 500 }],
       skip: [{ placeActor: { actor: 'mara', tile: 'orchard', state: 'overlook', x: STAIR_AT, y: 0.97, visible: true, pose: 'idle' } }],
     },
     {
       id: 'bridge',
       when: { all: [{ link: { a: 'carriage', b: 'gap', type: 'rail' } }, { link: { a: 'gap', b: 'platform', type: 'rail' } }] },
-      hint: { tile: 'gap', lens: true },
+      hint: {
+        tile: 'gap',
+        lens: true,
+        ghost: [
+          { drag: [{ tile: 'carriage', slot: 3 }, { tile: 'gap', slot: 4 }, { tile: 'platform', slot: 5 }] },
+          { lens: { tile: 'gap', u: 0.5, v: RAIL_AT } },
+        ],
+      },
       do: [
         // hold, whistle, then the crossing through 1978
         { wait: 900 },
