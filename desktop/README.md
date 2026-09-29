@@ -195,3 +195,11 @@ download these directly, so sign the mac build.
 - Open Credits → an external link. It should open in the system browser.
 - Title → QUIT GAME → QUIT should close the app.
 - Continue should show an existing save after updating from an older build.
+
+## Building on GitHub instead of locally
+
+`.github/workflows/desktop-release.yml` builds all three platforms on GitHub's
+runners whenever a `release/*` branch or a `v*` tag is pushed (or via
+**Actions → desktop-release → Run workflow**). Download the packages from the
+run's **Artifacts** section. macOS builds there are ad-hoc signed; add the
+Apple secrets listed in the workflow header for a notarized build.
