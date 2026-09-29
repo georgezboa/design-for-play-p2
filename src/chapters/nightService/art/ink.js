@@ -321,7 +321,10 @@ export function sepia(c, { amount = 1, warmth = 0.17 } = {}) {
   const tmp = document.createElement('canvas');
   tmp.width = canvas.width;
   tmp.height = canvas.height;
-  tmp.getContext('2d').drawImage(canvas, 0, 0);
+  // Match the source's backing (a software canvas stays on the CPU), so the
+  // copy never forces a GPU readback.
+  const software = Boolean(c.getContextAttributes?.().willReadFrequently);
+  tmp.getContext('2d', { willReadFrequently: software }).drawImage(canvas, 0, 0);
   c.save();
   c.setTransform(1, 0, 0, 1, 0, 0);
   c.clearRect(0, 0, canvas.width, canvas.height);

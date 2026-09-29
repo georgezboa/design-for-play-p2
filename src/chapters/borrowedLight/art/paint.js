@@ -8,10 +8,23 @@
 
 import { INK, PALETTE, rng } from './palette.js';
 
+// Context attributes for canvases made inside withCanvasOptions(): the
+// Chapter 6 finale borrows this kit and asks for CPU (willReadFrequently)
+// canvases so its paintings stay on one backing. Borrowed Light itself never
+// sets it.
+let canvasOptions = null;
+
+export function withCanvasOptions(options, paint) {
+  const previous = canvasOptions;
+  canvasOptions = options;
+  try { return paint(); } finally { canvasOptions = previous; }
+}
+
 export function makeCanvas(w, h) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.ceil(w));
   canvas.height = Math.max(1, Math.ceil(h));
+  if (canvasOptions) canvas.getContext('2d', canvasOptions);
   return canvas;
 }
 

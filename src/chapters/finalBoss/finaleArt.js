@@ -20,14 +20,31 @@ import { drawCarriageScene, drawCityRoom, drawHouse, drawPlatform } from '../nig
 import { BUTCH_PARTS, CONDUCTOR_PARTS, RES, TRAIN_PARTS } from '../nightService/art/figures.js';
 import { PAPER_URL, WORLDS } from '../nightService/worldAssets.js';
 import { BUTCH_SPEC, drawFigure } from '../borrowedLight/art/figures.js';
-import { paintBillboard, paintPuddle, paintSkylineStrip, paintWindow } from '../borrowedLight/art/paint.js';
+import {
+  paintBillboard as paintBillboardKit, paintPuddle as paintPuddleKit, paintSkylineStrip as paintSkylineStripKit, paintWindow, withCanvasOptions,
+} from '../borrowedLight/art/paint.js';
 
 const TAU = Math.PI * 2;
+
+// Every finale painting is a CPU (software) canvas. They are painted once and
+// only ever read back as texture sources, and on a GPU-accelerated 2D canvas
+// the filters, gradients and composites are rasterised later in the GPU
+// process, which then stalls the next WebGL call. On software GL (SwiftShader)
+// that stall was ~17 s on the first frame after load.
+export const FINALE_CANVAS_OPTIONS = Object.freeze({ willReadFrequently: true });
+
+// The Chapter 2 kit's own canvases, made on the same software backing.
+const paintBillboard = (...args) => withCanvasOptions(FINALE_CANVAS_OPTIONS, () => paintBillboardKit(...args));
+const paintPuddle = (...args) => withCanvasOptions(FINALE_CANVAS_OPTIONS, () => paintPuddleKit(...args));
+const paintSkylineStrip = (...args) => withCanvasOptions(FINALE_CANVAS_OPTIONS, () => paintSkylineStripKit(...args));
 
 export function makeCanvas(w, h) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(w));
   canvas.height = Math.max(1, Math.round(h));
+  // The first getContext call fixes the context's attributes; later
+  // getContext('2d') calls in the art kits get this same software context.
+  canvas.getContext('2d', FINALE_CANVAS_OPTIONS);
   return canvas;
 }
 
@@ -163,18 +180,47 @@ export function lostFloorLayout({ arena, seams }) {
 
 const ACT1_PANELS = [drawDesk, drawLockers, drawWindow, (ctx) => drawDoor(ctx, 'open')];
 
-export function paintLostPropertyFloor({ arena, seams, era = 'present', paper = null, fields = [] }) {
+// The ink.js sepia() pass, in horizontal strips so a 2400 px floor can be
+// toned across several short tasks. Sepia, saturate, contrast and brightness
+// are per-pixel filters, so strips give exactly the same pixels.
+function* sepiaStrips(c, { amount = 1, warmth = 0.17, strips = 4 } = {}) {
+  const canvas = c.canvas;
+  const tmp = makeCanvas(canvas.width, canvas.height);
+  tmp.getContext('2d').drawImage(canvas, 0, 0);
+  const band = Math.ceil(canvas.height / strips);
+  for (let y = 0; y < canvas.height; y += band) {
+    const h = Math.min(band, canvas.height - y);
+    c.save();
+    c.setTransform(1, 0, 0, 1, 0, 0);
+    c.clearRect(0, y, canvas.width, h);
+    c.filter = `sepia(${amount}) saturate(1.35) contrast(0.92) brightness(1.24)`;
+    c.drawImage(tmp, 0, y, canvas.width, h, 0, y, canvas.width, h);
+    c.filter = 'none';
+    c.globalCompositeOperation = 'source-atop';
+    c.fillStyle = `rgba(255, 200, 130, ${warmth})`;
+    c.fillRect(0, y, canvas.width, h);
+    c.restore();
+    yield;
+  }
+}
+
+// Paint the Movement I floor one piece at a time: each `yield` is a point
+// where the caller may hand the main thread back (see spectacleBattle.js
+// runSliced). The generator's return value is { canvas, layout }.
+export function* lostPropertyFloorSteps({ arena, seams, era = 'present', paper = null, fields = [] }) {
   const layout = lostFloorLayout({ arena, seams });
   const canvas = makeCanvas(layout.view.w, layout.view.h);
   const c = canvas.getContext('2d');
   paintWall(c, layout, { paper });
-  layout.slots.forEach((slot, index) => {
+  yield;
+  for (const [index, slot] of layout.slots.entries()) {
     const panel = paintChapterOnePanel(ACT1_PANELS[index], { era, paper, fields });
     c.drawImage(panel, slot.x, slot.y, slot.w, slot.h);
     const bezel = makeCanvas(slot.w + BEZEL * 2, slot.h + BEZEL * 2);
     paintBezel(bezel.getContext('2d'), slot.w, slot.h);
     c.drawImage(bezel, slot.x - BEZEL, slot.y - BEZEL);
-  });
+    yield;
+  }
   // The seams are the Conductor's rails: two brass rails and sleepers in
   // each gutter, so a train running there reads as running on track.
   const railPaint = (x0, y0, x1, y1) => {
@@ -201,8 +247,15 @@ export function paintLostPropertyFloor({ arena, seams, era = 'present', paper = 
   const [seamXpx] = floorPx(seams.x, 0);
   railPaint(layout.x - 30, seamY, layout.x + layout.w + 30, seamY);
   railPaint(seamXpx, layout.y - 30, seamXpx, layout.y + layout.h + 30);
-  if (era === 'past') sepia(c, { amount: 1, warmth: 0.12 });
+  if (era === 'past') yield* sepiaStrips(c, { amount: 1, warmth: 0.12 });
   return { canvas, layout };
+}
+
+export function paintLostPropertyFloor(options) {
+  const steps = lostPropertyFloorSteps(options);
+  let step = steps.next();
+  while (!step.done) step = steps.next();
+  return step.value;
 }
 
 // A big framed copy of the Conductor's own car (Act 1's last panel) for the
