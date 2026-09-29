@@ -89,6 +89,31 @@ function buildButch(scene) {
       carried.setVisible(holding);
       ticket.setVisible(pose === 'ticket');
       body.rotation = stagger ? Math.sin(stagger * 18) * 0.12 * stagger + 0.06 * stagger : 0;
+      // joints that only the slumped sleep pose moves
+      head.x = 1;
+      armFront.setPosition(3, -52);
+      armBack.setPosition(-3, -52);
+      torso.rotation = 0;
+      if (pose === 'sleep') {
+        // asleep on the stool: slumped forward, chin on chest, slow breath
+        const breath = Math.sin(t * 1.15);
+        body.y = 8 + breath * 0.5;
+        legFront.rotation = -1.35; legFront.knee.rotation = 1.3;
+        legBack.rotation = -1.25; legBack.knee.rotation = 1.25;
+        torso.rotation = 0.34 + breath * 0.025;
+        torso.scaleY = (1 + breath * 0.018) / RES;
+        head.x = 14;
+        head.y = -47 + breath * 0.6;
+        head.rotation = 0.62 + breath * 0.03;
+        armFront.setPosition(13, -48);
+        armBack.setPosition(8, -49);
+        armFront.rotation = -0.55;
+        armBack.rotation = -0.45;
+        glow.alpha = 0.2;
+        rig.asleep = true;
+        return;
+      }
+      rig.asleep = false;
       if (pose === 'ticket') {
         body.y = 0;
         legFront.rotation = 0.04; legFront.knee.rotation = 0;

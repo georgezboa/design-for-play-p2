@@ -169,7 +169,59 @@ export function sepiaWash(c) {
 // ---------------------------------------------------------------------------
 // TL "desk" — the lost-property desk.
 
-export function drawDesk(ctx) {
+/** The office's key line (a cash-carrier wire under the shelf, Act 0.5). */
+export const WIRE_OUT = 0.39;
+export const KEY_HOOK = Object.freeze({ x: 0.31, y: 0.4 });
+/** The desk bell and the claim spike on the desk top (Act 0). */
+export const DESK_BELL = Object.freeze({ x: 0.36, y: 0.555 });
+export const CLAIM_SPIKE = Object.freeze({ x: 0.43, y: 0.555 });
+
+/** The brass desk bell as a small sprite (it can ring on its own). */
+export function deskBellSprite(ctx, x, y) {
+  return ctx.sprite('office-bell', 34, 28, (c) => {
+    c.fillStyle = '#2a1a10';
+    c.beginPath(); c.ellipse(17, 25, 15, 3.2, 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = brassFill(c, 4, 9, 26, 16);
+    c.beginPath(); c.moveTo(4, 24); c.quadraticCurveTo(4, 9, 17, 9); c.quadraticCurveTo(30, 9, 30, 24); c.closePath(); c.fill();
+    c.fillStyle = 'rgba(255, 244, 210, 0.75)';
+    c.beginPath(); c.ellipse(11, 15, 2.2, 4, 0.5, 0, Math.PI * 2); c.fill();
+    c.fillStyle = PAL.brassLight; c.fillRect(15.5, 4, 3, 5);
+    c.beginPath(); c.arc(17, 4, 2.4, 0, Math.PI * 2); c.fill();
+    ink(c, [[4, 24], [6, 14], [12, 10], [17, 9], [22, 10], [28, 14], [30, 24]], { w: 1.3, jitter: 0.2, bleed: false });
+    inkEllipse(c, 17, 25, 15, 3.2, { w: 1.1, bleed: false });
+  }, x, y - 11, { origin: [0.5, 0.6] });
+}
+
+/** The brass carrier (a two-wheel trolley on the key line) with the office key. */
+export function paintTrolley(c, x, y, s = 1) {
+  c.save();
+  c.translate(x, y);
+  c.scale(s, s);
+  // wheels riding the wire
+  [-7, 7].forEach((dx) => {
+    c.fillStyle = PAL.brassDark; c.beginPath(); c.arc(dx, 0, 4.2, 0, Math.PI * 2); c.fill();
+    c.fillStyle = PAL.brassLight; c.beginPath(); c.arc(dx, 0, 1.6, 0, Math.PI * 2); c.fill();
+  });
+  c.fillStyle = brassFill(c, -10, 2, 20, 10);
+  c.beginPath(); c.moveTo(-10, 2); c.lineTo(10, 2); c.lineTo(6, 12); c.lineTo(-6, 12); c.closePath(); c.fill();
+  ink(c, [[-10, 2], [10, 2], [6, 12], [-6, 12]], { w: 1.1, closed: true, jitter: 0.2, bleed: false });
+  // the key hangs on a ring below
+  inkEllipse(c, 0, 16, 3.4, 3.4, { w: 1.4, color: PAL.brassLight, bleed: false });
+  c.fillStyle = brassFill(c, -5, 19, 10, 26, true);
+  c.beginPath(); c.arc(0, 24, 5.5, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#2a1a10'; c.beginPath(); c.arc(0, 24, 2.2, 0, Math.PI * 2); c.fill();
+  c.fillStyle = PAL.brass; c.fillRect(-1.6, 29, 3.2, 17);
+  c.fillRect(1.6, 39, 4, 2.6); c.fillRect(1.6, 43, 3, 2.4);
+  ink(c, [[0, 18.5], [-5.5, 24], [-1.6, 29], [-1.6, 46], [1.6, 46], [1.6, 29], [5.5, 24]], { w: 1, closed: true, jitter: 0.15, bleed: false });
+  c.restore();
+}
+
+/**
+ * TL "desk" / the lost-property office. Act 0 and Act 0.5 use the same picture
+ * (so the growing wall never repaints it): `key` hangs the office key on the
+ * carrier (until `keySent`); the desk bell is a live sprite everywhere.
+ */
+export function drawDesk(ctx, { key = false } = {}) {
   const { w, h } = ctx;
   const floorY = FLOOR * h;
   ctx.paint('act1-desk', (c, env) => {
@@ -245,9 +297,9 @@ export function drawDesk(ctx) {
     ink(c, [[lx - 4, ly + 4], [lx, ly], [lx + 52, ly - 3], [lx + 104, ly], [lx + 110, ly + 4]], { w: 1.4 });
     c.fillStyle = PAL.oxblood;
     c.fillRect(lx - 6, ly + 3, 118, 3);
-    // ink pot, pen, claim spike
-    c.fillStyle = '#10141c'; c.fillRect(w * 0.36, top - 12, 12, 12); inkRect(c, w * 0.36, top - 12, 12, 12, { w: 1.2 });
-    ink(c, [[w * 0.365, top - 12], [w * 0.39, top - 30]], { w: 1.4, color: PAL.ivory });
+    // ink pot, pen, claim spike (the desk bell sits left of the pot)
+    c.fillStyle = '#10141c'; c.fillRect(w * 0.392, top - 12, 11, 12); inkRect(c, w * 0.392, top - 12, 11, 12, { w: 1.2 });
+    ink(c, [[w * 0.396, top - 12], [w * 0.414, top - 30]], { w: 1.4, color: PAL.ivory });
     ink(c, [[w * 0.43, top], [w * 0.43, top - 34]], { w: 1.4 });
     [0, 1, 2, 3].forEach((i) => {
       c.save(); c.translate(w * 0.43, top - 8 - i * 6); c.rotate(-0.25 + i * 0.18);
@@ -275,9 +327,31 @@ export function drawDesk(ctx) {
     ink(c, [[sx + 13, sy + 2], [sx + 16, floorY]], { w: 2 });
     ink(c, [[sx, sy + 3], [sx, floorY - 1]], { w: 1.6, alpha: 0.7 });
     inkEllipse(c, sx, sy, 18, 4.5, { w: 1.8 });
+    // the key line: a carrier wire under the shelf, out through the left wall,
+    // a hook rail and a small pulley where the carrier rests
+    const wy = WIRE_OUT * h;
+    ink(c, [[-6, wy], [w * 0.345, wy]], { w: 1.3, color: '#cdb98a', alpha: 0.85, jitter: 0.25, bleed: false });
+    c.fillStyle = brassFill(c, w * 0.34, wy - 5, 10, 10);
+    c.beginPath(); c.arc(w * 0.348, wy, 4.4, 0, Math.PI * 2); c.fill();
+    ink(c, [[w * 0.348, wy - 4], [w * 0.348, h * 0.3 + 8]], { w: 1.2, color: PAL.brassLight, bleed: false });
+    c.fillStyle = brassFill(c, w * 0.25, h * 0.337, w * 0.075, 4);
+    c.fillRect(w * 0.25, h * 0.337, w * 0.075, 4);
+    [0.262, 0.29, 0.318].forEach((u) => ink(c, [[w * u, h * 0.337 + 4], [w * u, h * 0.355], [w * u + 3, h * 0.36]], { w: 1.4, color: PAL.brassLight, bleed: false }));
+    // two ordinary keys on their hooks
+    [[0.262, '#8a6934'], [0.29, '#6b5530']].forEach(([u, tone]) => {
+      c.fillStyle = tone;
+      c.beginPath(); c.arc(w * u + 2, h * 0.37, 2.6, 0, Math.PI * 2); c.fill();
+      c.fillRect(w * u + 1.2, h * 0.37, 1.6, 9);
+    });
     finish(c, env);
   });
   const top = h * 0.555;
+  deskBellSprite(ctx, w * DESK_BELL.x, top);
+  if (key) {
+    const trolley = ctx.sprite('office-trolley', 30, 52, (c) => paintTrolley(c, 15, 5, 1), w * KEY_HOOK.x, h * WIRE_OUT, { origin: [0.5, 0.1] });
+    trolley.setScale(trolley.scaleX * 0.62);
+    ctx.animate(() => trolley.setVisible(!ctx.flag('keySent')));
+  }
   ctx.glow(w * 0.13, top - 32, 120, { color: 0xffc070, alpha: 0.32, flicker: 0.08 });
   ctx.glow(w * 0.5, h * 0.4, 160, { color: 0xffc98a, alpha: 0.22, flicker: 0.05 });
   ctx.dust(w * 0.45, h * 0.3, w * 0.35, h * 0.45, { count: 16 });
