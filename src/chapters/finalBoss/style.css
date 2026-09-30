@@ -93,3 +93,13 @@
 .nf-board__keys dt { color: var(--nf-ivory); font-weight: 700; }
 .nf-board__keys dd { margin: 0; }
 @media (max-width: 760px) { .nf-board__keys { grid-template-columns: 1fr; } }
+/* a 720p window: the board with its key list still fits without scrolling */
+@media (max-height: 800px) {
+  #menu .nf-board { padding: 22px 36px 18px; }
+  #menu .nf-board__title { margin: 8px 0 4px; font-size: calc(50px * var(--nf-scale)); }
+  #menu .nf-board__rule { margin: 8px auto 12px; }
+  #menu .nf-board__intro { margin-bottom: 14px; font-size: calc(16px * var(--nf-scale)); }
+  #menu .nf-ticket-button { margin-top: 12px; padding: 12px 26px 12px 40px; }
+  #menu .nf-board__controls { margin-top: 12px; }
+  #menu .nf-board__keys { margin-top: 10px; padding: 8px 10px 6px; font-size: calc(10px * var(--nf-scale)); }
+}
