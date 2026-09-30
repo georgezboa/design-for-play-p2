@@ -702,7 +702,7 @@ class SpectacleBattle {
     const lamps = [{ x: -14.2, z: -7.4 }, { x: 14.2, z: -7.4 }, { x: -14.4, z: 2.6 }, { x: 14.4, z: 2.6 }, { x: -5.2, z: -7.6 }, { x: 5.2, z: -7.6 }];
     const floor = yield* echoTerraceSteps({ lamps });
     this.echoFloor.material.map = canvasTexture(floor);
-    this.echoFloor.material.color.setHex(0x9c8f82);
+    this.echoFloor.material.color.setHex(0x948b84);
     this.echoFloor.material.needsUpdate = true;
     yield;
     this.dressWith(this.echoDressing.lower, paintEchoSquare());
@@ -1354,7 +1354,9 @@ class SpectacleBattle {
     // Movement III uses the full 3D rig: kept small enough that his head
     // never slides under the ticket bar at the top of the screen (at 16:9,
     // 1280×720 as at 1920×1080, alpha A4-3).
-    this.conductorRoot.scale.setScalar(isEchoCity ? 2.85 : 3.8);
+    // IV's paper card is drawn arm-raised, so it stands a little smaller too:
+    // the hint under the ticket bar never covers his face.
+    this.conductorRoot.scale.setScalar(isEchoCity ? 2.85 : index === 3 ? 3.15 : 3.8);
     this.conductorPaper?.setForm(index, immediate);
     if (this.conductorPaper) this.conductorPaper.root.visible = !isEchoCity;
     this.conductorFallback.visible = this.movementReady(index) && (isEchoCity ? !this.conductorModel : !this.conductorPaper);

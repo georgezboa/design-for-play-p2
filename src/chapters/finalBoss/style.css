@@ -89,7 +89,7 @@
   text-align: left; border-top: 1px solid rgba(176, 138, 74, 0.45);
   font: calc(11px * var(--nf-scale)) / 1.5 var(--nf-mono); letter-spacing: 0.08em; color: #a8987c; text-transform: uppercase;
 }
-.nf-board__keys div { display: grid; grid-template-columns: 7.2em minmax(0, 1fr); gap: 10px; }
+.nf-board__keys div { display: grid; grid-template-columns: 8.6em minmax(0, 1fr); gap: 10px; }
 .nf-board__keys dt { color: var(--nf-ivory); font-weight: 700; }
 .nf-board__keys dd { margin: 0; }
 @media (max-width: 760px) { .nf-board__keys { grid-template-columns: 1fr; } }

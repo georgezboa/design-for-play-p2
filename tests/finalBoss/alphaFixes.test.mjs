@@ -56,7 +56,7 @@ test('A4-3: at 16:9 the bell dial leaves the Conductor and the hint leaves Butch
   assert.match(style, /\.battle-hud \.nf-hint \{\s*top: 82px; bottom: auto;/);
   assert.match(style, /\.battle-hud\.has-hint \.nf-toast \{ top: 138px; \}/);
   assert.match(battle, /this\.hud\.classList\.add\('has-hint'\)/);
-  assert.match(battle, /this\.conductorRoot\.scale\.setScalar\(isEchoCity \? 2\.85 : 3\.8\)/);
+  assert.match(battle, /this\.conductorRoot\.scale\.setScalar\(isEchoCity \? 2\.85 : index === 3 \? 3\.15 : 3\.8\)/);
 });
 
 test('A4-4: Movements III and IV are dressed in the finale\'s painted style before they open', () => {
