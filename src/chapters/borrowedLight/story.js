@@ -10,7 +10,7 @@ export const CHAPTER_NUMBER = 2;
 export const MECHANIC_LINES = Object.freeze([
   Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'That punch. You\'re off the night service.' }),
   Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She came through three nights ago. Took the same roofs. Said you\'d be along.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'This city runs on borrowed light. Punch a box and it switches on at the next bell. Try the one by the edge.' }),
+  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'This city runs on borrowed light. Punch a box and it switches on at the next bell. Try the one with the paper tag, on the pole by the gap.' }),
   Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'One line, one moment. Punch two on the same colour and the first one forgets.' }),
   Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She left a letter at the platform. She said the person looking for her would know the name.' }),
 ]);
@@ -43,9 +43,22 @@ export const HINTS = Object.freeze({
   punch: 'F · PUNCH',
   read: 'E · READ',
   talk: 'E · TALK',
+  jump: 'SPACE · JUMP',
   listen: 'HOLD Q · LISTEN',
   busy: 'LINE HOLDING · PUNCH ITS LIT TAG TO CUT',
   cut: 'LINE CUT · FREE AFTER THE FLICKER',
 });
 
-export const STONE_TOAST = 'GRID STONE · AN UNFILED OBJECT';
+// The game's one name for these is MAGIC STONES (docs/STORY_BIBLE.md).
+export const stoneToast = ({ count, total }) => `GRID STONE · MAGIC STONE ${count} / ${total}`;
+
+// The dark decks of the blackout stand only in borrowed light (a lit sign or
+// a punched node's afterglow); Butch's lamp shows their near edge, no more.
+export const DARK_DECK_HINT = 'DARK DECK · IT HOLDS ONLY IN BORROWED LIGHT';
+
+// The departure: one line as Butch boards. Late, the train is already rolling
+// and the doors close on his coat.
+export const BOARDING_LINES = Object.freeze({
+  onTime: Object.freeze({ speaker: 'BUTCH', text: 'On the bell. The door waited for me.' }),
+  late: Object.freeze({ speaker: 'BUTCH', text: 'Hold the— … Made it. Most of the coat, too.' }),
+});

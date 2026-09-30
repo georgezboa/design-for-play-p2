@@ -184,7 +184,7 @@ export class BorrowedLightHud {
       }
     });
     this.meterLabel.setText(departure ? '' : '');
-    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}` : '').setY(CY + R + 72);
+    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(CY + R + 72);
   }
 
   ring({ departure = false } = {}) {
@@ -208,6 +208,8 @@ export class BorrowedLightHud {
   // ---- title cards and toasts ---------------------------------------------
   titleCard(big, small, { hold = 2600 } = {}) {
     const scene = this.scene;
+    // A card or a conversation owns the screen: no section title over it.
+    if (this.cardOpen || this.dialogOpen) return;
     this.titleBig.setText(big);
     this.titleSmall.setText(small);
     const w = Math.max(this.titleBig.width, 600);
@@ -232,21 +234,47 @@ export class BorrowedLightHud {
   }
 
   showStones(snapshot) {
-    this.stoneText.setText(`GRID STONE · ${snapshot.count} / ${snapshot.total}`);
+    this.stoneText.setText(`MAGIC STONES · ${snapshot.count} / ${snapshot.total}`);
     this.scene.tweens.killTweensOf(this.stoneText);
     this.stoneText.setAlpha(1);
     this.scene.tweens.add({ targets: this.stoneText, alpha: 0.35, duration: 1400, delay: 4000 });
   }
 
   // ---- caption bar ---------------------------------------------------------
-  clearTitle() {
+  // `instant` clears a title the moment a card opens, so the two never share
+  // the screen (A2-8: the letter under EVACUATION PLATFORM).
+  clearTitle({ instant = false } = {}) {
     const parts = [this.titleBig, this.titleSmall, this.titleRule, this.titleBand];
     this.scene.tweens.killTweensOf(parts);
-    this.scene.tweens.add({ targets: parts, alpha: 0, duration: 200 });
+    if (instant) parts.forEach((part) => part.setAlpha(0));
+    else this.scene.tweens.add({ targets: parts, alpha: 0, duration: 200 });
+  }
+
+  // A one-line caption that takes no input and clears itself (the boarding
+  // line). Never while a conversation is open.
+  say(line, ms = 2600) {
+    if (this.dialog) return false;
+    this.clearTitle({ instant: true });
+    this.caption.setVisible(true).setAlpha(1);
+    this.captionSpeaker.setText(line.speaker);
+    this.captionBody.setText(line.text);
+    this.captionHint.setAlpha(0);
+    this.scene.tweens.killTweensOf(this.caption);
+    this.scene.tweens.add({
+      targets: this.caption,
+      alpha: 0,
+      delay: ms,
+      duration: 400,
+      onComplete: () => { if (!this.dialog) this.caption.setVisible(false); this.caption.setAlpha(1); },
+    });
+    this.saying = line;
+    return true;
   }
 
   openDialog(lines, onDone) {
-    this.clearTitle();
+    this.clearTitle({ instant: true });
+    this.scene.tweens.killTweensOf(this.caption);
+    this.caption.setAlpha(1);
     this.dialog = { lines, index: 0, shown: 0, onDone };
     this.caption.setVisible(true);
     this.renderDialog();
@@ -294,7 +322,7 @@ export class BorrowedLightHud {
 
   // ---- cards ---------------------------------------------------------------
   openCard({ heading, subheading = '', lines, kind = 'archive' }, onClose) {
-    this.clearTitle();
+    this.clearTitle({ instant: true });
     this.cardState = { onClose };
     this.cardOpenedAt = performance.now();
     const g = this.cardPaper;

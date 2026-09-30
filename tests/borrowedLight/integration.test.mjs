@@ -144,3 +144,46 @@ test('reduced motion is respected: no heavy rain streaks, no lightning flash, no
   assert.match(scene, /if \(!reducedMotionActive\(\)\) this\.cameras\.main\.shake/);
   assert.match(read('src/borrowedLight-main.js'), /installPhaserMotionGuard\(Phaser\)/);
 });
+
+// Alpha round 1 (F2): teaching, the letter card, the late boarding, stones.
+test('alpha F2: jump and listen are taught in the world at first use', async () => {
+  const { HINTS } = await import('../../src/chapters/borrowedLight/story.js');
+  const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
+  assert.equal(HINTS.jump, 'SPACE · JUMP');
+  // The first jump the route needs is the AC unit on the ROOMS roof.
+  assert.match(scene, /onRoomsRoof\) return \{ x: 5618, y: 386, text: HINTS\.jump \}/);
+  assert.match(scene, /if \(out\.jumped\) \{\n\s+this\.flags\.jumped = true;/);
+  assert.match(scene, /!this\.flags\.listened && this\.flags\.listenHinted && queued/);
+  // Prompts are paper tags (ivory paper, walnut ink), not dark boxes.
+  assert.match(scene, /color: '#2a1d14', backgroundColor: '#e6dcc2'/);
+});
+
+test('alpha F2: the mechanic names one box, and E · TALK clears the awning', () => {
+  const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
+  const pointing = MECHANIC_LINES[2].text;
+  assert.doesNotMatch(pointing, /by the edge/);
+  assert.match(pointing, /paper tag, on the pole by the gap/);
+  assert.match(scene, /\[MECHANIC\.x, MECHANIC\.y - 208, HINTS\.talk\]/);
+});
+
+test('alpha F2: a card or a conversation clears the section title at once', () => {
+  const hud = read('src/chapters/borrowedLight/hud.js');
+  assert.match(hud, /onClose\) \{\n\s+this\.clearTitle\(\{ instant: true \}\);/);
+  assert.match(hud, /if \(this\.cardOpen \|\| this\.dialogOpen\) return;/);
+});
+
+test('alpha F2: missing the departure looks and sounds different, and falls do not cost bells', async () => {
+  const { BOARDING_LINES } = await import('../../src/chapters/borrowedLight/story.js');
+  const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
+  assert.notEqual(BOARDING_LINES.onTime.text, BOARDING_LINES.late.text);
+  assert.match(scene, /this\.hud\.say\(BOARDING_LINES\.late/);
+  assert.match(scene, /this\.coatCaught = this\.caughtCoat\(train\)/);
+  assert.match(scene, /then: null, chase: true/);
+  assert.match(scene, /this\.tt\.holdCountdown\(true\)/);
+});
+
+test('alpha F2: the stone toast uses the one name, MAGIC STONES', async () => {
+  const { stoneToast } = await import('../../src/chapters/borrowedLight/story.js');
+  assert.equal(stoneToast({ count: 2, total: 5 }), 'GRID STONE · MAGIC STONE 2 / 5');
+  assert.match(read('src/chapters/borrowedLight/hud.js'), /MAGIC STONES · /);
+});
