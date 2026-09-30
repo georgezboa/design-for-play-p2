@@ -414,7 +414,8 @@ export class PaintedCountryScene extends Phaser.Scene {
   buildVarnish() {
     this.varnishLayer = this.graphics(DEPTH.VARNISH);
     this.varnishStamps = VARNISH_RECTS.map((rect) => this.add
-      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows / 2) * CELL, 'OFFICIAL RECORD', {
+      // Low in the gloss, clear of the (lowered) orchard plate's title.
+      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows * 0.72) * CELL, 'OFFICIAL RECORD', {
         fontFamily: MONO, fontSize: '16px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 4,
       })
       .setOrigin(0.5)
