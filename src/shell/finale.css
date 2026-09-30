@@ -219,7 +219,7 @@
 /* ---------- archive stamp (IDENTITY VERIFIED, CLAIM CLOSED, DEPARTING) ---------- */
 .nf-stamp-scene { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; background: rgba(5, 4, 3, 0.82); pointer-events: auto; }
 .nf-stamp-ticket {
-  position: relative; width: min(640px, calc(100vw - 48px)); padding: 30px 40px 32px 64px; color: var(--nf-paper-ink);
+  position: relative; width: min(640px, calc(100vw - 48px)); padding: 30px 40px 96px 64px; color: var(--nf-paper-ink);
   background: var(--nf-paper) radial-gradient(circle at 18% 12%, rgba(255, 255, 255, 0.4), transparent 60%);
   border-radius: 4px; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(42, 29, 20, 0.18);
   transform: rotate(-1.2deg);
@@ -233,14 +233,24 @@
 .nf-stamp-ticket dt { color: #6b5640; letter-spacing: 0.14em; }
 .nf-stamp-ticket dd { margin: 0; }
 .nf-stamp-ticket s { text-decoration-color: #b02a1e; text-decoration-thickness: 3px; }
+/* The stamp lands in the ticket's own empty foot, never over the lines:
+   the passenger's name (BUTCH) is the payoff it confirms (alpha A4-9). */
 .nf-stamp {
-  position: absolute; right: 34px; top: 50%; padding: 8px 16px; transform: translateY(-50%) rotate(-9deg) scale(2.6); opacity: 0;
-  font: calc(30px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; color: var(--nf-oxblood);
+  position: absolute; right: 34px; bottom: 22px; padding: 8px 16px; transform: rotate(-6deg) scale(2.6); transform-origin: 70% 50%; opacity: 0;
+  font: calc(28px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; color: var(--nf-oxblood);
   border: 4px double var(--nf-oxblood); border-radius: 6px; mix-blend-mode: multiply;
 }
 .nf-stamp.is-down { animation: nf-stamp-down 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
-@keyframes nf-stamp-down { 0% { opacity: 0; transform: translateY(-50%) rotate(-9deg) scale(2.6); } 60% { opacity: 1; transform: translateY(-50%) rotate(-9deg) scale(0.94); } 100% { opacity: 0.92; transform: translateY(-50%) rotate(-9deg) scale(1); } }
+@keyframes nf-stamp-down { 0% { opacity: 0; transform: rotate(-6deg) scale(2.6); } 60% { opacity: 1; transform: rotate(-6deg) scale(0.94); } 100% { opacity: 0.92; transform: rotate(-6deg) scale(1); } }
+.nf-stamp-ticket dd b { font-weight: 700; color: var(--nf-oxblood); letter-spacing: 0.06em; }
 .nf-stamp-scene small { position: absolute; left: 50%; bottom: 7%; transform: translateX(-50%); font: 700 calc(11px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.24em; color: #a8987c; }
+
+/* a title card's line of keys (the controls a movement adds) */
+.nf-title-card__keys {
+  display: inline-block; margin: 14px auto 0; padding: 7px 16px 6px; max-width: min(900px, calc(100vw - 60px));
+  font: 700 calc(12px * var(--nf-scale)) / 1.5 var(--nf-mono); letter-spacing: 0.12em; color: var(--nf-paper-ink);
+  background: var(--nf-paper); border-radius: 3px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+}
 
 /* ---------- big in-fiction stamps over the stage (DEPARTING, CLAIM CLOSED) ---------- */
 .nf-announce {
