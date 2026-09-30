@@ -129,7 +129,7 @@ export function createBellMeter(parent, { lines = ['amber', 'teal', 'rose'] } = 
 // ---------------------------------------------------------------------------
 // Stone row (five sockets, lit when held).
 
-export function createStoneRow(parent, { snapshot = magicStoneSnapshot(), caption = 'STONES' } = {}) {
+export function createStoneRow(parent, { snapshot = magicStoneSnapshot(), caption = 'MAGIC STONES' } = {}) {
   const root = el('div', 'nf-stone-row');
   const row = el('div', 'nf-stones');
   magicStoneRow(snapshot).forEach(({ name, held }) => {
