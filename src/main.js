@@ -1,3 +1,5 @@
+import './fonts/fonts.css';
+import './shell/uiKit.css';
 import './shell/titleMenu.css';
 import { DEV_MODE, hasDevRoute } from './devMode.js';
 import { createTitleMenu } from './shell/titleMenu.js';

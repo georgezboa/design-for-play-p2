@@ -21,6 +21,7 @@ import { SETTINGS_CONTROLS } from './settingsControls.js';
 import { DEV_ROUTES } from './devRoutes.js';
 import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { cycleIndex } from './menuNavigation.js';
+import { dressCarriageWall } from './titleCarriage.js';
 
 const store = createSaveStore();
 
@@ -46,30 +47,49 @@ export function createTitleMenu({ openCredits = false } = {}) {
   applySettings(readSettings());
   const root = document.createElement('main');
   root.id = 'nightfall-title';
+  // One wall of the night train (titleMenu.css, titleCarriage.js): the key
+  // art is the view through a brass-bezelled carriage window with the
+  // wordmark gilded on its glass, and the menu is the departures board
+  // beside it, where the selected line becomes a punched paper ticket.
   root.innerHTML = `
-    <img class="nf-title-backdrop" src="/assets/ui/nightfall-title-background.png" alt="" aria-hidden="true" />
-    <div class="nf-baked-menu-mask" aria-hidden="true"></div>
-    <div class="nf-vignette"></div>
-    <div class="nf-grain" aria-hidden="true"></div>
-    <section class="nf-menu" aria-label="NIGHTFALL main menu">
-      <header class="nf-menu-header">
-        <span class="nf-menu-rule"></span>
-        <p class="nf-kicker">NIGHT SERVICE TERMINAL</p>
-        <span class="nf-menu-rule"></span>
-      </header>
-      <nav class="nf-main-actions" aria-label="Main menu"></nav>
-      <footer class="nf-menu-footer">
-        <p class="nf-status" role="status" aria-live="polite"></p>
-        <p class="nf-hint"><kbd>↑</kbd><kbd>↓</kbd> SELECT <i></i> <kbd>ENTER</kbd> CONFIRM <i></i> <kbd>F</kbd> FULLSCREEN</p>
-      </footer>
-    </section>
-    <p class="nf-build-mark">ARCHIVE LINE 01 · NIGHT SERVICE</p>
+    <div class="nf-wall" aria-hidden="true"></div>
+    <div class="nf-rail" aria-hidden="true"></div>
+    <div class="nf-carriage">
+      <div class="nf-lamps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="nf-window">
+        <div class="nf-window-glass">
+          <img class="nf-title-backdrop" src="/assets/ui/nightfall-title-window.jpg" alt="" aria-hidden="true" />
+          <div class="nf-rain" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="nf-glass" aria-hidden="true"></div>
+          <header class="nf-wordmark">
+            <h1>NIGHTFALL</h1>
+            <span class="nf-wordmark-rule" aria-hidden="true"><b></b></span>
+            <p>THE LAST ARCHIVE LINE</p>
+          </header>
+        </div>
+      </div>
+      <section class="nf-menu" aria-label="NIGHTFALL main menu">
+        <header class="nf-menu-header">
+          <span class="nf-menu-rule"></span>
+          <p class="nf-kicker">NIGHT SERVICE · DEPARTURES</p>
+          <span class="nf-menu-rule"></span>
+        </header>
+        <p class="nf-board-columns" aria-hidden="true"><span>No.</span><span>SERVICE</span><span>LINE 01</span></p>
+        <nav class="nf-main-actions" aria-label="Main menu"></nav>
+        <footer class="nf-menu-footer">
+          <p class="nf-status" role="status" aria-live="polite"></p>
+          <p class="nf-hint"><span><kbd>↑</kbd><kbd>↓</kbd> SELECT</span> <span><kbd>ENTER</kbd> CONFIRM</span> <span><kbd>F</kbd> FULLSCREEN</span></p>
+        </footer>
+      </section>
+    </div>
+    <div class="nf-sill" aria-hidden="true"><p class="nf-build-mark">ARCHIVE LINE 01 · NIGHT SERVICE</p></div>
     <dialog class="nf-dialog" id="nf-dialog">
       <div class="nf-dialog-ornament" aria-hidden="true"><span></span><b>◇</b><span></span></div>
       <div class="nf-dialog-inner"></div>
     </dialog>
   `;
   document.body.append(root);
+  dressCarriageWall(root);
   const actions = root.querySelector('.nf-main-actions');
   const status = root.querySelector('.nf-status');
   const dialog = root.querySelector('#nf-dialog');
@@ -127,6 +147,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   };
 
   const renderCredits = () => {
+    dialog.dataset.variant = 'credits';
     panel.replaceChildren();
     panel.classList.add('nf-credits-panel');
     dialog.classList.add('nf-dialog--credits-roll');
@@ -291,6 +312,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   };
 
   const renderSlots = (mode) => {
+    dialog.dataset.variant = mode === 'new' ? 'slots-new' : 'slots-load';
     panel.classList.remove('nf-credits-panel');
     panel.replaceChildren();
     const heading = document.createElement('div');
@@ -300,7 +322,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
     store.readAll().forEach((save, index) => {
       const info = formatSave(save);
       const row = document.createElement('article');
-      row.className = 'nf-slot';
+      row.className = save ? 'nf-slot' : 'nf-slot is-empty';
       row.innerHTML = `<span class="nf-slot-index">${String(index + 1).padStart(2, '0')}</span><span class="nf-slot-meta">ARCHIVE SLOT</span><strong>${info.title}</strong><small>${info.detail}</small><b aria-hidden="true">›</b>`;
       row.tabIndex = 0;
       row.setAttribute('role', 'button');
@@ -336,6 +358,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
 
   const renderCheckpoints = (selectedIndex = store.getActiveSlot()) => {
     panel.classList.remove('nf-credits-panel');
+    dialog.dataset.variant = 'checkpoints';
     const index = selectedIndex;
     const save = store.readAll()[index];
     panel.innerHTML = `<p class="nf-eyebrow">SLOT ${index + 1}</p><h2>CHECKPOINTS</h2>`;
@@ -360,6 +383,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
 
   const renderSettings = () => {
     panel.classList.remove('nf-credits-panel');
+    dialog.dataset.variant = 'settings';
     const settings = readSettings();
     panel.innerHTML = `<p class="nf-eyebrow">SYSTEM</p><h2>SETTINGS</h2>`;
     SETTINGS_CONTROLS.forEach(([key, label, type, min, max]) => {
@@ -369,9 +393,12 @@ export function createTitleMenu({ openCredits = false } = {}) {
       const input = document.createElement('input');
       input.type = type;
       input.dataset.setting = key;
-      if (type === 'range') { input.min = min; input.max = max; input.value = settings[key]; }
+      // The brass slider's amber fill follows the value (titleMenu.css).
+      const fill = () => input.style.setProperty('--nf-range', `${((input.value - min) / (max - min)) * 100}%`);
+      if (type === 'range') { input.min = min; input.max = max; input.value = settings[key]; fill(); }
       else input.checked = settings[key];
       input.addEventListener('input', () => {
+        if (type === 'range') fill();
         const next = readSettings();
         next[key] = type === 'range' ? Number(input.value) : input.checked;
         writeSettings(next);
@@ -400,6 +427,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   };
 
   const renderHiddenChapterSelect = () => {
+    dialog.dataset.variant = 'router';
     panel.classList.remove('nf-credits-panel');
     panel.innerHTML = '<div class="nf-dialog-heading"><p class="nf-eyebrow">ARCHIVE ROUTING · 1111</p><h2>SELECT TEST NODE</h2><p class="nf-empty">Every entry skips transition films and opens its playable node directly.</p></div>';
     let group = null;
@@ -426,6 +454,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   };
 
   const renderQuit = () => {
+    dialog.dataset.variant = 'quit';
     panel.classList.remove('nf-credits-panel');
     panel.innerHTML = `
       <p class="nf-eyebrow">NIGHT SERVICE</p>
@@ -470,7 +499,13 @@ export function createTitleMenu({ openCredits = false } = {}) {
       button('SETTINGS', renderSettings, '', 'AUDIO · DISPLAY · ACCESSIBILITY'),
       button('QUIT GAME', renderQuit, 'nf-quit', 'END THE NIGHT SERVICE'),
     );
-    [...actions.children].forEach((action, index) => action.dataset.index = String(index + 1).padStart(2, '0'));
+    [...actions.children].forEach((action, index) => {
+      action.dataset.index = String(index + 1).padStart(2, '0');
+      // The pointer moves the one selection, so only one ticket is ever out.
+      action.addEventListener('pointerenter', () => {
+        if (!action.classList.contains('is-disabled')) action.focus({ preventScroll: true });
+      });
+    });
     status.textContent = activeSave ? `SLOT ${activeSave.slot + 1} · ${formatSave(activeSave).title}` : 'NO ACTIVE JOURNEY';
     actions.querySelector('button')?.focus();
   };
