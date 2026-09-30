@@ -883,7 +883,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 
 /* ---------- quit: an archive card ---------- */
 
-.nf-dialog[data-variant="quit"] {
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) {
   width: min(540px, calc(100vw - 40px));
   border: 0;
   border-radius: 4px;
@@ -896,7 +896,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
   box-shadow: 0 24px 60px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(42, 29, 20, .18);
   rotate: -.6deg;
 }
-.nf-dialog[data-variant="quit"]::before {
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"])::before {
   content: "";
   position: absolute;
   top: 20px;
@@ -907,15 +907,34 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
   background: #120b07;
   box-shadow: inset 0 2px 3px rgba(0, 0, 0, .7), 0 0 0 2px rgba(42, 29, 20, .15);
 }
-.nf-dialog[data-variant="quit"] .nf-dialog-ornament { display: none; }
-.nf-dialog[data-variant="quit"] .nf-dialog-inner { grid-template-columns: 1fr 1fr; gap: .5em 1em; padding: 2.1em 2.4em 2em; }
-.nf-dialog[data-variant="quit"] .nf-dialog-inner > :not(button) { grid-column: 1 / -1; text-align: left; }
-.nf-dialog[data-variant="quit"] .nf-eyebrow { color: var(--nf-oxblood); font-size: .7em; letter-spacing: .18em; }
-.nf-dialog[data-variant="quit"] h2 { margin: .15em 0 .2em; font-weight: 700; font-size: 1.7em; letter-spacing: .03em; }
-.nf-dialog[data-variant="quit"] .nf-empty { color: rgba(42, 29, 20, .8); font-style: normal; font-size: .95em; margin-bottom: .8em; }
-.nf-dialog[data-variant="quit"] .nf-action { justify-self: stretch; min-width: 0; margin: 0; }
-.nf-dialog[data-variant="quit"] .nf-back { color: var(--nf-paper-ink); border-color: rgba(42, 29, 20, .5); background: rgba(42, 29, 20, .05); }
-.nf-dialog[data-variant="quit"] .nf-back:is(:hover, :focus-visible) { color: var(--nf-paper-ink); border-color: var(--nf-amber); background: rgba(224, 162, 74, .22); box-shadow: 0 0 0 1px var(--nf-amber); }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-ornament { display: none; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-inner { grid-template-columns: 1fr 1fr; gap: .5em 1em; padding: 2.1em 2.4em 2em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-inner > :not(button) { grid-column: 1 / -1; text-align: left; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-eyebrow { color: var(--nf-oxblood); font-size: .7em; letter-spacing: .18em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) h2 { margin: .15em 0 .2em; font-weight: 700; font-size: 1.7em; letter-spacing: .03em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-empty { color: rgba(42, 29, 20, .8); font-style: normal; font-size: .95em; margin-bottom: .8em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-action { justify-self: stretch; min-width: 0; margin: 0; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-back { color: var(--nf-paper-ink); border-color: rgba(42, 29, 20, .5); background: rgba(42, 29, 20, .05); }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-back:is(:hover, :focus-visible) { color: var(--nf-paper-ink); border-color: var(--nf-amber); background: rgba(224, 162, 74, .22); box-shadow: 0 0 0 1px var(--nf-amber); }
+
+/* confirmations (overwrite, delete) read as the quit card; so does the
+   magic-stones card after a normal ending, one column wide */
+.nf-dialog[data-variant="confirm"] .nf-dialog-inner > .nf-confirm-copy { display: grid; gap: .2em; }
+.nf-dialog[data-variant="stones"] { width: min(620px, calc(100vw - 40px)); }
+.nf-dialog[data-variant="stones"] .nf-dialog-inner { grid-template-columns: 1fr; }
+.nf-dialog[data-variant="stones"] .nf-back { justify-self: start; min-width: 14em; }
+.nf-stones-card { display: grid; gap: .45em; }
+.nf-stones-sockets { margin: .2em 0 .5em; }
+.nf-stones-sockets .nf-stones i { border-color: #8a6934; background: rgba(42, 29, 20, .16); }
+.nf-stones-clues { display: grid; gap: .55em; margin: 0; padding: 0; list-style: none; }
+.nf-stones-clues li {
+  position: relative;
+  padding: .5em .8em .5em 1.6em;
+  border-left: 3px solid var(--nf-oxblood);
+  background: rgba(42, 29, 20, .06);
+  font: italic .92em/1.45 var(--nf-serif);
+}
+.nf-stones-clues li::before { content: ""; position: absolute; left: .55em; top: .95em; width: .42em; height: .42em; border-radius: 50%; border: 1.5px dashed rgba(42, 29, 20, .6); }
 
 /* ---------- the 1111 router: the conductor's routing ledger ---------- */
 

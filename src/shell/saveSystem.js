@@ -1,7 +1,20 @@
+import { DEV_MODE, PLAYTEST_MODE, hiddenRouterActive } from '../devMode.js';
+
 export const SAVE_VERSION = 1;
 export const SAVE_KEY = 'nightfall.saves.v1';
 export const SETTINGS_KEY = 'nightfall.settings.v1';
 export const ACTIVE_SLOT_KEY = 'nightfall.activeSlot.v1';
+// A test-route session (the title's 1111 router, the dev launcher) plays on
+// its own scratch slots: a router visit never moves a real slot's checkpoint,
+// stones or play time (docs: alpha A2-14 / A4-11).
+export const ROUTER_SAVE_KEY = 'nightfall.saves.router.v1';
+export const ROUTER_ACTIVE_SLOT_KEY = 'nightfall.activeSlot.router.v1';
+
+// The five magic stones' ids (shell/magicStones.js owns their names and
+// clues). Kept here so a save can be described without importing the stones.
+export const MAGIC_STONE_IDS = Object.freeze(['chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'black-knife']);
+// The five-stone route's name: only a save holding all five says it.
+export const LAST_CARRIAGE_TITLE = 'THE LAST CARRIAGE';
 
 export const CHECKPOINTS = Object.freeze([
   // Chapter 1 is the NIGHT SERVICE panel puzzle (night-service.html). The page
@@ -43,6 +56,29 @@ const MUSIC_BUS_GAIN = 1.15;
 
 const checkpointById = (id) => CHECKPOINTS.find((checkpoint) => checkpoint.id === id);
 
+/** Story order of a checkpoint (its index in CHECKPOINTS), -1 when unknown. */
+export function checkpointOrder(id) {
+  return CHECKPOINTS.findIndex((checkpoint) => checkpoint.id === id);
+}
+
+// Whether reaching `nextId` moves a save that stands on `currentId`. A page
+// load or a chapter beat records its checkpoint only when it is the same or
+// later in story order: opening car03-3d.html on a `chapter-3-dusk` save
+// must not rewind it to `chapter-3-start` (alpha A4-2). Going back on
+// purpose is LOAD / CHECKPOINTS, which selects the earlier checkpoint first.
+export function checkpointAdvances(currentId, nextId) {
+  const next = checkpointOrder(nextId);
+  if (next < 0) return false;
+  const current = checkpointOrder(currentId);
+  return current < 0 || next >= current;
+}
+
+/** True while this tab plays a test route (see ROUTER_SAVE_KEY). */
+export function routerSessionActive(session = globalThis.sessionStorage) {
+  if (!DEV_MODE && !PLAYTEST_MODE) return false;
+  try { return hiddenRouterActive(session); } catch { return false; }
+}
+
 // The rows LOAD / CHECKPOINTS lists for a save: its unlocked checkpoints in
 // story order, minus any `legacy: true` id when the save also holds a current
 // checkpoint for the same chapter and act (a save that unlocked both
@@ -66,14 +102,18 @@ const safeParse = (value, fallback) => {
   try { return JSON.parse(value) ?? fallback; } catch { return fallback; }
 };
 
-export function createSaveStore(storage = globalThis.localStorage) {
+// `scratch` (default: this tab is on a test route) reads and writes the
+// router's scratch slots instead of the player's three slots.
+export function createSaveStore(storage = globalThis.localStorage, { scratch = routerSessionActive() } = {}) {
+  const saveKey = scratch ? ROUTER_SAVE_KEY : SAVE_KEY;
+  const slotKey = scratch ? ROUTER_ACTIVE_SLOT_KEY : ACTIVE_SLOT_KEY;
   const readAll = () => {
-    const source = safeParse(storage?.getItem(SAVE_KEY), []);
+    const source = safeParse(storage?.getItem(saveKey), []);
     return [0, 1, 2].map((index) => source[index] ?? null);
   };
-  const writeAll = (saves) => storage?.setItem(SAVE_KEY, JSON.stringify(saves));
-  const getActiveSlot = () => Math.max(0, Math.min(2, Number(storage?.getItem(ACTIVE_SLOT_KEY)) || 0));
-  const setActiveSlot = (index) => storage?.setItem(ACTIVE_SLOT_KEY, String(Math.max(0, Math.min(2, index))));
+  const writeAll = (saves) => storage?.setItem(saveKey, JSON.stringify(saves));
+  const getActiveSlot = () => Math.max(0, Math.min(2, Number(storage?.getItem(slotKey)) || 0));
+  const setActiveSlot = (index) => storage?.setItem(slotKey, String(Math.max(0, Math.min(2, index))));
 
   const startNew = (index) => {
     const saves = readAll();
@@ -93,22 +133,37 @@ export function createSaveStore(storage = globalThis.localStorage) {
     return saves[index];
   };
 
+  // Reaching a checkpoint unlocks it; it becomes the one Continue resumes
+  // only when it does not rewind the save (checkpointAdvances).
   const markCheckpoint = (id, { slot = getActiveSlot(), playSeconds = 0 } = {}) => {
     if (!checkpointById(id)) return null;
     const saves = readAll();
     const save = saves[slot];
     if (!save) return null;
     const unlocked = [...new Set([...(save.unlocked ?? []), id])];
+    const recorded = checkpointAdvances(save.checkpointId, id);
     saves[slot] = {
       ...save,
-      checkpointId: id,
+      checkpointId: recorded ? id : save.checkpointId,
       unlocked,
       updatedAt: new Date().toISOString(),
       playSeconds: Math.max(save.playSeconds ?? 0, playSeconds),
     };
     writeAll(saves);
     setActiveSlot(slot);
-    globalThis.dispatchEvent?.(new CustomEvent('nightfall:checkpoint', { detail: { id, slot } }));
+    globalThis.dispatchEvent?.(new CustomEvent('nightfall:checkpoint', { detail: { id, slot, recorded } }));
+    return saves[slot];
+  };
+
+  // Time played, added in small increments by the play clock (playClock.js).
+  const addPlaySeconds = (seconds, { slot = getActiveSlot() } = {}) => {
+    const add = Number(seconds);
+    if (!Number.isFinite(add) || add <= 0) return null;
+    const saves = readAll();
+    const save = saves[slot];
+    if (!save) return null;
+    saves[slot] = { ...save, playSeconds: Math.round(((save.playSeconds ?? 0) + add) * 10) / 10 };
+    writeAll(saves);
     return saves[slot];
   };
 
@@ -143,7 +198,45 @@ export function createSaveStore(storage = globalThis.localStorage) {
     writeAll(saves);
   };
 
-  return { readAll, startNew, markCheckpoint, collectMagicStone, selectCheckpoint, remove, getActiveSlot, setActiveSlot };
+  // The first-pickup card (shell/stoneNotices.js) is shown once per save.
+  const markNoticeSeen = (key, { slot = getActiveSlot() } = {}) => {
+    const saves = readAll();
+    const save = saves[slot];
+    if (!save || typeof key !== 'string') return null;
+    saves[slot] = { ...save, notices: [...new Set([...(save.notices ?? []), key])] };
+    writeAll(saves);
+    return saves[slot];
+  };
+
+  return {
+    readAll, startNew, markCheckpoint, collectMagicStone, selectCheckpoint, remove, getActiveSlot, setActiveSlot,
+    addPlaySeconds, markNoticeSeen, scratch: Boolean(scratch),
+  };
+}
+
+// A test route's scratch save: the node's checkpoint, and the stones of the
+// player's active slot (so stone-gated routes behave as they would for them).
+// Called by the router just before it navigates.
+export function seedRouterSave(checkpointId, { storage = globalThis.localStorage } = {}) {
+  const real = createSaveStore(storage, { scratch: false });
+  const source = real.readAll()[real.getActiveSlot()];
+  const id = checkpointById(checkpointId) ? checkpointId : 'chapter-1-start';
+  const now = new Date().toISOString();
+  const save = {
+    version: SAVE_VERSION,
+    slot: 0,
+    checkpointId: id,
+    unlocked: [...new Set(['chapter-1-start', id])],
+    magicStones: [...(source?.magicStones ?? [])],
+    notices: [...(source?.notices ?? [])],
+    createdAt: now,
+    updatedAt: now,
+    playSeconds: 0,
+    router: true,
+  };
+  storage?.setItem(ROUTER_SAVE_KEY, JSON.stringify([save, null, null]));
+  storage?.setItem(ROUTER_ACTIVE_SLOT_KEY, '0');
+  return save;
 }
 
 export function readSettings(storage = globalThis.localStorage) {
@@ -216,12 +309,29 @@ export function requestReturnToTitle({ confirm = globalThis.confirm } = {}) {
   return true;
 }
 
+/** "1H 05M", "12M", "UNDER 1M" for a play time in seconds. */
+export function formatPlayTime(seconds) {
+  const total = Math.max(0, Math.floor(Number(seconds) || 0));
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours) return `${hours}H ${String(minutes).padStart(2, '0')}M`;
+  return minutes ? `${minutes}M` : 'UNDER 1M';
+}
+
+export function holdsAllStones(save) {
+  const held = new Set(save?.magicStones ?? []);
+  return MAGIC_STONE_IDS.every((id) => held.has(id));
+}
+
 export function formatSave(save) {
-  if (!save) return { title: 'EMPTY SLOT', detail: 'Begin a new journey.', checkpoint: null };
+  if (!save) return { title: 'EMPTY SLOT', detail: 'Begin a new journey here.', checkpoint: null };
   const checkpoint = checkpointById(save.checkpointId) ?? CHECKPOINTS[0];
+  // Chapter 6 with all five stones is the last carriage, not the Conductor.
+  const title = checkpoint.chapter === 6 && holdsAllStones(save) ? LAST_CARRIAGE_TITLE : checkpoint.title;
+  const played = save.playSeconds > 0 ? ` · ${formatPlayTime(save.playSeconds)} PLAYED` : '';
   return {
-    title: checkpoint.title,
-    detail: `CHAPTER ${checkpoint.chapter} · ${new Date(save.updatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}`,
+    title,
+    detail: `CHAPTER ${checkpoint.chapter} · ${new Date(save.updatedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}${played}`,
     checkpoint,
   };
 }

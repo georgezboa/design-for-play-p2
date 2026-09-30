@@ -1,5 +1,5 @@
-// Keyboard and gamepad navigation for the shell's menus (the title menu, the
-// pause menu and its confirm / settings panels). The rules are DOM-free so
+// Keyboard and gamepad navigation for the shell's menus (the title menu and
+// every title dialog, the pause menu and its confirm / settings panels). The rules are DOM-free so
 // they can be node-tested; the DOM side only asks for the list of visible
 // controls and focuses or clicks the one these helpers pick.
 
@@ -25,6 +25,43 @@ export function cycleIndex(current, count, direction) {
   const step = direction === 'prev' || direction < 0 ? -1 : 1;
   if (!Number.isInteger(current) || current < 0 || current >= count) return step > 0 ? 0 : count - 1;
   return (current + step + count) % count;
+}
+
+// The focus-cycling helper every shell menu shares (the title board and its
+// dialogs, the pause menu and its panels): the controls ↑ ↓ / W S / the D-pad
+// move through are the container's visible, enabled buttons, button-like
+// rows, sliders, checkboxes and links, in document order.
+export const NAVIGABLE_SELECTOR = 'button, [role="button"][tabindex], input, a[href]';
+
+export function navigableControls(container) {
+  if (!container?.querySelectorAll) return [];
+  return [...container.querySelectorAll(NAVIGABLE_SELECTOR)].filter((element) => !element.disabled
+    && !element.classList?.contains('is-disabled')
+    && element.getAttribute?.('aria-disabled') !== 'true'
+    && element.getClientRects().length > 0);
+}
+
+/** Move focus one control up or down inside `container`; returns the control. */
+export function moveFocusWithin(container, direction, active = globalThis.document?.activeElement) {
+  const items = navigableControls(container);
+  const next = items[cycleIndex(items.indexOf(active), items.length, direction)] ?? null;
+  next?.focus({ preventScroll: false });
+  next?.scrollIntoView?.({ block: 'nearest' });
+  return next;
+}
+
+/**
+ * Press the focused control (a gamepad A, or Enter on a control that has no
+ * native Enter, like a checkbox). A slider has nothing to press. With focus
+ * outside the container, the first control takes focus instead.
+ */
+export function activateWithin(container, active = globalThis.document?.activeElement) {
+  const items = navigableControls(container);
+  const target = items.includes(active) ? active : null;
+  if (!target) { items[0]?.focus(); return null; }
+  if (target.type === 'range') return target;
+  target.click();
+  return target;
 }
 
 // Standard-mapping gamepad buttons (https://w3c.github.io/gamepad/#remapping).

@@ -13,7 +13,8 @@ import { resolveCheckpointRoute } from './shell/finalBossRoute.js';
 // (`prologue-start` → night-service.html Act 1, `chapter-2-*` →
 // borrowed-light.html) so old saves still resume on the right page.
 //
-//   /?credits=1  the title with the credits roll open (the ending returns here)
+//   /?credits=1  the title with the credits roll open (the ending returns here;
+//                &ending=normal adds the missed magic stones after the roll)
 //   /?play=1     legacy "skip the title" entry: resume the active checkpoint,
 //                or show the title when there is no journey to resume
 //   /?title=1    dev only: the production title instead of the launcher
@@ -32,7 +33,7 @@ function resumeActiveCheckpoint() {
 }
 
 if (params.get('credits') === '1') {
-  createTitleMenu({ openCredits: true });
+  createTitleMenu({ openCredits: true, ending: params.get('ending') });
 } else if (params.get('play') === '1') {
   if (!resumeActiveCheckpoint()) createTitleMenu();
 } else if (DEV_MODE && params.get('title') !== '1') {

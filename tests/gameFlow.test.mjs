@@ -48,7 +48,7 @@ test('the hidden title router gives Chapter 3 direct node access', () => {
   // 1.0 release: the campfire chatter and the overlook climb were cut; the
   // nodes now open the ticket board, the scanners and the night fire.
   assert.match(title, /id: '3\.2'[\s\S]*?TICKET 43 BOARD[\s\S]*?playtest=chapter3-board/);
-  assert.match(title, /id: '3\.4'[\s\S]*?DUSK · CUT FEED & ECHO STONE/);
+  assert.match(title, /id: '3\.4'[\s\S]*?DUSK · THE CUT FEED/);
   assert.match(title, /id: '3\.6'[\s\S]*?STATION SCANNER · FINALE[\s\S]*?playtest=chapter3-station/);
 });
 
@@ -73,16 +73,16 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(collapse, /\/final-boss\.html\?from=chapter5/);
   assert.match(boss, /get\('from'\) === 'chapter5'/);
   assert.match(boss, /CINEMATICS\.ending/);
-  assert.match(boss, /preserveBlackout: true[\s\S]*showEndCredits\(\)/);
+  assert.match(boss, /preserveBlackout: true[\s\S]*showEndCredits\(\{ ending: 'normal' \}\)/);
   // Both endings hand over to the title menu's full credit roll, which plays
   // the credits track; the normal ending shows its archive card first.
   assert.match(source('src/shell/endCredits.js'), /END_CREDITS_ROUTE = '\/\?credits=1'/);
-  assert.match(boss, /onComplete: \(\) => showNormalEndingCard\(\)\.then\(\(\) => showEndCredits\(\)\)/);
+  assert.match(boss, /onComplete: \(\) => showNormalEndingCard\(\)\.then\(\(\) => showEndCredits\(\{ ending: 'normal' \}\)\)/);
   assert.match(boss, /CLAIM 1978-0412 · STATUS: OPEN/);
   assert.match(source('src/shell/titleMenu.js'), /new Audio\(CREDIT_MUSIC\[0\]\.localFile\)/);
   // The ending returns to /?credits=1; the legacy /?play=1 entry resumes
   // the active checkpoint instead of booting a game on index.html.
-  assert.match(source('src/main.js'), /params\.get\('credits'\) === '1'[\s\S]*?createTitleMenu\(\{ openCredits: true \}\)/);
+  assert.match(source('src/main.js'), /params\.get\('credits'\) === '1'[\s\S]*?createTitleMenu\(\{ openCredits: true, ending: params\.get\('ending'\) \}\)/);
   assert.match(source('src/main.js'), /params\.get\('play'\) === '1'[\s\S]*?resumeActiveCheckpoint\(\)/);
   assert.match(source('src/chapters/nightService/audio.js'), /1\.1_train_undertow\.mp3/);
   assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /music\.play\('chapter-two-borrowed-light'/);
@@ -133,11 +133,11 @@ test('the dev-only 1111 title code opens every chapter’s named test nodes', ()
   assert.match(title, /museum-3d\.html\?beat=corridor/);
   assert.match(title, /museum-3d\.html\?beat=collapse/);
   for (const movement of [1, 2, 3, 4]) assert.match(title, new RegExp(`CONDUCTOR ${['I', 'II', 'III', 'IV'][movement - 1]}[\\s\\S]*final-boss\\.html\\?qa=conductor-${movement}`));
-  assert.match(title, /BLACK KNIFE · HIDDEN FINALE[\s\S]*hidden-final-boss\.html\?easter-egg=1/);
+  assert.match(title, /THE LAST CARRIAGE'[\s\S]*hidden-final-boss\.html\?easter-egg=1/);
   // The router and its key listener exist in dev and playtest builds only; a
   // release build (PLAYTEST_MODE false) has neither, and the session flag it
   // sets unlocks dev routes only while PLAYTEST_MODE is on.
-  assert.match(titleMenu, /const hiddenChapters = \(DEV_MODE \|\| PLAYTEST_MODE\) \? DEV_ROUTES : \[\]/);
+  assert.match(titleMenu, /const hiddenChapters = DEV_MODE \? DEV_ROUTES : PLAYTEST_MODE \? routerEntries\(\) : \[\]/);
   assert.match(titleMenu, /if \(\(DEV_MODE \|\| PLAYTEST_MODE\) && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
   assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE \|\| \(PLAYTEST_MODE && hiddenRouterActive\(\)\);\n\}/);
   assert.match(viteConfig, /__PLAYTEST_MODE__: JSON\.stringify\(process\.env\.NIGHTFALL_RELEASE !== '1'\)/);
@@ -168,4 +168,28 @@ test('production chapter pages get no TITLE button or T hotkey', () => {
   assert.match(control, /if \(checkpoint\) createSaveStore\(\)\.markCheckpoint\(checkpoint\);\n    return;\n  \}/);
   assert.doesNotMatch(control, /'TITLE'/);
   assert.doesNotMatch(control, /returnToTitle/);
+});
+
+test('every film has a same-size VP9 WebM beside its MP4, chosen by canPlayType', async () => {
+  const { existsSync, statSync } = await import('node:fs');
+  const { cinematicSources, orderCinematicSources } = await import('../src/shell/cinematicSources.js');
+  const { FINAL_BOSS_DESTINATIONS } = await import('../src/shell/finalBossRoute.js');
+  const listed = [...source('src/shell/gameFlow.js').matchAll(/'(\/cinematics\/[^']+\.mp4)'/g)].map((match) => match[1]);
+  assert.equal(listed.length, 6);
+  const films = [...listed, ...Object.values(FINAL_BOSS_DESTINATIONS).map(({ cinematicPath }) => cinematicPath)];
+  for (const film of films) {
+    const [mp4, webm] = cinematicSources(film);
+    assert.match(webm, /\.webm$/, film);
+    const mp4File = new URL(`../public${mp4}`, import.meta.url);
+    const webmFile = new URL(`../public${webm}`, import.meta.url);
+    assert.ok(existsSync(webmFile), `${webm} is missing`);
+    assert.ok(statSync(webmFile).size < statSync(mp4File).size, `${webm} is smaller than its MP4`);
+  }
+  const answers = (mp4, webm) => (type) => (type.startsWith('video/mp4') ? mp4 : webm);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('probably', 'probably')), ['/cinematics/end.mp4', '/cinematics/end.webm']);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('maybe', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
+  assert.deepEqual(orderCinematicSources('/x.webm'), ['/x.webm']);
+  const flow = source('src/shell/gameFlow.js');
+  assert.match(flow, /if \(sourceIndex \+ 1 < sources\.length\)/, 'a failed decode tries the other file');
 });

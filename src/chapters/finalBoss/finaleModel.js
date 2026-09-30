@@ -143,6 +143,12 @@ export const LANE_X = Object.freeze({ west: -7, centre: 0, east: 7 });
 export const LANE_EDGE = 3.5;
 export const OFFBEAT_MS = BELL_MS / 2;
 export const LIGHT_DAMAGE = 25;
+// A return plank lays in RETURN_PLANK_TRAVEL_MS, stays out RETURN_PLANK_MS
+// in all and folds as it came.
+export const RETURN_PLANK_MS = 4200;
+export const RETURN_PLANK_TRAVEL_MS = 450;
+// Seconds stranded on the far roof before the line lays a return plank.
+export const STRANDED_GRACE_S = 1.2;
 
 export const BELL_ARENA = Object.freeze({
   gapNearZ: -1.35,
@@ -206,6 +212,9 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
   let conductorLane = 'centre';
   let exposure = null; // { lane, bell, punched }
   let beam = null; // { lanes, firesInMs, fired }
+  // Return planks (alpha A4-6): a bridge the line lays by itself for a
+  // player stranded on the far roof, outside the timetable.
+  const returns = new Map(); // id -> { age, left } in ms
   const planFor = (index, fromLane) => {
     // The Conductor never announces the lane he already stands in twice
     // running, so the player always has somewhere new to light.
@@ -261,6 +270,11 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
         out.push(event);
         if (event.type === 'bell') onBell(out, event.index);
       }
+      for (const [id, plank] of returns) {
+        plank.age += step;
+        plank.left -= step;
+        if (plank.left <= 0) { returns.delete(id); out.push({ type: 'return-off', machineId: id }); }
+      }
       if (exposure && !lit(exposure.lane)) {
         out.push({ type: 'exposure-end', lane: exposure.lane });
         exposure = null;
@@ -285,18 +299,36 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     return shelteredBy(x, z) ? 'sheltered' : 'hit';
   };
 
+  const returnLevel = (id) => {
+    const plank = returns.get(id);
+    if (!plank) return 0;
+    return Math.max(0, Math.min(1, plank.age / RETURN_PLANK_TRAVEL_MS, plank.left / RETURN_PLANK_TRAVEL_MS));
+  };
+  // How far a bridge is out, 0..1: its timetable machine or a return plank.
+  const bridgeLevel = (id) => Math.max(timetable.machineStatus(id)?.level ?? 0, returnLevel(id));
+
   const bridgeUnder = (x, z) => {
     if (z > BELL_ARENA.gapNearZ || z < BELL_ARENA.gapFarZ) return null;
     for (const [id, bx] of Object.entries(BELL_ARENA.bridges)) {
-      const status = timetable.machineStatus(id);
-      if (status?.level >= 0.85 && Math.abs(x - bx) <= BELL_ARENA.bridgeHalfWidth) return id;
+      if (bridgeLevel(id) >= 0.85 && Math.abs(x - bx) <= BELL_ARENA.bridgeHalfWidth) return id;
     }
     return null;
   };
+  const anyBridgeOut = () => Object.keys(BELL_ARENA.bridges).some((id) => bridgeLevel(id) >= 0.85);
 
   // Standing over the gap with no extended bridge underfoot: Butch falls.
   const fallsAt = (x, z) => z <= BELL_ARENA.gapNearZ && z >= BELL_ARENA.gapFarZ && !bridgeUnder(x, z);
   const onFrontPlatform = (z) => z < BELL_ARENA.gapFarZ;
+  // On the far roof with no way back: no bridge out, and no lit Conductor
+  // still waiting for a punch there.
+  const stranded = (z) => onFrontPlatform(z) && !anyBridgeOut() && !(exposure && !exposure.punched && lit(exposure.lane));
+  // The bridge closest to x (a return plank goes where the player is).
+  const nearestBridge = (x) => Object.entries(BELL_ARENA.bridges).sort((a, b) => Math.abs(a[1] - x) - Math.abs(b[1] - x))[0][0];
+  const extendReturnBridge = (id, ms = RETURN_PLANK_MS) => {
+    if (!BELL_ARENA.bridges[id]) return false;
+    returns.set(id, { age: returns.get(id)?.age ?? 0, left: ms });
+    return true;
+  };
 
   const nearestNode = (x, z, reach = BELL_ARENA.nodeReach) => {
     let best = null;
@@ -326,8 +358,14 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     resolveBeam,
     shelteredBy,
     bridgeUnder,
+    bridgeLevel,
+    anyBridgeOut,
     fallsAt,
     onFrontPlatform,
+    stranded,
+    nearestBridge,
+    extendReturnBridge,
+    returnPlanks: () => [...returns.keys()],
     nearestNode,
     punchConductor,
     clearQueue: () => timetable.clearQueue(),

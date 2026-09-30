@@ -129,7 +129,7 @@ export function createBellMeter(parent, { lines = ['amber', 'teal', 'rose'] } = 
 // ---------------------------------------------------------------------------
 // Stone row (five sockets, lit when held).
 
-export function createStoneRow(parent, { snapshot = magicStoneSnapshot(), caption = 'STONES' } = {}) {
+export function createStoneRow(parent, { snapshot = magicStoneSnapshot(), caption = 'MAGIC STONES' } = {}) {
   const root = el('div', 'nf-stone-row');
   const row = el('div', 'nf-stones');
   magicStoneRow(snapshot).forEach(({ name, held }) => {
@@ -181,9 +181,10 @@ export function createTagLayer(parent) {
 }
 
 // ---------------------------------------------------------------------------
-// Title card (.nf-title-card): kicker, main line, rule, optional sub-line.
+// Title card (.nf-title-card): kicker, main line, rule, optional sub-line,
+// and an optional line of keys (the controls this beat adds).
 
-export function showTitleCard({ kicker = '', main = '', sub = '', duration = 4600, parent = document.body } = {}) {
+export function showTitleCard({ kicker = '', main = '', sub = '', keys = '', duration = 4600, parent = document.body } = {}) {
   // One card at a time: a new card replaces one still fading out.
   parent.querySelectorAll(':scope > .nf-title-card').forEach((old) => old.remove());
   const card = el('div', 'nf-title-card');
@@ -194,6 +195,11 @@ export function showTitleCard({ kicker = '', main = '', sub = '', duration = 460
   const subLine = card.querySelector('.nf-title-card__sub');
   subLine.textContent = sub;
   subLine.style.cssText = 'margin:16px 0 0;font:calc(21px * var(--nf-scale)) / 1.4 var(--nf-serif);font-style:italic;color:#d8ccb0;text-shadow:0 3px 14px rgba(0,0,0,.9);';
+  if (keys) {
+    const keyLine = el('p', 'nf-title-card__keys');
+    keyLine.textContent = keys;
+    card.firstElementChild.append(keyLine);
+  }
   parent.append(card);
   const timer = setTimeout(() => card.remove(), duration + 50);
   return { root: card, remove() { clearTimeout(timer); card.remove(); } };

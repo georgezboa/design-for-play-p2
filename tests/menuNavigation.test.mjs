@@ -92,11 +92,48 @@ test('the menu gamepad poll runs only between start() and stop()', () => {
   assert.equal(timers.size, 0);
 });
 
-test('the pause menu and the title share the focus-cycling helper', () => {
+test('the pause menu and every title dialog share the focus-cycling helper (A4-1)', () => {
   const pause = read('src/shell/pauseMenu.js');
-  assert.match(pause, /import \{ createMenuGamepadPoll, cycleIndex, menuKeyAction \} from '\.\/menuNavigation\.js'/);
+  assert.match(pause, /import \{ activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin, navigableControls \} from '\.\/menuNavigation\.js'/);
   assert.match(pause, /const panel = inConfirm \? confirmPanel : inSettings \? settingsPanel : actions;/);
   assert.match(pause, /padPoll\.start\(\);/);
   assert.match(pause, /padPoll\.stop\(\);/);
-  assert.match(read('src/shell/titleMenu.js'), /cycleIndex\(options\.indexOf\(document\.activeElement\), options\.length/);
+  const title = read('src/shell/titleMenu.js');
+  // ↑ ↓ / W S and the D-pad move through the open dialog's controls (slots,
+  // checkpoints, settings, router, confirmations), not just the board.
+  assert.match(title, /const navContainer = \(\) => \(dialog\.open \? panel : actions\);/);
+  assert.match(title, /moveFocusWithin\(navContainer\(\), action\)/);
+  assert.match(title, /const padPoll = createMenuGamepadPoll\(/);
+  assert.match(title, /const action = menuKeyAction\(event\);/);
+  assert.doesNotMatch(title, /window\.confirm\(/, 'the in-game confirmation replaces the browser dialog');
+});
+
+function fakeControl(name, { disabled = false, hidden = false, className = '' } = {}) {
+  return {
+    name, disabled, type: 'button', classList: { contains: (c) => className.split(' ').includes(c) },
+    getAttribute: () => null, getClientRects: () => (hidden ? [] : [{}]),
+    focused: false, clicks: 0,
+    focus() { this.focused = true; }, click() { this.clicks += 1; },
+  };
+}
+
+test('moveFocusWithin skips hidden, disabled and is-disabled controls and wraps', async () => {
+  const { moveFocusWithin, activateWithin, navigableControls } = await import('../src/shell/menuNavigation.js');
+  const a = fakeControl('a');
+  const b = fakeControl('b', { disabled: true });
+  const c = fakeControl('c', { hidden: true });
+  const d = fakeControl('d', { className: 'nf-action is-disabled' });
+  const e = fakeControl('e');
+  const container = { querySelectorAll: () => [a, b, c, d, e] };
+  assert.deepEqual(navigableControls(container).map(({ name }) => name), ['a', 'e']);
+  assert.equal(moveFocusWithin(container, 'next', a).name, 'e');
+  assert.equal(moveFocusWithin(container, 'next', e).name, 'a');
+  assert.equal(moveFocusWithin(container, 'prev', null).name, 'e');
+  assert.equal(activateWithin(container, e), e);
+  assert.equal(e.clicks, 1);
+  assert.equal(activateWithin(container, null), null);
+  assert.equal(a.focused, true, 'nothing focused: the first control takes focus');
+  const slider = { ...fakeControl('slider'), type: 'range' };
+  assert.equal(activateWithin({ querySelectorAll: () => [slider] }, slider), slider);
+  assert.equal(slider.clicks, 0, 'a slider has nothing to press');
 });
