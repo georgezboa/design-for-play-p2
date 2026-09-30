@@ -65,6 +65,29 @@ test('every exchange offers exactly two voiced answers and one holds both truths
   await Promise.all(ECHO_VOICE_URLS.map((url) => access(new URL(`../../public${url}`, import.meta.url))));
 });
 
+test('Movement III: the true answer is not given away by its length, and the argument reads in order (A4-8)', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const manifest = JSON.parse(await readFile(new URL('../../public/assets/chapter03-3d/voice/ch03/manifest.json', import.meta.url), 'utf8'));
+  const spoken = new Map(manifest.lines.map((entry) => [entry.url.replace(/^\./, ''), entry.text]));
+  let rightLonger = 0;
+  for (const exchange of ECHO_EXCHANGES) {
+    const right = exchange.replies.find((reply) => reply.holdsBoth).cue.text.length;
+    const wrong = exchange.replies.find((reply) => !reply.holdsBoth).cue.text.length;
+    if (right > wrong) rightLonger += 1;
+    assert.ok(Math.max(right, wrong) / Math.min(right, wrong) < 1.5, `${exchange.id}: answers of a similar length`);
+  }
+  assert.ok(rightLonger <= 3, 'the longer answer is not always the right one');
+  const claims = new Set(ECHO_EXCHANGES.map((exchange) => exchange.claim.text));
+  for (const exchange of ECHO_EXCHANGES) {
+    for (const reply of exchange.replies) {
+      if (reply.rebut) assert.ok(!claims.has(reply.rebut.text), `${exchange.id}: a rebuttal is never also an opening claim`);
+      for (const cue of [reply.cue, reply.rebut].filter(Boolean)) assert.equal(spoken.get(cue.url), cue.text, `${cue.url}: the subtitle is what is heard`);
+    }
+    assert.equal(spoken.get(exchange.claim.url), exchange.claim.text, exchange.id);
+  }
+  assert.match(ECHO_EXCHANGES[0].claim.text, /^Official inquiry\?/, 'he opens the argument');
+});
+
 // ---------------------------------------------------------------- Movement II
 
 const settle = (arena, ms, step = 50) => {
@@ -222,4 +245,25 @@ test('STORY is offered after the third death in one movement, once', () => {
   assert.equal(ledger.record(1).offerStory, false, 'offered once');
   const onStory = createDeathLedger();
   [0, 0, 0].forEach(() => assert.equal(onStory.record(0, 'story').offerStory, false));
+});
+
+test('A4-6: a player stranded on the far roof gets a return plank, which folds again', async () => {
+  const { RETURN_PLANK_MS, RETURN_PLANK_TRAVEL_MS } = await import('../../src/chapters/finalBoss/finaleModel.js');
+  const arena = createBellArena({ seed: 5, beams: false });
+  const farZ = BELL_ARENA.gapFarZ - 1;
+  const gapZ = (BELL_ARENA.gapNearZ + BELL_ARENA.gapFarZ) / 2;
+  assert.equal(arena.stranded(farZ), true, 'no bridge out and nobody lit: stranded');
+  assert.equal(arena.stranded(3), false, 'the near roof is never stranded');
+  const id = arena.nearestBridge(5.5);
+  assert.equal(id, 'bridge-east');
+  assert.equal(arena.fallsAt(LANE_X.east, gapZ), true);
+  arena.extendReturnBridge(id);
+  arena.update(RETURN_PLANK_TRAVEL_MS + 10);
+  assert.ok(arena.bridgeLevel(id) >= 0.99);
+  assert.equal(arena.fallsAt(LANE_X.east, gapZ), false, 'the plank carries Butch back');
+  assert.equal(arena.stranded(farZ), false);
+  let off = [];
+  for (let t = 0; t < RETURN_PLANK_MS; t += 50) off = off.concat(arena.update(50).filter((event) => event.type === 'return-off'));
+  assert.deepEqual(off.map((event) => event.machineId), [id]);
+  assert.equal(arena.fallsAt(LANE_X.east, gapZ), true, 'it folds again: it is not a free crossing');
 });
