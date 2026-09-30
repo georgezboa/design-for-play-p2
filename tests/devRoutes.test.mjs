@@ -48,3 +48,23 @@ test('index.html boots no game: title, credits, legacy ?play=1 resume and the de
   assert.doesNotMatch(html, /id="game"/);
   assert.match(html, /src="\/src\/main\.js"/);
 });
+
+test('a playtest router lists only shipped, on-route nodes with player-safe copy (A2-14 / A4-11)', async () => {
+  const { routerEntries } = await import('../src/shell/devRoutes.js');
+  const listed = routerEntries().map(({ id }) => id);
+  assert.ok(!listed.includes('5.6'), 'the dev-only painted-country page is not built for production');
+  assert.ok(!listed.includes('5.3'), 'the sealed museum reconstruction is not on the shipping route');
+  for (const entry of routerEntries()) {
+    assert.ok(!entry.devOnly && !entry.devBuildOnly, entry.id);
+    assert.doesNotMatch(`${entry.title} ${entry.detail}`, /DEV ONLY|BLACK KNIFE|VENN|VELEZ|Mara|suitcase|ladder|Grid runner|not in production/i, entry.id);
+  }
+  // Every Chapter 6 node describes the movement it opens today.
+  const ch6 = Object.fromEntries(DEV_ROUTES.filter(({ id }) => id.startsWith('6.')).map((entry) => [entry.id, entry]));
+  assert.match(ch6['6.1'].detail, /lens/);
+  assert.match(ch6['6.2'].detail, /bell/);
+  assert.match(ch6['6.3'].detail, /truths/);
+  assert.match(ch6['6.4'].detail, /pigment/);
+  const title = read('src/shell/titleMenu.js');
+  assert.match(title, /DEV_MODE \? DEV_ROUTES : PLAYTEST_MODE \? routerEntries\(\) : \[\]/);
+  assert.match(read('src/shell/devLauncher.js'), /seedRouterSave\(entry\.checkpoint\); activateHiddenRouter\(\);/);
+});

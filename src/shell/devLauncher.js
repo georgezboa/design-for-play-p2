@@ -1,5 +1,7 @@
 import './devLauncher.css';
 import { DEV_ROUTES, DEV_SHELL_ROUTES } from './devRoutes.js';
+import { seedRouterSave } from './saveSystem.js';
+import { activateHiddenRouter } from '../devMode.js';
 
 // `npm run dev` opens index.html on this launcher instead of the title. It is
 // plain HTML: every chapter is its own page, so each entry is just a link.
@@ -41,6 +43,9 @@ export function createDevLauncher({ note = '' } = {}) {
     const detail = document.createElement('small');
     detail.textContent = `${entry.detail} · ${entry.route}`;
     link.append(id, title, detail);
+    // A chapter node plays on the router's scratch save, like the 1111
+    // router: testing never moves a real slot's checkpoint.
+    if (entry.checkpoint) link.addEventListener('click', () => { seedRouterSave(entry.checkpoint); activateHiddenRouter(); });
     item.append(link);
     list.append(item);
   }
