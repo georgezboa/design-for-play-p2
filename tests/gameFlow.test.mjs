@@ -169,3 +169,27 @@ test('production chapter pages get no TITLE button or T hotkey', () => {
   assert.doesNotMatch(control, /'TITLE'/);
   assert.doesNotMatch(control, /returnToTitle/);
 });
+
+test('every film has a same-size VP9 WebM beside its MP4, chosen by canPlayType', async () => {
+  const { existsSync, statSync } = await import('node:fs');
+  const { cinematicSources, orderCinematicSources } = await import('../src/shell/cinematicSources.js');
+  const { FINAL_BOSS_DESTINATIONS } = await import('../src/shell/finalBossRoute.js');
+  const listed = [...source('src/shell/gameFlow.js').matchAll(/'(\/cinematics\/[^']+\.mp4)'/g)].map((match) => match[1]);
+  assert.equal(listed.length, 6);
+  const films = [...listed, ...Object.values(FINAL_BOSS_DESTINATIONS).map(({ cinematicPath }) => cinematicPath)];
+  for (const film of films) {
+    const [mp4, webm] = cinematicSources(film);
+    assert.match(webm, /\.webm$/, film);
+    const mp4File = new URL(`../public${mp4}`, import.meta.url);
+    const webmFile = new URL(`../public${webm}`, import.meta.url);
+    assert.ok(existsSync(webmFile), `${webm} is missing`);
+    assert.ok(statSync(webmFile).size < statSync(mp4File).size, `${webm} is smaller than its MP4`);
+  }
+  const answers = (mp4, webm) => (type) => (type.startsWith('video/mp4') ? mp4 : webm);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('probably', 'probably')), ['/cinematics/end.mp4', '/cinematics/end.webm']);
+  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('maybe', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
+  assert.deepEqual(orderCinematicSources('/x.webm'), ['/x.webm']);
+  const flow = source('src/shell/gameFlow.js');
+  assert.match(flow, /if \(sourceIndex \+ 1 < sources\.length\)/, 'a failed decode tries the other file');
+});

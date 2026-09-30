@@ -3,6 +3,9 @@ import { getChapterPreloadState, preloadChapter } from './chapterPreloader.js';
 import { preloadProgress } from './preloadQueue.js';
 import { SKIP_HOLD_MS, createHoldGesture, isSkipKey } from './holdToSkip.js';
 import { DEFAULT_SETTINGS, volumeForChannel } from './saveSystem.js';
+import { orderCinematicSources } from './cinematicSources.js';
+
+export { CINEMATIC_TYPES, cinematicSources, orderCinematicSources } from './cinematicSources.js';
 
 export const CINEMATICS = Object.freeze({
   opening: '/cinematics/start.mp4',
@@ -58,7 +61,10 @@ export function playCinematic({
   const video = sharedCinematicVideo(label);
   video.pause();
   video.currentTime = 0;
-  video.src = src;
+  const sources = orderCinematicSources(src, (type) => video.canPlayType?.(type) ?? '');
+  let sourceIndex = 0;
+  video.src = sources[sourceIndex];
+  root.dataset.source = sources[sourceIndex];
   video.dataset.nightfallAudioChannel = 'music';
   video.volume = volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? DEFAULT_SETTINGS, 'music');
   root.prepend(video);
@@ -228,6 +234,7 @@ export function playCinematic({
         }
       }
       root.remove();
+      video.removeEventListener('error', onVideoError);
       video.removeAttribute('src');
       video.load();
       activePlayback = null;
@@ -243,10 +250,22 @@ export function playCinematic({
   video.addEventListener('playing', beginPreload, { once: true });
   video.addEventListener('canplay', () => root.classList.add('is-ready'), { once: true });
   video.addEventListener('ended', finish, { once: true });
-  video.addEventListener('error', () => {
+  const onVideoError = () => {
+    if (settled) return;
+    // The other encoding of the same film, before giving up on it.
+    if (sourceIndex + 1 < sources.length) {
+      sourceIndex += 1;
+      video.src = sources[sourceIndex];
+      root.dataset.source = sources[sourceIndex];
+      video.load();
+      video.play().catch(() => {});
+      return;
+    }
+    video.removeEventListener('error', onVideoError);
     root.querySelector('.nf-cinematic-loading').textContent = 'FILM UNAVAILABLE · CONTINUING';
     window.setTimeout(finish, 900);
-  }, { once: true });
+  };
+  video.addEventListener('error', onVideoError);
   video.play().catch(() => {
     root.classList.add('needs-gesture');
     const resume = document.createElement('button');
