@@ -4,19 +4,33 @@ import { createSaveStore } from './saveSystem.js';
 // archive could not file. Holding all five lets Butch reach the line's last
 // carriage. Code ids never change; the fifth keeps `black-knife` but is shown
 // to the player as the BLACK TICKET STONE.
+//
+// One name everywhere the player sees them (alpha A4-13): MAGIC STONES, as
+// in "MAGIC STONES · 2 / 5". "Unfiled" is what they are, never their name.
+// Each clue is where the stone really is, as a hint rather than a map; the
+// normal ending lists the clues of the stones a journey missed.
 export const MAGIC_STONES = Object.freeze([
-  Object.freeze({ id: 'chapter-1', chapter: 1, name: 'EMBER STONE', clue: 'Night Service: zoom deep into the orchard case, beneath the unfinished letter to Rosa.' }),
-  Object.freeze({ id: 'chapter-2', chapter: 2, name: 'GRID STONE', clue: 'Borrowed Light: a ledge above the roofs that shows only in the afterglow of a punched node.' }),
-  Object.freeze({ id: 'chapter-3', chapter: 3, name: 'ECHO STONE', clue: 'Echo City: left in an unclaimed coat by the campfire.' }),
-  Object.freeze({ id: 'chapter-4', chapter: 4, name: 'PIGMENT STONE', clue: 'The Painted Country: under the grey on the plate above the HOME door, in the painted-train yard.' }),
-  Object.freeze({ id: 'black-knife', chapter: 5, name: 'BLACK TICKET STONE', clue: 'The Museum: behind the pigment vials in the pending case. Only broken glass reaches it.' }),
+  Object.freeze({ id: 'chapter-1', chapter: 1, world: 'NIGHT SERVICE', name: 'EMBER STONE', clue: 'Night Service: look closer beneath the unfinished letter to Rosa, in the orchard case.' }),
+  Object.freeze({ id: 'chapter-2', chapter: 2, world: 'BORROWED LIGHT', name: 'GRID STONE', clue: 'Borrowed Light: a ledge high above the roofs that shows only in the afterglow of a punched node.' }),
+  Object.freeze({ id: 'chapter-3', chapter: 3, world: 'ECHO CITY', name: 'ECHO STONE', clue: 'Echo City: someone at the dusk campfire kept one, sewn into an unclaimed coat.' }),
+  Object.freeze({ id: 'chapter-4', chapter: 4, world: 'THE PAINTED COUNTRY', name: 'PIGMENT STONE', clue: 'The Painted Country: under the grey on the plate above the HOME door, in the painted-train yard.' }),
+  Object.freeze({ id: 'black-knife', chapter: 5, world: 'THE MUSEUM', name: 'BLACK TICKET STONE', clue: 'The Museum: behind the pigment vials in the pending case. Only broken glass reaches it.' }),
 ]);
 
-/** What the stones are, in the archive's own words (offer card, pause menu). */
+/** The stones' one player-visible name. */
+export const MAGIC_STONES_LABEL = 'MAGIC STONES';
+
+/** What the stones are, in one visible line (offer card, pause menu, cards). */
 export const MAGIC_STONE_MEANING = Object.freeze([
-  'A record the archive could not file.',
-  'There are five. Carry all five, and the line’s last carriage opens.',
+  'Records the archive could not file.',
+  'Five open the last carriage.',
 ]);
+export const MAGIC_STONE_LINE = MAGIC_STONE_MEANING.join(' ');
+
+/** "MAGIC STONES · 2 / 5" */
+export function magicStoneCountLabel(snapshot) {
+  return `${MAGIC_STONES_LABEL} · ${snapshot.count} / ${snapshot.total}`;
+}
 
 const stoneById = (id) => MAGIC_STONES.find((stone) => stone.id === id);
 
@@ -46,7 +60,55 @@ export function magicStoneRowHtml(snapshot = magicStoneSnapshot(), { pending = n
     const label = held ? name : id === pending ? `${name} (here)` : 'an empty socket';
     return `<i class="${cls}" title="${label}" aria-label="${label}"></i>`;
   }).join('');
-  return `<span class="nf-stones" role="img" aria-label="${snapshot.count} of ${snapshot.total} stones held">${sockets}</span>`;
+  return `<span class="nf-stones" role="img" aria-label="${snapshot.count} of ${snapshot.total} magic stones held">${sockets}</span>`;
+}
+
+// The one-time card for the first stone a journey picks up (the pause menu
+// shows it on every chapter page): what the stones are, and that five
+// change the ending. `null` once this save has seen it.
+export const FIRST_STONE_NOTICE = 'first-magic-stone';
+
+export function firstStoneNotice(id, storage = globalThis.localStorage) {
+  const stone = stoneById(id);
+  if (!stone) return null;
+  const store = createSaveStore(storage);
+  const save = store.readAll()[store.getActiveSlot()];
+  if (!save || (save.notices ?? []).includes(FIRST_STONE_NOTICE)) return null;
+  const snapshot = magicStoneSnapshot(storage);
+  if (!snapshot.collected.includes(id)) return null;
+  return {
+    key: FIRST_STONE_NOTICE,
+    stamp: `MAGIC STONE ${snapshot.count} / ${snapshot.total} · AN UNFILED RECORD`,
+    title: stone.name,
+    lines: [
+      'The archive could not file it. Keep what it can’t.',
+      'There are five on the line. Carry all five and the journey ends differently: the last carriage opens.',
+    ],
+    socketsHtml: magicStoneRowHtml(snapshot),
+    count: snapshot.count,
+  };
+}
+
+// After the normal ending's credits: the count, and the clue of every stone
+// the journey missed. `null` when all five were held.
+export function missingStoneNotice(collectedIds = []) {
+  const held = new Set(collectedIds);
+  const missing = MAGIC_STONES.filter(({ id }) => !held.has(id));
+  if (!missing.length) return null;
+  const count = MAGIC_STONES.length - missing.length;
+  const snapshot = {
+    collected: MAGIC_STONES.filter(({ id }) => held.has(id)).map(({ id }) => id),
+    count,
+    total: MAGIC_STONES.length,
+  };
+  return {
+    stamp: `${count} / ${MAGIC_STONES.length} ${MAGIC_STONES_LABEL} FOUND`,
+    title: 'The last carriage stayed closed.',
+    line: `${MAGIC_STONE_LINE} Where the missing ones were:`,
+    clues: missing.map(({ chapter, world, clue }) => `CH ${chapter} · ${world} — ${clue.replace(/^[^:]+:\s*/, '')}`),
+    socketsHtml: magicStoneRowHtml(snapshot),
+    missing: missing.map(({ id }) => id),
+  };
 }
 
 export function collectMagicStone(id, storage = globalThis.localStorage) {
@@ -97,10 +159,10 @@ export function offerMagicStone(id, { storage = globalThis.localStorage } = {}) 
     root.setAttribute('aria-modal', 'true');
     root.innerHTML = `<article class="nf-card">
       <div class="nf-stone-gem${id === 'chapter-1' ? ' is-ember' : ''}" aria-hidden="true"></div>
-      <p class="nf-card__stamp">AN UNFILED OBJECT</p>
+      <p class="nf-card__stamp">A MAGIC STONE · AN UNFILED RECORD</p>
       <h2 class="nf-card__title">${escapeHtml(stone.name)}</h2>
       <div class="nf-card__lines">${MAGIC_STONE_MEANING.map((line) => `<p>${escapeHtml(line)}</p>`).join('')}</div>
-      <div class="nf-stone-row">${magicStoneRowHtml(before, { pending: id })}<span>${before.count} / ${before.total} HELD</span></div>
+      <div class="nf-stone-row">${magicStoneRowHtml(before, { pending: id })}<span>${magicStoneCountLabel(before)}</span></div>
       <div class="nf-stone-actions"><button type="button" data-take>TAKE IT · E</button><button type="button" data-leave>LEAVE IT · L</button></div>
     </article>`;
     document.body.append(root);

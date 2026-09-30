@@ -2839,7 +2839,7 @@ class SpectacleBattle {
       src: CINEMATICS.ending,
       label: 'NIGHTFALL ending cinematic',
       preserveBlackout: true,
-      onComplete: () => showNormalEndingCard().then(() => showEndCredits()),
+      onComplete: () => showNormalEndingCard().then(() => showEndCredits({ ending: 'normal' })),
     });
   }
 

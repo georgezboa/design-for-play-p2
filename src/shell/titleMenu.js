@@ -5,6 +5,7 @@ import {
   launchCheckpoint,
   loadListCheckpoints,
   readSettings,
+  seedRouterSave,
   volumeForChannel,
   writeSettings,
 } from './saveSystem.js';
@@ -15,15 +16,18 @@ import {
   CREDIT_TEAM,
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
-import { DEV_MODE, PLAYTEST_MODE, activateHiddenRouter } from '../devMode.js';
+import { DEV_MODE, PLAYTEST_MODE, activateHiddenRouter, clearHiddenRouter } from '../devMode.js';
 import { quitGame, toggleFullscreen } from './desktopBridge.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
-import { DEV_ROUTES } from './devRoutes.js';
+import { DEV_ROUTES, routerEntries } from './devRoutes.js';
 import { resolveCheckpointRoute } from './finalBossRoute.js';
-import { cycleIndex } from './menuNavigation.js';
+import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin } from './menuNavigation.js';
+import { missingStoneNotice } from './magicStones.js';
 import { dressCarriageWall } from './titleCarriage.js';
 
-const store = createSaveStore();
+// The title always shows the player's own three slots, never a test route's
+// scratch slots (saveSystem.js ROUTER_SAVE_KEY).
+const store = createSaveStore(undefined, { scratch: false });
 
 function button(label, action, className = '', description = '') {
   const element = document.createElement('button');
@@ -43,8 +47,12 @@ function button(label, action, className = '', description = '') {
   return element;
 }
 
-export function createTitleMenu({ openCredits = false } = {}) {
+// `ending` is set when a run's credits roll here: 'normal' (the Conductor
+// outlasted) shows which magic stones were missed once the roll is over.
+export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   applySettings(readSettings());
+  // Back on the title, a test route (1111 router, dev launcher) is over.
+  clearHiddenRouter();
   const root = document.createElement('main');
   root.id = 'nightfall-title';
   // One wall of the night train (titleMenu.css, titleCarriage.js): the key
@@ -132,10 +140,19 @@ export function createTitleMenu({ openCredits = false } = {}) {
     (lastFocusedAction?.isConnected ? lastFocusedAction : actions.querySelector('button'))?.focus();
   };
   const openDialog = () => {
-    lastFocusedAction = document.activeElement;
-    if (!dialog.open) dialog.showModal();
+    // Remember the board line only when the dialog first opens: moving
+    // between its panels (slots → checkpoints → confirm) keeps that line.
+    if (!dialog.open) {
+      lastFocusedAction = document.activeElement;
+      dialog.showModal();
+    }
   };
-  dialog.addEventListener('cancel', (event) => { event.preventDefault(); closeDialog(); });
+  dialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    const wasCredits = creditsOpen();
+    closeDialog();
+    if (wasCredits) showEndingStones();
+  });
 
   const citationLink = (label, href) => {
     const anchor = document.createElement('a');
@@ -271,7 +288,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
       root.dataset.creditRoll = 'rolling';
       pause.querySelector('.nf-action-label').textContent = 'PAUSE';
     }, 'nf-roll-control');
-    const exitCredits = button('EXIT', closeDialog, 'nf-roll-control');
+    const exitCredits = button('EXIT', () => { closeDialog(); showEndingStones(); }, 'nf-roll-control');
     controls.append(pause, restart, exitCredits);
     const legend = document.createElement('p');
     legend.className = 'nf-credits-legend';
@@ -304,11 +321,77 @@ export function createTitleMenu({ openCredits = false } = {}) {
         { transform: `translateY(${endY}px)`, offset: 1 },
       ], { duration: 138000, easing: 'linear', fill: 'forwards' });
       creditRollAnimation.playbackRate = creditPlaybackRate;
-      creditRollAnimation.onfinish = () => { root.dataset.creditRoll = 'complete'; };
+      creditRollAnimation.onfinish = () => {
+        root.dataset.creditRoll = 'complete';
+        showEndingStones();
+      };
       root.__creditsAnimation = creditRollAnimation;
       root.dataset.creditRoll = 'rolling';
       viewport.scrollTop = 0;
     });
+  };
+
+  // The in-game confirmation (an archive card, the quit dialog's look) in
+  // place of the browser's confirm(). CANCEL has focus, so a stray Enter
+  // never overwrites or deletes anything.
+  const renderConfirm = ({ eyebrow = 'ARCHIVE MEMORY', title, copy, confirmLabel, onConfirm, onCancel }) => {
+    dialog.dataset.variant = 'confirm';
+    panel.classList.remove('nf-credits-panel');
+    panel.replaceChildren();
+    const heading = document.createElement('div');
+    heading.className = 'nf-confirm-copy';
+    heading.innerHTML = '<p class="nf-eyebrow"></p><h2></h2><p class="nf-empty"></p>';
+    heading.querySelector('.nf-eyebrow').textContent = eyebrow;
+    heading.querySelector('h2').textContent = title;
+    heading.querySelector('.nf-empty').textContent = copy;
+    const cancel = button('CANCEL', () => onCancel?.(), 'nf-back');
+    panel.append(heading, button(confirmLabel, () => onConfirm?.(), 'nf-danger'), cancel);
+    openDialog();
+    cancel.focus();
+  };
+
+  // New journey in a slot: the opening film, then Chapter 1.
+  const startJourney = (index) => {
+    store.startNew(index);
+    status.textContent = `SLOT ${index + 1} · NIGHT SERVICE AWAKENING`;
+    closeDialog();
+    padPoll.stop();
+    root.remove();
+    playCinematic({
+      id: 'opening',
+      src: CINEMATICS.opening,
+      label: 'NIGHTFALL opening cinematic',
+      preloadChapterId: 'chapter1',
+      // Chapter 1 is its own page: the NIGHT SERVICE panel puzzle.
+      onComplete: () => window.location.assign('/night-service.html'),
+    });
+  };
+
+  // After a normal ending's credits: how many magic stones this journey held
+  // and where the missing ones were (magicStones.js missingStoneNotice), once.
+  let endingStonesShown = false;
+  const showEndingStones = () => {
+    if (ending !== 'normal' || endingStonesShown) return;
+    const save = store.readAll()[store.getActiveSlot()];
+    const notice = missingStoneNotice(save?.magicStones ?? []);
+    if (!notice) return;
+    endingStonesShown = true;
+    if (dialog.open) closeDialog();
+    dialog.dataset.variant = 'stones';
+    panel.classList.remove('nf-credits-panel');
+    panel.replaceChildren();
+    const card = document.createElement('div');
+    card.className = 'nf-stones-card';
+    card.innerHTML = '<p class="nf-eyebrow"></p><h2></h2><p class="nf-empty"></p><div class="nf-stones-sockets"></div><ul class="nf-stones-clues"></ul>';
+    card.querySelector('.nf-eyebrow').textContent = notice.stamp;
+    card.querySelector('h2').textContent = notice.title;
+    card.querySelector('.nf-empty').textContent = notice.line;
+    card.querySelector('.nf-stones-sockets').innerHTML = notice.socketsHtml;
+    const list = card.querySelector('.nf-stones-clues');
+    notice.clues.forEach((clue) => { const item = document.createElement('li'); item.textContent = clue; list.append(item); });
+    panel.append(card, button('BACK TO THE TITLE', closeDialog, 'nf-back'));
+    openDialog();
+    panel.querySelector('.nf-back')?.focus();
   };
 
   const renderSlots = (mode) => {
@@ -327,23 +410,18 @@ export function createTitleMenu({ openCredits = false } = {}) {
       row.tabIndex = 0;
       row.setAttribute('role', 'button');
       const activate = () => {
+        // An empty slot begins a new journey from either list.
+        if (!save) { startJourney(index); return; }
         if (mode === 'new') {
-          if (save && !window.confirm(`Overwrite Slot ${index + 1}?`)) return;
-          store.startNew(index);
-          status.textContent = `SLOT ${index + 1} · NIGHT SERVICE AWAKENING`;
-          closeDialog();
-          root.remove();
-          playCinematic({
-            id: 'opening',
-            src: CINEMATICS.opening,
-            label: 'NIGHTFALL opening cinematic',
-            preloadChapterId: 'chapter1',
-            // Chapter 1 is its own page: the NIGHT SERVICE panel puzzle.
-            onComplete: () => window.location.assign('/night-service.html'),
+          renderConfirm({
+            title: `OVERWRITE SLOT ${index + 1}?`,
+            copy: `${info.title} · ${info.detail}. This journey will be replaced by a new one.`,
+            confirmLabel: 'OVERWRITE',
+            onConfirm: () => startJourney(index),
+            onCancel: () => renderSlots(mode),
           });
           return;
         }
-        if (!save) return;
         store.setActiveSlot(index);
         renderCheckpoints(index);
       };
@@ -376,12 +454,13 @@ export function createTitleMenu({ openCredits = false } = {}) {
       }, 'nf-checkpoint');
       panel.append(row);
     });
-    if (save) panel.append(button('DELETE SLOT', () => {
-      if (!window.confirm(`Delete Slot ${index + 1}? This cannot be undone.`)) return;
-      store.remove(index);
-      closeDialog();
-      refresh();
-    }, 'nf-danger'));
+    if (save) panel.append(button('DELETE SLOT', () => renderConfirm({
+      title: `DELETE SLOT ${index + 1}?`,
+      copy: `${formatSave(save).title} · this journey and its magic stones are gone for good.`,
+      confirmLabel: 'DELETE',
+      onConfirm: () => { store.remove(index); closeDialog(); refresh(); },
+      onCancel: () => renderCheckpoints(index),
+    }), 'nf-danger'));
     panel.append(button('BACK', closeDialog, 'nf-back'));
     openDialog();
     panel.querySelector('button')?.focus();
@@ -423,9 +502,13 @@ export function createTitleMenu({ openCredits = false } = {}) {
   // down moment-to-moment playtests. Dev build only: a shipped title has no
   // router, and typing 1111 there does nothing. The list lives in
   // devRoutes.js, shared with the dev launcher.
-  const hiddenChapters = (DEV_MODE || PLAYTEST_MODE) ? DEV_ROUTES : [];
+  // A playtest build lists only the nodes it can open, with player-safe copy
+  // (routerEntries); the dev build keeps every node.
+  const hiddenChapters = DEV_MODE ? DEV_ROUTES : PLAYTEST_MODE ? routerEntries() : [];
 
   const launchHiddenChapter = (chapter) => {
+    // The node plays on scratch slots: the player's saves stay as they were.
+    seedRouterSave(chapter.checkpoint);
     activateHiddenRouter();
     closeDialog();
     root.remove();
@@ -435,7 +518,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   const renderHiddenChapterSelect = () => {
     dialog.dataset.variant = 'router';
     panel.classList.remove('nf-credits-panel');
-    panel.innerHTML = '<div class="nf-dialog-heading"><p class="nf-eyebrow">ARCHIVE ROUTING · 1111</p><h2>SELECT TEST NODE</h2><p class="nf-empty">Every entry skips transition films and opens its playable node directly.</p></div>';
+    panel.innerHTML = '<div class="nf-dialog-heading"><p class="nf-eyebrow">ARCHIVE ROUTING · 1111</p><h2>SELECT TEST NODE</h2><p class="nf-empty">Every entry skips transition films and opens its playable node directly. Test nodes play on a scratch save: your slots are not touched.</p></div>';
     let group = null;
     hiddenChapters.forEach((chapter) => {
       if (chapter.group !== group) {
@@ -462,11 +545,15 @@ export function createTitleMenu({ openCredits = false } = {}) {
   const renderQuit = () => {
     dialog.dataset.variant = 'quit';
     panel.classList.remove('nf-credits-panel');
+    const activeSave = store.readAll()[store.getActiveSlot()];
     panel.innerHTML = `
       <p class="nf-eyebrow">NIGHT SERVICE</p>
       <h2>QUIT GAME?</h2>
-      <p class="nf-empty">Your archive is already saved at the latest checkpoint.</p>
+      <p class="nf-empty"></p>
     `;
+    panel.querySelector('.nf-empty').textContent = activeSave
+      ? `Slot ${store.getActiveSlot() + 1} is kept at its last checkpoint: ${formatSave(activeSave).title}.`
+      : 'No journey has begun, so there is nothing to keep.';
     panel.append(
       button('QUIT', () => {
         closeDialog();
@@ -480,12 +567,16 @@ export function createTitleMenu({ openCredits = false } = {}) {
           </div>
         `;
         root.dataset.state = 'exited';
-        root.querySelector('button')?.addEventListener('click', () => window.location.reload());
+        const again = root.querySelector('button');
+        again?.addEventListener('click', () => window.location.reload());
+        // Enter works at once: the only control on the screen has focus.
+        again?.focus();
       }, 'nf-danger'),
       button('CANCEL', closeDialog, 'nf-back'),
     );
     openDialog();
-    panel.querySelector('button')?.focus();
+    // CANCEL first: QUIT is one deliberate move away.
+    panel.querySelector('.nf-back')?.focus();
   };
 
   const refresh = () => {
@@ -516,7 +607,44 @@ export function createTitleMenu({ openCredits = false } = {}) {
     actions.querySelector('button')?.focus();
   };
 
-  const focusActions = () => [...actions.querySelectorAll('button:not(.is-disabled)')];
+  // ↑ ↓ / W S and the D-pad move through whatever is on screen: the board,
+  // or every control of the open dialog (slots, checkpoints, settings, the
+  // router, confirmations). The same helper as the pause menu.
+  const navContainer = () => (dialog.open ? panel : actions);
+  const creditsOpen = () => dialog.open && panel.classList.contains('nf-credits-panel');
+  const changeCreditSpeed = (faster) => {
+    if (!creditRollAnimation) return;
+    creditPlaybackRate = faster ? Math.min(4, creditPlaybackRate * 1.5) : Math.max(0.5, creditPlaybackRate / 1.5);
+    if (creditRollAnimation.updatePlaybackRate) creditRollAnimation.updatePlaybackRate(creditPlaybackRate);
+    else creditRollAnimation.playbackRate = creditPlaybackRate;
+    root.dataset.creditRate = `${creditPlaybackRate.toFixed(2)}x`;
+  };
+  const menuAction = (action) => {
+    if (!root.isConnected || root.dataset.state === 'exited') {
+      if (action === 'activate') root.querySelector('.nf-exit-screen button')?.click();
+      return;
+    }
+    root.dataset.nav = 'keys';
+    if (creditsOpen()) {
+      if (action === 'prev' || action === 'next') changeCreditSpeed(action === 'next');
+      else if (action === 'activate') panel.querySelector('.nf-roll-control')?.click();
+      else if (action === 'back') closeDialog();
+      return;
+    }
+    if (action === 'prev' || action === 'next') moveFocusWithin(navContainer(), action);
+    else if (action === 'activate') activateWithin(navContainer());
+    else if (action === 'back' && dialog.open) {
+      // B / START: the dialog's own way back (CANCEL, BACK), else close it.
+      const way = panel.querySelector('.nf-back');
+      if (way) way.click(); else closeDialog();
+    }
+  };
+  // The title has no game running, so it polls the pad itself.
+  const padPoll = createMenuGamepadPoll((action) => {
+    if (!root.isConnected) { padPoll.stop(); return; }
+    menuAction(action);
+  });
+  root.addEventListener('pointermove', () => { delete root.dataset.nav; });
   root.addEventListener('keydown', (event) => {
     if (dialog.open && panel.classList.contains('nf-credits-panel')) {
       const key = event.key.toLowerCase();
@@ -532,19 +660,21 @@ export function createTitleMenu({ openCredits = false } = {}) {
       }
       if (['ArrowUp', 'ArrowDown'].includes(event.key) && creditRollAnimation) {
         event.preventDefault();
-        creditPlaybackRate = event.key === 'ArrowDown'
-          ? Math.min(4, creditPlaybackRate * 1.5)
-          : Math.max(0.5, creditPlaybackRate / 1.5);
-        if (creditRollAnimation.updatePlaybackRate) creditRollAnimation.updatePlaybackRate(creditPlaybackRate);
-        else creditRollAnimation.playbackRate = creditPlaybackRate;
-        root.dataset.creditRate = `${creditPlaybackRate.toFixed(2)}x`;
+        changeCreditSpeed(event.key === 'ArrowDown');
         return;
       }
+      return;
     }
-    if (dialog.open || !['ArrowUp', 'ArrowDown'].includes(event.key)) return;
-    event.preventDefault();
-    const options = focusActions();
-    options[cycleIndex(options.indexOf(document.activeElement), options.length, event.key === 'ArrowDown' ? 'next' : 'prev')]?.focus();
+    const action = menuKeyAction(event);
+    if (action === 'prev' || action === 'next') {
+      // Also on a focused slider: ↑ ↓ move between rows, ← → set the value.
+      event.preventDefault();
+      menuAction(action);
+    } else if (action === 'activate' && event.key === 'Enter' && event.target?.type === 'checkbox') {
+      // Space toggles a checkbox natively; Enter does not.
+      event.preventDefault();
+      event.target.click();
+    }
   });
   const handleGlobalKey = async (event) => {
     if ((DEV_MODE || PLAYTEST_MODE) && !dialog.open && !event.repeat && event.key === '1') {
@@ -564,6 +694,7 @@ export function createTitleMenu({ openCredits = false } = {}) {
   window.addEventListener('keydown', handleGlobalKey);
   window.addEventListener('nightfall:settings', (event) => syncCreditVolume(event.detail));
   refresh();
+  padPoll.start();
   if (openCredits) renderCredits();
   if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({
     scene: root.dataset.state === 'exited' ? 'Exited' : 'TitleMenu',
