@@ -15,7 +15,7 @@
 // Acts 0 → 0.5 → 1 (the carriage wall slides open around the kept windows).
 
 import Phaser from 'phaser';
-import { edgePoint, planGrowth, tilePoint } from './panelModel.js';
+import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
 import { createHintDirector, pickGesture, stepVerb } from './hints.js';
@@ -44,8 +44,23 @@ const GRADES = {
 const SERIF = 'Georgia, "Times New Roman", "DejaVu Serif", serif';
 const MONO = '"Space Mono", ui-monospace, monospace';
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V'];
+/** Press-and-hold on a frame this long (still) and it lifts (spec §3). */
+const FRAME_HOLD_MS = 250;
+/** Inside this far from the lens rim a press is on the glass, not the rim. */
+const LENS_RIM = 18;
+/** The keys the panel scene answers (besides the arrows). */
+const KEYS = new Set(['Tab', 'Enter', ' ', 'Backspace', 'f', 'F', 'l', 'L', 'h', 'H']);
+/** After a key that had nothing to do, the key strip blinks the one that would help. */
+const KEY_NUDGE = { Enter: 'TAB', Tab: '← ↑ ↓ →', ' ': '← ↑ ↓ →', Backspace: 'TAB', f: '← ↑ ↓ →', l: 'H' };
+// the "lift" cursor over a liftable frame: a brass frame with an arrow up
+const LIFT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">'
+  + '<rect x="4.5" y="13.5" width="23" height="15" rx="3" fill="none" stroke="#1c130d" stroke-width="5"/>'
+  + '<rect x="4.5" y="13.5" width="23" height="15" rx="3" fill="none" stroke="#e0b36a" stroke-width="2.5"/>'
+  + '<path d="M16 1.5 L23.5 9.5 H19 V18 H13 V9.5 H8.5 Z" fill="#fff4dc" stroke="#1c130d" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+export const LIFT_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(LIFT_SVG)}") 16 16, grab`;
 
 const lerp = (a, b, t) => a + (b - a) * t;
+const wallKey = (layout) => `nsv-wall-${layout.cols}x${layout.rows}-${layout.slots[0]?.w ?? layout.tileW}`;
 const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -60,6 +75,8 @@ class TileView {
     const { tileW: w, tileH: h } = scene.layout;
     this.w = w;
     this.h = h;
+    // screen px per tile px (a small grid's windows are shown larger)
+    this.base = scene.layout.scale ?? 1;
     this.root = scene.add.container(this.ox, this.oy);
     this.stateLayer = scene.add.container(0, 0);
     this.frameLayer = scene.add.container(0, 0);
@@ -103,11 +120,13 @@ class TileView {
     this.vignette = s.add.image(-w / 2, -h / 2, vkey).setOrigin(0, 0);
     this.cover = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
     this.ring = s.add.image(-w / 2 - BEZEL, -h / 2 - BEZEL, key).setOrigin(0, 0);
+    // the keyboard's selected window: ivory on a dark outline, so it reads
+    // against the brass bezel and the gold wall alike
     this.select = s.add.graphics();
-    this.select.lineStyle(4, 0xffc46a, 0.95);
-    this.select.strokeRoundedRect(-w / 2 - BEZEL - 5, -h / 2 - BEZEL - 5, w + BEZEL * 2 + 10, h + BEZEL * 2 + 10, 24);
-    this.select.lineStyle(10, 0xffc46a, 0.18);
-    this.select.strokeRoundedRect(-w / 2 - BEZEL - 8, -h / 2 - BEZEL - 8, w + BEZEL * 2 + 16, h + BEZEL * 2 + 16, 28);
+    this.select.lineStyle(12, 0x0b0705, 0.85);
+    this.select.strokeRoundedRect(-w / 2 - BEZEL - 7, -h / 2 - BEZEL - 7, w + BEZEL * 2 + 14, h + BEZEL * 2 + 14, 26);
+    this.select.lineStyle(5, 0xfff4dc, 1);
+    this.select.strokeRoundedRect(-w / 2 - BEZEL - 7, -h / 2 - BEZEL - 7, w + BEZEL * 2 + 14, h + BEZEL * 2 + 14, 26);
     this.select.setVisible(false);
     this.glyph = s.add.image(w / 2 - 12, -h / 2 + 12, 'nsv-zoomout').setScale(0.5).setVisible(false);
     // the glyph's cue when stepping back is the lesson (Act 0)
@@ -119,17 +138,18 @@ class TileView {
   /** Place the window: viewport, zoom and rotation of its camera + the bezel. */
   apply() {
     const { x, y, w, h, scale, rot } = this.rect;
-    const vw = this.w * scale;
-    const vh = this.h * scale;
+    const k = scale * this.base;
+    const vw = this.w * k;
+    const vh = this.h * k;
     const vx = x + w / 2 - vw / 2;
     const vy = y + h / 2 - vh / 2;
     this.cam.setViewport(vx, vy, vw, vh);
     const f = this.focus ?? { cx: this.w / 2, cy: this.h / 2, zoom: 1 };
-    this.cam.setZoom(scale * f.zoom);
+    this.cam.setZoom(k * f.zoom);
     this.cam.setRotation(rot);
     this.cam.centerOn(this.ox + f.cx, this.oy + f.cy);
     this.bezel.setPosition(x + w / 2, y + h / 2);
-    this.bezel.setScale(scale);
+    this.bezel.setScale(k);
     this.bezel.setRotation(rot);
   }
 
@@ -142,8 +162,8 @@ class TileView {
   screen(u, v) {
     const { x, y, w, h, scale, rot } = this.rect;
     const f = this.focus ?? { cx: this.w / 2, cy: this.h / 2, zoom: 1 };
-    const lx = (u * this.w - f.cx) * f.zoom * scale;
-    const ly = (v * this.h - f.cy) * f.zoom * scale;
+    const lx = (u * this.w - f.cx) * f.zoom * scale * this.base;
+    const ly = (v * this.h - f.cy) * f.zoom * scale * this.base;
     const cos = Math.cos(rot);
     const sin = Math.sin(rot);
     return { x: x + w / 2 + lx * cos - ly * sin, y: y + h / 2 + lx * sin + ly * cos };
@@ -256,6 +276,10 @@ export class PanelScene extends Phaser.Scene {
     // where a carried window will land
     this.targetG = this.add.graphics();
     this.bezelLayer.add(this.targetG);
+    // the band where a frame can be taken hold of (hover / hold)
+    this.gripG = this.add.graphics();
+    this.bezelLayer.add(this.gripG);
+    this.hoverGrip = null;
     this.crossLayer = this.add.container(0, 0);
 
     // ---------- tiles ----------
@@ -267,6 +291,7 @@ export class PanelScene extends Phaser.Scene {
     this.bezelLayer.bringToTop(this.linkG);
     this.bezelLayer.bringToTop(this.targetG);
     this.bezelLayer.bringToTop(this.crossLayer);
+    this.bezelLayer.bringToTop(this.gripG);
     this.bezelCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'bezel');
     this.dragCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'drag');
     this.topCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'top');
@@ -303,6 +328,11 @@ export class PanelScene extends Phaser.Scene {
     }
     this.lensView = this.add.image(0, 0, lensKey).setVisible(false);
     this.topLayer.add(this.lensView);
+    // above the lens: the keyboard focus ring and the tier-1 beacons
+    this.focusG = this.add.graphics();
+    this.topLayer.add(this.focusG);
+    this.beaconLayer = this.add.container(0, 0);
+    this.topLayer.add(this.beaconLayer);
 
     this.buildOverlays();
     this.bindModel();
@@ -330,6 +360,7 @@ export class PanelScene extends Phaser.Scene {
     });
 
     this.buildSockets();
+    this.buildKeyStrip();
     this.growth = this.planGrowthIntro();
     this.introduce();
   }
@@ -412,7 +443,7 @@ export class PanelScene extends Phaser.Scene {
 
   buildWall() {
     const { cols, rows } = this.layout;
-    const key = `nsv-wall-${cols}x${rows}-${this.layout.tileW}`;
+    const key = wallKey(this.layout);
     if (!this.textures.exists(key)) {
       const tex = this.textures.createCanvas(key, this.layout.view.w, this.layout.view.h);
       const paper = this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null;
@@ -506,7 +537,7 @@ export class PanelScene extends Phaser.Scene {
   // building panel states
 
   paintCtx(view, target, era, stateId) {
-    return createPaintContext(this, { target, w: view.w, h: view.h, era, model: this.model, tileId: view.id, stateId, env: this.env });
+    return createPaintContext(this, { target, w: view.w, h: view.h, era, model: this.model, tileId: view.id, stateId, env: this.env, res: view.base });
   }
 
   buildState(view, stateId) {
@@ -700,7 +731,7 @@ export class PanelScene extends Phaser.Scene {
     const openDelay = slideDelay + (reduce ? 250 : 650);
     const openMs = reduce ? 550 : 1250;
     // the old, smaller wall panel fades into the new one while the windows move
-    const oldKey = `nsv-wall-${plan.from.cols}x${plan.from.rows}-${plan.from.tileW}`;
+    const oldKey = wallKey(plan.from);
     if (this.textures.exists(oldKey)) {
       const oldWall = this.add.image(0, 0, oldKey).setOrigin(0, 0);
       this.wallLayer.add(oldWall);
@@ -711,12 +742,16 @@ export class PanelScene extends Phaser.Scene {
       const view = this.views[win.tile];
       view.cover.setAlpha(0);
       if (win.kind === 'keep') {
-        view.setRect(win.from);
+        // a window shown larger in the smaller wall shrinks as it slides
+        view.setRect(win.from, { scale: win.from.w / win.to.w });
         view.moving = true;
         this.tweens.add({
           targets: view.rect,
           x: win.to.x,
           y: win.to.y,
+          w: win.to.w,
+          h: win.to.h,
+          scale: 1,
           delay: slideDelay,
           duration: slideMs,
           ease: 'Sine.easeInOut',
@@ -840,6 +875,7 @@ export class PanelScene extends Phaser.Scene {
       this.bezelLayer.bringToTop(this.linkG);
       this.bezelLayer.bringToTop(this.targetG);
       this.bezelLayer.bringToTop(this.crossLayer);
+      this.bezelLayer.bringToTop(this.gripG);
     }
     this.orderCameras();
   }
@@ -1211,11 +1247,19 @@ export class PanelScene extends Phaser.Scene {
   }
 
   buildSockets() {
-    // five stone sockets on the brass trim under the windows (Act 2 on)
-    const cx = this.layout.x + this.layout.w / 2;
-    const y = this.layout.y + this.layout.h + 30;
+    // five stone sockets below the brass sill, at its right end: clear of the
+    // wall's rivets, and drawn above the lens so it never hides them
+    const sillY = this.wallInfo?.sillY ?? this.layout.y + this.layout.h + 56;
+    const cx = this.layout.x + this.layout.w - 68;
+    const y = Math.min(this.layout.view.h - 28, sillY + 42);
     this.sockets = this.add.container(cx, y).setVisible(false);
-    this.bezelLayer.add(this.sockets);
+    this.topLayer.addAt(this.sockets, this.topLayer.getIndex(this.blackout));
+    const plate = this.add.graphics();
+    plate.fillStyle(0x0e0906, 0.85);
+    plate.fillRoundedRect(-96, -20, 192, 40, 20);
+    plate.lineStyle(1.5, 0xb08a4a, 0.8);
+    plate.strokeRoundedRect(-96, -20, 192, 40, 20);
+    this.sockets.add(plate);
     this.socketGems = [];
     for (let i = 0; i < 5; i += 1) {
       const x = (i - 2) * 34;
@@ -1393,6 +1437,44 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: glow, alpha: 0.6, duration: 750, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
   }
 
+  /**
+   * Tier 1, made to be seen: a bright amber beacon over a target (above the
+   * lens and the grade) — a glow and three rings rippling out from it, with a
+   * dark edge so it reads on gold as well as on night. Under Reduce Motion
+   * the rings breathe in place instead of spreading.
+   */
+  beacon(x, y, r = 60) {
+    const reduce = reducedMotionActive();
+    const glow = this.add.image(x, y, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(r * 3.4, r * 3.4).setAlpha(0);
+    this.beaconLayer.add(glow);
+    this.tweens.add({ targets: glow, alpha: 0.95, duration: 420, yoyo: true, hold: 700, repeat: 1, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
+    [0, 1, 2].forEach((i) => {
+      const g = this.add.graphics();
+      this.beaconLayer.add(g);
+      const st = { t: 0 };
+      this.tweens.add({
+        targets: st,
+        t: 1,
+        delay: i * 450,
+        duration: reduce ? 1200 : 1150,
+        ease: 'Sine.easeOut',
+        onUpdate: () => {
+          const rr = reduce ? r * 1.1 : r * (0.75 + st.t * 0.9);
+          // bright for most of its life, then gone
+          const a = reduce ? Math.sin(st.t * Math.PI) : 1 - st.t ** 3;
+          g.clear();
+          g.lineStyle(13, 0x0b0705, 0.4 * a);
+          g.strokeCircle(x, y, rr);
+          g.lineStyle(7, 0xffb040, a);
+          g.strokeCircle(x, y, rr);
+          g.lineStyle(2.5, 0xfff4dc, a);
+          g.strokeCircle(x, y, rr);
+        },
+        onComplete: () => g.destroy(),
+      });
+    });
+  }
+
   pulseHint(hint) {
     if (hint?.actor) {
       // pulse where a walker is waiting, and the edge it is waiting at
@@ -1402,10 +1484,11 @@ export class PanelScene extends Phaser.Scene {
       const pt = view.screen(actor.x, actor.y);
       this.hintGlow(pt.x, pt.y - 30, 150);
       this.shimmer(pt.x, pt.y - 24);
+      this.beacon(pt.x, pt.y - 30, 56);
       const target = actor.walk?.path?.[actor.walk.index];
       if (target && target.tile !== actor.tile) {
         const edgePt = view.screen(Math.min(1, Math.max(0, target.x === 0 ? 1 : target.x)), actor.y);
-        this.time.delayedCall(300, () => this.shimmer(edgePt.x, edgePt.y));
+        this.time.delayedCall(300, () => { this.shimmer(edgePt.x, edgePt.y); this.beacon(edgePt.x, edgePt.y, 40); });
       }
       if (hint.tile) this.pulseHint({ ...hint, actor: null });
       return;
@@ -1415,6 +1498,7 @@ export class PanelScene extends Phaser.Scene {
       const lens = this.model.state.lens;
       this.tweens.add({ targets: this.lensView, scale: reducedMotionActive() ? 1.04 : 1.12, duration: 380, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
       this.hintGlow(lens.x, lens.y, lens.r * 3);
+      this.beacon(lens.x, lens.y, lens.r * 0.95);
       [0, 1, 2, 3].forEach((i) => this.time.delayedCall(i * 110, () => {
         const a = (i / 4) * Math.PI * 2 - Math.PI / 2;
         this.shimmer(lens.x + Math.cos(a) * lens.r, lens.y + Math.sin(a) * lens.r);
@@ -1426,9 +1510,10 @@ export class PanelScene extends Phaser.Scene {
     if (hint.zoomOut) {
       // the ⤢ glyph swells: stepping back is the thing to do
       if (this.model.canZoomOut(hint.tile)) {
-        const slot = this.model.slotRect(hint.tile);
+        const glyph = this.glyphAt(hint.tile);
         this.tweens.add({ targets: view.glyph, scale: 0.72, duration: 240, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => view.glyph.setScale(0.5) });
-        this.hintGlow(slot.x + slot.w - 12, slot.y + 12, 150);
+        this.hintGlow(glyph.x, glyph.y, 150);
+        this.beacon(glyph.x, glyph.y, glyph.r * 1.4);
       }
       return;
     }
@@ -1448,6 +1533,14 @@ export class PanelScene extends Phaser.Scene {
         onComplete: () => g.destroy(),
       });
       [[0.5, 0.02], [0.02, 0.5], [0.98, 0.5], [0.5, 0.98]].forEach(([u, v], i) => this.time.delayedCall(i * 120, () => { const p = view.screen(u, v); this.shimmer(p.x, p.y); }));
+      // the beacon sits where a hand takes hold of the frame
+      const frameId = this.model.frameOn(hint.tile);
+      if (frameId) {
+        const slot = this.model.slotRect(hint.tile);
+        const holds = framePoints(this.model.frameGrip(frameId)).map(([u, v]) => ({ x: slot.x + u * slot.w, y: slot.y + v * slot.h }));
+        const at = this.clearOfLens(holds);
+        this.beacon(at.x, at.y, 46);
+      }
     }
     if (hint.hotspot) {
       const entry = view.current?.tags.find((tag) => tag.hotspot.id === hint.hotspot);
@@ -1460,6 +1553,9 @@ export class PanelScene extends Phaser.Scene {
         const glow = this.add.image((h.rect[0] + h.rect[2] / 2) * view.w, (h.rect[1] + h.rect[3] / 2) * view.h, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setDisplaySize(h.rect[2] * view.w * 2, h.rect[3] * view.h * 2).setAlpha(0);
         view.fxLayer.add(glow);
         this.tweens.add({ targets: glow, alpha: 0.65, duration: 700, yoyo: true, repeat: 2, ease: 'Sine.easeInOut', onComplete: () => glow.destroy() });
+        const c = view.screen(h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2);
+        const size = Math.max(h.rect[2] * view.w, h.rect[3] * view.h) * view.base * 0.5;
+        this.beacon(c.x, c.y, clamp(size + 18, 40, 150));
       }
     } else if (hint.edge) {
       const { side, at } = hint.edge;
@@ -1467,6 +1563,7 @@ export class PanelScene extends Phaser.Scene {
       const v = side === 'top' ? 0 : side === 'bottom' ? 1 : at;
       const pt = view.screen(u, v);
       this.shimmer(pt.x, pt.y);
+      this.beacon(pt.x, pt.y, 44);
     }
     // a soft breath of light over the whole window
     this.tweens.add({ targets: view.ring, alpha: { from: 1, to: 0.7 }, duration: 500, yoyo: true });
@@ -1482,11 +1579,16 @@ export class PanelScene extends Phaser.Scene {
     else if (g.kind === 'lens') {
       this.pulseHint({ lens: true });
       const p = this.views[g.tile].screen(g.u, g.v);
-      this.time.delayedCall(420, () => this.hintGlow(p.x, p.y, 170));
+      this.time.delayedCall(420, () => { this.hintGlow(p.x, p.y, 170); this.beacon(p.x, p.y, 50); });
     } else if (g.kind === 'drag') {
       this.pulseHint(step?.hint?.edge || step?.hint?.actor ? step.hint : { tile: g.tile });
       const slot = this.layout.slots[g.to];
-      this.time.delayedCall(360, () => this.hintGlow(slot.x + slot.w / 2, slot.y + slot.h / 2, Math.min(slot.w, slot.h) * 1.1));
+      const from = this.gesturePoints(g).from;
+      this.beacon(from.x, from.y, 54);
+      this.time.delayedCall(360, () => {
+        this.hintGlow(slot.x + slot.w / 2, slot.y + slot.h / 2, Math.min(slot.w, slot.h) * 1.1);
+        this.beacon(slot.x + slot.w / 2, slot.y + slot.h / 2, Math.min(slot.w, slot.h) * 0.32);
+      });
     }
   }
 
@@ -1495,7 +1597,7 @@ export class PanelScene extends Phaser.Scene {
     const text = hintLine(this.act.id, step?.id, this.model);
     if (!text || (this.caption && !this.caption.auto)) return false;
     this.hintCaptions += 1;
-    this.showCaption({ speaker: HINT_SPEAKER, text, ms: 6500 });
+    this.showCaption({ speaker: this.act.hintSpeaker ?? HINT_SPEAKER, text, ms: 6500 });
     return true;
   }
 
@@ -1536,18 +1638,44 @@ export class PanelScene extends Phaser.Scene {
     const m = this.model;
     const slotCentre = (index) => { const slot = this.layout.slots[index]; return { x: slot.x + slot.w / 2, y: slot.y + slot.h / 2 }; };
     if (g.kind === 'click') return { at: this.views[g.tile].screen(g.u, g.v) };
-    if (g.kind === 'zoomOut') { const slot = m.slotRect(g.tile); return { at: { x: slot.x + slot.w - 12, y: slot.y + 12 } }; }
-    if (g.kind === 'drag') return { from: slotCentre(g.from), to: slotCentre(g.to), slot: this.layout.slots[g.from] };
+    if (g.kind === 'zoomOut') { const glyph = this.glyphAt(g.tile); return { at: { x: glyph.x, y: glyph.y } }; }
+    if (g.kind === 'drag') {
+      // take hold of the window where the lens is not (a press there moves the lens)
+      const slot = this.layout.slots[g.from];
+      const grabs = [[0.5, 0.5], [0.3, 0.35], [0.7, 0.35], [0.3, 0.72], [0.7, 0.72]].map(([u, v]) => ({ x: slot.x + u * slot.w, y: slot.y + v * slot.h }));
+      const from = this.clearOfLens(grabs);
+      const to = slotCentre(g.to);
+      return { from, to: { x: to.x + from.x - (slot.x + slot.w / 2), y: to.y + from.y - (slot.y + slot.h / 2) }, slot, off: { x: slot.x + slot.w / 2 - from.x, y: slot.y + slot.h / 2 - from.y } };
+    }
     if (g.kind === 'frame') {
+      // press on the frame itself (its grip), clear of the lens, and carry it
+      // so that the same spot lands on the target window
       const from = m.slotRect(g.from);
       const to = m.slotRect(g.to) ?? from;
-      return { from: { x: from.x + from.w / 2, y: from.y + 10 }, to: { x: to.x + to.w / 2, y: to.y + 10 }, slot: from };
+      const grip = m.frameGrip(g.frame);
+      const holds = framePoints(grip).map(([u, v]) => ({ x: from.x + u * from.w, y: from.y + v * from.h, u, v }));
+      const at = this.clearOfLens(holds);
+      const [rx, ry, rw, rh] = grip.rect;
+      return {
+        from: { x: at.x, y: at.y },
+        to: { x: to.x + at.u * to.w, y: to.y + at.v * to.h },
+        slot: from,
+        // the carried outline: the frame's own rectangle, relative to the hand
+        frameRect: { x: (rx - at.u) * from.w, y: (ry - at.v) * from.h, w: rw * from.w, h: rh * from.h },
+      };
     }
     if (g.kind === 'lens') {
       const lens = m.state.lens;
       return { from: { x: lens.x, y: lens.y }, to: this.views[g.tile].screen(g.u, g.v) };
     }
     return null;
+  }
+
+  /** The first of these screen points the lens does not cover (else the first). */
+  clearOfLens(points, margin = 24) {
+    const lens = this.model.state.lens;
+    if (!lens.enabled) return points[0];
+    return points.find((pt) => Math.hypot(pt.x - lens.x, pt.y - lens.y) > lens.r + margin) ?? points[0];
   }
 
   cancelGhost() {
@@ -1620,28 +1748,47 @@ export class PanelScene extends Phaser.Scene {
       const frame = gesture.kind === 'frame';
       const slot = pts.slot;
       const g = this.add.graphics();
-      // a translucent ghost of the window, inset so it never hides in the bezel
-      const inset = frame ? 0 : 14;
-      if (!frame) { g.fillStyle(0xffc46a, 0.16); g.fillRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14); }
-      g.lineStyle(frame ? 10 : 4, frame ? 0xb08a4a : 0xffd9a0, 0.95);
-      g.strokeRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14);
+      if (frame) {
+        // the frame itself, lifted: its brass outline, where the hand holds it
+        // (ivory on dark, so it still reads where it passes over a brass bezel)
+        const r = pts.frameRect;
+        g.fillStyle(0xffc46a, 0.08);
+        g.fillRoundedRect(r.x, r.y, r.w, r.h, 16);
+        g.lineStyle(14, 0x0b0705, 0.45);
+        g.strokeRoundedRect(r.x + 8, r.y + 8, r.w - 16, r.h - 16, 16);
+        g.lineStyle(9, 0xd9b56e, 0.9);
+        g.strokeRoundedRect(r.x + 8, r.y + 8, r.w - 16, r.h - 16, 16);
+        g.lineStyle(2.5, 0xfff4dc, 0.95);
+        g.strokeRoundedRect(r.x + 8, r.y + 8, r.w - 16, r.h - 16, 16);
+      } else {
+        // a translucent ghost of the window, inset so it never hides in the bezel
+        const inset = 14;
+        g.fillStyle(0xffc46a, 0.16);
+        g.fillRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14);
+        g.lineStyle(4, 0xffd9a0, 0.95);
+        g.strokeRoundedRect(-slot.w / 2 + inset, -slot.h / 2 + inset, slot.w - inset * 2, slot.h - inset * 2, 14);
+      }
       layer.add(g);
       carried = g;
-      carried.offX = 0;
-      carried.offY = frame ? slot.h / 2 - 10 : 0;
+      carried.offX = frame ? 0 : pts.off?.x ?? 0;
+      carried.offY = frame ? 0 : pts.off?.y ?? 0;
       carried.setAlpha(0);
       tweens.push(...move(pts.from, 700), press(pts.from));
       if (frame) {
-        // press-and-hold: a ring fills around the fingertip before the lift
+        // press, then HOLD (a ring fills around the fingertip), then the frame lifts
         const ring = this.add.graphics();
         layer.add(ring);
         const st = { k: 0 };
         tweens.push({
           s: 0.84,
-          duration: 480,
+          duration: 760,
           onStart: () => this.tweens.add({
-            targets: st, k: 1, duration: 460,
-            onUpdate: () => { ring.clear(); ring.lineStyle(4, 0xffd9a0, 0.9); ring.beginPath(); ring.arc(pts.from.x, pts.from.y, 22, -Math.PI / 2, -Math.PI / 2 + st.k * Math.PI * 2); ring.strokePath(); },
+            targets: st, k: 1, duration: 720,
+            onUpdate: () => {
+              ring.clear();
+              ring.lineStyle(9, 0x0b0705, 0.55); ring.strokeCircle(pts.from.x, pts.from.y, 26);
+              ring.lineStyle(4.5, 0xfff4dc, 0.95); ring.beginPath(); ring.arc(pts.from.x, pts.from.y, 26, -Math.PI / 2, -Math.PI / 2 + st.k * Math.PI * 2); ring.strokePath();
+            },
             onComplete: () => ring.destroy(),
           }),
         });
@@ -1724,34 +1871,44 @@ export class PanelScene extends Phaser.Scene {
       return;
     }
     if (this.model.isLocked()) return;
+    const slot = this.slotAt(p.x, p.y);
+    const tile = slot ? this.model.tileAt(slot.index) : null;
     const lens = this.model.state.lens;
-    if (lens.enabled && Math.hypot(p.x - lens.x, p.y - lens.y) <= lens.r + 14) {
-      this.press = { kind: 'lens', x: p.x, y: p.y, dx: lens.x - p.x, dy: lens.y - p.y, moved: false };
+    const fromLens = lens.enabled ? Math.hypot(p.x - lens.x, p.y - lens.y) : Infinity;
+    if (fromLens <= lens.r + 14) {
+      // moving drags the lens; a still click acts through it (1978 first,
+      // then the present underneath); a still hold on a frame lifts it
+      this.press = { kind: 'lens', x: p.x, y: p.y, dx: lens.x - p.x, dy: lens.y - p.y, moved: false, time: this.time.now };
+      if (tile && !this.busyView(tile) && fromLens < lens.r - LENS_RIM) this.armFrameHold(tile, slot, p);
       return;
     }
-    const slot = this.slotAt(p.x, p.y);
-    if (!slot) return;
-    const tile = this.model.tileAt(slot.index);
     if (!tile || this.busyView(tile)) return;
-    const view = this.views[tile];
     // the zoom-out glyph
-    if (view.glyph.visible && Math.hypot(p.x - (slot.x + slot.w - 12), p.y - (slot.y + 12)) < 26) {
+    if (this.onGlyph(tile, p.x, p.y)) {
       this.model.zoomOut(tile);
       return;
     }
-    const edgeBand = 22;
-    const onEdge = p.x - slot.x < edgeBand || slot.x + slot.w - p.x < edgeBand || p.y - slot.y < edgeBand || slot.y + slot.h - p.y < edgeBand;
-    const frame = this.model.frameOn(tile);
     this.press = { kind: 'tile', tile, slot, x: p.x, y: p.y, moved: false, time: this.time.now };
-    if (onEdge && frame && this.model.canLiftFrame(frame)) {
-      this.press.holdTimer = this.time.delayedCall(250, () => {
-        if (this.press?.tile === tile && !this.press.moved) {
-          this.press.kind = 'frame';
-          this.model.liftFrame(frame);
-          this.moveFloating(p.x, p.y);
-        }
-      });
-    }
+    this.armFrameHold(tile, slot, p);
+  }
+
+  /** A press on a frame's grip (its painted frame, generously): hold still to lift it. */
+  armFrameHold(tile, slot, p) {
+    const frame = this.model.frameGripAt(tile, (p.x - slot.x) / slot.w, (p.y - slot.y) / slot.h);
+    const press = this.press;
+    if (!frame || !press) return;
+    press.grip = { tile, frame, x: p.x, y: p.y };
+    press.holdTimer = this.time.delayedCall(FRAME_HOLD_MS, () => {
+      if (this.press !== press || press.moved) return;
+      press.kind = 'frame';
+      press.grip = null;
+      if (this.model.liftFrame(frame) && this.floating) {
+        // keep the frame where the hand took hold of it
+        this.floating.offX = this.floating.holder.x - p.x;
+        this.floating.offY = this.floating.holder.y - p.y;
+        this.moveFloating(p.x, p.y);
+      }
+    });
   }
 
   onPointerMove(p) {
@@ -1760,11 +1917,14 @@ export class PanelScene extends Phaser.Scene {
       const dist = Math.hypot(p.x - press.x, p.y - press.y);
       if (dist > 7) press.moved = true;
       if (press.kind === 'lens' && press.moved) {
+        press.holdTimer?.remove();
+        press.grip = null;
         this.model.moveLens(p.x + press.dx, p.y + press.dy);
       } else if (press.kind === 'frame') {
         this.moveFloating(p.x, p.y);
       } else if (press.kind === 'tile' && press.moved && !this.drag) {
         press.holdTimer?.remove();
+        press.grip = null;
         if (this.model.canDrag(press.tile) && this.model.beginDrag(press.tile)) {
           this.drag = { tile: press.tile, offX: press.slot.x - press.x, offY: press.slot.y - press.y, lastX: p.x, vx: 0 };
         }
@@ -1778,8 +1938,8 @@ export class PanelScene extends Phaser.Scene {
         view.rect.y = p.y + this.drag.offY;
         view.rect.rot = reducedMotionActive() ? 0 : clamp(this.drag.vx * 0.004, -0.019, 0.019);
         view.apply();
-        this.shadow.setPosition(view.rect.x + view.w / 2 + 22, view.rect.y + view.h / 2 + 30).setDisplaySize(view.w * 1.2, view.h * 1.25);
-        const over = this.slotAt(view.rect.x + view.w / 2, view.rect.y + view.h / 2);
+        this.shadow.setPosition(view.rect.x + view.rect.w / 2 + 22, view.rect.y + view.rect.h / 2 + 30).setDisplaySize(view.rect.w * 1.2, view.rect.h * 1.25);
+        const over = this.slotAt(view.rect.x + view.rect.w / 2, view.rect.y + view.rect.h / 2);
         this.showDropTarget(over && over.index !== this.model.slotOf(this.drag.tile) ? over : null);
       }
       return;
@@ -1793,7 +1953,9 @@ export class PanelScene extends Phaser.Scene {
     if (!press) return;
     press.holdTimer?.remove();
     if (press.kind === 'frame') {
-      const slot = this.slotAt(p.x, p.y);
+      // the frame lands where it is (its centre), like a carried window
+      const holder = this.floating?.holder;
+      const slot = (holder && this.slotAt(holder.x, holder.y)) ?? this.slotAt(p.x, p.y);
       this.model.dropFrame(slot ? this.model.tileAt(slot.index) : null);
       return;
     }
@@ -1801,8 +1963,8 @@ export class PanelScene extends Phaser.Scene {
       const drag = this.drag;
       this.drag = null;
       const view = this.views[drag.tile];
-      const cx = view.rect.x + view.w / 2;
-      const cy = view.rect.y + view.h / 2;
+      const cx = view.rect.x + view.rect.w / 2;
+      const cy = view.rect.y + view.rect.h / 2;
       const slot = this.slotAt(cx, cy) ?? this.slotAt(p.x, p.y);
       this.model.dropOn(slot ? slot.index : this.model.slotOf(drag.tile));
       if (!slot) this.model.cancelDrag();
@@ -1812,7 +1974,10 @@ export class PanelScene extends Phaser.Scene {
     if (press.kind === 'lens') {
       const slot = this.slotAt(p.x, p.y);
       const tile = slot ? this.model.tileAt(slot.index) : null;
-      if (tile) this.clickAt(tile, slot, p);
+      if (!tile || this.busyView(tile)) return;
+      // the lens never swallows the ⤢ glyph either
+      if (this.onGlyph(tile, p.x, p.y)) this.model.zoomOut(tile);
+      else this.clickAt(tile, slot, p);
       return;
     }
     this.clickAt(press.tile, press.slot, p);
@@ -1836,23 +2001,76 @@ export class PanelScene extends Phaser.Scene {
   updateHover(p) {
     let cursor = 'default';
     let hovered = null;
+    let grip = null;
     const locked = this.model.isLocked() || this.fading;
     const lens = this.model.state.lens;
     const slot = this.slotAt(p.x, p.y);
     const tile = slot ? this.model.tileAt(slot.index) : null;
+    const fromLens = lens.enabled ? Math.hypot(p.x - lens.x, p.y - lens.y) : Infinity;
     if (!locked && tile && !this.busyView(tile)) {
       const u = (p.x - slot.x) / slot.w;
       const v = (p.y - slot.y) / slot.h;
       const hit = this.model.hotspotAt(tile, u, v, { x: p.x, y: p.y });
-      const view = this.views[tile];
-      if (view.glyph.visible && Math.hypot(p.x - (slot.x + slot.w - 12), p.y - (slot.y + 12)) < 26) cursor = 'zoom-out';
+      const frame = fromLens < lens.r - LENS_RIM || fromLens > lens.r + 14 ? this.model.frameGripAt(tile, u, v) : null;
+      if (this.onGlyph(tile, p.x, p.y)) cursor = 'zoom-out';
       else if (hit) { cursor = hit.kind === 'zoom' ? 'zoom-in' : 'pointer'; hovered = { tile, hotspot: hit }; }
+      else if (frame) { cursor = LIFT_CURSOR; grip = { tile, frame }; }
       else if (this.model.canDrag(tile)) cursor = 'grab';
     }
-    if (!locked && lens.enabled && Math.hypot(p.x - lens.x, p.y - lens.y) <= lens.r + 14 && cursor === 'default') cursor = 'move';
-    if (!locked && lens.enabled && Math.abs(Math.hypot(p.x - lens.x, p.y - lens.y) - lens.r) < 16) cursor = 'move';
+    if (!locked && fromLens <= lens.r + 14 && cursor === 'default') cursor = 'move';
+    if (!locked && lens.enabled && Math.abs(fromLens - lens.r) < 16) cursor = 'move';
     this.input.setDefaultCursor(cursor);
     this.hovered = hovered;
+    this.hoverGrip = grip;
+  }
+
+  /** Where the ⤢ glyph of a tile sits on screen (it scales with the window). */
+  glyphAt(tile) {
+    const slot = this.model.slotRect(tile);
+    if (!slot) return null;
+    const k = this.layout.scale ?? 1;
+    return { x: slot.x + slot.w - 12 * k, y: slot.y + 12 * k, r: 26 * k };
+  }
+
+  onGlyph(tile, x, y) {
+    const view = this.views[tile];
+    const g = this.glyphAt(tile);
+    return Boolean(view?.glyph.visible && g && Math.hypot(x - g.x, y - g.y) < g.r);
+  }
+
+  /** The glowing band where a frame can be taken hold of (hover, and while a hold fills). */
+  drawGrip() {
+    const g = this.gripG;
+    g.clear();
+    const press = this.press;
+    const holding = press?.grip && !press.moved ? press.grip : null;
+    const target = holding ?? (this.drag || this.floating || this.keyboardMode ? null : this.hoverGrip);
+    if (!target || this.busyView(target.tile) || !this.model.canLiftFrame(target.frame)) return;
+    const slot = this.model.slotRect(target.tile);
+    if (!slot) return;
+    const grip = this.model.frameGrip(target.frame);
+    const k = 0.5 + Math.sin(this.clock / (reducedMotionActive() ? 700 : 260)) * 0.5;
+    const box = ([x, y, w, h]) => [slot.x + x * slot.w, slot.y + y * slot.h, w * slot.w, h * slot.h];
+    const [ox, oy, ow, oh] = box(grip.rect);
+    g.lineStyle(10, 0xffb050, 0.12 + k * 0.1);
+    g.strokeRoundedRect(ox + 4, oy + 4, ow - 8, oh - 8, 18);
+    g.lineStyle(3, 0xffd9a0, 0.55 + k * 0.35);
+    g.strokeRoundedRect(ox + 4, oy + 4, ow - 8, oh - 8, 18);
+    if (grip.hole) {
+      const [hx, hy, hw, hh] = box(grip.hole);
+      g.lineStyle(2, 0xffd9a0, 0.35 + k * 0.3);
+      g.strokeRoundedRect(hx, hy, hw, hh, 14);
+    }
+    if (holding) {
+      // press-and-hold: a ring fills around the fingertip until the frame lifts
+      const t = clamp((this.time.now - press.time) / FRAME_HOLD_MS, 0, 1);
+      g.lineStyle(8, 0x0b0705, 0.6);
+      g.strokeCircle(holding.x, holding.y, 24);
+      g.lineStyle(4, 0xfff4dc, 0.95);
+      g.beginPath();
+      g.arc(holding.x, holding.y, 24, -Math.PI / 2, -Math.PI / 2 + t * Math.PI * 2);
+      g.strokePath();
+    }
   }
 
   // ---------- keyboard ----------
@@ -1887,20 +2105,25 @@ export class PanelScene extends Phaser.Scene {
       return key === 'Tab';
     }
     const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    const ours = Boolean(arrows[key]) || KEYS.has(key);
+    // the first key a player uses brings up the key strip and the focus ring
+    // (a first Tab or Enter only shows where the focus is)
+    const fresh = ours && !this.keyboardMode;
+    if (fresh) { this.keyboardMode = true; this.refreshSelection(); }
     if (this.lensFocus && m.state.lens.enabled) {
       if (arrows[key]) { this.keysDown.add(key); return true; }
       if (key === 'l' || key === 'L' || key === 'Escape') { this.lensFocus = false; return true; }
       if (key === 'Enter' || key === ' ') {
         const lens = m.state.lens;
         const slot = this.slotAt(lens.x, lens.y);
-        if (slot) this.clickAt(m.tileAt(slot.index), slot, { x: lens.x, y: lens.y });
+        const tile = slot ? m.tileAt(slot.index) : null;
+        if (tile && !this.busyView(tile)) this.clickAt(tile, slot, { x: lens.x, y: lens.y });
         return true;
       }
     }
     if (m.isLocked()) return ['Tab', ' ', 'Enter', 'Backspace'].includes(key) || Boolean(arrows[key]);
     if (arrows[key]) {
       const [dx, dy] = arrows[key];
-      this.keyboardMode = true;
       if (this.kbHeld || this.floating) {
         this.moveKbTarget(dx, dy);
       } else {
@@ -1913,55 +2136,69 @@ export class PanelScene extends Phaser.Scene {
     const tile = m.tileAt(this.selectedSlot);
     switch (key) {
       case ' ':
-        this.keyboardMode = true;
         if (this.floating) { m.dropFrame(m.tileAt(this.kbFrameTarget ?? this.selectedSlot)); this.kbFrameTarget = null; }
         else if (this.kbHeld) this.kbDrop();
         else if (tile && m.canDrag(tile) && !this.busyView(tile) && m.beginDrag(tile)) {
           this.kbHeld = { tile, target: this.selectedSlot };
           this.hoverKbHeld();
-        }
+        } else this.kbNudge(tile, ' ');
         this.refreshSelection();
         return true;
       case 'Tab': {
-        this.keyboardMode = true;
-        const list = tile ? m.hotspots(tile).filter((h) => h.enabled && (h.era !== 'past' || this.hotspotInLens(tile, h))) : [];
-        if (!list.length) { this.focusedHotspot = null; return true; }
-        const at = list.findIndex((h) => h.id === this.focusedHotspot?.id);
-        const next = list[(at + (event.shiftKey ? list.length - 1 : 1) + list.length) % list.length];
-        this.focusedHotspot = { tile, id: next.id };
+        // every reachable tag on the wall, window by window
+        const list = this.kbTargets();
+        if (!list.length) { this.kbNudge(tile, 'Tab'); return true; }
+        const current = this.kbFocus();
+        if (fresh && current) return true;
+        const at = current ? list.findIndex((h) => h.tile === current.tile && h.id === current.id) : -1;
+        const step = event.shiftKey ? -1 : 1;
+        const next = at < 0 ? (step > 0 ? list.find((h) => m.slotOf(h.tile) >= this.selectedSlot) ?? list[0] : list[list.length - 1]) : list[(at + step + list.length) % list.length];
+        this.selectedSlot = m.slotOf(next.tile);
+        this.focusedHotspot = { tile: next.tile, id: next.id };
         this.refreshSelection();
         return true;
       }
       case 'Enter': {
-        this.keyboardMode = true;
-        if (this.focusedHotspot?.tile === tile && tile && !this.busyView(tile)) {
-          const h = m.hotspots(tile).find((spot) => spot.id === this.focusedHotspot.id);
-          if (h?.enabled) {
-            if (h.era === 'past' && !this.hotspotInLens(tile, h)) return true;
-            m.activateHotspot(tile, h.id);
-            this.focusedHotspot = null;
-          }
-        } else if (tile) {
-          const first = m.hotspots(tile).find((h) => h.enabled && (h.era !== 'past' || this.hotspotInLens(tile, h)));
-          if (first) this.focusedHotspot = { tile, id: first.id };
-        }
+        // Enter uses the focused tag (a window's first tag is focused as soon as it is selected)
+        const focus = this.kbFocus();
+        if (fresh && focus) { this.kbFlash(focus.tile, focus.id); return true; }
+        if (focus && !this.busyView(focus.tile) && m.activateHotspot(focus.tile, focus.id)) {
+          this.kbFlash(focus.tile, focus.id);
+          this.focusedHotspot = null;
+        } else this.kbNudge(tile, 'Enter');
         this.refreshSelection();
         return true;
       }
-      case 'Backspace':
+      case 'Backspace': {
         if (this.floating) { m.dropFrame(null); this.kbFrameTarget = null; return true; }
-        if (this.kbHeld) { m.cancelDrag(); this.kbHeld = null; return true; }
-        if (tile && m.canZoomOut(tile) && !this.busyView(tile)) m.zoomOut(tile);
+        if (this.kbHeld) { m.cancelDrag(); this.kbHeld = null; this.refreshSelection(); return true; }
+        // the selected window, else the one window that can step back
+        const target = tile && m.canZoomOut(tile) && !this.busyView(tile)
+          ? tile
+          : m.state.slots.find((id) => id && m.canZoomOut(id) && !this.busyView(id)) ?? null;
+        if (target) {
+          this.selectedSlot = m.slotOf(target);
+          this.focusedHotspot = null;
+          m.zoomOut(target);
+          this.refreshSelection();
+        } else this.kbNudge(tile, 'Backspace');
         return true;
+      }
       case 'f':
       case 'F': {
-        const frame = tile ? m.frameOn(tile) : null;
-        if (frame && m.liftFrame(frame)) { this.kbFrameTarget = this.selectedSlot; this.keyboardMode = true; this.placeFloatingAtSlot(this.selectedSlot); }
+        // the selected window's frame, else the one frame that can lift now
+        const liftable = (id) => { const frame = id ? m.frameOn(id) : null; return frame && m.canLiftFrame(frame) ? frame : null; };
+        const host = liftable(tile) ? tile : m.state.slots.find((id) => liftable(id)) ?? null;
+        if (host) {
+          this.selectedSlot = m.slotOf(host);
+          if (m.liftFrame(liftable(host))) { this.kbFrameTarget = this.selectedSlot; this.placeFloatingAtSlot(this.selectedSlot); }
+        } else this.kbNudge(tile, 'f');
         return true;
       }
       case 'l':
       case 'L':
         if (m.state.lens.enabled) this.lensFocus = !this.lensFocus;
+        else this.kbNudge(tile, 'l');
         return true;
       case 'h':
       case 'H':
@@ -1989,6 +2226,71 @@ export class PanelScene extends Phaser.Scene {
     return this.model.lensCovers(tilePoint(slot, h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2));
   }
 
+  /** Hotspots the keyboard can reach now (1978 ones only inside the lens), in slot order. */
+  kbTargets() {
+    const m = this.model;
+    const out = [];
+    m.state.slots.forEach((tile) => {
+      if (!tile || this.busyView(tile)) return;
+      m.hotspots(tile).forEach((h) => {
+        if (h.enabled && (h.era !== 'past' || this.hotspotInLens(tile, h))) out.push({ tile, id: h.id });
+      });
+    });
+    return out;
+  }
+
+  /** The focused hotspot: the one Tab chose, else the selected window's first. */
+  kbFocus() {
+    const tile = this.model.tileAt(this.selectedSlot);
+    if (!tile) return null;
+    const list = this.kbTargets().filter((h) => h.tile === tile);
+    if (this.focusedHotspot?.tile === tile) {
+      const kept = list.find((h) => h.id === this.focusedHotspot.id);
+      if (kept) return kept;
+    }
+    return list[0] ?? null;
+  }
+
+  /** A key with nothing to do here: the window wobbles and the key strip points at what can. */
+  kbNudge(tile, key) {
+    if (tile) this.tapPanel(tile);
+    this.audio.play('mismatch');
+    this.keyStripBlink = { key: KEY_NUDGE[key] ?? 'TAB', until: this.clock + 1400 };
+  }
+
+  /** Enter took: a bright flash where the focus ring was. */
+  kbFlash(tile, id) {
+    const h = this.model.hotspots(tile).find((spot) => spot.id === id);
+    const view = this.views[tile];
+    if (!h || !view) return;
+    const p = view.screen(h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2);
+    this.hintGlow(p.x, p.y, 140);
+  }
+
+  /** The keyboard focus ring: ivory on a dark outline, readable on brass and on gold. */
+  drawFocus() {
+    const g = this.focusG;
+    g.clear();
+    if (!this.keyboardMode || this.kbHeld || this.floating || this.lensFocus) return;
+    const focus = this.kbFocus();
+    if (!focus || this.busyView(focus.tile)) return;
+    const h = this.model.hotspots(focus.tile).find((spot) => spot.id === focus.id);
+    const view = this.views[focus.tile];
+    if (!h || !view) return;
+    const a = view.screen(h.rect[0], h.rect[1]);
+    const b = view.screen(h.rect[0] + h.rect[2], h.rect[1] + h.rect[3]);
+    const pad = 8 + (reducedMotionActive() ? 0 : (Math.sin(this.clock / 260) * 0.5 + 0.5) * 3);
+    const x = Math.min(a.x, b.x) - pad;
+    const y = Math.min(a.y, b.y) - pad;
+    const w = Math.max(28, Math.abs(b.x - a.x) + pad * 2);
+    const hh = Math.max(28, Math.abs(b.y - a.y) + pad * 2);
+    const r = Math.min(14, w / 2, hh / 2);
+    g.lineStyle(9, 0x0b0705, 0.85);
+    g.strokeRoundedRect(x, y, w, hh, r);
+    g.lineStyle(3.5, 0xfff4dc, 1);
+    g.strokeRoundedRect(x, y, w, hh, r);
+  }
+
   stepSlot(index, dx, dy) {
     const { cols, rows } = this.layout;
     const col = clamp((index % cols) + dx, 0, cols - 1);
@@ -2012,18 +2314,16 @@ export class PanelScene extends Phaser.Scene {
     const slot = this.layout.slots[target];
     this.tweens.killTweensOf(view.rect);
     this.tweens.add({ targets: view.rect, x: slot.x + 14, y: slot.y - 16, scale: 1.045, duration: 200, ease: 'Sine.easeOut', onUpdate: () => view.apply() });
-    this.shadow.setPosition(slot.x + slot.w / 2 + 30, slot.y + slot.h / 2 + 20).setDisplaySize(view.w * 1.2, view.h * 1.25);
+    this.shadow.setPosition(slot.x + slot.w / 2 + 30, slot.y + slot.h / 2 + 20).setDisplaySize(slot.w * 1.2, slot.h * 1.25);
     this.showDropTarget(target !== this.model.slotOf(tile) ? slot : null);
   }
 
   kbDrop() {
-    const { tile, target } = this.kbHeld;
+    const { target } = this.kbHeld;
     this.kbHeld = null;
     this.selectedSlot = target;
-    if (!this.model.dropOn(target)) {
-      // dropping back on its own slot: onDragEnd already animates home
-    }
-    void tile;
+    // dropping back on its own slot: onDragEnd already animates home
+    this.model.dropOn(target);
   }
 
   refreshSelection() {
@@ -2031,6 +2331,99 @@ export class PanelScene extends Phaser.Scene {
       const slot = this.model.slotOf(view.id);
       view.select.setVisible(this.keyboardMode && slot === (this.kbHeld ? this.kbHeld.target : this.kbFrameTarget ?? this.selectedSlot));
     });
+  }
+
+  // ---------- the key strip (keyboard play) ----------
+
+  /** Which keys do something right now, as [keycap, what it does]. */
+  keyStripItems() {
+    const m = this.model;
+    const arrows = '← ↑ ↓ →';
+    if (this.lensFocus && m.state.lens.enabled) return [[arrows, 'MOVE THE LENS'], ['ENTER', 'CLICK THROUGH IT'], ['L', 'LET GO']];
+    if (this.kbHeld) return [[arrows, 'CARRY'], ['SPACE', 'PUT DOWN'], ['⌫', 'PUT BACK']];
+    if (this.floating) return [[arrows, 'CARRY THE FRAME'], ['SPACE', 'DROP IT'], ['⌫', 'PUT BACK']];
+    const items = [[arrows, 'WINDOW'], ['TAB', 'NEXT TAG'], ['ENTER', 'USE']];
+    if (m.state.slots.some((id) => id && m.canDrag(id))) items.push(['SPACE', 'PICK UP']);
+    items.push(['⌫', 'STEP BACK']);
+    if (Object.keys(m.state.frames).some((id) => m.canLiftFrame(id))) items.push(['F', 'LIFT FRAME']);
+    if (m.state.lens.enabled) items.push(['L', 'LENS']);
+    items.push(['H', 'SHOW ME'], ['ESC', 'PAUSE']);
+    return items;
+  }
+
+  buildKeyStrip() {
+    this.keyStrip = this.add.container(this.layout.view.w / 2, this.stripY()).setAlpha(0).setVisible(false);
+    this.topLayer.addAt(this.keyStrip, this.topLayer.getIndex(this.blackout));
+    this.keyStripSig = '';
+    this.keyStripCaps = [];
+  }
+
+  stripY() {
+    return Math.min(this.layout.view.h - 28, (this.wallInfo?.sillY ?? this.layout.y + this.layout.h + 56) + 42);
+  }
+
+  layoutKeyStrip(items) {
+    const strip = this.keyStrip;
+    strip.removeAll(true);
+    this.keyStripCaps = [];
+    const s = clamp(this.textScale, 0.8, 1.4);
+    const font = (size, color, bold = true) => ({ fontFamily: MONO, fontSize: `${Math.round(size * s)}px`, color, fontStyle: bold ? 'bold' : 'normal' });
+    const parts = [];
+    let x = 0;
+    items.forEach(([cap, label], i) => {
+      const capText = this.add.text(0, 0, cap, font(17, '#1c130d')).setOrigin(0.5);
+      const capW = Math.max(30 * s, capText.width + 16 * s);
+      const capH = 30 * s;
+      const capBg = this.add.graphics();
+      const labelText = this.add.text(0, 0, label, font(15, '#eadfc6')).setOrigin(0, 0.5);
+      parts.push({ capText, capBg, labelText, capW, capH, x, cap: items[i][0] });
+      x += capW + 8 * s + labelText.width + 26 * s;
+    });
+    const total = x - 26 * s;
+    // never under the stone sockets at the right end of the sill
+    const room = this.sockets?.visible ? 2 * (this.sockets.x - 110 - this.layout.view.w / 2) : this.layout.view.w - 120;
+    const k = Math.min(1, room / (total + 48));
+    const bg = this.add.graphics();
+    const bw = (total + 40 * s) * k;
+    const bh = 46 * s * k;
+    bg.fillStyle(0x0e0906, 0.9);
+    bg.fillRoundedRect(-bw / 2, -bh / 2, bw, bh, 10);
+    bg.lineStyle(1.5, 0xb08a4a, 0.9);
+    bg.strokeRoundedRect(-bw / 2, -bh / 2, bw, bh, 10);
+    strip.add(bg);
+    parts.forEach((part) => {
+      const left = (-total / 2 + part.x) * k;
+      part.capBg.fillStyle(0xeadfc6, 1);
+      part.capBg.fillRoundedRect(0, 0, part.capW, part.capH, 6);
+      part.capBg.lineStyle(2, 0x0b0705, 0.9);
+      part.capBg.strokeRoundedRect(0, 0, part.capW, part.capH, 6);
+      part.capBg.setPosition(left, (-part.capH / 2) * k).setScale(k);
+      part.capText.setPosition(left + (part.capW / 2) * k, 0).setScale(k);
+      part.labelText.setPosition(left + (part.capW + 8 * s) * k, 0).setScale(k);
+      strip.add([part.capBg, part.capText, part.labelText]);
+      this.keyStripCaps.push(part);
+    });
+  }
+
+  updateKeyStrip(dt = 16) {
+    const strip = this.keyStrip;
+    if (!strip) return;
+    const show = this.keyboardMode && !this.caption && !this.model.state.card && !this.fading && !this.growing && !this.model.state.ended;
+    if (show) {
+      const items = this.keyStripItems();
+      const sig = `${items.map((item) => item.join(':')).join('|')}#${this.textScale}#${this.sockets?.visible}`;
+      if (sig !== this.keyStripSig) { this.keyStripSig = sig; this.layoutKeyStrip(items); }
+      strip.setY(this.stripY());
+      if (!strip.visible) strip.setVisible(true);
+      strip.setAlpha(Math.min(1, strip.alpha + dt / 200));
+      // the key that would help blinks amber after a key that could not
+      const blink = this.keyStripBlink && this.clock < this.keyStripBlink.until ? this.keyStripBlink.key : null;
+      const on = blink && Math.sin(this.clock / 110) > 0;
+      this.keyStripCaps.forEach((part) => part.capText.setColor(on && part.cap === blink ? '#b3261e' : '#1c130d'));
+    } else if (strip.visible) {
+      strip.setAlpha(Math.max(0, strip.alpha - dt / 160));
+      if (strip.alpha <= 0) strip.setVisible(false);
+    }
   }
 
   devSkip() {
@@ -2065,7 +2458,7 @@ export class PanelScene extends Phaser.Scene {
       def.draw(ctx);
       holder.animators = ctx.animators;
     }
-    holder.setScale(0.9).setAlpha(0.95);
+    holder.setScale(0.9 * view.base).setAlpha(0.95);
     const outline = this.add.graphics();
     outline.lineStyle(3, 0xffc46a, 0.7);
     outline.strokeRoundedRect(-view.w / 2, -view.h / 2, view.w, view.h, 16);
@@ -2073,14 +2466,16 @@ export class PanelScene extends Phaser.Scene {
     this.dragLayer.add(holder);
     const start = view.screen(0.5, 0.5);
     holder.setPosition(start.x, start.y);
-    this.floating = { frameId, holder };
+    this.floating = { frameId, holder, offX: 0, offY: 0 };
   }
 
   moveFloating(x, y) {
     if (!this.floating) return;
     const h = this.floating.holder;
-    const vx = x - h.x;
-    h.setPosition(x, y);
+    const tx = x + (this.floating.offX ?? 0);
+    const ty = y + (this.floating.offY ?? 0);
+    const vx = tx - h.x;
+    h.setPosition(tx, ty);
     h.setRotation(reducedMotionActive() ? 0 : clamp(vx * 0.003, -0.03, 0.03));
   }
 
@@ -2097,7 +2492,7 @@ export class PanelScene extends Phaser.Scene {
     this.floating = null;
     const target = this.views[onto];
     const dest = target.screen(0.5, 0.5);
-    this.tweens.add({ targets: holder, x: dest.x, y: dest.y, scale: 1, rotation: 0, alpha: 0.6, duration: 220, ease: 'Sine.easeOut', onComplete: () => holder.destroy() });
+    this.tweens.add({ targets: holder, x: dest.x, y: dest.y, scale: target.base, rotation: 0, alpha: 0.6, duration: 220, ease: 'Sine.easeOut', onComplete: () => holder.destroy() });
     void frameId;
   }
 
@@ -2118,7 +2513,9 @@ export class PanelScene extends Phaser.Scene {
 
     const lens = this.model.state.lens;
     const cueStep = this.model.currentStep();
-    const zoomOutCue = cueStep?.hint?.zoomOut ? cueStep.hint.tile : null;
+    // `hint.zoomOut` (always) or `hint.zoomOutCue` (a condition): the ⤢ glyph breathes
+    const cueHint = cueStep?.hint;
+    const zoomOutCue = cueHint?.zoomOut || (cueHint?.zoomOutCue && this.model.evaluate(cueHint.zoomOutCue)) ? cueHint.tile : null;
     Object.values(this.views).forEach((view) => {
       const run = (list) => list?.forEach((fn) => fn(this.clock, dt));
       run(view.current?.animators);
@@ -2152,8 +2549,9 @@ export class PanelScene extends Phaser.Scene {
 
     // hover shimmer over the hotspot under the pointer (or keyboard focus)
     Object.values(this.views).forEach((view) => view.hover.setVisible(false));
-    const focus = this.keyboardMode && this.focusedHotspot
-      ? { tile: this.focusedHotspot.tile, hotspot: this.model.hotspots(this.focusedHotspot.tile).find((h) => h.id === this.focusedHotspot.id) }
+    const kb = this.keyboardMode ? this.kbFocus() : null;
+    const focus = kb
+      ? { tile: kb.tile, hotspot: this.model.hotspots(kb.tile).find((h) => h.id === kb.id) }
       : this.hovered;
     if (focus?.hotspot?.enabled && !this.busyView(focus.tile)) {
       const view = this.views[focus.tile];
@@ -2166,6 +2564,9 @@ export class PanelScene extends Phaser.Scene {
 
     this.syncActors(dt);
     this.drawLinks();
+    this.drawGrip();
+    this.drawFocus();
+    this.updateKeyStrip(dt);
 
     // lens
     this.lensView.setVisible(lens.enabled);
@@ -2206,7 +2607,8 @@ export class PanelScene extends Phaser.Scene {
     if (ring.kind === 'edge') {
       cx = ring.u * view.w; cy = ring.v * view.h; rx = 30; ry = 30;
     } else {
-      const [x, y, w, h] = ring.hotspot.rect;
+      // `ringRect`: ring the thing itself when the click target is larger
+      const [x, y, w, h] = ring.hotspot.ringRect ?? ring.hotspot.rect;
       cx = (x + w / 2) * view.w; cy = (y + h / 2) * view.h;
       rx = Math.max(22, (w * view.w) / 2 + 10); ry = Math.max(22, (h * view.h) / 2 + 10);
     }
@@ -2267,7 +2669,7 @@ export class PanelScene extends Phaser.Scene {
         const dest = this.views[to.tile].screen(to.x, to.y);
         rig.root.setPosition(lerp(from.x, dest.x, actor.crossing.t), lerp(from.y, dest.y, actor.crossing.t));
         rig.root.setVisible(actor.visible);
-        rig.root.setScale(actor.facing * scale * view.rect.scale, scale * view.rect.scale);
+        rig.root.setScale(actor.facing * scale * view.rect.scale * view.base, scale * view.rect.scale * view.base);
       } else {
         if (entry.parent !== view.actorLayer) { view.actorLayer.add(rig.root); entry.parent = view.actorLayer; }
         rig.root.setPosition(actor.x * view.w, actor.y * view.h);
@@ -2305,8 +2707,8 @@ export class PanelScene extends Phaser.Scene {
       slotsScreen: this.layout.slots.map(({ index, x, y, w, h }) => ({ index, x, y, w, h })),
       hotspots,
       zoomOutGlyphs: Object.keys(this.act.tiles).filter((tile) => this.model.canZoomOut(tile)).map((tile) => {
-        const slot = this.model.slotRect(tile);
-        return { tile, x: slot.x + slot.w - 12, y: slot.y + 12 };
+        const glyph = this.glyphAt(tile);
+        return { tile, x: Math.round(glyph.x), y: Math.round(glyph.y) };
       }),
       view: {
         animating: Object.values(this.views).filter((view) => view.zooming || view.moving || view.lifted).map((view) => view.id),

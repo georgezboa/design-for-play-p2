@@ -7,13 +7,16 @@ const list = (...rows) => Object.freeze(rows.map((row) => Object.freeze(row)));
 export const CHAPTER_CONTROLS = Object.freeze({
   // Chapter 1 panel puzzle (night-service.html). Mouse first; every verb
   // also has a keyboard fallback.
+  // The full key list (the in-game key strip shows the ones that apply now).
   nightServicePanels: list(
-    ['MOVE A WINDOW', 'DRAG IT · ARROWS + SPACE'],
-    ['LOOK CLOSER', 'CLICK A TAG · TAB + ENTER'],
-    ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · BACKSPACE'],
-    ['LIFT A FRAME', 'HOLD ITS EDGE · F'],
-    ['PUNCH-HOLE LENS', 'DRAG IT · L + ARROWS'],
-    ['CONTINUE / READ', 'CLICK · ENTER'],
+    ['CHOOSE A WINDOW', 'ARROW KEYS'],
+    ['MOVE A WINDOW', 'DRAG IT · SPACE PICKS UP, ARROWS, SPACE PUTS DOWN'],
+    ['LOOK CLOSER / USE', 'CLICK A TAG · TAB NEXT TAG, ENTER USES IT'],
+    ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · ⤢ GLYPH · BACKSPACE'],
+    ['LIFT A FRAME', 'PRESS AND HOLD THE FRAME · F, ARROWS, SPACE DROPS'],
+    ['PUNCH-HOLE LENS', 'DRAG IT · L, ARROWS MOVE IT, ENTER CLICKS THROUGH'],
+    ['PUT BACK WHAT YOU HOLD', 'BACKSPACE · ESC'],
+    ['CONTINUE / READ', 'CLICK · ENTER · SPACE'],
     ['SHOW ME (A HINT)', 'PAUSE → SHOW ME · H'],
     ['PAUSE', 'ESC'],
   ),
