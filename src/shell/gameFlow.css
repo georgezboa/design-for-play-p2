@@ -72,9 +72,10 @@
   translate: -50% -50%;
   min-width: 180px;
   padding: 14px 24px;
-  border: 1px solid #43dce5;
+  border: 1px solid #b08a4a;
+  border-radius: 6px;
   color: #ead6ae;
-  background: #071013ee;
+  background: #1c130dee;
   font: 700 12px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
   letter-spacing: .18em;
 }
