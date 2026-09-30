@@ -90,7 +90,7 @@ export function ensureLoopTexture(scene, key, chunkKeys, height = 520, fade = 26
  * @param {object} o.model
  * @param {object} o.env  { paper, images, worlds, reduceMotion() }
  */
-export function createPaintContext(scene, { target, w, h, era = 'present', model = null, tileId = null, stateId = null, env }) {
+export function createPaintContext(scene, { target, w, h, era = 'present', model = null, tileId = null, stateId = null, env, res = 1 }) {
   const animators = [];
   const add = (obj) => { target.add(obj); return obj; };
   const reduce = () => env.reduceMotion();
@@ -109,17 +109,21 @@ export function createPaintContext(scene, { target, w, h, era = 'present', model
      * `fn(c, env)` draws in panel coordinates; the canvas is cached by key.
      */
     paint(key, fn, { bleed = PAINT_BLEED } = {}) {
-      const fullKey = `nsv-paint-${key}-${era}-${Math.round(w)}x${Math.round(h)}`;
+      // `res` > 1: the window is shown larger than its tile size (Act 0), so
+      // the canvas is painted at screen resolution and drawn back down
+      const r = Math.max(1, Math.round(res * 100) / 100);
+      const fullKey = `nsv-paint-${key}-${era}-${Math.round(w)}x${Math.round(h)}${r > 1 ? `@${r}` : ''}`;
       if (!scene.textures.exists(fullKey)) {
-        const tex = scene.textures.createCanvas(fullKey, Math.ceil(w + bleed * 2), Math.ceil(h + bleed * 2));
+        const tex = scene.textures.createCanvas(fullKey, Math.ceil((w + bleed * 2) * r), Math.ceil((h + bleed * 2) * r));
         const c = tex.getContext();
         c.save();
+        c.scale(r, r);
         c.translate(bleed, bleed);
         fn(c, { w, h, era, paper: env.paper, images: env.images, bleed });
         c.restore();
         tex.refresh();
       }
-      return add(scene.add.image(-bleed, -bleed, fullKey).setOrigin(0, 0));
+      return add(scene.add.image(-bleed, -bleed, fullKey).setOrigin(0, 0).setScale(1 / r));
     },
     /** A small painted sprite (canvas at 3×), placed at x, y. */
     sprite(key, sw, sh, fn, x, y, { origin = [0.5, 0.5], angle = 0, alpha = 1 } = {}) {

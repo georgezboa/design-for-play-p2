@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  LINK_TOLERANCE, TIMES_OF_DAY, createPanelModel, defineAct, edgePoint, layoutGrid, validateAct,
+  LINK_TOLERANCE, TIMES_OF_DAY, createPanelModel, defineAct, edgePoint, framePoints, layoutGrid, validateAct,
 } from '../../src/chapters/nightService/panelModel.js';
 import { record, settle } from './helpers.mjs';
 
@@ -229,7 +229,7 @@ test('lens: without lensAt the edge endpoint itself must be covered', () => {
   assert.ok(model.findLink('d', 'e', 'rail'));
 });
 
-test('lens: past hotspots are clickable only inside the lens; present ones only outside', () => {
+test('lens: past hotspots are clickable only inside the lens; present ones fall through it', () => {
   const act = fixture({ start: { lens: { x: 10, y: 10 } } });
   const model = createPanelModel(act);
   const b = model.slotRect('b');
@@ -239,9 +239,11 @@ test('lens: past hotspots are clickable only inside the lens; present ones only 
   assert.equal(model.hotspotAt('b', 0.2, 0.2, inside).id, 'past');
   const centre = { x: b.x + 0.5 * b.w, y: b.y + 0.5 * b.h };
   model.moveLens(centre.x, centre.y);
-  assert.equal(model.hotspotAt('b', 0.5, 0.5, centre), null, 'present zoom hotspot under the lens is not clickable');
+  // alpha #1: the lens never swallows a click — with no 1978 hotspot there,
+  // the present one underneath takes it
+  assert.equal(model.hotspotAt('b', 0.5, 0.5, centre).id, 'zoom', 'present zoom hotspot under the lens falls through');
   model.moveLens(10, 10);
-  assert.equal(model.hotspotAt('b', 0.5, 0.5, centre).id, 'zoom', 'and clickable again once the lens moves away');
+  assert.equal(model.hotspotAt('b', 0.5, 0.5, centre).id, 'zoom', 'and outside the lens as before');
   model.moveLens(inside.x, inside.y);
   assert.ok(model.clickTile('b', 0.2, 0.2, inside));
   assert.ok(model.hasFlag('sawPast'));
@@ -250,6 +252,100 @@ test('lens: past hotspots are clickable only inside the lens; present ones only 
   assert.ok(model.clickTile('b', 0.8, 0.8));
   assert.ok(model.hasItem('key'));
   assert.equal(model.hotspots('b').find((h) => h.id === 'gated').enabled, false);
+});
+
+test('lens: inside it a 1978 hotspot wins over a present one on the same spot', () => {
+  const noopDraw = () => {};
+  const act = defineAct({
+    id: 'overlap', grid: { cols: 2, rows: 2 }, slots: ['a', 'b', 'c', 'd'], start: { lens: { x: 10, y: 10 } },
+    tiles: {
+      a: { states: { s: { draw: noopDraw, hotspots: [
+        { id: 'now', kind: 'use', rect: [0.3, 0.3, 0.4, 0.4] },
+        { id: 'then', kind: 'use', era: 'past', rect: [0.4, 0.4, 0.2, 0.2] },
+      ] } } },
+      b: { states: { s: { draw: noopDraw } } }, c: { states: { s: { draw: noopDraw } } }, d: { states: { s: { draw: noopDraw } } },
+    },
+    steps: [],
+  });
+  const model = createPanelModel(act);
+  const a = model.slotRect('a');
+  const at = (u, v) => ({ x: a.x + u * a.w, y: a.y + v * a.h });
+  model.moveLens(at(0.5, 0.5).x, at(0.5, 0.5).y);
+  assert.equal(model.hotspotAt('a', 0.5, 0.5, at(0.5, 0.5)).id, 'then');
+  assert.equal(model.hotspotAt('a', 0.32, 0.32, at(0.32, 0.32)).id, 'now', 'past of the 1978 spot: the present shows through');
+  model.moveLens(10, 10);
+  assert.equal(model.hotspotAt('a', 0.5, 0.5, at(0.5, 0.5)).id, 'now', 'outside the lens the 1978 spot is gone');
+});
+
+test('frame grips: a generous band (or a whole window) lifts the frame; the glass does not', () => {
+  const noopDraw = () => {};
+  const act = defineAct({
+    id: 'grips', grid: { cols: 2, rows: 2 }, slots: ['a', 'b', 'c', 'd'],
+    tiles: {
+      a: { frame: { id: 'band', draw: noopDraw }, states: { s: { draw: noopDraw } } },
+      b: { frame: { id: 'window', draw: noopDraw, grip: { rect: [0.4, 0.1, 0.3, 0.4] } }, states: { s: { draw: noopDraw } } },
+      c: { states: { s: { draw: noopDraw } } }, d: { states: { s: { draw: noopDraw } } },
+    },
+    steps: [],
+  });
+  const model = createPanelModel(act);
+  // the default band reaches well past a thin painted bezel (~6–10% in)
+  assert.equal(model.frameGripAt('a', 0.05, 0.5), 'band');
+  assert.equal(model.frameGripAt('a', 0.5, 0.1), 'band');
+  assert.equal(model.frameGripAt('a', 0.5, 0.5), null, 'the view inside the frame is not the frame');
+  assert.equal(model.frameGripAt('b', 0.55, 0.3), 'window');
+  assert.equal(model.frameGripAt('b', 0.1, 0.9), null);
+  // the ghost hand's hold points are all on the grip
+  [['band', 'a'], ['window', 'b']].forEach(([frame, tile]) => framePoints(model.frameGrip(frame)).forEach(([u, v]) => {
+    assert.equal(model.frameGripAt(tile, u, v), frame, `${frame} ${u},${v}`);
+  }));
+  // lifted (floating), nothing can be gripped
+  model.liftFrame('band');
+  assert.equal(model.frameGripAt('b', 0.55, 0.3), null);
+});
+
+test('layout: a small grid can be shown larger than its tile size (Act 0, 0.5)', () => {
+  const plain = layoutGrid({ cols: 1, rows: 1, tile: { w: 745, h: 414 } });
+  const big = layoutGrid({ cols: 1, rows: 1, tile: { w: 745, h: 414 }, display: 1.7 });
+  assert.equal(plain.scale, 1);
+  assert.equal(big.tileW, 745, 'tile coordinates are unchanged');
+  assert.equal(big.slots[0].w, Math.round(745 * 1.7));
+  assert.ok(Math.abs(big.scale - 1.7) < 0.01);
+  assert.ok(big.slots[0].w / 1920 > 0.6, 'the one window fills most of the wall');
+  assert.ok(big.y >= 66 && big.y + big.h <= 1080 - 150);
+});
+
+test('effects: showCard `unless` and zoomOutAll', () => {
+  const noopDraw = () => {};
+  const act = defineAct({
+    id: 'fx', grid: { cols: 2, rows: 2 }, slots: ['a', 'b', 'c', 'd'],
+    cards: { C: { title: 'c' } },
+    tiles: {
+      a: { states: {
+        s: { draw: noopDraw, hotspots: [{ id: 'in', kind: 'zoom', to: 't', rect: [0, 0, 1, 1] }, { id: 'read', kind: 'read', card: 'C', rect: [0, 0, 0.1, 0.1] }] },
+        t: { draw: noopDraw, hotspots: [{ id: 'in2', kind: 'zoom', to: 'u', rect: [0, 0, 1, 1] }] },
+        u: { draw: noopDraw },
+      } },
+      b: { states: { s: { draw: noopDraw } } }, c: { states: { s: { draw: noopDraw } } }, d: { states: { s: { draw: noopDraw } } },
+    },
+    steps: [
+      { id: 'deep', when: { state: { tile: 'a', is: 'u' } }, do: [{ showCard: { card: 'C', unless: { hotspot: 'a.read' } } }, { zoomOutAll: { tile: 'a', gap: 100 } }] },
+    ],
+  });
+  const model = createPanelModel(act);
+  model.zoomIn('a', 'in');
+  model.zoomIn('a', 'in2');
+  assert.equal(model.state.card?.id, 'C', 'not read yet: shown');
+  model.closeCard();
+  settle(model);
+  assert.equal(model.state.tiles.a.state, 's');
+  assert.equal(model.state.tiles.a.zoomStack.length, 0);
+  const read = createPanelModel(act);
+  read.activateHotspot('a', 'read');
+  read.closeCard();
+  read.zoomIn('a', 'in');
+  read.zoomIn('a', 'in2');
+  assert.equal(read.state.card, null, 'already read: skipped');
 });
 
 test('walk: actors cross only over an active link and stop when it breaks', () => {
