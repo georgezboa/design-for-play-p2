@@ -29,7 +29,8 @@ export const ACT0 = defineAct({
   heading: 'ONE WINDOW',
   checkpoint: 'chapter-1-start',
   next: 'act05',
-  grid: { cols: 1, rows: 1, tile: CARRIAGE_TILE },
+  // painted at the 2×2 window size, shown large: the one window fills the wall
+  grid: { cols: 1, rows: 1, tile: CARRIAGE_TILE, display: 1.7 },
   slots: ['office'],
   start: { bell: 0, items: [] },
   assets: ['fields'],
@@ -114,6 +115,8 @@ export const ACT0 = defineAct({
         { sfx: 'stool' },
         { wait: 700 },
         { setFlag: 'butchAwake' },
+        // who he is, in the fiction: the night service's lost-property clerk
+        { caption: { speaker: 'THE CONDUCTOR', text: 'Wake up, Lost Property. A claim has come in on the night service.', ms: 6500 } },
       ],
       skip: [{ zoomOut: 'office' }, { actorPose: { actor: 'butch', pose: 'sit', facing: -1 } }, { setFlag: 'butchAwake' }],
     },

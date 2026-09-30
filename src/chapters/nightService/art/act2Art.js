@@ -646,7 +646,9 @@ export function drawBeneath(ctx) {
 export const STOPS = Object.freeze(['CITY TERMINAL', 'RIVER JUNCTION', 'MILL ROAD', 'HALFWAY HOUSE', 'BELLWETHER']);
 
 /** The big REQUEST STOP plate on the timetable board (1978: punch it through the lens). */
-export const REQUEST_STOP = Object.freeze([0.6, 0.57, 0.22, 0.22]);
+export const REQUEST_STOP = Object.freeze([0.575, 0.555, 0.255, 0.235]);
+/** The brass push on the plate (tile-normalised). */
+export const REQUEST_KNOB = Object.freeze({ u: REQUEST_STOP[0] + REQUEST_STOP[2] * 0.2, v: REQUEST_STOP[1] + REQUEST_STOP[3] / 2 });
 
 function boardBase(c, env, w, h, { past = false, requested = false, arrived = false }) {
   backWall(c, w, h, h, { seed: 281, tone: past ? ['#2e2217', '#3a2a1c'] : ['#132126', '#1b2f35'] });
@@ -711,17 +713,25 @@ function boardBase(c, env, w, h, { past = false, requested = false, arrived = fa
   c.strokeStyle = brassFill(c, rx, ry, rw, rh);
   roundRectPath(c, rx + 2, ry + 2, rw - 4, rh - 4, 10); c.stroke();
   c.restore();
-  const knobX = rx + rh * 0.5;
-  const knobY = ry + rh * 0.5;
+  const knobX = REQUEST_KNOB.u * w;
+  const knobY = REQUEST_KNOB.v * h;
   c.fillStyle = brassFill(c, knobX - 22, knobY - 22, 44, 44);
   c.beginPath(); c.arc(knobX, knobY, 21, 0, Math.PI * 2); c.fill();
   c.fillStyle = past ? '#f2e2bc' : '#4a4038';
   c.beginPath(); c.arc(knobX, knobY, 13, 0, Math.PI * 2); c.fill();
   inkEllipse(c, knobX, knobY, 21, 21, { w: 1.6 });
+  // the label gets its own room right of the push, with a clear margin
   c.fillStyle = past ? '#ffe6c0' : arrived ? '#d8a070' : '#4a433c';
-  c.font = '700 20px "Space Mono", monospace';
-  c.fillText('REQUEST', knobX + 30, knobY - 5);
-  c.fillText('STOP', knobX + 30, knobY + 21);
+  const textX = knobX + 21 + 14;
+  const room = rx + rw - 16 - textX;
+  let size = 20;
+  c.font = `700 ${size}px "Space Mono", monospace`;
+  while (size > 12 && c.measureText('REQUEST').width > room) { size -= 1; c.font = `700 ${size}px "Space Mono", monospace`; }
+  const lineGap = Math.round(size * 1.25);
+  c.textBaseline = 'middle';
+  c.fillText('REQUEST', textX, knobY - lineGap / 2);
+  c.fillText('STOP', textX, knobY + lineGap / 2);
+  c.textBaseline = 'alphabetic';
   ink(c, [[rx, ry], [rx + rw, ry], [rx + rw, ry + rh], [rx, ry + rh]], { w: 1.6, closed: true, alpha: 0.7 });
   if (past && requested) {
     // punched: a clean round hole through the enamel, the paper-card board behind

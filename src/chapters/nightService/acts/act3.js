@@ -19,7 +19,7 @@
 
 import { defineAct } from '../panelModel.js';
 import {
-  HEDGE, OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
+  CITY_WINDOW, HEDGE, OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
   drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook, drawPlatform,
   drawPlatformPast,
 } from '../art/act3Art.js';
@@ -71,7 +71,8 @@ export const ACT3 = defineAct({
   },
   tiles: {
     city: {
-      frame: { id: 'cityWindow', draw: drawCityFrame },
+      // the whole window (sash, glass and sill) is the grip: hold it to lift it
+      frame: { id: 'cityWindow', draw: drawCityFrame, grip: { rect: [CITY_WINDOW[0] - 0.02, CITY_WINDOW[1] - 0.02, CITY_WINDOW[2] + 0.04, CITY_WINDOW[3] + 0.06] } },
       states: {
         default: {
           draw: drawCityRoom,

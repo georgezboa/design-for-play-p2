@@ -221,6 +221,38 @@ export function paintTrolley(c, x, y, s = 1) {
  * (so the growing wall never repaints it): `key` hangs the office key on the
  * carrier (until `keySent`); the desk bell is a live sprite everywhere.
  */
+/** The enamel sign over the counter: who works this desk (story bible: Butch is the clerk). */
+export const OFFICE_SIGN = Object.freeze(['LOST PROPERTY', 'NIGHT SERVICE · CLERK B.']);
+
+function lostPropertySign(c, x, y, sw, sh) {
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.5)'; c.shadowBlur = 8; c.shadowOffsetY = 3;
+  c.fillStyle = '#5a2019';
+  roundRectPath(c, x, y, sw, sh, 6); c.fill();
+  c.restore();
+  c.save();
+  c.lineWidth = 3;
+  c.strokeStyle = brassFill(c, x, y, sw, sh);
+  roundRectPath(c, x + 1.5, y + 1.5, sw - 3, sh - 3, 5); c.stroke();
+  c.lineWidth = 1;
+  c.strokeStyle = 'rgba(234, 223, 198, 0.7)';
+  roundRectPath(c, x + 6, y + 6, sw - 12, sh - 12, 3); c.stroke();
+  c.restore();
+  [[x + 10, y + sh / 2], [x + sw - 10, y + sh / 2]].forEach(([rx, ry]) => rivet(c, rx, ry, 2.6));
+  c.save();
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.fillStyle = '#efe4cc';
+  let size = Math.round(sh * 0.4);
+  c.font = `700 ${size}px "Space Mono", monospace`;
+  while (size > 10 && c.measureText(OFFICE_SIGN[0]).width > sw - 40) { size -= 1; c.font = `700 ${size}px "Space Mono", monospace`; }
+  c.fillText(OFFICE_SIGN[0], x + sw / 2, y + sh * 0.4);
+  c.font = `700 ${Math.max(8, Math.round(size * 0.46))}px "Space Mono", monospace`;
+  c.fillStyle = PAL.brassLight;
+  c.fillText(OFFICE_SIGN[1], x + sw / 2, y + sh * 0.76);
+  c.restore();
+}
+
 export function drawDesk(ctx, { key = false } = {}) {
   const { w, h } = ctx;
   const floorY = FLOOR * h;
@@ -327,6 +359,7 @@ export function drawDesk(ctx, { key = false } = {}) {
     ink(c, [[sx + 13, sy + 2], [sx + 16, floorY]], { w: 2 });
     ink(c, [[sx, sy + 3], [sx, floorY - 1]], { w: 1.6, alpha: 0.7 });
     inkEllipse(c, sx, sy, 18, 4.5, { w: 1.8 });
+    lostPropertySign(c, w * 0.6, h * 0.53, w * 0.32, h * 0.125);
     // the key line: a carrier wire under the shelf, out through the left wall,
     // a hook rail and a small pulley where the carrier rests
     const wy = WIRE_OUT * h;

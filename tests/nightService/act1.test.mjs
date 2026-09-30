@@ -124,7 +124,36 @@ test('Act 1: zoomed pigeonhole away from the door holds the ticket until swapped
   assert.equal(model.state.ended?.next, 'act2');
 });
 
-test('Act 1: reading the claim envelope shows card A1 and is optional', () => {
+test('Act 1 (alpha #4): card A1 opens by itself when the chute fires, and holds the scene until read', () => {
+  const model = createPanelModel(ACT1);
+  model.swap(TL, BL);
+  settle(model);
+  const log = record(model);
+  model.zoomIn('lockers', 'tagged');
+  settle(model, { cards: false });
+  assert.ok(model.hasFlag('ticketDropped'));
+  assert.equal(model.state.card?.id, 'A1', 'the claim card is up');
+  assert.equal(log.find(([name]) => name === 'card')[1].card.title, 'MARA VELEZ');
+  assert.equal(model.state.ended, null, 'nothing moves on under the card');
+  model.closeCard();
+  settle(model);
+  assert.equal(model.state.ended?.next, 'act2');
+  // read already (the envelope): not shown twice
+  const read = createPanelModel(ACT1);
+  read.swap(TL, BL);
+  settle(read);
+  read.swap(TR, TL);
+  read.zoomIn('lockers', 'tagged');
+  read.activateHotspot('lockers', 'envelope');
+  read.closeCard();
+  const again = record(read);
+  read.swap(TR, TL);
+  settle(read, { cards: false });
+  assert.equal(again.filter(([name]) => name === 'card').length, 0);
+  assert.equal(read.state.ended?.next, 'act2');
+});
+
+test('Act 1: reading the claim envelope early shows card A1', () => {
   const model = createPanelModel(ACT1);
   model.swap(TL, BL);
   settle(model);
