@@ -246,3 +246,11 @@ test('every reachable action stays reversible: nothing locks a window again afte
   settle(model);
   assert.ok(model.zoomIn('plate', 'print'));
 });
+
+test('alpha: the first move (the stub\'s punch hole) is a big, ringed target', () => {
+  const hole = ONE_ANSWER_ACT.tiles.stub.states.default.hotspots.find((h) => h.id === 'hole');
+  assert.ok(hole.rect[2] >= 0.15 && hole.rect[3] >= 0.25, 'enlarged click target');
+  assert.equal(hole.tag.ring, true, 'the amber ring');
+  const [rx, ry, rw, rh] = hole.ringRect;
+  assert.ok(rx >= hole.rect[0] && ry >= hole.rect[1] && rx + rw <= hole.rect[0] + hole.rect[2] && ry + rh <= hole.rect[1] + hole.rect[3], 'ring inside the target');
+});
