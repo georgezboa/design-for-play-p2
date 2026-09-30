@@ -168,7 +168,7 @@ export function createPaintedCar() {
     }
     if (state.blocks.delete(key)) {
       if (inPigmentZone(cx)) {
-        state.pigment += 1;
+        state.pigment += PIGMENT_ZONE.perGrey ?? 1;
         emit('pigment-recovered', { cx, cy, pigment: state.pigment });
       }
       emit('block-washed', { cx, cy });

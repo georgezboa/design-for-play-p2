@@ -126,12 +126,13 @@ test('escalation 3: in bay C paint costs pigment, and washing the grey gives her
   // the long wall is grey: wash three cells of it
   const wall = BLOCK_RECTS[1];
   for (let r = FLOOR_ROW - 3; r < FLOOR_ROW; r += 1) assert.equal(car.wash(wall.col, r), true);
-  assert.equal(car.state.pigment, 3);
+  // two pigment per grey cell (alpha round 1 pacing)
+  assert.equal(car.state.pigment, 6);
   assert.equal(car.paint(col, FLOOR_ROW - 1), true);
-  assert.equal(car.state.pigment, 2);
+  assert.equal(car.state.pigment, 5);
   // washing your own paint refunds it
   assert.equal(car.wash(col, FLOOR_ROW - 1), true);
-  assert.equal(car.state.pigment, 3);
+  assert.equal(car.state.pigment, 6);
 });
 
 test('the long wall reaches the ceiling: there is no way over it, only through', () => {
@@ -198,7 +199,7 @@ test('no dead ends: every plate has a legal perch and bay C never runs out of co
   const stairRows = FLOOR_ROW - Math.floor((plate.y + plate.h / 2 + READ_RADIUS - 10 + PLAYER_HALF_HEIGHT) / CELL);
   const needed = hole + stairRows * 2;
   const wall = BLOCK_RECTS[1];
-  const recoverable = PIGMENT_ZONE.start + wall.cols * wall.rows;
+  const recoverable = PIGMENT_ZONE.start + wall.cols * wall.rows * PIGMENT_ZONE.perGrey;
   assert.ok(needed <= 30, `bay C should need a handful of cells, not ${needed}`);
   assert.ok(recoverable >= needed * 3, `bay C must never run dry: ${recoverable} vs ${needed}`);
 });
@@ -252,4 +253,25 @@ test('falling costs nothing that was drawn', () => {
   assert.equal(car.snapshot().falls, 1);
   assert.equal(car.isPainted(5, FLOOR_ROW - 1), true);
   assert.equal(car.isBlock(41, 19), false);
+});
+
+// Alpha round 1 (P1 pacing): plates 2 and 3 were cell-by-cell staircase
+// chores. The tallest stair each plate needs, stood on straight under it:
+// plate 1 one cell, plate 2 a single jumpable column (≤ 4 cells, the jump
+// rises 92 px), plate 3 at most five cells over the hole (was 1 / 6 / 7).
+test('pacing: the stair each plate needs stays short', () => {
+  const rise = (560 * 560) / (2 * 1700);
+  const stairFor = (plate) => {
+    const cy = plate.y + plate.h / 2;
+    for (let rows = 0; rows < 12; rows += 1) {
+      const standY = (FLOOR_ROW - rows) * CELL - PLAYER_HALF_HEIGHT;
+      if (standY - cy <= READ_RADIUS) return rows;
+    }
+    return Infinity;
+  };
+  const [city, orchard, drawing] = PAINTINGS.map(stairFor);
+  assert.equal(city, 1);
+  assert.ok(orchard >= 2 && orchard * CELL <= rise, `orchard needs ${orchard} cells`);
+  assert.ok(drawing <= 5, `drawing needs ${drawing} cells`);
+  assert.equal(PIGMENT_ZONE.perGrey, 2);
 });
