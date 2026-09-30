@@ -41,8 +41,13 @@ export function layoutGrid(grid, view = VIEW) {
   const availW = view.w - side * 2;
   const tileH = grid.tile?.h ?? Math.floor((availH - gutter * (rows - 1)) / rows);
   const tileW = grid.tile?.w ?? Math.floor(Math.min((availW - gutter * (cols - 1)) / cols, tileH * 1.8));
-  const totalW = tileW * cols + gutter * (cols - 1);
-  const totalH = tileH * rows + gutter * (rows - 1);
+  // `display` shows a small grid's windows larger on screen than the size
+  // they are painted at (tile coordinates stay tileW × tileH), so Act 0's one
+  // window fills the wall and still grows into Act 1's 2×2 without a repaint.
+  const slotW = Math.round(tileW * (grid.display ?? 1));
+  const slotH = Math.round(tileH * (grid.display ?? 1));
+  const totalW = slotW * cols + gutter * (cols - 1);
+  const totalH = slotH * rows + gutter * (rows - 1);
   const x0 = Math.round((view.w - totalW) / 2);
   const y0 = Math.round(top + (availH - totalH) / 2);
   const slots = [];
@@ -52,14 +57,15 @@ export function layoutGrid(grid, view = VIEW) {
         index: row * cols + col,
         col,
         row,
-        x: x0 + col * (tileW + gutter),
-        y: y0 + row * (tileH + gutter),
-        w: tileW,
-        h: tileH,
+        x: x0 + col * (slotW + gutter),
+        y: y0 + row * (slotH + gutter),
+        w: slotW,
+        h: slotH,
       });
     }
   }
-  return { cols, rows, gutter, tileW, tileH, x: x0, y: y0, w: totalW, h: totalH, view, slots };
+  // `scale`: screen pixels per tile pixel (1 unless `grid.display` is set)
+  return { cols, rows, gutter, tileW, tileH, scale: slotW / tileW, x: x0, y: y0, w: totalW, h: totalH, view, slots };
 }
 
 /**
@@ -133,6 +139,40 @@ export function effectKind(effect) {
 const asList = (value) => (Array.isArray(value) ? value : value == null ? [] : [value]);
 const clone = (value) => (value === undefined ? undefined : JSON.parse(JSON.stringify(value)));
 const inRect = (rect, u, v) => u >= rect[0] && v >= rect[1] && u <= rect[0] + rect[2] && v <= rect[1] + rect[3];
+
+/**
+ * Where a liftable frame can be taken hold of (tile-normalised): `rect`,
+ * minus an optional `hole` (the glass a picture frame surrounds). The default
+ * is a generous band all round the window, well past the painted brass.
+ */
+export const DEFAULT_FRAME_GRIP = Object.freeze({ rect: Object.freeze([0, 0, 1, 1]), hole: Object.freeze([0.09, 0.15, 0.82, 0.7]) });
+
+export function onFrameGrip(grip, u, v) {
+  const g = grip ?? DEFAULT_FRAME_GRIP;
+  if (!inRect(g.rect, u, v)) return false;
+  if (!g.hole) return true;
+  const [hx, hy, hw, hh] = g.hole;
+  return !(u > hx && v > hy && u < hx + hw && v < hy + hh);
+}
+
+/**
+ * Points on a grip where a hand would take hold, best first (the middle of
+ * the top band, then the sides and the bottom; or the centre of a solid grip).
+ * @returns {Array<[number, number]>} tile-normalised points
+ */
+export function framePoints(grip) {
+  const g = grip ?? DEFAULT_FRAME_GRIP;
+  const [x, y, w, h] = g.rect;
+  if (!g.hole) {
+    return [[x + w / 2, y + h / 2], [x + w * 0.25, y + h * 0.3], [x + w * 0.75, y + h * 0.3], [x + w * 0.25, y + h * 0.75], [x + w * 0.75, y + h * 0.75]];
+  }
+  const [hx, hy, hw, hh] = g.hole;
+  const top = (y + hy) / 2;
+  const bottom = (hy + hh + y + h) / 2;
+  const left = (x + hx) / 2;
+  const right = (hx + hw + x + w) / 2;
+  return [[x + w / 2, top], [left, y + h / 2], [right, y + h / 2], [x + w / 2, bottom], [x + w * 0.2, top], [x + w * 0.8, top]];
+}
 
 function createEmitter() {
   const listeners = new Map();
@@ -441,7 +481,9 @@ export function createPanelModel(act, options = {}) {
 
   /**
    * Hit-test a tile-local point. Clicks inside the lens act on the 1978 layer
-   * (era past/both); outside it on the present (era present/both).
+   * first (era past/both); when no 1978 hotspot is there, the click falls
+   * through to the present one underneath, so the lens never swallows a
+   * click. Outside the lens only the present counts (era present/both).
    * @param {{x:number,y:number}} [screen] the same point in screen space
    */
   function hotspotAt(tileId, u, v, screen = null) {
@@ -449,13 +491,17 @@ export function createPanelModel(act, options = {}) {
     const point = screen ?? (rect ? tilePoint(rect, u, v) : null);
     const inLens = lensCovers(point);
     const list = hotspots(tileId).filter((hotspot) => hotspot.enabled && inRect(hotspot.rect, u, v));
-    for (let i = list.length - 1; i >= 0; i -= 1) {
-      const hotspot = list[i];
-      if (hotspot.era === 'both') return hotspot;
-      if (hotspot.era === 'past' && inLens) return hotspot;
-      if (hotspot.era === 'present' && !inLens) return hotspot;
-    }
-    return null;
+    // the last listed is drawn on top: it wins
+    const top = (ok) => [...list].reverse().find(ok) ?? null;
+    if (inLens) return top((h) => h.era !== 'present') ?? top((h) => h.era === 'present');
+    return top((h) => h.era !== 'past');
+  }
+
+  /** The frame a press at a tile-local point takes hold of (liftable now), or null. */
+  function frameGripAt(tileId, u, v) {
+    const frameId = frameOn(tileId);
+    if (!frameId || !canLiftFrame(frameId)) return null;
+    return onFrameGrip(frameDefs[frameId]?.grip, u, v) ? frameId : null;
   }
 
   // ---------- script ----------
@@ -479,6 +525,8 @@ export function createPanelModel(act, options = {}) {
       case 'giveItem': asList(arg).forEach((item) => { if (!hasItem(item)) s.items.push(item); events.emit('item', { item, held: true }); }); break;
       case 'takeItem': asList(arg).forEach((item) => { s.items = s.items.filter((held) => held !== item); events.emit('item', { item, held: false }); }); break;
       case 'showCard': {
+        // `unless`: skip a card the player has already chosen to read
+        if (typeof arg === 'object' && arg.unless !== undefined && evaluate(arg.unless)) break;
         const id = typeof arg === 'string' ? arg : arg.card;
         const wait = typeof arg === 'object' && arg.await;
         s.card = { id, await: Boolean(wait) };
@@ -537,6 +585,15 @@ export function createPanelModel(act, options = {}) {
       }
       case 'zoomTo': zoomIn(arg.tile, arg.to, arg.rect ?? [0.25, 0.25, 0.5, 0.5], { forced: true }); break;
       case 'zoomOut': zoomOut(arg.tile ?? arg, { forced: true }); break;
+      case 'zoomOutAll': {
+        // step all the way back out, one level at a time (however deep the player went)
+        const id = arg.tile ?? arg;
+        const gap = arg.gap ?? 600;
+        const steps = [];
+        for (let i = 0; i < (s.tiles[id]?.zoomStack.length ?? 0); i += 1) steps.push({ zoomOut: id }, { wait: gap });
+        s.queue.unshift(...steps);
+        break;
+      }
       case 'dialogue': {
         const lines = asList(arg.lines ?? arg);
         s.blocking = { kind: 'dialogue', lines, index: 0 };
@@ -1049,6 +1106,8 @@ export function createPanelModel(act, options = {}) {
     frameLifted,
     floatingFrame,
     frameDef: (id) => frameDefs[id] ?? null,
+    frameGrip: (id) => frameDefs[id]?.grip ?? DEFAULT_FRAME_GRIP,
+    frameGripAt,
     canDrag,
     canZoomOut,
     canLiftFrame,

@@ -22,12 +22,15 @@ import { installPauseMenu } from '../../../shell/pauseMenu.js';
 import { CHAPTER_CONTROLS } from '../../../shell/chapterControls.js';
 import { installPhaserMotionGuard } from '../../../shell/motion.js';
 import { applySettings, readSettings } from '../../../shell/saveSystem.js';
+import { leaveForTitle } from '../../../shell/titleReturn.js';
 import { DEV_MODE, devParams } from '../../../devMode.js';
 
 installPhaserMotionGuard(Phaser);
 applySettings(readSettings());
 
 const embedded = new URLSearchParams(window.location.search).get('embedded') === '1';
+// the Museum frames this page; opened on its own there is no one to tell
+const framed = (() => { try { return window.parent !== window; } catch { return true; } })();
 const params = devParams();
 const startStep = params.get('step');
 let scene = null;
@@ -67,6 +70,8 @@ const services = {
   onChapterEnd() {
     if (completionSent) return;
     completionSent = true;
+    // standalone (no Museum around it): the exhibit ends at the title, not on black
+    if (!embedded || !framed) { leaveForTitle(); return; }
     post(ONE_ANSWER_CHAPTER05_CONTRACT.completeMessage);
   },
 };

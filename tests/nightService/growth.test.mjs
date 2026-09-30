@@ -6,12 +6,17 @@ import { settle } from './helpers.mjs';
 
 const { act0, act05, act1, act2 } = ACTS;
 
-test('the carriage wall grows 1×1 → 1×2 → 2×2 with one window size throughout', () => {
+test('the carriage wall grows 1×1 → 1×2 → 2×2 with one painted window size throughout', () => {
   const sizes = [act0, act05, act1].map((act) => layoutGrid(act.grid));
   sizes.forEach((layout) => {
     assert.equal(layout.tileW, CARRIAGE_TILE.w);
     assert.equal(layout.tileH, CARRIAGE_TILE.h);
   });
+  // alpha #13: the few windows of the first acts are shown large, shrinking as the wall grows
+  const widths = sizes.map((l) => l.slots[0].w);
+  assert.ok(widths[0] > widths[1] && widths[1] > widths[2]);
+  assert.ok(widths[0] / 1920 > 0.6, `Act 0's window is ${Math.round((widths[0] / 1920) * 100)}% of the screen`);
+  sizes.forEach((l) => assert.ok(l.x >= 40 && l.y >= 60 && l.y + l.h <= 1080 - 140, 'every wall fits the carriage'));
   assert.deepEqual(sizes.map((l) => [l.cols, l.rows]), [[1, 1], [2, 1], [2, 2]]);
   // every grid stays centred on the carriage wall
   sizes.forEach((l) => assert.ok(Math.abs(l.x + l.w / 2 - 960) <= 1));
@@ -24,12 +29,12 @@ test('Act 0 → 0.5: the office slides aside and one new window opens beside it'
   assert.deepEqual(keep.map((w) => [w.tile, w.continues]), [['desk', 'office']]);
   assert.deepEqual(open.map((w) => w.tile), ['door']);
   const [desk] = keep;
-  // from the centre of the wall to the right-hand slot, same size, same row
+  // from the centre of the wall to the right-hand slot, shrinking a little as it goes
   assert.equal(desk.from.x, plan.from.slots[0].x);
   assert.equal(desk.to.x, plan.to.slots[1].x);
-  assert.equal(desk.from.y, desk.to.y);
-  assert.equal(desk.from.w, desk.to.w);
-  assert.ok(desk.to.x > desk.from.x, 'it moves right; the new window opens on its left');
+  assert.ok(desk.from.w > desk.to.w);
+  assert.ok(Math.abs(desk.from.w / desk.from.h - desk.to.w / desk.to.h) < 0.01, 'same shape');
+  assert.ok(desk.to.x + desk.to.w / 2 > desk.from.x + desk.from.w / 2, 'it moves right; the new window opens on its left');
   assert.equal(open[0].to.x, plan.to.slots[0].x);
 });
 
@@ -41,8 +46,9 @@ test('Act 0.5 → 1: the top row rises and two windows open below it', () => {
   assert.equal(byTile.lockers.continues, 'door', 'the stores door zoomed through into the pigeonholes');
   assert.equal(byTile.window.kind, 'open');
   assert.equal(byTile.door.kind, 'open');
-  // no sideways jump: the pair only rises into the top row
-  assert.equal(byTile.desk.from.x, byTile.desk.to.x);
+  // no sideways jump: the pair rises into the top row, closing in on the
+  // gutter between them as it shrinks to the 2×2 size
+  assert.equal(byTile.desk.from.x + byTile.desk.from.w, byTile.desk.to.x + byTile.desk.to.w);
   assert.equal(byTile.lockers.from.x, byTile.lockers.to.x);
   assert.ok(byTile.desk.to.y < byTile.desk.from.y);
   assert.equal(byTile.desk.to.y, plan.to.slots[0].y);

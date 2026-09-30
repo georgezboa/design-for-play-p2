@@ -185,17 +185,42 @@ test('Act 2: the optional Ember Stone — open case, letter A2, beneath the lett
   model.closeCard();
   assert.ok(model.zoomIn('aisle', 'beneath'));
   assert.ok(model.activateHotspot('aisle', 'ember'));
-  settle(model);
   assert.ok(model.hasFlag('stone:chapter-1'));
   assert.ok(log.some(([n, p]) => n === 'stone' && p.id === 'chapter-1'));
-  assert.equal(model.hotspots('aisle').find((h) => h.id === 'ember').enabled, false);
-  // back out three levels: the act ends, and the stone travels on
-  model.zoomOut('aisle');
-  model.zoomOut('aisle');
-  model.zoomOut('aisle');
+  // taking the stone ends the act: the scene steps all three levels back out
+  // by itself (no silent three-level zoom-out for the player), and the stone travels on
   settle(model);
+  assert.equal(log.filter(([n, p]) => n === 'zoom' && p.dir === 'out').length, 3);
+  assert.equal(model.state.tiles.aisle.state, 'aisle');
   assert.equal(model.state.ended?.next, 'act3');
   assert.deepEqual(model.carry().flags, ['stone:chapter-1']);
+});
+
+test('Act 2 end (alpha #5): closing the case once ends the act, however deep the player went', () => {
+  // straight back out of the open case
+  const shallow = createPanelModel(ACT2, { carry: startCarry('act2'), step: 'end' });
+  assert.ok(shallow.zoomIn('aisle', 'case'));
+  settle(shallow);
+  assert.equal(shallow.state.ended, null, 'looking inside does not end it');
+  assert.ok(shallow.zoomOut('aisle'));
+  settle(shallow);
+  assert.equal(shallow.state.ended?.next, 'act3');
+  // from the letter: reading it keeps the act open (the stone is still below it) ...
+  const deep = createPanelModel(ACT2, { carry: startCarry('act2'), step: 'end' });
+  deep.zoomIn('aisle', 'case');
+  deep.zoomIn('aisle', 'letter');
+  deep.activateHotspot('aisle', 'read');
+  settle(deep);
+  assert.equal(deep.state.ended, null);
+  assert.ok(deep.hotspots('aisle').find((h) => h.id === 'beneath').enabled, 'the stone can still be found');
+  // ... and one step back out (the case closes) finishes it, the scene doing the rest
+  assert.ok(deep.zoomOut('aisle'));
+  settle(deep);
+  assert.equal(deep.state.tiles.aisle.state, 'aisle');
+  assert.equal(deep.state.ended?.next, 'act3');
+  // the ⤢ glyph is cued once the letter has been seen
+  const end = ACT2.steps.find((x) => x.id === 'end');
+  assert.deepEqual(end.hint.zoomOutCue, { hotspot: 'aisle.letter' });
 });
 
 test('Act 2: dev ?step= jumps produce consistent worlds', () => {

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { ACTS, ACT_ORDER, startCarry } from '../../src/chapters/nightService/acts/index.js';
-import { createPanelModel } from '../../src/chapters/nightService/panelModel.js';
+import { createPanelModel, framePoints, tilePoint } from '../../src/chapters/nightService/panelModel.js';
 import {
   FIRST_USE_MS, HINT_TIERS, PULSE_REPEAT_MS, createHintDirector, pickGesture, resolveDrag, stepVerb,
 } from '../../src/chapters/nightService/hints.js';
@@ -179,4 +179,75 @@ test('tier-3 lines: one short, in-fiction line for every hinted Chapter 1 step',
     });
   }
   assert.equal(HINT_LINES['act2:mark'], 'The tag says more in 1978 light.');
+});
+
+test('tier-3 lines: the Museum exhibit has its own (Butch thinking aloud)', () => {
+  const carry = { bell: 0, items: [], flags: [], linkHistory: [], ...ONE_ANSWER_ACT.start };
+  assert.equal(ONE_ANSWER_ACT.hintSpeaker, 'BUTCH');
+  ONE_ANSWER_ACT.steps.filter((step) => step.hint).forEach((step) => {
+    const model = createPanelModel(ONE_ANSWER_ACT, { carry, step: step.id });
+    const line = hintLine('oneAnswer', step.id, model);
+    assert.ok(line, `oneAnswer:${step.id} has a line`);
+    assert.ok(line.length <= 80, `oneAnswer:${step.id} is one line`);
+    assert.doesNotMatch(line, /click|drag|press|button|mouse|tap/i, `oneAnswer:${step.id} stays diegetic`);
+  });
+});
+
+/** Can the player really do what the ghost hand shows, with the lens where it is? */
+function reachable(model, g) {
+  if (g.kind === 'click' || (g.kind === 'lens' && g.click && g.hotspot)) {
+    const slot = model.slotRect(g.tile);
+    const pt = tilePoint(slot, g.u, g.v);
+    if (g.kind === 'lens') model.moveLens(pt.x, pt.y); // the gesture carries the lens there first
+    return model.hotspotAt(g.tile, g.u, g.v, pt)?.id === g.hotspot;
+  }
+  if (g.kind === 'frame') return framePoints(model.frameGrip(g.frame)).some(([u, v]) => model.frameGripAt(g.from, u, v) === g.frame);
+  if (g.kind === 'zoomOut') return model.canZoomOut(g.tile);
+  if (g.kind === 'drag') return model.canDrag(g.tile);
+  return model.state.lens.enabled;
+}
+
+test('the ghost hand never points at a target the player cannot use (lens anywhere)', () => {
+  const acts = [...ACT_ORDER.map((id) => [id, ACTS[id], startCarry(id)]), ['oneAnswer', ONE_ANSWER_ACT, { bell: 0, items: [], flags: [], linkHistory: [], ...ONE_ANSWER_ACT.start }]];
+  let checked = 0;
+  acts.forEach(([actId, act, carry]) => act.steps.filter((step) => step.hint).forEach((step) => {
+    const base = createPanelModel(act, { carry, step: step.id });
+    settle(base);
+    if (base.currentStep()?.id !== step.id) return;
+    const g = pickGesture(base);
+    if (!g) return;
+    assert.ok(reachable(createPanelModel(act, { carry, step: step.id }), g), `${actId}:${step.id} ${g.kind}`);
+    // and with the lens parked right on top of the target (alpha #1)
+    if (base.state.lens.enabled && (g.kind === 'click' || g.kind === 'frame')) {
+      const model = createPanelModel(act, { carry, step: step.id });
+      settle(model);
+      const tile = g.kind === 'frame' ? g.from : g.tile;
+      const [u, v] = g.kind === 'frame' ? framePoints(model.frameGrip(g.frame))[0] : [g.u, g.v];
+      const pt = tilePoint(model.slotRect(tile), u, v);
+      model.moveLens(pt.x, pt.y);
+      assert.ok(reachable(model, pickGesture(model)), `${actId}:${step.id} under the lens`);
+    }
+    checked += 1;
+  }));
+  assert.ok(checked >= 15, `${checked} gestures checked`);
+});
+
+test('alpha #1: after marking BELLWETHER, the case tag under the lens takes the click', () => {
+  const model = createPanelModel(ACTS.act2, { carry: startCarry('act2'), step: 'mark' });
+  settle(model);
+  // mark it through the lens, as a player does
+  const mark = model.hotspots('rack').find((h) => h.id === 'bellwether');
+  const rack = model.slotRect('rack');
+  const at = tilePoint(rack, mark.rect[0] + mark.rect[2] / 2, mark.rect[1] + mark.rect[3] / 2);
+  model.moveLens(at.x, at.y);
+  assert.ok(model.clickTile('rack', mark.rect[0] + mark.rect[2] / 2, mark.rect[1] + mark.rect[3] / 2, at));
+  settle(model);
+  assert.equal(model.currentStep().id, 'orchard');
+  // the ghost hand points at the case tag, which is under the lens: a click there zooms
+  const g = pickGesture(model);
+  assert.equal(g.hotspot, 'caseTag');
+  const pt = tilePoint(rack, g.u, g.v);
+  assert.ok(model.lensCovers(pt), 'the lens still sits over the case');
+  assert.ok(model.clickTile('rack', g.u, g.v, pt));
+  assert.equal(model.state.tiles.rack.state, 'tag');
 });

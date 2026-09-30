@@ -88,3 +88,22 @@ test('act end leads to chapter-2-start, the 1-2 film and BORROWED LIGHT', () => 
   assert.match(main, /onChapterEnd\(\) \{[\s\S]*?onCheckpoint\('chapter-2-start'\)[\s\S]*?CINEMATICS\.chapter1To2[\s\S]*?preloadChapterId: 'chapter2'[\s\S]*?onComplete: launchChapter2/);
   assert.match(main, /function launchChapter2\(\) \{[\s\S]*?launchCheckpoint\('chapter-2-start'\)/);
 });
+
+test('alpha #3: keyboard play shows its keys and a high-contrast focus (PanelScene)', () => {
+  const scene = read('src/chapters/nightService/PanelScene.js');
+  // a key strip that follows keyboard focus, listing what each key does now
+  assert.match(scene, /keyStripItems\(\)/);
+  ['TAB', 'ENTER', 'SPACE', 'STEP BACK', 'LIFT FRAME', 'SHOW ME'].forEach((word) => assert.match(scene, new RegExp(`'${word}`)));
+  // the focus ring and selected window: ivory on a dark outline, not gold on gold
+  assert.match(scene, /lineStyle\(9, 0x0b0705, 0\.85\)[\s\S]{0,120}lineStyle\(3\.5, 0xfff4dc, 1\)/);
+  assert.match(scene, /lineStyle\(5, 0xfff4dc, 1\)/);
+  // frames: press-and-hold anywhere on the grip, with a lift cursor
+  assert.match(scene, /frameGripAt\(/);
+  assert.match(scene, /LIFT_CURSOR/);
+});
+
+test('A3-9: the exhibit opened on its own ends at the title, not on black', () => {
+  const entry = read('src/chapters/museum3d/oneAnswer/oneAnswer-main.js');
+  assert.match(entry, /window\.parent !== window/);
+  assert.match(entry, /if \(!embedded \|\| !framed\) \{ leaveForTitle\(\); return; \}/);
+});

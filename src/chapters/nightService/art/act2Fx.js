@@ -1,6 +1,6 @@
 // Act 2 presentation effects (see README.md → Custom fx).
 
-import { DROP_AT, ORCHARD_CASE, ORCHARD_TAG, RACK_Y, CASE_TOP, REQUEST_STOP, UPSTAIRS } from './act2Art.js';
+import { DROP_AT, ORCHARD_CASE, ORCHARD_TAG, RACK_Y, CASE_TOP, REQUEST_KNOB, UPSTAIRS } from './act2Art.js';
 
 export const ACT2_FX = {
   /** The punched hole pops out of the ticket and floats up to become the lens. */
@@ -28,8 +28,7 @@ export const ACT2_FX = {
 
   /** REQUEST STOP punched in 1978: the plate answers, and BELLWETHER lights today. */
   requestStop(api) {
-    const [x, y, w, h] = REQUEST_STOP;
-    const knob = { u: x + (h * 0.5 * (414 / 745)), v: y + h / 2 };
+    const knob = REQUEST_KNOB;
     api.flash('board', knob.u, knob.v, { color: 0xffd27a, size: 200, duration: 700 });
     const p = api.screen('board', knob.u, knob.v);
     api.sparkle(p.x, p.y, 10);
@@ -37,7 +36,6 @@ export const ACT2_FX = {
       api.flash('board', 0.194, 0.697, { color: 0xffb060, size: 150, duration: 900, repeat: 1 });
       api.audio.play('chime');
     });
-    void w;
   },
 
   /** Through the lens the Bellwether tag was marked: the present case answers. */

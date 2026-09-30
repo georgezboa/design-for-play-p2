@@ -55,6 +55,8 @@ export const ONE_ANSWER_ACT = defineAct({
   kicker: 'THE MUSEUM OF ONE ANSWER',
   heading: 'OBJECT PENDING CLASSIFICATION',
   title: 'OBJECT PENDING CLASSIFICATION',
+  // the tier-3 hint lines here are Butch's own (hintLines.js `oneAnswer:*`)
+  hintSpeaker: 'BUTCH',
   grid: { cols: 2, rows: 2 },
   // the Archivist's arrangement: the orchard face-down in the corner, the
   // duplicate filed at the bottom, the city line facing the wall
@@ -87,10 +89,13 @@ export const ONE_ANSWER_ACT = defineAct({
           drawPast: drawStubPast,
           edges: { right: [{ type: 'route', at: CITY_AT }] },
           hotspots: [{
+            // the first move: a generous target (the whole stub around the
+            // hole), with the amber ring breathing round the hole itself
             id: 'hole', kind: 'use', once: true,
-            rect: [STUB_HOLE.x - 0.05, STUB_HOLE.y - 0.09, 0.1, 0.18],
+            rect: [STUB_HOLE.x - 0.09, STUB_HOLE.y - 0.15, 0.18, 0.3],
+            ringRect: [STUB_HOLE.x - 0.025, STUB_HOLE.y - 0.045, 0.05, 0.09],
             do: [{ setFlag: 'punched' }],
-            tag: { x: STUB_HOLE.x + 0.06, y: STUB_HOLE.y - 0.1, angle: -0.3 },
+            tag: { x: STUB_HOLE.x + 0.06, y: STUB_HOLE.y - 0.1, angle: -0.3, ring: true },
           }],
         },
       },

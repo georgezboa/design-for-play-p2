@@ -36,6 +36,20 @@ export const HINT_LINES = Object.freeze({
     { text: 'She always took the hill path down to the station.' },
   ],
   'act3:bridge': 'The viaduct fell years ago. In 1978 it stood. Hold it there.',
+  // The Museum · the one-answer exhibit (acts/oneAnswer.js). The Conductor is
+  // not here: these are Butch thinking aloud (the act's `hintSpeaker`).
+  'oneAnswer:punch': 'Her stub still has the Conductor’s hole in it. Holes are for looking through.',
+  'oneAnswer:unfile': 'They stamped the reservation FILED. In 1978 nobody had stamped it yet.',
+  'oneAnswer:plate': 'Plate IV. Rosa drew that lane. It deserves a closer look.',
+  'oneAnswer:tag': 'An unclaimed tag always has another side.',
+  'oneAnswer:route': [
+    {
+      when: { all: [{ slot: { tile: 'stub', index: 0 } }, { slot: { tile: 'duplicate', index: 1 } }, { slot: { tile: 'tag', index: 2 } }, { slot: { tile: 'plate', index: 3 } }] },
+      text: 'Her office floor is torn today. It wasn’t in 1978.',
+    },
+    { text: 'Platform, office, the drawing, the orchard. Put her day back in order.' },
+  ],
+  'oneAnswer:arrive': 'She stops where the floor is torn. In 1978 it was whole.',
 });
 
 /** The line for a step now (`model` resolves conditional lines). */

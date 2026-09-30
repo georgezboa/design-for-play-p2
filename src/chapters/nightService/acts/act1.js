@@ -171,6 +171,8 @@ export const ACT1 = defineAct({
         { sfx: 'clack' },
         { setState: { tile: 'door', state: 'unlocked' } },
         { wait: 800 },
+        // the claim this chapter is about: never optional (unless already read)
+        { showCard: { card: 'A1', unless: { hotspot: 'lockers.envelope' } } },
       ],
       skip: [{ setFlag: 'ticketDropped' }, { setState: { tile: 'door', state: 'unlocked' } }],
     },

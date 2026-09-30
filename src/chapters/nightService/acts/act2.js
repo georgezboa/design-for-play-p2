@@ -58,7 +58,8 @@ export const ACT2 = defineAct({
               id: 'bellwether', kind: 'use', era: 'past', once: true,
               rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
               // the second use of the lens click (REQUEST STOP is the first)
-              requires: { all: [{ item: 'lens' }, { flag: 'stopRequested' }] },
+              // (once marked it steps aside: a click there reaches the case tag)
+              requires: { all: [{ item: 'lens' }, { flag: 'stopRequested' }, { notFlag: 'orchardMarked' }] },
               tag: { x: ORCHARD_TAG.x + 0.07, y: ORCHARD_TAG.y - 0.03, glintOnly: true, ring: true },
               do: [{ setFlag: 'orchardMarked' }],
             },
@@ -88,6 +89,8 @@ export const ACT2 = defineAct({
       frame: {
         id: 'windowFrame',
         draw: drawBrassFrame,
+        // press-and-hold anywhere on the brass (and a little past it)
+        grip: { rect: [0, 0, 1, 1], hole: [0.09, 0.15, 0.82, 0.7] },
         // the frame lifts once the orchard has been seen (taught when it is the only move)
         requires: { flag: 'orchardSeen' },
       },
@@ -249,6 +252,9 @@ export const ACT2 = defineAct({
       skip: [
         { setFlag: ['stopRequested', 'orchardMarked', 'orchardSeen', 'caseAtEdge'] },
         { setState: { tile: 'board', state: 'arrived' } },
+        // back out of the postcard first, as the arrival does (no stale zoom stack)
+        { zoomOut: 'rack' },
+        { zoomOut: 'rack' },
         { setState: { tile: 'rack', state: 'tilting' } },
       ],
     },
@@ -276,10 +282,27 @@ export const ACT2 = defineAct({
     },
     {
       id: 'end',
-      when: { all: [{ flag: 'caseInArms' }, { hotspot: 'aisle.case' }, { state: { tile: 'aisle', is: 'aisle' } }] },
+      // the act ends once the case has been opened and then closed again: back
+      // out to the aisle, or one step back out of the letter, or on taking the
+      // Ember Stone; the scene then steps the rest of the way out by itself
+      when: {
+        all: [
+          { flag: 'caseInArms' },
+          { hotspot: 'aisle.case' },
+          {
+            any: [
+              { state: { tile: 'aisle', is: 'aisle' } },
+              { all: [{ hotspot: 'aisle.letter' }, { state: { tile: 'aisle', is: 'openCase' } }] },
+              { hotspot: 'aisle.ember' },
+            ],
+          },
+        ],
+      },
       hint: {
         tile: 'aisle',
         hotspot: 'case',
+        // the ⤢ glyph breathes once the letter has been seen
+        zoomOutCue: { hotspot: 'aisle.letter' },
         ghost: [
           { when: { hotspot: 'aisle.case' }, zoomOut: 'aisle' },
           { click: { tile: 'aisle', hotspot: 'case' } },
@@ -287,7 +310,9 @@ export const ACT2 = defineAct({
       },
       do: [
         { lockInput: true },
-        { wait: 1100 },
+        { wait: 1200 },
+        { zoomOutAll: { tile: 'aisle', gap: 650 } },
+        { wait: 500 },
         { fx: { name: 'fadeAll', ms: 1700 } },
         { checkpoint: 'chapter-1-act-3' },
         { nextAct: 'act3' },

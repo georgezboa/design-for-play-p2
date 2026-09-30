@@ -36,7 +36,8 @@ export const ACT05 = defineAct({
   heading: 'TWO WINDOWS',
   checkpoint: 'chapter-1-act-05',
   next: 'act1',
-  grid: { cols: 2, rows: 1, tile: CARRIAGE_TILE },
+  // painted at the 2×2 window size, shown a little larger (the full wall width)
+  grid: { cols: 2, rows: 1, tile: CARRIAGE_TILE, display: 1.16 },
   // row-major, and wrong on purpose: the door stands left of the desk
   slots: ['door', 'desk'],
   start: { bell: 0, items: [] },
