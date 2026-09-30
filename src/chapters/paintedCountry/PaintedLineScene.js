@@ -8,7 +8,9 @@ import {
   LINE_WORLD,
   TRAIN,
   TRAIN_COLOURS,
+  coatAlpha,
   createPaintedLine,
+  platformLines,
   key as lineKey,
 } from './paintedLineModel.js';
 import { PIGMENTS } from './chapter4ExpansionModel.js';
@@ -401,7 +403,9 @@ export class PaintedLineScene extends Phaser.Scene {
     const fx = this.trainX + this.departOffset;
     const rects = this.partRects(fx);
     const returned = new Set(this.line.state.returned);
-    const fill = (id) => (returned.has(id) ? [PAPER.sheetHigh, 0.9] : [PART_OF[id].color, 0.9]);
+    // Each coat the weather took leaves the borrowed paint thinner (P2).
+    const coat = coatAlpha(this.line.state.coatsLost);
+    const fill = (id) => (returned.has(id) ? [PAPER.sheetHigh, 0.9] : [PART_OF[id].color, 0.9 * coat]);
     const outline = () => g.lineStyle(2, PAPER.graphite, 0.9);
     const wheelSpin = -fx / 16;
     ['blue', 'violet', 'orange', 'red', 'yellow'].forEach((id) => {
@@ -449,6 +453,19 @@ export class PaintedLineScene extends Phaser.Scene {
       }
     });
     g.lineStyle(3, PAPER.graphiteSoft, 0.7).lineBetween(w.x + 22, TRACK_Y - 12, w.x + w.w - 18, TRACK_Y - 12);
+    // Runs where a coat washed off: pale drips down the carriage and engine.
+    const lost = this.line.state.coatsLost;
+    if (lost > 0 && !this.line.state.complete) {
+      const drip = makeRandom(0x5eed);
+      g.lineStyle(2, PAPER.sheetHigh, 0.75);
+      for (let i = 0; i < lost * 7; i += 1) {
+        const part = i % 2 ? rects.red : rects.blue;
+        if (returned.has(i % 2 ? 'red' : 'blue')) continue;
+        const x = part.x + 6 + drip() * (part.w - 12);
+        const y = part.y + 2 + drip() * 8;
+        g.lineBetween(x, y, x + (drip() - 0.5) * 2, y + 10 + drip() * (part.h - 14));
+      }
+    }
   }
 
   drawSteam(dt) {
@@ -486,10 +503,11 @@ export class PaintedLineScene extends Phaser.Scene {
       const x = p.x;
       const y = TRACK_Y - 2;
       const color = p.restored ? p.color : 0xd6d0c4;
+      const clothAlpha = p.restored ? 0.9 * coatAlpha(this.line.state.coatsLost) + 0.1 : 0.9;
       g.lineStyle(2, PAPER.graphite, 0.85);
       g.fillStyle(PAPER.sheetHigh, 0.96).fillCircle(x, y - 60, 9);
       g.strokeCircle(x, y - 60, 9);
-      g.fillStyle(color, 0.9).fillRoundedRect(x - 6, y - 50, 12, 26, 3);
+      g.fillStyle(color, clothAlpha).fillRoundedRect(x - 6, y - 50, 12, 26, 3);
       g.strokeRoundedRect(x - 6, y - 50, 12, 26, 3);
       g.lineBetween(x - 3, y - 44, x - 11 + stride * 9, y - 30);
       g.lineBetween(x + 3, y - 44, x + 11 - stride * 9, y - 30);
@@ -651,6 +669,10 @@ export class PaintedLineScene extends Phaser.Scene {
         noteAt(this, person.x, TRACK_Y - 80, `${person.name} · RETURNED`, { tone: 'good', hold: 1100 });
       } else if (event.type === 'colours-returned') {
         this.departPencilTrain();
+      } else if (event.type === 'coat-lost') {
+        const at = this.frontX(this.line.state.front);
+        noteAt(this, at - 140, TRAIN.topRow * CELL - 60, platformLines(event.coatsLost).coatLost, { tone: 'warn', hold: 2200 });
+        for (let i = 0; i < 4; i += 1) this.puff();
       } else if (event.type === 'wash-refused') {
         noteAt(this, event.c * CELL, event.r * CELL, 'THE TRAIN IS ON IT', { tone: 'warn', hold: 900 });
       }
@@ -661,7 +683,7 @@ export class PaintedLineScene extends Phaser.Scene {
     whistle();
     this.walker.body.setVelocity(0, 0);
     // Well above the return tag, which sits just over the roof (A3-5).
-    noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 96, 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.', { hold: 2600 });
+    noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 96, platformLines(this.line.state.coatsLost).arrival, { hold: 2600 });
   }
 
   // Every colour is home; what is left is pencil, and it still runs.
@@ -673,7 +695,7 @@ export class PaintedLineScene extends Phaser.Scene {
       ringBell({ departure: true });
       this.bellFlash = 1;
       whistle({ long: true });
-      noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 40, 'A PENCIL TRAIN STILL RUNS.', { tone: 'mara', hold: 2600 });
+      noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 40, platformLines(this.line.state.coatsLost).departure, { tone: 'mara', hold: 2600 });
       this.tweens.add({ targets: this.walker, alpha: 0, duration: 400 });
       this.cameras.main.stopFollow();
       this.tweens.add({
