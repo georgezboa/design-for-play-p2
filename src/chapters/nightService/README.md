@@ -23,7 +23,9 @@ import { defineAct } from '../panelModel.js';
 export const ACT2 = defineAct({
   id: 'act2', number: 2, title: 'THE LUGGAGE CAR',
   grid: { cols: 2, rows: 2 },            // 3×2 works too; layout is automatic
-                                         // (1×1 / 1×2 pass `tile: CARRIAGE_TILE` so the wall can grow)
+                                         // (1×1 / 1×2 pass `tile: CARRIAGE_TILE` so the wall can grow,
+                                         // and `display: 1.7` to show that tile larger on screen:
+                                         // tile coordinates stay the same, the canvases paint at screen res)
   growFrom: { act: 'act0', keep: { desk: 'office' } }, // optional: grow in place from the previous act
   slots: ['rack', 'window', 'aisle', 'board'],   // row-major starting layout
   start: { bell: 1, items: ['punch'] },  // chapter state when starting here fresh
@@ -56,6 +58,9 @@ rack: {
   zoomStack: [],                    // optional pre-zoomed start: [{ state, rect }]
   frame: {                          // optional liftable frame (FrameDef)
     id: 'windowFrame', draw(ctx) {}, edges: {…}, accepts: ['orchard'], requires: cond,
+    grip: { rect: [x, y, w, h], hole: [x, y, w, h] }, // where press-and-hold lifts it
+                                    // (default: a wide band all round the window; a solid
+                                    // `rect` for a window drawn inside the room, Act 3)
   },
   states: {
     default: {                      // a SceneDef
@@ -79,12 +84,20 @@ rack: {
         tag: { x, y, angle, scale },// draws the paper tag + amber glint for you
                                     // (glintOnly: true = glint, no paper; a glint-only
                                     // or past-era hotspot also gets a pulsing amber
-                                    // ring — seen through the lens for 1978 — unless ring: false)
+                                    // ring — seen through the lens for 1978 — unless ring: false;
+                                    // ring: true rings any hotspot)
+        ringRect: [x, y, w, h],     // ring the thing itself when the click target is larger
       }],
     },
   },
 },
 ```
+
+**The lens and clicks.** A still click inside the lens acts on the 1978 layer
+first (`era: 'past'` / `'both'`); when no 1978 hotspot is under it, the click
+falls through to the present hotspot or ⤢ glyph underneath, so the lens never
+swallows a click. Moving from a press on the lens drags it; a still hold on
+a frame's grip, inside the lens glass, still lifts the frame.
 
 **Links.** Adjacent slots link when facing edges share `type` and their `at`
 values differ by ≤ 0.03. Edges come from the tile's *current* state (so zoom
@@ -103,7 +116,10 @@ the pause menu's SHOW ME (`nightfall:hint`, or `H`) plays the ghost hand at once
 `hint.ghost` lists the gestures, first applicable wins, each with an optional `when`:
 `{ drag: { tile, leftOf|rightOf|above|below|slot } }` (or a list) · `{ click: { tile, hotspot(s) } }` ·
 `{ zoomOut: tile }` · `{ frame: { from, to } }` · `{ lens: { tile, u, v } | { tile, hotspot }, click }`.
-Without `ghost`, a hotspot hint clicks it and `zoomOut: true` taps the glyph. The pulse keys are:
+Without `ghost`, a hotspot hint clicks it and `zoomOut: true` taps the glyph. `zoomOutCue: cond`
+keeps the tile's ⤢ glyph breathing while the condition holds. The ghost hand
+takes hold of windows and frames where the lens is not (a press there would move
+the lens), and every gesture is proved reachable in `hints.test.mjs`. The pulse keys are:
 `{ tile, hotspot }` · `{ tile, hotspots: [ids] }` (first enabled one) ·
 `{ tile, edge: { side, at } }` · `{ tile, frame: true }` (the liftable frame) ·
 `{ tile, lens: true }` (the lens rim) · `{ actor }` (the actor and the edge it waits at). `skip` lists the
@@ -116,12 +132,13 @@ Conditions (single-key objects, combinable): `link {a,b,type}` · `state {tile,i
 `all [...]` · `any [...]` · `not cond` · `true`.
 
 Effects: `setState {tile,state}` · `setFlag` / `clearFlag` · `giveItem` / `takeItem` ·
-`showCard id` (cards: `{stamp,title,lines,strike?,strikeDelay?}`; `strike` is
+`showCard id` or `{ card, unless: cond }` (cards: `{stamp,title,lines,strike?,strikeDelay?}`; `strike` is
 the line index the Archivist's red pencil crosses out) · `dialogue [{speaker,text}]` (blocks, click to advance) ·
 `caption {text,ms}` · `wait ms` · `fx {name,…,ms?}` · `sfx name` · `ringBell` ·
 `walkButch {id,path,speed,await}` / `walk {actor,…}` / `playTrain {id,path}` ·
 `placeActor {actor,tile,state,x,y,visible,pose,facing,carrying}` · `actorPose` ·
-`zoomTo {tile,to,rect}` · `zoomOut tile` · `enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
+`zoomTo {tile,to,rect}` · `zoomOut tile` · `zoomOutAll {tile,gap}` (back out of every level, one at a time) ·
+`enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
 `returnFrame id` · `unlockDrag` / `lockTile` · `lockInput` / `unlockInput` ·
 `grantStone id` · `checkpoint id` · `nextAct id` · `endChapter` · `setSlots [..]` (dev `skip` only).
 
@@ -158,7 +175,20 @@ chunks (`nsv-w07-0`, `nsv-w01-2`, …) for exact crops — see `crop`/`cropFull`
 `pulse`, `drift {rate}` (slows the fields and the rail clack), `shake`.
 
 **Actors** take `scale` and `tint` (e.g. Act 3's far train). **Stone sockets**
-(five, bezel bottom) appear once any stone is held and light on `grantStone`.
+(five, below the sill at its right end, above the lens) appear once any stone
+is held and light on `grantStone`.
+
+**Keyboard.** The first key a player uses shows the focus (an ivory ring on a
+dark outline around the selected window and its focused tag) and a key strip
+on the sill listing only the keys that do something now; it hides again on
+the next mouse press. Arrows choose a window (its first tag is focused), Tab
+cycles every reachable tag on the wall, Enter uses it, Space picks up / puts
+down, Backspace steps back (the selected window, else the one that can),
+F lifts a frame (likewise), L takes the lens, H is SHOW ME. A key with nothing
+to do wobbles the window and blinks the key that would help.
+
+**Tier-3 speaker.** The Conductor speaks the hint lines; an act can name its
+own `hintSpeaker` (the Museum exhibit: Butch).
 
 ## Testing
 

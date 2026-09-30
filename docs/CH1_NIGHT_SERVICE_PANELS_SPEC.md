@@ -22,12 +22,14 @@ You are a night-train lost-property clerk. The carriage windows are paintings yo
 | Drag a panel to another slot (swap) | press on panel body + drag, release on target slot | arrows select a panel, Space picks it up / puts it down |
 | Zoom in | click a zoom hotspot (a subtle amber shimmer on hover) | Tab cycles hotspots in the selected panel, Enter activates |
 | Zoom out | right-click the panel, mouse wheel down, or the small "⤢" corner glyph | Backspace |
-| Lift a frame layer | press-and-hold 250 ms on the frame's edge, then drag it out; drop it on another panel to overlay, or on an empty gutter to return it | F on the selected panel lifts its frame; arrows move it; Space drops it |
-| Punch-hole lens (from Act 2) | drag the round lens anywhere; clicks inside the lens act on the 1978 layer | L toggles lens focus; arrows move it |
+| Lift a frame layer | press-and-hold 250 ms anywhere on the frame (its grip: a wide band over the brass, or the whole window in Act 3; a "lift" cursor and a glow on hover, a filling ring while held), then drag it out; drop it on another panel to overlay, or on an empty gutter to return it | F lifts the selected panel's frame (or the one liftable frame); arrows move it; Space drops it |
+| Punch-hole lens (from Act 2) | drag the round lens anywhere; clicks inside the lens act on the 1978 layer first, then fall through to the present (the lens never swallows a click) | L toggles lens focus; arrows move it; Enter clicks through it |
 | Read an archive card | click the paper item | Enter; Esc closes |
 | Pause | Esc | Esc |
 
 No text tutorials. Each verb is taught by one puzzle whose only possible action is that verb, plus a hover affordance (cursor change and shimmer).
+
+**Keyboard legend (alpha 1).** The first key pressed shows a small key strip on the sill (only the keys that apply now) and a high-contrast focus (ivory on a dark outline); both stay while keyboard focus is active. The pause menu lists every key (`CHAPTER_CONTROLS.nightServicePanels`).
 
 **Past-era affordance.** Inside the lens, every 1978 interactable (a past-era hotspot, or the anchor of a past-era edge) wears a pulsing amber ring, and the cursor turns to a pointer over it. No text. Any required action whose only mark is a glint (`tag.glintOnly`) gets the same ring outside the lens; `tag.ring: false` keeps an optional secret (the Ember Stone) subtle. The ring breathes more slowly and does not grow under Reduce Motion.
 
@@ -102,7 +104,7 @@ Chapter flow and first-time pacing (target 22–28 min for a first-time player):
 The transitions run 0 → 0.5 → I (the wall grows in place) → II → III (fade and title card) → chapter end, unchanged after that.
 
 ### Act 0 · ONE WINDOW (1×1, about 3–4 min). Gorogoa's opening: learn zoom with a single picture.
-The one window is the lost-property office at night, seen from outside through the carriage glass: rain runs down it. Butch is asleep on his stool at the desk; there is a brass desk bell and a spike of claim stubs.
+The one window is the lost-property office at night, seen from outside through the carriage glass: rain runs down it. Butch is asleep on his stool at the desk; there is a brass desk bell and a spike of claim stubs. An enamel sign over the counter reads LOST PROPERTY · NIGHT SERVICE · CLERK B., and when the bell wakes him the Conductor says so: "Wake up, Lost Property. A claim has come in on the night service." (alpha 1: Butch's role is stated on screen). The one window is shown large (`grid.display`), so the bell and the stub are easy to see at 1280×720.
 1. **0.1 The bell.** Clicking the desk bell zooms into it. In its polished curve the room is bent into a reflection, and the Conductor's lantern comes closer in it. The plunger is the only thing to do in the close-up (zoom-out waits for it): striking it rings the bell (sound rings drawn in ink). The ring wakes Butch. The desk bell is not the chapter bell (the count is unchanged).
 2. **0.2 Zoom out.** The ⤢ glyph breathes, and the ghost hand shows it (the first-use demo). Back at the desk, Butch sits up.
 3. **0.3 The stub.** Clicking the claim stub zooms in: CLAIM 1978-0412, with the Conductor's punch hole showing night through it. Zooming into the hole turns it into a brass porthole over the rainy fields; zooming through the glass lands in a wider picture — the whole carriage from outside in the rain, where the office is one lit window. The view dives back in through that window and the carriage wall slides open a second window beside the first. Checkpoint `chapter-1-act-05`.
@@ -123,7 +125,7 @@ Opens as the wall grows from Act 0.5: the office and the pigeonholes rise into t
 Steps:
 1. **Swap the desk and the window.** Now "desk" is BL, directly left of "door", and the floor link is active. Butch stands up and walks across into the door panel, then stops at the locked door. The ticket slot flashes. Swapping desk↔door, or putting desk anywhere else, does nothing (a gentle mismatch shimmer at the edge shows why).
 2. **Zoom into the tagged pigeonhole** in "lockers" (TR, directly above "door"). The zoomed state shows a claim envelope and a single train ticket resting at a chute opening on the BOTTOM edge `at 0.70` (type `chute`). The link with the door's top chute is active, so the ticket drops through the chute into the slot (animation across the gutter) and the door unlocks.
-   - Clicking the envelope shows archive card A1: "Claim 1978-0412 · MARA VELEZ · one case, unclaimed". This is optional but pulses once.
+   - Clicking the envelope shows archive card A1: "Claim 1978-0412 · MARA VELEZ · one case, unclaimed". It pulses once, and if it has not been read it opens by itself once the ticket has dropped (alpha 1: the claim is never optional).
    - If the lockers tile is not above the door when zoomed, the ticket waits at the opening. Swapping it back above the door completes the step.
 3. **The door opens.** Butch walks in and the door panel auto-zooms into the Conductor's car. The Conductor hands over the punch (a brief two-line exchange in a small caption bar, typewriter, click to advance). Ring bell #1. The act ends after a 2 s beat with a fade across all four windows. Save `chapter-1-act-2`.
 
@@ -151,7 +153,7 @@ Steps:
    - Zoom beneath the letter to find the small glowing EMBER STONE. Click it to take it.
    - The window bezel gains a row of five empty stone sockets; one fills. This communicates that there are more stones, with no text.
    - Leaving the act without the stone is allowed.
-6. The act ends when Butch holds the case and the player zooms back out to the aisle. Fade, then save `chapter-1-act-3`.
+6. The act ends when Butch holds the case and the player closes it again: zooming back out to the aisle, one step back out of the letter, or taking the Ember Stone; the scene then steps the rest of the way out by itself (alpha 1). The ⤢ glyph breathes once the letter has been seen. Fade, then save `chapter-1-act-3`.
 
 ### Act 3 · TWO TRUE THINGS (3×2, about 7–8 min). Everything combined; the lens as a bridge; the bell finale.
 Top row:
