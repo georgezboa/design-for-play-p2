@@ -196,9 +196,11 @@ export class PaintedLineScene extends Phaser.Scene {
     this.add.text(24, 26, 'THE LINE AHEAD', {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH.UI);
-    this.add.text(this.frontX(FINISH_FRONT) + 40, 300, 'THE LAST PAINTED\nPLATFORM', {
+    // On the ground under the platform, like the gallery's bay names: up in
+    // the air it sat on an orchard tree and under the return tag (A3-5).
+    this.add.text(this.frontX(FINISH_FRONT) - 40 + 240, TRACK_Y + 34, 'THE LAST PAINTED PLATFORM', {
       fontFamily: MONO, fontSize: '12px', color: '#5c574f', align: 'center', letterSpacing: 2,
-    }).setOrigin(0.5).setDepth(DEPTH.TRACK);
+    }).setOrigin(0.5).setDepth(DEPTH.TRACK + 1);
   }
 
   buildTrackArt() {
@@ -387,6 +389,12 @@ export class PaintedLineScene extends Phaser.Scene {
     };
   }
 
+  // The five wheels, drawn over the body, cab and engine.
+  wheelCentres(frontX) {
+    const w = this.partRects(frontX).green;
+    return [w.x + 22, w.x + 80, w.x + 150, w.x + 214, w.x + w.w - 18].map((x) => ({ x, y: TRACK_Y - 12 }));
+  }
+
   drawTrain() {
     const g = this.trainArt;
     g.clear();
@@ -431,7 +439,7 @@ export class PaintedLineScene extends Phaser.Scene {
     // wheels
     const w = rects.green;
     const [wc, wa] = fill('green');
-    [w.x + 22, w.x + 80, w.x + 150, w.x + 214, w.x + w.w - 18].forEach((x) => {
+    this.wheelCentres(fx).forEach(({ x }) => {
       g.fillStyle(wc, wa).fillCircle(x, TRACK_Y - 12, 12);
       outline();
       g.strokeCircle(x, TRACK_Y - 12, 12);
@@ -557,13 +565,18 @@ export class PaintedLineScene extends Phaser.Scene {
     this.lastBrushCell = { c, r };
   }
 
+  // What the brush is over, in the order the train is drawn from the top:
+  // the wheels sit over the blue carriage, the cab and the engine, so their
+  // whole circle is the green part (alpha A3-3: only the bottom 12 px were).
   partAt(x, y) {
     const rects = this.partRects(this.trainX);
-    const order = ['yellow', 'orange', 'red', 'violet', 'blue', 'green'];
-    return order.find((id) => {
+    const inRect = (id) => {
       const r = rects[id];
       return x >= r.x - 4 && x <= r.x + r.w + 4 && y >= r.y - 4 && y <= r.y + r.h + 4;
-    }) ?? null;
+    };
+    if (inRect('yellow')) return 'yellow';
+    if (this.wheelCentres(this.trainX).some((c) => Math.hypot(x - c.x, y - c.y) <= 15)) return 'green';
+    return ['orange', 'red', 'violet', 'blue', 'green'].find(inRect) ?? null;
   }
 
   stepReturn(dt) {
@@ -647,7 +660,8 @@ export class PaintedLineScene extends Phaser.Scene {
   onArrived() {
     whistle();
     this.walker.body.setVelocity(0, 0);
-    noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 40, 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.', { hold: 2600 });
+    // Well above the return tag, which sits just over the roof (A3-5).
+    noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 96, 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.', { hold: 2600 });
   }
 
   // Every colour is home; what is left is pencil, and it still runs.
@@ -812,11 +826,11 @@ export class PaintedLineScene extends Phaser.Scene {
       hover: this.hover,
       tag: this.tag.visible ? this.tag.text : null,
       barriers: BARRIERS.length,
-      // A point on each part that no other part covers (wheels: the rim, below the body).
-      parts: Object.fromEntries(Object.entries(this.partRects(this.trainX)).map(([id, r]) => [id, {
-        x: Math.round(r.x + r.w / 2),
-        y: Math.round(id === 'green' ? TRACK_Y - 6 : r.y + r.h / 2),
-      }])),
+      // A point on each part that no other part covers (wheels: a wheel hub,
+      // which sits over the carriage).
+      parts: Object.fromEntries(Object.entries(this.partRects(this.trainX)).map(([id, r]) => [id, id === 'green'
+        ? { x: Math.round(this.wheelCentres(this.trainX)[1].x), y: TRACK_Y - 18 }
+        : { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h / 2) }])),
       ...this.line.snapshot(),
     };
   }

@@ -136,7 +136,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.lastPlateCell = null;
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
-    this.tutorialSeen = { bridge: false, wash: false, varnish: false, pigment: false };
+    this.tutorialSeen = { move: false, bridge: false, wash: false, varnish: false, pigment: false };
+    this.hasJumped = false;
     this.activeTutorial = null;
     this.noteThrottle = {};
     this.hintedSmallMark = new Set();
@@ -1097,7 +1098,10 @@ export class PaintedCountryScene extends Phaser.Scene {
       return;
     }
     body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
-    if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
+    if (move.jump && body.blocked.down) {
+      body.setVelocityY(JUMP_VELOCITY);
+      this.hasJumped = true;
+    }
   }
 
   // Falling through the paper costs nothing that was drawn. Runs every frame,
@@ -1186,6 +1190,18 @@ export class PaintedCountryScene extends Phaser.Scene {
   // Spatial prompts, not global instructions: the gap, the grey block.
   updateTutorials() {
     const b = this.brush;
+    // The first tag of the chapter: walking and jumping (alpha A3-4: Space
+    // paints here, and testers reached for it to jump).
+    if (!this.tutorialSeen.move) {
+      const walked = this.walker.x >= 280 || (this.hasJumped && Math.abs(this.walker.x - 200) > 60);
+      if (walked) {
+        this.dismissTutorial('move');
+        this.tutorialSeen.move = true;
+      } else {
+        const text = b.device === 'pad' ? 'LEFT STICK · WALK   ·   Y · JUMP' : 'A / D · WALK   ·   W · JUMP';
+        if (this.showTutorial('move', text, this.walker.x, FLOOR_Y - 84)) return true;
+      }
+    }
     if (!this.tutorialSeen.bridge && this.walker.x >= 300 && this.walker.x < 700) {
       if (this.showTutorial('bridge', `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`, 25 * CELL, FLOOR_Y - 96)) return true;
     } else if (this.activeTutorial === 'bridge' && this.walker.x >= 700) {
