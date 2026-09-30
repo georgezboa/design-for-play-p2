@@ -270,7 +270,10 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.walker = this.add.rectangle(this.fusedEntry ? 2110 : TRAIN_ENTRY_X, 410, 18, 62, 0xffffff, 0);
     this.physics.add.existing(this.walker);
     this.physics.add.collider(this.walker, this.floor);
-    this.walker.body.setCollideWorldBounds(false);
+    // The yard's ends are the body's own bounds (alpha A3-1): writing
+    // walker.x every frame let Arcade add a slow frame's whole step on top.
+    this.walker.body.setBoundsRectangle(new Phaser.Geom.Rectangle(42 - 9, -200, WORLD.w - 44 - 42 + 18, WORLD.h + 400));
+    this.walker.body.setCollideWorldBounds(true);
     this.figure = this.add.graphics().setDepth(28);
     this.playerFacing = 1;
     this.playerAnimation = 'idle';
@@ -338,7 +341,6 @@ export class PigmentTrainScene extends Phaser.Scene {
     }
     this.walker.body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
     if (move.jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
-    this.walker.x = Phaser.Math.Clamp(this.walker.x, 42, WORLD.w - 44);
   }
 
   updateFigure() {

@@ -23,6 +23,7 @@ import { reducedMotionActive } from '../../shell/motion.js';
 import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 import { devParam } from '../../devMode.js';
+import { createFallGuard, placeBody } from './fallGuard.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part III, "paint the line ahead".
 //
@@ -79,7 +80,15 @@ export class PaintedLineScene extends Phaser.Scene {
     this.finished = false;
     this.paintDirty = true;
     this.steam = [];
-    this.lastSafe = { x: 460, y: 400 };
+    // Falls: see fallGuard.js (alpha A3-1). Section starts are the first
+    // solid ground of each span, which nothing can wash away.
+    this.fallGuard = createFallGuard({
+      start: { x: 460, y: TRACK_Y - 32 },
+      sections: GROUND_SPANS.slice(1).map(({ from }) => ({ x: from * CELL + 2 * CELL, y: TRACK_Y - 32 })),
+      bodyWidth: 16,
+      fallY: VIEW.h + 100,
+      isFloorAt: (x) => this.line.isGround(Math.floor(x / CELL), LINE.trackRow),
+    });
     this.startedAt = this.time.now;
     this.tutorialSeen = { gap: false, barrier: false, return: false };
 
@@ -690,13 +699,15 @@ export class PaintedLineScene extends Phaser.Scene {
     }
     body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
     if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
-    if (body.blocked.down && this.line.isGround(Math.floor(this.walker.x / CELL), LINE.trackRow)) {
-      this.lastSafe = { x: this.walker.x, y: this.walker.y };
-    }
-    if (this.walker.y > VIEW.h + 100) {
-      this.walker.setPosition(this.lastSafe.x, this.lastSafe.y - 10);
-      body.setVelocity(0, 0);
-    }
+  }
+
+  // Runs every frame, whatever else is blocking input, so a fall is always
+  // caught (the physics keeps running under a card).
+  stepFall(dt) {
+    const body = this.walker.body;
+    const put = this.fallGuard.step({ x: this.walker.x, y: this.walker.y, grounded: body.blocked.down, dt });
+    if (!put) return;
+    placeBody(body, put.x, put.y - 10);
   }
 
   updateTag() {
@@ -750,6 +761,7 @@ export class PaintedLineScene extends Phaser.Scene {
       }
     }
     this.stepPlayer(move);
+    this.stepFall(dt);
 
     if (this.trainAnim < 1) {
       this.trainAnim = Math.min(1, this.trainAnim + (dt * 1000) / TRAIN_ANIM_MS);
@@ -795,6 +807,7 @@ export class PaintedLineScene extends Phaser.Scene {
       departing: this.departing,
       finished: this.finished,
       player: { x: Math.round(this.walker.x), y: Math.round(this.walker.y), onGround: this.walker.body.blocked.down },
+      fall: this.fallGuard.snapshot(),
       pointer: { mode: b.mode, x: Math.round(b.worldX), y: Math.round(b.worldY) },
       hover: this.hover,
       tag: this.tag.visible ? this.tag.text : null,

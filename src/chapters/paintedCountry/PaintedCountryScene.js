@@ -54,6 +54,7 @@ import {
 import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell } from './platePencil.js';
 import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
+import { createFallGuard, placeBody } from './fallGuard.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part I, "Under the gouache".
 //
@@ -142,7 +143,20 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.notesPulse = false;
     this.locked = false;
     this.mara = null;
-    this.lastSafe = { x: 200, y: 360 };
+    // Falls: see fallGuard.js (alpha A3-1). Section starts sit on the
+    // carriage's own floor, which no wash can remove: the cold end, just over
+    // the first hole, just past the long wall, and just over the second hole.
+    this.fallGuard = createFallGuard({
+      start: { x: 200, y: FLOOR_Y - 30 },
+      sections: [
+        { x: FLOOR_SPANS[1].from * CELL + 2 * CELL, y: FLOOR_Y - 30 },
+        { x: 109 * CELL + 10, y: FLOOR_Y - 30 },
+        { x: FLOOR_SPANS[2].from * CELL + 2 * CELL, y: FLOOR_Y - 30 },
+      ],
+      bodyWidth: 16,
+      fallY: VIEW.h + 120,
+      isFloorAt: (x, y) => this.car.isTerrain(colOf(x), rowOf(y + 34)),
+    });
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
@@ -1084,17 +1098,16 @@ export class PaintedCountryScene extends Phaser.Scene {
     }
     body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
     if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
+  }
 
-    if (body.blocked.down) {
-      const below = this.car.isTerrain(colOf(this.walker.x), rowOf(this.walker.y + 34));
-      if (below) this.lastSafe = { x: this.walker.x, y: this.walker.y };
-    }
-    // Falling through the paper costs nothing that was drawn.
-    if (this.walker.y > VIEW.h + 120) {
-      this.car.fell();
-      this.walker.setPosition(this.lastSafe.x, this.lastSafe.y - 10);
-      body.setVelocity(0, 0);
-    }
+  // Falling through the paper costs nothing that was drawn. Runs every frame,
+  // under cards and the plate viewer too, because the physics does.
+  stepFall(dt) {
+    const body = this.walker.body;
+    const put = this.fallGuard.step({ x: this.walker.x, y: this.walker.y, grounded: body.blocked.down, dt });
+    if (!put) return;
+    if (put.kind === 'respawn') this.car.fell();
+    placeBody(body, put.x, put.y - 10);
   }
 
   // The door opens, and someone is already walking through it: Mara, painted,
@@ -1323,6 +1336,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     const dt = Math.min(delta, 50) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
+    this.stepFall(dt);
     if (this.restart.blocking) {
       this.walker.body.setVelocityX(0);
       this.drawFigure();
@@ -1445,6 +1459,7 @@ export class PaintedCountryScene extends Phaser.Scene {
         y: Math.round(this.walker.y),
         onGround: this.walker.body.blocked.down,
       },
+      fall: this.fallGuard.snapshot(),
       pointer: {
         mode: b.mode,
         device: b.device,
