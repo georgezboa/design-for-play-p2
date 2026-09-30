@@ -348,7 +348,13 @@ export function createTitleMenu({ openCredits = false } = {}) {
         renderCheckpoints(index);
       };
       row.addEventListener('click', activate);
-      row.addEventListener('keydown', (event) => { if (event.key === 'Enter' || event.key === ' ') activate(); });
+      // preventDefault: the checkpoint list takes focus during this keydown,
+      // and the same Enter must not go on to click its first checkpoint.
+      row.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        activate();
+      });
       panel.append(row);
     });
     panel.append(button('BACK', closeDialog, 'nf-back'));
