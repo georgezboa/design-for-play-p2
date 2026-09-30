@@ -437,3 +437,85 @@ test('world bounds leave room for every roof, lift top and the mist', () => {
   assert.ok(tFall + 0.6 < 2, `worst fall ${tFall.toFixed(2)} s + 0.6 s fade`);
   assert.equal(BELL_MS, 4000);
 });
+
+// ---------------------------------------------------------------------------
+// Alpha round 1 · F2-6: the blackout's dark decks stand only in borrowed
+// light. Butch's lamp shows a near-edge rim; it never makes a deck solid.
+import { DECK_SOLID_AT, afterglowLight, deckReveal, deckSolid, lampRim, machineLight } from '../../src/chapters/borrowedLight/memoryLight.js';
+import { machineBounds } from '../../src/chapters/borrowedLight/level.js';
+
+const hiddenDecks = PLATFORMS.filter((platform) => platform.hidden);
+
+test('dark decks: invisible and not solid in the dark, even beside Butch\'s lamp', () => {
+  assert.deepEqual(hiddenDecks.map((deck) => deck.id), ['b-step1', 'b-step2', 'b-stone-ledge', 'b-deck3', 'b-deck4']);
+  for (const deck of hiddenDecks) {
+    assert.equal(deckReveal(deck, []), 0, `${deck.id} is dark with no light`);
+    assert.equal(deckSolid(deckReveal(deck, [])), false);
+    // Standing at the edge before it, the lamp reaches its near edge only.
+    const lamp = { x: deck.x - 40, y: deck.y - 80 };
+    const rim = lampRim(deck, lamp, 250);
+    assert.ok(rim && rim.x0 === deck.x && rim.x1 - rim.x0 <= 90, `${deck.id}: a near-edge rim, not the deck`);
+  }
+});
+
+test('dark decks: the OPEN LATE sign and b-n1\'s afterglow hold the first two decks for the crossing', () => {
+  const tt = createTimetable(timetableDefinition());
+  tt.setMemoryLight(true);
+  const sign = machineById('b-sign');
+  const node = nodeById('b-n1');
+  const lightsNow = () => {
+    const status = tt.machineStatus('b-sign');
+    const on = status.powered ? 1 : 0;
+    return [machineLight(sign, machineBounds(sign, status.level), on), afterglowLight(nodeHead(node), tt.afterglowOf('b-n1'))];
+  };
+  const [step1, step2] = ['b-step1', 'b-step2'].map(platformById);
+  assert.equal(deckSolid(deckReveal(step1, lightsNow())), false, 'dark before the punch');
+  tt.punch('b-n1');
+  tt.update(tt.msToBell());
+  // Running from the node (x 9210) to b-roof8 (x 10100) takes ~2.2 s.
+  for (let ms = 0; ms <= 2600; ms += 200) {
+    assert.ok(deckReveal(step1, lightsNow()) >= DECK_SOLID_AT, `step1 solid ${ms} ms after the bell`);
+    assert.ok(deckReveal(step2, lightsNow()) >= DECK_SOLID_AT, `step2 solid ${ms} ms after the bell`);
+    tt.update(200);
+  }
+  tt.update(12000);
+  assert.equal(deckSolid(deckReveal(step1, lightsNow())), false, 'dark again once the light is spent');
+});
+
+test('dark decks: only VACANCY\'s borrowed light holds the B5 decks', () => {
+  const tt = createTimetable(timetableDefinition());
+  tt.setMemoryLight(true);
+  tt.hold('b-bridge2', machineById('b-bridge2').heldBy);
+  const sign = machineById('b-sign2');
+  const node = nodeById('b-n8');
+  const lightsNow = () => {
+    const status = tt.machineStatus('b-sign2');
+    return [machineLight(sign, machineBounds(sign, status.level), status.powered ? 1 : 0), afterglowLight(nodeHead(node), tt.afterglowOf('b-n8'))];
+  };
+  const decks = ['b-deck3', 'b-deck4'].map(platformById);
+  for (const deck of decks) assert.equal(deckSolid(deckReveal(deck, lightsNow())), false, `${deck.id} dark while the bridge holds the line`);
+  assert.equal(tt.punch('b-n7').result, 'cut');
+  assert.equal(tt.punch('b-n8').result, 'queued');
+  tt.update(tt.msToBell());
+  for (let ms = 0; ms <= 2400; ms += 200) {
+    for (const deck of decks) assert.ok(deckReveal(deck, lightsNow()) >= DECK_SOLID_AT, `${deck.id} solid ${ms} ms after the bell`);
+    tt.update(200);
+  }
+});
+
+test('dark decks: the Grid Stone ledge holds while its lift is up', () => {
+  const tt = createTimetable(timetableDefinition());
+  tt.setMemoryLight(true);
+  const lift = machineById('b-lift2');
+  const node = nodeById('b-n3');
+  const ledge = platformById('b-stone-ledge');
+  tt.punch('b-n3');
+  tt.update(tt.msToBell());
+  tt.update(1300); // the lift arrives
+  for (let ms = 0; ms <= 2400; ms += 200) {
+    const status = tt.machineStatus('b-lift2');
+    const lights = [machineLight(lift, machineBounds(lift, status.level), status.powered ? 1 : 0), afterglowLight(nodeHead(node), tt.afterglowOf('b-n3'))];
+    assert.ok(deckReveal(ledge, lights) >= DECK_SOLID_AT, `ledge solid ${ms} ms after the lift arrives`);
+    tt.update(200);
+  }
+});

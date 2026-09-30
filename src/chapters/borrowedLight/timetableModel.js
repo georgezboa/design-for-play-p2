@@ -18,6 +18,8 @@
 // - Machines flicker for FLICKER_MS before switching off, then travel home.
 // - Memory light (section B): a node that fired glows for MEMORY_MS after its
 //   bell.
+// - Departure countdown (section C): counts bells down; a held countdown
+//   (Butch falling and respawning) lets its bells pass uncounted.
 //
 // A node's `line` is its colour. The one-line rule applies per `circuit`
 // (default: the colour), so each district of the city can have its own
@@ -181,7 +183,10 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       history.push({ nodeId, machineId, bell: bellIndex });
       if (memoryLight) afterglow.set(nodeId, memoryMs);
     }
-    if (countdown && countdown.remaining > 0) {
+    // A held countdown (Butch respawning) lets its bell pass uncounted.
+    if (countdown && countdown.remaining > 0 && countdown.held) {
+      events.push({ type: 'countdown-held', remaining: countdown.remaining, total: countdown.total });
+    } else if (countdown && countdown.remaining > 0) {
       countdown.remaining -= 1;
       events.push({ type: 'countdown', remaining: countdown.remaining, total: countdown.total });
       if (countdown.remaining === 0) {
@@ -339,7 +344,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     })),
     afterglow: Object.fromEntries([...afterglow].map(([id, ms]) => [id, Math.round(ms)])),
     memoryLight,
-    countdown: countdown ? { remaining: countdown.remaining, total: countdown.total, done: Boolean(countdown.done) } : null,
+    countdown: countdown ? { remaining: countdown.remaining, total: countdown.total, done: Boolean(countdown.done), held: Boolean(countdown.held) } : null,
   });
 
   return {
@@ -361,7 +366,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     setMemoryLight: (on) => { memoryLight = Boolean(on); if (!memoryLight) afterglow.clear(); },
     memoryLightOn: () => memoryLight,
     afterglowOf: (nodeId) => (afterglow.has(nodeId) ? afterglow.get(nodeId) / memoryMs : 0),
-    startCountdown: (bells = 8) => { countdown = { total: bells, remaining: bells, done: false }; return { ...countdown }; },
+    startCountdown: (bells = 8) => { countdown = { total: bells, remaining: bells, done: false, held: false }; return { ...countdown }; },
+    // While held (a fall and its respawn), bells ring but do not count down.
+    holdCountdown: (on = true) => { if (countdown) countdown.held = Boolean(on); return countdown ? countdown.held : false; },
     stopCountdown: () => { countdown = null; },
     countdown: () => (countdown ? { ...countdown } : null),
     history: (fromBell = 0) => history.filter((entry) => entry.bell > fromBell).map((entry) => ({ ...entry })),

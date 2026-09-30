@@ -227,6 +227,24 @@ test('departure countdown counts bells and ends exactly once', () => {
   assert.equal(tt.countdown().done, true);
 });
 
+// Alpha round 1 · F2-7: a fall must not cost departure bells.
+test('a held countdown lets bells ring without counting them (respawn)', () => {
+  const tt = createTimetable(def());
+  tt.startCountdown(8);
+  tt.update(BELL_MS);
+  assert.equal(tt.countdown().remaining, 7);
+  assert.equal(tt.holdCountdown(true), true);
+  const events = [...tt.update(BELL_MS), ...tt.update(BELL_MS)];
+  assert.equal(events.filter((event) => event.type === 'bell').length, 2, 'the city bell still rings');
+  assert.equal(events.filter((event) => event.type === 'countdown').length, 0);
+  assert.equal(events.filter((event) => event.type === 'countdown-held').length, 2);
+  assert.equal(tt.countdown().remaining, 7, 'no departure bell was spent while held');
+  assert.equal(tt.snapshot().countdown.held, true);
+  tt.holdCountdown(false);
+  tt.update(BELL_MS);
+  assert.equal(tt.countdown().remaining, 6);
+});
+
 test('the train remembers the section\'s punches in order, then the rest of the chain', () => {
   const tt = createTimetable(def());
   tt.punch('n-lift');
