@@ -71,10 +71,11 @@ test('a hunter from outside the gaze warns before it can hit', () => {
   t = stepTelegraph(t, { hunting: true, seen: false, distance: 40, now: 200 + TELEGRAPH.telegraphMs });
   assert.equal(t.ready, true);
   assert.equal(statueCanDamage({ isPrimaryHunter: true, state: 'hunting', now: 2000, telegraphReady: t.ready }), true);
-  // Looked at: no marker (it is in view), but it stays announced.
+  // Looked at: no marker (it is in view), and the warning re-arms (round 2,
+  // R3-2), so turning away again shows the marker for the full telegraph.
   const seen = stepTelegraph(t, { hunting: true, seen: true, distance: 40, now: 2100 });
   assert.equal(seen.warning, false);
-  assert.equal(seen.ready, true);
+  assert.equal(seen.ready, false);
   // Losing it resets the warning.
   const lost = stepTelegraph(t, { hunting: false, seen: false, distance: 40, now: 2200 });
   assert.equal(lost.warnedAt, null);

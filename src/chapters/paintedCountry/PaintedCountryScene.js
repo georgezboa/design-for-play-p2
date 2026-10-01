@@ -1199,7 +1199,7 @@ export class PaintedCountryScene extends Phaser.Scene {
         this.dismissTutorial('move');
         this.tutorialSeen.move = true;
       } else {
-        const text = b.device === 'pad' ? 'LEFT STICK · WALK   ·   Y · JUMP' : 'A / D · WALK   ·   W · JUMP';
+        const text = b.device === 'pad' ? 'LEFT STICK · WALK   ·   Y · JUMP' : `A / D · WALK   ·   ${b.jumpKeysLabel()} · JUMP`;
         if (this.showTutorial('move', text, this.walker.x, FLOOR_Y - 84)) return true;
       }
     }

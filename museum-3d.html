@@ -45,6 +45,24 @@
       /* the interactable's paper tag: placed by InteractionSystem */
       #prompt.nf-tag { left: 50%; top: 44%; white-space: nowrap; transition: left 60ms linear, top 60ms linear; }
       #prompt[hidden] { display: none; }
+      /* the lobby's first-objective tag (LobbyObjective.js) */
+      .museum-objective[hidden] { display: none; }
+
+      /* LOW GRAPHICS (alpha round 2): nothing in the HUD layer may make the
+         compositor redraw a filtered layer over the canvas every frame. The
+         paper tags lose their drop-shadow and glint, the aim tag stops
+         easing, and the caption's arrow and big shadow go still. Covers both
+         the shared setting and the museum's own automatic low tier. */
+      :root[data-low-graphics='true'] .nf-tag,
+      :root[data-museum-quality='low'] .nf-tag { filter: none; transition: none; }
+      :root[data-low-graphics='true'] .nf-tag::after,
+      :root[data-museum-quality='low'] .nf-tag::after { animation: none; box-shadow: none; }
+      :root[data-low-graphics='true'] #subtitle .nf-caption__next,
+      :root[data-museum-quality='low'] #subtitle .nf-caption__next { animation: none; }
+      :root[data-low-graphics='true'] #subtitle.nf-caption,
+      :root[data-museum-quality='low'] #subtitle.nf-caption { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+      :root[data-low-graphics='true'] #reticle,
+      :root[data-museum-quality='low'] #reticle { box-shadow: none; outline: 1px solid rgba(0, 0, 0, 0.6); }
 
       /* dialogue captions: DialogueSystem toggles display */
       #subtitle.nf-caption { display: none; pointer-events: none; }

@@ -10,6 +10,11 @@
 // Butch still walks on A / D (or the left stick / d-pad), jumps on W (or pad
 // Y / RB) and reads on E (or pad X). The arrows no longer walk him: they aim.
 //
+// Alpha round 2 (R3-5): testers reached for ↑ to jump. ↑ jumps too, unless
+// the arrows are steering the brush: pressing ← / → / ↓ hands the arrows to
+// the brush (its amber ring appears) and ↑ then aims up with them; moving the
+// mouse or the right stick hands ↑ back to jumping.
+//
 // The virtual cursor rides with Butch: it is kept as an offset from the
 // anchor, so the brush does not get left behind when he walks. With no anchor
 // (the studio's easel, the yard) it is clamped to the view instead.
@@ -41,6 +46,7 @@ export class BrushInput {
     this.lastPointer = { x: -1, y: -1 };
     this.queued = { paint: false, wash: false };
     this.padPrev = {};
+    this.arrowAiming = false;
     this.keys = scene.input.keyboard.addKeys({
       up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', paint: 'SPACE', wash: 'SHIFT',
     });
@@ -68,11 +74,12 @@ export class BrushInput {
     // Phaser forgets a key whose down and up both land between two frames
     // (Key.onUp clears _justDown). On a slow machine that eats quick taps, so
     // the taps that matter are latched from the raw keydown event instead.
-    this.tapped = { e: false, w: false, enter: false, paint: false, wash: false };
+    this.tapped = { e: false, w: false, up: false, enter: false, paint: false, wash: false };
     this.onKeyDown = (event) => {
       if (event.repeat) return;
       if (event.code === 'KeyE') this.tapped.e = true;
       else if (event.code === 'KeyW') this.tapped.w = true;
+      else if (event.code === 'ArrowUp') this.tapped.up = true;
       else if (event.code === 'Enter') this.tapped.enter = true;
       else if (event.code === 'Space') this.tapped.paint = true;
       else if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') this.tapped.wash = true;
@@ -96,12 +103,15 @@ export class BrushInput {
     const pad = this.pad;
     let left = keys.a.isDown;
     let right = keys.d.isDown;
-    let jump = keys.w.isDown || this.tapped.w;
+    const upJumps = this.upArrowJumps;
+    const upDown = upJumps && (this.keys.up.isDown || this.tapped.up);
+    let jump = keys.w.isDown || this.tapped.w || upDown;
     let interactPressed = this.tapped.e;
-    let jumpPressed = this.tapped.w;
+    let jumpPressed = this.tapped.w || (upJumps && this.tapped.up);
     const enterPressed = this.tapped.enter;
     this.tapped.e = false;
     this.tapped.w = false;
+    this.tapped.up = false;
     this.tapped.enter = false;
     if (pad) {
       const ax = pad.axes.length ? pad.axes[0].getValue() : 0;
@@ -118,6 +128,16 @@ export class BrushInput {
     return { left, right, jump, jumpPressed, interactPressed, enterPressed };
   }
 
+  /** ↑ is a jump key unless the arrows are steering the brush. */
+  get upArrowJumps() {
+    return !this.arrowAiming;
+  }
+
+  /** The keyboard jump keys, as a tag should print them right now. */
+  jumpKeysLabel() {
+    return this.upArrowJumps ? 'W / ↑' : 'W';
+  }
+
   update(dt) {
     const scene = this.scene;
     const cam = scene.cameras.main;
@@ -128,15 +148,17 @@ export class BrushInput {
       if (this.lastPointer.x >= 0) {
         this.mode = 'mouse';
         this.device = 'mouse';
+        this.arrowAiming = false;
       }
       this.lastPointer = { x: pointer.x, y: pointer.y };
     }
 
     let ax = 0;
     let ay = 0;
+    if (this.keys.left.isDown || this.keys.right.isDown || this.keys.down.isDown) this.arrowAiming = true;
     if (this.keys.left.isDown) ax -= 1;
     if (this.keys.right.isDown) ax += 1;
-    if (this.keys.up.isDown) ay -= 1;
+    if (this.keys.up.isDown && this.arrowAiming) ay -= 1;
     if (this.keys.down.isDown) ay += 1;
     if (ax || ay) this.device = 'keys';
     if (pad && pad.axes.length >= 4) {
@@ -146,6 +168,7 @@ export class BrushInput {
         ax += sx;
         ay += sy;
         this.device = 'pad';
+        this.arrowAiming = false;
       }
     }
     const moving = Math.hypot(ax, ay) > 0.01;

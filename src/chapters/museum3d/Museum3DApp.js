@@ -330,6 +330,8 @@ export class Museum3DApp {
     if (tier === 'high') this._qualityCache.clear();
     this._syncLowFill();
     if (this.coordinateEl) this.coordinateEl.dataset.quality = tier;
+    // museum-3d.html's HUD drops its filters and animations on this hook.
+    if (typeof document !== 'undefined') document.documentElement.dataset.museumQuality = tier;
   }
 
   // The low tier's stand-in for the rect lights and the room environment.

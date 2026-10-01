@@ -160,9 +160,12 @@ export const PAINTINGS = [
     primarySign: SIGN.APPLE,
     sharedSign: SIGN.HAWTHORN,
     scene: 'drawing',
-    // 40 px lower: a five-cell tower over the hole instead of seven.
+    // 40 px lower: a five-cell tower over the hole instead of seven. Alpha
+    // round 2: 40 px lower again, so a bridge over the hole and one hop onto
+    // a three-cell step reach it (testers were making three 1-cell hops). It
+    // still hangs out over the hole, past what a jump from the floor reaches.
     x: 2240,
-    y: 160,
+    y: 200,
     w: 200,
     h: 112,
     markRect: { c: 1, r: 2, w: 4, h: 5 },
