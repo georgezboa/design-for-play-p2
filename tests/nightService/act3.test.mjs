@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { ACT3 } from '../../src/chapters/nightService/acts/act3.js';
+import { ACT3, SAFE_FAR, SAFE_NEAR, TRAIN_LENGTH } from '../../src/chapters/nightService/acts/act3.js';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
-import { HEDGE, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
+import { GAP_SPAN, HEDGE, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
 import { createPanelModel, validateAct } from '../../src/chapters/nightService/panelModel.js';
 import { apply, availableActions, record, settle } from './helpers.mjs';
 
@@ -171,7 +171,7 @@ test('Act 3: the rail links only through the lens; the train stops safely if it 
   assert.equal(train.tile, 'gap');
   assert.ok(train.blocked, 'waits while 1978 is out of view');
   for (let i = 0; i < 200; i += 1) model.update(50);
-  assert.ok(Math.abs(train.x - 0.2) < 0.001, `backs off the missing span to the abutment (x ${train.x})`);
+  assert.ok(Math.abs(train.x - SAFE_NEAR) < 0.001, `backs off the missing span to the abutment (x ${train.x})`);
   lensOnGap(model);
   settle(model, { maxMs: 60000 });
   assert.equal(model.state.ended?.kind, 'endChapter');

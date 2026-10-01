@@ -19,7 +19,7 @@
 
 import { defineAct } from '../panelModel.js';
 import {
-  CITY_WINDOW, HEDGE, OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
+  CITY_WINDOW, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATFORM_DY, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
   drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook, drawPlatform,
   drawPlatformPast,
 } from '../art/act3Art.js';
@@ -55,9 +55,17 @@ const THROUGH_HEDGE = [
   { tile: 'orchard', x: STAIR_AT, y: 0.97 },
 ];
 const TRAIN_Y = RAIL_AT - 0.004;
-// the present viaduct is missing between ~0.35 and ~0.65; the train is ~0.26 wide
-const SAFE_NEAR = 0.2;
-const SAFE_FAR = 0.8;
+/** Our train is drawn larger than the far one, so the finale reads at a glance (alpha R3 · R5). */
+export const TRAIN_SCALE = 1.35;
+/** Its length on a tile (the rig is 150 tile px at scale 1; tiles are 536 wide on the 3×2 wall). */
+export const TRAIN_LENGTH = (150 * TRAIN_SCALE) / 536;
+// the present viaduct is missing over GAP_SPAN (rails end 0.02 short of each
+// side): where the train waits, its whole length stays on good track
+export const SAFE_NEAR = Math.floor((GAP_SPAN[0] - 0.02 - TRAIN_LENGTH / 2) * 100) / 100;
+export const SAFE_FAR = Math.ceil((GAP_SPAN[1] + 0.02 + TRAIN_LENGTH / 2) * 100) / 100;
+/** The platform's walking line and the far track, raised with the rail. */
+const WALK_Y = 0.8 + PLATFORM_DY;
+const FAR_Y = 0.665 + PLATFORM_DY;
 
 export const ACT3 = defineAct({
   id: 'act3',
@@ -83,8 +91,17 @@ export const ACT3 = defineAct({
   },
   tiles: {
     city: {
-      // the whole window (sash, glass and sill) is the grip: hold it to lift it
-      frame: { id: 'cityWindow', draw: drawCityFrame, grip: { rect: [CITY_WINDOW[0] - 0.02, CITY_WINDOW[1] - 0.02, CITY_WINDOW[2] + 0.04, CITY_WINDOW[3] + 0.06] } },
+      // the whole window (sash, glass and sill) is the grip: hold it (or drag
+      // it) to lift it. Once the two windows have met it stays put, so a drag
+      // anywhere on the room moves the room (the lane needs it moved)
+      frame: {
+        id: 'cityWindow',
+        draw: drawCityFrame,
+        grip: { rect: [CITY_WINDOW[0] - 0.02, CITY_WINDOW[1] - 0.02, CITY_WINDOW[2] + 0.04, CITY_WINDOW[3] + 0.06] },
+        // HOLD · LIFT THE FRAME (if no frame was lifted in Act 2), under the sill
+        tag: { u: 0.36, v: 0.74 },
+        requires: { notFlag: 'windowsJoined' },
+      },
       states: {
         default: {
           draw: drawCityRoom,
@@ -148,9 +165,9 @@ export const ACT3 = defineAct({
   },
   actors: {
     butch: { rig: 'butch', tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false },
-    train: { rig: 'train', tile: 'carriage', x: 0.36, y: TRAIN_Y, facing: 1 },
+    train: { rig: 'train', tile: 'carriage', x: 0.36, y: TRAIN_Y, facing: 1, scale: TRAIN_SCALE },
     mara: { rig: 'mara', tile: 'city', x: 0.62, y: PATH_AT, visible: false, facing: 1 },
-    farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: 0.665, facing: 1, scale: 0.72, tint: 0x9a9aae },
+    farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: FAR_Y, facing: 1, scale: 0.72, tint: 0x9a9aae },
   },
   steps: [
     {
@@ -166,6 +183,7 @@ export const ACT3 = defineAct({
       },
       do: [
         { lockInput: true },
+        { setFlag: 'windowsJoined' },
         // the pause before the reveal
         { wait: 900 },
         { fx: { name: 'windowsJoin', ms: 1500 } },
@@ -181,6 +199,7 @@ export const ACT3 = defineAct({
         { walk: { actor: 'mara', id: 'toHedge', speed: 95, await: false, path: TO_HEDGE } },
       ],
       skip: [
+        { setFlag: 'windowsJoined' },
         { ringBell: true },
         { placeActor: { actor: 'mara', tile: 'city', x: 0.6, y: PATH_AT, visible: true, pose: 'walk', facing: 1 } },
         { walk: { actor: 'mara', id: 'toHedge', speed: 95, await: false, path: TO_HEDGE } },
@@ -271,8 +290,8 @@ export const ACT3 = defineAct({
           walk: {
             actor: 'mara', id: 'board', speed: 70,
             path: [
-              { tile: 'platform', x: 0.6, y: 0.69 },
-              { tile: 'platform', x: 0.71, y: 0.67 },
+              { tile: 'platform', x: 0.6, y: 0.69 + PLATFORM_DY },
+              { tile: 'platform', x: 0.71, y: 0.67 + PLATFORM_DY },
             ],
           },
         },
@@ -282,10 +301,10 @@ export const ACT3 = defineAct({
         { placeActor: { actor: 'mara', visible: false } },
         { sfx: 'whistle' },
         { wait: 500 },
-        { walk: { actor: 'farTrain', id: 'away', speed: 70, await: false, path: [{ tile: 'platform', x: 1.5, y: 0.665 }] } },
+        { walk: { actor: 'farTrain', id: 'away', speed: 70, await: false, path: [{ tile: 'platform', x: 1.5, y: FAR_Y }] } },
         { wait: 3000 },
-        { placeActor: { actor: 'butch', tile: 'platform', x: 0.44, y: 0.8, visible: true, pose: 'idle', facing: -1, carrying: 'case' } },
-        { walkButch: { id: 'bench', speed: 90, path: [{ tile: 'platform', x: 0.24, y: 0.8 }] } },
+        { placeActor: { actor: 'butch', tile: 'platform', x: 0.44, y: WALK_Y, visible: true, pose: 'idle', facing: -1, carrying: 'case' } },
+        { walkButch: { id: 'bench', speed: 90, path: [{ tile: 'platform', x: 0.24, y: WALK_Y }] } },
         { actorPose: { actor: 'butch', pose: 'idle', carrying: null, facing: 1 } },
         { setFlag: 'caseOnBench' },
         { sfx: 'thud' },
