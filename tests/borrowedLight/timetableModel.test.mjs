@@ -5,11 +5,31 @@ import {
   CATCH_MS,
   CUT_GRACE_MS,
   FLICKER_MS,
+  CH2_RULES,
+  LEGACY_CATCH_MS,
   MEMORY_MS,
-  createTimetable,
+  REPEAT_GUARD_MS,
+  createTimetable as createAnyTimetable,
   rememberedSequence,
   ringsOn,
 } from '../../src/chapters/borrowedLight/timetableModel.js';
+
+// Chapter 2 plays by its round-3 rules; the defaults are the legacy rules
+// another chapter (the finale's bell arena) still uses.
+const createTimetable = (definition, options = {}) => createAnyTimetable(definition, { ...CH2_RULES, ...options });
+
+test('the legacy defaults are unchanged for other users of the model (the finale)', () => {
+  const tt = createAnyTimetable(def());
+  tt.punch('n-lift');
+  tt.update(REPEAT_GUARD_MS - 100);
+  assert.equal(tt.punch('n-lift').result, 'already', 'a quick double press is one punch');
+  tt.update(200);
+  assert.equal(tt.punchPreview('n-lift').result, 'unqueue');
+  assert.equal(tt.punch('n-lift').result, 'unqueued');
+  const late = createAnyTimetable(def());
+  late.update(BELL_MS + LEGACY_CATCH_MS - 20);
+  assert.equal(late.punch('n-lift').result, 'caught');
+});
 
 const def = () => ({
   nodes: [

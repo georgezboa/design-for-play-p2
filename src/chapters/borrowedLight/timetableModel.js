@@ -52,6 +52,13 @@ export const FLICKER_MS = 600;
 export const MEMORY_MS = 6000;
 export const CUT_GRACE_MS = 2000;
 export const CATCH_MS = 120;
+// The pre-round-3 rules, still the defaults for other users of this model
+// (the finale's bell arena): a 250 ms catch, and a second press more than
+// 450 ms after a punch takes it back.
+export const LEGACY_CATCH_MS = 250;
+export const REPEAT_GUARD_MS = 450;
+// Chapter 2's rules (alpha round 3): pass these to createTimetable.
+export const CH2_RULES = Object.freeze({ catchMs: CATCH_MS, repress: 'keep' });
 export const LINES = Object.freeze(['amber', 'teal', 'rose']);
 export const PHASES = Object.freeze(['odd', 'even']);
 
@@ -104,7 +111,11 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   flickerMs = FLICKER_MS,
   memoryMs = MEMORY_MS,
   cutGraceMs = CUT_GRACE_MS,
-  catchMs = CATCH_MS,
+  catchMs = LEGACY_CATCH_MS,
+  // 'keep': pressing a punched node again never takes it back (Chapter 2);
+  // 'take-back': the legacy rule, after REPEAT_GUARD_MS.
+  repress = 'take-back',
+  repeatGuardMs = REPEAT_GUARD_MS,
   startMs = 0,
   // (machineId) => true while a lift's rider is still walking to it.
   shouldWait = null,
@@ -169,6 +180,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   const districtBusy = (node) => [...queue.values()].some((id) => id !== node.id && nodeById.get(id).district === node.district)
     || [...given.keys()].some((id) => id !== node.id && nodeById.get(id).district === node.district)
     || holds.has(node.district);
+  const pressTakesBack = (nodeId) => repress === 'take-back' && timeMs - (queuedAt.get(nodeId) ?? -Infinity) >= repeatGuardMs;
   // A punch just after a bell catches it, only when it cannot split a pair
   // and is not a lift leaving before its rider gets there.
   const canCatch = (node) => sinceBell < catchMs && bellIndex > 0 && !node.noCatch
@@ -350,7 +362,10 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       return { result: 'dead', nodeId, line, lit: machine.powered };
     }
     // Pressing a queued node again never takes it back (R3-1).
-    if (queue.get(circuit) === nodeId) return { result: 'already', nodeId, line, inBells: bellsUntilNode(node), waiting: waited.has(nodeId) };
+    if (queue.get(circuit) === nodeId) {
+      if (pressTakesBack(nodeId)) return { result: 'unqueue', nodeId, line };
+      return { result: 'already', nodeId, line, inBells: bellsUntilNode(node), waiting: waited.has(nodeId) };
+    }
     if (machine.powered && !machine.cut && !machine.light) {
       return machine.held ? { result: 'cut', nodeId, line } : { result: 'renew', nodeId, line };
     }
@@ -369,8 +384,12 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     const machine = state.get(node.machine);
     if (node.dead) return { result: given.has(nodeId) ? 'given' : 'dead', nodeId, line };
 
-    // A second press, however late, is the same punch: never a take-back.
-    if (queue.get(circuit) === nodeId) return { result: 'already', nodeId, line, inBells: bellsUntilNode(node) };
+    // A second press, however late, is the same punch: never a take-back
+    // (Chapter 2). The legacy rule takes it back after the repeat guard.
+    if (queue.get(circuit) === nodeId) {
+      if (pressTakesBack(nodeId)) return takeBack(nodeId);
+      return { result: 'already', nodeId, line, inBells: bellsUntilNode(node) };
+    }
     if (machine.powered && !machine.cut && !machine.light) {
       if (machine.held) {
         machine.held = false;
