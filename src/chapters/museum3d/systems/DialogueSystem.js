@@ -26,10 +26,31 @@ export class DialogueSystem {
   }
 
   // lines: [{ speaker, text }] — speaker may be null for narration.
-  play(lines, { onComplete = null } = {}) {
+  // `replace: true` (alpha round 2, R3-3) drops whatever is still showing or
+  // queued so a repeated guide press or an action's immediate feedback is
+  // heard now, not after a minute of stacked lines. A pending onComplete is
+  // kept (chained before the new one) so no scripted flow is stranded.
+  play(lines, { onComplete = null, replace = false } = {}) {
+    if (replace && (this._current || this._queue.length) && !this._choice) {
+      const previous = this._onComplete;
+      this._queue.length = 0;
+      this._current = null;
+      this.voice.stop();
+      this._onComplete = previous && onComplete
+        ? () => { previous(); onComplete(); }
+        : (previous ?? onComplete);
+    } else if (onComplete) {
+      this._onComplete = onComplete;
+    }
     this._queue.push(...lines);
-    if (onComplete) this._onComplete = onComplete;
     if (!this._current) this._next();
+  }
+
+  /** True when one of `texts` is on screen or still queued. */
+  isSaying(texts) {
+    const wanted = new Set(texts);
+    if (this._current && wanted.has(this._current.text)) return true;
+    return this._queue.some((line) => wanted.has(line.text));
   }
 
   get isPlaying() {

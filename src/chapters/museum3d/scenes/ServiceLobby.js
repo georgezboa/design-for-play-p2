@@ -449,12 +449,28 @@ export class ServiceLobby {
   playWelcome() {
     if (this._welcomePlayed) return;
     this._welcomePlayed = true;
-    this.ctx.audioGuide.sayArchivist(this.guideLines());
+    this.ctx.audioGuide.sayArchivist(this.guideLines(), { replace: true });
+  }
+
+  /**
+   * The guide pedestal (alpha round 2, R3-3). Pressing E or clicking while the
+   * guide is speaking moves its caption on instead of queueing the welcome
+   * again; otherwise its current line replaces anything still queued.
+   */
+  listenToGuide() {
+    const { audioGuide, dialogue } = this.ctx;
+    const lines = this.guideLines();
+    if (dialogue.isSaying(lines)) {
+      dialogue.advance();
+      return 'advanced';
+    }
+    audioGuide.sayArchivist(lines, { replace: true });
+    return 'spoke';
   }
 
   // Re-registered by Museum3DApp each time this space becomes active.
   registerInteractions() {
-    const { interaction, model, audioGuide, dialogue } = this.ctx;
+    const { interaction, model, dialogue } = this.ctx;
     const inLobby = () => ['lobby', 'return'].includes(model.getSnapshot().phase);
 
     interaction.register('punched-ticket', {
@@ -468,11 +484,11 @@ export class ServiceLobby {
         const s = model.getSnapshot();
         if (!s.ticket.inspected) {
           model.dispatch({ type: 'inspectTicket' });
-          dialogue.play([{ speaker: null, text: 'A museum admission ticket, punched once. Claim 1978-0412.' }]);
+          dialogue.play([{ speaker: null, text: 'A museum admission ticket, punched once. Claim 1978-0412.' }], { replace: true });
         } else {
           model.dispatch({ type: 'carryTicket' });
           this.ticketMesh.visible = false;
-          dialogue.play([{ speaker: null, text: 'You carry the ticket. The archive wing doors will read it.' }]);
+          dialogue.play([{ speaker: null, text: 'You carry the ticket. The archive wing doors will read it.' }], { replace: true });
         }
       },
     });
@@ -481,7 +497,7 @@ export class ServiceLobby {
       mesh: this.guideStand,
       enabled: () => model.getSnapshot().phase === 'lobby',
       prompt: 'E · LISTEN TO THE GUIDE',
-      action: () => audioGuide.sayArchivist(this.guideLines()),
+      action: () => this.listenToGuide(),
     });
 
     interaction.register('house-rules', {
@@ -510,7 +526,7 @@ export class ServiceLobby {
         this.fireAxeEvidence.getObjectByName('fire-axe-head').visible = false;
         this.fireAxeEvidence.getObjectByName('fire-axe-neck').visible = false;
         this.heldFireAxe.visible = true;
-        dialogue.play([{ speaker: null, text: 'The axe is still sharp. The long south pane of the central case would give.' }]);
+        dialogue.play([{ speaker: null, text: 'The axe is still sharp. The long south pane of the central case would give.' }], { replace: true });
       },
     });
 
@@ -537,7 +553,7 @@ export class ServiceLobby {
         this._claimingBlackKnifeStone = false;
         if (!taken) return;
         this.blackKnifeStone.visible = false;
-        dialogue.play([{ speaker: null, text: 'The stone is cold, and lighter than it looks.' }]);
+        dialogue.play([{ speaker: null, text: 'The stone is cold, and lighter than it looks.' }], { replace: true });
         // The shell's one-time first-stone card waits for this line instead
         // of freezing it half-read (pauseMenu.js checks the flag).
         globalThis.NIGHTFALL_STONE_OFFER = true;
@@ -603,7 +619,7 @@ export class ServiceLobby {
     this.blackKnifeLongSideGlass.visible = false;
     this.glassShardEvidence.visible = true;
     this.putAxeAway();
-    this.ctx.dialogue.play([{ speaker: null, text: 'The south pane gives. You set the axe down among the glass.' }]);
+    this.ctx.dialogue.play([{ speaker: null, text: 'The south pane gives. You set the axe down among the glass.' }], { replace: true });
     return true;
   }
 
