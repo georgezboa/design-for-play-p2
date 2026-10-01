@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
+import { cheapenMaterial, createQualityMonitor, storedQualityPreference } from './chapter3Quality.js';
 import {
   CAMERA_HOME,
   CAMERA_FOLLOW,
@@ -299,7 +300,16 @@ async function makeMaterialSet(renderer) {
       metalness: 0,
     }),
     earth: new THREE.MeshStandardMaterial({ color: CITY_PALETTE.earth, roughness: 1 }),
-    rock: new THREE.MeshStandardMaterial({ color: 0x403937, roughness: 0.98, metalness: 0 }),
+    // The tunnel cutting's rock masses were flat grey blocks in the finale
+    // shot (A2-11): give them the dark limestone and a bump like the walls.
+    rock: new THREE.MeshStandardMaterial({
+      color: 0x6a5a4e,
+      map: cloneTexture(darkLimestone, [1.5, 1.5], true),
+      bumpMap: cloneTexture(height, [1.5, 1.5]),
+      bumpScale: 0.22,
+      roughness: 0.97,
+      metalness: 0,
+    }),
     rockFace: new THREE.MeshStandardMaterial({
       color: 0x6a5548,
       map: cloneTexture(darkLimestone, [2, 4], true),
@@ -938,6 +948,15 @@ function makeDestinationMarker(scene) {
   return marker;
 }
 
+// Frame pacing (see animate()).
+export const MAX_FRAME_SECONDS = 0.25;
+// Click-to-walk speed (m/s); a double-click or a held Shift runs.
+export const WALK_SPEED = 5.4;
+export const RUN_MULTIPLIER = 1.8;
+// How far past the view a static model's shadow can still fall into it.
+const SHADOW_REACH = 24;
+export const MAX_STEP_SECONDS = 0.1;
+
 function createRenderer(container) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
@@ -1044,6 +1063,21 @@ export class EchoCity3DPreview {
     this.cameraShakeDuration = 0;
     this.cameraShakeAmplitude = 0;
     this.cameraShakeOffset = new THREE.Vector3();
+    // Render quality (chapter3Quality.js): a slow GPU drops to LOW once.
+    // Static city models far from the view stop casting shadows on every tier.
+    this.shadowCasters = [];
+    this.shadowLodElapsed = 0;
+    this.qualityTier = 'high';
+    const requestedQuality = devParam('quality');
+    this.qualityMonitor = createQualityMonitor({
+      preference: requestedQuality === 'low' || requestedQuality === 'high' ? requestedQuality : storedQualityPreference(),
+    });
+    this.quality = {
+      sample: (frameSeconds) => {
+        if (!this.modelsReady || !this.gameplayRuntime?.initialized) return;
+        if (this.qualityMonitor.sample(frameSeconds) === 'low') this.applyQualityTier('low');
+      },
+    };
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(CITY_PALETTE.sky);
@@ -1086,6 +1120,14 @@ export class EchoCity3DPreview {
     window.addEventListener('keyup', this.onKeyUp);
     this.renderer.domElement.addEventListener('pointerup', this.onPointerUp);
     this.renderer.domElement.addEventListener('pointermove', this.onPointerMove);
+    // Double-click a destination to run there (the second click of the pair
+    // has already set the same path).
+    this.running = false;
+    this.shiftHeld = false;
+    this.renderer.domElement.addEventListener('dblclick', () => {
+      if (this.path.length) this.running = true;
+    });
+    window.addEventListener('blur', () => { this.shiftHeld = false; });
     this.loadingCount.textContent = `0 / ${this.expectedUniqueModels}`;
     if (this.developerMode) this.resetCamera();
   }
@@ -1222,6 +1264,7 @@ export class EchoCity3DPreview {
       const clone = prepareBoundaryInstance(source.clone(true), spec);
       this.scene.add(clone);
       this.registerOccludingBuilding(clone, spec.id);
+      this.registerShadowCaster(clone);
       this.boundaryModelIds.push(spec.id);
       const footprint = PERIMETER_FOOTPRINTS[spec.prototype];
       const boundaryScale = boundaryScaleFor(spec);
@@ -1268,6 +1311,7 @@ export class EchoCity3DPreview {
         this.lastClick = { result: 'auto-no-path', x: target.x, z: target.z };
       }
     }
+    if (this.qualityMonitor.tier === 'low') this.applyQualityTier('low');
     this.refreshStatus();
     this.loadingFill.style.width = '100%';
     this.loadingCount.textContent = ok ? `${total} / ${total}` : `${completed} / ${total}`;
@@ -1296,6 +1340,67 @@ export class EchoCity3DPreview {
       this.scene.add(this.campfireLight);
     }
     if (spec.occludesPlayer) this.registerOccludingBuilding(root, spec.id);
+    if (!/tram/.test(spec.id)) this.registerShadowCaster(root);
+  }
+
+  // Static city models: a far one's shadow never reaches the view, so it
+  // leaves the shadow pass (updateShadowLod).
+  registerShadowCaster(root) {
+    root.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(root);
+    if (bounds.isEmpty()) return;
+    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
+    const meshes = [];
+    root.traverse((object) => { if (object.isMesh && object.castShadow) meshes.push(object); });
+    this.shadowCasters.push({ root, x: sphere.center.x, z: sphere.center.z, radius: sphere.radius, meshes, casting: true });
+  }
+
+  // Half the ground diagonal the fixed isometric camera sees, in metres.
+  viewRadius() {
+    const zoom = Math.max(0.1, this.camera.zoom);
+    const halfWidth = (this.camera.right - this.camera.left) / 2 / zoom;
+    const halfHeight = (this.camera.top - this.camera.bottom) / 2 / zoom;
+    // The view is tilted ~54° down: screen height stretches ~1.25× on the ground.
+    return Math.hypot(halfWidth, halfHeight * 1.25);
+  }
+
+  updateShadowLod(dt) {
+    this.shadowLodElapsed += dt;
+    if (this.shadowLodElapsed < 0.5 || !this.shadowCasters.length) return;
+    this.shadowLodElapsed = 0;
+    const reach = this.viewRadius() + SHADOW_REACH;
+    const { x, z } = this.controls.target;
+    const shadowsOn = this.renderer.shadowMap.enabled;
+    for (const caster of this.shadowCasters) {
+      const near = shadowsOn && Math.hypot(caster.x - x, caster.z - z) - caster.radius <= reach;
+      if (near === caster.casting) continue;
+      caster.casting = near;
+      for (const mesh of caster.meshes) mesh.castShadow = near;
+    }
+  }
+
+  // LOW: a lower pixel ratio, no shadow maps, one light fewer, cheaper
+  // materials and no water transmission pass. One way, for this visit.
+  applyQualityTier(tier) {
+    if (tier !== 'low' || this.qualityTier === 'low') return false;
+    this.qualityTier = 'low';
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * 0.8);
+    this.renderer.shadowMap.enabled = false;
+    const fill = this.scene.getObjectByName('city-fill-light');
+    if (fill) fill.visible = false;
+    const hemi = this.scene.getObjectByName('city-hemisphere-light');
+    if (hemi) hemi.intensity *= 1.2;
+    this.scene.traverse((object) => {
+      if (object.isLight && object.castShadow) object.castShadow = false;
+      if (!object.material) return;
+      for (const material of Array.isArray(object.material) ? object.material : [object.material]) {
+        cheapenMaterial(material);
+        // Shadow-map defines are baked into programs: recompile without them.
+        material.needsUpdate = true;
+      }
+    });
+    this.onResize();
+    return true;
   }
 
   registerOccludingBuilding(root, id) {
@@ -1388,6 +1493,9 @@ export class EchoCity3DPreview {
       return;
     }
     this.path = nextPath;
+    // A fresh single click walks; the dblclick that follows a second click
+    // turns it into a run.
+    if (event.detail < 2) this.running = false;
     const resolvedTarget = nextPath[nextPath.length - 1];
     this.destinationMarker.position.set(resolvedTarget.x, 0.52, resolvedTarget.z);
     this.destinationMarker.visible = true;
@@ -1400,6 +1508,7 @@ export class EchoCity3DPreview {
   }
 
   onKeyDown(event) {
+    if (event.key === 'Shift') this.shiftHeld = true;
     if (this.gameplayRuntime?.handleKeyDown(event)) return;
     if (event.key.toLowerCase() === 'r') this.resetCamera();
     // The full-map developer camera is URL-only (`?dev=1`, dev builds only). It must never be
@@ -1409,6 +1518,7 @@ export class EchoCity3DPreview {
   }
 
   onKeyUp(event) {
+    if (event.key === 'Shift') this.shiftHeld = false;
     this.gameplayRuntime?.handleKeyUp(event);
   }
 
@@ -1443,6 +1553,7 @@ export class EchoCity3DPreview {
   stopWalking() {
     this.path = [];
     this.pathArrival = null;
+    this.running = false;
     this.destinationMarker.visible = false;
   }
 
@@ -1556,7 +1667,7 @@ export class EchoCity3DPreview {
       const delta = target.clone().sub(this.player.position);
       delta.y = 0;
       const distance = delta.length();
-      const travel = 5.4 * dt;
+      const travel = (this.running || this.shiftHeld ? WALK_SPEED * RUN_MULTIPLIER : WALK_SPEED) * dt;
       if (distance <= travel) {
         this.player.position.x = target.x;
         this.player.position.z = target.z;
@@ -1568,6 +1679,7 @@ export class EchoCity3DPreview {
       }
       if (!this.path.length) {
         this.destinationMarker.visible = false;
+        this.running = false;
         const arrival = this.pathArrival;
         this.pathArrival = null;
         arrival?.();
@@ -1585,6 +1697,7 @@ export class EchoCity3DPreview {
       this.camera.position.add(this.cameraShakeOffset);
     }
     this.updateBuildingOcclusion(dt);
+    this.updateShadowLod(dt);
     this.gameplayRuntime?.update(dt);
 
     if (this.campfireLight) {
@@ -1684,12 +1797,17 @@ export class EchoCity3DPreview {
   }
 
   animate(now) {
-    const dt = Math.min(0.05, Math.max(0.001, (now - this.lastFrame) / 1000));
+    // Game time follows the wall clock up to a quarter second per frame: a
+    // slow GPU plays at its own frame rate, not in slow motion. Movement and
+    // timers still advance in steps of at most MAX_STEP_SECONDS.
+    const frame = Math.min(MAX_FRAME_SECONDS, Math.max(0.001, (now - this.lastFrame) / 1000));
     this.lastFrame = now;
-    this.update(dt);
+    const steps = Math.max(1, Math.ceil(frame / MAX_STEP_SECONDS - 1e-9));
+    for (let step = 0; step < steps; step += 1) this.update(frame / steps);
+    this.quality?.sample(frame);
     this.render();
     this.fpsFrames += 1;
-    this.fpsWindow += dt;
+    this.fpsWindow += frame;
     if (this.fpsWindow >= 0.5) {
       this.fps = Math.round(this.fpsFrames / this.fpsWindow);
       this.fpsFrames = 0;
@@ -1774,6 +1892,8 @@ export class EchoCity3DPreview {
         fps: this.fps,
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
+        quality: { tier: this.qualityTier, pixelRatio: this.renderer.getPixelRatio(), shadows: this.renderer.shadowMap.enabled, ...this.qualityMonitor.snapshot() },
+        shadowCasters: { total: this.shadowCasters.length, casting: this.shadowCasters.filter((caster) => caster.casting).length },
       },
       interaction: this.developerMode
         ? 'developer inspection: left drag pans, right drag orbits, wheel freely zooms; reload without ?dev=1 for production camera'
