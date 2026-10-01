@@ -48,14 +48,22 @@ export function magicStoneSnapshot(storage = globalThis.localStorage, { slot = n
   };
 }
 
-// One entry per stone in the registry, in order, marking which are held.
-export function magicStoneRow(snapshot = magicStoneSnapshot()) {
-  return MAGIC_STONES.map(({ id, name }) => ({ id, name, held: snapshot.collected.includes(id) }));
+// One entry per stone in the registry, marking which are held. In registry
+// order by default (one socket per chapter); `byCount` puts the held stones
+// first, so a row read next to "1 / 5" lights its first socket whichever
+// stone was found (alpha R2-6), with a pending stone in the next one.
+export function magicStoneRow(snapshot = magicStoneSnapshot(), { byCount = false, pending = null } = {}) {
+  const row = MAGIC_STONES.map(({ id, name }) => ({ id, name, held: snapshot.collected.includes(id) }));
+  if (!byCount) return row;
+  const rank = ({ id, held }) => (held ? 0 : id === pending ? 1 : 2);
+  return row.map((entry, index) => ({ entry, index }))
+    .sort((a, b) => rank(a.entry) - rank(b.entry) || a.index - b.index)
+    .map(({ entry }) => entry);
 }
 
-/** The five sockets as `.nf-stones` markup (src/shell/uiKit.css). */
+/** The five sockets as `.nf-stones` markup (src/shell/uiKit.css), filled by count. */
 export function magicStoneRowHtml(snapshot = magicStoneSnapshot(), { pending = null } = {}) {
-  const sockets = magicStoneRow(snapshot).map(({ id, name, held }) => {
+  const sockets = magicStoneRow(snapshot, { byCount: true, pending }).map(({ id, name, held }) => {
     const cls = held ? 'is-held' : id === pending ? 'is-pending' : '';
     const label = held ? name : id === pending ? `${name} (here)` : 'an empty socket';
     return `<i class="${cls}" title="${label}" aria-label="${label}"></i>`;
