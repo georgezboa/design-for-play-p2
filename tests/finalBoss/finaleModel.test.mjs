@@ -12,13 +12,13 @@ import { BELL_MS } from '../../src/chapters/borrowedLight/timetableModel.js';
 
 // ---------------------------------------------------------------- Movement IV
 
-test('Movement IV damage scales with the absorbed charge: 8 / 17 / 28', () => {
-  assert.deepEqual([...PAINT_DAMAGE_BY_CHARGE], [0, 8, 17, 28]);
+test('Movement IV damage scales with the absorbed charge: 16 / 34 / 52', () => {
+  assert.deepEqual([...PAINT_DAMAGE_BY_CHARGE], [0, 16, 34, 52]);
   assert.equal(paintReturnDamage(0), 0);
-  assert.equal(paintReturnDamage(1), 8);
-  assert.equal(paintReturnDamage(2), 17);
-  assert.equal(paintReturnDamage(3), 28);
-  assert.equal(paintReturnDamage(9), 28, 'charge is capped at three colours');
+  assert.equal(paintReturnDamage(1), 16);
+  assert.equal(paintReturnDamage(2), 34);
+  assert.equal(paintReturnDamage(3), 52);
+  assert.equal(paintReturnDamage(9), 52, 'charge is capped at three colours');
   assert.equal(paintReturnDamage(-2), 0);
   // a full charge is worth more than three single returns: holding pays
   assert.ok(paintReturnDamage(3) > paintReturnDamage(1) * 3);
@@ -81,7 +81,13 @@ test('Movement III: the true answer is not given away by its length, and the arg
   for (const exchange of ECHO_EXCHANGES) {
     for (const reply of exchange.replies) {
       if (reply.rebut) assert.ok(!claims.has(reply.rebut.text), `${exchange.id}: a rebuttal is never also an opening claim`);
-      for (const cue of [reply.cue, reply.rebut].filter(Boolean)) assert.equal(spoken.get(cue.url), cue.text, `${cue.url}: the subtitle is what is heard`);
+      for (const cue of [reply.cue, reply.rebut].filter(Boolean)) {
+        // A two-recording answer: each part is what is heard, and the
+        // subtitle is the parts in order.
+        const parts = cue.parts ?? [cue];
+        for (const part of parts) assert.equal(spoken.get(part.url), part.text, `${part.url}: the subtitle is what is heard`);
+        assert.equal(cue.text, parts.map((part) => part.text).join(' '), `${exchange.id}: the subtitle is every recording, in order`);
+      }
     }
     assert.equal(spoken.get(exchange.claim.url), exchange.claim.text, exchange.id);
   }

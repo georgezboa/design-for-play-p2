@@ -432,10 +432,52 @@ export function createEchoDebate(exchanges) {
 
 // ---------------------------------------------------------------------------
 // Movement IV · PAINTED COUNTRY — a returned colour scales with its charge.
-
-export const PAINT_DAMAGE_BY_CHARGE = Object.freeze([0, 8, 17, 28]);
+//
+// The movement drains 88 of his ticket (100 → 12, where the night service
+// arrives). At 8 a colour that took ~11 single returns, ~10 minutes for a
+// first-time player (alpha R4-5). Now one colour is 16 (six single returns),
+// a full brush 52 (two), so a first run lands in 5–8 minutes and holding a
+// fuller brush still pays: 3 colours cut deeper than three single returns.
+export const PAINT_MOVEMENT_DRAIN = 88;
+export const PAINT_DAMAGE_BY_CHARGE = Object.freeze([0, 16, 34, 52]);
 
 export function paintReturnDamage(charge) {
   const index = Math.max(0, Math.min(PAINT_DAMAGE_BY_CHARGE.length - 1, Math.floor(Number(charge) || 0)));
   return PAINT_DAMAGE_BY_CHARGE[index];
+}
+
+// ---------------------------------------------------------------------------
+// HUD · world-anchored tags never sit on one another (alpha round 2: in
+// Movement I a case's claim tag covered the SPACE · RETURN prompt beside it).
+//
+// A tag is drawn centred on x with its bottom edge on y (.nf-tag). Its box
+// is estimated from the text (13 px mono, 0.12em tracking, 34 px of padding
+// and point). Tags are placed in priority order; one that would overlap a
+// placed tag is lifted a row at a time until it is clear.
+
+export const TAG_ROW_PX = 30;
+const TAG_CHAR_PX = 9.4;
+const TAG_PAD_PX = 34;
+const TAG_HEIGHT_PX = 26;
+
+export function tagWidth(text) {
+  const visible = String(text).replace(/<[^>]*>/g, '').replace(/&[a-z#0-9]+;/gi, '_');
+  return TAG_PAD_PX + visible.length * TAG_CHAR_PX;
+}
+
+export function spreadWorldTags(tags, { rowPx = TAG_ROW_PX, maxLift = 6, gap = 4 } = {}) {
+  const order = tags.map((tag, index) => ({ ...tag, index, priority: tag.priority ?? 0 }))
+    .sort((a, b) => (b.priority - a.priority) || (b.y - a.y) || (a.index - b.index));
+  const placed = [];
+  const boxOf = (tag, y) => {
+    const half = tagWidth(tag.text) / 2;
+    return { left: tag.x - half, right: tag.x + half, top: y - TAG_HEIGHT_PX, bottom: y };
+  };
+  const hits = (a, b) => a.left < b.right + gap && b.left < a.right + gap && a.top < b.bottom + gap && b.top < a.bottom + gap;
+  for (const tag of order) {
+    let y = tag.y;
+    for (let lift = 0; lift < maxLift && placed.some((other) => hits(boxOf(tag, y), other.box)); lift += 1) y -= rowPx;
+    placed.push({ ...tag, y, box: boxOf(tag, y) });
+  }
+  return placed.sort((a, b) => a.index - b.index).map(({ box, index, ...tag }) => tag);
 }
