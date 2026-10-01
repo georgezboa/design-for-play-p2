@@ -50,7 +50,20 @@ export const HINTS = Object.freeze({
   cut: 'LINE CUT · FREE AFTER THE FLICKER',
   // Round 3 · a press always says what it did (or why it did nothing).
   outOfReach: 'OUT OF REACH · STEP CLOSER',
-  takeBack: 'F · TAKE BACK',
+  // Alpha r3 (R3-1): a press never takes a punch back; holding it does.
+  punched: (phase, inBells = 1) => (phase
+    ? `PUNCHED · RINGS ON BELL ${phase === 'even' ? 'II' : 'I'}`
+    : inBells > 1 ? 'PUNCHED · RINGS IN TWO BELLS' : 'PUNCHED · RINGS ON THE NEXT BELL'),
+  holdTakeBack: 'HOLD F · TAKE BACK',
+  takenBack: 'TAKEN BACK',
+  // R3-2: never borrow the light out from under your own feet.
+  stepOff: 'STEP OFF FIRST',
+  // R3-3: a lift holds its bell while Butch walks to it.
+  liftWaits: 'THE LIFT WAITS A BELL · STAND IN THE CAGE',
+  standInCage: 'STAND IN THE CAGE',
+  // A8: where the last cradle's pole is punched from.
+  fromCradle: 'PUNCH THE LAST POLE FROM HERE',
+  lastPoleEarly: 'BEST FROM CRADLE 1, AFTER ITS BELL',
   cutPrompt: 'F · CUT',
   renew: 'F · RENEW AT THE BELL',
   renewed: 'RENEWED · RUNS AGAIN FROM THIS BELL',
@@ -81,6 +94,8 @@ export const HINTS = Object.freeze({
   lightHomeFall: 'THE LIGHT WENT HOME TO ITS LANTERN',
   // The counterweight walkway (C3).
   brake: 'F · RELEASE THE BRAKE',
+  // C4 · the ledge the city holds up drops when its brake lets go.
+  dropBrake: 'F · RELEASE · THE LEDGE DROPS',
   cage: 'STAND IN THE CAGE · YOUR WEIGHT TAKES IT DOWN',
 });
 

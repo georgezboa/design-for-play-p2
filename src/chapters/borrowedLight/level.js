@@ -16,18 +16,24 @@
 // v2 adds, each taught alone, then combined, then twisted (spec §5):
 //   A6–A8  two-phase bells (I / II), ending in the Mara chase (quick bell);
 //   B5–B7  BORROW: carry a lit machine's light to a dead node;
-//   C3     the counterweight walkway, against the twelve-bell departure.
+//   C3     the counterweight walkway, against the departure countdown;
+//   C4     TWO WEIGHTS (round 3): a ledge the city holds up drops on its
+//          brake, then a second walkway rides up — two brakes on one line
+//          that rings only on bell I.
 // Sections B and C are authored in their v1 coordinates and shifted by the
 // room the new A and B content takes (B(x), C(x)), so every v1 relation
 // between their roofs, nodes and machines is kept exactly.
 
 const DX_B = 5960; // A grew from 8440 to 14400 px
 const DX_C = 7500; // … and B grew by 1540 px (B5–B7)
+const DX_D = 1440; // C4 sits between the C3 walkway and the platform
 const B = (x) => x + DX_B;
 const C = (x) => x + DX_C;
+// The evacuation platform and everything on it, after C4.
+const D = (x) => C(x + DX_D);
 
 export const WORLD = Object.freeze({
-  width: C(21600),
+  width: D(21600),
   top: -760,
   bottom: 1480,
   killY: 990,       // below every roof: Butch is falling into the mist → respawn
@@ -38,7 +44,7 @@ export const WORLD = Object.freeze({
 export const SECTIONS = Object.freeze({
   A: Object.freeze({ id: 'A', name: 'RAIN ROOFTOPS', from: 0, to: B(8440), checkpoint: 'chapter-2-start', spawn: 'lamp-a0' }),
   B: Object.freeze({ id: 'B', name: 'BLACKOUT', from: B(8440), to: C(16760), checkpoint: 'chapter-2-midpoint', spawn: 'lamp-b0' }),
-  C: Object.freeze({ id: 'C', name: 'EVACUATION PLATFORM', from: C(16760), to: C(21600), checkpoint: 'chapter-2-platform', spawn: 'lamp-c0' }),
+  C: Object.freeze({ id: 'C', name: 'EVACUATION PLATFORM', from: C(16760), to: D(21600), checkpoint: 'chapter-2-platform', spawn: 'lamp-c0' }),
 });
 
 export const SECTION_ORDER = Object.freeze(['A', 'B', 'C']);
@@ -100,7 +106,10 @@ export const PLATFORMS = Object.freeze([
   roof('c-concourse', C(16760), 990, 520, 'concourse'),
   roof('c-yard', C(18250), 500, 520, 'concourse'),
   roof('c-gantry', C(18750), 600, 180, 'gantry', { bottom: 250 }),
-  roof('c-platform', C(19950), 1650, 180, 'platform'),
+  // C3's walkway lands on the signal deck; C4 · TWO WEIGHTS starts here.
+  roof('c-signal', C(19950), 300, 180, 'gantry', { bottom: 250 }),
+  roof('c-landing', C(20630), 160, 180, 'gantry', { bottom: 250 }),
+  roof('c-platform', D(19950), 1650, 180, 'platform'),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -152,6 +161,22 @@ export const MACHINES = Object.freeze([
     x: C(19370), w: 220, yA0: 180, yA1: 290,
     xB: C(19610), wB: 320, yB0: 540, yB1: 180,
   },
+  // C4 · TWO WEIGHTS. The drop ledge: the city holds it up (level 1) over
+  // the gap; it is heavier than its iron counter-box, so released it sinks
+  // on its own (ballast 'b') into line with the signal deck and the landing.
+  // Only the ledge (cage b) can be stood on.
+  {
+    id: 'c-drop', kind: 'counterweight', section: 'C', duration: 3000, travel: 1600, ballast: 'b', startLevel: 1, riders: ['b'], style: 'ledge',
+    x: C(20190), w: 46, yA0: 300, yA1: 630,
+    xB: C(20270), wB: 340, yB0: 180, yB1: -150,
+    brakeAt: { x: C(20226), y: 174 },
+  },
+  // … then the second walkway, ridden up from cage A2 beside the landing.
+  {
+    id: 'c-weights2', kind: 'counterweight', section: 'C', duration: 3000, travel: 2400,
+    x: C(20810), w: 220, yA0: 180, yA1: 290,
+    xB: C(21050), wB: 320, yB0: 540, yB1: 180,
+  },
 ].map((machine) => Object.freeze(machine)));
 
 // ---------------------------------------------------------------------------
@@ -165,8 +190,10 @@ export const NODES = Object.freeze([
   // A2 · lift.
   { id: 'a-n2', line: 'teal', machine: 'a-lift1', x: 2540, y: 760, mount: 'pole', section: 'A' },
   // A3 · lift + bridge on different lines, both punched from the low roof.
-  { id: 'a-n3', line: 'teal', machine: 'a-lift2', x: 4390, y: 760, mount: 'pole', section: 'A' },
-  { id: 'a-n4', line: 'rose', machine: 'a-bridge2', x: 4280, y: 760, mount: 'pole', section: 'A' },
+  // `noCatch`: half of a pair meant for one bell never catches the bell
+  // just gone (round 3, R3-4: a caught bridge was gone before the lift).
+  { id: 'a-n3', line: 'teal', machine: 'a-lift2', x: 4390, y: 760, mount: 'pole', section: 'A', noCatch: true },
+  { id: 'a-n4', line: 'rose', machine: 'a-bridge2', x: 4280, y: 760, mount: 'pole', section: 'A', noCatch: true },
   // A4 · one amber line, two machines.
   { id: 'a-n5', line: 'amber', machine: 'a-bridge3', x: 5500, y: 460, mount: 'pole', section: 'A' },
   { id: 'a-n6', line: 'amber', machine: 'a-billboard', x: 5390, y: 460, mount: 'pole', section: 'A' },
@@ -176,13 +203,13 @@ export const NODES = Object.freeze([
   // A6 · TWO BELLS: rose rings on II.
   { id: 'a-n9', line: 'rose', machine: 'a-bridge4', x: 8860, y: 160, mount: 'pole', section: 'A', district: 'A6', phase: 'even' },
   // A7 · I THEN II: punch both while the next bell is I.
-  { id: 'a-n11', line: 'amber', machine: 'a-bridge5', x: 10620, y: 520, mount: 'pole', section: 'A', district: 'A7', phase: 'even' },
-  { id: 'a-n10', line: 'teal', machine: 'a-lift3', x: 10800, y: 520, mount: 'pole', section: 'A', district: 'A7', phase: 'odd' },
+  { id: 'a-n11', line: 'amber', machine: 'a-bridge5', x: 10620, y: 520, mount: 'pole', section: 'A', district: 'A7', phase: 'even', noCatch: true },
+  { id: 'a-n10', line: 'teal', machine: 'a-lift3', x: 10800, y: 520, mount: 'pole', section: 'A', district: 'A7', phase: 'odd', noCatch: true },
   // A8 · THE CHASE: I, II, I. The last cradle's node stands at the roof edge,
   // in reach from the first cradle: punch it once the first bell has rung.
-  { id: 'a-n12', line: 'amber', machine: 'a-cradle1', x: 12060, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'odd' },
-  { id: 'a-n13', line: 'teal', machine: 'a-cradle2', x: 12160, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'even' },
-  { id: 'a-n14', line: 'rose', machine: 'a-cradle3', x: 12300, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'odd' },
+  { id: 'a-n12', line: 'amber', machine: 'a-cradle1', x: 12060, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'odd', noCatch: true },
+  { id: 'a-n13', line: 'teal', machine: 'a-cradle2', x: 12160, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'even', noCatch: true },
+  { id: 'a-n14', line: 'rose', machine: 'a-cradle3', x: 12300, y: 220, mount: 'pole', section: 'A', district: 'A8', phase: 'odd', noCatch: true },
 
   // B
   { id: 'b-n1', line: 'rose', machine: 'b-sign', x: B(9210), y: 640, mount: 'pole', section: 'B' },
@@ -207,10 +234,18 @@ export const NODES = Object.freeze([
   { id: 'c-n3', line: 'teal', machine: 'c-lift', x: C(18490), y: 520, mount: 'pole', section: 'C' },
   // C3 · the brake shares the lift's teal line: it waits for the lift.
   { id: 'c-n5', line: 'teal', machine: 'c-weights', x: C(19300), y: 180, mount: 'pole', section: 'C' },
+  // C4 · two brakes on one rose line that rings only on bell I: drop the
+  // ledge from the signal deck, then ride cage A2 from the landing. One
+  // line, one moment: they cannot both be released on the same bell.
+  { id: 'c-n7', line: 'rose', machine: 'c-drop', x: C(20140), y: 180, mount: 'pole', section: 'C', district: 'C4', phase: 'odd' },
+  { id: 'c-n6', line: 'rose', machine: 'c-weights2', x: C(20740), y: 180, mount: 'pole', section: 'C', district: 'C4', phase: 'odd' },
 ].map((node) => Object.freeze(node)));
 
 // Required machines for the departure (the train remembers them in order).
-export const DEPARTURE_CHAIN = Object.freeze(['c-points', 'c-lift', 'c-weights']);
+export const DEPARTURE_CHAIN = Object.freeze(['c-points', 'c-lift', 'c-weights', 'c-drop', 'c-weights2']);
+// Tuned so a first run (a wasted bell or two in C3 and C4) makes it with
+// about three bells to spare and a clean run with five (round 3: C used to
+// leave nine of twelve; tests/borrowedLight/level.test.mjs, solveC).
 export const DEPARTURE_BELLS = 12;
 
 // The chase (A8): from Mara's first look back until Butch lands on her roof,
@@ -240,18 +275,20 @@ export const LAMPS = Object.freeze([
   { id: 'lamp-c0', x: C(16880), y: 520, section: 'C', spawnX: C(16940) },
   { id: 'lamp-c1', x: C(18360), y: 520, section: 'C', spawnX: C(18280) },
   { id: 'lamp-c2', x: C(18790), y: 180, section: 'C', spawnX: C(18820) }, // top of the lift
+  { id: 'lamp-c3', x: C(19970), y: 180, section: 'C', spawnX: C(20010) }, // the signal deck, before C4
 ].map((lamp) => Object.freeze(lamp)));
 
 // Which machines a respawn at a lamp puts back at rest (the counterweight a
 // fall left at the bottom of its run).
-export const RESET_ON_RESPAWN = Object.freeze({ 'lamp-c2': ['c-weights'], 'lamp-c1': ['c-weights'], 'lamp-c0': ['c-weights'] });
+// The drop ledge stays dropped: once down it only ever helps.
+export const RESET_ON_RESPAWN = Object.freeze({ 'lamp-c3': ['c-weights2'], 'lamp-c2': ['c-weights'], 'lamp-c1': ['c-weights'], 'lamp-c0': ['c-weights'] });
 
 // ---------------------------------------------------------------------------
 // Story props.
 export const TRAIN = Object.freeze({
   // Two cars fit the rooftop terminal (-400 … 1500); the door is on the rear car.
   start: Object.freeze({ x: -380, y: 760, cars: 2 }),
-  end: Object.freeze({ x: C(20060), y: 180, cars: 3 }),
+  end: Object.freeze({ x: D(20060), y: 180, cars: 3 }),
   // The train ahead: Mara boards it on a far track as C begins (scroll 0.7):
   // placed so it stands in the same part of the screen at C's first lamp.
   ahead: Object.freeze({ x: 1080 + 0.7 * (C(16940) + 220 - 960), y: 470, cars: 2, scroll: 0.7, scale: 0.55 }),
@@ -266,9 +303,9 @@ export const WINDOW_SIGHTING = Object.freeze({ id: 'hotel-window', fromX: B(1256
 export const BENCH = Object.freeze({ x: C(17160), y: 520, readRadius: 150 });
 export const GRID_STONE = Object.freeze({ x: B(11690), y: -60 });
 export const DEPARTURE_TRIGGER_X = C(17520);
-export const BOARD_X = C(20300);
+export const BOARD_X = D(20300);
 // Where the train puts Butch when it remembers the route for him.
-export const REMEMBER_PLACE = Object.freeze({ x: C(20020), y: 180, upperFromX: C(19950) });
+export const REMEMBER_PLACE = Object.freeze({ x: D(20020), y: 180, upperFromX: D(19950) });
 
 // Mara, always one roof ahead. Each sighting is a short authored run.
 // `waitForX`: she stands and looks back until Butch gets that close.
@@ -300,15 +337,16 @@ export const SIGNS = Object.freeze([
   // the mid skyline (scroll 0.5). It dies with the rest of the city.
   { x: 4520, y: 250, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'far', w: 400, scroll: 0.5 },
   { x: C(17900), y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
-  { x: C(20110), y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
+  { x: D(20110), y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));
 
 // Platform lamps along the evacuation platform, lit as the chain fires.
 export const PLATFORM_LAMPS = Object.freeze([
-  Object.freeze({ x: C(20060), lights: 'c-points' }),
-  Object.freeze({ x: C(20260), lights: 'c-lift' }),
-  Object.freeze({ x: C(20860), lights: 'c-weights' }),
-  Object.freeze({ x: C(21160), lights: 'c-weights' }),
+  Object.freeze({ x: D(20060), lights: 'c-points' }),
+  Object.freeze({ x: D(20260), lights: 'c-lift' }),
+  Object.freeze({ x: D(20560), lights: 'c-weights' }),
+  Object.freeze({ x: D(20860), lights: 'c-drop' }),
+  Object.freeze({ x: D(21160), lights: 'c-weights2' }),
 ]);
 
 // ---------------------------------------------------------------------------
@@ -348,7 +386,9 @@ export const ROUTE = Object.freeze([
   { from: 'b-roof13', to: 'c-concourse', via: 'drop' },
   { from: 'c-concourse', to: 'c-yard', via: 'c-points' },
   { from: 'c-yard', to: 'c-gantry', via: 'c-lift' },
-  { from: 'c-gantry', to: 'c-platform', via: 'c-weights' },
+  { from: 'c-gantry', to: 'c-signal', via: 'c-weights' },
+  { from: 'c-signal', to: 'c-landing', via: 'c-drop' },
+  { from: 'c-landing', to: 'c-platform', via: 'c-weights2' },
 ].map((edge) => Object.freeze(edge)));
 
 // Punch auto-targets the nearest node within this range of Butch's chest
@@ -369,13 +409,49 @@ export function nodeHead(node) {
   return { x: node.x, y: node.y - NODE_POLE };
 }
 
-// The counterweight's two cages at a level (0 = rest: A up, B down).
+// The counterweight's two cages at a level (0 = rest: A up, B down; for
+// the drop ledge, rest is the ledge down in line and its box up).
 export function cagesAt(machine, level) {
   const k = Math.max(0, Math.min(1, level));
   return {
     a: { x: machine.x, w: machine.w, y: machine.yA0 + (machine.yA1 - machine.yA0) * k },
     b: { x: machine.xB, w: machine.wB, y: machine.yB0 + (machine.yB1 - machine.yB0) * k },
   };
+}
+
+// The tops Butch can stand on, for a machine at a level: [{ x0, x1, y }].
+export function surfacesOf(machine, level) {
+  switch (machine.kind) {
+    case 'bridge': {
+      const len = machine.length * level;
+      if (len <= 8) return [];
+      return [{ x0: machine.dir > 0 ? machine.x : machine.x - len, x1: machine.dir > 0 ? machine.x + len : machine.x, y: machine.y }];
+    }
+    case 'lift': {
+      const y = machine.y0 + (machine.y1 - machine.y0) * level;
+      return [{ x0: machine.x, x1: machine.x + machine.w, y }];
+    }
+    case 'billboard':
+    case 'cradle':
+    case 'points':
+    case 'drawbridge': {
+      const b = machineBounds(machine, level);
+      return [{ x0: b.x, x1: b.x + b.w, y: b.y }];
+    }
+    case 'counterweight': {
+      const cages = cagesAt(machine, level);
+      return (machine.riders ?? ['a', 'b']).map((side) => ({ x0: cages[side].x, x1: cages[side].x + cages[side].w, y: cages[side].y, cage: side }));
+    }
+    default: return [];
+  }
+}
+
+// Is Butch (feet at x, y) standing on this machine? His body is 40 px wide:
+// with his centre a few px past the end he is still held by the roof.
+// `above`: also count him this far up in the air over it (mid-jump).
+export function standsOn(machine, level, feetX, feetY, { slack = 4, tol = 10, above = 0 } = {}) {
+  return surfacesOf(machine, level).some((s) => feetX >= s.x0 - slack && feetX <= s.x1 + slack
+    && feetY >= s.y - Math.max(tol, above) && feetY <= s.y + tol);
 }
 
 // Where power arrives at a machine (end of its cable).
@@ -392,7 +468,7 @@ export function machineAnchor(machine) {
     // The cradles' winch cables come down one post at the roof edge.
     case 'cradle': return { x: machine.postX, y: machine.y - 60 };
     case 'lantern': return { x: machine.x - 8, y: machine.y - 6 };
-    case 'counterweight': return { x: machine.x - 34, y: machine.yA0 - 6 };
+    case 'counterweight': return machine.brakeAt ? { ...machine.brakeAt } : { x: machine.x - 34, y: machine.yA0 - 6 };
     default: return { x: machine.x, y: machine.y };
   }
 }
@@ -480,6 +556,11 @@ export function resolveStartLamp({ search = '', devMode = false, section = 'A' }
 }
 
 export const circuitKey = (district, line) => `${district}:${line}`;
+
+// Machines that start somewhere other than at rest (the drop ledge, held up).
+export function settleStartLevels(tt) {
+  MACHINES.filter((m) => m.startLevel != null).forEach((m) => tt.settle(m.id, m.startLevel));
+}
 export const districtOf = (node) => node.district ?? node.section;
 
 // The tuple the timetable model is built from.
@@ -491,9 +572,14 @@ export function timetableDefinition() {
       line: node.line,
       machine: node.machine,
       circuit: circuitKey(districtOf(node), node.line),
+      district: districtOf(node),
       ...(node.phase ? { phase: node.phase } : {}),
       ...(node.dead ? { dead: true } : {}),
+      ...(node.noCatch ? { noCatch: true } : {}),
     })),
-    machines: MACHINES.map(({ id, kind, duration, travel, borrowable }) => ({ id, kind, duration, travel, borrowable: Boolean(borrowable) })),
+    // Every lift waits a bell for a rider who is still on the way (R3-3).
+    machines: MACHINES.map(({ id, kind, duration, travel, borrowable, ballast }) => ({
+      id, kind, duration, travel, borrowable: Boolean(borrowable), waitsForRider: kind === 'lift', ...(ballast ? { ballast } : {}),
+    })),
   };
 }
