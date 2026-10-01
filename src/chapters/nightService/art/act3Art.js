@@ -1,14 +1,18 @@
 // Act 3 · TWO TRUE THINGS — the city room and its window, the hawthorn lane,
 // the orchard house (close and from the hill), the carriage, the broken
 // viaduct (whole in 1978) and the Bellwether platform. Linked edges line up:
-// the lane at 0.62, the rails at 0.85, the stair at x 0.55.
+// the lane at 0.62, the rails at 0.75, the stair at x 0.55.
 
 import { PAL, brassFill, glow, ink, inkEllipse, rivet, rng, roundRectPath, speckle, vgrad, wood } from './ink.js';
 import { backWall, finish } from './act1Art.js';
 import { crop, cropFull } from './act2Art.js';
 
 export const PATH_AT = 0.62;
-export const RAIL_AT = 0.85;
+// the bottom row's rail: raised from 0.85 so the viaduct stands high over
+// its cut (alpha R3 · R5); the platform is laid out from it (PLATFORM_DY)
+export const RAIL_AT = 0.75;
+/** How far the platform's furniture moved up with the rail (from the 0.85 layout). */
+export const PLATFORM_DY = RAIL_AT - 0.85;
 export const STAIR_AT = 0.55;
 /** The city room's window (outer frame) and its glass, tile-normalised. */
 export const CITY_WINDOW = Object.freeze([0.44, 0.1, 0.34, 0.42]);
@@ -370,14 +374,16 @@ function rails(c, w, h, from, to, { past = false } = {}) {
 
 export function drawCarriageScene(ctx) {
   const { w, h } = ctx;
-  ctx.fields(-20, -20, w + 40, h * 0.8, { speed: 0, crop: 0.55, zoom: 1.2, offset: 2200 });
+  ctx.fields(-20, -20, w + 40, h * (RAIL_AT - 0.05), { speed: 0, crop: 0.55, zoom: 1.2, offset: 2200 });
   ctx.paint('act3-carriage', (c, env) => {
-    c.fillStyle = vgrad(c, h * 0.72, h, [[0, '#1d2a2a'], [1, '#0a0f10']]);
-    c.fillRect(-20, h * 0.72, w + 40, h * 0.3);
+    const ground = RAIL_AT - 0.13;
+    c.fillStyle = vgrad(c, h * ground, h, [[0, '#1d2a2a'], [1, '#0a0f10']]);
+    c.fillRect(-20, h * ground, w + 40, h * (1.02 - ground));
     // embankment and ballast
     c.fillStyle = '#2a2622';
-    c.beginPath(); c.moveTo(-20, h * 0.86); c.lineTo(w + 20, h * 0.86); c.lineTo(w + 20, h + 20); c.lineTo(-20, h + 20); c.closePath(); c.fill();
-    speckle(c, 0, h * 0.86, w, h * 0.14, { count: 500, color: 'rgba(200,190,170,0.18)', size: 2, seed: 331 });
+    const bank = RAIL_AT + 0.01;
+    c.beginPath(); c.moveTo(-20, h * bank); c.lineTo(w + 20, h * bank); c.lineTo(w + 20, h + 20); c.lineTo(-20, h + 20); c.closePath(); c.fill();
+    speckle(c, 0, h * bank, w, h * (1 - bank), { count: 600, color: 'rgba(200,190,170,0.18)', size: 2, seed: 331 });
     rails(c, w, h, w * 0.02, w + 20);
     // buffer stop at the left end and a signal lamp
     c.fillStyle = '#6b2a22'; c.fillRect(w * 0.02 - 6, h * RAIL_AT - 22, 12, 22);
@@ -385,97 +391,160 @@ export function drawCarriageScene(ctx) {
     c.fillStyle = '#1a1410'; c.fillRect(w * 0.9 - 10, h * 0.44, 20, 26);
     c.fillStyle = '#ffcf7a'; c.beginPath(); c.arc(w * 0.9, h * 0.5, 5, 0, Math.PI * 2); c.fill();
     glow(c, w * 0.9, h * 0.5, 50, 'rgba(255,200,110,0.9)', 0.6);
-    ink(c, [[-4, h * 0.86], [w + 4, h * 0.86]], { w: 1.4, alpha: 0.5 });
+    ink(c, [[-4, h * bank], [w + 4, h * bank]], { w: 1.4, alpha: 0.5 });
     finish(c, env, { vig: 0.5 });
   });
 }
 
 // The viaduct is a timber trestle with a brass-strapped deck, in the same
 // wood-and-brass kit as the carriage (not grey slabs): broken in the present
-// (splintered deck ends, a twisted rail, planks hanging into the cut), whole
-// and lamplit in 1978.
+// (splintered deck ends, a twisted rail, planks hanging into the cut, a red
+// lantern on each broken end), whole and lamplit in 1978. It stands high
+// over a misty cut and is lit by the moon, so it reads at a glance without
+// the lens (alpha R3 · R5).
+/** Deck thickness (tile px) and where the present span is missing (0..1). */
+const DECK = 20;
+export const GAP_SPAN = Object.freeze([0.36, 0.64]);
+
 function timberDeck(c, x0, x1, y, { past, seed }) {
-  const tone = past ? '#7a5634' : '#35261a';
-  wood(c, x0, y + 3, x1 - x0, 16, { base: tone, seed, planks: 2, grain: 'rgba(0,0,0,0.35)', light: past ? 'rgba(255,220,170,0.12)' : 'rgba(255,220,170,0.05)' });
+  const tone = past ? '#8a6440' : '#6e5038';
+  wood(c, x0, y + 3, x1 - x0, DECK, { base: tone, seed, planks: 2, grain: 'rgba(0,0,0,0.3)', light: past ? 'rgba(255,220,170,0.16)' : 'rgba(220,226,255,0.12)' });
+  // moonlight along the top of the deck, lamplight warmer in 1978
+  c.fillStyle = past ? 'rgba(255, 226, 170, 0.45)' : 'rgba(210, 220, 245, 0.38)';
+  c.fillRect(x0, y + 3, x1 - x0, 2);
   // sleeper ends along the face of the deck
-  c.fillStyle = past ? 'rgba(50,30,14,0.55)' : 'rgba(0,0,0,0.5)';
-  for (let x = x0 + 6; x < x1 - 4; x += 20) c.fillRect(x, y + 4, 9, 4);
+  c.fillStyle = past ? 'rgba(50,30,14,0.5)' : 'rgba(0,0,0,0.42)';
+  for (let x = x0 + 6; x < x1 - 4; x += 20) c.fillRect(x, y + 6, 9, 5);
   // brass strap along the parapet edge, with bolts
-  c.fillStyle = brassFill(c, x0, y + 17, x1 - x0, 3);
-  c.fillRect(x0, y + 17, x1 - x0, 3);
-  for (let x = x0 + 14; x < x1 - 6; x += 44) rivet(c, x, y + 18.5, 1.8);
+  c.fillStyle = brassFill(c, x0, y + DECK + 1, x1 - x0, 4);
+  c.fillRect(x0, y + DECK + 1, x1 - x0, 4);
+  for (let x = x0 + 14; x < x1 - 6; x += 44) rivet(c, x, y + DECK + 3, 2);
   // the shadow the deck throws on the trestles
-  c.fillStyle = 'rgba(0,0,0,0.35)';
-  c.fillRect(x0, y + 20, x1 - x0, 4);
+  c.fillStyle = 'rgba(0,0,0,0.3)';
+  c.fillRect(x0, y + DECK + 5, x1 - x0, 4);
 }
 
 function trestle(c, x, y, h, { past, seed }) {
-  const tone = past ? '#6a4a2c' : '#2b2017';
-  const top = y + 22;
+  const tone = past ? '#7a5634' : '#56402c';
+  const top = y + DECK + 6;
   const len = h + 30 - top;
   const leg = (lx, angle, s) => {
     c.save();
     c.translate(lx, top);
     c.rotate(angle);
-    wood(c, -5, 0, 10, len, { base: tone, seed: s, vertical: true, grain: 'rgba(0,0,0,0.4)' });
-    c.fillStyle = 'rgba(0,0,0,0.35)';
-    c.fillRect(3, 0, 2, len);
+    wood(c, -6, 0, 12, len, { base: tone, seed: s, vertical: true, grain: 'rgba(0,0,0,0.35)' });
+    // moonlit on the left, in shadow on the right
+    c.fillStyle = past ? 'rgba(255, 220, 160, 0.22)' : 'rgba(200, 212, 240, 0.24)';
+    c.fillRect(-6, 0, 2, len);
+    c.fillStyle = 'rgba(0,0,0,0.32)';
+    c.fillRect(3, 0, 3, len);
     c.restore();
   };
-  leg(x, 0.1, seed);
-  leg(x + 52, -0.1, seed + 1);
-  // X bracing and a cap beam, bolted with brass
-  const braceY = top + Math.min(36, len * 0.5);
-  const brace = past ? '#4a3220' : '#1c140d';
-  ink(c, [[x + 2, top + 4], [x + 50, braceY]], { w: 3.2, color: brace, alpha: 0.95, bleed: false, jitter: 0.3 });
-  ink(c, [[x + 50, top + 4], [x + 2, braceY]], { w: 3.2, color: brace, alpha: 0.95, bleed: false, jitter: 0.3 });
-  wood(c, x - 8, top - 2, 68, 7, { base: tone, seed: seed + 2 });
-  [[x, top + 1], [x + 52, top + 1], [x + 26, (top + braceY) / 2 + 2]].forEach(([bx, by]) => rivet(c, bx, by, 2.2));
+  const spread = 64;
+  leg(x, 0.12, seed);
+  leg(x + spread, -0.12, seed + 1);
+  // two tiers of X bracing and a cap beam, bolted with brass
+  const brace = past ? '#5a3c24' : '#2e2218';
+  const tier = Math.max(30, (len - 30) / 2);
+  for (let i = 0; i < 2; i += 1) {
+    const y0 = top + 4 + i * tier;
+    const y1 = y0 + tier - 6;
+    const inset = i * tier * 0.12;
+    ink(c, [[x + 2 - inset, y0], [x + spread - 2 + inset, y1]], { w: 3.6, color: brace, alpha: 0.95, bleed: false, jitter: 0.3, seed: seed + 10 + i });
+    ink(c, [[x + spread - 2 + inset, y0], [x + 2 - inset, y1]], { w: 3.6, color: brace, alpha: 0.95, bleed: false, jitter: 0.3, seed: seed + 20 + i });
+    wood(c, x - 6 - inset, y1 - 2, spread + 12 + inset * 2, 6, { base: tone, seed: seed + 30 + i });
+  }
+  wood(c, x - 10, top - 2, spread + 20, 8, { base: tone, seed: seed + 2 });
+  [[x, top + 2], [x + spread, top + 2], [x + spread / 2, top + tier / 2 + 2]].forEach(([bx, by]) => rivet(c, bx, by, 2.4));
 }
 
 function splinteredEnd(c, x, y, dir, { seed }) {
   // the broken deck end: jagged timber, one plank hanging into the cut
   const random = rng(seed);
-  c.fillStyle = '#35261a';
+  c.fillStyle = '#5e4330';
   c.beginPath();
   c.moveTo(x, y + 3);
-  for (let i = 0; i <= 5; i += 1) c.lineTo(x + dir * (4 + random() * 14), y + 3 + (16 * i) / 5);
-  c.lineTo(x, y + 20);
+  for (let i = 0; i <= 5; i += 1) c.lineTo(x + dir * (4 + random() * 16), y + 3 + (DECK * i) / 5);
+  c.lineTo(x, y + DECK + 4);
   c.closePath();
   c.fill();
-  ink(c, [[x, y + 3], [x + dir * 12, y + 8], [x + dir * 6, y + 13], [x + dir * 14, y + 19]], { w: 1.2, color: '#1a120c', alpha: 0.9, bleed: false });
+  ink(c, [[x, y + 3], [x + dir * 13, y + 9], [x + dir * 6, y + 15], [x + dir * 15, y + DECK + 2]], { w: 1.4, color: '#1a120c', alpha: 0.9, bleed: false });
   c.save();
-  c.translate(x + dir * 6, y + 12);
+  c.translate(x + dir * 6, y + 14);
   c.rotate(dir * (0.9 + random() * 0.3));
-  wood(c, -3, 0, 7, 44, { base: '#3e2c1d', seed: seed + 3, vertical: true, grain: 'rgba(0,0,0,0.4)' });
+  wood(c, -4, 0, 8, 56, { base: '#5a4030', seed: seed + 3, vertical: true, grain: 'rgba(0,0,0,0.35)' });
   c.restore();
+}
+
+/** A red lantern hung on a broken end: the line stops here. */
+function dangerLamp(c, x, y) {
+  ink(c, [[x, y - 34], [x, y - 14]], { w: 2.2, color: '#1a1410', bleed: false });
+  c.fillStyle = '#1a1410';
+  c.fillRect(x - 6, y - 16, 12, 4);
+  c.fillStyle = '#ff6a48';
+  roundRectPath(c, x - 5, y - 13, 10, 13, 3); c.fill();
+  c.fillStyle = '#ffd2b8';
+  c.fillRect(x - 2, y - 10, 4, 6);
+  glow(c, x, y - 7, 64, 'rgba(255, 90, 60, 0.95)', 0.55);
+}
+
+/** The cut under the viaduct: a moonlit haze behind the deck, mist and a stream below. */
+function gorge(c, w, h, y, { past }) {
+  // haze in the sky behind the deck so its silhouette stands clear
+  c.fillStyle = vgrad(c, y - h * 0.3, y, [[0, 'rgba(150, 165, 210, 0)'], [1, past ? 'rgba(255, 210, 150, 0.22)' : 'rgba(150, 170, 220, 0.24)']]);
+  c.fillRect(-20, y - h * 0.3, w + 40, h * 0.3);
+  // the cut: banks dropping away under the abutments
+  c.fillStyle = vgrad(c, y + 10, h, [[0, past ? 'rgba(70, 52, 36, 0.55)' : 'rgba(24, 30, 46, 0.6)'], [1, past ? 'rgba(40, 28, 18, 0.85)' : 'rgba(10, 13, 22, 0.9)']]);
+  c.beginPath();
+  c.moveTo(-20, y + 10);
+  c.lineTo(w * 0.2, y + 14);
+  c.quadraticCurveTo(w * 0.32, h * 0.98, w * 0.5, h * 1.02);
+  c.quadraticCurveTo(w * 0.68, h * 0.98, w * 0.8, y + 14);
+  c.lineTo(w + 20, y + 10);
+  c.lineTo(w + 20, h + 30);
+  c.lineTo(-20, h + 30);
+  c.closePath();
+  c.fill();
+  // mist pooled in the bottom of the cut, lit by the moon
+  const mist = c.createRadialGradient(w * 0.5, h * 0.98, 6, w * 0.5, h * 0.98, w * 0.42);
+  mist.addColorStop(0, past ? 'rgba(255, 220, 170, 0.3)' : 'rgba(185, 200, 235, 0.34)');
+  mist.addColorStop(1, 'rgba(185, 200, 235, 0)');
+  c.fillStyle = mist;
+  c.fillRect(-20, y, w + 40, h - y + 30);
+  // the stream's glint
+  ink(c, [[w * 0.36, h - 6], [w * 0.46, h - 9], [w * 0.56, h - 7], [w * 0.66, h - 10]], { w: 1.6, color: past ? '#f0d29a' : '#b8c8ee', alpha: 0.7, bleed: false, seed: 377 });
 }
 
 function viaduct(c, w, h, { broken, past }) {
   const y = RAIL_AT * h;
+  const [b0, b1] = GAP_SPAN;
+  gorge(c, w, h, y, { past });
   if (broken) {
-    [0.06, 0.74].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 360 + i * 5 }));
-    timberDeck(c, -20, w * 0.36, y, { past, seed: 351 });
-    timberDeck(c, w * 0.64, w + 20, y, { past, seed: 352 });
-    splinteredEnd(c, w * 0.36, y, 1, { seed: 353 });
-    splinteredEnd(c, w * 0.64, y, -1, { seed: 354 });
-    rails(c, w, h, -20, w * 0.34);
-    rails(c, w, h, w * 0.66, w + 20);
+    [0.04, 0.76].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 360 + i * 5 }));
+    timberDeck(c, -20, w * b0, y, { past, seed: 351 });
+    timberDeck(c, w * b1, w + 20, y, { past, seed: 352 });
+    splinteredEnd(c, w * b0, y, 1, { seed: 353 });
+    splinteredEnd(c, w * b1, y, -1, { seed: 354 });
+    rails(c, w, h, -20, w * (b0 - 0.02));
+    rails(c, w, h, w * (b1 + 0.02), w + 20);
     // the rails' broken ends twist down into the cut
-    ink(c, [[w * 0.34, y - 3], [w * 0.36, y + 4], [w * 0.372, y + 18], [w * 0.366, y + 30]], { w: 2.2, color: PAL.brass, alpha: 0.85, bleed: false });
-    ink(c, [[w * 0.66, y - 3], [w * 0.642, y + 8], [w * 0.646, y + 22]], { w: 2.2, color: PAL.brass, alpha: 0.85, bleed: false });
-    // fallen timbers in the channel, in shadow
+    ink(c, [[w * (b0 - 0.02), y - 3], [w * b0, y + 4], [w * (b0 + 0.014), y + 20], [w * (b0 + 0.008), y + 36]], { w: 2.6, color: PAL.brassLight, alpha: 0.9, bleed: false });
+    ink(c, [[w * (b1 + 0.02), y - 3], [w * (b1 + 0.002), y + 8], [w * (b1 + 0.006), y + 26]], { w: 2.6, color: PAL.brassLight, alpha: 0.9, bleed: false });
+    // fallen timbers in the bottom of the cut
     const random = rng(341);
-    for (let i = 0; i < 5; i += 1) {
+    for (let i = 0; i < 6; i += 1) {
       c.save();
-      c.globalAlpha = 0.85;
-      c.translate(w * (0.4 + random() * 0.2), h - 10 - random() * 22);
+      c.globalAlpha = 0.9;
+      c.translate(w * (0.4 + random() * 0.2), h - 14 - random() * 26);
       c.rotate((random() - 0.5) * 1.4);
-      wood(c, -16, -3, 32 + random() * 18, 6, { base: '#2c2017', seed: 370 + i });
+      wood(c, -16, -3, 32 + random() * 18, 7, { base: '#4a3828', seed: 370 + i });
       c.restore();
     }
+    // a red lantern on each broken end
+    dangerLamp(c, w * (b0 - 0.035), y);
+    dangerLamp(c, w * (b1 + 0.035), y);
   } else {
-    [0.06, 0.4, 0.74].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 380 + i * 5 }));
+    [0.04, 0.4, 0.76].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 380 + i * 5 }));
     timberDeck(c, -20, w + 20, y, { past, seed: 351 });
     rails(c, w, h, -20, w + 20, { past });
     // 1978: lamps on brass posts along the parapet
@@ -496,8 +565,12 @@ export function drawGap(ctx) {
   ctx.paint('act3-gap', (c, env) => {
     cropFull(c, env, 'nsv-w01-2', [972, 267, 596, 460], w, h);
     viaduct(c, w, h, { broken: true, past: false });
-    finish(c, env, { vig: 0.5 });
+    finish(c, env, { vig: 0.38 });
   });
+  // the red lanterns breathe a little
+  const [b0, b1] = GAP_SPAN;
+  ctx.glow(w * (b0 - 0.035), h * RAIL_AT - 7, 70, { color: 0xff6a48, alpha: 0.32, flicker: 0.18 });
+  ctx.glow(w * (b1 + 0.035), h * RAIL_AT - 7, 70, { color: 0xff6a48, alpha: 0.32, flicker: 0.18 });
 }
 
 export function drawGapPast(ctx) {
@@ -505,7 +578,7 @@ export function drawGapPast(ctx) {
   ctx.paint('act3-gap-past', (c, env) => {
     cropFull(c, env, 'nsv-w01-2', [972, 267, 596, 460], w, h);
     viaduct(c, w, h, { broken: false, past: true });
-    finish(c, env, { vig: 0.45 });
+    finish(c, env, { vig: 0.38 });
   });
 }
 
@@ -513,22 +586,22 @@ function platformBase(c, env, w, h) {
   const past = PAST(env);
   cropFull(c, env, 'nsv-w07-1', [20, 412, 536, 414], w, h);
   // far track (the other train stands on it)
-  const far = 0.66 * h;
+  const far = (0.66 + PLATFORM_DY) * h;
   c.fillStyle = past ? '#6a5236' : '#1d2226';
   c.fillRect(-20, far - 2, w + 40, h * 0.06);
   ink(c, [[-4, far], [w + 4, far]], { w: 2, color: PAL.brassLight, alpha: 0.9, bleed: false });
   // the platform between the tracks: wet stone flags lit by the lamp (painted
   // into the scene, no ink outline over the painting)
-  const top = h * 0.7;
+  const top = h * (0.7 + PLATFORM_DY);
   const pw = w * 0.94 + 20;
-  c.fillStyle = vgrad(c, top, h * 0.83, [[0, past ? '#a89068' : '#4a443d'], [1, past ? '#7a6244' : '#2c2823']]);
+  c.fillStyle = vgrad(c, top, h * (0.83 + PLATFORM_DY), [[0, past ? '#a89068' : '#4a443d'], [1, past ? '#7a6244' : '#2c2823']]);
   c.fillRect(-20, top, pw, h * 0.13);
   c.save();
   c.beginPath(); c.rect(-20, top, pw, h * 0.13); c.clip();
   speckle(c, -20, top, pw, h * 0.13, { count: 260, color: past ? 'rgba(60,40,20,0.18)' : 'rgba(0,0,0,0.22)', size: 2.2, seed: 345 });
   c.strokeStyle = past ? 'rgba(60,40,20,0.35)' : 'rgba(0,0,0,0.38)';
   c.lineWidth = 1.2;
-  for (let x = 18; x < pw; x += 46) { c.beginPath(); c.moveTo(x, top + 6); c.lineTo(x - 6, h * 0.83); c.stroke(); }
+  for (let x = 18; x < pw; x += 46) { c.beginPath(); c.moveTo(x, top + 6); c.lineTo(x - 6, h * (0.83 + PLATFORM_DY)); c.stroke(); }
   c.beginPath(); c.moveTo(-20, top + h * 0.065); c.lineTo(pw, top + h * 0.065); c.stroke();
   // the lamp's pool of light on the wet stone
   const pool = c.createRadialGradient(w * 0.82, top + 20, 4, w * 0.82, top + 20, w * 0.32);
@@ -539,7 +612,7 @@ function platformBase(c, env, w, h) {
   c.restore();
   // a worn coping along the platform's edge, and its shadow
   c.fillStyle = past ? 'rgba(232, 212, 160, 0.75)' : 'rgba(200, 176, 120, 0.5)';
-  c.fillRect(-20, h * 0.822, pw, 3);
+  c.fillRect(-20, h * (0.822 + PLATFORM_DY), pw, 3);
   c.fillStyle = 'rgba(0,0,0,0.45)';
   c.fillRect(-20, top - 2, pw, 3);
   c.fillRect(w * 0.94 - 3, top, 3, h * 0.13);
@@ -548,35 +621,36 @@ function platformBase(c, env, w, h) {
   const sx = w * STAIR_AT;
   for (let i = 0; i <= 8; i += 1) {
     const t = i / 8;
-    const yy = -4 + (h * 0.7 + 4) * t;
+    const yy = -4 + (top + 4) * t;
     wood(c, sx - 22 + t * 30, yy, 44, 6, { base: past ? '#8a6640' : '#4e3a28', seed: 390 + i });
     c.fillStyle = 'rgba(0,0,0,0.4)';
     c.fillRect(sx - 22 + t * 30, yy + 6, 44, 2);
   }
   [[-24, 6], [24, 54]].forEach(([a, b], i) => {
     c.save();
-    c.beginPath(); c.moveTo(sx + a - 3, -6); c.lineTo(sx + a + 3, -6); c.lineTo(sx + b + 3, h * 0.7); c.lineTo(sx + b - 3, h * 0.7); c.closePath();
+    c.beginPath(); c.moveTo(sx + a - 3, -6); c.lineTo(sx + a + 3, -6); c.lineTo(sx + b + 3, top); c.lineTo(sx + b - 3, top); c.closePath();
     c.fillStyle = past ? '#6a4a2c' : '#2e2218';
     c.fill();
     c.restore();
-    ink(c, [[sx + a, -6], [sx + b, h * 0.7]], { w: 1.6, color: PAL.brassLight, alpha: 0.6, bleed: false, seed: 395 + i });
+    ink(c, [[sx + a, -6], [sx + b, top]], { w: 1.6, color: PAL.brassLight, alpha: 0.6, bleed: false, seed: 395 + i });
   });
   // bench, lamp and the station nameboard
   const bx = w * 0.12;
-  wood(c, bx, h * 0.745, w * 0.2, 8, { base: '#5a3a22', seed: 351 });
-  wood(c, bx, h * 0.71, w * 0.2, 6, { base: '#5a3a22', seed: 352 });
-  ink(c, [[bx + 6, h * 0.753], [bx + 4, h * 0.8]], { w: 2.4, color: '#1a1410', bleed: false });
-  ink(c, [[bx + w * 0.2 - 6, h * 0.753], [bx + w * 0.2 - 4, h * 0.8]], { w: 2.4, color: '#1a1410', bleed: false });
+  const by = PLATFORM_DY * h;
+  wood(c, bx, h * 0.745 + by, w * 0.2, 8, { base: '#5a3a22', seed: 351 });
+  wood(c, bx, h * 0.71 + by, w * 0.2, 6, { base: '#5a3a22', seed: 352 });
+  ink(c, [[bx + 6, h * 0.753 + by], [bx + 4, h * 0.8 + by]], { w: 2.4, color: '#1a1410', bleed: false });
+  ink(c, [[bx + w * 0.2 - 6, h * 0.753 + by], [bx + w * 0.2 - 4, h * 0.8 + by]], { w: 2.4, color: '#1a1410', bleed: false });
   c.fillStyle = 'rgba(0,0,0,0.35)';
-  c.fillRect(bx + 4, h * 0.8, w * 0.2 - 4, 3);
+  c.fillRect(bx + 4, h * 0.8 + by, w * 0.2 - 4, 3);
   const lx = w * 0.82;
-  ink(c, [[lx, h * 0.72], [lx, h * 0.36]], { w: 3, color: '#1a1410', bleed: false });
+  ink(c, [[lx, top + h * 0.02], [lx, h * 0.36]], { w: 3, color: '#1a1410', bleed: false });
   c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(lx, h * 0.34, 7, 0, Math.PI * 2); c.fill();
   glow(c, lx, h * 0.34, 90, 'rgba(255,210,130,0.95)', 0.55);
   const nx = w * 0.3;
   const ny = h * 0.5;
-  ink(c, [[nx + 10, ny + 20], [nx + 10, h * 0.71]], { w: 2.4, color: '#1a1410', bleed: false });
-  ink(c, [[nx + 150, ny + 20], [nx + 150, h * 0.71]], { w: 2.4, color: '#1a1410', bleed: false });
+  ink(c, [[nx + 10, ny + 20], [nx + 10, top + h * 0.01]], { w: 2.4, color: '#1a1410', bleed: false });
+  ink(c, [[nx + 150, ny + 20], [nx + 150, top + h * 0.01]], { w: 2.4, color: '#1a1410', bleed: false });
   c.fillStyle = past ? '#6b2a22' : '#23434a';
   roundRectPath(c, nx, ny - 8, 160, 32, 5); c.fill();
   c.fillStyle = '#eadfc6';
@@ -612,7 +686,7 @@ export function drawPlatform(ctx) {
     c.fillStyle = PAL.brass; c.fillRect(14, 8, 5, 30); c.fillRect(41, 8, 5, 30); c.fillRect(24, 3, 12, 5);
     c.fillStyle = '#e6dcc2'; c.beginPath(); c.moveTo(48, 20); c.lineTo(56, 16); c.lineTo(59, 24); c.lineTo(51, 28); c.closePath(); c.fill();
     ink(c, [[4, 8], [56, 8], [56, 38], [4, 38]], { w: 1.4, closed: true, bleed: false });
-  }, w * 0.22, h * 0.745 - 18);
+  }, w * 0.22, h * (0.745 + PLATFORM_DY) - 18);
   ctx.animate(() => caseSprite.setVisible(ctx.flag('caseOnBench')));
   ctx.glow(w * 0.82, h * 0.34, 160, { color: 0xffc070, alpha: 0.2, flicker: 0.08 });
 }
