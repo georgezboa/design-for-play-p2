@@ -28,7 +28,7 @@ export const SOFTWARE_PIXEL_RATIO = 0.6;
 //     environment gave a rough surface at a grazing angle (the carpet most);
 //   · a fill (a hemisphere and one shadowless light from straight above),
 //     scaled per space so the corridor keeps its dimmer, later red mood.
-export const LOW_SHEEN = 0x2e2b27;
+export const LOW_SHEEN = 0x38342f;
 export const LOW_FILL = Object.freeze({ hemisphere: 1.6, overhead: 1.2 });
 export const LOW_FILL_SCALE = Object.freeze({ lobby: 1, corridor: 0.55, collapse: 0.2, echo: 0.6 });
 
