@@ -8,7 +8,7 @@
 // The rules (createPlayClock) are DOM-free for node tests; installPlayClock
 // wires them to the page.
 
-import { createSaveStore } from './saveSystem.js';
+import { createSaveStore, routerSessionActive } from './saveSystem.js';
 
 export const TICK_MS = 1000;
 export const FLUSH_EVERY_S = 15;
@@ -45,14 +45,24 @@ export function createPlayClock({ now, running, commit }) {
 
 let installed = null;
 
-export function installPlayClock({ win = globalThis.window, storage = globalThis.localStorage } = {}) {
+// Which save the page's time belongs to is decided once, when the page
+// starts: a test-route page (1111 router, dev launcher) counts into the
+// router's scratch save only. Asking again at commit time sent the last
+// flush of a router visit to the real active slot, because BACK TO THE TITLE
+// clears the router flag just before the page hides (9000 → 9019 s).
+export function playClockTarget({ scratch = routerSessionActive() } = {}) {
+  return { scratch: Boolean(scratch) };
+}
+
+export function installPlayClock({ win = globalThis.window, storage = globalThis.localStorage, scratch = routerSessionActive() } = {}) {
   if (installed || !win?.document) return installed;
   const doc = win.document;
+  const target = playClockTarget({ scratch });
   const clock = createPlayClock({
     now: () => win.performance.now(),
     running: () => doc.visibilityState !== 'hidden' && !globalThis.NIGHTFALL_PAUSED,
     commit: (seconds) => {
-      try { createSaveStore(storage).addPlaySeconds(seconds); } catch { /* storage unavailable */ }
+      try { createSaveStore(storage, target).addPlaySeconds(seconds); } catch { /* storage unavailable */ }
     },
   });
   const timer = win.setInterval(() => clock.tick(), TICK_MS);
@@ -63,6 +73,6 @@ export function installPlayClock({ win = globalThis.window, storage = globalThis
   });
   win.addEventListener('pagehide', settle);
   win.addEventListener('nightfall:checkpoint', settle);
-  installed = { clock, stop() { win.clearInterval(timer); settle(); installed = null; } };
+  installed = { clock, target, stop() { win.clearInterval(timer); settle(); installed = null; } };
   return installed;
 }

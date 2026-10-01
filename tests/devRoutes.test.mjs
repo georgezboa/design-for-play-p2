@@ -66,5 +66,5 @@ test('a playtest router lists only shipped, on-route nodes with player-safe copy
   assert.match(ch6['6.4'].detail, /pigment/);
   const title = read('src/shell/titleMenu.js');
   assert.match(title, /DEV_MODE \? DEV_ROUTES : PLAYTEST_MODE \? routerEntries\(\) : \[\]/);
-  assert.match(read('src/shell/devLauncher.js'), /seedRouterSave\(entry\.checkpoint\); activateHiddenRouter\(\);/);
+  assert.match(read('src/shell/devLauncher.js'), /seedRouterSave\(entry\.checkpoint, \{ stones: entry\.stones \?\? null \}\); activateHiddenRouter\(\);/);
 });

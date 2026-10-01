@@ -6,7 +6,8 @@
 // `checkpoint` is the save id the node belongs to; `route` is opened
 // directly, skipping any transition film. A node always plays on the
 // router's scratch save (saveSystem.js seedRouterSave), never a real slot.
-// `devOnly` marks a page that is not a production build input at all, and
+// `stones: 'all'` seeds that scratch save with all five magic stones (the
+// five-stone route's own nodes). `devOnly` marks a page that is not a production build input at all, and
 // `devBuildOnly` a node that is not part of the shipping route; neither is
 // listed by a playtest build's router (routerEntries). Titles and details
 // are player-safe: no story reveals, only what the node plays.
@@ -40,8 +41,8 @@ export const DEV_ROUTES = Object.freeze([
   { id: '6.2', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR II · ON THE BELL', detail: 'Rose lamps, amber bridges and the four-second bell.', route: '/final-boss.html?qa=conductor-2' },
   { id: '6.3', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR III · TWO TRUE THINGS', detail: 'The argument in the square: answer with both truths.', route: '/final-boss.html?qa=conductor-3' },
   { id: '6.4', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'CONDUCTOR IV · TAKE BACK THE COLOUR', detail: 'Absorb his pigment and return it; the night service arrives.', route: '/final-boss.html?qa=conductor-4' },
-  { id: '6.5', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'THE LAST CARRIAGE', detail: 'The five-stone route, opened directly for testing.', route: '/hidden-final-boss.html?easter-egg=1' },
-  { id: '6.6', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'THE FIVE-STONE ENDING', detail: 'The ending after the last carriage, then the credits.', route: '/true-ending.html' },
+  { id: '6.5', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'THE LAST CARRIAGE', detail: 'The five-stone route, opened directly for testing.', route: '/hidden-final-boss.html?easter-egg=1', stones: 'all' },
+  { id: '6.6', group: 'CHAPTER 6 · ALL WORLDS AT ONCE', checkpoint: 'chapter-6-start', title: 'THE FIVE-STONE ENDING', detail: 'The ending after the last carriage, then the credits.', route: '/true-ending.html', stones: 'all' },
 ]);
 
 // The nodes a playtest build's 1111 router lists: pages it ships, on the

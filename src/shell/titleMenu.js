@@ -24,6 +24,7 @@ import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin } from './menuNavigation.js';
 import { missingStoneNotice } from './magicStones.js';
 import { dressCarriageWall } from './titleCarriage.js';
+import { clearCreditsQuery } from './endCredits.js';
 
 // The title always shows the player's own three slots, never a test route's
 // scratch slots (saveSystem.js ROUTER_SAVE_KEY).
@@ -137,6 +138,9 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     dialog.classList.remove('nf-dialog--credits-roll');
     panel.classList.remove('nf-credits-panel');
     root.dataset.chapterSelect = 'closed';
+    // back on the title: the credits route is spent (the stones card that may
+    // follow reads `ending` from this closure, not the URL)
+    clearCreditsQuery(window);
     (lastFocusedAction?.isConnected ? lastFocusedAction : actions.querySelector('button'))?.focus();
   };
   const openDialog = () => {
@@ -508,7 +512,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
 
   const launchHiddenChapter = (chapter) => {
     // The node plays on scratch slots: the player's saves stay as they were.
-    seedRouterSave(chapter.checkpoint);
+    seedRouterSave(chapter.checkpoint, { stones: chapter.stones ?? null });
     activateHiddenRouter();
     closeDialog();
     root.remove();

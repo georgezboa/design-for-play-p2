@@ -45,7 +45,7 @@ export function createDevLauncher({ note = '' } = {}) {
     link.append(id, title, detail);
     // A chapter node plays on the router's scratch save, like the 1111
     // router: testing never moves a real slot's checkpoint.
-    if (entry.checkpoint) link.addEventListener('click', () => { seedRouterSave(entry.checkpoint); activateHiddenRouter(); });
+    if (entry.checkpoint) link.addEventListener('click', () => { seedRouterSave(entry.checkpoint, { stones: entry.stones ?? null }); activateHiddenRouter(); });
     item.append(link);
     list.append(item);
   }

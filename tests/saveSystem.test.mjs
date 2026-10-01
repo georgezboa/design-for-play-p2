@@ -147,7 +147,7 @@ test('a test-route session writes only its scratch slots, seeded from the active
 
 test('the router seeds its scratch save before it navigates, and the title always reads the real slots', () => {
   const title = readFileSync(new URL('../src/shell/titleMenu.js', import.meta.url), 'utf8');
-  assert.match(title, /seedRouterSave\(chapter\.checkpoint\);\s*activateHiddenRouter\(\);/);
+  assert.match(title, /seedRouterSave\(chapter\.checkpoint, \{ stones: chapter\.stones \?\? null \}\);\s*activateHiddenRouter\(\);/);
   assert.match(title, /createSaveStore\(undefined, \{ scratch: false \}\)/);
   assert.match(title, /clearHiddenRouter\(\)/);
 });
