@@ -17,9 +17,12 @@ export const DEV_ROUTES = Object.freeze([
   { id: 'I', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-1', title: 'ACT I · LOST PROPERTY', detail: 'Drag and zoom: the desk, the pigeonholes, the Conductor.', route: '/night-service.html?act=1' },
   { id: 'II', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-2', title: 'ACT II · THE LUGGAGE CAR', detail: 'The punch-hole lens and the frame lift.', route: '/night-service.html?act=2' },
   { id: 'III', group: 'CHAPTER 1 · NIGHT SERVICE', checkpoint: 'chapter-1-act-3', title: 'ACT III · TWO TRUE THINGS', detail: 'The bridge through 1978 and the bell finale.', route: '/night-service.html?act=3' },
-  { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell and the one-line rule.', route: '/borrowed-light.html?section=A' },
-  { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone and the hotel cut.', route: '/borrowed-light.html?section=B' },
-  { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Eight-bell departure; the train remembers.', route: '/borrowed-light.html?section=C' },
+  { id: '2.1', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A · RAIN ROOFTOPS', detail: 'The punch, the bell, the one-line rule; then two bells.', route: '/borrowed-light.html?section=A' },
+  { id: '2.1b', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A6 · TWO BELLS (DEV ONLY)', detail: 'Lines that ring on bell I or bell II.', route: '/borrowed-light.html?section=A&lamp=lamp-a5', devBuildOnly: true },
+  { id: '2.1c', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A8 · THE CHASE (DEV ONLY)', detail: 'The quick bell and the window cradles.', route: '/borrowed-light.html?section=A&lamp=lamp-a7', devBuildOnly: true },
+  { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone, the hotel cut and borrowed light.', route: '/borrowed-light.html?section=B' },
+  { id: '2.2b', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B5 · BORROWED LIGHT (DEV ONLY)', detail: 'Carry a lantern’s light to the dead nodes.', route: '/borrowed-light.html?section=B&lamp=lamp-b4', devBuildOnly: true },
+  { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Twelve-bell departure, the counterweight walkway; the train remembers.', route: '/borrowed-light.html?section=C' },
   { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · THE PLATFORM', detail: 'The night service drops Butch with the claim card.', route: '/car03-3d.html' },
   // Round 3: 3.1a/3.1b open the oil line and the ministry walk; 3.4 starts
   // at the dusk cut (the dusk save's own start) and 3.4a at the optional

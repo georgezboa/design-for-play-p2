@@ -42,11 +42,7 @@ const CHAPTER1_WORLD = Object.values(import.meta.glob('../assets/generated/world
   import: 'default',
 }));
 
-const CHAPTER2_WORLD = Object.values(import.meta.glob('../assets/generated/worlds/world-04-retro-cyberpunk/*.jpg', {
-  eager: true,
-  query: '?url',
-  import: 'default',
-}));
+// Chapter 2 paints its skyline procedurally (no world-04 panorama any more).
 
 // Chapter 6 paints Movements I and II from the Chapter 1 kit: the paper
 // grain and the night-fields chunks (world-01, as Chapter 1), plus the
@@ -70,7 +66,7 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
   chapter1: Object.freeze({ route: '/night-service.html', assets: Object.freeze(CHAPTER1_WORLD) }),
   chapter2: Object.freeze({
     route: '/borrowed-light.html',
-    assets: Object.freeze([...CHAPTER2_WORLD, '/assets/music/ch1/1.3_neon_safety_test.mp3']),
+    assets: Object.freeze(['/assets/music/ch1/1.3_neon_safety_test.mp3']),
   }),
   chapter3: Object.freeze({
     route: '/car03-3d.html',
