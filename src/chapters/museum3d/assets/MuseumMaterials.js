@@ -132,14 +132,156 @@ function lowerWallTexture() {
   return texture;
 }
 
+// ---------------------------------------------------------------------------
+// Round 3 (owner: "the museum looks like greybox"). Three things made it so:
+//   · every wall, floor and lane shared one texture repeat, so a 30 m wall
+//     and a 2 m wall got the same 2.4 tiles: the corridor's surfaces were
+//     stretched into flat colour. Shell geometry now carries world-scale UVs
+//     (graybox.js applyWorldUv: one tile per `userData.worldTile` metres);
+//   · the plaster photo is nearly featureless, so the upper walls now wear a
+//     painted wallcovering (warm linen ground, a quiet regency stripe), the
+//     lower walls walnut panelling under a brass chair rail;
+//   · the "walnut" was a flat brown (normal map, no colour map) and the case
+//     backs were black slabs: walnut now has grain, and the backs are walnut.
+// Everything new is a small canvas painted once: no new downloads.
+
+// A tile of museum wallcovering: warm linen ground, fine woven threads, a
+// regency stripe and a low, broad mottle so the repeat never reads as a grid.
+function museumWallcoveringTexture({ base = '#cdb894', stripe = 'rgba(120, 86, 46, 0.075)', seed = 7 } = {}) {
+  const size = 256;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const c = canvas.getContext('2d');
+  c.fillStyle = base;
+  c.fillRect(0, 0, size, size);
+  let s = seed;
+  const random = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+  for (let i = 0; i < 26; i += 1) {
+    const x = random() * size;
+    const y = random() * size;
+    const r = 30 + random() * 70;
+    const g = c.createRadialGradient(x, y, 0, x, y, r);
+    const light = random() > 0.5;
+    g.addColorStop(0, light ? 'rgba(255, 244, 214, 0.06)' : 'rgba(90, 62, 34, 0.06)');
+    g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    c.fillStyle = g;
+    for (const dx of [-size, 0, size]) for (const dy of [-size, 0, size]) {
+      c.save(); c.translate(dx, dy); c.fillRect(x - r, y - r, r * 2, r * 2); c.restore();
+    }
+  }
+  // the stripe: two quiet bands and a hairline per tile
+  c.fillStyle = stripe;
+  c.fillRect(0, 0, 40, size);
+  c.fillRect(128, 0, 40, size);
+  c.fillStyle = 'rgba(120, 86, 46, 0.12)';
+  c.fillRect(84, 0, 2, size);
+  c.fillRect(212, 0, 2, size);
+  // woven threads
+  for (let x = 0; x < size; x += 2) {
+    c.fillStyle = random() > 0.5 ? 'rgba(255, 248, 226, 0.05)' : 'rgba(70, 50, 28, 0.05)';
+    c.fillRect(x, 0, 1, size);
+  }
+  for (let y = 0; y < size; y += 2) {
+    c.fillStyle = random() > 0.5 ? 'rgba(255, 248, 226, 0.04)' : 'rgba(70, 50, 28, 0.045)';
+    c.fillRect(0, y, size, 1);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  return texture;
+}
+
+// One bay of walnut panelling (1.2 m × 1.1 m): a raised field in a moulded
+// frame, stiles at the bay edges. The grain is the dark_wood photo, drawn in
+// once it loads; until then the bay is painted walnut.
+function walnutPanelTexture(imageLoader) {
+  const W = 384;
+  const H = 352;
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = H;
+  const c = canvas.getContext('2d');
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 4;
+  const paint = (grain) => {
+    c.fillStyle = '#4a2f1d';
+    c.fillRect(0, 0, W, H);
+    if (grain) {
+      // field grain runs vertically, frame grain along each member
+      c.save(); c.translate(W, 0); c.rotate(Math.PI / 2); c.drawImage(grain, 0, 0, H, W); c.restore();
+    }
+    c.fillStyle = 'rgba(40, 22, 12, 0.35)';
+    c.fillRect(0, 0, W, H);
+    const frame = 46;
+    const inset = (x, y, w, h, light, dark, width) => {
+      c.fillStyle = light; c.fillRect(x, y, w, width); c.fillRect(x, y, width, h);
+      c.fillStyle = dark; c.fillRect(x, y + h - width, w, width); c.fillRect(x + w - width, y, width, h);
+    };
+    // stiles meet at the bay edge: a dark joint, then the frame
+    c.fillStyle = 'rgba(15, 8, 4, 0.75)';
+    c.fillRect(0, 0, 3, H);
+    // the moulding round the field (lit from above, as by the picture lights)
+    inset(frame - 10, frame - 10, W - (frame - 10) * 2, H - (frame - 10) * 2, 'rgba(0, 0, 0, 0.42)', 'rgba(255, 214, 160, 0.16)', 6);
+    inset(frame - 4, frame - 4, W - (frame - 4) * 2, H - (frame - 4) * 2, 'rgba(255, 214, 160, 0.2)', 'rgba(0, 0, 0, 0.4)', 4);
+    // the raised field: a bevel and a slightly lighter face
+    c.fillStyle = 'rgba(255, 220, 170, 0.05)';
+    c.fillRect(frame + 10, frame + 10, W - (frame + 10) * 2, H - (frame + 10) * 2);
+    inset(frame, frame, W - frame * 2, H - frame * 2, 'rgba(255, 214, 160, 0.12)', 'rgba(0, 0, 0, 0.3)', 10);
+    texture.needsUpdate = true;
+  };
+  paint(null);
+  imageLoader.load(`${ROOT}/dark_wood/diffuse.jpg`, (image) => paint(image));
+  return texture;
+}
+
+// The soft warm pool a picture light throws on a case back (LOW tier stand-in
+// for the case's point light: one additive textured quad, no lighting).
+let lightPoolTexture = null;
+export function museumLightPoolTexture() {
+  if (lightPoolTexture) return lightPoolTexture;
+  const size = 128;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const c = canvas.getContext('2d');
+  // brightest just under the lamp, falling off down the case
+  const g = c.createRadialGradient(size / 2, size * 0.18, 2, size / 2, size * 0.42, size * 0.62);
+  g.addColorStop(0, 'rgba(255, 214, 150, 0.95)');
+  g.addColorStop(0.35, 'rgba(255, 190, 120, 0.5)');
+  g.addColorStop(0.7, 'rgba(255, 170, 100, 0.14)');
+  g.addColorStop(1, 'rgba(255, 170, 100, 0)');
+  c.fillStyle = g;
+  c.fillRect(0, 0, size, size);
+  lightPoolTexture = new THREE.CanvasTexture(canvas);
+  lightPoolTexture.colorSpace = THREE.SRGBColorSpace;
+  return lightPoolTexture;
+}
+
+function tiled(material, worldTile) {
+  material.userData.worldTile = worldTile;
+  return material;
+}
+
 export function createMuseumMaterialLibrary() {
   if (sharedLibrary) return sharedLibrary;
 
   const loader = new THREE.TextureLoader();
-  const wallMaps = pbrSet(loader, 'beige_wall_001', 2.4, 1.4);
-  const carpetMaps = pbrSet(loader, 'dirty_carpet', 8, 6);
-  const woodMaps = pbrSet(loader, 'wood_table_001', 2.2, 1.1);
-  const darkWoodMaps = pbrSet(loader, 'dark_wood', 1.35, 1.0);
+  const imageLoader = new THREE.ImageLoader();
+  // Shell surfaces use world-scale UVs (graybox.js), so these repeat once
+  // per UV unit and `worldTile` says how many metres one unit covers.
+  const wallMaps = pbrSet(loader, 'beige_wall_001', 1, 1);
+  const carpetMaps = pbrSet(loader, 'dirty_carpet', 1, 1);
+  const woodMaps = pbrSet(loader, 'wood_table_001', 1, 1);
+  const darkWoodMaps = pbrSet(loader, 'dark_wood', 1, 1);
+  const wallcovering = museumWallcoveringTexture();
+  const wallcoveringDark = museumWallcoveringTexture({ base: '#b9a27c', stripe: 'rgba(96, 64, 32, 0.09)', seed: 11 });
+  const panelling = walnutPanelTexture(imageLoader);
   const rubberTileMaps = pbrSet(loader, 'rubber_tiles', 3.2, 8);
   const glassSmudges = {
     normalMap: tiledTexture(loader, `${ROOT}/glass_fingerprints/normal_gl.jpg`, {
@@ -152,76 +294,104 @@ export function createMuseumMaterialLibrary() {
     }),
   };
   sharedLibrary = {
-    wall: new THREE.MeshStandardMaterial({
+    // upper walls: wallcovering colour over the plaster's normal/roughness
+    wall: tiled(new THREE.MeshStandardMaterial({
       ...wallMaps,
-      color: 0xdccaa8,
+      map: wallcovering,
+      color: 0xffffff,
       roughness: 0.92,
       metalness: 0,
-      normalScale: new THREE.Vector2(0.16, 0.16),
-    }),
-    wallDark: new THREE.MeshStandardMaterial({
+      normalScale: new THREE.Vector2(0.35, 0.35),
+    }), 1.4),
+    wallDark: tiled(new THREE.MeshStandardMaterial({
       ...wallMaps,
-      color: 0xcbb890,
+      map: wallcoveringDark,
+      color: 0xffffff,
       roughness: 0.93,
       metalness: 0,
-      normalScale: new THREE.Vector2(0.14, 0.14),
-    }),
-    wallLower: new THREE.MeshStandardMaterial({
+      normalScale: new THREE.Vector2(0.32, 0.32),
+    }), 1.4),
+    wallLower: tiled(new THREE.MeshStandardMaterial({
       ...wallMaps,
       color: 0xcfbd9b,
       roughness: 0.94,
       metalness: 0,
       normalScale: new THREE.Vector2(0.12, 0.12),
-    }),
-    carpet: new THREE.MeshStandardMaterial({
+    }), 1.4),
+    // lower walls: walnut panelling, one bay per 1.2 m
+    wainscot: tiled(new THREE.MeshStandardMaterial({
+      map: panelling,
+      color: 0xffffff,
+      roughness: 0.62,
+      metalness: 0,
+    }), [1.2, 1.02]),
+    carpet: tiled(new THREE.MeshStandardMaterial({
       ...carpetMaps,
       color: 0xa3927e,
       roughness: 1,
       metalness: 0,
       normalScale: new THREE.Vector2(0.42, 0.42),
-    }),
-    carpetLane: new THREE.MeshStandardMaterial({
+    }), 2),
+    carpetLane: tiled(new THREE.MeshStandardMaterial({
       ...carpetMaps,
-      color: 0x5f574d,
+      color: 0x6b5a48,
       roughness: 1,
       metalness: 0,
       normalScale: new THREE.Vector2(0.34, 0.34),
-    }),
-    deskWood: new THREE.MeshStandardMaterial({
-      normalMap: woodMaps.normalMap,
-      roughnessMap: woodMaps.roughnessMap,
-      color: 0x9b7450,
-      roughness: 0.74,
+    }), 2),
+    // walnut with grain (it was a flat brown: a normal map and no colour)
+    deskWood: tiled(new THREE.MeshStandardMaterial({
+      ...woodMaps,
+      color: 0xe2cfb8,
+      roughness: 0.7,
+      metalness: 0,
+      normalScale: new THREE.Vector2(0.2, 0.2),
+    }), 1.1),
+    deskWoodDark: tiled(new THREE.MeshStandardMaterial({
+      ...woodMaps,
+      color: 0xb29c88,
+      roughness: 0.76,
+      metalness: 0,
+      normalScale: new THREE.Vector2(0.18, 0.18),
+    }), 1.1),
+    // case backboards: dark walnut, not black slabs
+    walnutBack: tiled(new THREE.MeshStandardMaterial({
+      ...darkWoodMaps,
+      color: 0x9a765c,
+      roughness: 0.72,
       metalness: 0,
       normalScale: new THREE.Vector2(0.16, 0.16),
+    }), 0.9),
+    brassTrim: new THREE.MeshStandardMaterial({
+      color: 0xb08a4a,
+      roughness: 0.34,
+      metalness: 0.78,
+      emissive: 0x1e1408,
     }),
-    deskWoodDark: new THREE.MeshStandardMaterial({
-      normalMap: woodMaps.normalMap,
-      roughnessMap: woodMaps.roughnessMap,
-      color: 0x715137,
-      roughness: 0.8,
+    // the warm strip under a picture light
+    lampGlow: new THREE.MeshBasicMaterial({ color: 0xffe2a8, toneMapped: false }),
+    // vitrine plinths in walnut on a brass toe band, ivory linen decks
+    displayPlinth: tiled(new THREE.MeshStandardMaterial({
+      ...woodMaps,
+      color: 0xb08868,
+      roughness: 0.68,
       metalness: 0,
-      normalScale: new THREE.Vector2(0.14, 0.14),
-    }),
-    displayPlinth: new THREE.MeshStandardMaterial({
-      color: 0xcac0a6,
-      roughness: 0.9,
-      metalness: 0,
-    }),
+      normalScale: new THREE.Vector2(0.18, 0.18),
+    }), 1.1),
     displayDeck: new THREE.MeshStandardMaterial({
       color: 0xe0d8bf,
       roughness: 0.88,
       metalness: 0,
     }),
     displayToeKick: new THREE.MeshStandardMaterial({
-      color: 0x4c4539,
-      roughness: 0.86,
-      metalness: 0.08,
+      color: 0x6e5530,
+      roughness: 0.4,
+      metalness: 0.7,
     }),
     caseChannel: new THREE.MeshStandardMaterial({
-      color: 0x626158,
-      roughness: 0.42,
-      metalness: 0.72,
+      color: 0x9a7a44,
+      roughness: 0.36,
+      metalness: 0.78,
     }),
     glassEdge: new THREE.MeshPhysicalMaterial({
       color: 0x83aaa3,

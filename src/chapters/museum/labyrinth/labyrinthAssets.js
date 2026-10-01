@@ -3,7 +3,7 @@
 //
 // The art language is a spare theatrical illustration read: monumental
 // near-black masonry walls over restrained cool slate floors, warm isolated
-// torch pools, ivory reserved for the player and the keys, cyan for safety
+// torch pools, ivory reserved for the player and the keys, polished brass for safety
 // and open paths, red only for active danger. Silhouette carries the read
 // first; color only ever confirms it.
 
@@ -187,7 +187,7 @@ export const TEXTURE_SLOTS = [
     h: CELL,
     paint(g, w, h) {
       // Open connector: jambs and raised lintel remain, the passage is floor,
-      // and a thin cyan threshold line says "this way is safe now".
+      // and a thin brass threshold line says "this way is safe now".
       paintFloor(g, 0, 0);
       g.fillStyle(PAL.stone, 1);
       g.fillRect(0, 0, 10, h);
@@ -196,9 +196,9 @@ export const TEXTURE_SLOTS = [
       g.fillStyle(PAL.slate, 0.4);
       g.fillRect(10, 8, 2, h - 8);
       g.fillRect(w - 12, 8, 2, h - 8);
-      g.fillStyle(PAL.cyan, 0.1);
+      g.fillStyle(PAL.safe, 0.1);
       g.fillRect(12, 10, w - 24, h - 14);
-      g.fillStyle(PAL.cyan, 0.85);
+      g.fillStyle(PAL.safe, 0.85);
       g.fillRect(12, h - 8, w - 24, 2);
       g.fillRect(12, 10, w - 24, 1);
     },
@@ -355,10 +355,10 @@ export const TEXTURE_SLOTS = [
     w: 24,
     h: 26,
     paint(g) {
-      // Heraldic kite shield in the chapter's living cyan — collectible read
+      // Heraldic kite shield in polished brass — collectible read
       // first (bright silhouette, pale boss), carried/active states are the
       // HUD count and the scene's aura ring.
-      g.fillStyle(PAL.cyan, 1);
+      g.fillStyle(PAL.safe, 1);
       g.fillTriangle(1, 2, 23, 2, 12, 25);
       g.fillRect(1, 2, 22, 11);
       g.fillStyle(PAL.void, 0.92);
@@ -375,14 +375,14 @@ export const TEXTURE_SLOTS = [
     w: 96,
     h: 96,
     paint(g, w, h) {
-      // Active-shield aura stamp — a soft cyan ring, drawn once and reused
+      // Active-shield aura stamp — a soft brass ring, drawn once and reused
       // every frame around the player while a shield is up.
       const r = w / 2;
-      g.fillStyle(PAL.cyan, 0.05);
+      g.fillStyle(PAL.safe, 0.05);
       g.fillCircle(r, r, r - 4);
-      g.lineStyle(3, PAL.cyan, 0.8);
+      g.lineStyle(3, PAL.safe, 0.8);
       g.strokeCircle(r, r, r - 5);
-      g.lineStyle(1, PAL.cyan, 0.32);
+      g.lineStyle(1, PAL.safe, 0.32);
       g.strokeCircle(r, r, r - 11);
     },
   },
@@ -424,7 +424,7 @@ export const TEXTURE_SLOTS = [
       g.strokeCircle(26, 26, 22);
       g.lineStyle(3, PAL.brass, 0.9);
       for (let i = 0; i < 5; i += 1) g.lineBetween(12 + i * 4, 36 - i * 5, 38 - i * 2, 36 - i * 5);
-      g.fillStyle(PAL.cyan, 0.8);
+      g.fillStyle(PAL.safe, 0.8);
       g.fillTriangle(26, 7, 21, 14, 31, 14);
       g.fillTriangle(26, 45, 21, 38, 31, 38);
     },
@@ -476,7 +476,7 @@ export const TEXTURE_SLOTS = [
       g.strokePath();
       g.fillStyle(PAL.void, 1);
       g.fillCircle(w / 2, h / 2, 10);
-      g.lineStyle(2, PAL.cyan, 0.85);
+      g.lineStyle(2, PAL.safe, 0.85);
       g.strokeCircle(w / 2, h / 2, 28);
       g.lineStyle(1, PAL.torch, 0.7);
       g.lineBetween(w / 2 - 2, h / 2 + 10, w / 2 - 8, h / 2 + 26);

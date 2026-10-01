@@ -324,11 +324,37 @@ test('each newly reached wing restores three lives once, but backtracking cannot
   assert.match(labyrinthScene, /STRINGS\.wingLivesRestored/);
 });
 
-test('the survey map uses a bright colored field and high-contrast walls', () => {
-  assert.equal(PAL.mapBackground, 0x16445b);
-  assert.equal(PAL.mapWall, 0xf3e8bd);
+test('the survey map is a walnut plate with ivory walls in a brass frame (UI kit)', () => {
+  assert.equal(PAL.mapBackground, 0x2a1d14);
+  assert.equal(PAL.mapWall, 0xeadfc6);
   assert.match(labyrinthScene, /PAL\.mapBackground/);
   assert.match(labyrinthScene, /PAL\.mapWall/);
+  assert.match(labyrinthScene, /lineStyle\(2, PAL\.brass, 0\.95\)/, 'brass frame around the survey');
+  // walls stand out from the floor field: luminance contrast well above 3:1
+  const lum = (hex) => {
+    const c = [hex >> 16, (hex >> 8) & 255, hex & 255].map((v) => {
+      const s = v / 255;
+      return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+    });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  assert.ok((lum(PAL.mapWall) + 0.05) / (lum(PAL.mapBackground) + 0.05) > 7);
+});
+
+test('the Labyrinth speaks the UI kit palette: no cyan, no cold blue tiles', () => {
+  const kit = { brass: 0xb08a4a, brassHi: 0xd9b56e, ivory: 0xeadfc6, amber: 0xe0a24a, oxblood: 0x8a2a1e };
+  assert.equal(PAL.brass, kit.brass);
+  assert.equal(PAL.safe, kit.brassHi);
+  assert.equal(PAL.ivory, kit.ivory);
+  assert.equal(PAL.amber, kit.amber);
+  assert.equal(PAL.bloodRed, kit.oxblood);
+  assert.equal(PAL.cyan, undefined);
+  assert.doesNotMatch(labyrinthScene, /PAL\.cyan|0x2fd8c8|0x16445b|0x0a2230/);
+  // floors and walls lean warm (red >= blue), not slate blue
+  for (const name of ['floor', 'floorLight', 'floorSeam', 'stone', 'stoneLight', 'slate', 'void', 'mapBackground']) {
+    const hex = PAL[name];
+    assert.ok((hex >> 16) >= (hex & 255), `${name} is warm`);
+  }
 });
 
 test('Wing III moving walls have three states and every state stays solvable', () => {

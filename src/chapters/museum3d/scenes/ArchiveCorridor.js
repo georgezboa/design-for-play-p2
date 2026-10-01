@@ -9,8 +9,9 @@
 // Layout: x ∈ [8, 42], z ∈ [-2, 2], ceiling 3.2. Entrance from lobby at x=8.
 
 import * as THREE from 'three';
-import { mat, emissiveMat, box, plane, label, fluorescentFixture, glassMat, hitProxy } from '../util/graybox.js';
+import { mat, emissiveMat, box, plane, label, fluorescentFixture, glassMat, hitProxy, applyWorldUv } from '../util/graybox.js';
 import { createMuseumMaterialLibrary } from '../assets/MuseumMaterials.js';
+import { addLightPool, addPictureLight, highOnly } from '../assets/CaseLighting.js';
 import { addAcousticCeilingGrid, createPublicBench, createWallRadiator } from '../assets/MuseumProps.js';
 import { CHAPTER05_DIRECTIONS, isDirectionPlayable } from '../directions/directionRegistry.js';
 import { directionAtDoorway } from '../directions/directionDoorways.js';
@@ -61,14 +62,11 @@ export class ArchiveCorridor {
     addAcousticCeilingGrid(g, { width: roomLength + 0.18, depth: roomHalfDepth * 2, y: WALL_H - 0.012, centerX: roomCenterX });
 
     const wall = this.materials.wallDark;
-    const lower = this.materials.wallDark;
-    const rail = this.materials.oliveSteel;
     // Main hall walls stop where the final dodge room flares outward.
     const mainWallLength = roomStartX - 8;
     const mainWallCenter = 8 + mainWallLength / 2;
     box(g, { x: mainWallCenter, y: WALL_H / 2, z: 2, w: mainWallLength, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south', collide: true, collisionWorld });
-    box(g, { x: mainWallCenter, y: 0.63, z: 1.82, w: mainWallLength - 0.3, h: 1.08, d: 0.05, material: lower, name: 'wainscot-south' });
-    box(g, { x: mainWallCenter, y: 1.18, z: 1.86, w: mainWallLength - 0.3, h: 0.09, d: 0.07, material: rail, name: 'chair-rail-south' });
+    this._wallTrim(g, { x: mainWallCenter, z: 1.85, w: mainWallLength - 0.3, side: 1, id: 'south' });
     for (const side of [-1, 1]) {
       const start = new THREE.Vector2(roomStartX, side * 2);
       const end = new THREE.Vector2(39.58, side * roomHalfDepth);
@@ -76,7 +74,7 @@ export class ArchiveCorridor {
       const dz = end.y - start.y;
       const length = Math.hypot(dx, dz);
       const rotationY = -Math.atan2(dz, dx);
-      const flare = new THREE.Mesh(new THREE.BoxGeometry(length, WALL_H, WALL_T), wall);
+      const flare = new THREE.Mesh(applyWorldUv(new THREE.BoxGeometry(length, WALL_H, WALL_T), { w: length, h: WALL_H, d: WALL_T }, wall), wall);
       flare.name = `final-room-flare-${side < 0 ? 'north' : 'south'}`;
       flare.position.set((start.x + end.x) / 2, WALL_H / 2, (start.y + end.y) / 2);
       flare.rotation.y = rotationY;
@@ -111,8 +109,7 @@ export class ArchiveCorridor {
       const segW = gx - 1 - cursor;
       const segX = cursor + segW / 2;
       box(g, { x: segX, y: WALL_H / 2, z: -2, w: segW, h: WALL_H, d: WALL_T, material: wall, name: `wall-n-${cursor}`, collide: true, collisionWorld });
-      box(g, { x: segX, y: 0.63, z: -1.82, w: Math.max(0.05, segW - 0.12), h: 1.08, d: 0.05, material: lower, name: `wainscot-n-${cursor}` });
-      box(g, { x: segX, y: 1.18, z: -1.86, w: Math.max(0.05, segW - 0.12), h: 0.09, d: 0.07, material: rail, name: `chair-rail-n-${cursor}` });
+      this._wallTrim(g, { x: segX, z: -1.85, w: Math.max(0.05, segW - 0.12), side: -1, id: `n-${cursor}` });
       box(g, { x: gx, y: 2.85, z: -2, w: 2.0, h: 0.7, d: WALL_T, material: wall, name: `lintel-${gx}` });
       cursor = gx + 1;
     }
@@ -211,6 +208,18 @@ export class ArchiveCorridor {
     });
   }
 
+  // Lower-wall dressing for one run of wall whose inner face is at z, facing
+  // the corridor (side +1: the south wall, facing −z): walnut panelling on a
+  // walnut skirting, a brass chair rail over it, a brass picture rail above.
+  _wallTrim(g, { x, z, w, side, id }) {
+    const m = this.materials;
+    const out = (depth) => z - side * depth / 2;
+    box(g, { x, y: 0.61, z: out(0.04), w, h: 1.02, d: 0.04, material: m.wainscot, name: `wainscot-${id}` });
+    box(g, { x, y: 0.07, z: out(0.065), w, h: 0.14, d: 0.065, material: m.deskWoodDark, name: `skirting-${id}` });
+    box(g, { x, y: 1.14, z: out(0.065), w, h: 0.05, d: 0.065, material: m.brassTrim, name: `chair-rail-${id}` });
+    box(g, { x, y: 2.44, z: out(0.03), w, h: 0.025, d: 0.03, material: m.brassTrim, name: `picture-rail-${id}` });
+  }
+
   _numberedDoor(g, { x, id, number, screenColor }) {
     box(g, {
       x, y: 1.25, z: -1.98, w: 2.0, h: 2.5, d: 0.14,
@@ -248,6 +257,7 @@ export class ArchiveCorridor {
     const m = this.materials;
     // close the old doorway behind it: this bay no longer leads anywhere
     box(g, { x, y: 1.25, z: -2, w: 2.02, h: 2.5, d: 0.3, material: m.wallDark, name: `${claim.id}-bay-infill-wall`, collide: true, collisionWorld: this.ctx.collisionWorld });
+    this._wallTrim(g, { x, z: -1.85, w: 2.02, side: -1, id: `${claim.id}-bay` });
     box(group, { x: 0, y: 0.62, z: 0, w: 1.72, h: 1.24, d: 0.34, material: m.walnutDark, name: `${claim.id}-cabinet` });
     this.ctx.collisionWorld.addBoxFromCenterSize(x, -1.8, 1.72, 0.34, `${claim.id}-cabinet`);
     for (let row = 0; row < 3; row += 1) {
@@ -260,9 +270,15 @@ export class ArchiveCorridor {
       }
     }
     // the vitrine on top, holding the claim card
-    box(group, { x: 0, y: 1.26, z: 0, w: 1.8, h: 0.05, d: 0.4, material: m.brass, name: `${claim.id}-cap` });
-    box(group, { x: 0, y: 1.72, z: 0.02, w: 1.7, h: 0.86, d: 0.02, material: emissiveMat(0x0c0b09, 0.2), name: `${claim.id}-back` });
-    box(group, { x: 0, y: 1.72, z: 0.19, w: 1.74, h: 0.9, d: 0.012, material: glassMat(), name: `${claim.id}-glass` });
+    box(group, { x: 0, y: 1.26, z: 0, w: 1.8, h: 0.05, d: 0.4, material: m.brassTrim, name: `${claim.id}-cap` });
+    // a walnut-backed vitrine with walnut cheeks and a top, not a black slab
+    box(group, { x: 0, y: 1.72, z: 0.02, w: 1.7, h: 0.86, d: 0.02, material: m.walnutBack, name: `${claim.id}-back` });
+    for (const sx of [-1, 1]) box(group, { x: sx * 0.86, y: 1.72, z: 0.1, w: 0.04, h: 0.9, d: 0.18, material: m.walnutDark, name: `${claim.id}-cheek` });
+    box(group, { x: 0, y: 2.19, z: 0.08, w: 1.8, h: 0.05, d: 0.26, material: m.walnutDark, name: `${claim.id}-top` });
+    box(group, { x: 0, y: 2.162, z: 0.205, w: 1.76, h: 0.012, d: 0.012, material: m.brassTrim, name: `${claim.id}-lip` });
+    box(group, { x: 0, y: 1.72, z: 0.19, w: 1.68, h: 0.86, d: 0.012, material: glassMat(), name: `${claim.id}-glass` });
+    addPictureLight(group, m, { y: 2.3, z: 0.3, wallZ: 0.08, width: 1.1, name: `${claim.id}-picture-light` });
+    addLightPool(group, { y: 1.74, z: 0.034, w: 1.6, h: 0.84, opacity: 0.6, name: `${claim.id}-light-pool` });
     const card = label(group, `${claim.title}\n${claim.stamp}`, {
       x: 0, y: 1.74, z: 0.06, w: 1.3, h: 0.46,
       fg: '#2a1d14', bg: '#efe4cc', font: 'bold 30px Georgia, serif',
@@ -271,7 +287,7 @@ export class ArchiveCorridor {
     const punch = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({ color: 0x050403 }));
     punch.position.set(0.56, 1.9, 0.064);
     group.add(punch);
-    const light = new THREE.PointLight(0xffd7a1, 1.2, 2.4, 2);
+    const light = highOnly(new THREE.PointLight(0xffd7a1, 1.2, 2.4, 2));
     light.position.set(0, 2.1, 0.4);
     group.add(light);
     const proxy = hitProxy(group, { x: 0, y: 1.2, z: 0.24, w: 1.8, h: 2.1, d: 0.1, name: `${claim.id}-interaction-proxy` });
@@ -285,8 +301,22 @@ export class ArchiveCorridor {
     group.name = `${id}-chapter-case`;
     group.position.set(x, 0, 1.86);
     g.add(group);
-    box(group, { x: 0, y: 1.42, z: 0.07, w: 2.25, h: 1.54, d: 0.16, material: this.materials.walnutDark, name: `${id}-niche-frame` });
-    box(group, { x: 0, y: 1.42, z: -0.03, w: 2.02, h: 1.30, d: 0.08, material: emissiveMat(0x080a0b, 0.2), name: `${id}-niche-back` });
+    const m = this.materials;
+    box(group, { x: 0, y: 1.42, z: 0.07, w: 2.25, h: 1.54, d: 0.16, material: m.walnutDark, name: `${id}-niche-frame` });
+    // walnut back (it was a black slab), and a walnut surround so the case
+    // is a vitrine with sides, not a pane floating off the wall
+    // (standing proud of the chair rail, which runs behind the case)
+    box(group, { x: 0, y: 1.42, z: -0.05, w: 2.02, h: 1.30, d: 0.08, material: m.walnutBack, name: `${id}-niche-back` });
+    const supportingElements = new THREE.Group();
+    supportingElements.name = `${id}-niche-light`; // goes dark when the case shatters
+    group.add(supportingElements);
+    for (const sx of [-1, 1]) box(group, { x: sx * 1.08, y: 1.42, z: -0.13, w: 0.09, h: 1.54, d: 0.24, material: m.walnutDark, name: `${id}-niche-cheek` });
+    for (const sy of [-1, 1]) box(group, { x: 0, y: 1.42 + sy * 0.72, z: -0.13, w: 2.25, h: 0.1, d: 0.24, material: m.walnutDark, name: `${id}-niche-rail` });
+    // a brass lip round the glass
+    for (const sy of [-1, 1]) box(group, { x: 0, y: 1.42 + sy * 0.665, z: -0.25, w: 2.07, h: 0.014, d: 0.014, material: m.brassTrim, name: `${id}-niche-lip` });
+    for (const sx of [-1, 1]) box(group, { x: sx * 1.03, y: 1.42, z: -0.25, w: 0.014, h: 1.34, d: 0.014, material: m.brassTrim, name: `${id}-niche-lip` });
+    addPictureLight(group, m, { y: 2.3, z: -0.36, wallZ: -0.13, width: 1.3, name: `${id}-picture-light` });
+    addLightPool(supportingElements, { y: 1.42, z: -0.093, w: 2.0, h: 1.28, opacity: 0.62, name: `${id}-light-pool` });
     const glass = box(group, { x: 0, y: 1.42, z: -0.24, w: 2.07, h: 1.34, d: 0.012, material: glassMat(), name: `${id}-niche-glass` });
     const artifact = createChapterCaseObject(id);
     artifact.position.set(0, 1.46, -0.14);
@@ -294,23 +324,24 @@ export class ArchiveCorridor {
     artifact.rotation.y = Math.PI;
     artifact.visible = true;
     group.add(artifact);
-    const light = new THREE.PointLight(0xffd7a1, 1.8, 3.4, 2);
+    const light = highOnly(new THREE.PointLight(0xffd7a1, 1.8, 3.4, 2));
     light.position.set(0, 1.6, -0.55);
     group.add(light);
     const proxy = hitProxy(group, { x: 0, y: 1.42, z: -0.32, w: 2.25, h: 1.54, d: 0.12, name: `${id}-niche-interaction-proxy` });
-    // the cases hang on the south wall: their labels face north, into the corridor
+    // the cases hang on the south wall: their plaques face north, into the
+    // corridor, fixed to the panelling under the case
     label(group, `${exhibit.chapter} · ${exhibit.title}\n${exhibit.object}`, {
-      x: 0, y: 0.54, z: -0.255, w: 2.05, h: 0.36, rotationY: Math.PI,
-      fg: '#eee4cb', bg: '#090b0c', font: 'bold 25px Georgia, serif',
+      x: 0, y: 0.43, z: -0.062, w: 2.05, h: 0.3, rotationY: Math.PI,
+      fg: '#eadfc6', bg: '#1c130d', font: 'bold 25px Georgia, serif',
     });
-    // the accession plate sits under the chapter label, leaving the case's
-    // top edge to the interaction tag
+    // the accession plate, brass, under the chapter plaque, leaving the
+    // case's top edge to the interaction tag
     label(group, exhibit.accession, {
-      x: 0, y: 0.25, z: -0.255, w: 1.18, h: 0.16, rotationY: Math.PI,
-      fg: '#c9b681', bg: '#15120d', font: 'bold 26px Georgia, serif',
+      x: 0, y: 0.215, z: -0.062, w: 1.12, h: 0.14, rotationY: Math.PI,
+      fg: '#1c130d', bg: '#b08a4a', font: 'bold 26px Georgia, serif',
     });
     proxy.userData.tagAnchor = 1; // on the case's top edge, clear of every label
-    return { group, artifact, exhibit, light, glass, proxy, displayed: true, shattered: false };
+    return { group, artifact, exhibit, light, glass, proxy, supportingElements, displayed: true, shattered: false };
   }
 
   _finalArchiveDoor(g) {

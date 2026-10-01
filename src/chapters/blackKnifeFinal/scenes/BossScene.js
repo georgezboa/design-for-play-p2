@@ -11,6 +11,17 @@ import Player from '../entities/Player.js';
 import Boss from '../entities/Boss.js';
 import Hud from '../entities/Hud.js';
 import { battle } from '../battleBridge.js';
+import { CONDUCTOR_SHEETS, SHEET_PAD } from '../assets.js';
+import { paintLastCarriage } from '../carriageBackdrop.js';
+
+// Origin that puts a padded sheet's drawing (not its clear margin) on a point.
+function bodyCentreOrigin(key) {
+  const { frameWidth, frameHeight } = CONDUCTOR_SHEETS[key].sheet;
+  return [
+    (SHEET_PAD.left + (frameWidth - SHEET_PAD.left - SHEET_PAD.right) / 2) / frameWidth,
+    (SHEET_PAD.top + (frameHeight - SHEET_PAD.top - SHEET_PAD.bottom) / 2) / frameHeight,
+  ];
+}
 import { createFinaleQualityMonitor, finaleQualityPreference } from '../../finalBoss/finaleQuality.js';
 
 // The hidden finale — THE BLACK TICKET, the Conductor's true form: the ticket
@@ -95,11 +106,14 @@ export default class BossScene extends Phaser.Scene {
   // The last carriage at night: a walnut sky, rain, brass rails, and behind
   // the Conductor the Black Ticket itself, the one hole never punched.
   buildBackground() {
-    const g = this.add.graphics().setDepth(DEPTHS.bg);
-    g.fillGradientStyle(0x1a120c, 0x1a120c, 0x070504, 0x070504, 1).fillRect(0, 0, W, H);
-    for (let i = 0; i < 90; i += 1) {
-      g.fillStyle(0xeadfc6, 0.05 + (i % 5) * 0.012).fillRect((i * 149) % W, (i * 97) % (H - 120), 1.5, 9);
+    // The last carriage of the night service, painted once (carriageBackdrop.js).
+    if (!this.textures.exists('nf-last-carriage')) {
+      const canvas = this.textures.createCanvas('nf-last-carriage', W, H);
+      paintLastCarriage(canvas.getContext(), W, H);
+      canvas.refresh();
     }
+    this.add.image(0, 0, 'nf-last-carriage').setOrigin(0, 0).setDepth(DEPTHS.bg);
+    const g = this.add.graphics().setDepth(DEPTHS.bg);
     // the Black Ticket: a huge unpunched ticket behind the boss
     const tx = W * 0.62;
     const ty = 46;
@@ -349,7 +363,7 @@ export default class BossScene extends Phaser.Scene {
       this.playSfx('train', 1);
       if (this.settings.shake) this.cameras.main.shake(420, 0.011);
       const speed = (560 + phase * 70) * (this.assist ? ASSIST.bulletScale : 1);
-      const train = this.add.sprite(W + 180, rowY, 'conductor-locom').setDepth(DEPTHS.attacks).setScale(0.62);
+      const train = this.add.sprite(W + 180, rowY, 'conductor-locom').setOrigin(...bodyCentreOrigin('conductor-locom')).setDepth(DEPTHS.attacks).setScale(0.62);
       if (this.anims.exists('conductor-locom-anim')) train.play('conductor-locom-anim');
       this.enemyShots.push({ sprite: train, x: W + 180, y: rowY, vx: -speed, vy: 0, r: 62, kind: 'train', life: 6, pierce: true, trail: phase >= 1 ? 0.11 : 0 });
       const passes = [1, 1, 2, 2, 3][phase];
@@ -792,12 +806,12 @@ export default class BossScene extends Phaser.Scene {
 
   updateProjectiles(dt) {
     // Player bullets → boss hurt-box
-    const halfW = this.boss.sprite.displayWidth * 0.36;
+    const halfW = this.boss.bodyWidth * 0.36;
     this.playerBullets = this.playerBullets.filter(b => {
       b.x += PLAYER.bulletSpeed * dt;
       b.sprite.setPosition(b.x, b.y);
       const inX = Math.abs(b.x - this.boss.x) < halfW;
-      const inY = b.y > this.boss.top + this.boss.sprite.displayHeight * 0.06 && b.y < this.boss.y;
+      const inY = b.y > this.boss.top + this.boss.bodyHeight * 0.06 && b.y < this.boss.y;
       if (this.stateFlag === 'play' && inX && inY) {
         b.sprite.destroy();
         this.emitBurst(b.x, b.y, 4, COLORS.yellow);

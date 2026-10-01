@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, BOSS, DEPTHS } from '../constants.js';
+import { SHEET_PAD } from '../assets.js';
 
 // The Black Ticket — the Conductor's true form: the ticket that never gets
 // punched, the line that never ends, fused with his engine. Mathias's
@@ -78,7 +79,10 @@ export default class Boss {
   }
 
   get hpFrac() { return Math.max(0, this.hp / BOSS.maxHp); }
-  get top() { return this.y - this.sprite.displayHeight; }
+  // The drawing inside its frame's clear margin (assets.js SHEET_PAD).
+  get bodyWidth() { return this.sprite.displayWidth - (SHEET_PAD.left + SHEET_PAD.right) * Math.abs(this.sprite.scaleX); }
+  get bodyHeight() { return this.sprite.displayHeight - (SHEET_PAD.top + SHEET_PAD.bottom) * Math.abs(this.sprite.scaleY); }
+  get top() { return this.y - this.bodyHeight; }
 
   computePhase() {
     const f = this.hpFrac;
@@ -109,9 +113,9 @@ export default class Boss {
   }
 
   // World positions of notable parts (measured against the bottom-anchored art)
-  batonHandPos() { return { x: this.x - this.sprite.displayWidth * 0.34, y: this.top + this.sprite.displayHeight * 0.16 }; }
-  eyePos() { return { x: this.x - this.sprite.displayWidth * 0.1, y: this.top + this.sprite.displayHeight * 0.28 }; }
-  chimneyPos() { return { x: this.x + this.sprite.displayWidth * 0.22, y: this.top + this.sprite.displayHeight * 0.3 }; }
+  batonHandPos() { return { x: this.x - this.bodyWidth * 0.34, y: this.top + this.bodyHeight * 0.16 }; }
+  eyePos() { return { x: this.x - this.bodyWidth * 0.1, y: this.top + this.bodyHeight * 0.28 }; }
+  chimneyPos() { return { x: this.x + this.bodyWidth * 0.22, y: this.top + this.bodyHeight * 0.3 }; }
 
   // Pick a new station to chug toward. aggressive=true advances on the player.
   reposition(aggressive = false) {

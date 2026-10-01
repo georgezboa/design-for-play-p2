@@ -29,6 +29,13 @@ export const SOFTWARE_PIXEL_RATIO = 0.6;
 //   · a fill (a hemisphere and one shadowless light from straight above),
 //     scaled per space so the corridor keeps its dimmer, later red mood.
 export const LOW_SHEEN = 0x38342f;
+export const LOW_NORMAL_MAPS = true;
+// Round 3: a LOW frame without MSAA can end on an FXAA pass
+// (Museum3DApp._renderFrame), but only on a GPU: on a software rasteriser
+// the pass costs more than the frame it smooths (measured 17–50 ms).
+export function lowTierWantsFxaa({ software = false, contextAntialias = false } = {}) {
+  return !software && !contextAntialias;
+}
 export const LOW_FILL = Object.freeze({ hemisphere: 1.6, overhead: 1.2 });
 export const LOW_FILL_SCALE = Object.freeze({ lobby: 1, corridor: 0.55, collapse: 0.2, echo: 0.6 });
 
@@ -173,6 +180,9 @@ function lambertFor(Lambert, m) {
     emissive: m.emissive?.clone?.(),
     emissiveMap: m.emissiveMap ?? null,
     emissiveIntensity: m.emissiveIntensity ?? 1,
+    // Round 3: the low tier keeps the shell's normal maps (plaster, carpet
+    // pile, wood grain), so walls and floors do not flatten into colour.
+    ...(LOW_NORMAL_MAPS && !glass && m.normalMap ? { normalMap: m.normalMap, normalScale: m.normalScale?.clone?.() } : {}),
     transparent: m.transparent || glass,
     opacity: glass ? Math.min(0.32, Math.max(0.16, m.opacity ?? 0.2)) : m.opacity,
     alphaTest: m.alphaTest ?? 0,
@@ -249,6 +259,10 @@ export function applySceneQuality(root, tier, { Lambert, cache = new Map() } = {
       if (low && o.userData.lowHidden !== true) { o.userData.lowHidden = o.visible; o.visible = false; }
       if (!low && o.userData.lowHidden !== undefined) { o.visible = o.userData.lowHidden !== false; delete o.userData.lowHidden; }
     }
+    // Round 3: a case's real light on HIGH, its painted light pool on LOW
+    // (assets/CaseLighting.js).
+    const only = o.userData?.tierVisibility;
+    if (only === 'low' || only === 'high') o.visible = (only === 'low') === low;
   });
   return changed;
 }

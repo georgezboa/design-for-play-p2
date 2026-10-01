@@ -49,9 +49,9 @@ import {
 import { ECHO_EXCHANGES } from './echoExchanges.js';
 import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference } from './finaleQuality.js';
 import {
-  CONDUCTOR_RAIN_SPEC, LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
+  LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
   paintClaimCase, paintConductorCarBackdrop, paintInkButch, paintInkConductor, paintInkTrain, paintInkTrainFront, paintLampNode,
-  paintGapWall, paintLensRimCanvas, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
+  paintGapWall, paintLensRimCanvas, paintRainConductor, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
 } from './finaleArt.js';
 import {
   ECHO_FLOOR, ECHO_SQUARE, PAINTED_FLOOR, echoTerraceSteps, paintEchoParapet, paintEchoProp, paintEchoSkyline, paintEchoSquare,
@@ -1154,8 +1154,8 @@ class SpectacleBattle {
       yield;
     }
     this.puppet.setCard(1, { painted: true, width: 2.6 * (butchRain.idle.width / butchRain.idle.height), height: 2.6, frames: butchRain, lift: -0.1 });
-    const conductorRain = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4 });
-    const conductorRainLit = paintRainFigure({ spec: CONDUCTOR_RAIN_SPEC, pose: 'idle', scale: 4, lit: true });
+    const conductorRain = paintRainConductor({ scale: 4 });
+    const conductorRainLit = paintRainConductor({ scale: 4, lit: true });
     this.conductorPaper.setCard(1, { painted: true, width: 3.9 * (conductorRain.width / conductorRain.height), height: 3.9, frames: { idle: conductorRain, punch: conductorRainLit, hurt: conductorRainLit } });
     this.keepConductorOutOfFog();
     this.setConductorWorld(this.phase, true);

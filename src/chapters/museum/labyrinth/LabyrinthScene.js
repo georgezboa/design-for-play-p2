@@ -21,8 +21,8 @@
 // AI logic, not engine plumbing.
 //
 // Art direction: spare theatrical illustration. Monumental near-black
-// masonry, cool slate floors, warm isolated torch pools, ivory for the
-// player and the keys, cyan for safety and open paths, red only for active
+// masonry, worn limestone floors, warm isolated torch pools, ivory for the
+// player and the keys, polished brass for safety and open paths, red only for active
 // danger. All static world dressing (wing washes, threshold inlays, room
 // motifs) is baked ONCE into render textures at run start — never redrawn
 // per frame — and never lies about the maze: collision stays exactly what
@@ -38,7 +38,7 @@ import { applyWingEntryRules, choosePrimaryHunterId, statueCanDamage, stepTelegr
 import { cellKey, keysLostOnGameOver, markSeen, nearestByPath, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
 
 // unsurveyed cells on the survey map: darker than the surveyed floor
-const MINIMAP_FOG = 0x0a2230;
+const MINIMAP_FOG = PAL.mapFog;
 import { sfx } from '../../../sfx.js';
 import { labyrinthCues } from './labyrinthCues.js';
 import * as chaseMusic from './chaseMusic.js';
@@ -380,7 +380,7 @@ export class LabyrinthScene extends Phaser.Scene {
     });
 
     // Shield collectibles — same overlap pattern as keys, with a slow
-    // breathing pulse so the cyan silhouette reads as something to pick up.
+    // breathing pulse so the brass silhouette reads as something to pick up.
     this.shieldsGroup = this.physics.add.staticGroup();
     this.shieldSprites = this.layout.shields.map((s) => {
       const img = this.shieldsGroup.create(s.x, s.y - 8, textureKey('shield'));
@@ -667,7 +667,7 @@ export class LabyrinthScene extends Phaser.Scene {
       fontFamily: FONT, fontSize: '12px', color: css(PAL.amber), fontStyle: 'bold', letterSpacing: 2,
     });
     this.shieldText = this.add.text(16, 52, '', {
-      fontFamily: FONT, fontSize: '12px', color: css(PAL.cyan), fontStyle: 'bold', letterSpacing: 2,
+      fontFamily: FONT, fontSize: '12px', color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 2,
     });
     this.torchText = this.add.text(16, 71, '', {
       fontFamily: FONT, fontSize: '11px', color: css(PAL.torchCore), fontStyle: 'bold', letterSpacing: 2,
@@ -678,7 +678,7 @@ export class LabyrinthScene extends Phaser.Scene {
       })
       .setOrigin(1, 0);
     this.controlsText = this.add.text(14, VIEW.h - 22, STRINGS.controls, {
-      fontFamily: FONT, fontSize: '10px', color: css(0x6d7280),
+      fontFamily: FONT, fontSize: '10px', color: css(0x8a7a5e),
     });
     this.captionText = this.add
       .text(VIEW.w / 2, VIEW.h - 50, '', {
@@ -689,7 +689,7 @@ export class LabyrinthScene extends Phaser.Scene {
     this.interactText = this.add
       .text(VIEW.w / 2, VIEW.h - 84, '', {
         fontFamily: FONT, fontSize: '12px', color: css(PAL.torchCore), fontStyle: 'bold',
-        backgroundColor: '#060609cc', padding: { x: 10, y: 5 }, letterSpacing: 2,
+        backgroundColor: '#140d09cc', padding: { x: 10, y: 5 }, letterSpacing: 2,
       })
       .setOrigin(0.5);
     hud.add([this.threatG, this.hudPlate, this.livesText, this.keysText, this.shieldText, this.torchText, this.wingLabel, this.controlsText, this.captionText, this.interactText]);
@@ -718,7 +718,7 @@ export class LabyrinthScene extends Phaser.Scene {
     const fragShard = this.add.image(0, 0, textureKey('fragment'));
     const take = this.add.text(0, 96, STRINGS.fragmentTakeHint, {
       fontFamily: FONT, fontSize: '12px', color: css(PAL.ivory), letterSpacing: 3,
-      backgroundColor: '#09090dcc', padding: { x: 12, y: 6 },
+      backgroundColor: '#140d09cc', padding: { x: 12, y: 6 },
     }).setOrigin(0.5);
     fragment.add([fragGlow, fragShard, take]);
     hud.add(fragment);
@@ -768,14 +768,24 @@ export class LabyrinthScene extends Phaser.Scene {
 
     const container = this.add.container(0, 0).setScrollFactor(0).setDepth(101);
 
-    const panel = this.add.rectangle(x0 - 7, y0 - 7, size + 14, size + 14, PAL.mapBackground, 0.96).setOrigin(0, 0);
+    // A walnut plate in a brass frame (the UI kit's panel), holding the key
+    // pips, the readout, the label and the survey itself, so none of them
+    // floats over the maze on its own.
+    const plateTop = y0 - 64;
+    const panel = this.add.graphics();
+    panel.fillStyle(0x1c130d, 0.94).fillRoundedRect(x0 - 12, plateTop, size + 24, size + 12 + (y0 - plateTop), 6);
+    panel.fillStyle(PAL.mapBackground, 1).fillRect(x0 - 3, y0 - 3, size + 6, size + 6);
     const border = this.add.graphics();
-    border.lineStyle(2, PAL.cyan, 0.98);
-    border.strokeRect(x0 - 7, y0 - 7, size + 14, size + 14);
+    border.lineStyle(2, PAL.brass, 0.95).strokeRoundedRect(x0 - 12, plateTop, size + 24, size + 12 + (y0 - plateTop), 6);
+    border.lineStyle(1, PAL.safe, 0.35).strokeRoundedRect(x0 - 8, plateTop + 4, size + 16, size + 4 + (y0 - plateTop), 4);
+    border.lineStyle(1, PAL.brass, 0.8).strokeRect(x0 - 3, y0 - 3, size + 6, size + 6);
+    for (const [rx, ry] of [[x0 - 6, plateTop + 6], [x0 + size + 6, plateTop + 6], [x0 - 6, y0 + size + 6], [x0 + size + 6, y0 + size + 6]]) {
+      border.fillStyle(PAL.brass, 1).fillCircle(rx, ry, 2);
+    }
 
     const label = this.add
       .text(x0, y0 - 8, 'SURVEY · FLOOR I', {
-        fontFamily: FONT, fontSize: '11px', color: css(PAL.cyan), fontStyle: 'bold', letterSpacing: 4,
+        fontFamily: FONT, fontSize: '11px', color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 4,
       })
       .setOrigin(0, 1);
 
@@ -865,7 +875,7 @@ export class LabyrinthScene extends Phaser.Scene {
     }
 
     // Remaining shield pickups.
-    mm.markers.fillStyle(PAL.cyan, 1);
+    mm.markers.fillStyle(PAL.safe, 1);
     for (const s of this.layout.shields) {
       if (s.collected || (s.wing === 3 && s.floor !== this.activeFloor)) continue;
       if (!seenAt(this.seenCells, s.x, s.y)) continue;
@@ -939,7 +949,7 @@ export class LabyrinthScene extends Phaser.Scene {
         pip.setTint(PAL.torch);
         pip.setAlpha(1);
       } else {
-        pip.setTint(0x3a3a44);
+        pip.setTint(0x4a3a2a);
         pip.setAlpha(0.55);
       }
     });
@@ -1092,7 +1102,7 @@ export class LabyrinthScene extends Phaser.Scene {
     chaseMusic.setChasing(false);
     sfx.goal();
     this.endOverlay.dim.setVisible(true);
-    this.endOverlay.line1.setText(STRINGS.winLine).setColor(css(PAL.cyan));
+    this.endOverlay.line1.setText(STRINGS.winLine).setColor(css(PAL.safe));
     this.endOverlay.line2.setText(STRINGS.winSub);
     this.time.delayedCall(1400, () => this.revealArtifact());
   }
@@ -1330,7 +1340,7 @@ export class LabyrinthScene extends Phaser.Scene {
         this.layout.floorWalls[1][gate.cell.y][gate.cell.x] = false;
         this.wallLayer.putTileAt(TILE_FLOOR, gate.cell.x, gate.cell.y);
         gs.img.setTexture(textureKey('gate-open'));
-        gs.label.setColor(css(PAL.cyan));
+        gs.label.setColor(css(PAL.safe));
         this.openGateOnMinimap(gate);
         labyrinthCues.gateUnlock();
         this.cameras.main.flash(200, 47, 216, 200);
@@ -1381,7 +1391,7 @@ export class LabyrinthScene extends Phaser.Scene {
     // handled by the overlap callback, onExitOverlap).
     const allKeys = this.player.keysCollected >= TUNING.keysTotal;
     this.gateSprite.setTexture(allKeys ? textureKey('fragment-seal-ready') : textureKey('fragment-seal'));
-    this.gateLabel.setColor(allKeys ? css(PAL.cyan) : css(PAL.bloodRed));
+    this.gateLabel.setColor(allKeys ? css(PAL.safe) : css(PAL.bloodRed));
 
     // Statues.
     let chasingClose = false;
@@ -1569,7 +1579,7 @@ export class LabyrinthScene extends Phaser.Scene {
       const ny = dx;
       // A hot signal red with an ivory rim: the maze's blood red is too dark
       // to read against the unlit stone.
-      g.fillStyle(0x060609, 0.82).fillCircle(at.x, at.y, 24);
+      g.fillStyle(PAL.void, 0.82).fillCircle(at.x, at.y, 24);
       g.lineStyle(2, 0xeadfc6, 0.85).strokeCircle(at.x, at.y, 24);
       g.fillStyle(0xff4a32, 0.55 + 0.45 * pulse);
       // A long, narrow arrowhead, so its direction reads at a glance.

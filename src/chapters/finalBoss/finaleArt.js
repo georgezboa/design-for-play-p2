@@ -18,6 +18,7 @@ import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from '../ni
 import { drawConductorCar, drawDesk, drawDoor, drawLockers, drawWindow } from '../nightService/art/act1Art.js';
 import { drawCarriageScene, drawCityRoom, drawHouse, drawPlatform } from '../nightService/art/act3Art.js';
 import { BUTCH_PARTS, CONDUCTOR_PARTS, RES, TRAIN_PARTS } from '../nightService/art/figures.js';
+import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART, drawConductorHeadOver } from './conductorFigure.js';
 import { PAPER_URL, WORLDS } from '../nightService/worldAssets.js';
 import { BUTCH_SPEC, drawFigure } from '../borrowedLight/art/figures.js';
 import {
@@ -364,8 +365,12 @@ export function paintInkButch({ pose = 'idle', phase = 0, scale = 6, lampGlow = 
   return canvas;
 }
 
+// The Chapter 1 Conductor rig with the finale's front-facing head and coat
+// (conductorFigure.js): the same face in every movement.
+export const FINALE_CONDUCTOR_PARTS = Object.freeze({ ...CONDUCTOR_PARTS, head: CONDUCTOR_HEAD_PART, torso: CONDUCTOR_TORSO_PART });
+
 export function paintInkConductor({ scale = 6, lantern = true, era = 'present' } = {}) {
-  const P = CONDUCTOR_PARTS;
+  const P = FINALE_CONDUCTOR_PARTS;
   const W = 80;
   const H = 124;
   const canvas = makeCanvas(W * scale, H * scale);
@@ -376,15 +381,15 @@ export function paintInkConductor({ scale = 6, lantern = true, era = 'present' }
   c.beginPath(); c.ellipse(0, 0, 25, 4, 0, 0, TAU); c.fill();
   if (lantern) inkGlow(c, -12, -38, 70, 'rgba(255, 184, 96, 0.95)', 0.42);
   c.save(); c.translate(-8, -76); c.rotate(0.08);
-  drawPart(c, 'c', P, 'arm', 0, 0, 0, { dim: 0.28 });
-  drawPart(c, 'c', P, 'lantern', 0, 35, -0.06);
+  drawPart(c, 'cf', P, 'arm', 0, 0, 0, { dim: 0.28 });
+  drawPart(c, 'cf', P, 'lantern', 0, 35, -0.06);
   c.restore();
-  drawPart(c, 'c', P, 'legs', 0, -15);
-  drawPart(c, 'c', P, 'torso', 0, -12);
-  drawPart(c, 'c', P, 'head', 1, -80);
+  drawPart(c, 'cf', P, 'legs', 0, -15);
+  drawPart(c, 'cf', P, 'torso', 0, -12);
+  drawPart(c, 'cf', P, 'head', 0, -77);
   c.save(); c.translate(9, -76); c.rotate(-0.7);
-  drawPart(c, 'c', P, 'arm', 0, 0);
-  drawPart(c, 'c', P, 'punch', 0, 34);
+  drawPart(c, 'cf', P, 'arm', 0, 0);
+  drawPart(c, 'cf', P, 'punch', 0, 34);
   c.restore();
   if (era === 'past') sepia(c);
   return canvas;
@@ -536,6 +541,47 @@ export function paintRainFigure({ spec = BUTCH_SPEC, pose = 'idle', phase = 0, s
   return canvas;
 }
 
+// Movement II's Conductor: the Chapter 2 figure (coat, scarf, lantern) with
+// the same front-facing, brim-shadowed face as Movement I, a warm key light
+// from his lantern down his coat, and a dark ink edge so he stands solid in
+// the rain instead of reading as a pale ghost.
+export function paintRainConductor({ scale = 4, lit = false } = {}) {
+  const spec = { ...CONDUCTOR_RAIN_SPEC, cap: null };
+  const W = 110;
+  const H = spec.height * 1.3 + 20;
+  const canvas = makeCanvas(W * scale, H * scale);
+  const c = canvas.getContext('2d');
+  c.scale(scale, scale);
+  if (lit) inkGlow(c, W / 2, H - spec.height * 0.55, spec.height * 1.4, 'rgba(201, 128, 136, 0.9)', 0.35);
+  // a dark under-stroke first: the figure drawn once in silhouette, a touch larger
+  c.save();
+  c.translate(W / 2, H - 8);
+  c.scale(1.035, 1.012);
+  c.translate(-W / 2, -(H - 8));
+  drawFigure(graphicsShim(c), spec, { x: W / 2, y: H - 8, facing: 1, pose: 'idle', t: 1.2, rim: 0, silhouette: true, alpha: 0.85 });
+  c.restore();
+  // no backlight halo: on him it read as a pale ghost shell around the coat
+  drawFigure(graphicsShim(c), spec, { x: W / 2, y: H - 8, facing: 1, pose: 'idle', t: 1.2, rim: 0 });
+  // drawFigure's idle pose at t = 1.2: hip −50 + bob·0.4, shoulders 36 above,
+  // head 13 above the shoulders and 3 + lean·30 forward (units of height/110)
+  const k = spec.height / 110;
+  const bob = Math.sin(1.2 * 2.1) * 0.9;
+  const headX = W / 2 + (3 + 0.02 * 30) * k;
+  const headY = H - 8 + (-50 + bob * 0.4 - 36 - 13) * k;
+  // the lantern's warm key light down his front
+  c.save();
+  c.globalCompositeOperation = 'source-atop';
+  const key = c.createLinearGradient(W / 2 - 24 * k, 0, W / 2 + 18 * k, 0);
+  key.addColorStop(0, 'rgba(0, 0, 0, 0)');
+  key.addColorStop(0.62, 'rgba(255, 196, 110, 0)');
+  key.addColorStop(1, 'rgba(255, 196, 110, 0.22)');
+  c.fillStyle = key;
+  c.fillRect(0, headY, W, H - headY);
+  c.restore();
+  drawConductorHeadOver(c, headX, headY, 9.5 * k);
+  return canvas;
+}
+
 // The Movement II floor, in three pieces: the near roof, the street far
 // below in the gap, and the far roof. Lamp pools are painted in (Chapter 2
 // lights its roofs with warm pools, not with scene lights).
@@ -684,7 +730,17 @@ export function paintBillboardFace(lit) {
   return canvas;
 }
 
-// A lamp box on a pole with its paper tag, in one of the three line colours.
+// A street lamp on a pole with its paper tag, in one of the three line
+// colours. Round 3: the head is a real lantern, as Chapter 2's lamps are
+// (borrowedLight buildLamp): a brass roof and finial, amber glass in a brass
+// cage, a base cone onto the pole. Unlit it is still amber glass with a dark
+// mantle (never an empty square); queued, the mantle warms; powering, it
+// burns in its line's colour. The coloured band on the pole names the line.
+export const LAMP_NODE_GLASS = Object.freeze({
+  idle: ['#8a5a26', '#4a2e16'],
+  queued: ['#e0a24a', '#9a5e24'],
+});
+
 export function paintLampNode({ line = 'rose', state = 'idle' } = {}) {
   const colors = { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' };
   const color = colors[line];
@@ -694,21 +750,52 @@ export function paintLampNode({ line = 'rose', state = 'idle' } = {}) {
   const canvas = makeCanvas(w * S, h * S);
   const c = canvas.getContext('2d');
   c.scale(S, S);
-  c.fillStyle = '#1b1e20';
-  c.fillRect(18, 26, 4, 68);
-  ink(c, [[18, 26], [18, 94]], { w: 0.9, alpha: 0.5, bleed: false });
-  c.fillStyle = '#2a2f33';
-  roundRectPath(c, 8, 6, 24, 24, 3); c.fill();
   const on = state === 'powering';
-  c.fillStyle = on ? color : state === 'queued' ? 'rgba(234,223,198,0.35)' : 'rgba(40,44,46,1)';
-  roundRectPath(c, 11, 9, 18, 18, 2); c.fill();
-  if (on) inkGlow(c, 20, 18, 60, color, 0.55);
+  // pole, its brass collar and the line band
+  c.fillStyle = '#1b1e20';
+  c.fillRect(18, 30, 4, 64);
+  ink(c, [[18, 30], [18, 94]], { w: 0.9, alpha: 0.5, bleed: false });
+  c.fillStyle = PAL.brassDark;
+  c.fillRect(16.5, 30, 7, 2.5);
   c.fillStyle = color;
-  c.fillRect(8, 30, 24, 3);
-  ink(c, [[8, 6], [32, 6], [32, 30], [8, 30]], { w: 1.1, closed: true, bleed: false });
-  paperTag(c, 22, 44, { angle: 0.25, scale: 1.25, glint: state === 'idle', punched: state !== 'idle', string: [20, 32], seed: 3 });
+  c.fillRect(17, 35, 6, 2.6);
+  if (on) inkGlow(c, 20, 19, 70, color, 0.6);
+  // glass: amber, lit from inside by the mantle
+  const [top, bottom] = on ? ['#fff1c8', color] : LAMP_NODE_GLASS[state === 'queued' ? 'queued' : 'idle'];
+  c.fillStyle = vgrad(c, 11, 27, [[0, top], [1, bottom]]);
+  c.fillRect(10.5, 11, 19, 16);
+  c.fillStyle = on ? 'rgba(255, 250, 230, 0.95)' : state === 'queued' ? 'rgba(255, 226, 160, 0.85)' : 'rgba(40, 24, 12, 0.85)';
+  c.beginPath(); c.ellipse(20, 19.5, 2.6, 3.6, 0, 0, Math.PI * 2); c.fill();
+  if (state === 'queued') inkGlow(c, 20, 19, 26, 'rgba(255, 200, 120, 0.9)', 0.35);
+  c.fillStyle = 'rgba(255, 240, 210, 0.22)';
+  c.fillRect(11.5, 12, 2, 14);
+  // the brass cage over the glass
+  c.fillStyle = PAL.brass;
+  [10, 15, 20, 25, 29.5].forEach((x) => c.fillRect(x, 11, 1, 16));
+  c.fillRect(10, 18.6, 20.5, 0.9);
+  // roof, finial and hook
+  c.fillStyle = brassFill(c, 7, 5, 26, 6);
+  c.beginPath(); c.moveTo(7, 11); c.lineTo(14, 5); c.lineTo(26, 5); c.lineTo(33, 11); c.closePath(); c.fill();
+  c.fillStyle = PAL.brassDark;
+  c.fillRect(7, 10.4, 26, 1.4);
+  c.fillStyle = PAL.brassLight;
+  c.beginPath(); c.arc(20, 3.4, 1.7, 0, Math.PI * 2); c.fill();
+  // base plate and the cone onto the pole
+  c.fillStyle = brassFill(c, 9, 27, 22, 3);
+  c.fillRect(9, 27, 22, 2.6);
+  c.fillStyle = PAL.brassDark;
+  c.beginPath(); c.moveTo(13, 29.6); c.lineTo(27, 29.6); c.lineTo(22.5, 32); c.lineTo(17.5, 32); c.closePath(); c.fill();
+  ink(c, [[7, 11], [14, 5], [26, 5], [33, 11]], { w: 1, bleed: false, seed: 31 });
+  ink(c, [[10, 11], [10, 27], [30.5, 27], [30.5, 11]], { w: 1, closed: true, bleed: false, seed: 32 });
+  if (on) {
+    c.save();
+    c.globalCompositeOperation = 'lighter';
+    inkGlow(c, 20, 19, 30, 'rgba(255, 244, 214, 0.95)', 0.45);
+    c.restore();
+  }
+  paperTag(c, 22, 46, { angle: 0.25, scale: 1.25, glint: state === 'idle', punched: state !== 'idle', string: [20, 33], seed: 3 });
   c.fillStyle = color;
-  c.fillRect(28, 38, 8, 2);
+  c.fillRect(28, 40, 8, 2);
   return canvas;
 }
 

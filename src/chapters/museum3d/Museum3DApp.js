@@ -13,6 +13,11 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/addons/shaders/FXAAShader.js';
 import { Chapter05Model, createInitialState } from './state/chapter05Model.js';
 import { FirstPersonController } from './player/FirstPersonController.js';
 import { StaticCollisionWorld } from './player/StaticCollisionWorld.js';
@@ -46,7 +51,10 @@ import {
   applyRendererQuality,
   applySceneQuality,
   createQualityGovernor,
+  isSoftwareRendererName,
   lowFillScale,
+  lowTierWantsFxaa,
+  rendererName,
   probeSoftwareRenderer,
   qualityPreference,
   syncLowMaterials,
@@ -116,6 +124,8 @@ export class Museum3DApp {
     // Keeping the drawing buffer is useful for automated canvas captures, but
     // is expensive during normal play. QA opts into the slower capture path.
     this.captureMode = captureMode;
+    // FXAA on the LOW tier (see _renderFrame), set once the context exists.
+    this.lowAntialias = false;
     // Adaptive quality (alpha A3-7, systems/QualityTier.js). A software
     // rasteriser is known before the renderer exists, so it never gets MSAA.
     const probe = probeSoftwareRenderer(document);
@@ -140,6 +150,10 @@ export class Museum3DApp {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
+    this.lowAntialias = lowTierWantsFxaa({
+      software: probe.software || isSoftwareRendererName(rendererName(this.renderer.getContext())),
+      contextAntialias: Boolean(this.renderer.getContextAttributes()?.antialias),
+    });
 
     this.scene = new THREE.Scene();
     const pmrem = new THREE.PMREMGenerator(this.renderer);
@@ -312,6 +326,41 @@ export class Museum3DApp {
       const next = this.quality.setPreference(qualityPreference(event.detail ?? {}));
       if (next) this.applyQuality(next);
     });
+  }
+
+  // One museum frame. A context without MSAA on the LOW tier ends on an FXAA
+  // pass (round 3). Not on a software rasteriser: measured headless on
+  // SwiftShader at 960×540, the composer's two extra full-screen passes cost
+  // 35–50 ms a frame (a half-float target) or 17–33 ms (8-bit, with banding),
+  // more than the whole lobby frame, so there `lowAntialias` stays off.
+  _renderFrame() {
+    if (this._qualityApplied !== 'low' || !this.lowAntialias) {
+      this.renderer.render(this.scene, this.camera);
+      return;
+    }
+    if (!this._lowComposer) {
+      const composer = new EffectComposer(this.renderer);
+      composer.renderToScreen = true;
+      this._lowRenderPass = new RenderPass(this.scene, this.camera);
+      this._fxaaPass = new ShaderPass(FXAAShader);
+      composer.addPass(this._lowRenderPass);
+      composer.addPass(new OutputPass());
+      composer.addPass(this._fxaaPass);
+      this._lowComposer = composer;
+      this._lowComposerSize = '';
+    }
+    const ratio = this.renderer.getPixelRatio();
+    if (!this._lowComposerScratch) this._lowComposerScratch = new THREE.Vector2();
+    const size = this.renderer.getSize(this._lowComposerScratch);
+    const key = `${size.x}x${size.y}@${ratio}`;
+    if (key !== this._lowComposerSize) {
+      this._lowComposerSize = key;
+      this._lowComposer.setPixelRatio(ratio);
+      this._lowComposer.setSize(size.x, size.y);
+      this._fxaaPass.material.uniforms.resolution.value.set(1 / (size.x * ratio), 1 / (size.y * ratio));
+    }
+    this._lowRenderPass.camera = this.camera;
+    this._lowComposer.render();
   }
 
   // Apply a render tier to the renderer and every built space. Safe to call
@@ -736,7 +785,7 @@ export class Museum3DApp {
       const dt = Math.min(this.clock.getDelta(), 0.05);
       if (globalThis.NIGHTFALL_PAUSED) {
         this.objective.update(null);
-        this.renderer.render(this.scene, this.camera);
+        this._renderFrame();
         return;
       }
       const snapshot = this.model.getSnapshot();
@@ -768,7 +817,7 @@ export class Museum3DApp {
       this.dialogue.update(dt);
       this._syncObjective(snapshot);
       music.setDialogueActive(this.dialogue.isPlaying);
-      this.renderer.render(this.scene, this.camera);
+      this._renderFrame();
     });
   }
 

@@ -12,6 +12,7 @@
 // objects read as the same documents the one-answer exhibit shows up close.
 
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 // the lobby's pending case lays all four out on one plinth, about a metre apart
 const SMALL_SCALE = 0.88;
@@ -112,13 +113,43 @@ export function drawHawthornLeaf(c, x, y, s = 1, { color = '#4f6b3a', blossom = 
 
 // ---------------------------------------------------------------------------
 
+// Worn brown leather with a stitched welt near every edge (round 3: the
+// orchard case was a plain brown box).
+let leatherTexture = null;
+function caseLeatherTexture() {
+  if (leatherTexture) return leatherTexture;
+  leatherTexture = paperTexture(256, 256, (c, w, h) => {
+    c.fillStyle = '#7a4f2c';
+    c.fillRect(0, 0, w, h);
+    let a = 77;
+    const random = () => { a = (a * 16807) % 2147483647; return a / 2147483647; };
+    for (let i = 0; i < 1800; i += 1) {
+      c.fillStyle = random() > 0.5 ? 'rgba(40, 22, 10, 0.14)' : 'rgba(255, 214, 160, 0.06)';
+      c.fillRect(random() * w, random() * h, 1 + random() * 2.5, 1 + random() * 2.5);
+    }
+    // scuffed, darker edges and a rubbed, paler middle
+    const edge = c.createRadialGradient(w / 2, h / 2, w * 0.2, w / 2, h / 2, w * 0.72);
+    edge.addColorStop(0, 'rgba(255, 220, 170, 0.08)');
+    edge.addColorStop(1, 'rgba(30, 14, 6, 0.45)');
+    c.fillStyle = edge;
+    c.fillRect(0, 0, w, h);
+    c.strokeStyle = 'rgba(232, 208, 160, 0.55)';
+    c.lineWidth = 2;
+    c.setLineDash([7, 6]);
+    c.strokeRect(14, 14, w - 28, h - 28);
+  });
+  leatherTexture.wrapS = THREE.ClampToEdgeWrapping;
+  leatherTexture.wrapT = THREE.ClampToEdgeWrapping;
+  return leatherTexture;
+}
+
 function orchardCase({ small = false } = {}) {
   const group = new THREE.Group();
   group.name = 'case-object-orchard-case';
-  const leather = new THREE.MeshStandardMaterial({ color: 0x6b4526, roughness: 0.78, metalness: 0.02 });
+  const leather = new THREE.MeshStandardMaterial({ map: caseLeatherTexture(), color: 0xffffff, roughness: 0.74, metalness: 0.02 });
   const seam = new THREE.MeshStandardMaterial({ color: 0x4a2e18, roughness: 0.9 });
   const brass = new THREE.MeshStandardMaterial({ color: 0xb08a4a, roughness: 0.4, metalness: 0.75 });
-  const body = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.42, 0.2), leather);
+  const body = new THREE.Mesh(new RoundedBoxGeometry(0.62, 0.42, 0.2, 3, 0.03), leather);
   body.name = 'orchard-case-body';
   body.castShadow = true;
   group.add(body);

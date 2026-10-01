@@ -102,22 +102,25 @@ export class ServiceLobby {
     // leaves only its worn footprint behind, not a corridor to nowhere.
     box(g, { x: 0, y: WALL_H / 2, z: 6, w: 16.6, h: WALL_H, d: WALL_T, material: wall, name: 'wall-south', collide: true, collisionWorld });
 
-    const dado = this.materials.oliveSteel;
-    const lower = this.materials.wall;
-    box(g, { x: 0, y: 0.63, z: -5.82, w: 15.7, h: 1.08, d: 0.05, material: lower, name: 'wainscot-north' });
-    box(g, { x: 0, y: 0.18, z: -5.86, w: 15.7, h: 0.22, d: 0.08, material: dado, name: 'baseboard-north' });
-    box(g, { x: 0, y: 1.18, z: -5.86, w: 15.7, h: 0.09, d: 0.07, material: dado, name: 'chair-rail-north' });
-    box(g, { x: -7.82, y: 0.63, z: 0, w: 0.05, h: 1.08, d: 11.55, material: lower, name: 'wainscot-west' });
-    box(g, { x: -7.86, y: 0.18, z: 0, w: 0.08, h: 0.22, d: 11.55, material: dado, name: 'baseboard-west' });
-    box(g, { x: -7.86, y: 1.18, z: 0, w: 0.08, h: 0.09, d: 11.55, material: dado, name: 'chair-rail-west' });
-    for (const [z, id] of [[-3.55, 'north'], [3.55, 'south']]) {
-      box(g, { x: 7.82, y: 0.63, z, w: 0.05, h: 1.08, d: 4.55, material: lower, name: `wainscot-east-${id}` });
-      box(g, { x: 7.86, y: 0.18, z, w: 0.08, h: 0.22, d: 4.55, material: dado, name: `baseboard-east-${id}` });
-      box(g, { x: 7.86, y: 1.18, z, w: 0.08, h: 0.09, d: 4.55, material: dado, name: `chair-rail-east-${id}` });
-    }
-    box(g, { x: 0, y: 0.63, z: 5.82, w: 15.7, h: 1.08, d: 0.05, material: lower, name: 'wainscot-south' });
-    box(g, { x: 0, y: 0.18, z: 5.86, w: 15.7, h: 0.22, d: 0.08, material: dado, name: 'baseboard-south' });
-    box(g, { x: 0, y: 1.18, z: 5.86, w: 15.7, h: 0.09, d: 0.07, material: dado, name: 'chair-rail-south' });
+    // Walnut panelling under a brass chair rail, a walnut skirting and a
+    // brass picture rail: the lower walls of a museum, not a beige box.
+    // Each run is [centre, along-wall length, inner-face position, facing].
+    const trim = (axis, at, along, length, face, id) => {
+      const m = this.materials;
+      const piece = (y, h, depth, material, name) => {
+        const inward = face * depth / 2;
+        if (axis === 'z') box(g, { x: along, y, z: at + inward, w: length, h, d: depth, material, name });
+        else box(g, { x: at + inward, y, z: along, w: depth, h, d: length, material, name });
+      };
+      piece(0.61, 1.02, 0.04, m.wainscot, `wainscot-${id}`);
+      piece(0.07, 0.14, 0.065, m.deskWoodDark, `baseboard-${id}`);
+      piece(1.14, 0.05, 0.065, m.brassTrim, `chair-rail-${id}`);
+      piece(2.66, 0.025, 0.03, m.brassTrim, `picture-rail-${id}`);
+    };
+    trim('z', -5.85, 0, 15.7, 1, 'north');
+    trim('z', 5.85, 0, 15.7, -1, 'south');
+    trim('x', -7.85, 0, 11.55, 1, 'west');
+    for (const [z, id] of [[-3.55, 'east-north'], [3.55, 'east-south']]) trim('x', 7.85, z, 4.55, -1, id);
 
     for (const fx of [-4, 0, 4]) fluorescentFixture(g, { x: fx, z: 0, ceilingY: WALL_H, length: 3.2 });
 
@@ -221,6 +224,7 @@ export class ServiceLobby {
     // the reclassified desk lamp — the one important dynamic light in here
     this.deskLampLight = new THREE.PointLight(0xffe9b8, 0, 5, 1.8);
     this.deskLampLight.position.set(1.1, 2.2, 0.2);
+    this.deskLampLight.visible = false;
     g.add(this.deskLampLight);
 
     this.reclassification = new RoomReclassification({
@@ -583,6 +587,8 @@ export class ServiceLobby {
     } else {
       this.deskLampLight.intensity = 0;
     }
+    // an unlit light still costs every pixel: out of the scene until it burns
+    this.deskLampLight.visible = variant === 'reclassified';
     this._syncCorridorDoors(snapshot);
   }
 
