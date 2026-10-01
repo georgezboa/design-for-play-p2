@@ -6,6 +6,7 @@ import { SCANNER_FIELDS } from '../../src/cars/presentCity3d/chapter3OpeningCont
 import {
   FLAG_MS,
   PIPS_REQUIRED,
+  RELEASE_BACKWARD_SECONDS,
   WARNING_MS,
   createWalkBeside,
   fieldContains,
@@ -111,8 +112,45 @@ describe('Chapter 3 walk beside (scanner crossings)', () => {
     assert.equal(walk.snapshot().walker.along, along, 'the walker waits where he is');
     walk.toggleMatch(besideWalker(walk));
     const back = { x: -walk.geometry.u.x, z: -walk.geometry.u.z };
-    const events = run(walk, 0.6, back, () => walk.besidePosition());
+    const events = run(walk, RELEASE_BACKWARD_SECONDS + 0.1, back, () => walk.besidePosition());
     assert.ok(events.includes('released'));
+  });
+
+  // Alpha round 1 · F2-2: "HOLD FORWARD · WASD" read as screen-up. Holding E
+  // walks in step; any input with some pull toward the arch counts; walking
+  // away only pauses the pair for a long moment before it lets go.
+  it('walks in step while E is held, with no direction at all', () => {
+    const walk = createWalkBeside(SCANNER_FIELDS.market);
+    walk.toggleMatch(besideWalker(walk));
+    for (let i = 0; i < 60 * 12 && !walk.snapshot().passed; i += 1) {
+      walk.update(1 / 60, { player: walk.besidePosition(), input: { x: 0, z: 0 }, hold: true });
+    }
+    assert.equal(walk.snapshot().passed, true);
+    assert.equal(walk.snapshot().flags, 0);
+  });
+
+  it('accepts a mostly sideways key that still leans toward the arch', () => {
+    const walk = createWalkBeside(SCANNER_FIELDS.station);
+    walk.toggleMatch(besideWalker(walk));
+    const { u, n } = walk.geometry;
+    // 80° off the lane: cos 80° ≈ 0.17 toward the arch.
+    const lean = { x: n.x * 0.985 + u.x * 0.17, z: n.z * 0.985 + u.z * 0.17 };
+    run(walk, 1.0, lean, () => walk.besidePosition());
+    assert.ok(walk.snapshot().pips >= 1, 'pips fill');
+    assert.ok(walk.snapshot().walker.along > 0, 'the pair moves');
+  });
+
+  it('a key pointing away pauses the pair and shows the way, but holds on for a moment', () => {
+    const walk = createWalkBeside(SCANNER_FIELDS.market);
+    walk.toggleMatch(besideWalker(walk));
+    run(walk, 0.7, walk.geometry.u, () => walk.besidePosition());
+    const along = walk.snapshot().walker.along;
+    const away = { x: -walk.geometry.u.x, z: -walk.geometry.u.z };
+    const events = run(walk, 0.8, away, () => walk.besidePosition());
+    assert.equal(events.includes('released'), false, 'still in step after 0.8 s');
+    assert.equal(walk.snapshot().matched, true);
+    assert.equal(walk.snapshot().wrongWay, true);
+    assert.equal(walk.snapshot().walker.along, along, 'the pair waits');
   });
 
   it('warns, then flags, anyone who enters the scan volume alone', () => {

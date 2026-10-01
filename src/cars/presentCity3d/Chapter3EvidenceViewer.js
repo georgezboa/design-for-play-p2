@@ -54,7 +54,8 @@ export class Chapter3EvidenceViewer {
       this.title = el('h2', 'nf-card__title');
       this.title.id = 'evidence-title';
       this.lines = el('div', 'nf-card__lines');
-      this.closeButton = el('button', 'nf-card__close', 'CLOSE · E / ESC');
+      // One prompt only (A2-9: CLOSE · E/ESC sat beside CONTINUE · E).
+      this.closeButton = el('button', 'nf-card__close', 'CONTINUE · E');
       this.closeButton.type = 'button';
       this.card.append(this.stamp, this.title, this.lines, this.closeButton);
       this.root.replaceChildren(this.card);

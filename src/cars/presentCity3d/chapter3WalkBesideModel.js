@@ -5,8 +5,13 @@
 // (`from`), the scanner arch stands at `gate`, the crossing ends at `to`.
 // Anyone who enters the scan volume alone is warned, then flagged and sent
 // back to the safe line. Press E beside the lit walker to match their pace:
-// while you keep moving forward the pair advances, three pips fill (one per
+// while you keep moving the pair advances, three pips fill (one per
 // PIP_SECONDS of kept pace) and the scanner reads the pair as one party.
+//
+// "Moving" is generous (alpha round 1): holding E walks in step on its own,
+// and any direction with some component toward the arch counts — on the
+// isometric camera "W" is rarely the lane. Walking clearly away only pauses
+// the pair; it lets go after RELEASE_BACKWARD_SECONDS of it.
 //
 // Everything is plain numbers on the x/z ground plane so node tests can
 // drive a full crossing; the runtime owns meshes, input and collision.
@@ -17,8 +22,9 @@ export const WARNING_MS = 600;
 export const FLAG_MS = 1500;
 export const MATCH_RADIUS = 1.9;
 export const SCAN_HALF_DEPTH = 1.1;
-const FORWARD_THRESHOLD = 0.35;
-const RELEASE_BACKWARD_SECONDS = 0.45;
+const FORWARD_THRESHOLD = 0.1;
+const BACKWARD_THRESHOLD = 0.35;
+export const RELEASE_BACKWARD_SECONDS = 1.2;
 
 const sub = (a, b) => ({ x: a.x - b.x, z: a.z - b.z });
 const dot = (a, b) => a.x * b.x + a.z * b.z;
@@ -79,6 +85,7 @@ export function createWalkBeside(field) {
     flags: 0,
     passed: false,
     backwardSeconds: 0,
+    wrongWay: false,
   };
 
   const walker = () => worldFromLocal(geometry, state.walkerAlong, 0);
@@ -131,13 +138,15 @@ export function createWalkBeside(field) {
     },
     // `input` is the player's intended world direction on the ground
     // (unit-ish vector, zero when idle). `player` is the current position.
-    update(dt, { player, input = { x: 0, z: 0 } }) {
+    // `hold` is E held while matched: walk in step without a direction.
+    update(dt, { player, input = { x: 0, z: 0 }, hold = false }) {
       const events = [];
       if (state.passed) return events;
-      const forward = dot(input, geometry.u);
+      const forward = hold ? 1 : dot(input, geometry.u);
       state.walkerMoving = false;
+      state.wrongWay = state.matched && forward < -BACKWARD_THRESHOLD;
       if (state.matched) {
-        if (forward < -FORWARD_THRESHOLD) state.backwardSeconds += dt;
+        if (forward < -BACKWARD_THRESHOLD) state.backwardSeconds += dt;
         else state.backwardSeconds = 0;
         if (state.backwardSeconds >= RELEASE_BACKWARD_SECONDS
           && !(state.pips >= PIPS_REQUIRED && state.walkerAlong >= scanEntry - 0.05)) {
@@ -196,6 +205,7 @@ export function createWalkBeside(field) {
         scanner: state.scanner,
         flags: state.flags,
         passed: state.passed,
+        wrongWay: state.wrongWay,
       };
     },
   };

@@ -96,7 +96,15 @@ export class Chapter3TicketBoard {
     this.lensElement.append(el('span', 'c3-lens__label', '1978'));
     this.lensElement.addEventListener('pointerdown', (event) => this.beginDrag(event, 'lens'));
     this.table.append(this.lensElement);
-    this.stackTag = el('div', 'nf-tag c3-board__tag', '<kbd>CLICK</kbd> PUNCH BOTH');
+    // A real button (alpha round 1: the tag looked clickable and was not).
+    this.stackTag = el('button', 'nf-tag c3-board__tag', '<kbd>CLICK</kbd> · PUNCH BOTH');
+    this.stackTag.type = 'button';
+    this.stackTag.setAttribute('aria-label', 'Punch both tickets');
+    this.stackTag.addEventListener('pointerdown', (event) => event.stopPropagation());
+    this.stackTag.addEventListener('click', (event) => {
+      event.stopPropagation();
+      this.tryPunch();
+    });
     this.stackTag.hidden = true;
     this.table.append(this.stackTag);
     this.filedCard = el('article', 'nf-card c3-card c3-card--filed');
