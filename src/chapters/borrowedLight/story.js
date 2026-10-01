@@ -46,7 +46,49 @@ export const HINTS = Object.freeze({
   jump: 'SPACE · JUMP',
   listen: 'HOLD Q · LISTEN',
   busy: 'LINE HOLDING · PUNCH ITS LIT TAG TO CUT',
+  busyTimed: 'LINE BUSY · FREE WHEN ITS MACHINE GOES OFF',
   cut: 'LINE CUT · FREE AFTER THE FLICKER',
+  // Round 3 · a press always says what it did (or why it did nothing).
+  outOfReach: 'OUT OF REACH · STEP CLOSER',
+  takeBack: 'F · TAKE BACK',
+  cutPrompt: 'F · CUT',
+  renew: 'F · RENEW AT THE BELL',
+  renewed: 'RENEWED · RUNS AGAIN FROM THIS BELL',
+  already: 'PUNCHED · WAITING FOR THE BELL',
+  caught: 'CAUGHT THE BELL',
+  forgets: (line) => `SAME LINE · ${line} FORGETS THE OTHER`,
+  forgotten: (line) => `${line} · FORGOTTEN`,
+  ringsOn: (phase) => `RINGS ON BELL ${phase === 'even' ? 'II' : 'I'}`,
+  waitsABell: (phase) => `RINGS ON BELL ${phase === 'even' ? 'II' : 'I'} · ONE MORE BELL`,
+  punchesReset: 'PUNCHES FORGOTTEN · THE LAMP KEEPS YOUR PLACE',
+  // Two-phase bells (A6–A8).
+  bellCounts: 'THE BELL COUNTS · I · II · I · II',
+  quickens: 'THE CITY\'S BELL QUICKENS',
+  // Borrowed light (B5–B7).
+  dead: 'DEAD NODE · NO LINE · BRING IT LIGHT',
+  borrow: 'E · BORROW LIGHT',
+  give: 'E · GIVE LIGHT',
+  retrieve: 'E · TAKE IT BACK',
+  putBack: 'E · PUT IT BACK',
+  borrowed: 'LIGHT BORROWED · CARRY IT TO A DEAD NODE',
+  given: 'GIVEN · IT LIGHTS AT THE BELL',
+  full: 'ONE LIGHT AT A TIME',
+  fixed: 'THE CITY\'S OWN LINE · PUNCH IT (F)',
+  live: 'A LIVE LINE · PUNCH IT (F)',
+  lit: 'ALREADY LIT',
+  nothing: 'NO LIGHT TO BORROW',
+  lightHome: 'THE LIGHT WENT HOME',
+  lightHomeFall: 'THE LIGHT WENT HOME TO ITS LANTERN',
+  // The counterweight walkway (C3).
+  brake: 'F · RELEASE THE BRAKE',
+  cage: 'STAND IN THE CAGE · YOUR WEIGHT TAKES IT DOWN',
+});
+
+// One-time teaching tags for the new mechanics (where they are first met).
+export const TEACH = Object.freeze({
+  bells: Object.freeze({ fromX: 8560, toX: 9000, x: 9230, y: 60, text: HINTS.bellCounts }),
+  borrow: Object.freeze({ text: 'E AT THE LIT LANTERN · BORROW ITS LIGHT' }),
+  cage: Object.freeze({ text: HINTS.cage }),
 });
 
 // The game's one name for these is MAGIC STONES (docs/STORY_BIBLE.md).

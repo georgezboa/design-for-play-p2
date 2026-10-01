@@ -21,7 +21,7 @@ test('every stone is an authored world pickup rather than a completion offer', (
   assert.match(chapter1, /requires: \{ notFlag: 'stone:chapter-1' \}/);
   assert.match(chapter1, /\{ grantStone: 'chapter-1' \}/);
   assert.match(chapter1Main, /onStone\(id\) \{\s*collectMagicStone\(id\);/);
-  assert.match(chapter2Level, /GRID_STONE = Object\.freeze\(\{ x: 11690, y: -60 \}\)/);
+  assert.match(chapter2Level, /GRID_STONE = Object\.freeze\(\{ x: B\(11690\), y: -60 \}\)/);
   assert.match(chapter2, /collectMagicStone\('chapter-2'\)/);
   assert.match(chapter3, /id: 'campfire-seline'/);
   assert.match(chapter3, /openCampfireSelineDialogue\(\)/);

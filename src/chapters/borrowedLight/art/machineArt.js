@@ -7,7 +7,7 @@
 import Phaser from 'phaser';
 import { DEPTH, INK_HEX, LINE_COLORS } from './palette.js';
 import { makeCanvas, paintBillboard, paintSign } from './paint.js';
-import { NODE_POLE, machineBounds, nodeHead } from '../level.js';
+import { NODE_POLE, cagesAt, machineBounds, nodeHead } from '../level.js';
 
 const TAU = Math.PI * 2;
 
@@ -28,8 +28,11 @@ export function powerLevel(status, t) {
 
 // ---------------------------------------------------------------------------
 // Cables.
-export function drawCable(g, points, line, { queued = false, powered = 0, pulse = null, t = 0, busyFlash = 0 } = {}) {
-  const color = LINE_COLORS[line];
+// Borrowed light runs warm white, whatever the line's colour.
+const BORROWED = Object.freeze({ hex: 0xf6e2b4, glow: 0xfff3d6, dim: 0x3a3428 });
+
+export function drawCable(g, points, line, { queued = false, powered = 0, pulse = null, t = 0, busyFlash = 0, dead = false, charged = false } = {}) {
+  const color = charged ? { ...LINE_COLORS[line], ...BORROWED } : LINE_COLORS[line];
   g.clear();
   const path = () => {
     g.beginPath();
@@ -39,8 +42,22 @@ export function drawCable(g, points, line, { queued = false, powered = 0, pulse 
   };
   g.lineStyle(5, 0x06080a, 0.95);
   path();
-  g.lineStyle(2, color.dim, 0.9);
+  g.lineStyle(2, dead && !charged ? 0x2a2622 : color.dim, 0.9);
   path();
+  if (dead && !charged && points.length > 1) {
+    // A dead line: the cable is cut a hand's width below the box, its end frayed.
+    const a = points[0];
+    const b = points[1];
+    const k = Math.min(1, 46 / Math.max(1, Math.hypot(b.x - a.x, b.y - a.y)));
+    const cx = a.x + (b.x - a.x) * k;
+    const cy = a.y + (b.y - a.y) * k;
+    g.fillStyle(0x0b0c0d, 1).fillRect(cx - 4, cy - 7, 8, 14);
+    g.lineStyle(1.2, 0x8a7a5a, 0.7);
+    g.lineBetween(cx - 1, cy - 7, cx - 5, cy - 11);
+    g.lineBetween(cx + 1, cy - 7, cx + 4, cy - 12);
+    g.lineBetween(cx - 1, cy + 7, cx - 4, cy + 11);
+    g.lineBetween(cx + 1, cy + 7, cx + 5, cy + 10);
+  }
   const glow = Math.max(powered, queued ? 0.45 + 0.35 * Math.sin(t * 6) : 0, busyFlash);
   if (glow > 0.01) {
     g.lineStyle(9, color.hex, 0.12 * glow);
@@ -109,13 +126,20 @@ export function drawNode(g, node, view, t) {
   g.fillStyle(0x0b0806, 1).fillRect(bx - 20, by - 24, 40, 6);
   g.lineStyle(1.4, INK_HEX, 0.55).lineBetween(bx - 20, by - 24, bx + 20, by - 24);
   // Lens: dim idle, pulsing queued, steady powering, blinking when flickering.
-  const powered = status.powering ? powerLevel({ powered: true, flicker: view.flicker }, t) : 0;
-  const lens = Math.max(powered, status.queued ? 0.55 + 0.4 * Math.sin(t * 6) : 0, status.afterglow * 0.8);
+  // Borrowed light (given, or powering a dead node's machine) burns warm white.
+  const warm = status.given || status.charged;
+  const lensColor = warm ? BORROWED : color;
+  const powered = status.powering || status.charged ? powerLevel({ powered: true, flicker: view.flicker }, t) : 0;
+  const lens = Math.max(powered, status.queued || status.given ? 0.55 + 0.4 * Math.sin(t * 6) : 0, status.afterglow * 0.8);
   g.fillStyle(0x07090a, 1).fillCircle(bx, by - 4, 9);
-  g.fillStyle(color.dim, 1).fillCircle(bx, by - 4, 7);
+  g.fillStyle(status.dead && !warm ? 0x1a1816 : lensColor.dim, 1).fillCircle(bx, by - 4, 7);
+  if (status.dead && !warm && lens < 0.02) {
+    // Dead: a cracked, cold lens.
+    g.lineStyle(1.2, 0x5a5248, 0.9).lineBetween(bx - 5, by - 9, bx + 1, by - 3).lineBetween(bx + 1, by - 3, bx - 1, by + 2).lineBetween(bx + 1, by - 3, bx + 5, by - 1);
+  }
   if (lens > 0.02) {
-    g.fillStyle(color.glow, 0.25 * lens).fillCircle(bx, by - 4, 20);
-    g.fillStyle(color.hex, lens).fillCircle(bx, by - 4, 7);
+    g.fillStyle(lensColor.glow, 0.25 * lens).fillCircle(bx, by - 4, 20);
+    g.fillStyle(lensColor.hex, lens).fillCircle(bx, by - 4, 7);
     g.fillStyle(0xffffff, 0.7 * lens).fillCircle(bx - 2, by - 6, 2.2);
   }
   // Tag on a string, swinging a little in the wind.
@@ -128,13 +152,31 @@ export function drawNode(g, node, view, t) {
   const corners = [rot(-12, 12), rot(12, 12), rot(12, 46), rot(-12, 46)];
   g.fillStyle(0xe6dcc2, 1).fillPoints(corners, true);
   g.fillStyle(0xbfae8a, 0.6).fillPoints([rot(-12, 40), rot(12, 40), rot(12, 46), rot(-12, 46)], true);
-  g.fillStyle(color.hex, 0.95).fillPoints([rot(-12, 12), rot(12, 12), rot(12, 18), rot(-12, 18)], true);
-  // Tiny ruled lines like a printed ticket.
-  g.lineStyle(1, 0x7a6a50, 0.6);
-  for (const ly of [24, 29, 34]) { const a = rot(-8, ly); const b = rot(8, ly); g.lineBetween(a.x, a.y, b.x, b.y); }
+  g.fillStyle(status.dead ? 0x6b6256 : color.hex, 0.95).fillPoints([rot(-12, 12), rot(12, 12), rot(12, 18), rot(-12, 18)], true);
+  if (node.phase) {
+    // Two-phase lines carry their bell as a stamp: I (odd) or II (even).
+    g.lineStyle(2.6, 0x2a1d14, 0.95);
+    const bars = node.phase === 'even' ? [-3.5, 3.5] : [0];
+    for (const bxo of bars) { const a = rot(bxo, 22); const b = rot(bxo, 36); g.lineBetween(a.x, a.y, b.x, b.y); }
+    const s0 = rot(-7, 22); const s1 = rot(7, 22); const s2 = rot(-7, 36); const s3 = rot(7, 36);
+    g.lineStyle(1.6, 0x2a1d14, 0.95).lineBetween(s0.x, s0.y, s1.x, s1.y).lineBetween(s2.x, s2.y, s3.x, s3.y);
+  } else if (status.dead) {
+    // Dead: the tag is stamped through, no line printed on it.
+    const a = rot(-8, 24); const b = rot(8, 36); const c = rot(8, 24); const d = rot(-8, 36);
+    g.lineStyle(2, 0x6b2a22, 0.85).lineBetween(a.x, a.y, b.x, b.y).lineBetween(c.x, c.y, d.x, d.y);
+  } else {
+    // Tiny ruled lines like a printed ticket.
+    g.lineStyle(1, 0x7a6a50, 0.6);
+    for (const ly of [24, 29, 34]) { const a = rot(-8, ly); const b = rot(8, ly); g.lineBetween(a.x, a.y, b.x, b.y); }
+  }
   g.lineStyle(1.3, INK_HEX, 0.7).strokePoints(corners, true);
   // The punched hole (queued / powering), sealing when cancelled.
-  const holeR = hole * 5;
+  const holeR = node.phase || status.dead ? 0 : hole * 5;
+  if (node.phase && hole > 0.05) {
+    // Phase tags are punched beside their stamp.
+    const hc = rot(0, 42);
+    g.fillStyle(0x05070a, 1).fillCircle(hc.x, hc.y, hole * 3.2);
+  }
   if (holeR > 0.3) {
     const hc = rot(0, 31);
     g.fillStyle(0x05070a, 1).fillCircle(hc.x, hc.y, holeR);
@@ -200,8 +242,13 @@ export function createMachineView(scene, machine) {
     view.images.on = scene.add.image(machine.x, machine.y, on).setOrigin(0.5, 0.2).setDepth(DEPTH.machine + 0.1).setAlpha(0);
     view.images.glow = scene.add.image(machine.x, machine.y + machine.h / 2, 'bl-glow').setDisplaySize(machine.glow * 1.6, machine.glow * 1.1).setTint(0xe6aab0).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(DEPTH.fx);
   }
-  if (machine.kind === 'lift' || machine.kind === 'bridge' || machine.kind === 'points' || machine.kind === 'drawbridge') {
+  if (['lift', 'bridge', 'points', 'drawbridge', 'cradle', 'counterweight'].includes(machine.kind)) {
     view.images.glow = scene.add.image(0, 0, 'bl-glow').setTint(LINE_COLORS.amber.hex).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(DEPTH.fx);
+  }
+  if (machine.kind === 'lantern') {
+    const top = machine.y - machine.h;
+    view.images.glow = scene.add.image(machine.x, top + 10, 'bl-glow').setDisplaySize(420, 420).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(DEPTH.fx);
+    view.images.pool = scene.add.image(machine.x, machine.y + 4, 'bl-glow').setDisplaySize(420, 60).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(DEPTH.fx);
   }
   if (machine.kind === 'fan') {
     const streaks = makeCanvas(64, 256);
@@ -452,6 +499,132 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       images.glow?.setPosition((x + ex) / 2, (y + ey) / 2 + 8).setDisplaySize(length + 100, 130).setTint(color.hex).setAlpha(0.25 * on);
       break;
     }
+    case 'cradle': {
+      // A window-cleaner's cradle on a girder over the gap. Hoisted up and
+      // dark at rest; on its bell it lowers into line with the roofs.
+      const { x, w, y, hoist } = machine;
+      const gy = y - hoist - 210;
+      const cy = y - hoist * (1 - level);
+      // Girder segment (the cradles share one girder) and the winch.
+      g.fillStyle(0x0d1012, 1).fillRect(x - 100, gy - 14, w + 200, 16);
+      g.lineStyle(1.6, 0x0d1012, 1);
+      for (let tx = x - 100; tx < x + w + 100; tx += 32) g.lineBetween(tx, gy + 2, tx + 16, gy - 14);
+      g.lineStyle(1.2, INK_HEX, 0.28).lineBetween(x - 100, gy - 14, x + w + 100, gy - 14);
+      g.fillStyle(0x1b1612, 1).fillRect(x + w / 2 - 22, gy + 2, 44, 22);
+      g.fillStyle(0x07090a, 1).fillCircle(x + w / 2, gy + 13, 5);
+      g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(x + w / 2, gy + 13, 3.6);
+      // The riser down to the roof edge, where the nodes' cables arrive.
+      if (machine.postX) {
+        g.fillStyle(0x0d1012, 1).fillRect(machine.postX - 3, gy, 6, y - 60 - gy);
+      }
+      // Ropes.
+      g.lineStyle(2, 0x0a0908, 1);
+      g.lineBetween(x + 14, gy + 2, x + 14, cy - 40);
+      g.lineBetween(x + w - 14, gy + 2, x + w - 14, cy - 40);
+      // Cradle: deck, toe board, rail.
+      g.fillStyle(0x2a241e, 1).fillRect(x, cy, w, 18);
+      g.fillStyle(0x0a0908, 0.9).fillRect(x, cy + 15, w, 4);
+      g.lineStyle(2, 0x0e0c0a, 1);
+      for (let tx = x + 6; tx <= x + w - 6; tx += 38) g.lineBetween(tx, cy, tx, cy - 40);
+      g.lineBetween(x, cy - 40, x + w, cy - 40);
+      g.lineBetween(x + 14, cy - 40, x + 14, cy);
+      g.lineBetween(x + w - 14, cy - 40, x + w - 14, cy);
+      g.lineStyle(level > 0.85 && on > 0 ? 2.6 : 1.4, INK_HEX, level > 0.85 && on > 0 ? 0.9 : 0.4).lineBetween(x, cy + 1, x + w, cy + 1);
+      if (on > 0) g.lineStyle(3, color.hex, 0.8 * on).lineBetween(x, cy + 5, x + w, cy + 5);
+      images.glow?.setPosition(x + w / 2, cy + 6).setDisplaySize(w + 140, 120).setTint(color.hex).setAlpha(0.3 * on);
+      break;
+    }
+    case 'lantern': {
+      // A city lantern on an iron post: the light the city still holds.
+      const { x, y, h } = machine;
+      const top = y - h;
+      g.fillStyle(0x0b0907, 1);
+      g.fillRect(x - 4, top + 26, 8, h - 26);
+      g.fillRect(x - 14, y - 10, 28, 10);
+      g.fillRect(x - 9, y - 28, 18, 18);
+      g.fillRect(x - 20, top + 22, 40, 6);
+      g.lineStyle(1.3, INK_HEX, 0.35).lineBetween(x - 4, top + 30, x - 4, y - 30);
+      // Glass box and cap.
+      g.fillStyle(0x0b0907, 1).fillTriangle(x - 22, top - 20, x + 22, top - 20, x, top - 40);
+      g.fillStyle(0x0b0907, 1).fillRect(x - 3, top - 48, 6, 10);
+      const lit = on;
+      g.fillStyle(lit > 0 ? 0xf2c27a : 0x15140f, lit > 0 ? 0.95 : 1).fillRect(x - 16, top - 20, 32, 42);
+      if (lit > 0) {
+        g.fillStyle(0xfff3d6, 0.85 * lit).fillEllipse(x, top + 2, 12, 20);
+      } else if (status.lentOut) {
+        // Its light is out with Butch: a faint ember remembers it.
+        g.fillStyle(0x6d5227, 0.6 + 0.3 * Math.sin(t * 3)).fillCircle(x, top + 8, 2.2);
+      }
+      g.lineStyle(2, 0x0b0907, 1).strokeRect(x - 16, top - 20, 32, 42).lineBetween(x, top - 20, x, top + 22);
+      g.lineStyle(1.2, INK_HEX, 0.5).strokeRect(x - 17, top - 21, 34, 44);
+      images.glow?.setAlpha(0.6 * lit);
+      images.pool?.setAlpha(0.35 * lit);
+      break;
+    }
+    case 'counterweight': {
+      // Two cages on one axle: a small drum for cage A, a big one for the
+      // walkway B, so a short ride down brings the walkway a long way up.
+      const { a, b } = cagesAt(machine, level);
+      const frameTop = machine.yA0 - 300;
+      const ax = machine.x;
+      const bxr = machine.xB + machine.wB;
+      const axle = { x: machine.xB + 10, y: frameTop + 40 };
+      const turn = (machine.yB0 - b.y) / 60; // the wheel turns with the walkway
+      // Frame: two masts and a head beam.
+      g.fillStyle(0x0d1012, 1);
+      g.fillRect(ax - 14, frameTop, 12, machine.yB0 + 600 - frameTop);
+      g.fillRect(bxr + 2, frameTop, 12, machine.yB0 + 600 - frameTop);
+      g.fillRect(ax - 14, frameTop - 12, bxr - ax + 28, 14);
+      g.lineStyle(2, 0x0d1012, 1);
+      for (let my = frameTop + 30; my < machine.yB0 + 560; my += 60) {
+        g.lineBetween(ax - 14, my, ax - 2, my + 60);
+        g.lineBetween(bxr + 14, my, bxr + 2, my + 60);
+      }
+      g.lineStyle(1.3, INK_HEX, 0.3).lineBetween(ax - 14, frameTop - 12, bxr + 14, frameTop - 12);
+      // Wheels: small drum (A side) and big drum (B side) on the same axle.
+      g.fillStyle(0x1b1612, 1).fillCircle(axle.x, axle.y, 58);
+      g.lineStyle(3, 0x0a0908, 1).strokeCircle(axle.x, axle.y, 58);
+      g.lineStyle(2, 0x2c2620, 1);
+      for (let i = 0; i < 6; i += 1) {
+        const ang = turn + (i * TAU) / 6;
+        g.lineBetween(axle.x, axle.y, axle.x + Math.cos(ang) * 56, axle.y + Math.sin(ang) * 56);
+      }
+      g.fillStyle(0x2a241e, 1).fillCircle(axle.x, axle.y, 20);
+      g.lineStyle(1.4, INK_HEX, 0.4).strokeCircle(axle.x, axle.y, 58);
+      g.fillStyle(0x0a0908, 1).fillCircle(axle.x, axle.y, 5);
+      // Ropes: A from the small drum's left, B from the big drum's right.
+      g.lineStyle(2.4, 0x0a0908, 1);
+      g.lineBetween(axle.x - 20, axle.y, a.x + a.w / 2, axle.y);
+      g.lineBetween(a.x + a.w / 2, axle.y, a.x + a.w / 2, a.y - 44);
+      g.lineBetween(axle.x + 58, axle.y, b.x + b.w * 0.55, axle.y);
+      g.lineBetween(b.x + b.w * 0.55, axle.y, b.x + b.w * 0.55, b.y - 44);
+      // Cage A: a small car with a low cage.
+      g.lineStyle(2, 0x0c0b0a, 1);
+      g.lineBetween(a.x + 10, a.y, a.x + 10, a.y - 44).lineBetween(a.x + a.w - 10, a.y, a.x + a.w - 10, a.y - 44).lineBetween(a.x + 10, a.y - 44, a.x + a.w - 10, a.y - 44);
+      hazard(g, a.x, a.y, a.w, 24);
+      g.fillStyle(0x0a0908, 1).fillRect(a.x, a.y + 20, a.w, 6);
+      g.lineStyle(2.6, INK_HEX, 0.9).lineBetween(a.x - 2, a.y + 1, a.x + a.w + 2, a.y + 1);
+      // Walkway B: a long deck with hand rails, hung at both ends.
+      g.fillStyle(0x2a241e, 1).fillRect(b.x, b.y, b.w, 18);
+      g.fillStyle(0x0a0908, 0.9).fillRect(b.x, b.y + 15, b.w, 4);
+      g.lineStyle(2, 0x0e0c0a, 1);
+      for (let tx = b.x + 8; tx < b.x + b.w; tx += 46) g.lineBetween(tx, b.y, tx, b.y - 30);
+      g.lineBetween(b.x, b.y - 30, b.x + b.w, b.y - 30);
+      g.lineBetween(b.x + 14, b.y - 30, b.x + b.w * 0.55, b.y - 44).lineBetween(b.x + b.w - 14, b.y - 30, b.x + b.w * 0.55, b.y - 44);
+      const flush = level > 0.97;
+      g.lineStyle(flush ? 2.6 : 1.6, INK_HEX, flush ? 0.9 : 0.55).lineBetween(b.x, b.y + 1, b.x + b.w, b.y + 1);
+      // Brake: a drum and lever at the gantry end, lit while released.
+      const bk = { x: machine.x - 34, y: machine.yA0 - 6 };
+      g.fillStyle(0x1b1612, 1).fillRect(bk.x - 16, bk.y - 34, 32, 34);
+      g.lineStyle(1.6, 0xb08a4a, 0.75).strokeRect(bk.x - 16, bk.y - 34, 32, 34);
+      g.fillStyle(0x07090a, 1).fillCircle(bk.x, bk.y - 17, 6);
+      g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(bk.x, bk.y - 17, 4.2);
+      const lever = on > 0 ? -1.1 : -0.25;
+      g.lineStyle(4, 0x0c0b0a, 1).lineBetween(bk.x + 10, bk.y - 30, bk.x + 10 + Math.cos(lever) * 30, bk.y - 30 + Math.sin(lever) * 30);
+      if (on > 0) g.lineStyle(3, color.hex, 0.8 * on).lineBetween(b.x, b.y + 5, b.x + b.w, b.y + 5);
+      images.glow?.setPosition(b.x + b.w / 2, b.y + 8).setDisplaySize(b.w + 120, 120).setTint(color.hex).setAlpha(0.25 * on);
+      break;
+    }
     case 'sign': {
       const lit = on * level;
       images.on.setAlpha(lit);
@@ -482,6 +655,21 @@ export function drawGhost(g, machine, to, line, t) {
       g.lineBetween(x1 + (x2 - x1) * a, y1 + (y2 - y1) * a, x1 + (x2 - x1) * c, y1 + (y2 - y1) * c);
     }
   };
+  if (machine.kind === 'counterweight') {
+    // Both cages where the ride leaves them.
+    const { a, b: walk } = cagesAt(machine, 1);
+    g.fillStyle(color.hex, 0.14 + 0.06 * Math.sin(t * 7)).fillRect(walk.x, walk.y, walk.w, 18).fillRect(a.x, a.y, a.w, 18);
+    g.lineStyle(4, color.glow, pulse);
+    for (const c of [a, walk]) {
+      dash(c.x, c.y, c.x + c.w, c.y);
+      dash(c.x, c.y + 18, c.x + c.w, c.y + 18);
+    }
+    return;
+  }
+  if (machine.kind === 'lantern') {
+    g.lineStyle(4, color.glow, pulse).strokeCircle(machine.x, machine.y - machine.h, 30);
+    return;
+  }
   // A soft fill makes the ghost read as a shape, not just a dashed line.
   if (!['points', 'drawbridge', 'fan', 'shutter'].includes(machine.kind)) {
     g.fillStyle(color.hex, 0.14 + 0.06 * Math.sin(t * 7)).fillRect(b.x, b.y, b.w, Math.max(b.h, 18));
