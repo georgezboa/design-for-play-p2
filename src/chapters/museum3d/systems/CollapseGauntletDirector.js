@@ -259,6 +259,10 @@ export class CollapseGauntletDirector {
     root.add(this.impactFxRoot);
     this.impactBursts = [];
     this.emergencyLights = this._buildEmergencyLights();
+    // Dark until the collapse: a light at intensity 0 still costs every
+    // fragment in the calm corridor (three counts it in every shader), so
+    // the red points and rects stay out of the scene until start().
+    this._setEmergencyLightsPresent(false);
     this.keyInsertionRig = makeKeyInsertionRig();
     this.ctx.camera.add(this.keyInsertionRig);
     this.keyInsertion = {
@@ -294,8 +298,14 @@ export class CollapseGauntletDirector {
     this.syncDoor(snapshot.collapse, { immediate: true });
   }
 
+  _setEmergencyLightsPresent(present) {
+    const { rects, points, roomWash, ambientWash } = this.emergencyLights;
+    [...rects, ...points, roomWash, ambientWash].forEach((light) => { light.visible = present; });
+  }
+
   start(snapshot) {
     this.active = true;
+    this._setEmergencyLightsPresent(true);
     this.lastRunId = snapshot.collapse.runId;
     this.finalDoor.void.visible = snapshot.collapse.doorOpen;
     this.ctx.renderer.toneMappingExposure = 0.72;

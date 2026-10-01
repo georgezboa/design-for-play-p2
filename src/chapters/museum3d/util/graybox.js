@@ -54,9 +54,38 @@ export function glassMat() {
   return createMuseumMaterialLibrary().museumGlass;
 }
 
+// World-scale UVs: a material with `userData.worldTile` (metres per texture
+// repeat, a number or [u, v]) shows the same texture density on a 2 m wall
+// and a 30 m one (round 3: one shared repeat stretched the corridor flat).
+// BoxGeometry face order is +x, −x, +y, −y, +z, −z, four vertices each.
+function tileOf(material) {
+  const tile = material?.userData?.worldTile;
+  if (!tile) return null;
+  return Array.isArray(tile) ? tile : [tile, tile];
+}
+
+export function applyWorldUv(geometry, { w, h, d = 0 }, material) {
+  const tile = tileOf(material);
+  const uv = geometry.attributes.uv;
+  if (!tile || !uv) return geometry;
+  const [tu, tv] = tile;
+  if (geometry.type === 'PlaneGeometry') {
+    for (let i = 0; i < uv.count; i += 1) uv.setXY(i, (uv.getX(i) * w) / tu, (uv.getY(i) * h) / tv);
+  } else {
+    const faces = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+    const perFace = uv.count / 6;
+    for (let i = 0; i < uv.count; i += 1) {
+      const [fu, fv] = faces[Math.min(5, Math.floor(i / perFace))];
+      uv.setXY(i, (uv.getX(i) * fu) / tu, (uv.getY(i) * fv) / tv);
+    }
+  }
+  uv.needsUpdate = true;
+  return geometry;
+}
+
 // Box centered at (x, z), sitting on the floor (y=0) unless y is given.
 export function box(parent, { x = 0, y, z = 0, w, h, d, material, name, collide, collisionWorld, collideId }) {
-  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+  const mesh = new THREE.Mesh(applyWorldUv(new THREE.BoxGeometry(w, h, d), { w, h, d }, material), material);
   mesh.position.set(x, y ?? h / 2, z);
   if (name) mesh.name = name;
   parent.add(mesh);
@@ -67,7 +96,7 @@ export function box(parent, { x = 0, y, z = 0, w, h, d, material, name, collide,
 }
 
 export function plane(parent, { x = 0, y = 0, z = 0, w, h, material, rotationX = -Math.PI / 2, rotationY = 0, name }) {
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), material);
+  const mesh = new THREE.Mesh(applyWorldUv(new THREE.PlaneGeometry(w, h), { w, h }, material), material);
   mesh.rotation.x = rotationX;
   mesh.rotation.y = rotationY;
   mesh.position.set(x, y, z);
