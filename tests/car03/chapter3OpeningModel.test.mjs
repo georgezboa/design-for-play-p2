@@ -9,6 +9,7 @@ import {
   createChapter3OpeningModel,
 } from '../../src/cars/presentCity3d/chapter3OpeningModel.js';
 import { CHAPTER3_PERIODS } from '../../src/cars/presentCity3d/chapter3TimeSystem.js';
+import { CHAPTER3_DOCUMENTS } from '../../src/cars/presentCity3d/Chapter3EvidenceViewer.js';
 
 const runtime = fs.readFileSync(new URL('../../src/cars/presentCity3d/Chapter3OpeningRuntime.js', import.meta.url), 'utf8');
 
@@ -236,8 +237,9 @@ describe('Chapter 3 checklist menus', () => {
 
   it('keeps the chapter near its 20–25 minute budget in reading', () => {
     const lines = allContentLines().filter((line) => line.speaker !== 'CHOOSE');
-    // Alpha round 1 length pass: 128 → 96 authored lines in all.
-    assert.ok(lines.length <= 96, `about 96 spoken lines at most (was ~413, then 128); found ${lines.length}`);
+    // Alpha round 1 length pass: 128 → 96 authored lines in all. Round 3
+    // logic pass (G1–G13) restores the set-ups later beats lean on: 110.
+    assert.ok(lines.length <= 110, `about 110 spoken lines at most (was ~413, then 128, then 96); found ${lines.length}`);
   });
 
   // Alpha round 1 · F2 length: first-time play was 60–80 min, mostly talk and
@@ -252,7 +254,13 @@ describe('Chapter 3 checklist menus', () => {
       'past the market scanner': CONTENT.MARKET_CROSSED_DIALOGUE,
       'sleep, the dark, waking': [...CONTENT.SLEEP_DIALOGUE, ...CONTENT.NIGHT_WAKE_DIALOGUE],
       'the first fire row': CONTENT.NIGHT_FIRST_LINE,
-      'the second row, the dark, the dawn bench': [...CONTENT.NIGHT_SECOND_LINE, ...CONTENT.SUNRISE_BENCH_DIALOGUE],
+      // Round 3 (G3): the blackout and the bench painting separate these;
+      // the dawn bench is a run of its own after the dark.
+      'the second row, before the dark': CONTENT.NIGHT_SECOND_LINE,
+      'the dawn bench': CONTENT.SUNRISE_BENCH_DIALOGUE,
+      'Hana at the desk': CONTENT.HOTEL_ARRIVAL_DIALOGUE,
+      'Sava at the records desk': CONTENT.SAVA_LOOK,
+      'the dusk fire': CONTENT.CAMPFIRE_SELINE_DIALOGUE,
       'the station approach': [...CONTENT.STATION_APPROACH_DIALOGUE, ...CONTENT.STATION_MARA_SIGHTED],
       'boarding and the empty seat': [...CONTENT.BOARDING_DIALOGUE, ...CONTENT.BOARDED_DIALOGUE],
       'Seline\'s stone and the pickup line': [...CONTENT.CAMPFIRE_SELINE_STONE_DIALOGUE, { speaker: 'BUTCH', text: 'pickup' }],
@@ -276,6 +284,97 @@ describe('Chapter 3 checklist menus', () => {
     for (const responses of [CONTENT.NIKA_TOPIC_RESPONSES, CONTENT.EDA_TOPIC_RESPONSES, CONTENT.HANA_TOPIC_RESPONSES]) {
       for (const lines of Object.values(responses)) assert.notEqual(lines[0].speaker, 'BUTCH');
     }
+  });
+
+  // Round 3 · G13: the HUD task card never names a person, place or thing
+  // the player has not yet heard, read or seen named. The chapter is walked
+  // in play order; a word counts as told once it is in a caption (speaker
+  // names included: the caption shows them), an evidence card or a tag on
+  // the target. Optional menu topics never count: the player may skip them.
+  it('names in every objective only what the player has been told by then (G13)', () => {
+    const OBJ = CONTENT.CHAPTER3_OBJECTIVES;
+    const DOCS = CHAPTER3_DOCUMENTS;
+    const told = [];
+    const tell = (...items) => {
+      for (const item of items.flat(Infinity)) {
+        if (typeof item === 'string') told.push(item);
+        else if (item.lines) told.push([item.stamp, item.title, ...item.lines].join(' '));
+        else told.push(`${item.speaker} ${item.text}`);
+      }
+    };
+    // Words that name nothing: verbs, articles, directions, counts and the
+    // HUD's own generic nouns.
+    const GENERIC = new Set(('the a to on in by of for with into through beside about who her both two second '
+      + 'step off meet man go enter inspect ask lay file cross keep pace walk together find check upstairs sleep '
+      + 'night open follow read drag wait dawn board leaves chapter 3 complete room door loose burning').split(' '));
+    const normal = (text) => ` ${text.toLowerCase().replace(/<[^>]+>/g, ' ').replace(/\b43\b/g, 'forty-three').replace(/[^a-z0-9-]+/g, ' ')} `;
+    const check = (key) => {
+      const objective = OBJ[key];
+      assert.ok(objective, `${key} is an objective`);
+      const heard = normal(told.join(' '));
+      for (const word of normal(objective).trim().split(/\s+/)) {
+        if (GENERIC.has(word)) continue;
+        const stem = word.length > 3 ? word.replace(/s$/, '') : word;
+        assert.ok(heard.includes(` ${stem}`), `"${objective}" names "${word}" before the player has been told it`);
+      }
+      checked.add(key);
+    };
+    const checked = new Set();
+    const menu = (opening, conclusion) => [opening, conclusion];
+    const script = [
+      // Known from the earlier chapters and the ECHO CITY title card.
+      () => tell('Butch', 'the night service', 'the bell', 'Echo City'),
+      'stepOff',
+      () => tell(CONTENT.ARRIVAL_DIALOGUE, DOCS.CLAIM_CARD),
+      'meetLev',
+      () => tell(CONTENT.LEV_INTRO_DIALOGUE),
+      'oilLine',
+      () => tell(menu(CONTENT.SEAM_DIALOGUE, CONTENT.SEAM_CONCLUSION)),
+      'ministry',
+      () => tell(CONTENT.TRANSPORT_ENTRANCE_DIALOGUE),
+      'publicHall', 'nika',
+      () => tell(menu(CONTENT.NIKA_OPENING, CONTENT.NIKA_CONCLUSION)),
+      'publicTable',
+      () => tell(CONTENT.TICKET_BOARD_CARDS),
+      'fileTickets',
+      () => tell(CONTENT.TICKET_BOARD_CONCLUSION),
+      'eda',
+      () => tell(menu(CONTENT.EDA_OPENING, CONTENT.EDA_CONCLUSION)),
+      'marketScanner', 'keepPaceOlek', 'walkThrough',
+      () => tell(CONTENT.MARKET_CROSSED_DIALOGUE),
+      'serviceJoint',
+      () => tell(DOCS.MAINTENANCE_ORDER_C441, menu(CONTENT.CUT_INTERFACE_OPENING, CONTENT.CUT_INTERFACE_CONCLUSION)),
+      'copperHeron',
+      () => tell(CONTENT.HOTEL_ARRIVAL_DIALOGUE),
+      'hana',
+      () => tell(DOCS.HOTEL_REGISTER, menu(CONTENT.HANA_OPENING, CONTENT.HANA_CONCLUSION)),
+      'upstairs', 'sleep',
+      () => tell(CONTENT.SLEEP_DIALOGUE),
+      'night',
+      () => tell(CONTENT.NIGHT_WAKE_DIALOGUE),
+      'roomDoor', 'followFire', 'readLetters',
+      () => tell(CONTENT.NIGHT_FIRST_LINE),
+      'clamp', 'bell',
+      () => tell(CONTENT.NIGHT_SECOND_LINE),
+      'secondRow',
+      () => tell(CONTENT.SUNRISE_BENCH_DIALOGUE),
+      'dawn', 'platform',
+      () => tell(CONTENT.STATION_APPROACH_DIALOGUE, CONTENT.STATION_MARA_SIGHTED),
+      'stationScanner', 'keepPaceHer', 'walkThrough',
+      () => tell(CONTENT.BOARDING_DIALOGUE),
+      'board', 'leaves', 'complete',
+    ];
+    for (const step of script) {
+      if (typeof step === 'function') step();
+      else check(step);
+    }
+    assert.deepEqual(Object.keys(OBJ).filter((key) => !checked.has(key)), [], 'every objective is walked');
+    // The runtime takes its task-card words from that table only (the dev
+    // character-rig QA page keeps its own label).
+    const objectiveText = (runtime.match(/objectiveText\(\) \{([\s\S]*?)\n  \}/)?.[1] ?? '')
+      .split('\n').filter((line) => !line.includes('this.characterQa')).join('\n');
+    assert.ok(objectiveText.length > 0);
+    assert.doesNotMatch(objectiveText, /return '[A-Z ]{4,}'/);
   });
 
   it('lets the player walk away from scripted beats', () => {

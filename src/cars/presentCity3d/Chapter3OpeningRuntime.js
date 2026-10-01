@@ -7,6 +7,7 @@ import {
   BOARDING_DIALOGUE,
   CAMPFIRE_SELINE_DIALOGUE,
   CAMPFIRE_SELINE_STONE_DIALOGUE,
+  CHAPTER3_OBJECTIVES as OBJECTIVES,
   CHAPTER_END_CARD,
   CUT_INTERFACE_CONCLUSION,
   CUT_INTERFACE_OPENING,
@@ -17,6 +18,7 @@ import {
   HANA_CONCLUSION,
   HANA_OPENING,
   HANA_TOPIC_RESPONSES,
+  HOTEL_ARRIVAL_DIALOGUE,
   LEV_INTRO_DIALOGUE,
   MARKET_CROSSED_DIALOGUE,
   MORNING_LEV_REMINDER,
@@ -29,6 +31,7 @@ import {
   NIKA_TOPIC_RESPONSES,
   OLEK_WALK_BARKS,
   OPENING_POSITIONS,
+  SAVA_LOOK,
   SCANNER_FIELDS,
   SCANNER_WORDS,
   SEAM_CONCLUSION,
@@ -54,7 +57,7 @@ import { Chapter3TicketBoard } from './Chapter3TicketBoard.js';
 import { Chapter3ScannerField } from './Chapter3ScannerField.js';
 import { Chapter3BellClamp } from './Chapter3BellClamp.js';
 import { createChapter3MinistryHall, MINISTRY_POSITIONS } from './Chapter3MinistryHall.js';
-import { Chapter3TimeVisualController } from './Chapter3TimeVisualController.js';
+import { Chapter3TimeVisualController, chapter3LampGlowForClock } from './Chapter3TimeVisualController.js';
 import { Chapter3EvidenceViewer, CHAPTER3_DOCUMENTS } from './Chapter3EvidenceViewer.js';
 import { createChapter3HotelHall, HOTEL_POSITIONS } from './Chapter3HotelHall.js';
 import {
@@ -71,6 +74,7 @@ import { findPath, isWalkable } from './EchoCity3DPreview.js';
 import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js';
 import {
   FIRE_SITE,
+  applyRimLight,
   clampInteriorPoint,
   findInteriorPath,
   interiorSegmentIsClear,
@@ -126,6 +130,9 @@ const DIRECT_WALK_SPEED = 3.1;
 // The default street camera sits closer than the old 2.85 overview so the
 // cast reads at least ~48 px tall at 1080p; dialogue eases in a little more.
 const DIALOGUE_ZOOM_BOOST = 0.45;
+// Round 3 art pass (P2, Butch lost on the cobbles): the street camera sits
+// a little tighter on every tier (3.6 -> 4.0, about 11 % larger).
+const STREET_ZOOM_BOOST = 0.4;
 const LOW_QUALITY_ZOOM_BOOST = 0.5;
 // How far (m) the finale camera follows the departing train before it holds.
 const FINALE_CAMERA_FOLLOW = 9;
@@ -141,6 +148,8 @@ const MINISTRY_WALK_BOUNDS = Object.freeze({ minX: -7.9, maxX: 7.9, minZ: -3.95,
 const DISTANT_GUIDANCE_INTERACTIONS = Object.freeze(new Set([
   'transport-entrance', 'copper-heron-entrance', 'night-burning-message',
   'eda', 'cut-feed-interface',
+  // G10: the optional dusk fire pulses from across the square.
+  'campfire-seline',
 ]));
 const AMBIENT_CITY_ROAM_POINTS = Object.freeze(
   Object.values(WORLD_NODES).map(([x, z]) => Object.freeze([x, z])),
@@ -180,7 +189,7 @@ export const CHAPTER3_DYNAMIC_VOICE_LINES = Object.freeze(
 
 // Speakers the dialogue camera can frame.
 const SPEAKER_HOSTS = Object.freeze({
-  LEV: 'lev', EDA: 'eda', OLEK: 'olek', TOMA: 'toma', PETAR: 'petar', SELINE: 'campfireSeline',
+  LEV: 'lev', EDA: 'eda', OLEK: 'olek', TOMA: 'toma', PETAR: 'petar', SELINE: 'campfireSeline', RADA: 'campfireRada',
   NIKA: 'ministryHall.nika', SAVA: 'ministryHall.sava', CLERK: 'ministryHall.sava', HANA: 'hotelHall.hana',
 });
 
@@ -1030,12 +1039,13 @@ export class Chapter3OpeningRuntime {
     this.hotelRegisterOutline = makeDynamicObjectHighlight(this.hotelHall.register);
     this.hotelBedOutline = makeObjectHighlight(this.hotelHall.bed);
     this.hotelCorridorEntranceOutline = makeObjectHighlight(this.hotelHall.corridorEntrance);
-    this.hotelButchRoomDoorOutline = makeObjectHighlight(this.hotelHall.butchRoomDoor);
-    this.hotelCorridorStairOutline = makeObjectHighlight(this.hotelHall.corridorStairExit);
     this.hotelRoomExitOutline = makeObjectHighlight(this.hotelHall.roomExit);
-    this.hotelLobbyExitOutline = makeObjectHighlight(this.hotelHall.lobbyExit);
     this.queueOutline = makeObjectHighlight(this.ministryHall.queueDispenser);
     this.nikaOutline = makeDynamicObjectHighlight(this.ministryHall.nika);
+    this.savaOutline = makeDynamicObjectHighlight(this.ministryHall.sava);
+    // G10: a warm smoke column over Seline's fire while the stone is there
+    // to be found at dusk (it fades as Butch walks up).
+    this.campfireBeacon = makeGuidanceBeacon(scene, { name: 'chapter3-beacon-campfire', color: 0xd9784a, height: 11 });
     this.boardTableOutline = makeObjectHighlight(this.ministryHall.discardedPrint);
 
     this.chapterEndCard = document.createElement('section');
@@ -1069,6 +1079,15 @@ export class Chapter3OpeningRuntime {
         outline: this.nikaOutline, interior: true,
         eligible: () => this.insideMinistry && Boolean(state().transportNumber) && !state().nikaComplete,
         activate: () => this.openNika(),
+      },
+      {
+        // G11: the silent clerk Nika names. Hover only (never Tab or E).
+        id: 'sava-records', label: 'Sava · issue records', verb: 'LOOK', ambient: true,
+        position: this.ministryHall.sava.position.clone().add(new THREE.Vector3(0, 1.1, 0)),
+        approach: MINISTRY_POSITIONS.savaApproach,
+        outline: this.savaOutline, interior: true, screenRadius: 52,
+        eligible: () => this.insideMinistry && !state().ticketBoardComplete,
+        activate: () => this.openAmbientDialogue(SAVA_LOOK),
       },
       {
         id: 'ticket-board-table', label: 'Both tickets 43 · public table', verb: 'LAY OUT',
@@ -1114,7 +1133,7 @@ export class Chapter3OpeningRuntime {
         activate: () => this.enterCopperHeron(),
       },
       {
-        id: 'hotel-register-hana', label: 'Hana · the register', verb: 'TALK',
+        id: 'hotel-register-hana', label: 'Hana · the guest ledger', verb: 'TALK',
         position: this.hotelHall.register.position, approach: () => this.npcApproach(this.hotelHall.hana, 1.2, 0.5),
         outline: this.hotelRegisterOutline, interior: true,
         eligible: () => this.hotelArea === 'lobby' && state().hotelEntered && !state().hotelCheckInComplete,
@@ -1126,13 +1145,6 @@ export class Chapter3OpeningRuntime {
         outline: this.hotelCorridorEntranceOutline, interior: true,
         eligible: () => this.hotelArea === 'lobby' && state().hotelCheckInComplete && !state().hotelCorridorEntered,
         activate: () => this.enterHotelCorridor(),
-      },
-      {
-        id: 'hotel-private-room-door', label: 'Room 4 · yours', verb: 'OPEN',
-        position: this.hotelHall.butchRoomDoor.position, approach: HOTEL_POSITIONS.butchRoomDoorApproach,
-        outline: this.hotelButchRoomDoorOutline, interior: true,
-        eligible: () => this.hotelArea === 'corridor' && state().hotelCorridorEntered && !state().hotelRoomEntered,
-        activate: () => this.enterButchRoom(),
       },
       {
         id: 'hotel-bed', label: 'The bed', verb: 'SLEEP',
@@ -1147,20 +1159,6 @@ export class Chapter3OpeningRuntime {
         outline: this.hotelRoomExitOutline, interior: true,
         eligible: () => this.hotelArea === 'room' && state().slept && !state().nightRoomLeft && this.butchBedTransition === null,
         activate: () => this.leaveRoomAtNight(),
-      },
-      {
-        id: 'hotel-night-corridor-stairs', label: 'Downstairs', verb: 'GO',
-        position: this.hotelHall.corridorStairExit.position, approach: HOTEL_POSITIONS.corridorStairExitApproach,
-        outline: this.hotelCorridorStairOutline, interior: true,
-        eligible: () => this.hotelArea === 'corridor' && state().nightRoomLeft && !state().nightLobbyReached,
-        activate: () => this.goDownstairsAtNight(),
-      },
-      {
-        id: 'hotel-night-exit', label: 'The street door', verb: 'GO OUT',
-        position: this.hotelHall.lobbyExit.position, approach: HOTEL_POSITIONS.lobbyExitApproach,
-        outline: this.hotelLobbyExitOutline, interior: true,
-        eligible: () => this.hotelArea === 'lobby' && state().nightLobbyReached && !state().nightRouteStarted,
-        activate: () => this.leaveHotelAtNight(),
       },
       {
         id: 'night-burning-message', label: 'The burning letters', verb: 'READ',
@@ -1371,6 +1369,10 @@ export class Chapter3OpeningRuntime {
         material.emissiveIntensity = 0.55;
       }
     });
+    // Round 3 art pass: a warm rim keeps his outline against the cobbles.
+    // A tight edge only: from this high camera most of a thin figure is at a
+    // grazing angle, and a soft rim washed his whole coat pale by day.
+    applyRimLight(rig, { color: 0xffbf73, strength: 0.85, power: 4 });
   }
 
   updateButchMarker() {
@@ -1407,6 +1409,16 @@ export class Chapter3OpeningRuntime {
       const strength = THREE.MathUtils.clamp((distance - 2.5) / 4, 0, 1);
       const ground = this.preview.surfaceHeightAt?.(host.position.x, host.position.z);
       beacon.update({ visible: strength > 0.02, position: host.position, ground, elapsed: this.ambientElapsed, strength });
+    }
+    // G10: the dusk fire (optional, the Echo Stone) smokes above the roofs
+    // while the stone is still there; softer than the story beacons.
+    if (this.campfireBeacon) {
+      const fire = this.campfireKettle.position;
+      const live = outside && free && this.campfireGatheringVisible()
+        && !magicStoneSnapshot().collected.includes('chapter-3');
+      const distance = Math.hypot(this.preview.player.position.x - fire.x, this.preview.player.position.z - fire.z);
+      const strength = live ? 0.55 * THREE.MathUtils.clamp((distance - 6) / 8, 0, 1) : 0;
+      this.campfireBeacon.update({ visible: strength > 0.02, position: fire, ground: 0.1, elapsed: this.ambientElapsed * 0.7, strength });
     }
   }
 
@@ -2117,7 +2129,15 @@ export class Chapter3OpeningRuntime {
     return [clamp.x + towardCamera.x * 1.4, 0.5, clamp.z + towardCamera.z * 1.4];
   }
 
+  // G1: Petar's signed work order opens the beat (it is also what a dusk
+  // save resumes on), then the conversation at the cut.
   openCutInterface() {
+    this.preview.stopWalking();
+    if (this.evidenceViewer.open(CHAPTER3_DOCUMENTS.MAINTENANCE_ORDER_C441, { onClose: () => this.openCutInterfaceTalk() })) return;
+    this.openCutInterfaceTalk();
+  }
+
+  openCutInterfaceTalk() {
     this.butchActionOverride = 'crouch';
     this.openTopicMenu({
       opening: CUT_INTERFACE_OPENING,
@@ -2608,6 +2628,11 @@ export class Chapter3OpeningRuntime {
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
+      // Hana greets him at the desk, so the task card can name her.
+      if (targetArea === 'lobby' && !state.hotelCheckInComplete && !this.hotelGreeted) {
+        this.hotelGreeted = true;
+        this.showLines(HOTEL_ARRIVAL_DIALOGUE);
+      }
     });
   }
 
@@ -2710,14 +2735,6 @@ export class Chapter3OpeningRuntime {
     return true;
   }
 
-  enterButchRoom() {
-    if (this.model.snapshot().hotelRoomEntered) return;
-    this.animateHotelDoor(() => {
-      if (!this.model.enterHotelRoom()) return;
-      this.switchHotelArea('room', { fade: false });
-    });
-  }
-
   // Upstairs is one step: the corridor walk to the door was cut for length.
   enterHotelCorridor() {
     if (!this.model.enterHotelCorridor()) return;
@@ -2734,14 +2751,6 @@ export class Chapter3OpeningRuntime {
       this.model.reachNightLobby();
       this.leaveHotelAtNight();
     });
-  }
-
-  goDownstairsAtNight() {
-    if (this.model.snapshot().nightLobbyReached) return;
-    this.animateHotelDoor(() => {
-      if (!this.model.reachNightLobby()) return;
-      this.switchHotelArea('lobby', { arrival: 'stairs' });
-    }, this.hotelHall.stairDoorPivot, -Math.PI * 0.5);
   }
 
   animateHotelDoor(onComplete, pivot = this.hotelHall.butchDoorPivot, openAngle = Math.PI * 0.5) {
@@ -3194,6 +3203,7 @@ export class Chapter3OpeningRuntime {
     if (!this.insideMinistry && !this.insideHotel) {
       this.timeVisual.requestClock(clock);
       this.timeVisual.update(dt);
+      this.preview.setLampGlow?.(chapter3LampGlowForClock(clock));
     }
     this.updateCharacterAnimations(dt);
     this.updateButchMarker();
@@ -3311,7 +3321,7 @@ export class Chapter3OpeningRuntime {
   updateCameraZoom(dt) {
     if (this.insideHotel || this.insideMinistry || this.preview.developerMode) return;
     const state = this.model.snapshot();
-    let target = this.baseZoom;
+    let target = this.baseZoom + STREET_ZOOM_BOOST;
     // LOW quality frames a little closer: less city in view, larger cast.
     if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
@@ -3348,6 +3358,7 @@ export class Chapter3OpeningRuntime {
     return {
       eda: ['eda'], 'transport-entrance': ['toma'], 'nika-terminal': ['nika'],
       'cut-feed-interface': ['petar'], 'hotel-register-hana': ['hana'], 'campfire-seline': ['campfire-seline'],
+      'sava-records': ['sava'],
     }[interactionId] || [];
   }
 
@@ -3560,45 +3571,44 @@ export class Chapter3OpeningRuntime {
   objectiveText() {
     const state = this.model.snapshot();
     if (this.characterQa) return 'SHARED CHARACTER RIG TEST';
-    if (state.chapterComplete) return 'CHAPTER 3 COMPLETE';
-    if (state.boardedTrain) return 'THE NIGHT SERVICE LEAVES ECHO CITY';
-    if (state.stationScanPassed) return 'BOARD THE NIGHT SERVICE';
+    // Words live in CHAPTER3_OBJECTIVES (G13: each names only what the player
+    // has been told). Beats the runtime passes through in one step (the
+    // queue number, Lev's guided walk, the corridor and the night stairs) no
+    // longer have a card of their own (G14).
+    if (state.chapterComplete) return OBJECTIVES.complete;
+    if (state.boardedTrain) return OBJECTIVES.leaves;
+    if (state.stationScanPassed) return OBJECTIVES.board;
     if (state.stationReached) {
       const snapshot = this.fieldState('station');
-      if (snapshot.matched) return snapshot.pips >= 3 ? 'WALK THROUGH TOGETHER' : 'KEEP PACE BESIDE HER';
-      return 'WALK BESIDE HER THROUGH THE SCANNER';
+      if (snapshot.matched) return snapshot.pips >= 3 ? OBJECTIVES.walkThrough : OBJECTIVES.keepPaceHer;
+      return OBJECTIVES.stationScanner;
     }
-    if (state.sunriseViewed) return 'MEET THE NIGHT SERVICE ON THE PLATFORM';
-    if (state.morningStarted) return 'DAWN';
-    if (state.secondLineLit) return 'READ THE SECOND ROW';
-    if (state.wireReconnected) return 'WAIT FOR THE BELL';
-    if (state.nightFireObserved) return this.bellClamp.active ? 'DRAG THE LOOSE FEED INTO THE CLAMP' : 'READ THE BURNING LETTERS';
-    if (state.nightRouteStarted) return 'FOLLOW THE FIRE TO THE SQUARE';
-    if (state.nightLobbyReached) return 'LEAVE THE HOTEL';
-    if (state.nightRoomLeft) return 'GO DOWNSTAIRS';
-    if (state.slept) return this.dialogue.active ? 'NIGHT' : 'OPEN THE ROOM DOOR';
-    if (state.hotelRoomEntered) return 'SLEEP';
-    if (state.hotelCorridorEntered) return 'FIND YOUR ROOM';
-    if (state.hotelCheckInComplete) return 'GO UPSTAIRS';
-    if (state.hotelEntered) return 'ASK HANA ABOUT ROOM SIX';
-    if (state.cutInterfaceComplete) return 'CHECK IN AT THE COPPER HERON';
-    if (state.marketCrossed) return 'FIND THE CUT FEED IN THE SQUARE';
+    if (state.sunriseViewed) return OBJECTIVES.platform;
+    if (state.morningStarted) return OBJECTIVES.dawn;
+    if (state.secondLineLit) return OBJECTIVES.secondRow;
+    if (state.wireReconnected) return OBJECTIVES.bell;
+    if (state.nightFireObserved) return this.bellClamp.active ? OBJECTIVES.clamp : OBJECTIVES.readLetters;
+    if (state.nightRouteStarted) return OBJECTIVES.followFire;
+    if (state.slept) return this.dialogue.active ? OBJECTIVES.night : OBJECTIVES.roomDoor;
+    if (state.hotelRoomEntered) return OBJECTIVES.sleep;
+    if (state.hotelCheckInComplete) return OBJECTIVES.upstairs;
+    if (state.hotelEntered) return OBJECTIVES.hana;
+    if (state.cutInterfaceComplete) return OBJECTIVES.copperHeron;
+    if (state.marketCrossed) return OBJECTIVES.serviceJoint;
     if (state.edaComplete) {
       const snapshot = this.fieldState('market');
-      if (snapshot.matched) return snapshot.pips >= 3 ? 'WALK THROUGH TOGETHER' : 'KEEP PACE WITH OLEK';
-      return 'CROSS THE MARKET SCANNER BESIDE OLEK';
+      if (snapshot.matched) return snapshot.pips >= 3 ? OBJECTIVES.walkThrough : OBJECTIVES.keepPaceOlek;
+      return OBJECTIVES.marketScanner;
     }
-    if (state.ticketBoardComplete) return 'ASK EDA WHO BOUGHT THE OIL';
-    if (this.ticketBoard.active) return 'FILE THE TWO TICKETS';
-    if (state.nikaComplete) return 'LAY BOTH TICKETS ON THE PUBLIC TABLE';
-    if (state.transportNumber) return 'ASK NIKA ABOUT SEAT 43';
-    if (state.transportHallEntered) return 'TAKE A NUMBER';
-    if (state.transportEntranceReached) return 'ENTER THE PUBLIC HALL';
-    if (state.seamInspected) return 'GO TO THE TRANSPORT MINISTRY';
-    if (state.explorationBriefingComplete) return 'INSPECT THE OIL LINE';
-    if (state.guideStarted) return 'WALK WITH LEV';
-    if (state.trainDeparted) return 'MEET THE INVESTIGATOR';
-    return 'STEP OFF THE NIGHT SERVICE';
+    if (state.ticketBoardComplete) return OBJECTIVES.eda;
+    if (this.ticketBoard.active) return OBJECTIVES.fileTickets;
+    if (state.nikaComplete) return OBJECTIVES.publicTable;
+    if (state.transportHallEntered) return OBJECTIVES.nika;
+    if (state.transportEntranceReached) return OBJECTIVES.publicHall;
+    if (state.seamInspected) return OBJECTIVES.ministry;
+    if (state.guideStarted) return OBJECTIVES.oilLine;
+    if (state.trainDeparted) return OBJECTIVES.meetLev;
+    return OBJECTIVES.stepOff;
   }
 
   updateObjective() {

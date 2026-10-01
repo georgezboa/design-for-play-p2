@@ -273,7 +273,11 @@ describe('Chapter 3 interior replacement placement', () => {
     assert.equal(hall.stairDoorLeaf.position.x, 0.775, 'closed stair leaf remains centered in its frame');
     assert.equal(hall.stairDoorPortal.position.z, 0.06, 'dark stair portal covers the fused closed shell door when the leaf opens');
     assert.match(runtimeSource, /this\.hotelDoorPivot\.rotation\.y = this\.hotelDoorOpenAngle/, 'door animation rotates the hinge pivot');
-    assert.match(runtimeSource, /stairDoorPivot, -Math\.PI \* 0\.5/, 'stair door swings out toward the stair landing');
+    // Round 3 (G14): the corridor and night-stair walks were cut for length,
+    // so their door interactions (Room 4, the stairs, the street door) went
+    // too; only Butch's room door still swings.
+    assert.doesNotMatch(runtimeSource, /goDownstairsAtNight|enterButchRoom|hotel-night-corridor-stairs|hotel-night-exit|hotel-private-room-door/, 'no dead hotel door interactions');
+    assert.match(runtimeSource, /leaveRoomAtNight\(\) \{[\s\S]*?this\.animateHotelDoor\(/, 'the room door still opens on its hinge at night');
     // Release cut: the eight occupied-room doors are no longer interactable.
     assert.doesNotMatch(runtimeSource, /VOICE BEHIND DOOR|hotel-background-room-door/, 'occupied guest rooms are scenery, not knocks');
   });
