@@ -25,10 +25,19 @@ export function afterglowLight(head, glow) {
   };
 }
 
+// v2 · the light Butch has borrowed and carries in his lamp is borrowed
+// light too: it shows (and holds) the dark decks around him as he walks.
+export const CARRIED_RADIUS = 300;
+export function carriedLight(lamp) {
+  if (!lamp) return null;
+  return { x: lamp.x, y: lamp.y, r: CARRIED_RADIUS, strength: 0.9 };
+}
+
 // A powered machine lights its own surroundings (signs by their glow radius).
 // `bounds` is machineBounds(machine, level); `on` is powerLevel (0..1).
 export function machineLight(machine, bounds, on) {
   if (!(on > 0)) return null;
+  if (machine.kind === 'lantern') return { x: machine.x, y: machine.y - machine.h + 10, r: 380, strength: 0.85 * on };
   const r = machine.kind === 'sign' ? machine.glow : Math.min(420, Math.max(160, bounds.w * 0.6));
   return {
     x: bounds.x + bounds.w / 2,
