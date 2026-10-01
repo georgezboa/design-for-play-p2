@@ -1,142 +1,40 @@
 // Chapter 4 // THE PAINTED COUNTRY — what is under the grey.
 //
-// Each gallery plate is a pencil drawing composed once into a texture: a
-// scene (the city room, the orchard house, Rosa's own drawing) plus the marks
-// from scripts/art/generate-chapter4-sign-icons.mjs at the rects carLayout.js
-// gives them. The archive's grey is drawn over it cell by cell by the scene,
-// never baked in, so washing reveals exactly this image.
+// Each gallery plate is a pencil drawing composed once into a texture
+// (art/plateArt.js): a scene (the city room, the orchard house, Rosa's own
+// drawing) plus the five marks (art/marksArt.js) at the rects carLayout.js
+// gives them. A second texture, `<key>-painted`, is the same plate with
+// Rosa's colour back in it; the scene blooms it in when the plate comes
+// clear. The archive's grey is drawn over it cell by cell by the scene, never
+// baked in, so washing reveals exactly this image.
 
-import { PAPER } from './paperPalette.js';
-import { draftLine, draftRect, hatchRect, makeRandom } from './paperSurface.js';
-import { PLATE_GRID } from './carLayout.js';
+import { PLATE_GRID, SIGN } from './carLayout.js';
+import { makeRandom } from './paperSurface.js';
+import { paintMark, paintSign } from './art/marksArt.js';
+import { paintPlate } from './art/plateArt.js';
 
 export const PLATE_TEX = Object.freeze({ w: 480, h: 280 });
 export const PLATE_CELL = PLATE_TEX.w / PLATE_GRID.cols; // 40
 
-const cellRect = (rect) => ({
-  x: rect.c * PLATE_CELL,
-  y: rect.r * PLATE_CELL,
-  w: rect.w * PLATE_CELL,
-  h: rect.h * PLATE_CELL,
-});
-
-function drawCity(g, rnd) {
-  // The rented room: a window on the terminal, rain, a clock, a narrow bed.
-  g.lineStyle(2, PAPER.graphite, 0.8);
-  draftRect(g, rnd, 300, 18, 150, 118, { overshoot: 6, jitter: 0.8 });
-  draftLine(g, rnd, 375, 18, 375, 136, { overshoot: 3 });
-  draftLine(g, rnd, 300, 77, 450, 77, { overshoot: 3 });
-  g.lineStyle(1, PAPER.graphiteSoft, 0.6);
-  for (let i = 0; i < 18; i += 1) {
-    const x = 306 + rnd() * 138;
-    const y = 24 + rnd() * 100;
-    g.lineBetween(x, y, x - 4, y + 12);
-  }
-  // the terminal clock across the street
-  g.lineStyle(1.4, PAPER.graphiteSoft, 0.8).strokeCircle(340, 48, 13);
-  g.lineBetween(340, 48, 340, 39);
-  g.lineBetween(340, 48, 347, 51);
-  // the bed and nightstand
-  g.lineStyle(2, PAPER.graphite, 0.7);
-  draftLine(g, rnd, 20, 236, 250, 236, { overshoot: 5 });
-  draftLine(g, rnd, 20, 236, 20, 270, { overshoot: 3 });
-  draftLine(g, rnd, 250, 236, 250, 270, { overshoot: 3 });
-  hatchRect(g, rnd, 24, 240, 222, 28, { spacing: 9, alpha: 0.35 });
-  draftRect(g, rnd, 272, 196, 70, 74, { overshoot: 4, jitter: 0.6 });
-  draftLine(g, rnd, 272, 226, 342, 226, { overshoot: 2 });
-  // floorboards
-  g.lineStyle(1, PAPER.graphiteFaint, 0.7);
-  [258, 270].forEach((y) => draftLine(g, rnd, 350, y, 476, y, { overshoot: 0, jitter: 0.6 }));
-}
-
-function drawOrchard(g, rnd) {
-  // The orchard house from the gate: roof, porch, trees, the path.
-  g.lineStyle(2, PAPER.graphite, 0.78);
-  draftLine(g, rnd, 110, 110, 190, 40, { overshoot: 5 });
-  draftLine(g, rnd, 190, 40, 350, 40, { overshoot: 5 });
-  draftLine(g, rnd, 350, 40, 420, 110, { overshoot: 5 });
-  draftRect(g, rnd, 124, 110, 282, 130, { overshoot: 6, jitter: 0.7 });
-  hatchRect(g, rnd, 128, 44, 270, 60, { spacing: 10, alpha: 0.3 });
-  draftRect(g, rnd, 150, 140, 40, 40, { overshoot: 3 });
-  draftRect(g, rnd, 350, 140, 40, 40, { overshoot: 3 });
-  draftRect(g, rnd, 236, 170, 56, 70, { overshoot: 3 });
-  // trees either side
-  g.lineStyle(1.6, PAPER.graphiteSoft, 0.8);
-  [[40, 150], [456, 130]].forEach(([x, y]) => {
-    g.strokeCircle(x, y, 34);
-    g.strokeCircle(x - 14, y - 16, 20);
-    draftLine(g, rnd, x, y + 30, x, 270, { overshoot: 0, jitter: 0.8 });
+// `mark-<sign>` (the bare mark) and `sign-<sign>` (the door's pinned card),
+// drawn once per game.
+export function ensureMarkTextures(scene) {
+  Object.values(SIGN).forEach((sign) => {
+    if (!scene.textures.exists(`mark-${sign}`)) scene.textures.addCanvas(`mark-${sign}`, paintMark(sign));
+    if (!scene.textures.exists(`sign-${sign}`)) scene.textures.addCanvas(`sign-${sign}`, paintSign(sign));
   });
-  // the path to the gate
-  g.lineStyle(1.3, PAPER.graphiteFaint, 0.9);
-  draftLine(g, rnd, 250, 240, 200, 280, { overshoot: 0 });
-  draftLine(g, rnd, 280, 240, 330, 280, { overshoot: 0 });
-  g.lineStyle(2, PAPER.graphite, 0.6);
-  for (let x = 20; x < 470; x += 22) draftLine(g, rnd, x, 252, x, 276, { overshoot: 2, jitter: 0.5, segments: 3 });
-  draftLine(g, rnd, 10, 258, 470, 258, { overshoot: 0, jitter: 0.6 });
 }
 
-function drawChildDrawing(g, rnd) {
-  // A nine-year-old's crayon: a sun in the corner, trees like lollipops, a
-  // green ground line, and a tall figure walking up the path — seen from
-  // behind, as Rosa drew her sister coming home.
-  g.fillStyle(0xe7c35a, 0.35).fillCircle(456, 24, 30);
-  g.lineStyle(2, 0xc8892f, 0.7);
-  for (let i = 0; i < 9; i += 1) {
-    const a = Math.PI * 0.5 + (i / 8) * Math.PI * 0.5;
-    g.lineBetween(456 + Math.cos(a) * 36, 24 + Math.sin(a) * 36, 456 + Math.cos(a) * 52, 24 + Math.sin(a) * 52);
-  }
-  g.lineStyle(3, 0x7a9a62, 0.55);
-  draftLine(g, rnd, 0, 262, 480, 256, { overshoot: 0, jitter: 3, segments: 14 });
-  [[250, 150], [330, 170], [420, 150]].forEach(([x, y]) => {
-    g.fillStyle(0x7a9a62, 0.28).fillCircle(x, y - 40, 34);
-    g.lineStyle(2.4, PAPER.graphite, 0.55).strokeCircle(x, y - 40, 34);
-    g.lineStyle(4, 0x8a6a4a, 0.5).lineBetween(x, y - 6, x, 258);
-    g.fillStyle(0xb4453a, 0.55);
-    for (let i = 0; i < 4; i += 1) g.fillCircle(x - 18 + rnd() * 36, y - 58 + rnd() * 34, 5);
-  });
-  // "my sister coming home": a tall figure, back turned, walking up the path
-  const fx = 300;
-  g.lineStyle(2.4, PAPER.graphite, 0.75);
-  g.strokeCircle(fx, 196, 9);
-  draftLine(g, rnd, fx, 205, fx, 236, { overshoot: 0, jitter: 1.2 });
-  draftLine(g, rnd, fx, 214, fx - 12, 228, { overshoot: 0, jitter: 1.2 });
-  draftLine(g, rnd, fx, 214, fx + 12, 228, { overshoot: 0, jitter: 1.2 });
-  draftLine(g, rnd, fx, 236, fx - 8, 256, { overshoot: 0, jitter: 1.2 });
-  draftLine(g, rnd, fx, 236, fx + 8, 256, { overshoot: 0, jitter: 1.2 });
-  g.fillStyle(PAPER.graphite, 0.5).fillTriangle(fx - 10, 208, fx + 10, 208, fx, 240);
-}
+export const paintedPlateKey = (plate) => `${plate.key}-painted`;
 
-const SCENES = { city: drawCity, orchard: drawOrchard, drawing: drawChildDrawing };
-
-// Builds `plate.key` once. Marks come from the MARK_ART images, which must be
-// loaded as `mark-<sign>`.
+// Builds `plate.key` (pencil) and `<key>-painted` once.
 export function buildPlateTexture(scene, plate) {
   if (scene.textures.exists(plate.key)) return plate.key;
-  const { w, h } = PLATE_TEX;
-  const rt = scene.add.renderTexture(0, 0, w, h).setOrigin(0).setVisible(false);
-  const g = scene.make.graphics({ add: false });
-  const rnd = makeRandom(0x9b1e + plate.id.length * 31);
-  g.fillStyle(PAPER.sheetHigh, 1).fillRect(0, 0, w, h);
-  g.lineStyle(1, PAPER.graphiteFaint, 0.25);
-  for (let y = 22; y < h; y += 26) g.lineBetween(10, y, w - 10, y + (rnd() - 0.5) * 3);
-  SCENES[plate.scene]?.(g, rnd);
-  rt.draw(g);
-  g.destroy();
-
-  const place = (sign, rect, inset = 0) => {
-    if (!rect || !scene.textures.exists(`mark-${sign}`)) return;
-    const r = cellRect(rect);
-    const size = Math.min(r.w, r.h) - inset * 2;
-    const img = scene.make.image({ x: r.x + r.w / 2, y: r.y + r.h / 2, key: `mark-${sign}`, add: false });
-    img.setDisplaySize(size, size);
-    rt.draw(img);
-    img.destroy();
-  };
-  place(plate.primarySign, plate.markRect, 2);
-  place(plate.sharedSign, plate.hawthornRect, 1);
-  if (plate.roseRect) place('rose', plate.roseRect, 3);
-  rt.saveTexture(plate.key);
+  ensureMarkTextures(scene);
+  const marks = Object.fromEntries(Object.values(SIGN).map((sign) => [sign, scene.textures.get(`mark-${sign}`).getSourceImage()]));
+  const art = paintPlate(plate, marks, PLATE_CELL);
+  scene.textures.addCanvas(plate.key, art.pencil);
+  scene.textures.addCanvas(paintedPlateKey(plate), art.painted);
   return plate.key;
 }
 

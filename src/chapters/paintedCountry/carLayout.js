@@ -94,14 +94,9 @@ export const SIGN_LABELS = Object.freeze({
   [SIGN.ROSE]: 'ROSE',
 });
 
-// Original project art, rendered by scripts/art/generate-chapter4-sign-icons.mjs.
-// sign-* is the door plate; mark-* is the bare mark the gallery plates use.
-export const SIGN_ART = Object.freeze(Object.fromEntries(
-  Object.values(SIGN).map((sign) => [sign, `assets/chapter04/icons/sign-${sign}.webp`]),
-));
-export const MARK_ART = Object.freeze(Object.fromEntries(
-  Object.values(SIGN).map((sign) => [sign, `assets/chapter04/icons/mark-${sign}.webp`]),
-));
+// The marks are drawn at boot in the chapter's own pencil and wash
+// (art/marksArt.js, via platePencil.js ensureMarkTextures): `sign-<id>` is the
+// door's pinned card, `mark-<id>` the bare mark the gallery plates compose.
 
 // ------------------------------------------------------------------ plates
 // Three plates, hung too high to read from the floor. Each is under the

@@ -10,7 +10,6 @@ import {
   FOLDS,
   GRID,
   JUMP_VELOCITY,
-  MARK_ART,
   MOVE_SPEED,
   PAINTINGS,
   PIGMENT_ZONE,
@@ -18,7 +17,6 @@ import {
   RACK_Y,
   REACH,
   SEALED_RECTS,
-  SIGN_ART,
   SIGN_LABELS,
   VARNISH_RECTS,
   VIEW,
@@ -29,7 +27,11 @@ import {
 } from './carLayout.js';
 import { colOf, createPaintedCar, idx, plateCell, rectPlateCells, rowOf } from './paintedCarModel.js';
 import { PAPER } from './paperPalette.js';
-import { drawPaintedPlayer } from './paintedPlayerFigure.js';
+import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
+import { addFrames, addLayers, ensureCanvasTexture } from './art/artTextures.js';
+import { paintCountry } from './art/countryArt.js';
+import { paintCarriage, paintDoor } from './art/carriageArt.js';
+import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
 import {
   buildPaperGrain,
   draftLine,
@@ -51,7 +53,7 @@ import {
   px,
   showTitleCard,
 } from './chapterUi.js';
-import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell } from './platePencil.js';
+import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell, ensureMarkTextures, paintedPlateKey } from './platePencil.js';
 import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
 import { createFallGuard, placeBody } from './fallGuard.js';
@@ -101,8 +103,9 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   preload() {
-    Object.entries(SIGN_ART).forEach(([sign, file]) => this.load.image(`sign-${sign}`, file));
-    Object.entries(MARK_ART).forEach(([sign, file]) => this.load.image(`mark-${sign}`, file));
+    // The door's signs and the plates' marks are drawn, not loaded
+    // (art/marksArt.js, in create()).
+    preloadPaintedPlayer(this);
     if (!this.cache.audio.exists('chapter4-drawing-music')) {
       this.load.audio('chapter4-drawing-music', '/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3');
     }
@@ -169,13 +172,14 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildGrid();
     this.buildVarnish();
     this.buildSealed();
+    ensureMarkTextures(this);
     PAINTINGS.forEach((plate) => buildPlateTexture(this, plate));
     this.buildGallery();
     this.buildDoor();
     this.buildSolids();
     this.buildPlayer();
-    this.paintLayer = this.graphics(DEPTH.PAINT);
-    this.blockLayer = this.graphics(DEPTH.BLOCK);
+    this.paintLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.PAINT);
+    this.blockLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.BLOCK);
     this.brushCursor = this.graphics(DEPTH.CURSOR);
     this.doorLayer = this.graphics(DEPTH.DOOR);
     this.markerLayer = this.graphics(DEPTH.CURSOR - 1);
@@ -297,46 +301,28 @@ export class PaintedCountryScene extends Phaser.Scene {
     }
   }
 
+  // The country through the windows: three views of Rosa's Bellwether,
+  // drawn in pencil and waiting for their colour. Each window blooms when
+  // its plate comes clear; all of the car does when the door opens.
   buildCountry() {
     const container = this.add.container(0, 0).setDepth(DEPTH.COUNTRY);
-    const g = this.add.graphics();
-    container.add(g);
-
-    g.fillStyle(PAPER.sheetHigh, 1);
-    g.fillRect(0, 100, WORLD.w, 230);
-    for (let x = -60; x < WORLD.w; x += 330) this.foldedHill(g, x, 190, 380, 130, PAPER.sheet, PAPER.sheetMid);
-    for (let x = 140; x < WORLD.w; x += 300) this.foldedHill(g, x, 220, 320, 106, PAPER.sheetMid, PAPER.sheetLow);
-
-    g.lineStyle(1.5, PAPER.graphiteFaint, 0.95);
-    for (let x = 0; x < WORLD.w; x += 420) {
-      draftLine(g, this.rnd, x, 300, x + 420, 284, { overshoot: 0, jitter: 2.6, segments: 12 });
-    }
+    const sky = this.add.graphics();
+    sky.fillStyle(PAPER.sheetHigh, 1);
+    WINDOWS.forEach((win) => sky.fillRect(win.x, win.y, win.w, win.h));
+    container.add(sky);
+    const views = [
+      [{ kind: 'farm', x: 40, s: 0.85 }, { kind: 'orchard', x: 170, s: 0.6, n: 2 }],
+      [{ kind: 'orchard', x: 10, s: 0.7, n: 3 }, { kind: 'hawthorn', x: 160, s: 0.9 }, { kind: 'tree', x: 220, s: 0.7 }],
+      [{ kind: 'house', x: 30, s: 0.75, lit: true }, { kind: 'orchard', x: 120, s: 0.65, n: 3 }],
+    ];
+    this.windowViews = WINDOWS.map((win, i) => addLayers(this, `ch4-gallery-window-${i}`, () => paintCountry({
+      w: win.w + 20, h: win.h + 10, seed: 0x3a1 + i * 97, horizon: 0.3, features: views[i], washScale: 0.5, density: 0.6,
+    }), { x: win.x - 10, y: win.y - 5, depth: 0, washAlpha: 0, container }));
 
     const mask = this.add.graphics().setVisible(false);
     mask.fillStyle(0xffffff, 1);
     WINDOWS.forEach((win) => mask.fillRect(win.x, win.y, win.w, win.h));
     container.setMask(mask.createGeometryMask());
-  }
-
-  foldedHill(g, x, y, w, h, faceColor, shadeColor) {
-    const peak = x + w * 0.4;
-    g.fillStyle(faceColor, 1);
-    g.beginPath();
-    g.moveTo(x, y + h);
-    g.lineTo(peak, y);
-    g.lineTo(peak + w * 0.14, y + h);
-    g.closePath();
-    g.fillPath();
-    g.fillStyle(shadeColor, 1);
-    g.beginPath();
-    g.moveTo(peak, y);
-    g.lineTo(x + w, y + h * 0.78);
-    g.lineTo(x + w, y + h);
-    g.lineTo(peak + w * 0.14, y + h);
-    g.closePath();
-    g.fillPath();
-    g.lineStyle(1.2, PAPER.graphiteSoft, 0.85);
-    draftLine(g, this.rnd, x, y + h, peak, y, { overshoot: 0, jitter: 0.8 });
   }
 
   buildCarriage() {
@@ -357,6 +343,22 @@ export class PaintedCountryScene extends Phaser.Scene {
         flip: true,
       }),
     );
+
+    // The car itself, drawn: panels, curtains, the rack, lamps, the stove.
+    // Its washes bloom in when the door opens.
+    this.carriageArt = addLayers(this, 'ch4-gallery-car', () => paintCarriage({
+      w: WORLD.w,
+      h: WORLD.h,
+      ceilingY: CEILING_Y,
+      rackY: RACK_Y,
+      wainscotY: WAINSCOT_Y,
+      floorY: FLOOR_Y,
+      windows: WINDOWS,
+      skip: [{ x0: 102 * CELL - 20, x1: 108 * CELL + 20 }, { x0: DOOR.x - 10, x1: WORLD.w }],
+      stoveX: 330,
+      railFrom: 960,
+      railTo: 1900,
+    }), { depth: DEPTH.WALL + 2.5, washAlpha: 0 });
 
     // The torn edges of the two holes.
     for (let i = 0; i < FLOOR_SPANS.length - 1; i += 1) {
@@ -412,7 +414,8 @@ export class PaintedCountryScene extends Phaser.Scene {
   // "Official record": hard gloss over the air under the orchard plate, drawn
   // per cell so it thins and vanishes as it is washed.
   buildVarnish() {
-    this.varnishLayer = this.graphics(DEPTH.VARNISH);
+    this.ensureCellAtlas();
+    this.varnishLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.VARNISH);
     this.varnishStamps = VARNISH_RECTS.map((rect) => this.add
       // Low in the gloss, clear of the (lowered) orchard plate's title.
       .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows * 0.72) * CELL, 'OFFICIAL RECORD', {
@@ -426,16 +429,12 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   redrawVarnish() {
-    const g = this.varnishLayer;
-    g.clear();
+    const b = this.varnishLayer;
+    b.clear();
     this.car.state.varnish.forEach((coats, key) => {
-      const x = (key % GRID.w) * CELL;
-      const y = Math.floor(key / GRID.w) * CELL;
-      g.fillStyle(0xfffaf0, 0.28 + 0.16 * coats).fillRect(x, y, CELL, CELL);
-      g.lineStyle(1, 0xc9bda3, 0.55).strokeRect(x + 0.5, y + 0.5, CELL - 1, CELL - 1);
-      g.lineStyle(1.4, 0xffffff, 0.75);
-      g.lineBetween(x + 3, y + CELL - 3, x + CELL - 3, y + 3);
-      if (coats > 1) g.lineBetween(x + 9, y + CELL - 2, x + CELL - 2, y + 9);
+      const x = (key % GRID.w) * CELL - CELL_STAMP.bleed;
+      const y = Math.floor(key / GRID.w) * CELL - CELL_STAMP.bleed;
+      b.create(x, y, `varnish-${Math.min(2, coats)}`);
     });
     VARNISH_RECTS.forEach((rect, i) => {
       let left = 0;
@@ -468,11 +467,19 @@ export class PaintedCountryScene extends Phaser.Scene {
         .setOrigin(0)
         .setDepth(DEPTH.PICTURE)
         .setDisplaySize(picture.w - inset * 2, picture.h - inset * 2);
+      // the same plate with Rosa's colour back in it, bloomed in on developing
+      const painted = this.add
+        .image(picture.x + inset, picture.y + inset, paintedPlateKey(picture))
+        .setOrigin(0)
+        .setDepth(DEPTH.PICTURE + 0.2)
+        .setDisplaySize(picture.w - inset * 2, picture.h - inset * 2)
+        .setAlpha(0);
       const cover = this.graphics(DEPTH.PICTURE + 0.5);
 
       g.lineStyle(3, PAPER.graphite, 0.94);
       draftRect(g, this.rnd, picture.x, picture.y, picture.w, picture.h, { overshoot: 5, jitter: 0.6 });
-      g.fillStyle(PAPER.sheetHigh, 1);
+      // a plain wooden frame, kraft-washed
+      g.fillStyle(PAPER.kraft, 0.75);
       g.fillRect(picture.x, picture.y, picture.w, inset);
       g.fillRect(picture.x, picture.y + picture.h - inset, picture.w, inset);
       g.fillRect(picture.x, picture.y, inset, picture.h);
@@ -495,7 +502,7 @@ export class PaintedCountryScene extends Phaser.Scene {
         })
         .setOrigin(0.5, 0)
         .setDepth(DEPTH.PICTURE);
-      this.pictureViews[picture.id] = { plate, cover };
+      this.pictureViews[picture.id] = { plate, painted, cover, bloomed: false };
     });
   }
 
@@ -506,7 +513,15 @@ export class PaintedCountryScene extends Phaser.Scene {
       const state = this.car.plateState(picture.id);
       const g = view.cover;
       g.clear();
-      if (state.developed) return;
+      if (state.developed) {
+        if (!view.bloomed) {
+          view.bloomed = true;
+          this.tweens.add({ targets: view.painted, alpha: 1, duration: 1400, ease: 'Sine.easeOut' });
+          // its window's country takes its colour back too
+          this.windowViews?.[PAINTINGS.indexOf(picture)]?.bloomAll({ duration: 1800, stagger: 140 });
+        }
+        return;
+      }
       const w = picture.w - inset * 2;
       const h = picture.h - inset * 2;
       const cw = w / PLATE_GRID.cols;
@@ -525,16 +540,13 @@ export class PaintedCountryScene extends Phaser.Scene {
   // ============================================================== the door
 
   buildDoor() {
-    const g = this.graphics(DEPTH.DOOR - 1);
-    this.doorFace = g;
-    g.fillStyle(PAPER.sheetMid, 1);
-    g.fillRect(DOOR.x, DOOR.y, DOOR.w, DOOR.h);
-    g.lineStyle(2.6, PAPER.graphite, 0.94);
-    draftRect(g, this.rnd, DOOR.x, DOOR.y, DOOR.w, DOOR.h, { overshoot: 6, jitter: 0.7 });
-    hatchRect(g, this.rnd, DOOR.x + 8, DOOR.y + 8, DOOR.w - 16, DOOR.h - 16, {
-      spacing: 15,
-      alpha: 0.12,
+    // The vestibule door, drawn (art/carriageArt.js); it fades as it opens.
+    const face = addLayers(this, 'ch4-gallery-door', () => paintDoor(DOOR.w, DOOR.h), {
+      x: DOOR.x, y: DOOR.y, depth: DEPTH.DOOR - 1, washAlpha: 1, groups: ['red', 'yellow'],
     });
+    const base = this.graphics(DEPTH.DOOR - 1.5);
+    base.fillStyle(PAPER.sheetMid, 1).fillRect(DOOR.x + 2, DOOR.y + 2, DOOR.w - 4, DOOR.h - 4);
+    this.doorFace = [base, ...face.images()];
 
     // The opening behind the door, shown when it swings: pencil light.
     this.doorway = this.graphics(DEPTH.DOOR - 2);
@@ -616,7 +628,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.walker.body.setCollideWorldBounds(false);
     this.physics.add.collider(this.walker, this.solids);
 
-    this.figure = this.graphics(DEPTH.FIGURE);
+    this.figure = createPaintedPlayer(this, DEPTH.FIGURE);
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
     this.cameras.main.setDeadzone(240, 160);
 
@@ -685,6 +697,7 @@ export class PaintedCountryScene extends Phaser.Scene {
       fontFamily: MONO, fontSize: '14px', color: UI.ink, fontStyle: 'bold', letterSpacing: 3,
     }).setOrigin(0.5, 0));
     v.plate = fixed(this.add.image(VIEWER.x, VIEWER.y, PAINTINGS[0].key).setOrigin(0).setDepth(D + 1));
+    v.paint = fixed(this.add.image(VIEWER.x, VIEWER.y, paintedPlateKey(PAINTINGS[0])).setOrigin(0).setDepth(D + 1).setAlpha(0));
     v.frame = fixed(this.add.graphics().setDepth(D + 1));
     v.frame.lineStyle(3, PAPER.graphite, 0.9).strokeRect(VIEWER.x - 6, VIEWER.y - 6, VIEWER.w + 12, VIEWER.h + 12);
     v.grey = fixed(this.add.graphics().setDepth(D + 2));
@@ -714,7 +727,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   viewerObjects() {
     const v = this.viewer;
-    return [v.scrim, v.card, v.title, v.plate, v.frame, v.grey, ...v.stamps, v.caption, v.close, v.noteLayer,
+    return [v.scrim, v.card, v.title, v.plate, v.paint, v.frame, v.grey, ...v.stamps, v.caption, v.close, v.noteLayer,
       ...v.notePlates.flatMap((n) => [n.img, n.label])];
   }
 
@@ -725,7 +738,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.viewerObjects().forEach((obj) => obj.setVisible(false));
     if (on) {
       [v.scrim, v.card, v.title, v.close].forEach((obj) => obj.setVisible(true));
-      if (mode === 'plate') [v.plate, v.frame, v.grey, v.caption].forEach((obj) => obj.setVisible(true));
+      if (mode === 'plate') [v.plate, v.paint, v.frame, v.grey, v.caption].forEach((obj) => obj.setVisible(true));
       if (mode === 'notes') {
         v.noteLayer.setVisible(true);
         v.notePlates.forEach((n) => { n.img.setVisible(true); n.label.setVisible(true); });
@@ -746,6 +759,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     v.picture = picture;
     v.title.setText(picture.title);
     v.plate.setTexture(picture.key).setDisplaySize(VIEWER.w, VIEWER.h);
+    this.tweens.killTweensOf(v.paint);
+    v.paint.setTexture(paintedPlateKey(picture)).setDisplaySize(VIEWER.w, VIEWER.h).setAlpha(this.car.plateState(picture.id).developed ? 1 : 0);
     v.close.setText(`${this.brush.label('wash')} · WASH THE GREY      ${this.brush.label('read')} · PUT IT BACK`);
     picture.varnishRects.forEach((rect, i) => {
       v.stamps[i]?.setPosition(VIEWER.x + (rect.c + rect.w / 2) * PLATE_CELL, VIEWER.y + (rect.r + rect.h / 2) * PLATE_CELL);
@@ -776,6 +791,10 @@ export class PaintedCountryScene extends Phaser.Scene {
     });
     for (let i = picture.varnishRects.length; i < v.stamps.length; i += 1) v.stamps[i].setVisible(false);
     v.caption.setText(state.developed ? picture.caption : '');
+    // The plate comes clear: Rosa's colour blooms back into it.
+    if (state.developed && v.paint.alpha === 0 && !this.tweens.isTweening(v.paint)) {
+      this.tweens.add({ targets: v.paint, alpha: 1, duration: 1300, ease: 'Sine.easeOut' });
+    }
   }
 
   // At the door, E lays the plates out side by side. Only pictures: the
@@ -788,7 +807,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     v.close.setText(`${this.brush.label('read')} · CLOSE`);
     v.notePlates.forEach((n) => {
       const developed = this.car.plateState(n.picture.id).developed;
-      n.img.setAlpha(developed ? 1 : 0.2);
+      n.img.setTexture(developed ? paintedPlateKey(n.picture) : n.picture.key).setDisplaySize(NOTE_PLATE.w, NOTE_PLATE.h).setAlpha(developed ? 1 : 0.2);
       n.label.setText(developed ? n.picture.title : `${n.picture.title}\n(STILL UNDER GREY)`);
     });
     this.drawNotes();
@@ -826,33 +845,28 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   // ================================================================= draw
 
+  // The brush's indigo gouache and the archive's grey, as cell stamps
+  // (art/cellArt.js) laid with blitters.
+  ensureCellAtlas() {
+    ensureCanvasTexture(this, 'ch4-cells', () => paintCellAtlas().canvas);
+    addFrames(this, 'ch4-cells', cellAtlasFrames());
+  }
+
   redrawPaint() {
     const g = this.paintLayer;
     const b = this.blockLayer;
     g.clear();
     b.clear();
-    const rnd = makeRandom(0x31a9);
-
+    const off = CELL_STAMP.bleed;
     this.car.state.painted.forEach((key) => {
-      const cx = (key % GRID.w) * CELL;
-      const cy = Math.floor(key / GRID.w) * CELL;
-      paintedFill(g, rnd, cx, cy, CELL, CELL, PAPER.indigo, { alpha: 0.92 });
-    });
-    g.lineStyle(1.4, PAPER.boneBlack, 0.4);
-    this.car.state.painted.forEach((key) => {
-      const cx = (key % GRID.w);
+      const cx = key % GRID.w;
       const cy = Math.floor(key / GRID.w);
-      if (!this.car.isPainted(cx, cy - 1)) g.lineBetween(cx * CELL, cy * CELL, cx * CELL + CELL, cy * CELL);
-      if (!this.car.isPainted(cx, cy + 1)) g.lineBetween(cx * CELL, cy * CELL + CELL, cx * CELL + CELL, cy * CELL + CELL);
-      if (!this.car.isPainted(cx - 1, cy)) g.lineBetween(cx * CELL, cy * CELL, cx * CELL, cy * CELL + CELL);
-      if (!this.car.isPainted(cx + 1, cy)) g.lineBetween(cx * CELL + CELL, cy * CELL, cx * CELL + CELL, cy * CELL + CELL);
+      g.create(cx * CELL - off, cy * CELL - off, `paint-${(cx * 7 + cy * 3) % CELL_STAMP.variants}`);
     });
-
-    // The archive's grey gouache: flat, heavy, a little streaked.
     this.car.state.blocks.forEach((key) => {
-      const cx = (key % GRID.w) * CELL;
-      const cy = Math.floor(key / GRID.w) * CELL;
-      drawGreyCell(b, cx, cy, CELL, key * 13);
+      const cx = key % GRID.w;
+      const cy = Math.floor(key / GRID.w);
+      b.create(cx * CELL - off, cy * CELL - off, `grey-${(cx * 5 + cy) % CELL_STAMP.variants}`);
     });
   }
 
@@ -1121,7 +1135,10 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (this.advancingToStudio) return;
     this.advancingToStudio = true;
     this.tag.hide();
-    this.tweens.add({ targets: [this.doorFace, ...Object.values(this.panelArt), ...Object.values(this.panelLabels)], alpha: 0, duration: 700, delay: 500 });
+    this.tweens.add({ targets: [...this.doorFace, ...Object.values(this.panelArt), ...Object.values(this.panelLabels)], alpha: 0, duration: 700, delay: 500 });
+    // The car is finished by being seen: its colour blooms in, every window.
+    this.carriageArt.bloomAll({ duration: 2200, delay: 300, stagger: 220 });
+    this.windowViews.forEach((view, i) => view.bloomAll({ duration: 1800, delay: 200 + i * 150, stagger: 120 }));
     this.cameras.main.stopFollow();
     this.cameras.main.pan(DOOR.x + DOOR.w / 2 - 60, VIEW.h / 2, 900, 'Sine.easeInOut');
     this.mara = { x: DOOR.x + 30, alpha: 0, t: 0 };
