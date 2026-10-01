@@ -272,6 +272,23 @@ test('pacing: the stair each plate needs stays short', () => {
   const [city, orchard, drawing] = PAINTINGS.map(stairFor);
   assert.equal(city, 1);
   assert.ok(orchard >= 2 && orchard * CELL <= rise, `orchard needs ${orchard} cells`);
-  assert.ok(drawing <= 5, `drawing needs ${drawing} cells`);
+  assert.ok(drawing <= 3, `drawing needs ${drawing} cells`);
   assert.equal(PIGMENT_ZONE.perGrey, 2);
+});
+
+// Alpha round 2: plate 3 is one hop from a bridge, but it still needs the
+// bridge: no jump from the last floor before the hole reaches it.
+test('pacing: plate 3 hangs over the hole, out of reach of a jump from the floor', () => {
+  const rise = (560 * 560) / (2 * 1700);
+  const drawing = PAINTINGS.find((plate) => plate.id === 'drawing');
+  const cx = drawing.x + drawing.w / 2;
+  const cy = drawing.y + drawing.h / 2;
+  const floorEdge = FLOOR_SPANS.find((span) => span.to * CELL <= drawing.x + drawing.w && span.to * CELL >= drawing.x - CELL);
+  assert.ok(floorEdge, 'the plate hangs past the end of a floor span');
+  const edgeX = floorEdge.to * CELL + 12; // a body overhanging the edge
+  const apexY = FLOOR_ROW * CELL - PLAYER_HALF_HEIGHT - rise;
+  assert.ok(Math.hypot(cx - edgeX, cy - apexY) > READ_RADIUS);
+  // Stood on three painted cells under it, it reads.
+  const standY = (FLOOR_ROW - 3) * CELL - PLAYER_HALF_HEIGHT;
+  assert.ok(Math.hypot(0, cy - standY) <= READ_RADIUS);
 });
