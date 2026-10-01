@@ -142,7 +142,11 @@ export const SEAM_TOPIC_RESPONSES = Object.freeze({
 export const SEAM_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.' },
   { speaker: 'BUTCH', text: 'Someone placed it deliberately.' },
-  { speaker: 'LEV', text: 'Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is east, past the clock.' },
+  // Alpha round 2 (R2-4): the ministry front (Toma, 37.7, -15.9) is northeast
+  // of the oil line, straight past the Reunion Fountain (20, 0); the clock
+  // (0, 0) is behind Butch here. tests/car03/chapter3Guidance.test.mjs checks
+  // both against the geometry.
+  { speaker: 'LEV', text: 'Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is northeast, past the fountain. Toma keeps the door.' },
 ]);
 
 // ---------------------------------------------------------------- ministry
@@ -467,8 +471,15 @@ export const CHAPTER_END_CARD = Object.freeze({
 // Lev notices Butch searching too long and points him at the current
 // destination. `direction` is a compass word from the live player position.
 export const SEARCH_HINT_LINES = Object.freeze({
-  'find-ministry': (direction) => [
-    { speaker: 'LEV', text: `We have walked past it twice. The Transport Ministry is ${direction} of here — the tall stone front with the recessed doors.` },
+  // "Twice" only after Butch really walked past the front twice (R2-4); that
+  // wording keeps its 1.0 recording, the other two are subtitle-only.
+  'find-ministry': (direction, { passes = 0 } = {}) => [
+    {
+      speaker: 'LEV',
+      text: passes >= 2
+        ? `We have walked past it twice. The Transport Ministry is ${direction} of here — the tall stone front with the recessed doors.`
+        : `${passes === 1 ? 'We just walked past it. ' : ''}The Transport Ministry is ${direction} of here — the tall stone front with the recessed doors, where Toma waits.`,
+    },
   ],
   'find-market': (direction) => [
     { speaker: 'LEV', text: `The market is ${direction} of here. Eda sells lamp oil under the blue canvas.` },

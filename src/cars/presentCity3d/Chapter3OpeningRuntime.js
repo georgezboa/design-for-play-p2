@@ -81,6 +81,7 @@ import {
   makeDynamicObjectHighlight,
   makeFinalTrainDoor,
   makeGroundMessage,
+  makeGuidanceBeacon,
   makeLampOilStall,
   makeMorningCampfireEchoStone,
   makeObjectHighlight,
@@ -93,6 +94,13 @@ import { music } from '../../shared/musicDirector.js';
 import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
 import { car03Audio } from '../presentCity/car03Audio.js';
 import { devParam } from '../../devMode.js';
+import {
+  IDLE_LOOK_HINT_HTML,
+  autoTaggedInteractions,
+  closestOnPolyline2D,
+  idleLookHintDue,
+  trackDestinationPass,
+} from './chapter3Guidance.js';
 
 // Chapter 3 horizontal score map. Each cue owns a narrative district/beat and
 // stays looped until the next cue is ready. musicDirector crossfades.
@@ -161,11 +169,11 @@ const COMPASS_VOICE_DIRECTIONS = Object.freeze([
 ]);
 
 // Runtime-assembled guidance lines that kept their 1.0 recordings (the
-// ministry and cut-feed hints, every compass direction). The other hints are
-// subtitle-only.
+// ministry hint after two real passes, the cut-feed hint, every compass
+// direction). The other hints are subtitle-only.
 export const CHAPTER3_DYNAMIC_VOICE_LINES = Object.freeze(
   COMPASS_VOICE_DIRECTIONS.flatMap((direction) => [
-    ...SEARCH_HINT_LINES['find-ministry'](direction),
+    ...SEARCH_HINT_LINES['find-ministry'](direction, { passes: 2 }),
     ...SEARCH_HINT_LINES['find-cut-interface'](direction),
   ]),
 );
@@ -234,7 +242,13 @@ export class Chapter3OpeningRuntime {
     this.tags = new TagLayer();
     this.initialized = false;
     this.hoveredId = null;
+    this.hoverAnchor = null;
     this.tabHeld = false;
+    // Seconds without input (R2-3: after IDLE_LOOK_HINT_SECONDS the city
+    // suggests holding Tab).
+    this.idleElapsed = 0;
+    this.idleLookHintShown = false;
+    this.destinationPass = { phase: null, near: false, passes: 0 };
     this.pointerClient = { x: 0, y: 0 };
     this.pointerHeld = false;
     this.keysHeld = new Set();
@@ -1003,6 +1017,12 @@ export class Chapter3OpeningRuntime {
     await Promise.all(this.characterSpecs().start.map((spec) => this.characters.attach(spec)));
     this.afterAssetGroup('start', this.characterSpecs().start);
     this.makeButchMarker();
+    // R2-4: the two walks across the city end at a beacon (Toma at the
+    // ministry front, Eda at her stall).
+    this.guidanceBeacons = {
+      ministry: makeGuidanceBeacon(scene, { name: 'chapter3-beacon-ministry' }),
+      eda: makeGuidanceBeacon(scene, { name: 'chapter3-beacon-eda' }),
+    };
 
     this.finalTrainObject = scene.getObjectByName('municipal-tram');
     this.finalTrainOutline = makeObjectHighlight(this.finalTrainObject || this.finalDoor.group);
@@ -1030,6 +1050,8 @@ export class Chapter3OpeningRuntime {
       {
         id: 'lamp-oil-seam', label: 'Dark oil between the paving stones', verb: 'LOOK',
         position: positionFrom(OPENING_POSITIONS.seam), approach: OPENING_POSITIONS.seamApproach,
+        // The line is ten metres long: hover and reach follow all of it.
+        hitPoints: this.seam.points,
         outline: this.seam.outline,
         eligible: () => state().explorationBriefingComplete && !state().seamInspected,
         activate: () => this.openSeam(),
@@ -1150,7 +1172,7 @@ export class Chapter3OpeningRuntime {
       {
         id: 'night-cut-feed', label: 'The loose feed · drag it into the clamp', verb: 'E · SEAT',
         position: this.groundMessage.interfacePosition, approach: () => this.clampApproach(),
-        outline: this.cutInterface.highlight,
+        outline: this.cutInterface.highlight, reach: 3.2,
         eligible: () => exterior() && state().nightFireObserved && !state().wireReconnected,
         activate: () => this.bellClamp.seat(),
       },
@@ -1164,7 +1186,8 @@ export class Chapter3OpeningRuntime {
       {
         id: 'lev-morning-companion', label: 'Lev', verb: 'TALK',
         position: this.lev.position, approach: () => this.morningLevApproach(),
-        outline: this.levOutline,
+        // He walks beside Butch all morning: tagged on hover or Tab only.
+        outline: this.levOutline, follows: true,
         eligible: () => exterior() && state().sunriseViewed && !state().stationReached && this.lev.visible,
         activate: () => this.openAmbientDialogue(MORNING_LEV_REMINDER),
       },
@@ -1239,6 +1262,15 @@ export class Chapter3OpeningRuntime {
     if (state.nikaComplete && !state.ticketBoardComplete) {
       this.stageMinistryHall({ at: 'board' });
       return;
+    }
+    // QA starts at the oil line and on the walk to the ministry.
+    if (state.explorationBriefingComplete && !state.seamInspected) {
+      place(this.preview.player, [-1.5, 0.5, 14.5]);
+      place(this.lev, OPENING_POSITIONS.levInterview);
+    }
+    if (state.seamInspected && !state.transportEntranceReached) {
+      place(this.preview.player, OPENING_POSITIONS.seamApproach);
+      place(this.lev, [4.6, 0.5, 10.6]);
     }
     if (state.edaComplete && !state.marketCrossed) {
       place(this.preview.player, [-15.6, 0.5, 1.8]);
@@ -1353,6 +1385,31 @@ export class Chapter3OpeningRuntime {
     halo.material.opacity = 0.55 + 0.15 * Math.sin(this.ambientElapsed * 2.2);
   }
 
+  // The ministry front and Eda's stall carry a beacon while Butch is walking
+  // to them; it fades out as he arrives (his own tag takes over).
+  updateGuidanceBeacons() {
+    if (!this.guidanceBeacons) return;
+    const state = this.model.snapshot();
+    const outside = !this.insideMinistry && !this.insideHotel && !state.boardedTrain;
+    const free = !this.dialogue.active && !this.ticketBoard.active;
+    const targets = {
+      ministry: { host: this.toma, active: state.seamInspected && !state.transportEntranceReached },
+      eda: { host: this.eda, active: state.ticketBoardComplete && !state.edaComplete },
+    };
+    for (const [id, { host, active }] of Object.entries(targets)) {
+      const beacon = this.guidanceBeacons[id];
+      const visible = Boolean(host) && outside && free && active && host.visible !== false;
+      if (!visible) {
+        beacon.update({ visible: false });
+        continue;
+      }
+      const distance = this.preview.player.position.distanceTo(host.position);
+      const strength = THREE.MathUtils.clamp((distance - 2.5) / 4, 0, 1);
+      const ground = this.preview.surfaceHeightAt?.(host.position.x, host.position.z);
+      beacon.update({ visible: strength > 0.02, position: host.position, ground, elapsed: this.ambientElapsed, strength });
+    }
+  }
+
   // ------------------------------------------------------------------ input
   interactionLocked() {
     return this.characterQa
@@ -1400,8 +1457,41 @@ export class Chapter3OpeningRuntime {
     };
   }
 
+  noteInput() {
+    this.idleElapsed = 0;
+  }
+
+  // Metres from Butch: to the nearest stretch of a long interactable (the
+  // oil line), otherwise to its point.
+  interactionDistance(interaction) {
+    const player = this.preview.player.position;
+    if (!interaction.hitPoints) return player.distanceTo(interaction.position);
+    return closestOnPolyline2D(
+      { x: player.x, y: player.z },
+      interaction.hitPoints.map((entry) => ({ x: entry.x, y: entry.z })),
+    ).distance;
+  }
+
+  // The world point `hit` ({ index, t } from closestOnPolyline2D) names.
+  polylinePoint(points, hit) {
+    const a = points[hit.index];
+    const b = points[Math.min(points.length - 1, hit.index + 1)];
+    return a.clone().lerp(b, hit.t);
+  }
+
+  // Where an interactable's tag hangs: a long one under the pointer or
+  // beside Butch, everything else over its own point.
+  interactionTagAnchor(interaction, hovered) {
+    if (!interaction.hitPoints) return interaction.position.clone();
+    if (hovered && this.hoverAnchor) return this.hoverAnchor.clone();
+    const player = this.preview.player.position;
+    const hit = closestOnPolyline2D({ x: player.x, y: player.z }, interaction.hitPoints.map((entry) => ({ x: entry.x, y: entry.z })));
+    return this.polylinePoint(interaction.hitPoints, hit);
+  }
+
   handlePointerDown(event) {
     if (!this.initialized || event.button !== 0) return;
+    this.noteInput();
     this.pointerClient = { x: event.clientX, y: event.clientY };
     // The clamp takes its own drags and near misses. It never stops Butch's
     // walk to the clamp (a drag used to cancel the E walk).
@@ -1414,6 +1504,7 @@ export class Chapter3OpeningRuntime {
   }
 
   handlePointerMove(event) {
+    if (this.pointerClient.x !== event.clientX || this.pointerClient.y !== event.clientY) this.noteInput();
     this.pointerClient = { x: event.clientX, y: event.clientY };
     if (this.bellClamp.handlePointerMove(event)) return true;
     if (!this.initialized || this.interactionLocked()) {
@@ -1423,20 +1514,39 @@ export class Chapter3OpeningRuntime {
     }
     let nearest = null;
     const point = this.preview.projectPointerToGround(event);
+    const pointer = { x: event.clientX, y: event.clientY };
     for (const interaction of this.eligibleInteractions()) {
-      const screen = this.screenOf(interaction.position);
-      const screenDistance = Math.hypot(event.clientX - screen.x, event.clientY - screen.y);
+      // While the clamp is live, the copper end and the ring take the
+      // pointer; the loose-feed interactable never walks Butch onto them.
+      if (interaction.id === 'night-cut-feed' && this.bellClamp.active) continue;
+      let screenDistance;
+      let groundDistance;
+      let anchor = null;
+      if (interaction.hitPoints) {
+        // A long interactable (the oil line) answers anywhere along itself.
+        const screenPoints = interaction.hitPoints.map((entry) => this.screenOf(entry));
+        const onScreen = closestOnPolyline2D(pointer, screenPoints);
+        screenDistance = onScreen.distance;
+        anchor = this.polylinePoint(interaction.hitPoints, onScreen);
+        groundDistance = point
+          ? closestOnPolyline2D({ x: point.x, y: point.z }, interaction.hitPoints.map((entry) => ({ x: entry.x, y: entry.z }))).distance
+          : Infinity;
+      } else {
+        const screen = this.screenOf(interaction.position);
+        screenDistance = Math.hypot(event.clientX - screen.x, event.clientY - screen.y);
+        groundDistance = point ? Math.hypot(point.x - interaction.position.x, point.z - interaction.position.z) : Infinity;
+      }
       const precise = interaction.ambient === true;
       const screenRadius = interaction.screenRadius ?? (precise ? 30 : (interaction.position.y > 1.5 ? 56 : 44));
-      const groundDistance = point ? Math.hypot(point.x - interaction.position.x, point.z - interaction.position.z) : Infinity;
       const score = screenDistance <= screenRadius
         ? screenDistance / screenRadius
         : !precise && groundDistance <= INTERACTION_RADIUS * 0.7
           ? 1 + groundDistance / INTERACTION_RADIUS
           : Infinity;
-      if (score < Infinity && (!nearest || score < nearest.score)) nearest = { id: interaction.id, score };
+      if (score < Infinity && (!nearest || score < nearest.score)) nearest = { id: interaction.id, score, anchor };
     }
     this.hoveredId = nearest?.id || null;
+    this.hoverAnchor = nearest?.anchor ?? null;
     this.preview.renderer.domElement.classList.toggle('interaction-hover', Boolean(this.hoveredId));
     this.updateOutlines();
     return Boolean(this.hoveredId);
@@ -1452,6 +1562,19 @@ export class Chapter3OpeningRuntime {
     }
     if (this.levWalkElapsed !== null && !this.dialogue.active && this.skipScriptedWalk()) return true;
     if (this.interactionLocked()) return true;
+    // R2-5: while the feed is loose, a click on the ground by the copper end
+    // or the ring is a missed grab (even when its press closed the caption
+    // or began elsewhere), never a walk onto the clamp.
+    if (this.bellClamp.active && !this.bellClamp.seated) {
+      const ground = this.preview.projectPointerToGround({
+        clientX: event?.clientX ?? this.pointerClient.x,
+        clientY: event?.clientY ?? this.pointerClient.y,
+      });
+      if (this.bellClamp.nearPuzzle(ground)) {
+        this.bellClamp.noteMiss('grab');
+        return true;
+      }
+    }
     const interaction = this.eligibleInteractions().find((entry) => entry.id === this.hoveredId);
     if (!interaction && (this.insideMinistry || this.insideHotel)) {
       const point = this.preview.projectPointerToGround({
@@ -1544,6 +1667,7 @@ export class Chapter3OpeningRuntime {
   }
 
   handleKeyDown(event) {
+    this.noteInput();
     if (this.ticketBoard.active) return true;
     const movementKey = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code);
     if (movementKey) {
@@ -1584,8 +1708,8 @@ export class Chapter3OpeningRuntime {
         return true;
       }
       const nearest = this.eligibleInteractions()
-        .map((interaction) => ({ interaction, distance: this.preview.player.position.distanceTo(interaction.position) }))
-        .filter(({ distance, interaction }) => distance <= (interaction.id === 'night-cut-feed' ? 3.2 : INTERACTION_RADIUS))
+        .map((interaction) => ({ interaction, distance: this.interactionDistance(interaction) }))
+        .filter(({ distance, interaction }) => distance <= (interaction.reach ?? INTERACTION_RADIUS))
         .sort((a, b) => a.distance - b.distance)[0]?.interaction;
       if (!nearest) return false;
       this.startInteraction(nearest);
@@ -2168,8 +2292,11 @@ export class Chapter3OpeningRuntime {
     this.bellClamp.start({ clamp, restFrom: rest });
     // Lean the frame toward the clamp while the feed is loose.
     this.preview.setCameraOverrideTarget(this.fireFrame().lerp(clamp, 0.45));
-    // Butch kneels by the clamp to work the cable.
-    const kneel = this.groundMessage.group.localToWorld(new THREE.Vector3(-5.4, 0, 4.3));
+    // Butch kneels beside the copper end, to its screen-left: never between
+    // it and the camera, where his body hid it (alpha round 2, R2-5).
+    const toCamera = this.preview.camera.position.clone().sub(this.preview.controls.target).setY(0).normalize();
+    const screenLeft = new THREE.Vector3(-toCamera.z, 0, toCamera.x);
+    const kneel = rest.clone().addScaledVector(screenLeft, 1.5);
     this.preview.walkTo(kneel.x, kneel.z);
     this.updateObjective();
   }
@@ -2949,6 +3076,10 @@ export class Chapter3OpeningRuntime {
     this.dialogue.update(dt);
     this.ticketBoard.update(dt);
     this.bellClamp.update(dt);
+    // Idle = free to act, standing still, no input (R2-3).
+    const moving = this.preview.path?.length > 0 || this.keysHeld.size > 0 || this.pointerHeld;
+    if (this.interactionLocked() || moving) this.idleElapsed = 0;
+    else this.idleElapsed += dt;
     music.setDialogueActive(this.dialogue.active);
     this.updateMusic();
     this.updateCameraZoom(dt);
@@ -3066,6 +3197,7 @@ export class Chapter3OpeningRuntime {
     }
     this.updateCharacterAnimations(dt);
     this.updateButchMarker();
+    this.updateGuidanceBeacons();
     this.updateObjective();
     this.updateTags();
     this.updatePips();
@@ -3181,7 +3313,7 @@ export class Chapter3OpeningRuntime {
     const state = this.model.snapshot();
     let target = this.baseZoom;
     // LOW quality frames a little closer: less city in view, larger cast.
-    if (this.preview.qualityTier === 'low') target += LOW_QUALITY_ZOOM_BOOST;
+    if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
     if (this.fireCameraActive) target = this.baseZoom + 1.5;
     if (this.bellClamp.active && !this.bellClamp.seated) target = this.baseZoom + 1.2;
@@ -3279,6 +3411,8 @@ export class Chapter3OpeningRuntime {
       this.searchHintElapsed = 0;
       this.searchHintLastShownAt = -Infinity;
     }
+    if (this.destinationPass.phase !== phase.id) this.destinationPass = { phase: phase.id, near: false, passes: 0 };
+    trackDestinationPass(this.destinationPass, this.preview.player.position.distanceTo(phase.target));
     if (this.interactionLocked()) return;
     if (this.preview.player.position.distanceTo(phase.target) < 6) {
       const nearTargetCap = phase.hintAfter ? Math.max(0, phase.hintAfter - 20) : SEARCH_HINT_NEAR_TARGET_SECONDS;
@@ -3290,7 +3424,7 @@ export class Chapter3OpeningRuntime {
       && (this.searchHintLastShownAt < 0 || this.searchHintElapsed - this.searchHintLastShownAt >= 90);
     if (!due || !this.lev.visible) return;
     this.searchHintLastShownAt = this.searchHintElapsed;
-    const lines = SEARCH_HINT_LINES[phase.id]?.(this.compassDirection(phase.target));
+    const lines = SEARCH_HINT_LINES[phase.id]?.(this.compassDirection(phase.target), { passes: this.destinationPass.passes });
     if (lines) this.showLines(lines);
   }
 
@@ -3324,31 +3458,55 @@ export class Chapter3OpeningRuntime {
     if (state.guideStarted && !state.seamInspected) this.seam.outline.visible = true;
   }
 
-  // Paper tags (.nf-tag): the hovered interactable always; with Tab held,
-  // every non-ambient story interactable on screen; walkers in a scanner
-  // field show the E prompt.
+  // Paper tags (.nf-tag): the hovered interactable always; the nearest
+  // story interactable within E's reach (alpha round 2, R2-3: no Tab
+  // needed); with Tab held, every non-ambient story interactable on screen;
+  // walkers in a scanner field show the E prompt; after a long idle, one
+  // HOLD TAB · LOOK AROUND tag over Butch.
   updateTags() {
     this.tags.begin();
     const locked = this.interactionLocked();
+    this.idleLookHintShown = false;
     if (!locked) {
       const shown = new Set();
-      const nearest = this.eligibleInteractions()
-        .filter((interaction) => !interaction.ambient)
-        .map((interaction) => ({ interaction, distance: this.preview.player.position.distanceTo(interaction.position) }))
-        .filter(({ distance }) => distance <= INTERACTION_RADIUS)
-        .sort((a, b) => a.distance - b.distance)[0]?.interaction;
-      for (const interaction of this.eligibleInteractions()) {
+      const eligible = this.eligibleInteractions();
+      const plan = autoTaggedInteractions({
+        candidates: eligible.map((interaction) => ({
+          id: interaction.id,
+          ambient: interaction.ambient === true,
+          follows: interaction.follows === true,
+          radius: interaction.reach ?? INTERACTION_RADIUS,
+          distance: this.interactionDistance(interaction),
+        })),
+        hoveredId: this.hoveredId,
+        tabHeld: this.tabHeld,
+        radius: INTERACTION_RADIUS,
+      });
+      let storyTagShown = false;
+      for (const interaction of eligible) {
         const hovered = interaction.id === this.hoveredId;
-        if (!hovered && !(this.tabHeld && !interaction.ambient)) continue;
+        if (!plan.shown.has(interaction.id)) continue;
         // While the clamp is live it carries the one tag for the loose feed.
         if (interaction.id === 'night-cut-feed' && this.bellClamp.active) continue;
-        const anchor = interaction.position.clone();
+        const anchor = this.interactionTagAnchor(interaction, hovered);
         anchor.y = Math.max(anchor.y, 0.5) + (interaction.ambient ? 0.6 : 2.1);
         const screen = this.screenOf(anchor);
         if (!screen.onScreen || shown.has(interaction.id)) continue;
         shown.add(interaction.id);
-        const key = interaction === nearest ? '<kbd>E</kbd> ' : '';
-        this.tags.place(screen, `${key}${interaction.verb ?? 'LOOK'} · ${interaction.label}`, { emphasis: hovered });
+        if (!interaction.ambient) storyTagShown = true;
+        const key = interaction.id === plan.nearestId ? '<kbd>E</kbd> ' : '';
+        this.tags.place(screen, `${key}${interaction.verb ?? 'LOOK'} · ${interaction.label}`, { emphasis: hovered || interaction.id === plan.nearestId });
+      }
+      const storyTargets = eligible.filter((interaction) => !interaction.ambient && !interaction.follows).length;
+      if (!this.activeField() && !(this.bellClamp.active && !this.bellClamp.seated)
+        && idleLookHintDue({ idleSeconds: this.idleElapsed, tabHeld: this.tabHeld, storyTargets, storyTagShown })) {
+        const anchor = this.preview.player.position.clone();
+        anchor.y += 2.5;
+        const screen = this.screenOf(anchor);
+        if (screen.onScreen) {
+          this.tags.place(screen, IDLE_LOOK_HINT_HTML);
+          this.idleLookHintShown = true;
+        }
       }
       for (const [id, field] of Object.entries(this.scannerFields)) {
         if (!this.model.scannerActive(id)) continue;
@@ -3495,6 +3653,10 @@ export class Chapter3OpeningRuntime {
       storyInteractables: this.eligibleInteractions().filter((interaction) => !interaction.ambient).map((interaction) => interaction.id),
       flavourInteractables: this.interactions.filter((interaction) => interaction.ambient).map((interaction) => interaction.id),
       tags: this.tags.snapshot(),
+      idleSeconds: Number(this.idleElapsed.toFixed(1)),
+      idleLookHint: this.idleLookHintShown,
+      destinationPasses: this.destinationPass.passes,
+      guidanceBeacons: Object.fromEntries(Object.entries(this.guidanceBeacons ?? {}).map(([id, beacon]) => [id, beacon.visible])),
       dialogue: this.dialogue.snapshot(),
       evidenceViewer: this.evidenceViewer.snapshot(),
       ticketBoard: this.ticketBoard.snapshot(),

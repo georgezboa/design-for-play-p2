@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v39', () => {
+describe('Chapter 3 integrated final lock v41', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -75,10 +75,11 @@ describe('Chapter 3 integrated final lock v39', () => {
     // shared pause menu, REDUCE MOTION and TEXT SIZE are honoured.
     // v40: chapter3Quality pins the LOW tier when the shared Settings
     // checkbox LOW GRAPHICS · SLOWER COMPUTERS is on (alpha round 1, F2/F3).
-    assert.equal(sourceFiles.length, 26);
+    // v41 (alpha round 2, engineer G2, 2026-09-30): objective tags show near Butch and along the oil line, HOLD TAB after 20 s idle; ministry directions match the map, "twice" only after two passes, beacons at Toma and Eda; clamp near-misses never walk; LOWEST tier; QA starts chapter3-oil / chapter3-ministry. Files: +1 (chapter3Guidance): 26 -> 27.
+    assert.equal(sourceFiles.length, 27);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '1c4111c322eeb57b81a4ab44d2c7beab08d99d35bc7cb6cc885d28b8b4490006',
+      'adae9f12ab4365b309bd29a1f7775c94a7acccc6246702784cae2a8ac41b6b6c',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

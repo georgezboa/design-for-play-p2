@@ -59,6 +59,8 @@ const preview = new EchoCity3DPreview({
 const query = devParams();
 const playtest = query.get('playtest');
 const PLAYTEST_STARTS = Object.freeze({
+  'chapter3-oil': 'oil-seam',
+  'chapter3-ministry': 'ministry-walk',
   'chapter3-board': 'ticket-board',
   'chapter3-market': 'market-scanner',
   'chapter3-dusk': 'cut-interface',

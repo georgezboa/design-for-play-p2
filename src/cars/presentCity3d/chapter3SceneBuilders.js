@@ -374,6 +374,60 @@ export function makeDarkSeam(scene, surfaceHeightAt = null) {
   return { spread, stain, wetGlint, outline, points };
 }
 
+// A soft amber shaft of light with a pulsing ground ring: marks a
+// destination the player has to walk to across the city (the ministry
+// front, Eda's stall). Unlit, no shadows: cheap on LOW. Normal blending, so
+// it still reads over the pale afternoon paving.
+export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', color = 0xf0a640, height = 9 } = {}) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 4;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  const fade = context.createLinearGradient(0, 0, 0, 128);
+  fade.addColorStop(0, 'rgba(255, 255, 255, 0)');
+  fade.addColorStop(0.55, 'rgba(255, 255, 255, 0.35)');
+  fade.addColorStop(1, 'rgba(255, 255, 255, 1)');
+  context.fillStyle = fade;
+  context.fillRect(0, 0, 4, 128);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  const group = new THREE.Group();
+  group.name = name;
+  const shaft = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.42, 0.62, height, 18, 1, true),
+    new THREE.MeshBasicMaterial({
+      color, map: texture, transparent: true, opacity: 0.5, depthWrite: false,
+      side: THREE.DoubleSide, fog: false, toneMapped: false,
+    }),
+  );
+  shaft.position.y = height / 2;
+  shaft.renderOrder = 5;
+  const ring = new THREE.Mesh(
+    new THREE.RingGeometry(0.7, 0.88, 40),
+    new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false }),
+  );
+  ring.rotation.x = -Math.PI / 2;
+  ring.position.y = 0.04;
+  ring.renderOrder = 5;
+  group.add(shaft, ring);
+  group.visible = false;
+  scene.add(group);
+  return {
+    group,
+    get visible() { return group.visible; },
+    // `pulse` runs 0..1 and repeats; `strength` fades the whole beacon.
+    update({ visible, position, ground = null, elapsed = 0, strength = 1 }) {
+      group.visible = Boolean(visible);
+      if (!group.visible) return;
+      if (position) group.position.set(position.x, Number.isFinite(ground) ? ground : position.y - 0.47, position.z);
+      const pulse = (elapsed * 0.6) % 1;
+      shaft.material.opacity = (0.5 + 0.18 * Math.sin(elapsed * 2.4)) * strength;
+      ring.scale.setScalar(1 + pulse * 1.4);
+      ring.material.opacity = 0.9 * (1 - pulse) * strength;
+    },
+  };
+}
+
 export function makeCutInterface(scene) {
   const group = new THREE.Group();
   group.name = 'opening-cut-feed-interface';
