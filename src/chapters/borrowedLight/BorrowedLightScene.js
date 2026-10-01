@@ -1031,8 +1031,11 @@ export class BorrowedLightScene extends Phaser.Scene {
       }
       case 'already':
         // Never a take-back (R3-1): the tag says it is punched and when it
-        // rings; holding the press takes it back on purpose.
-        this.floatHint(node.id, this.tt.machineStatus(node.machine).waiting ? HINTS.liftWaits : HINTS.punched(node.phase, res.inBells), color.css, 1400);
+        // rings; holding the press takes it back on purpose. The marked
+        // node's own tag already says so; a click on another node floats it.
+        sfx.flickerTick();
+        view.busyShake = Math.max(view.busyShake, 0.35);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, this.tt.machineStatus(node.machine).waiting ? HINTS.liftWaits : HINTS.punched(node.phase, res.inBells), color.css, 1400);
         if (source) this.takeBack = { nodeId: node.id, source, ms: 0 };
         break;
       case 'busy': {
@@ -1094,7 +1097,12 @@ export class BorrowedLightScene extends Phaser.Scene {
         break;
       default: {
         const text = { full: HINTS.full, fixed: HINTS.fixed, live: HINTS.live, lit: HINTS.lit, dark: HINTS.nothing, 'step-off': HINTS.stepOff }[res.result];
-        if (text) { sfx.refused(); this.floatHint(node.id, text, '#e6dcc2', 1800); }
+        if (!text) break;
+        sfx.refused();
+        if (view) view.busyShake = Math.max(view.busyShake, 0.6);
+        // The marked node's tag already reads STEP OFF FIRST / ONE LIGHT…
+        const tagSays = node.id === this.currentTarget?.id && ['step-off', 'full', 'lit'].includes(res.result);
+        if (!tagSays) this.floatHint(node.id, text, '#e6dcc2', 1800);
         break;
       }
     }
@@ -2312,7 +2320,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       const last = this.tt.nodeStatus('a-n14');
       const firstDown = this.tt.machineStatus('a-cradle1').powered || this.tt.isQueued('a-n12');
       if (firstDown && !last.queued && !last.powering && !this.tt.machineStatus('a-cradle3').powered) {
-        return { x: cradle.x + cradle.w / 2 + 40, y: cradle.y - cradle.hoist - 90, text: HINTS.fromCradle };
+        return { x: cradle.x + cradle.w / 2 + 40, y: cradle.y - cradle.hoist - 112, text: HINTS.fromCradle };
       }
       return null;
     }
