@@ -66,7 +66,9 @@ const EVIDENCE_LAYOUT = Object.freeze([
   Object.freeze({ id: 'night-service', x: -1.95, z: 0.5 }),
   Object.freeze({ id: 'painted-country', x: -0.95, z: 0.5 }),
 ]);
-export const BLACK_TICKET_STONE = Object.freeze({ x: 2.3, y: 1.105, z: 0.66, radius: 0.045 });
+// Alpha A3-8: a touch larger (0.045 → 0.05, still no larger than a vial) and
+// taken with E like every other pickup.
+export const BLACK_TICKET_STONE = Object.freeze({ x: 2.3, y: 1.105, z: 0.66, radius: 0.05 });
 const PIGMENT_VIALS = Object.freeze({ x: 2.28, z: 0.9 });
 
 export class ServiceLobby {
@@ -344,7 +346,7 @@ export class ServiceLobby {
     this.blackKnifeStone.rotation.z = Math.PI / 4;
     this.blackKnifeStone.scale.set(1.2, 0.7, 1);
     this.blackKnifeCase.add(this.blackKnifeStone);
-    this.blackKnifeStoneProxy = hitProxy(this.blackKnifeCase, { x: BLACK_TICKET_STONE.x, y: 1.16, z: BLACK_TICKET_STONE.z + 0.1, w: 0.3, h: 0.3, d: 0.36, name: 'black-ticket-stone-click-proxy' });
+    this.blackKnifeStoneProxy = hitProxy(this.blackKnifeCase, { x: BLACK_TICKET_STONE.x, y: 1.16, z: BLACK_TICKET_STONE.z + 0.1, w: 0.44, h: 0.4, d: 0.44, name: 'black-ticket-stone-click-proxy' });
     // The player can start the break from anywhere along the visible south side.
     this.blackKnifeBreakProxy = hitProxy(this.blackKnifeCase, { x: 0, y: 1.65, z: 1.46, w: 5.0, h: 1.3, d: 0.1, name: 'black-ticket-long-side-glass-break-proxy' });
     this.blackKnifeLongSideGlass = this.blackKnifeCase.getObjectByName('central-case-glass-front');
@@ -527,8 +529,7 @@ export class ServiceLobby {
       enabled: () => inLobby()
         && this.blackKnifeGlassBroken && !magicStoneSnapshot().collected.includes('black-knife')
         && !this._claimingBlackKnifeStone,
-      prompt: 'CLICK · TAKE THE SMALL DARK STONE',
-      pointerOnly: true,
+      prompt: 'E · TAKE THE SMALL DARK STONE',
       showWhenInactive: true,
       action: async () => {
         this._claimingBlackKnifeStone = true;
@@ -537,6 +538,10 @@ export class ServiceLobby {
         if (!taken) return;
         this.blackKnifeStone.visible = false;
         dialogue.play([{ speaker: null, text: 'The stone is cold, and lighter than it looks.' }]);
+        // The shell's one-time first-stone card waits for this line instead
+        // of freezing it half-read (pauseMenu.js checks the flag).
+        globalThis.NIGHTFALL_STONE_OFFER = true;
+        setTimeout(() => { if (!document.querySelector('.nf-stone-offer')) globalThis.NIGHTFALL_STONE_OFFER = false; }, 2600);
       },
     });
 
@@ -612,9 +617,9 @@ export class ServiceLobby {
 
     // Proximity supplies the break / take prompt along the case's south
     // side: a centre-reticle ray through transparent panes is unreliable at
-    // arm's length. Collecting the stone still requires a deliberate click
-    // (the stone is pointerOnly: E never takes it), and the tag's CLICK
-    // works from anywhere within reach, not only dead on the hidden stone.
+    // arm's length. The stone is taken with E (or a click) like every other
+    // pickup, from anywhere within reach, not only dead on the hidden stone;
+    // the offer card that follows is the deliberate step.
     const atBlackKnifeLongSide = this.canBreakBlackKnifeGlass();
     const atExposedStone = this.canReachBlackKnifeStone() && !magicStoneSnapshot().collected.includes('black-knife');
     this.ctx.interaction.setFallback(

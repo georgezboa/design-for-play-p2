@@ -213,12 +213,13 @@ function textureQuality(texture, low) {
     texture.userData.highSampling = { anisotropy: texture.anisotropy, minFilter: texture.minFilter };
     texture.anisotropy = 1;
     if (texture.minFilter === LINEAR_MIPMAP_LINEAR) texture.minFilter = LINEAR_MIPMAP_NEAREST;
-    texture.needsUpdate = true;
+    // Not loaded yet: the upload will read the new sampling when it comes.
+    if (texture.image) texture.needsUpdate = true;
   } else if (!low && saved) {
     texture.anisotropy = saved.anisotropy;
     texture.minFilter = saved.minFilter;
     delete texture.userData.highSampling;
-    texture.needsUpdate = true;
+    if (texture.image) texture.needsUpdate = true;
   }
 }
 
