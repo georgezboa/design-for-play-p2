@@ -39,8 +39,15 @@ describe('Chapter 3 alpha fixes (F2)', () => {
       const result = slow.sample(0.2);
       if (result) decisions.push(result);
     }
-    assert.deepEqual(decisions, ['low'], 'exactly once');
-    assert.equal(slow.tier, 'low');
+    // Round 2: LOW is measured again and, still slow, drops once to LOWEST.
+    assert.deepEqual(decisions, ['low', 'lowest'], 'each exactly once');
+    assert.equal(slow.tier, 'lowest');
+    const recovers = createQualityMonitor();
+    const steps = [];
+    for (let i = 0; i < 30; i += 1) steps.push(recovers.sample(0.2));
+    for (let i = 0; i < 400; i += 1) steps.push(recovers.sample(1 / 60));
+    assert.deepEqual(steps.filter(Boolean), ['low'], 'LOW that runs fast stays LOW');
+    assert.equal(recovers.tier, 'low');
     assert.equal(createQualityMonitor({ preference: 'low' }).tier, 'low');
     assert.equal(createQualityMonitor({ preference: 'high' }).sample(5), null, 'a pinned tier never changes');
     assert.equal(storedQualityPreference({ getItem: () => 'low' }), 'low');
@@ -53,7 +60,7 @@ describe('Chapter 3 alpha fixes (F2)', () => {
     // LOW: pixel ratio, no shadow maps, a light fewer, closer framing.
     assert.match(preview, /this\.renderer\.shadowMap\.enabled = false;/);
     assert.match(preview, /fill\.visible = false/);
-    assert.match(runtime, /if \(this\.preview\.qualityTier === 'low'\) target \+= LOW_QUALITY_ZOOM_BOOST;/);
+    assert.match(runtime, /if \(this\.preview\.qualityTier !== 'high'\) target \+= LOW_QUALITY_ZOOM_BOOST;/);
     // Rigs (~30k triangles each, never frustum-culled) are hidden off screen,
     // and far static models leave the shadow pass on every tier.
     assert.match(runtime, /this\.charactersDrawn = this\.characters\.cullOutside\(this\.preview\.camera\);/);
@@ -75,7 +82,8 @@ describe('Chapter 3 alpha fixes (F2)', () => {
     assert.doesNotMatch(runtime, /DRAG INTO THE CLAMP/);
     assert.match(clamp, /this\.grabHalo = new THREE\.Mesh/);
     assert.match(clamp, /this\.setCursor\(hovering \? 'grab' : ''\)/);
-    assert.match(clamp, /this\.lastMiss = 'grab';/);
+    // Round 2 (R2-5): misses go through noteMiss(), also for ground clicks.
+    assert.match(clamp, /this\.noteMiss\('grab'\);/);
     assert.match(clamp, /this\.lastMiss = 'drop';/);
     assert.match(clamp, /const RING = 0x7fd6c8;/);
     // A drag never stops Butch's walk to the clamp.

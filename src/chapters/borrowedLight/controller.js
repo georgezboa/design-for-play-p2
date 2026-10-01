@@ -152,3 +152,14 @@ export function stepController(state, input, body, dtMs, c = CONTROLLER) {
 
   return { vx, vy, jumped, landed, pose: state.pose };
 }
+
+// How long (game ms) a jump key counts as held after a tap that was already
+// released when its jump starts. On a slow frame (a weak machine, or QA's
+// dev-only ?timescale= run, where one rendered frame can cover a whole hop)
+// key-down and key-up arrive together, and without this every tap became the
+// shortest cut hop (alpha round 2, R2-2). Timestamps are wall ms (DOM event
+// timeStamp); `timescale` is game ms per wall ms.
+export function tapHoldMs({ downAt, upAt, timescale = 1, max = 400 } = {}) {
+  if (!Number.isFinite(downAt) || !Number.isFinite(upAt) || upAt < downAt) return 0;
+  return Math.min(max, (upAt - downAt) * timescale);
+}

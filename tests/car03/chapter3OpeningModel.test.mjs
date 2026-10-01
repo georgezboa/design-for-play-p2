@@ -128,6 +128,8 @@ describe('Chapter 3 · ECHO CITY release chapter', () => {
 
   it('builds every dev playtest start by replaying the real transitions', () => {
     const expected = {
+      'oil-seam': 'inspect-oil-line',
+      'ministry-walk': 'find-ministry',
       'ticket-board': 'ticket-board',
       'market-scanner': 'cross-market-scanner',
       'cut-interface': 'find-cut-feed',

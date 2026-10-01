@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import { bell, clunk } from '../../chapters/borrowedLight/audio.js';
+import { closestOnPolyline2D } from './chapter3Guidance.js';
 
 // The night climax: drag the cut lower feed into the old clamp. Nothing lights
 // at once — the connection fires on the next train bell, with Chapter 2's
@@ -10,10 +11,14 @@ import { bell, clunk } from '../../chapters/borrowedLight/audio.js';
 export const BELL_PERIOD_SECONDS = 4;
 const SEAT_RADIUS = 0.55;
 const GRAB_RADIUS_PX = 86;
-// A click this close to the copper end (but not on it) counts as a miss
-// worth telling the player about.
+// A click this close to the copper end, the ring or the stretch between
+// them (but not on the copper end) counts as a miss worth telling the player
+// about, and is never also a ground click (alpha round 2, R2-5: a missed
+// grab used to walk Butch onto the clamp, hiding the copper end).
 const NEAR_MISS_PX = 220;
 const SEAT_RADIUS_PX = 46;
+// Ground clicks this close (m) to the copper end or the ring never walk.
+const PUZZLE_GROUND_RADIUS = 2.2;
 const COPPER = 0xb8733a;
 // The clamp's target ring is ivory and teal so it never reads as copper.
 const RING = 0x7fd6c8;
@@ -149,15 +154,34 @@ export class Chapter3BellClamp {
     return this.end.localToWorld(new THREE.Vector3(0.5, 0, 0));
   }
 
+  // Screen distance from a pointer to the puzzle: the copper end, the ring,
+  // and the line between them.
+  puzzleDistance(event) {
+    const points = [this.screenOf(this.end.position), this.screenOf(this.tipWorld()), this.screenOf(this.clamp)];
+    return closestOnPolyline2D({ x: event.clientX, y: event.clientY }, points).distance;
+  }
+
+  // A ground point (metres) on or beside the puzzle: a click there is a
+  // missed grab, never a walk.
+  nearPuzzle(point, radius = PUZZLE_GROUND_RADIUS) {
+    if (!this.active || this.seated || !point) return false;
+    const points = [this.end.position, this.tipWorld(), this.clamp].map((entry) => ({ x: entry.x, y: entry.z }));
+    return closestOnPolyline2D({ x: point.x, y: point.z }, points).distance <= radius;
+  }
+
+  noteMiss(kind = 'grab') {
+    this.missFlash = 1;
+    this.misses += 1;
+    this.lastMiss = kind;
+  }
+
   handlePointerDown(event) {
     if (!this.active || this.seated) return false;
     const near = this.pointerDistance(event);
     if (near > GRAB_RADIUS_PX) {
       // A grab that just missed: say so instead of silently walking.
-      if (near <= NEAR_MISS_PX) {
-        this.missFlash = 1;
-        this.misses += 1;
-        this.lastMiss = 'grab';
+      if (near <= NEAR_MISS_PX || this.puzzleDistance(event) <= NEAR_MISS_PX) {
+        this.noteMiss('grab');
         return true;
       }
       return false;

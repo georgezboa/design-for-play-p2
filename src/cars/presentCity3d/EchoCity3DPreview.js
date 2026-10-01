@@ -3,7 +3,13 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
-import { cheapenMaterial, createQualityMonitor, storedQualityPreference } from './chapter3Quality.js';
+import {
+  LOW_PIXEL_RATIO,
+  LOWEST_PIXEL_RATIO,
+  cheapenMaterial,
+  createQualityMonitor,
+  storedQualityPreference,
+} from './chapter3Quality.js';
 import {
   CAMERA_HOME,
   CAMERA_FOLLOW,
@@ -1075,7 +1081,8 @@ export class EchoCity3DPreview {
     this.quality = {
       sample: (frameSeconds) => {
         if (!this.modelsReady || !this.gameplayRuntime?.initialized) return;
-        if (this.qualityMonitor.sample(frameSeconds) === 'low') this.applyQualityTier('low');
+        const tier = this.qualityMonitor.sample(frameSeconds);
+        if (tier) this.applyQualityTier(tier);
       },
     };
 
@@ -1381,10 +1388,19 @@ export class EchoCity3DPreview {
 
   // LOW: a lower pixel ratio, no shadow maps, one light fewer, cheaper
   // materials and no water transmission pass. One way, for this visit.
+  // LOWEST (LOW still slow): the same at half resolution.
   applyQualityTier(tier) {
-    if (tier !== 'low' || this.qualityTier === 'low') return false;
+    if (tier === 'lowest') {
+      if (this.qualityTier === 'lowest') return false;
+      this.applyQualityTier('low');
+      this.qualityTier = 'lowest';
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * LOWEST_PIXEL_RATIO);
+      this.onResize();
+      return true;
+    }
+    if (tier !== 'low' || this.qualityTier !== 'high') return false;
     this.qualityTier = 'low';
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * 0.8);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * LOW_PIXEL_RATIO);
     this.renderer.shadowMap.enabled = false;
     const fill = this.scene.getObjectByName('city-fill-light');
     if (fill) fill.visible = false;

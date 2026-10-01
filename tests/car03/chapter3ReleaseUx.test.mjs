@@ -21,7 +21,9 @@ const caption = read('src/cars/presentCity3d/Chapter3Caption.js');
 describe('Chapter 3 release UX', () => {
   it('lights only story interactables with Tab, each with a paper tag', () => {
     assert.match(runtime, /\(this\.tabHeld && !interaction\.ambient\)/);
-    assert.match(runtime, /if \(!hovered && !\(this\.tabHeld && !interaction\.ambient\)\) continue;/);
+    // Round 2 (R2-3): chapter3Guidance.autoTaggedInteractions picks the tags
+    // (hover, Tab, and the story interactable within E's reach).
+    assert.match(runtime, /if \(!plan\.shown\.has\(interaction\.id\)\) continue;/);
     assert.match(runtime, /tag\.className = 'nf-tag c3-tag'/);
     assert.doesNotMatch(runtime, /world-building-|world-street-lamp|world-municipal-mailbox|LAMP_COPY|MAILBOX_COPY/);
   });

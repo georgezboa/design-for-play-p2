@@ -131,9 +131,17 @@ function advanceTo(state, anchor, reason) {
 // the real transitions, so a QA route can never reach a state the chapter
 // itself cannot.
 const START_SCRIPT = Object.freeze({
-  'ticket-board': (m) => {
+  // Alpha round 2 QA starts: the oil line, and the walk to the ministry.
+  'oil-seam': (m) => {
     m.readArrival(); m.completeTrainDeparture(); m.completeLevIntroduction(); m.beginGuide();
-    m.completeExplorationBriefing(); m.observeSeam('geometry'); m.concludeSeam();
+    m.completeExplorationBriefing();
+  },
+  'ministry-walk': (m) => {
+    START_SCRIPT['oil-seam'](m);
+    m.observeSeam('geometry'); m.concludeSeam();
+  },
+  'ticket-board': (m) => {
+    START_SCRIPT['ministry-walk'](m);
     m.reachTransportEntrance(); m.enterTransportHall(); m.takeTransportNumber();
     m.noteNikaTopic('reservation'); m.completeNika();
   },
