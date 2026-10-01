@@ -24,6 +24,8 @@ const WARMUP_SECONDS = 2;
 const SAMPLE_SECONDS = 3;
 
 export function storedQualityPreference(storage = globalThis.localStorage) {
+  // The shared Settings checkbox (LOW GRAPHICS) pins the low tier everywhere.
+  if (globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true) return 'low';
   try {
     const value = storage?.getItem?.(QUALITY_STORAGE_KEY);
     return value === 'low' || value === 'high' ? value : 'auto';

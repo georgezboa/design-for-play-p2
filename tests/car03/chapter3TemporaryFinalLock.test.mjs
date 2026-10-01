@@ -73,10 +73,12 @@ describe('Chapter 3 integrated final lock v39', () => {
     // chapter3SceneBuilders, chapter3WalkBesideModel): 24 -> 25.
     // v37 note kept: QA routes/hooks are dev-only (DEV_MODE), Escape opens the
     // shared pause menu, REDUCE MOTION and TEXT SIZE are honoured.
+    // v40: chapter3Quality pins the LOW tier when the shared Settings
+    // checkbox LOW GRAPHICS · SLOWER COMPUTERS is on (alpha round 1, F2/F3).
     assert.equal(sourceFiles.length, 26);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '10379fbb5bd346c997648479b980f8a542ac9a17ceaa4b9973f5c45dd0762624',
+      '1c4111c322eeb57b81a4ab44d2c7beab08d99d35bc7cb6cc885d28b8b4490006',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

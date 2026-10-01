@@ -98,7 +98,7 @@ test('the true ending row has one gem per registered stone', () => {
 // ---------- settings plumbing ----------
 
 test('settings lists no longer offer the no-op subtitles toggle', () => {
-  assert.deepEqual(SETTINGS_CONTROLS.map(([key]) => key), ['masterVolume', 'musicVolume', 'sfxVolume', 'textScale', 'reducedMotion']);
+  assert.deepEqual(SETTINGS_CONTROLS.map(([key]) => key), ['masterVolume', 'musicVolume', 'sfxVolume', 'textScale', 'reducedMotion', 'lowGraphics']);
   assert.equal('subtitles' in DEFAULT_SETTINGS, false);
   for (const file of ['src/shell/pauseMenu.js', 'src/shell/titleMenu.js']) {
     assert.doesNotMatch(read(file), /'SUBTITLES'/);

@@ -9,4 +9,7 @@ export const SETTINGS_CONTROLS = Object.freeze([
   Object.freeze(['sfxVolume', 'SFX VOLUME', 'range', 0, 100]),
   Object.freeze(['textScale', 'TEXT SIZE', 'range', 90, 130]),
   Object.freeze(['reducedMotion', 'REDUCE MOTION', 'checkbox']),
+  // Forces the low render tier in the 3D chapters (Echo City, the Museum);
+  // off means each chapter picks its tier from measured frame time.
+  Object.freeze(['lowGraphics', 'LOW GRAPHICS · SLOWER COMPUTERS', 'checkbox']),
 ]);

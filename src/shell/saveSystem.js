@@ -48,6 +48,7 @@ export const DEFAULT_SETTINGS = Object.freeze({
   sfxVolume: 85,
   reducedMotion: false,
   textScale: 100,
+  lowGraphics: false,
 });
 
 // A modest music-bus lift keeps the score present beneath gameplay without
