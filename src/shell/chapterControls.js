@@ -50,7 +50,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
   // aim a virtual cursor; A / D and the left stick walk.
   paintedCountry: list(
     ['MOVE', 'A / D · LEFT STICK'],
-    ['JUMP', 'W · PAD Y / RB'],
+    ['JUMP', 'W / ↑ · PAD Y / RB'],
     ['AIM THE BRUSH', 'MOUSE · ARROW KEYS · RIGHT STICK'],
     ['PAINT / APPLY', 'LEFT MOUSE · SPACE · PAD A'],
     ['WASH / TAKE', 'RIGHT MOUSE · SHIFT · PAD B'],
