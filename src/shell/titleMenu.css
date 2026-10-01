@@ -16,9 +16,10 @@
  * rain and paper tiles (--nf-tex-*) are painted once by titleCarriage.js;
  * every rule has a flat fallback until they arrive.
  *
- * The window art (public/assets/ui/nightfall-title-window.jpg) is the key art
- * nightfall-title-background.png with its baked-in wordmark and menu painted
- * out and a slightly warmer grade.
+ * The window art is painted at runtime by titlePlate.js in Chapter 1's ink
+ * language: the night service waiting at Bellwether in the rain, one brass
+ * lamp and Butch on the wet platform. Its lamp flicker and steam are the
+ * .nf-plate-* layers below, placed by custom properties the painter sets.
  */
 
 :root {
@@ -260,10 +261,45 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: 72% 40%;
   pointer-events: none;
   user-select: none;
+}
+
+/* the platform lamp breathing, and the engine's steam lying back over the roofs */
+.nf-plate-lamp {
+  position: absolute;
+  z-index: 0;
+  left: var(--nf-plate-lamp-x, 62%);
+  top: var(--nf-plate-lamp-y, 42%);
+  width: 34cqh;
+  aspect-ratio: 1;
+  translate: -50% -50%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(255, 200, 120, .22), rgba(255, 180, 90, .07) 55%, rgba(255, 170, 80, 0) 100%);
+  mix-blend-mode: screen;
+  pointer-events: none;
+  animation: nf-lamp 6.1s steps(1, end) infinite;
+}
+.nf-plate-steam { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
+.nf-plate-steam i {
+  position: absolute;
+  right: -20cqh;
+  top: calc(var(--nf-plate-steam-y, 31%) - 9cqh);
+  width: 34cqh;
+  height: 14cqh;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(214, 216, 210, .2), rgba(214, 216, 210, .08) 60%, rgba(214, 216, 210, 0) 100%);
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: nf-steam 19s linear infinite;
+}
+.nf-plate-steam i:nth-child(2) { animation-delay: -6.3s; top: calc(var(--nf-plate-steam-y, 31%) - 13cqh); scale: 1.3; }
+.nf-plate-steam i:nth-child(3) { animation-delay: -12.6s; top: calc(var(--nf-plate-steam-y, 31%) - 6cqh); scale: .85; }
+@keyframes nf-steam {
+  0% { transform: translate(0, 0) scale(.7); opacity: 0; }
+  12% { opacity: 1; }
+  70% { opacity: .7; }
+  100% { transform: translate(-115cqw, -10cqh) scale(1.6); opacity: 0; }
 }
 
 /* rain on the glass: two sheets of streaks and the beads resting on it */
@@ -1259,15 +1295,17 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 
 html[data-reduced-motion="true"] *, html[data-reduced-motion="true"] *::before, html[data-reduced-motion="true"] *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
 /* Reduce Motion keeps the lamps lit and the beads on the glass, and drops the
-   falling rain, the flicker and the glint's pulse (spec §5). */
-html[data-reduced-motion="true"] .nf-rain i:first-child { display: none; }
+   falling rain, the flicker, the drifting steam and the glint's pulse (spec §5). */
+html[data-reduced-motion="true"] .nf-rain i:first-child,
+html[data-reduced-motion="true"] .nf-plate-steam { display: none; }
 html[data-reduced-motion="true"] .nf-rain i,
 html[data-reduced-motion="true"] .nf-lamps i::after,
+html[data-reduced-motion="true"] .nf-plate-lamp,
 html[data-reduced-motion="true"] .nf-action-label::after,
 html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .nf-rain i:first-child { display: none; }
-  .nf-rain i, .nf-lamps i::after, .nf-action-label::after, .nf-slot::after { animation: none !important; }
+  .nf-rain i:first-child, .nf-plate-steam { display: none; }
+  .nf-rain i, .nf-lamps i::after, .nf-plate-lamp, .nf-action-label::after, .nf-slot::after { animation: none !important; }
 }
 
 /* ---------- smaller and shorter windows ---------- */
@@ -1291,7 +1329,6 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
   .nf-wordmark { width: 60cqw; right: 50%; translate: 50% 0; }
   .nf-wordmark h1 { font-size: min(14cqw, 26cqh); }
   .nf-wordmark p { font-size: max(9px, min(2.6cqw, 5cqh)); }
-  .nf-title-backdrop { object-position: 62% 60%; }
   .nf-menu { padding: calc(var(--nf-bezel) + 8px) calc(var(--nf-bezel) + 8px); }
   .nf-menu-header, .nf-hint, .nf-board-columns { display: none; }
   .nf-main-actions { gap: 0; padding: .2em 0; }

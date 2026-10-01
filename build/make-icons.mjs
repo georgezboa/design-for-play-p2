@@ -8,8 +8,10 @@
 //   build/icon.ico   Windows (tighter plate so it stays legible at 16-32 px)
 //
 // Needs `sharp` and `png2icons` (devDependencies). The artwork is a crop of
-// the night train's cab from public/assets/ui/nightfall-title-background.png
-// (the train alone: a pasted wordmark letter cluttered it at small sizes).
+// the night train's cab from build/title-key-art.png, the old title key art
+// (moved out of public/ when the title got its painted Bellwether plate; it
+// is kept here only as the icons' source). The train alone: a pasted
+// wordmark letter cluttered it at small sizes.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -22,7 +24,7 @@ const require = createRequire(process.env.NIGHTFALL_ICON_DEPS || import.meta.url
 const sharp = require('sharp');
 const png2icons = require('png2icons');
 
-const SOURCE = path.join(root, 'public/assets/ui/nightfall-title-background.png');
+const SOURCE = path.join(root, 'build/title-key-art.png');
 const OUT = path.join(root, 'build');
 const SIZE = 1024;
 
