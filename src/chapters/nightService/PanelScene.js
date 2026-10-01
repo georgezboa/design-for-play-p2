@@ -1688,7 +1688,7 @@ export class PanelScene extends Phaser.Scene {
     const step = this.model.currentStep();
     if (!step?.hint || this.model.isLocked() || this.fading || this.growing) return false;
     // the Conductor's tier-3 line comes back with SHOW ME (alpha R1-3)
-    if (this.hints.request().includes('caption')) this.time.delayedCall(450, () => this.hintCaption(this.model.currentStep()));
+    if (this.hints.request().includes('caption')) this.hintCaption(step);
     const gesture = pickGesture(this.model, step);
     if (gesture) {
       // the goal as well as the next move
