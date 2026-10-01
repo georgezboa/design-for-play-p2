@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v38', () => {
+describe('Chapter 3 integrated final lock v39', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -47,6 +47,18 @@ describe('Chapter 3 integrated final lock v38', () => {
       'src/car03-3d-main.js',
       ...filesBelow('src/cars/presentCity3d', (file) => /\.(?:js|png)$/.test(file)),
     ];
+    // v39 (alpha round 1 fix round, engineer F2, 2026-09-30): reopened for
+    // the alpha issues. Frame time follows the wall clock (substeps ≤ 0.1 s)
+    // and captions read on it; a LOW quality tier (+chapter3Quality.js) and
+    // off-screen rig culling; scanners walk in step on a held E with a lane
+    // arrow; one clamp tag with a grab halo and miss feedback; PUNCH BOTH is
+    // a button; one prompt on the claim card; the gate label fits; Mara's
+    // scarf is rose; a Butch marker; the finale camera holds at the
+    // platform; and the length pass (no caption run over five lines, no
+    // queue number, briefing, guided walk or hotel corridor; departure and
+    // Lev's walks no longer hold Butch; double-click / Shift runs).
+    // Toma's composition (above) is unchanged. Files: +1 (chapter3Quality):
+    // 25 -> 26.
     // v38 (release/1.0 Echo City pass, 2026-09-28, George's review): reopened
     // for gameplay. Lev's theory rounds became the Ticket 43 board (lens,
     // stack, one punch: VENN is VELEZ); "walk beside" was added at the market
@@ -61,10 +73,10 @@ describe('Chapter 3 integrated final lock v38', () => {
     // chapter3SceneBuilders, chapter3WalkBesideModel): 24 -> 25.
     // v37 note kept: QA routes/hooks are dev-only (DEV_MODE), Escape opens the
     // shared pause menu, REDUCE MOTION and TEXT SIZE are honoured.
-    assert.equal(sourceFiles.length, 25);
+    assert.equal(sourceFiles.length, 26);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'ed00fc3ec0cb4c82d710fa11f45378eef64184b83004f4be6e9750804cdba9a0',
+      '10379fbb5bd346c997648479b980f8a542ac9a17ceaa4b9973f5c45dd0762624',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

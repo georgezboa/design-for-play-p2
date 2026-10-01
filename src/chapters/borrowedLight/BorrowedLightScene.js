@@ -51,7 +51,8 @@ import {
   sectionAt,
   timetableDefinition,
 } from './level.js';
-import { ARCHIVE_CARD_B1, CHAPTER_TITLE, HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, STONE_TOAST } from './story.js';
+import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, stoneToast } from './story.js';
+import { afterglowLight, deckReveal, deckSolid, lampRim, machineLight } from './memoryLight.js';
 import { DEPTH, FONTS, INK_HEX, LINE_COLORS } from './art/palette.js';
 import { BUTCH_SPEC, MARA_SPEC, MECHANIC_SPEC, drawFigure } from './art/figures.js';
 import {
@@ -115,7 +116,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.stoneTaken = magicStoneSnapshot().collected.includes('chapter-2');
     this.cull = [];
     this.platformX = PLATFORMS.find((p) => p.id === 'c-platform').x;
-    this.flags = { mechanicTalked: false, letterRead: false, cardRead: false, listenHinted: false, firstPunch: false };
+    this.flags = { mechanicTalked: false, letterRead: false, cardRead: false, listenHinted: false, firstPunch: false, jumped: false, listened: false, darkDeckHinted: false, darkDeckToasted: false };
     this.departure = { started: false, startBell: 0 };
     this.platformLampsLit = new Set();
     this.lastBellAt = -10;
@@ -158,7 +159,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     drawBlackoutRims(this.dark.rim, PLATFORMS);
     this.dark.rim.setVisible(false);
     this.hud = new BorrowedLightHud(this);
-    this.promptText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '16px', color: '#eadfc6', backgroundColor: 'rgba(11,9,7,0.78)', padding: { x: 10, y: 5 } })
+    // World prompts are paper tags (ivory paper, walnut ink), like every
+    // chapter's tags. The teach tag carries first-use keys (jump, listen).
+    const tagStyle = { fontFamily: FONTS.mono, fontSize: '16px', fontStyle: 'bold', color: '#2a1d14', backgroundColor: '#e6dcc2', padding: { x: 12, y: 6 } };
+    this.promptText = this.add.text(0, 0, '', tagStyle)
+      .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
+    this.teachText = this.add.text(0, 0, '', tagStyle)
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
     this.hintText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '14px', color: '#e6aab0', align: 'center' })
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 3).setLetterSpacing(2).setAlpha(0);
@@ -176,6 +182,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.hud.applyTextScale();
       const k = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
       this.promptText.setFontSize(`${Math.round(16 * k)}px`);
+      this.teachText.setFontSize(`${Math.round(16 * k)}px`);
       this.hintText.setFontSize(`${Math.round(14 * k)}px`);
     };
     this.onSettings();
@@ -197,6 +204,8 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   buildPlatforms() {
     this.solids = this.physics.add.staticGroup();
+    // The blackout's dark decks: solid and visible only in borrowed light.
+    this.darkDecks = [];
     PLATFORMS.forEach((platform) => {
       const blackout = sectionAt(platform.x + platform.w / 2) === 'B';
       const exclude = [
@@ -218,6 +227,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         zone.body.checkCollision.down = false;
       }
       this.solids.add(zone);
+      if (platform.hidden) this.darkDecks.push({ platform, zone, objects: art.objects, reveal: 1, shown: 1, solid: true });
     });
   }
 
@@ -728,6 +738,10 @@ export class BorrowedLightScene extends Phaser.Scene {
   respawn() {
     if (this.respawning || this.boarded) return;
     this.respawning = true;
+    // The departure does not count the bells spent falling and walking back
+    // into the lamp's light.
+    this.tt.holdCountdown(true);
+    this.time.removeEvent(this.countdownRelease);
     sfx.fallWhoosh();
     // Into the rain mist: the fade is the mist's colour, not black.
     this.hud.fade.setTint(0x0e1b22);
@@ -747,7 +761,21 @@ export class BorrowedLightScene extends Phaser.Scene {
           this.tweens.add({ targets: lv.glow, alpha: 0.55, duration: 700, ease: 'Sine.easeOut' });
           sfx.lampLit();
         }
-        this.tweens.add({ targets: this.hud.fade, alpha: 0, duration: 300, onComplete: () => { this.respawning = false; this.hud.fade.setTint(0x000000); } });
+        this.tweens.add({
+          targets: this.hud.fade,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => {
+            this.respawning = false;
+            this.hud.fade.setTint(0x000000);
+            this.countdownRelease = this.time.delayedCall(1500, () => this.tt.holdCountdown(false));
+            if (this.fellThroughDark && !this.flags.darkDeckToasted) {
+              this.flags.darkDeckToasted = true;
+              this.hud.toast(DARK_DECK_HINT, '#9fd9cf', 3600);
+            }
+            this.fellThroughDark = false;
+          },
+        });
       },
     });
   }
@@ -789,10 +817,9 @@ export class BorrowedLightScene extends Phaser.Scene {
         this.fx.pop(head.x, head.y + 51, LINE_COLORS[node.line].glow);
         view.pulse = 0;
         view.pulseSpeed = 1.6;
-        if (!this.flags.listenHinted && this.section === 'A' && this.flags.firstPunch) {
-          this.flags.listenHinted = true;
-          this.time.delayedCall(700, () => this.hud.toast(`${HINTS.listen} · SEE WHAT THE NEXT BELL MOVES`, '#9fd9cf', 3200));
-        }
+        // Listen is taught by a tag over Butch from the second punch on
+        // (updatePrompts), until he has listened once.
+        if (this.flags.firstPunch) this.flags.listenHinted = true;
         this.flags.firstPunch = true;
         break;
       }
@@ -836,9 +863,13 @@ export class BorrowedLightScene extends Phaser.Scene {
     const node = NODES.find((n) => n.id === nodeId);
     if (!node) return;
     const head = nodeHead(node);
-    this.hintText.setText(text).setColor(color).setPosition(head.x, head.y - 78).setAlpha(1);
+    this.floatHintAt(head.x, head.y - 78, text, color, ms);
+  }
+
+  floatHintAt(x, y, text, color, ms = 2000) {
+    this.hintText.setText(text).setColor(color).setPosition(x, y).setAlpha(1);
     this.tweens.killTweensOf(this.hintText);
-    this.tweens.add({ targets: this.hintText, alpha: 0, y: head.y - 104, delay: ms, duration: 500 });
+    this.tweens.add({ targets: this.hintText, alpha: 0, y: y - 26, delay: ms, duration: 500 });
   }
 
   interactTarget() {
@@ -909,6 +940,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const events = this.tt.update(dt);
     events.forEach((event) => this.onModelEvent(event));
     this.machineViews.forEach((entry) => this.syncMachineBody(entry, dtSec));
+    this.updateDarkDecks();
     this.controlPlayer(dt);
     this.checkWorld();
     this.onLiftId = null;
@@ -1042,6 +1074,42 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
   }
 
+  // Borrowed light in the blackout: powered machines and punched nodes'
+  // afterglow (memoryLight.js). The darkness is erased with exactly these
+  // lights; `visual` adds the machines' flicker, solidity ignores it.
+  borrowedLights(t, { visual = false } = {}) {
+    const lights = [];
+    this.machineViews.forEach((entry) => {
+      const st = this.tt.machineStatus(entry.machine.id);
+      if (!st.powered) return;
+      lights.push(machineLight(entry.machine, machineBounds(entry.machine, st.level), visual ? powerLevel(st, t) : 1));
+    });
+    NODES.forEach((node) => {
+      const glow = this.tt.afterglowOf(node.id);
+      if (glow > 0) lights.push(afterglowLight(nodeHead(node), glow));
+    });
+    return lights.filter(Boolean);
+  }
+
+  // Dark decks are solid only while borrowed light is on them. A deck Butch
+  // is standing on holds until he leaves it (the light never drops him).
+  updateDarkDecks() {
+    if (!this.darkDecks?.length) return;
+    const lights = this.blackout ? this.borrowedLights(this.clock) : null;
+    const grounded = this.player.ctrl.grounded;
+    for (const deck of this.darkDecks) {
+      const { platform } = deck;
+      deck.reveal = this.blackout ? deckReveal(platform, lights) : 1;
+      const standing = grounded && Math.abs(this.feetY - platform.y) < 8
+        && this.feetX >= platform.x - BODY_W / 2 && this.feetX <= platform.x + platform.w + BODY_W / 2;
+      const solid = deckSolid(deck.reveal) || (deck.solid && standing);
+      if (solid !== deck.solid) {
+        deck.solid = solid;
+        deck.zone.body.enable = solid;
+      }
+    }
+  }
+
   inUpdraft() {
     const x = this.feetX;
     const y = this.feetY - BODY_H / 2;
@@ -1077,6 +1145,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.jumpQueued) { input.jumpPressed = true; this.jumpQueued = false; }
     if (this.locked === 'auto' && this.autoRun) {
       input = { left: false, right: true, jumpHeld: false, jumpPressed: false };
+      if (this.autoRun.chase) this.autoRun.targetX = this.boardX() + 10;
       if (this.feetX >= this.autoRun.targetX) {
         const then = this.autoRun.then;
         this.autoRun = null;
@@ -1106,6 +1175,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     body.setVelocity(out.vx, vy);
     this.player.pose = out.pose;
     if (out.jumped) {
+      this.flags.jumped = true;
       sfx.jumpSound();
       this.squash = 1.1;
       this.fx.dust(this.feetX, this.feetY, { dir: -ctrl.facing });
@@ -1123,7 +1193,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.boarded) return;
     const x = this.feetX;
     const y = this.feetY;
-    if (y > WORLD.killY) { this.respawn(); return; }
+    if (y > WORLD.killY) {
+      // A fall past an unlit dark deck earns one reminder after the respawn.
+      if (this.blackout && this.darkDecks.some((deck) => !deck.solid && x > deck.platform.x - 120 && x < deck.platform.x + deck.platform.w + 120)) this.fellThroughDark = true;
+      this.respawn();
+      return;
+    }
     if (this.respawning) return;
 
     // Street lamps.
@@ -1157,7 +1232,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.section === 'C' && x >= this.boardX() - 30 && Math.abs(y - TRAIN.end.y) < 40) this.board();
   }
 
-  boardX() { return Math.min(BOARD_X + 200, this.trainEnd.doorWorldX); }
+  // Late, the door is rolling away: Butch boards where it actually is.
+  boardX() { return this.remembering ? this.trainEnd.doorWorldX : Math.min(BOARD_X + 200, this.trainEnd.doorWorldX); }
 
   takeStone() {
     this.stoneTaken = true;
@@ -1165,8 +1241,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     sfx.stoneChime();
     this.tweens.add({ targets: [this.stoneGlow], alpha: 0, scale: 3, duration: 700 });
     this.stoneG.setVisible(false);
-    this.hud.toast(STONE_TOAST, '#9fd9cf', 2600);
-    this.hud.showStones(magicStoneSnapshot());
+    // The shell's one-time first-stone card opens ~1.1 s after a first
+    // pickup; the toast is short so it has cleared by then.
+    const snapshot = magicStoneSnapshot();
+    this.hud.toast(stoneToast(snapshot), '#9fd9cf', 900);
+    this.hud.showStones(snapshot);
   }
 
   startSighting(s) {
@@ -1194,7 +1273,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.time.delayedCall(650 * seq.length + 1600, () => {
       const onUpper = this.feetY <= TRAIN.end.y + 20 && this.feetX >= REMEMBER_PLACE.upperFromX;
       const run = () => {
-        this.autoRun = { targetX: this.boardX() + 10, then: null };
+        // Late: the doors are still open but the train is already rolling;
+        // Butch has to run the platform for the last car.
+        const train = this.trainEnd;
+        this.lateRoll = this.tweens.add({ targets: train.container, x: train.container.x + 900, duration: 9000, ease: 'Sine.easeIn', onUpdate: () => train.sync() });
+        sfx.trainChime();
+        this.autoRun = { targetX: this.boardX() + 10, then: null, chase: true };
         this.locked = 'auto';
       };
       if (onUpper) { run(); return; }
@@ -1227,18 +1311,51 @@ export class BorrowedLightScene extends Phaser.Scene {
       // The calmer shot: the train waits, door open, light on the wet
       // platform, then closes and pulls away slowly.
       this.frame = { x: train.doorWorldX + 300, y: TRAIN.end.y - 120, until: this.clock + 99 };
+      this.time.delayedCall(700, () => this.hud.say(BOARDING_LINES.onTime, 2600));
       this.time.delayedCall(2100, () => {
         train.setDoorOpen(false);
         this.tweens.add({ targets: train.container, x: train.container.x + 900, duration: 4200, ease: 'Sine.easeIn', onUpdate: () => train.sync() });
         this.time.delayedCall(1800, () => this.exitChapter());
       });
     } else {
-      // Late: the train is already rolling; Butch swings aboard.
+      // Late: Butch makes the last car at a run and the doors close on his
+      // coat; the tail of it flaps outside as the train pulls away.
+      this.lateRoll?.stop();
+      p.alpha = 0;
+      this.tweens.killTweensOf(p);
       train.setDoorOpen(false);
-      this.frame = { x: train.doorWorldX + 200, y: TRAIN.end.y - 120, until: this.clock + 99 };
-      this.tweens.add({ targets: train.container, x: train.container.x + 1400, duration: 3600, ease: 'Cubic.easeIn', onUpdate: () => train.sync() });
-      this.time.delayedCall(1500, () => this.exitChapter());
+      this.coatCaught = this.caughtCoat(train);
+      sfx.clunk('drawbridge');
+      if (!reducedMotionActive()) this.cameras.main.shake(160, 0.003);
+      this.frame = { x: train.doorWorldX + 160, y: TRAIN.end.y - 110, until: this.clock + 99 };
+      this.time.delayedCall(300, () => this.hud.say(BOARDING_LINES.late, 2800));
+      this.tweens.add({ targets: train.container, x: train.container.x + 1700, duration: 4200, ease: 'Cubic.easeIn', onUpdate: () => train.sync() });
+      this.time.delayedCall(2900, () => this.exitChapter());
     }
+  }
+
+  // The coat tail shut in the rear car's door (late boarding only).
+  caughtCoat(train) {
+    const g = this.add.graphics();
+    // The door seam on the side Butch ran from; the tail streams back.
+    const x = train.doorOffset - 34;
+    const y = -150;
+    const draw = (t) => {
+      g.clear();
+      const flap = Math.sin(t * 17) * 7 + Math.sin(t * 7.3) * 5;
+      const tail = [
+        { x: x + 4, y }, { x: x + 4, y: y + 78 },
+        { x: x - 58 - flap, y: y + 92 + flap * 0.5 }, { x: x - 46 - flap * 0.6, y: y + 40 },
+        { x: x - 30 - flap * 0.3, y: y + 8 },
+      ];
+      g.fillStyle(BUTCH_SPEC.coat, 1).fillPoints(tail, true);
+      g.fillStyle(BUTCH_SPEC.coatShade, 1).fillPoints([tail[0], tail[1], { x: x - 20 - flap * 0.4, y: y + 84 }, { x: x - 12, y: y + 20 }], true);
+      g.lineStyle(2, INK_HEX, 0.7).strokePoints(tail, true);
+    };
+    draw(0);
+    train.container.add(g);
+    this.tweens.addCounter({ from: 0, to: 60, duration: 60000, onUpdate: (tw) => draw(tw.getValue()) });
+    return g;
   }
 
   exitChapter() {
@@ -1281,6 +1398,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const t = (this.clock += dt / 1000);
     this.pollGamepad();
     this.listening = !this.locked && !this.hud.dialogOpen && !this.hud.cardOpen && (this.keys.q.isDown || Boolean(this.input.gamepad?.pad1?.L1));
+    if (this.listening) this.flags.listened = true;
     if (this.hud.dialogOpen) this.hud.updateDialog(dt);
 
     this.updateCamera(dt);
@@ -1660,25 +1778,17 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.mara) light(this.mara.x, this.mara.y - 55, 150, 0.55);
     // Lit street lamps.
     this.lamps.forEach((lamp) => { if (lamp.lit) light(lamp.x + 29, lamp.y - 120, 210, 0.85); });
-    // Nodes: small pilot glow; afterglow reveals the roofs around them.
+    // Nodes: small pilot glow (a lit node is a small lamp of its own).
     this.nodeViews.forEach((view, id) => {
       const head = nodeHead(view.node);
-      const glow = this.tt.afterglowOf(id);
       const st = this.tt.nodeStatus(id);
-      // A lit (queued / powering) node is a small lamp of its own.
       light(head.x, head.y + 10, st.queued || st.powering ? 130 : 70, st.queued || st.powering ? 1 : 0.7);
-      if (glow > 0) light(head.x, head.y + 40, 620 * (0.55 + 0.45 * Math.sqrt(glow)), Math.min(1, 0.35 + glow));
     });
-    // Powered machines light their surroundings.
-    this.machineViews.forEach((entry) => {
-      const st = this.tt.machineStatus(entry.machine.id);
-      const on = powerLevel(st, t);
-      if (on <= 0) return;
-      const m = entry.machine;
-      const b = machineBounds(m, st.level);
-      const r = m.kind === 'sign' ? m.glow : Math.min(420, Math.max(160, b.w * 0.6));
-      light(b.x + b.w / 2, b.y + Math.min(b.h, 200) / 2, r, 0.8 * on);
-    });
+    // Borrowed light: powered machines and afterglow reveal the roofs (and
+    // the dark decks) around them.
+    const borrowed = this.borrowedLights(t, { visual: true });
+    borrowed.forEach((b) => light(b.x, b.y, b.r, b.strength));
+    this.drawDarkDecks(borrowed, dt);
     // Mara's ticket stub catches what light there is: the one bright thing
     // in the hotel's dark window.
     if (this.section === 'B') light(HOTEL_WINDOW.x - 7, HOTEL_WINDOW.y - 158, 110, 0.75);
@@ -1702,6 +1812,47 @@ export class BorrowedLightScene extends Phaser.Scene {
         const tw = 0.5 + 0.5 * Math.sin(t * 2.3 + view.node.x);
         rd.fillStyle(0xffd08a, 0.35 + 0.4 * tw).fillCircle(head.x + 9, head.y + 35, 1.8 + tw);
       });
+      this.drawDarkDeckRims(rd);
+    }
+  }
+
+  // Dark decks fade in with the borrowed light on them and out without it.
+  drawDarkDecks(lights, dt) {
+    for (const deck of this.darkDecks ?? []) {
+      const target = this.blackout ? Math.min(1, deckReveal(deck.platform, lights) * 2.5) : 1;
+      deck.shown = Phaser.Math.Linear(deck.shown, target, Math.min(1, dt / 90));
+      if (Math.abs(deck.shown - target) < 0.01) deck.shown = target;
+      deck.objects.forEach((obj) => obj.setAlpha(deck.shown));
+    }
+  }
+
+  // A lit deck gets a readable rim; an unlit one inside Butch's lamp shows
+  // only a broken rim on its near edge — something is there, but it will not
+  // hold him until it is lit.
+  drawDarkDeckRims(rd) {
+    const lamp = this.player.visible ? this.player.lampAt : null;
+    for (const deck of this.darkDecks ?? []) {
+      const { platform } = deck;
+      if (!this.isVisibleX(platform.x, platform.x + platform.w)) continue;
+      if (deck.solid) {
+        if (deck.shown > 0.05) rd.lineStyle(2, INK_HEX, 0.55 * deck.shown).lineBetween(platform.x, platform.y + 1, platform.x + platform.w, platform.y + 1);
+        // Held under Butch after its light has gone: the lamp shows the
+        // boards he is standing on.
+        if (deck.shown < 0.5 && deck.reveal < 0.2) {
+          const under = lampRim(platform, lamp, 200);
+          if (under) rd.lineStyle(2, INK_HEX, 0.45).lineBetween(Math.max(platform.x, this.feetX - 110), platform.y + 1, Math.min(platform.x + platform.w, this.feetX + 110), platform.y + 1);
+        }
+        continue;
+      }
+      const rim = lampRim(platform, lamp, 250);
+      if (!rim) continue;
+      rd.lineStyle(2, 0x9fb8c0, 0.5);
+      for (let x = rim.x0; x < rim.x1; x += 18) rd.lineBetween(x, rim.y + 1, Math.min(rim.x1, x + 10), rim.y + 1);
+      if (!this.flags.darkDeckHinted) {
+        this.flags.darkDeckHinted = true;
+        // Under the broken rim, in the dark gap: clear of Butch and the node tags.
+        this.floatHintAt((rim.x0 + rim.x1) / 2 + 60, rim.y + 52, DARK_DECK_HINT, '#9fd9cf', 3600);
+      }
     }
   }
 
@@ -1741,8 +1892,24 @@ export class BorrowedLightScene extends Phaser.Scene {
     });
   }
 
+  // First-use key tags. Jumping is first needed at the AC unit on the ROOMS
+  // roof; Listen is worth learning once a punch is waiting for its bell.
+  teachPrompt() {
+    if (this.section !== 'A') return null;
+    const onRoomsRoof = this.feetX > 5160 && this.feetX < 5545 && Math.abs(this.feetY - 460) < 12;
+    if (!this.flags.jumped && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
+    const queued = Object.values(this.tt.snapshot().queued).length > 0;
+    if (!this.flags.listened && this.flags.listenHinted && queued && !this.currentTarget) {
+      return { x: this.feetX, y: this.feetY - 150, text: HINTS.listen };
+    }
+    return null;
+  }
+
   updatePrompts() {
     const pt = this.promptText;
+    const teach = this.locked || this.hud.dialogOpen || this.hud.cardOpen ? null : this.teachPrompt();
+    this.teachText.setVisible(Boolean(teach));
+    if (teach) this.teachText.setText(teach.text).setPosition(teach.x, teach.y);
     if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
     // Something already read keeps its E (you can read it again) but no
     // longer advertises it.
@@ -1750,7 +1917,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     const target = (raw === 'window' && this.flags.cardRead) || (raw === 'letter' && this.flags.letterRead) ? null : raw;
     if (target) {
       const [x, y, label] = target === 'mechanic'
-        ? [MECHANIC.x, MECHANIC.y - 130, HINTS.talk]
+        // Above the kiosk awning (its valance hangs 160–196 px up), clear of it.
+        ? [MECHANIC.x, MECHANIC.y - 208, HINTS.talk]
         : target === 'window'
           ? [HOTEL_WINDOW.x, HOTEL_WINDOW.y - 230, HINTS.read]
           : [BENCH.x, BENCH.y - 100, HINTS.read];
@@ -1808,6 +1976,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       dialog: this.hud.dialogOpen ? { speaker: this.hud.dialog.lines[this.hud.dialog.index].speaker, index: this.hud.dialog.index } : null,
       card: this.hud.cardOpen,
       prompt: this.promptText.visible ? this.promptText.text : null,
+      teach: this.teachText.visible ? this.teachText.text : null,
+      darkDecks: Object.fromEntries((this.darkDecks ?? []).map((deck) => [deck.platform.id, { solid: deck.solid, reveal: Number(deck.reveal.toFixed(2)), shown: Number(deck.shown.toFixed(2)) }])),
+      caption: this.hud.saying && this.hud.caption.visible && !this.hud.dialogOpen ? this.hud.saying.text : null,
       mara: this.mara ? { sighting: this.mara.s.id, phase: this.mara.phase, x: Math.round(this.mara.x) } : null,
       sightings: [...this.sightingsDone],
       windowMara: this.windowMara ? { state: this.windowMara.state, a: Number(this.windowMara.a.toFixed(2)) } : null,

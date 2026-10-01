@@ -39,11 +39,39 @@ function drawWord({ canvas, texture }, word, color) {
   context.fill();
   context.stroke();
   context.fillStyle = `#${color.toString(16).padStart(6, '0')}`;
-  context.font = '700 54px "Space Mono", ui-monospace, monospace';
+  // Shrink long labels to the panel (MARKET WARD CROSSING was clipped to
+  // "RKET WARD CROSSI").
+  const room = canvas.width - 56;
+  let size = 54;
+  context.font = `700 ${size}px "Space Mono", ui-monospace, monospace`;
+  while (size > 22 && context.measureText(word).width > room) {
+    size -= 2;
+    context.font = `700 ${size}px "Space Mono", ui-monospace, monospace`;
+  }
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.fillText(word, canvas.width / 2, canvas.height / 2 + 2);
+  context.fillText(word, canvas.width / 2, canvas.height / 2 + 2, room);
   texture.needsUpdate = true;
+}
+
+// Chevrons along the lane, pointing through the arch (repeats along V).
+function laneArrowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 128;
+  canvas.height = 128;
+  const context = canvas.getContext('2d');
+  context.strokeStyle = '#ffffff';
+  context.lineWidth = 16;
+  context.lineCap = 'round';
+  context.lineJoin = 'round';
+  context.beginPath();
+  context.moveTo(22, 92); context.lineTo(64, 40); context.lineTo(106, 92);
+  context.stroke();
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.ClampToEdgeWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
 }
 
 function floorMarkTexture(kind) {
@@ -144,6 +172,24 @@ export class Chapter3ScannerField {
     this.safeLine.position.set(0, 0.04, -2.5);
     this.group.add(this.safeLine);
 
+    // A chevron arrow down Butch's lane, from the safe line out past the
+    // crossing: "in step" means along this, whatever the camera calls up.
+    const laneX = (field.side ?? 1) * (field.sideOffset ?? 1);
+    // From where the walker waits (the field's `from`) out past the crossing.
+    const laneStart = -this.geometry.gateAlong - 0.4;
+    const laneEnd = this.geometry.length - this.geometry.gateAlong + 0.4;
+    const laneLength = laneEnd - laneStart;
+    this.laneTexture = laneArrowTexture();
+    this.laneTexture.repeat.set(1, laneLength / 1.1);
+    this.laneMaterial = new THREE.MeshBasicMaterial({ map: this.laneTexture, color: 0xe0a24a, transparent: true, opacity: 0.55, depthWrite: false });
+    this.laneArrow = new THREE.Mesh(new THREE.PlaneGeometry(0.8, laneLength), this.laneMaterial);
+    // Plane +Y (the chevrons' point) → local +Z, along the crossing.
+    this.laneArrow.rotation.x = -Math.PI / 2;
+    this.laneArrow.rotation.z = Math.PI;
+    this.laneArrow.position.set(laneX, 0.045, laneStart + laneLength / 2);
+    this.laneArrow.renderOrder = 3;
+    this.group.add(this.laneArrow);
+
     // The word panel above the arch.
     this.word = makeWordTexture();
     this.wordSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: this.word.texture, transparent: true, depthTest: false }));
@@ -186,6 +232,7 @@ export class Chapter3ScannerField {
     this.active = Boolean(active);
     this.wordSprite.visible = this.active;
     this.safeLine.visible = this.active;
+    this.laneArrow.visible = this.active;
     this.render('idle', true);
   }
 
@@ -210,6 +257,16 @@ export class Chapter3ScannerField {
           : scanner === 'matching' ? 'IN STEP…'
             : this.field.label;
     if (this.active) drawWord(this.word, word, scanner === 'idle' ? 0xeadfc6 : color);
+  }
+
+  // The lane arrow drifts toward the arch while the pair walks, glows when
+  // matched and flashes oxblood when Butch pulls the wrong way.
+  updateLaneArrow({ matched = false, wrongWay = false, elapsed = 0 } = {}) {
+    if (!this.active) return;
+    this.laneTexture.offset.y = -(elapsed * (matched ? 0.9 : 0.35)) % 1;
+    this.laneMaterial.color.setHex(wrongWay ? COLORS.flagged : matched ? COLORS.ok : 0xe0a24a);
+    const pulse = 0.5 + 0.5 * Math.sin(elapsed * (wrongWay ? 12 : 3));
+    this.laneMaterial.opacity = wrongWay ? 0.5 + 0.4 * pulse : matched ? 0.7 : 0.4 + 0.15 * pulse;
   }
 
   // Draw the ribbon between two world points; `progress` fills it (0..1).

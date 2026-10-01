@@ -234,7 +234,67 @@ describe('Chapter 3 checklist menus', () => {
 
   it('keeps the chapter near its 20–25 minute budget in reading', () => {
     const lines = allContentLines().filter((line) => line.speaker !== 'CHOOSE');
-    assert.ok(lines.length <= 140, `about 140 spoken lines at most (was ~413); found ${lines.length}`);
+    // Alpha round 1 length pass: 128 → 96 authored lines in all.
+    assert.ok(lines.length <= 96, `about 96 spoken lines at most (was ~413, then 128); found ${lines.length}`);
+  });
+
+  // Alpha round 1 · F2 length: first-time play was 60–80 min, mostly talk and
+  // scripted walks. No run of captions is longer than five before the
+  // player acts (a choice, a card, a click, a walk).
+  it('never runs more than five lines before the player acts', () => {
+    const runs = {
+      'arrival, before the claim card': CONTENT.ARRIVAL_DIALOGUE.slice(0, CONTENT.ARRIVAL_BEFORE_CARD),
+      'arrival, after the claim card + Lev': [...CONTENT.ARRIVAL_DIALOGUE.slice(CONTENT.ARRIVAL_BEFORE_CARD), ...CONTENT.LEV_INTRO_DIALOGUE],
+      'Toma at the door': CONTENT.TRANSPORT_ENTRANCE_DIALOGUE,
+      'the ticket board, then the walk out': CONTENT.TICKET_BOARD_CONCLUSION,
+      'past the market scanner': CONTENT.MARKET_CROSSED_DIALOGUE,
+      'sleep, the dark, waking': [...CONTENT.SLEEP_DIALOGUE, ...CONTENT.NIGHT_WAKE_DIALOGUE],
+      'the first fire row': CONTENT.NIGHT_FIRST_LINE,
+      'the second row, the dark, the dawn bench': [...CONTENT.NIGHT_SECOND_LINE, ...CONTENT.SUNRISE_BENCH_DIALOGUE],
+      'the station approach': [...CONTENT.STATION_APPROACH_DIALOGUE, ...CONTENT.STATION_MARA_SIGHTED],
+      'boarding and the empty seat': [...CONTENT.BOARDING_DIALOGUE, ...CONTENT.BOARDED_DIALOGUE],
+      'Seline\'s stone and the pickup line': [...CONTENT.CAMPFIRE_SELINE_STONE_DIALOGUE, { speaker: 'BUTCH', text: 'pickup' }],
+    };
+    const menus = {
+      seam: [CONTENT.SEAM_DIALOGUE, CONTENT.SEAM_TOPIC_RESPONSES, CONTENT.SEAM_CONCLUSION],
+      nika: [CONTENT.NIKA_OPENING, CONTENT.NIKA_TOPIC_RESPONSES, CONTENT.NIKA_CONCLUSION],
+      eda: [CONTENT.EDA_OPENING, CONTENT.EDA_TOPIC_RESPONSES, CONTENT.EDA_CONCLUSION],
+      cut: [CONTENT.CUT_INTERFACE_OPENING, CONTENT.CUT_INTERFACE_RESPONSES, CONTENT.CUT_INTERFACE_CONCLUSION],
+      hana: [CONTENT.HANA_OPENING, CONTENT.HANA_TOPIC_RESPONSES, CONTENT.HANA_CONCLUSION],
+    };
+    for (const [name, [opening, responses, conclusion]] of Object.entries(menus)) {
+      runs[`${name}: opening`] = opening;
+      runs[`${name}: conclusion`] = conclusion;
+      for (const [topic, lines] of Object.entries(responses)) runs[`${name}: ${topic}`] = lines;
+    }
+    for (const [name, lines] of Object.entries(runs)) {
+      assert.ok(lines.length <= 5, `${name}: ${lines.length} lines before the player acts`);
+    }
+    // A topic answer never starts by repeating the question the menu showed.
+    for (const responses of [CONTENT.NIKA_TOPIC_RESPONSES, CONTENT.EDA_TOPIC_RESPONSES, CONTENT.HANA_TOPIC_RESPONSES]) {
+      for (const lines of Object.values(responses)) assert.notEqual(lines[0].speaker, 'BUTCH');
+    }
+  });
+
+  it('lets the player walk away from scripted beats', () => {
+    // The opening train departure and Lev's walk to the oil line hold no one.
+    const lock = runtime.match(/interactionLocked\(\) \{([\s\S]*?)\n  \}/)?.[1] ?? '';
+    assert.doesNotMatch(lock, /departureElapsed|guideElapsed|guidedWalkActive/);
+    assert.match(runtime, /skipScriptedWalk\(\)/);
+    assert.doesNotMatch(runtime, /openWorldBriefing|openQueueDispenser|WORLD_BRIEFING_DIALOGUE|TRANSPORT_QUEUE_DIALOGUE/);
+    // Upstairs goes straight to the room; at night the room door goes out.
+    assert.match(runtime, /this\.model\.enterHotelRoom\(\);\n\s+this\.switchHotelArea\('room'\);/);
+    assert.match(runtime, /this\.model\.reachNightLobby\(\);\n\s+this\.leaveHotelAtNight\(\);/);
+    const preview = fs.readFileSync(new URL('../../src/cars/presentCity3d/EchoCity3DPreview.js', import.meta.url), 'utf8');
+    assert.match(preview, /addEventListener\('dblclick'/);
+    assert.match(preview, /this\.running \|\| this\.shiftHeld \? WALK_SPEED \* RUN_MULTIPLIER : WALK_SPEED/);
+  });
+
+  it('dresses Mara\'s scarf rose, as in Chapter 2', () => {
+    const text = allContentLines().map((line) => line.text).join(' ');
+    assert.doesNotMatch(text, /teal scarf/);
+    assert.match(text, /rose scarf/);
+    assert.doesNotMatch(runtime, /teal scarf|0x2f8f86/);
   });
 });
 

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 
 import {
+  ARRIVAL_BEFORE_CARD,
   ARRIVAL_DIALOGUE,
   BOARDED_DIALOGUE,
   BOARDING_DIALOGUE,
@@ -41,8 +42,6 @@ import {
   SUNRISE_BENCH_DIALOGUE,
   TICKET_BOARD_CONCLUSION,
   TRANSPORT_ENTRANCE_DIALOGUE,
-  TRANSPORT_QUEUE_DIALOGUE,
-  WORLD_BRIEFING_DIALOGUE,
   cutInterfaceMenu,
   edaTopicMenu,
   hanaTopicMenu,
@@ -111,12 +110,17 @@ const C3_MUSIC = {
 const INTERACTION_RADIUS = 4.2;
 const SLEEP_BLACKOUT_MS = 5000;
 const HOTEL_STAGE_TRANSITION_MS = 320;
-const SEARCH_HINT_AFTER_SECONDS = 90;
-const SEARCH_HINT_NEAR_TARGET_SECONDS = 60;
+// Lev points the way after this long searching (alpha round 1: 90 s felt
+// like being lost; the length target is 30–35 minutes).
+const SEARCH_HINT_AFTER_SECONDS = 45;
+const SEARCH_HINT_NEAR_TARGET_SECONDS = 30;
 const DIRECT_WALK_SPEED = 3.1;
 // The default street camera sits closer than the old 2.85 overview so the
 // cast reads at least ~48 px tall at 1080p; dialogue eases in a little more.
 const DIALOGUE_ZOOM_BOOST = 0.45;
+const LOW_QUALITY_ZOOM_BOOST = 0.5;
+// How far (m) the finale camera follows the departing train before it holds.
+const FINALE_CAMERA_FOLLOW = 9;
 // Measured from vertical raycasts through the installed Hunyuan furniture kit
 // at its runtime scale/offset. Boxes include a 0.42 m player-radius margin.
 const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
@@ -128,6 +132,7 @@ const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
 const MINISTRY_WALK_BOUNDS = Object.freeze({ minX: -7.9, maxX: 7.9, minZ: -3.95, maxZ: 9.75 });
 const DISTANT_GUIDANCE_INTERACTIONS = Object.freeze(new Set([
   'transport-entrance', 'copper-heron-entrance', 'night-burning-message',
+  'eda', 'cut-feed-interface',
 ]));
 const AMBIENT_CITY_ROAM_POINTS = Object.freeze(
   Object.values(WORLD_NODES).map(([x, z]) => Object.freeze([x, z])),
@@ -238,7 +243,6 @@ export class Chapter3OpeningRuntime {
     this.departureElapsed = null;
     this.departureBases = [];
     this.guideElapsed = null;
-    this.guidedWalkActive = false;
     this.guideStart = null;
     this.levWalkElapsed = null;
     this.levWalkDuration = 0;
@@ -917,7 +921,7 @@ export class Chapter3OpeningRuntime {
     // Her scarf is the one colour she carries (every witness names it).
     const scarf = new THREE.Mesh(
       new THREE.TorusGeometry(0.2, 0.07, 8, 18),
-      new THREE.MeshStandardMaterial({ color: 0x2f8f86, roughness: 0.7, emissive: 0x12403c, emissiveIntensity: 0.6 }),
+      new THREE.MeshStandardMaterial({ color: 0xc98088, roughness: 0.7, emissive: 0x4a1a22, emissiveIntensity: 0.6 }),
     );
     scarf.rotation.x = Math.PI / 2;
     scarf.position.y = 1.5;
@@ -987,7 +991,8 @@ export class Chapter3OpeningRuntime {
     this.pips = document.createElement('div');
     this.pips.className = 'c3-pips';
     this.pips.hidden = true;
-    this.pips.innerHTML = `<span class="c3-pips__label">IN STEP</span><i></i><i></i><i></i><span class="c3-pips__hint">HOLD FORWARD · WASD OR MOUSE</span><span class="c3-pips__key"><kbd>E</kbd> ${SCANNER_WORDS.release}</span>`;
+    this.pips.innerHTML = `<span class="c3-pips__label">IN STEP</span><i></i><i></i><i></i><span class="c3-pips__hint">${SCANNER_WORDS.holdHint}</span><span class="c3-pips__key">${SCANNER_WORDS.releaseHint}</span>`;
+    this.pipsHint = this.pips.querySelector('.c3-pips__hint');
     document.body.append(this.pips);
     this.readout = document.createElement('div');
     this.readout.className = 'c3-readout';
@@ -997,6 +1002,7 @@ export class Chapter3OpeningRuntime {
     // Only the two rigs needed on the platform load before play.
     await Promise.all(this.characterSpecs().start.map((spec) => this.characters.attach(spec)));
     this.afterAssetGroup('start', this.characterSpecs().start);
+    this.makeButchMarker();
 
     this.finalTrainObject = scene.getObjectByName('municipal-tram');
     this.finalTrainOutline = makeObjectHighlight(this.finalTrainObject || this.finalDoor.group);
@@ -1034,13 +1040,6 @@ export class Chapter3OpeningRuntime {
         outline: this.tomaOutline,
         eligible: () => exterior() && state().seamInspected && !state().transportEntranceReached,
         activate: () => this.openTransportEntrance(),
-      },
-      {
-        id: 'ministry-queue-dispenser', label: 'Number dispenser', verb: 'PULL',
-        position: this.ministryHall.queueDispenser.position, approach: MINISTRY_POSITIONS.queueApproach,
-        outline: this.queueOutline, interior: true,
-        eligible: () => this.insideMinistry && state().transportHallEntered && !state().transportNumber,
-        activate: () => this.openQueueDispenser(),
       },
       {
         id: 'nika-terminal', label: 'Nika · ticket terminal', verb: 'TALK',
@@ -1100,7 +1099,7 @@ export class Chapter3OpeningRuntime {
         activate: () => this.openHanaRegister(),
       },
       {
-        id: 'hotel-corridor-entrance', label: 'Upstairs', verb: 'GO',
+        id: 'hotel-corridor-entrance', label: 'Upstairs · your room', verb: 'GO',
         position: this.hotelHall.corridorEntrance.position, approach: HOTEL_POSITIONS.corridorEntranceApproach,
         outline: this.hotelCorridorEntranceOutline, interior: true,
         eligible: () => this.hotelArea === 'lobby' && state().hotelCheckInComplete && !state().hotelCorridorEntered,
@@ -1121,7 +1120,7 @@ export class Chapter3OpeningRuntime {
         activate: () => this.openSleep(),
       },
       {
-        id: 'hotel-night-room-door', label: 'The room door', verb: 'OPEN',
+        id: 'hotel-night-room-door', label: 'The room door · out to the square', verb: 'OPEN',
         position: this.hotelHall.roomExit.position, approach: HOTEL_POSITIONS.roomExitApproach,
         outline: this.hotelRoomExitOutline, interior: true,
         eligible: () => this.hotelArea === 'room' && state().slept && !state().nightRoomLeft && this.butchBedTransition === null,
@@ -1170,9 +1169,9 @@ export class Chapter3OpeningRuntime {
         activate: () => this.openAmbientDialogue(MORNING_LEV_REMINDER),
       },
       {
-        id: 'mara-walker', label: 'The woman in the teal scarf', verb: 'GO TO',
+        id: 'mara-walker', label: 'The woman in the rose scarf', verb: 'GO TO',
         position: this.echoMara.position, approach: () => this.walkerApproach('station'),
-        outline: makeDynamicObjectHighlight(this.echoMara, 0x2f8f86),
+        outline: makeDynamicObjectHighlight(this.echoMara, 0xc98088),
         eligible: () => exterior() && this.model.scannerActive('station') && this.echoMara.visible
           && !this.fieldState('station').matched
           && !this.scannerFields.station.logic.eligible(this.preview.player.position),
@@ -1208,7 +1207,7 @@ export class Chapter3OpeningRuntime {
 
     this.preview.renderer.domElement.addEventListener('pointerdown', (event) => this.handlePointerDown(event));
     window.addEventListener('pointerup', () => { this.pointerHeld = false; });
-    window.addEventListener('blur', () => { this.pointerHeld = false; this.keysHeld.clear(); });
+    window.addEventListener('blur', () => { this.pointerHeld = false; this.keysHeld.clear(); this.walkInStepHeld = false; });
 
     this.applyStartState();
     if (this.characterQa) this.stageCharacterQa();
@@ -1301,15 +1300,67 @@ export class Chapter3OpeningRuntime {
     window.setTimeout(() => card.remove(), 4800);
   }
 
+  // Butch is ~30 px tall at 720p: a soft amber pool under his feet and a
+  // faint warm lift on his rig make him the first thing the eye finds.
+  makeButchMarker() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 128;
+    const context = canvas.getContext('2d');
+    const glow = context.createRadialGradient(64, 64, 8, 64, 64, 64);
+    glow.addColorStop(0, 'rgba(255, 214, 150, 0.85)');
+    glow.addColorStop(0.45, 'rgba(224, 162, 74, 0.45)');
+    glow.addColorStop(1, 'rgba(224, 162, 74, 0)');
+    context.fillStyle = glow;
+    context.fillRect(0, 0, 128, 128);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    const halo = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.7, 1.7),
+      new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }),
+    );
+    halo.rotation.x = -Math.PI / 2;
+    halo.renderOrder = 2;
+    halo.name = 'chapter3-butch-marker';
+    const rim = new THREE.Mesh(
+      new THREE.RingGeometry(0.56, 0.63, 40),
+      new THREE.MeshBasicMaterial({ color: 0xe0a24a, transparent: true, opacity: 0.6, depthWrite: false }),
+    );
+    rim.position.z = 0.002;
+    halo.add(rim);
+    this.preview.scene.add(halo);
+    this.butchMarker = halo;
+    const rig = this.characters.get('butch')?.visual;
+    rig?.traverse((child) => {
+      if (!child.isMesh) return;
+      for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
+        if (!material || !('emissive' in material)) continue;
+        material.emissive.setHex(0x3a2210);
+        material.emissiveIntensity = 0.55;
+      }
+    });
+  }
+
+  updateButchMarker() {
+    const halo = this.butchMarker;
+    if (!halo) return;
+    const player = this.preview.player;
+    const state = this.model.snapshot();
+    halo.visible = player.visible && !state.boardedTrain && !this.butchBedPoseActive && !this.ticketBoard.active;
+    if (!halo.visible) return;
+    const ground = this.insideMinistry || this.insideHotel ? null : this.preview.surfaceHeightAt(player.position.x, player.position.z);
+    halo.position.set(player.position.x, (Number.isFinite(ground) ? ground : player.position.y - 0.47) + 0.035, player.position.z);
+    halo.material.opacity = 0.55 + 0.15 * Math.sin(this.ambientElapsed * 2.2);
+  }
+
   // ------------------------------------------------------------------ input
   interactionLocked() {
     return this.characterQa
       || this.evidenceViewer.active
       || this.ticketBoard.active
       || this.dialogue.active
-      || this.departureElapsed !== null
-      || this.guidedWalkActive
-      || this.guideElapsed !== null
+      // The opening train departure and Lev's walk to the oil line no longer
+      // hold Butch: ground clicks work while they play (alpha round 1).
       || this.levWalkElapsed !== null
       || this.ministryTransitioning
       || this.hotelTransitioning
@@ -1352,10 +1403,13 @@ export class Chapter3OpeningRuntime {
   handlePointerDown(event) {
     if (!this.initialized || event.button !== 0) return;
     this.pointerClient = { x: event.clientX, y: event.clientY };
+    // The clamp takes its own drags and near misses. It never stops Butch's
+    // walk to the clamp (a drag used to cancel the E walk).
     if (this.bellClamp.handlePointerDown(event)) {
-      this.preview.stopWalking();
+      this.clampOwnsPointer = true;
       return;
     }
+    this.clampOwnsPointer = false;
     if (this.activeField() && !this.interactionLocked() && !this.hoveredId) this.pointerHeld = true;
   }
 
@@ -1392,6 +1446,11 @@ export class Chapter3OpeningRuntime {
     if (!this.initialized) return false;
     this.pointerHeld = false;
     if (this.bellClamp.handlePointerUp(event)) return true;
+    if (this.clampOwnsPointer) {
+      this.clampOwnsPointer = false;
+      return true;
+    }
+    if (this.levWalkElapsed !== null && !this.dialogue.active && this.skipScriptedWalk()) return true;
     if (this.interactionLocked()) return true;
     const interaction = this.eligibleInteractions().find((entry) => entry.id === this.hoveredId);
     if (!interaction && (this.insideMinistry || this.insideHotel)) {
@@ -1507,14 +1566,21 @@ export class Chapter3OpeningRuntime {
         this.dialogue.handleAdvance();
         return true;
       }
+      // Walk beside: E matches the walker, and holding it walks in step.
+      const pacing = this.activeField();
+      if (pacing && this.fieldState(pacing.id).matched && !this.interactionLocked()) {
+        this.walkInStepHeld = true;
+        return true;
+      }
       if (this.sunriseTableauHoldElapsed !== null) {
         this.leaveSunriseTableau();
         return true;
       }
       if (this.interactionLocked()) return true;
       const field = this.activeField();
-      if (field && (this.fieldState(field.id).matched || field.field.logic.eligible(this.preview.player.position))) {
+      if (field && field.field.logic.eligible(this.preview.player.position)) {
         this.tryMatch(field.id);
+        this.walkInStepHeld = this.fieldState(field.id).matched;
         return true;
       }
       const nearest = this.eligibleInteractions()
@@ -1531,6 +1597,7 @@ export class Chapter3OpeningRuntime {
 
   handleKeyUp(event) {
     this.keysHeld.delete(event.code);
+    if (event.code === 'KeyE' || event.key === 'Enter') this.walkInStepHeld = false;
     if (event.key !== 'Tab') return false;
     event.preventDefault();
     this.tabHeld = false;
@@ -1607,7 +1674,8 @@ export class Chapter3OpeningRuntime {
       const inField = logic.contains(player.position) || logic.snapshot().matched;
       const intent = !locked && inField ? this.movementIntent() : new THREE.Vector3();
       if (inField && (intent.lengthSq() > 0 || logic.snapshot().matched)) this.preview.stopWalking();
-      const events = locked ? [] : logic.update(dt, { player: player.position, input: intent });
+      const hold = Boolean(this.walkInStepHeld) && logic.snapshot().matched;
+      const events = locked ? [] : logic.update(dt, { player: player.position, input: intent, hold });
       const snapshot = logic.snapshot();
       if (snapshot.matched) {
         // Butch keeps station at the walker's side.
@@ -1635,6 +1703,7 @@ export class Chapter3OpeningRuntime {
       }
       for (const event of events) this.onScannerEvent(id, event);
       field.render(snapshot.scanner);
+      field.updateLaneArrow({ matched: snapshot.matched, wrongWay: snapshot.wrongWay, elapsed: this.ambientElapsed });
       const walkerHost = id === 'market' ? this.olek : this.echoMara;
       field.updateRibbon(player.position, walkerHost.position, snapshot.pipProgress, snapshot.matched);
       field.showWalkerRing(walkerHost.position, !snapshot.matched && logic.eligible(player.position), this.ambientElapsed);
@@ -1744,16 +1813,16 @@ export class Chapter3OpeningRuntime {
     this.preview.setCameraOverrideTarget(subject);
   }
 
-  // The conductor's call, then the orchard-case claim card in Butch's hand,
-  // then his two lines about it.
+  // The conductor's call and Butch's line, then the orchard-case claim card
+  // in his hand; closing it lets the train go (and Butch walk).
   openArrival() {
-    const finish = () => this.showLines(ARRIVAL_DIALOGUE.slice(2), {
-      onComplete: () => {
-        this.model.readArrival();
-        this.beginTrainDeparture();
-      },
-    });
-    this.showLines(ARRIVAL_DIALOGUE.slice(0, 2), {
+    const after = ARRIVAL_DIALOGUE.slice(ARRIVAL_BEFORE_CARD);
+    const depart = () => {
+      this.model.readArrival();
+      this.beginTrainDeparture();
+    };
+    const finish = () => (after.length ? this.showLines(after, { onComplete: depart }) : depart());
+    this.showLines(ARRIVAL_DIALOGUE.slice(0, ARRIVAL_BEFORE_CARD), {
       onComplete: () => {
         if (!this.evidenceViewer.open(CHAPTER3_DOCUMENTS.CLAIM_CARD, { onClose: finish })) finish();
       },
@@ -1794,19 +1863,30 @@ export class Chapter3OpeningRuntime {
     });
   }
 
+  // Lev heads for the oil line and the player follows at their own pace: no
+  // scripted walk for Butch and no briefing stop on the way.
   beginGuidedWalk() {
-    const started = this.preview.walkTo(OPENING_POSITIONS.levInterview[0] - 1.8, OPENING_POSITIONS.levInterview[2] + 1.2, () => this.openWorldBriefing());
-    if (!started || !this.model.beginGuide()) return;
-    this.guidedWalkActive = true;
+    if (!this.model.beginGuide()) return;
+    this.model.completeExplorationBriefing();
     this.hoveredId = null;
     this.guideElapsed = 0;
     this.guideStart = this.lev.position.clone();
     this.updateObjective();
+    this.updateOutlines();
   }
 
-  openWorldBriefing() {
-    this.guidedWalkActive = false;
-    this.showLines(WORLD_BRIEFING_DIALOGUE, { onComplete: () => this.model.completeExplorationBriefing() });
+  // A click during one of Lev's scripted walks finishes it at once.
+  skipScriptedWalk() {
+    let skipped = false;
+    if (this.levWalkElapsed !== null && this.levWalkTarget) {
+      this.levWalkElapsed = this.levWalkDuration;
+      skipped = true;
+    }
+    if (this.guideElapsed !== null) {
+      this.guideElapsed = 4.0;
+      skipped = true;
+    }
+    return skipped;
   }
 
   seamFocus() {
@@ -1836,17 +1916,11 @@ export class Chapter3OpeningRuntime {
     this.showLines(TRANSPORT_ENTRANCE_DIALOGUE, {
       onComplete: () => {
         if (!this.model.enterTransportHall()) return;
+        // The queue number is taken for him (alpha round 1 length pass).
+        this.model.takeTransportNumber('M-17');
         this.stageMinistryHall();
       },
     });
-  }
-
-  openQueueDispenser() {
-    this.preview.stopWalking();
-    this.ministryHall.queueLever.rotation.z = -1.08;
-    this.ministryHall.queueTicket.visible = true;
-    window.setTimeout(() => { this.ministryHall.queueLever.rotation.z = -0.45; }, 360);
-    this.showLines(TRANSPORT_QUEUE_DIALOGUE, { onComplete: () => this.model.takeTransportNumber('M-17') });
   }
 
   openNika() {
@@ -1947,29 +2021,39 @@ export class Chapter3OpeningRuntime {
       this.openAmbientDialogue(CAMPFIRE_SELINE_DIALOGUE);
       return;
     }
-    this.openAmbientDialogue(CAMPFIRE_SELINE_STONE_DIALOGUE, {
-      onComplete: () => {
-        collectMagicStone('chapter-3');
-        const snapshot = magicStoneSnapshot();
-        this.openAmbientDialogue([{ speaker: 'BUTCH', text: `The Echo Stone was hidden in Seline's unclaimed coat. MAGIC STONE ${snapshot.count} / ${snapshot.total}.` }]);
-      },
-    });
+    // The stone is collected when Butch's last line closes, so the shell's
+    // one-time first-stone card (~1.1 s after a first pickup) never opens
+    // over the caption.
+    const next = this.nextStoneCount();
+    this.openAmbientDialogue([
+      ...CAMPFIRE_SELINE_STONE_DIALOGUE,
+      { speaker: 'BUTCH', text: `The Echo Stone was hidden in Seline's unclaimed coat. MAGIC STONE ${next.count} / ${next.total}.` },
+    ], { onComplete: () => collectMagicStone('chapter-3') });
+  }
+
+  // What the count will read once this chapter's stone is in the pocket.
+  nextStoneCount() {
+    const snapshot = magicStoneSnapshot();
+    const has = snapshot.collected.includes('chapter-3');
+    return { count: snapshot.count + (has ? 0 : 1), total: snapshot.total };
   }
 
   morningCampfireStoneAvailable() {
     const state = this.model.snapshot();
     return !this.insideHotel && !this.insideMinistry
       && state.morningStarted && state.sunriseViewed
-      && !state.boardedTrain
+      && !state.boardedTrain && !this.morningStoneTaken
       && !magicStoneSnapshot().collected.includes('chapter-3');
   }
 
   collectMorningCampfireStone() {
     if (!this.morningCampfireStoneAvailable()) return false;
-    collectMagicStone('chapter-3');
+    const next = this.nextStoneCount();
     this.morningCampfireEchoStone.visible = false;
-    const snapshot = magicStoneSnapshot();
-    this.openAmbientDialogue([...MORNING_STONE_PICKUP, { speaker: 'BUTCH', text: `The Echo Stone. MAGIC STONE ${snapshot.count} / ${snapshot.total}.` }]);
+    this.morningStoneTaken = true;
+    this.openAmbientDialogue([...MORNING_STONE_PICKUP, { speaker: 'BUTCH', text: `The Echo Stone. MAGIC STONE ${next.count} / ${next.total}.` }], {
+      onComplete: () => collectMagicStone('chapter-3'),
+    });
     return true;
   }
 
@@ -2143,7 +2227,7 @@ export class Chapter3OpeningRuntime {
     this.elements.sunriseTableau?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('sunrise-tableau-active');
     const continueButton = this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue');
-    if (continueButton) continueButton.disabled = true;
+    if (continueButton) { continueButton.disabled = true; continueButton.hidden = true; }
     this.dialogue.show(SUNRISE_BENCH_DIALOGUE, {
       onComplete: () => {
         this.sunriseTableauHoldElapsed = 0;
@@ -2156,6 +2240,8 @@ export class Chapter3OpeningRuntime {
     if (this.sunriseTableauHoldElapsed === null || this.sunriseTableauHoldElapsed < 1.2) return false;
     this.sunriseTableauHoldElapsed = null;
     this.elements.sunriseTableau?.classList.remove('visible', 'ready-to-leave');
+    const continueButton = this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue');
+    if (continueButton) { continueButton.disabled = true; continueButton.hidden = true; }
     this.elements.sunriseTableau?.setAttribute('aria-hidden', 'true');
     document.body.classList.remove('sunrise-tableau-active');
     this.model.completeSunriseView();
@@ -2251,7 +2337,11 @@ export class Chapter3OpeningRuntime {
       const travel = 38 * smooth((ms - 11200) / 10400);
       const movement = this.trainDirection.clone().multiplyScalar(travel);
       for (const entry of this.endingDepartureBases) entry.object.position.copy(entry.position).add(movement);
-      this.preview.setCameraOverrideTarget(this.finalDoor.group.position.clone());
+      // The camera watches from the platform's end and lets the train go:
+      // following it all the way framed the bare rock cutting at the tunnel
+      // mouth (A2-11).
+      const doorBase = this.endingDepartureBases.find((entry) => entry.object === this.finalDoor.group)?.position ?? this.finalDoor.group.position;
+      this.preview.setCameraOverrideTarget(doorBase.clone().addScaledVector(this.trainDirection, Math.min(travel, FINALE_CAMERA_FOLLOW)));
     }
     if (next.blackout) {
       this.elements.blackout?.classList.add('visible');
@@ -2501,16 +2591,21 @@ export class Chapter3OpeningRuntime {
     });
   }
 
+  // Upstairs is one step: the corridor walk to the door was cut for length.
   enterHotelCorridor() {
     if (!this.model.enterHotelCorridor()) return;
-    this.switchHotelArea('corridor');
+    this.model.enterHotelRoom();
+    this.switchHotelArea('room');
   }
 
+  // At night the room door opens straight onto the burning square (the
+  // corridor and lobby walks were cut for length).
   leaveRoomAtNight() {
     if (this.model.snapshot().nightRoomLeft) return;
     this.animateHotelDoor(() => {
       if (!this.model.leaveNightRoom()) return;
-      this.switchHotelArea('corridor', { fade: false });
+      this.model.reachNightLobby();
+      this.leaveHotelAtNight();
     });
   }
 
@@ -2707,7 +2802,7 @@ export class Chapter3OpeningRuntime {
     const distance = movement.length();
     if (distance <= 0.22) return;
     const naturalSpeed = 3.7 + 0.65 * (0.5 + 0.5 * Math.sin(this.morningLevFollowTime * 1.41));
-    const speed = distance > 4.2 ? 6.2 : naturalSpeed;
+    const speed = distance > 4.2 ? 10.5 : naturalSpeed;
     const step = Math.min(distance, dt * speed);
     this.lev.position.addScaledVector(movement.normalize(), step);
     this.morningLevMovedThisFrame = step > 0.001;
@@ -2872,7 +2967,7 @@ export class Chapter3OpeningRuntime {
       if (this.sunriseTableauHoldElapsed >= 1.2) {
         this.elements.sunriseTableau?.classList.add('ready-to-leave');
         const continueButton = this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue');
-        if (continueButton) continueButton.disabled = false;
+        if (continueButton) { continueButton.disabled = false; continueButton.hidden = false; }
       }
     }
     if (this.stationScanReadoutRemaining > 0) {
@@ -2893,7 +2988,7 @@ export class Chapter3OpeningRuntime {
       const progress = smooth(this.departureElapsed / 6.2);
       const offset = this.trainDirection.clone().multiplyScalar(38 * progress);
       for (const entry of this.departureBases) entry.object.position.copy(entry.position).add(offset);
-      // As the train pulls out, the woman in the teal scarf is already one
+      // As the train pulls out, the woman in the rose scarf is already one
       // step ahead, crossing into the city, back to Butch.
       const glimpse = THREE.MathUtils.clamp((this.departureElapsed - 0.6) / 5.2, 0, 1);
       this.echoMara.visible = glimpse > 0 && glimpse < 1;
@@ -2970,6 +3065,7 @@ export class Chapter3OpeningRuntime {
       this.timeVisual.update(dt);
     }
     this.updateCharacterAnimations(dt);
+    this.updateButchMarker();
     this.updateObjective();
     this.updateTags();
     this.updatePips();
@@ -3084,6 +3180,8 @@ export class Chapter3OpeningRuntime {
     if (this.insideHotel || this.insideMinistry || this.preview.developerMode) return;
     const state = this.model.snapshot();
     let target = this.baseZoom;
+    // LOW quality frames a little closer: less city in view, larger cast.
+    if (this.preview.qualityTier === 'low') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
     if (this.fireCameraActive) target = this.baseZoom + 1.5;
     if (this.bellClamp.active && !this.bellClamp.seated) target = this.baseZoom + 1.2;
@@ -3101,6 +3199,7 @@ export class Chapter3OpeningRuntime {
     const ambientLifeStates = this.updateAmbientLifeRoutes(dt);
     this.updateEchoMara(dt, ambientLifeStates);
     this.characters.update(dt, { groundingEnabled: !this.insideMinistry && !this.insideHotel });
+    this.charactersDrawn = this.characters.cullOutside(this.preview.camera);
     if (this.characterQa) {
       this.updateCharacterQa(dt);
       return;
@@ -3152,10 +3251,10 @@ export class Chapter3OpeningRuntime {
     const state = this.model.snapshot();
     if (this.characterQa || this.insideHotel || this.insideMinistry || state.boardedTrain) return null;
     if (state.seamInspected && !state.transportEntranceReached) return { id: 'find-ministry', target: positionFrom(OPENING_POSITIONS.transportApproach) };
-    if (state.ticketBoardComplete && !state.edaComplete) return { id: 'find-market', target: positionFrom(OPENING_POSITIONS.edaApproach), hintAfter: 75 };
-    if (state.marketCrossed && !state.cutInterfaceComplete) return { id: 'find-cut-interface', target: positionFrom(this.clampApproach()), hintAfter: 60 };
-    if (state.cutInterfaceComplete && !state.hotelEntered) return { id: 'find-hotel', target: positionFrom([50.3, 0.5, -12.4]), hintAfter: 75 };
-    if (state.sunriseViewed && !state.stationReached) return { id: 'find-station', target: positionFrom(STATION_TRIGGER), hintAfter: 75 };
+    if (state.ticketBoardComplete && !state.edaComplete) return { id: 'find-market', target: positionFrom(OPENING_POSITIONS.edaApproach), hintAfter: 40 };
+    if (state.marketCrossed && !state.cutInterfaceComplete) return { id: 'find-cut-interface', target: positionFrom(this.clampApproach()), hintAfter: 35 };
+    if (state.cutInterfaceComplete && !state.hotelEntered) return { id: 'find-hotel', target: positionFrom([50.3, 0.5, -12.4]), hintAfter: 40 };
+    if (state.sunriseViewed && !state.stationReached) return { id: 'find-station', target: positionFrom(STATION_TRIGGER), hintAfter: 40 };
     return null;
   }
 
@@ -3222,7 +3321,7 @@ export class Chapter3OpeningRuntime {
       if (outline) outline.visible = visible.has(outline);
     }
     if (waitingForToma) this.tomaOutline.visible = true;
-    if (state.guideStarted && !state.explorationBriefingComplete) this.seam.outline.visible = true;
+    if (state.guideStarted && !state.seamInspected) this.seam.outline.visible = true;
   }
 
   // Paper tags (.nf-tag): the hovered interactable always; with Tab held,
@@ -3241,6 +3340,8 @@ export class Chapter3OpeningRuntime {
       for (const interaction of this.eligibleInteractions()) {
         const hovered = interaction.id === this.hoveredId;
         if (!hovered && !(this.tabHeld && !interaction.ambient)) continue;
+        // While the clamp is live it carries the one tag for the loose feed.
+        if (interaction.id === 'night-cut-feed' && this.bellClamp.active) continue;
         const anchor = interaction.position.clone();
         anchor.y = Math.max(anchor.y, 0.5) + (interaction.ambient ? 0.6 : 2.1);
         const screen = this.screenOf(anchor);
@@ -3260,11 +3361,12 @@ export class Chapter3OpeningRuntime {
         const screen = this.screenOf(anchor);
         if (!screen.onScreen) continue;
         if (snapshot.matched) continue; // the pips bar carries E · LET GO while matched
-        else if (logic.eligible(this.preview.player.position)) this.tags.place(screen, `<kbd>E</kbd> ${SCANNER_WORDS.matchPrompt}`, { emphasis: true });
+        else if (logic.eligible(this.preview.player.position)) this.tags.place(screen, `HOLD <kbd>E</kbd> · ${SCANNER_WORDS.matchPrompt}`, { emphasis: true });
       }
       if (this.bellClamp.active && !this.bellClamp.seated) {
-        const screen = this.screenOf(this.bellClamp.tipWorld().add(new THREE.Vector3(0, 0.9, 0)));
-        if (screen.onScreen) this.tags.place(screen, 'DRAG INTO THE CLAMP · <kbd>E</kbd>', { emphasis: true });
+        // One tag, below the copper end: the fire letters are above it.
+        const screen = this.screenOf(this.bellClamp.tipWorld());
+        if (screen.onScreen) this.tags.place({ x: screen.x, y: screen.y + 92 }, this.bellClamp.tagText(), { emphasis: true });
       }
     }
     this.tags.end();
@@ -3287,8 +3389,10 @@ export class Chapter3OpeningRuntime {
       const screen = this.screenOf(anchor);
       this.pips.style.left = `${Math.round(screen.x)}px`;
       this.pips.style.top = `${Math.round(screen.y)}px`;
-      // The "hold forward" hint is for the first crossing only.
-      this.pips.classList.toggle('is-taught', this.model.snapshot().marketCrossed);
+      // Walking away from the arch: say which way it is.
+      const hint = snapshot.wrongWay ? SCANNER_WORDS.wrongWay : SCANNER_WORDS.holdHint;
+      if (this.pipsHint && this.pipsHint.innerHTML !== hint) this.pipsHint.innerHTML = hint;
+      this.pips.classList.toggle('is-wrong-way', Boolean(snapshot.wrongWay));
     }
     this.pips.hidden = !shown || this.dialogue.active;
   }

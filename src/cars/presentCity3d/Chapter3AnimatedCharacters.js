@@ -282,6 +282,25 @@ export class Chapter3AnimatedCharacterSystem {
     for (const instance of this.instances.values()) instance.update(dt, options);
   }
 
+  // The rigs skip three.js frustum culling (skinned bounds lie), so each one
+  // is ~30k triangles drawn every frame wherever it stands. Hide a rig whose
+  // host is off screen (with a body's margin) so only the cast in view draws.
+  cullOutside(camera) {
+    const point = this.cullPoint ?? (this.cullPoint = new THREE.Vector3());
+    let drawn = 0;
+    for (const instance of this.instances.values()) {
+      const visual = instance.visual;
+      if (!visual) continue;
+      instance.host.getWorldPosition(point);
+      point.y += 1;
+      point.project(camera);
+      const inView = point.z < 1 && Math.abs(point.x) < 1.2 && Math.abs(point.y) < 1.3;
+      if (visual.visible !== inView) visual.visible = inView;
+      if (inView && instance.host.visible) drawn += 1;
+    }
+    return drawn;
+  }
+
   state() {
     return [...this.instances.values()].map((instance) => instance.state());
   }

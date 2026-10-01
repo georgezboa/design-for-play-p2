@@ -43,6 +43,9 @@ export class Chapter3DialogueController {
     this.advanceLocked = false;
     this.active = false;
     this.barkRemaining = 0;
+    // Typewriter and bark timing run on the wall clock: on a slow GPU the
+    // game's clamped frame time must never turn reading into slow motion.
+    this.lastWallMs = null;
     this.voice = new Chapter3VoicePlayback();
     this.root.addEventListener('pointerup', (event) => {
       event.stopPropagation();
@@ -102,7 +105,18 @@ export class Chapter3DialogueController {
     return !line || this.visibleCharacters >= line.text.length;
   }
 
+  // Seconds since the last update on the wall clock (at most 1.5 s,
+  // so a hidden tab does not dump a whole line). Scripted QA that steps the
+  // game faster than real time keeps its own larger dt.
+  wallDelta(dt) {
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const wall = this.lastWallMs === null ? 0 : Math.min(1.5, Math.max(0, (now - this.lastWallMs) / 1000));
+    this.lastWallMs = now;
+    return Math.max(Number(dt) || 0, wall);
+  }
+
   update(dt) {
+    dt = this.wallDelta(dt);
     if (!this.active && this.barkRemaining > 0) {
       this.barkRemaining = Math.max(0, this.barkRemaining - dt);
       if (this.barkRemaining === 0) {

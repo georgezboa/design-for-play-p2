@@ -33,11 +33,14 @@ export const CHAPTER_CONTROLS = Object.freeze({
     // Echo City: click-to-walk streets; scanner fields switch to direct
     // movement. F is free (fullscreen is the desktop bridge's F11).
     ['WALK', 'CLICK THE GROUND'],
+    ['RUN', 'DOUBLE-CLICK THE GROUND · HOLD SHIFT'],
+    ['SKIP A SCRIPTED WALK', 'CLICK'],
     ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
     ['CONTINUE DIALOGUE', 'CLICK · E / ENTER'],
     ['SHOW WHAT MATTERS', 'HOLD TAB'],
-    ['SCANNER FIELDS', 'WASD / ARROWS · OR HOLD THE MOUSE'],
-    ['WALK BESIDE · LET GO', 'E NEXT TO A LIT WALKER'],
+    ['WALK IN STEP (SCANNERS)', 'HOLD E BESIDE A LIT WALKER · OR WASD TOWARD THE ARCH'],
+    ['LET GO OF A WALKER', 'WALK BACK'],
+    ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
     ['TICKET BOARD', 'DRAG CARDS AND LENS · CLICK TO PUNCH'],
     ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · SPACE PUNCH'],
     ['RESET CAMERA', 'R'],
