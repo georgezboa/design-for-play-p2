@@ -31,7 +31,7 @@ const config = {
   parent: 'game',
   width: VIEW.w,
   height: VIEW.h,
-  backgroundColor: '#07070a',
+  backgroundColor: '#070504',
   render: { preserveDrawingBuffer: true },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
   physics: {

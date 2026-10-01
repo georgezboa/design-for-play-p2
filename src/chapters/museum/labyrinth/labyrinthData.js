@@ -53,48 +53,51 @@ export const GRID_H = WINGS_ROWS * (LOCAL_H - 1) + 1;
 export const WORLD_W = GRID_W * CELL;
 export const WORLD_H = GRID_H * CELL;
 
-// Dark stone / cold gallery-at-night palette. Monumental near-black masonry
-// for the walls, restrained cool slate for the floors, warm brass torch pools
-// as the only comfort. Ivory marks the player and the keys; cyan is reserved
-// for safety/open paths; red only for active danger — the same living colors
-// as the rest of the chapter, so the language stays consistent in the dark.
+// The museum after hours, in the shared UI kit's language (src/shell/
+// uiKit.css): walnut-dark masonry for the walls, worn limestone with a walnut
+// cast for the floors, warm brass torch pools as the only comfort. Ivory marks
+// the player and the keys; polished brass (`safe`, the kit's brass-hi) marks
+// safety and open paths, where the old build used cyan; red only for active
+// danger. The survey map is a walnut plate with ivory walls in a brass frame,
+// like every other panel in the game.
 export const PAL = {
-  void: 0x060609,
-  stone: 0x090b10,
-  stoneLight: 0x111620,
-  stoneLine: 0x030408,
-  slate: 0x333b49,
-  floor: 0x252b35,
-  floorLight: 0x343c49,
-  floorSeam: 0x161b23,
+  void: 0x070504,
+  stone: 0x120d09,
+  stoneLight: 0x1f1711,
+  stoneLine: 0x050302,
+  slate: 0x4c4135,
+  floor: 0x352c23,
+  floorLight: 0x473c2f,
+  floorSeam: 0x1c1610,
   fog: 0x000000,
-  torch: 0xf2a541,
+  torch: 0xe0a24a,
   torchCore: 0xffd98a,
-  ivory: 0xe9e2d0,
-  graphite: 0x2e3138,
-  graphiteSoft: 0x8d93a0,
-  brass: 0x9c7f4e,
-  cyan: 0x2fd8c8,
-  amber: 0xf2a541,
-  red: 0xd64541,
-  bloodRed: 0x8c1f1f,
-  statue: 0x3b3b48,
-  statueEdge: 0x14141b,
+  ivory: 0xeadfc6,
+  graphite: 0x2f2922,
+  graphiteSoft: 0x9c8a68,
+  brass: 0xb08a4a,
+  safe: 0xd9b56e,
+  amber: 0xe0a24a,
+  red: 0xd0503a,
+  bloodRed: 0x8a2a1e,
+  statue: 0x4a4542,
+  statueEdge: 0x17120f,
   eye: 0x6e2a22,
   eyeFrozen: 0xb3563d,
   eyeHunt: 0xff3b3b,
-  mapBackground: 0x16445b,
-  mapWall: 0xf3e8bd,
+  mapBackground: 0x2a1d14,
+  mapFog: 0x120c08,
+  mapWall: 0xeadfc6,
 };
 
-// One restrained cool wash per wing — pure atmosphere, never geometry. The
+// One restrained warm wash per wing — pure atmosphere, never geometry. The
 // four wings share one masonry language but each leans a few degrees toward
-// its own tint: slate blue entry, verdigris restoration, violet archive
-// depths, warm umber last gallery.
+// its own tint: lamp-lit walnut entry, brass-patina restoration, oxblood
+// archive depths, umber last gallery.
 export const WING_WASH = [
-  { color: 0x2b3242, alpha: 0.1 },
-  { color: 0x2f3d38, alpha: 0.1 },
-  { color: 0x352c40, alpha: 0.1 },
+  { color: 0x3a2c1f, alpha: 0.1 },
+  { color: 0x30342a, alpha: 0.1 },
+  { color: 0x3b2726, alpha: 0.1 },
   { color: 0x3d332a, alpha: 0.1 },
 ];
 
