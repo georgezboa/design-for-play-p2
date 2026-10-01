@@ -14,10 +14,12 @@ export const HINT_LINES = Object.freeze({
   'act0:porthole': 'My punch leaves a hole. Holes are for looking through.',
   'act0:carriage': 'Go on through. The night is bigger than your office.',
   // Act 0.5 · TWO WINDOWS
+  'act05:unfold': 'This wall folds, clerk. There’s a second window tucked behind yours.',
   'act05:floor': 'Your desk and that door don’t meet. Floors go where floors go.',
   'act05:carrier': 'The key line runs when both of its ends are close enough to see.',
   'act05:home': 'That was the counter bell. Bring the floor back to your desk.',
   // Act 1 · LOST PROPERTY
+  'act1:unfold': 'The rest of the car is folded away underneath. Draw it out.',
   'act1:floor-link': 'The door to my car is past the window, not above it.',
   'act1:ticket-chute': 'Your ticket is in the pigeonholes, clerk. Tickets fall downhill.',
   // Act 2 · THE LUGGAGE CAR

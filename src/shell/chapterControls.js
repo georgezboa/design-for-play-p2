@@ -9,6 +9,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
   // also has a keyboard fallback.
   // The full key list (the in-game key strip shows the ones that apply now).
   nightServicePanels: list(
+    ['UNFOLD THE WALL', 'DRAG THE BRASS PULL · HOLD ITS ARROW · ENTER'],
     ['CHOOSE A WINDOW', 'ARROW KEYS'],
     ['MOVE A WINDOW', 'DRAG IT · SPACE PICKS UP, ARROWS, SPACE PUTS DOWN'],
     ['LOOK CLOSER / USE', 'CLICK A TAG · TAB NEXT TAG, ENTER USES IT'],

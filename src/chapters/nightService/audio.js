@@ -142,6 +142,18 @@ export function createNightServiceAudio({ music = true } = {}) {
       burst({ t: 1.15, dur: 0.08, peak: 0.2, freq: 700, q: 1 });
       tone(96, { type: 'triangle', t: 1.15, peak: 0.16, decay: 0.2, to: 60 });
     },
+    // the unfold: take hold of the brass pull, the wall springs back, or it
+    // snaps open (a short slide into a wooden stop) and a soft bell answers
+    unfoldGrab() { burst({ dur: 0.03, peak: 0.18, freq: 2400, q: 3 }); tone(520, { type: 'triangle', peak: 0.05, decay: 0.12 }); },
+    unfoldBack() { burst({ dur: 0.22, peak: 0.05, freq: 600, to: 300, q: 1.2, attack: 0.04 }); tone(92, { type: 'triangle', t: 0.2, peak: 0.08, decay: 0.12, to: 64 }); },
+    unfoldSnap() {
+      burst({ dur: 0.26, peak: 0.08, freq: 420, to: 240, q: 1.4, attack: 0.05 });
+      burst({ t: 0.26, dur: 0.07, peak: 0.24, freq: 760, q: 1 });
+      tone(98, { type: 'triangle', t: 0.26, peak: 0.18, decay: 0.22, to: 58 });
+    },
+    softBell() {
+      [[784, 0.06, 2.4], [1568, 0.025, 1.6], [1176, 0.02, 1.8], [392, 0.03, 2.8]].forEach(([f, p, d]) => tone(f, { t: 0.3, peak: p, decay: d, attack: 0.004 }));
+    },
     carrier() { burst({ dur: 0.9, peak: 0.08, freq: 1800, to: 3800, q: 6, attack: 0.05 }); tone(880, { type: 'sine', peak: 0.02, decay: 0.8, to: 1320, attack: 0.05 }); },
     lock() { burst({ dur: 0.03, peak: 0.4, freq: 2600, q: 3 }); tone(220, { type: 'triangle', peak: 0.18, decay: 0.08, to: 140 }); burst({ t: 0.18, dur: 0.04, peak: 0.3, freq: 1900, q: 3 }); tone(160, { type: 'triangle', t: 0.18, peak: 0.16, decay: 0.1, to: 90 }); },
   };

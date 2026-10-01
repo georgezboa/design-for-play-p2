@@ -3,7 +3,8 @@
 //
 //   Act 0 ONE WINDOW (1×1) → Act 0.5 TWO WINDOWS (1×2) → Act 1 LOST PROPERTY
 //   (2×2) → Act 2 THE LUGGAGE CAR (2×2) → Act 3 TWO TRUE THINGS (3×2) → Chapter 2.
-//   Acts 0 → 0.5 → 1 grow the carriage wall in place (see `growFrom`).
+//   Acts 0 → 0.5 → 1 grow the carriage wall in place (see `growFrom`): each
+//   opens folded and the player drags the brass pull to unfold it (unfold.js).
 
 import { ACT0 } from './act0.js';
 import { ACT05 } from './act05.js';

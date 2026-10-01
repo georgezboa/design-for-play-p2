@@ -23,7 +23,7 @@ export const GHOST_REPEAT_MS = 45000;
 export const CAPTION_REPEAT_MS = 60000;
 
 /** The verbs the ghost hand can demonstrate. */
-export const VERBS = Object.freeze(['drag', 'zoom', 'click', 'zoomOut', 'frame', 'lens', 'lensClick']);
+export const VERBS = Object.freeze(['drag', 'zoom', 'click', 'zoomOut', 'frame', 'lens', 'lensClick', 'unfold']);
 
 const asList = (value) => (Array.isArray(value) ? value : value == null ? [] : [value]);
 

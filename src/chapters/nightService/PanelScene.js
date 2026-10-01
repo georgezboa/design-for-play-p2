@@ -12,7 +12,8 @@
 //
 // Also here: the wordless hint tiers (hints.js decides when; this draws the
 // pulse, the ghost hand and the Conductor's line) and the grid growth between
-// Acts 0 → 0.5 → 1 (the carriage wall slides open around the kept windows).
+// Acts 0 → 0.5 → 1: the next act starts folded and the player drags the brass
+// pull to unfold the carriage wall (unfold.js holds the rules).
 
 import Phaser from 'phaser';
 import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
@@ -21,7 +22,8 @@ import { ACTS, actById, startCarry } from './acts/index.js';
 import { createHintDirector, pickGesture, stepVerb, unmetSeam } from './hints.js';
 import { HINT_SPEAKER, hintLine } from './hintLines.js';
 import { INTRO_FAILSAFE_SLACK_MS, createIntroGuard, growScheduleMs, introScheduleMs } from './introGuard.js';
-import { GHOST_HAND, paintGhostHand, paintShutter } from './art/hintArt.js';
+import { GHOST_HAND, UNFOLD_PULL, UNFOLD_TAG, paintGhostHand, paintUnfoldPull, paintUnfoldTag } from './art/hintArt.js';
+import { createUnfold, onFold, peekOffset, planUnfold, unfoldLayout } from './unfold.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
@@ -60,6 +62,13 @@ const LIFT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
   + '<path d="M16 1.5 L23.5 9.5 H19 V18 H13 V9.5 H8.5 Z" fill="#fff4dc" stroke="#1c130d" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 export const LIFT_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(LIFT_SVG)}") 16 16, grab`;
 
+// the unfold: the pull is drawn opening towards -x and turned to face its side
+const FOLD_ROTATION = Object.freeze({ left: 0, right: Math.PI, top: Math.PI / 2, bottom: -Math.PI / 2 });
+const FOLD_KEYS = Object.freeze({ left: 'ArrowLeft', right: 'ArrowRight', top: 'ArrowUp', bottom: 'ArrowDown' });
+const FOLD_CAPS = Object.freeze({ left: '←', right: '→', top: '↑', bottom: '↓' });
+/** The brass pull is shown a little larger than it is painted (×2 canvas). */
+const PULL_SCALE = 1.25;
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const wallKey = (layout) => `nsv-wall-${layout.cols}x${layout.rows}-${layout.slots[0]?.w ?? layout.tileW}`;
 const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
@@ -95,6 +104,9 @@ class TileView {
     this.zooming = false;
     this.lifted = false;
     this.moving = false;
+    // the unfold: the screen rect this window may draw in (null = all of it)
+    this.clip = null;
+    this.bezelClip = null;
     this.mask = scene.make.graphics({ add: false });
     this.geomMask = this.mask.createGeometryMask();
     this.hover = scene.add.image(0, 0, 'nsv-radial').setBlendMode('ADD').setTint(0xffc46a).setAlpha(0).setVisible(false);
@@ -144,14 +156,58 @@ class TileView {
     const vh = this.h * k;
     const vx = x + w / 2 - vw / 2;
     const vy = y + h / 2 - vh / 2;
-    this.cam.setViewport(vx, vy, vw, vh);
     const f = this.focus ?? { cx: this.w / 2, cy: this.h / 2, zoom: 1 };
+    let cx = this.ox + f.cx;
+    let cy = this.oy + f.cy;
+    // `clip` (screen rect, the unfold): only the part of the window clear of
+    // the windows it is tucked behind is drawn, picture and bezel alike
+    const clip = this.clip;
+    if (clip && !rot) {
+      const x0 = Math.max(vx, clip.x0);
+      const x1 = Math.min(vx + vw, clip.x1);
+      const y0 = Math.max(vy, clip.y0);
+      const y1 = Math.min(vy + vh, clip.y1);
+      const visible = x1 - x0 > 0.5 && y1 - y0 > 0.5;
+      this.cam.setVisible(visible);
+      if (visible) {
+        const zoom = k * f.zoom;
+        cx += ((x0 + x1) / 2 - (vx + vw / 2)) / zoom;
+        cy += ((y0 + y1) / 2 - (vy + vh / 2)) / zoom;
+        this.cam.setViewport(x0, y0, x1 - x0, y1 - y0);
+      }
+    } else {
+      if (!this.cam.visible) this.cam.setVisible(true);
+      this.cam.setViewport(vx, vy, vw, vh);
+    }
+    this.clipBezel(clip && !rot ? clip : null);
     this.cam.setZoom(k * f.zoom);
     this.cam.setRotation(rot);
-    this.cam.centerOn(this.ox + f.cx, this.oy + f.cy);
+    this.cam.centerOn(cx, cy);
     this.bezel.setPosition(x + w / 2, y + h / 2);
     this.bezel.setScale(k);
     this.bezel.setRotation(rot);
+  }
+
+  /** Mask the bezel to a screen rect (the unfold), or lift the mask. */
+  clipBezel(clip) {
+    if (!clip) {
+      if (this.bezelClip) { this.bezel.clearMask(); this.bezelClip.g.destroy(); this.bezelClip = null; }
+      return;
+    }
+    if (!this.bezelClip) {
+      const g = this.scene.make.graphics({ add: false });
+      this.bezelClip = { g, mask: g.createGeometryMask() };
+      this.bezel.setMask(this.bezelClip.mask);
+    }
+    const { view } = this.scene.layout;
+    const x0 = Math.max(-200, clip.x0);
+    const y0 = Math.max(-200, clip.y0);
+    const x1 = Math.min(view.w + 200, clip.x1);
+    const y1 = Math.min(view.h + 200, clip.y1);
+    const g = this.bezelClip.g;
+    g.clear();
+    g.fillStyle(0xffffff, 1);
+    if (x1 > x0 && y1 > y0) g.fillRect(x0, y0, x1 - x0, y1 - y0);
   }
 
   setRect(slot, extra = {}) {
@@ -243,7 +299,11 @@ export class PanelScene extends Phaser.Scene {
     this.introGuard = createIntroGuard();
     this.introSettled = null;
     this.introTimer = null;
-    this.finishGrowth = null;
+    // the unfold (unfold.js): set by startFold when this act opens folded
+    this.fold = null;
+    this.unfold = null;
+    this.foldUi = null;
+    this.foldWall = null;
     // verbs the ghost hand has shown, shared by every act of this page
     this.hintSeen = this.services.hintSeen ?? new Set();
     this.services.hintSeen = this.hintSeen;
@@ -449,16 +509,22 @@ export class PanelScene extends Phaser.Scene {
     });
   }
 
+  /** The painted carriage wall for a layout (cached across acts); returns its key. */
+  ensureWallTexture(layout) {
+    const key = wallKey(layout);
+    if (!this.textures.exists(key)) {
+      const tex = this.textures.createCanvas(key, layout.view.w, layout.view.h);
+      const paper = this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null;
+      const info = paintWall(tex.getContext(), layout, { paper });
+      tex.refresh();
+      this.textures.get(key).customData = info;
+    }
+    return key;
+  }
+
   buildWall() {
     const { cols, rows } = this.layout;
-    const key = wallKey(this.layout);
-    if (!this.textures.exists(key)) {
-      const tex = this.textures.createCanvas(key, this.layout.view.w, this.layout.view.h);
-      const paper = this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null;
-      this.wallInfo = paintWall(tex.getContext(), this.layout, { paper });
-      tex.refresh();
-      this.textures.get(key).customData = this.wallInfo;
-    }
+    const key = this.ensureWallTexture(this.layout);
     this.wallInfo = this.textures.get(key).customData ?? { sillY: this.layout.y + this.layout.h + 56 };
     this.wallLayer.add(this.add.image(0, 0, key).setOrigin(0, 0));
     // live lamp flicker between the windows
@@ -524,7 +590,9 @@ export class PanelScene extends Phaser.Scene {
 
   orderCameras() {
     const tiles = Object.values(this.views);
-    const resting = tiles.filter((view) => !view.lifted).map((view) => view.cam);
+    // while the wall is folded, the windows tucked behind the others draw first
+    const tucked = (view) => (this.fold && this.foldOpenTiles?.has(view.id) ? 0 : 1);
+    const resting = tiles.filter((view) => !view.lifted).sort((a, b) => tucked(a) - tucked(b)).map((view) => view.cam);
     const lifted = tiles.filter((view) => view.lifted).map((view) => view.cam);
     this.cameras.cameras = [this.cameras.main, ...resting, this.bezelCam, ...lifted, this.dragCam, this.topCam];
   }
@@ -688,7 +756,13 @@ export class PanelScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
-  // grid growth (Acts 0 → 0.5 → 1): the carriage wall slides open
+  // grid growth (Acts 0 → 0.5 → 1): the player unfolds the carriage wall
+  //
+  // The act starts folded (unfold.js): its kept windows sit where the last act
+  // left them, the new ones are tucked behind them, lamplight leaks out of the
+  // fold and a brass pull with a DRAG · UNFOLD tag waits on that edge. The
+  // drag drives the layout directly; nothing opens by itself, and the intro
+  // fail-safe (introGuard.js) never touches it: it only clears covers and titles.
 
   /** The growth plan when this act continues the previous act's wall, else null. */
   planGrowthIntro() {
@@ -698,106 +772,347 @@ export class PanelScene extends Phaser.Scene {
     return planGrowth(from, this.act, { fromSlots: this.carryIn?.slots ?? null, toSlots: this.model.state.slots });
   }
 
-  /** One sliding wall panel (two leaves) over a window about to open. */
-  makeShutter(rect, index) {
-    const pad = BEZEL + 6;
-    const x = rect.x - pad;
-    const y = rect.y - pad;
-    const w = rect.w + pad * 2;
-    const h = rect.h + pad * 2;
-    const half = Math.ceil(w / 2);
-    const leaves = ['L', 'R'].map((side, i) => {
-      const key = `nsv-shutter-${side}-${half}x${h}`;
-      if (!this.textures.exists(key)) {
-        const tex = this.textures.createCanvas(key, half, h);
-        paintShutter(tex.getContext(), half, h, side, index * 2 + i);
-        tex.refresh();
-      }
-      const leaf = this.add.image(x + i * half, y, key).setOrigin(0, 0);
-      this.bezelLayer.add(leaf);
-      return leaf;
-    });
-    const maskG = this.make.graphics({ add: false });
-    maskG.fillStyle(0xffffff, 1);
-    maskG.fillRect(x, y, w, h);
-    const mask = maskG.createGeometryMask();
-    leaves.forEach((leaf) => leaf.setMask(mask));
-    const seam = this.add.image(x + w / 2, y + h / 2, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(60, h * 1.1).setAlpha(0);
-    this.bezelLayer.add(seam);
-    return {
-      leaves, seam, x, w, half,
-      destroy: () => { leaves.forEach((leaf) => leaf.destroy()); seam.destroy(); maskG.destroy(); },
-    };
+  /** True while the wall is still folded (or being unfolded). */
+  foldActive() {
+    return Boolean(this.unfold && !this.unfold.done);
   }
 
-  growIntro(plan) {
-    const reduce = reducedMotionActive();
-    this.growing = true;
+  /** The arrow key that unfolds the wall (the side it opens towards). */
+  foldDirKey() {
+    return FOLD_KEYS[this.fold?.side] ?? null;
+  }
+
+  startFold(plan) {
+    const fold = planUnfold(plan);
     this.blackout.setAlpha(0);
-    const slideDelay = 350;
-    const slideMs = reduce ? 450 : 1000;
-    const openDelay = slideDelay + (reduce ? 250 : 650);
-    const openMs = reduce ? 550 : 1250;
-    // the old, smaller wall panel fades into the new one while the windows move
-    const oldKey = wallKey(plan.from);
-    if (this.textures.exists(oldKey)) {
-      const oldWall = this.add.image(0, 0, oldKey).setOrigin(0, 0);
-      this.wallLayer.add(oldWall);
-      this.tweens.add({ targets: oldWall, alpha: 0, delay: slideDelay, duration: slideMs + 400, ease: 'Sine.easeInOut', onComplete: () => oldWall.destroy() });
-    }
-    const shutters = [];
-    plan.windows.forEach((win, i) => {
-      const view = this.views[win.tile];
-      view.cover.setAlpha(0);
-      if (win.kind === 'keep') {
-        // a window shown larger in the smaller wall shrinks as it slides
-        view.setRect(win.from, { scale: win.from.w / win.to.w });
-        view.moving = true;
-        this.tweens.add({
-          targets: view.rect,
-          x: win.to.x,
-          y: win.to.y,
-          w: win.to.w,
-          h: win.to.h,
-          scale: 1,
-          delay: slideDelay,
-          duration: slideMs,
-          ease: 'Sine.easeInOut',
-          onUpdate: () => view.apply(),
-          onComplete: () => { view.moving = false; view.setRect(win.to); },
-        });
-      } else {
-        const shutter = this.makeShutter(win.to, i);
-        shutters.push(shutter);
-        // a line of lamplight in the seam, then the leaves part into the wall
-        this.tweens.add({ targets: shutter.seam, alpha: 0.7, delay: openDelay - 250, duration: 250, yoyo: true, hold: 200 });
-        this.tweens.add({ targets: shutter.leaves[0], x: shutter.x - shutter.half - 6, delay: openDelay, duration: openMs, ease: 'Cubic.easeInOut' });
-        this.tweens.add({ targets: shutter.leaves[1], x: shutter.x + shutter.w + 6, delay: openDelay, duration: openMs, ease: 'Cubic.easeInOut' });
-      }
+    if (!fold) { this.unfoldTitle(); return; }
+    this.growing = true;
+    this.fold = fold;
+    this.unfold = createUnfold(fold);
+    this.foldIdle = 0;
+    this.foldDemo = 0;
+    this.foldFocus = false;
+    this.foldPointer = false;
+    this.foldKeyHeld = false;
+    this.foldHover = false;
+    // the first unfold of the chapter is the one that teaches it
+    this.foldTeach = !this.hintSeen.has('unfold');
+    this.foldOpenTiles = new Set(fold.open.map((win) => win.tile));
+    // the smaller wall the last act ended on, over the new one until it opens
+    const oldKey = this.ensureWallTexture(plan.from);
+    this.foldWall = this.add.image(0, 0, oldKey).setOrigin(0, 0);
+    this.wallLayer.add(this.foldWall);
+    Object.values(this.views).forEach((view) => view.cover.setAlpha(0));
+    this.buildFoldUi(fold);
+    this.orderCameras();
+    this.applyFold(0);
+    this.drawFoldUi(0);
+  }
+
+  buildFoldUi(fold) {
+    const make = (key, w, h, fn) => {
+      if (this.textures.exists(key)) return;
+      const tex = this.textures.createCanvas(key, w, h);
+      fn(tex.getContext());
+      tex.refresh();
+    };
+    // painted at twice the size they are shown, so they stay crisp when scaled
+    make('nsv-unfold-pull', UNFOLD_PULL.w * 2, UNFOLD_PULL.h * 2, (c) => { c.scale(2, 2); paintUnfoldPull(c); });
+    make('nsv-unfold-tag', UNFOLD_TAG.w * 2, UNFOLD_TAG.h * 2, (c) => { c.scale(2, 2); paintUnfoldTag(c, this.env.paper); });
+    const ui = this.add.container(0, 0);
+    this.bezelLayer.add(ui);
+    this.bezelLayer.bringToTop(ui);
+    const len = fold.axis === 'x' ? fold.seam.y1 - fold.seam.y0 : fold.seam.x1 - fold.seam.x0;
+    // the lamplight leaking out of the fold: a wide warm wash and a thin bright line
+    const wash = this.add.image(0, 0, 'nsv-radial').setTint(0xffa850).setBlendMode('ADD');
+    const line = this.add.graphics();
+    const string = this.add.graphics();
+    const pull = this.add.image(0, 0, 'nsv-unfold-pull')
+      .setOrigin(UNFOLD_PULL.anchor[0] / UNFOLD_PULL.w, UNFOLD_PULL.anchor[1] / UNFOLD_PULL.h)
+      .setRotation(FOLD_ROTATION[fold.side]);
+    const halo = this.add.image(0, 0, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(190, 190);
+    const tag = this.add.image(0, 0, 'nsv-unfold-tag').setOrigin(UNFOLD_TAG.eyelet[0] / UNFOLD_TAG.w, UNFOLD_TAG.eyelet[1] / UNFOLD_TAG.h);
+    const glint = this.add.image(0, 0, 'nsv-glint').setBlendMode('ADD');
+    const focus = this.add.graphics();
+    ui.add([wash, line, halo, string, pull, tag, glint, focus]);
+    this.foldUi = { ui, wash, line, halo, string, pull, tag, glint, focus, len, alpha: 0 };
+  }
+
+  /** Lay the windows out at unfold progress `p` (0 folded … 1 open). */
+  applyFold(p) {
+    const lay = unfoldLayout(this.fold, p, { bezel: BEZEL });
+    this.foldLayout = lay;
+    Object.entries(lay.rects).forEach(([tile, r]) => {
+      const view = this.views[tile];
+      if (!view) return;
+      view.clip = r.clip;
+      view.moving = true;
+      view.setRect(r, { scale: r.scale });
     });
-    if (shutters.length) this.time.delayedCall(openDelay, () => this.audio.play('shutter'));
-    // the act's name, small, on the sill below the grown wall
+    // the old, smaller wall gives way to the new one as the wall opens
+    this.foldWall?.setAlpha(clamp(1 - p * 2.2, 0, 1));
+  }
+
+  /** The seam, the pull and its tag (every frame while folded). */
+  drawFoldUi(p, dt = 16) {
+    const ui = this.foldUi;
+    const fold = this.fold;
+    const lay = this.foldLayout;
+    if (!ui || !fold || !lay) return;
+    const reduce = reducedMotionActive();
+    const t = this.clock / 1000;
+    ui.alpha = Math.min(1, ui.alpha + dt / 450);
+    ui.ui.setAlpha(ui.alpha);
+    const breathe = reduce ? 0.85 : 0.75 + Math.sin(t * 2.2) * 0.2;
+    const k = fold.axis === 'x';
+    const k0 = lay.kept;
+    // the line of lamplight, on the live fold, as long as the windows beside it
+    const at = lay.fold;
+    const mid = k ? k0.y + k0.h / 2 : k0.x + k0.w / 2;
+    const light = clamp(1 - p * 0.9, 0.15, 1) * breathe;
+    ui.wash.setPosition(k ? at : mid, k ? mid : at)
+      .setDisplaySize(k ? 170 : ui.len * 1.04, k ? ui.len * 1.04 : 170)
+      .setAlpha(0.75 * light);
+    ui.line.clear();
+    const [a0, a1] = k ? [k0.y + 10, k0.y + k0.h - 10] : [k0.x + 10, k0.x + k0.w - 10];
+    [[16, 0xffa850, 0.22], [7, 0xffd08a, 0.6], [2.4, 0xfff2d4, 1]].forEach(([w, color, alpha]) => {
+      ui.line.lineStyle(w, color, alpha * light);
+      if (k) ui.line.lineBetween(at, a0, at, a1);
+      else ui.line.lineBetween(a0, at, a1, at);
+    });
+    // the pull rides the free edge of the new window(s)
+    const pull = lay.pull;
+    const grabbing = this.foldPointer || this.foldKeyHeld;
+    const hover = this.foldHover || grabbing;
+    if (!this.tweens.isTweening(ui.pull)) ui.pull.setScale((PULL_SCALE / 2) * (hover ? 1.08 : 1));
+    ui.pull.setPosition(pull.x, pull.y);
+    const rot = FOLD_ROTATION[fold.side];
+    const local = (x, y) => ({ x: pull.x + x * Math.cos(rot) - y * Math.sin(rot), y: pull.y + x * Math.sin(rot) + y * Math.cos(rot) });
+    const grip = local(-51 * PULL_SCALE, 0);
+    ui.halo.setPosition(grip.x, grip.y).setAlpha((hover ? 0.55 : 0.28) * breathe + (this.foldTeach && !grabbing ? 0.12 : 0));
+    // the tag hangs from the end of the grip on a string, swaying a little
+    const hook = local(-51 * PULL_SCALE, 56 * PULL_SCALE);
+    const eyelet = { x: hook.x + 22, y: hook.y + 34 };
+    const sway = reduce ? 0.14 : 0.14 + Math.sin(t * 1.7) * 0.06;
+    const tagA = clamp(1 - (p - 0.12) * 3.5, 0, 1);
+    ui.tag.setPosition(eyelet.x, eyelet.y).setRotation(sway).setAlpha(tagA).setScale(0.5);
+    ui.string.clear();
+    ui.string.lineStyle(1.6, 0xeadfc6, 0.8 * tagA);
+    ui.string.lineBetween(hook.x, hook.y, eyelet.x, eyelet.y);
+    // the amber glint at the tag's far corner (the "you can act on this" mark)
+    const gx = UNFOLD_TAG.w - UNFOLD_TAG.eyelet[0] - 12;
+    const gy = -UNFOLD_TAG.h / 2 + 12;
+    const tw = Math.max(0, Math.sin(t * 1.3)) ** 8;
+    ui.glint.setPosition(eyelet.x + gx * Math.cos(sway) - gy * Math.sin(sway), eyelet.y + gx * Math.sin(sway) + gy * Math.cos(sway))
+      .setAlpha((0.4 + tw * 0.6) * tagA).setScale(0.55 + tw * 0.3);
+    // keyboard focus: ivory on a dark outline, round the grip
+    ui.focus.clear();
+    if (this.keyboardMode && this.foldFocus) {
+      const r = 80 + (reduce ? 0 : (Math.sin(this.clock / 260) * 0.5 + 0.5) * 4);
+      ui.focus.lineStyle(10, 0x0b0705, 0.85);
+      ui.focus.strokeCircle(grip.x, grip.y, r);
+      ui.focus.lineStyle(4, 0xfff4dc, 1);
+      ui.focus.strokeCircle(grip.x, grip.y, r);
+    }
+  }
+
+  /** Every frame while folded: the drag / spring / snap, the tease, the drawing. */
+  updateFold(delta) {
+    const u = this.unfold;
+    // real time (capped), so a slow renderer still snaps in a few frames
+    const dt = Math.min(delta, 250);
+    const dirKey = this.foldDirKey();
+    if (dirKey && this.keysDown.has(dirKey) && this.foldKeyHeld) u.holdKey(dt);
+    const event = u.update(dt);
+    const resting = u.state === 'folded' && !this.ghost;
+    this.foldIdle = resting ? this.foldIdle + dt : 0;
+    const peek = resting ? peekOffset(this.foldIdle, { teach: this.foldTeach, reduce: reducedMotionActive() }) : 0;
+    if (!this.ghost) this.foldDemo = Math.max(0, this.foldDemo - dt / 260);
+    const shown = clamp(Math.max(u.progress, this.foldDemo) + peek, 0, 1);
+    this.applyFold(shown);
+    this.drawFoldUi(shown, dt);
+    if (event === 'done') this.completeFold();
+  }
+
+  now() {
+    return globalThis.performance?.now?.() ?? Date.now();
+  }
+
+  foldPointerDown(p) {
+    const u = this.unfold;
+    if (u.state === 'snapping') return;
+    if (!onFold(this.fold, p.x, p.y, { progress: u.progress })) { this.nudgeFold(); return; }
+    if (this.ghost) this.cancelGhost();
+    this.foldDemo = 0;
+    u.grab(p, this.now());
+    this.foldPointer = true;
+    this.audio.play('unfoldGrab');
+    this.input.setDefaultCursor('grabbing');
+  }
+
+  foldPointerMove(p) {
+    const u = this.unfold;
+    if (this.foldPointer && u.state === 'dragging') { u.move(p, this.now()); return; }
+    this.foldHover = Boolean(onFold(this.fold, p.x, p.y, { progress: u.progress }));
+    this.input.setDefaultCursor(this.foldHover ? 'grab' : 'default');
+  }
+
+  foldPointerUp(p) {
+    if (!this.foldPointer) return;
+    this.foldPointer = false;
+    const u = this.unfold;
+    u.move(p, this.now());
+    const result = u.release();
+    this.input.setDefaultCursor(this.foldHover ? 'grab' : 'default');
+    if (result === 'snap') this.onFoldSnap();
+    else if (result === 'spring' && u.progress > 0.02) this.audio.play('unfoldBack');
+  }
+
+  /** A press anywhere else: the pull jumps and the fold breathes (it's this). */
+  nudgeFold() {
+    const ui = this.foldUi;
+    if (!ui) return;
+    this.tweens.killTweensOf(ui.pull);
+    ui.pull.setScale(PULL_SCALE / 2);
+    this.tweens.add({ targets: ui.pull, scale: (PULL_SCALE / 2) * 1.18, duration: 140, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
+    this.foldIdle = this.foldTeach ? 1600 : 5000;
+    const grip = this.foldGripPoint();
+    this.shimmer(grip.x, grip.y, reducedMotionActive());
+  }
+
+  /** Screen point of the pull's grip (where a hand takes hold of it). */
+  foldGripPoint(progress = this.unfold?.progress ?? 0) {
+    const fold = this.fold;
+    const { pull } = unfoldLayout(fold, progress, { bezel: BEZEL });
+    const rot = FOLD_ROTATION[fold.side];
+    return { x: pull.x - 51 * PULL_SCALE * Math.cos(rot), y: pull.y - 51 * PULL_SCALE * Math.sin(rot) };
+  }
+
+  /** It will open: under Reduce Motion that is a short crossfade, not a slide. */
+  onFoldSnap() {
+    if (!reducedMotionActive()) return;
+    this.unfold.finish();
+    Object.values(this.views).forEach((view) => {
+      view.cover.setAlpha(this.foldOpenTiles.has(view.id) ? 0.9 : 0.5);
+      this.tweens.add({ targets: view.cover, alpha: 0, duration: 240, ease: 'Sine.easeOut' });
+    });
+    this.completeFold();
+  }
+
+  completeFold() {
+    if (!this.fold) return;
+    const fold = this.fold;
+    this.growing = false;
+    this.foldPointer = false;
+    this.foldKeyHeld = false;
+    this.foldHover = false;
+    if (this.ghost) this.cancelGhost();
+    Object.values(this.views).forEach((view) => {
+      view.clip = null;
+      view.moving = false;
+      view.setRect(this.model.slotRect(view.id));
+    });
+    this.foldWall?.destroy();
+    this.foldWall = null;
+    const ui = this.foldUi;
+    this.foldUi = null;
+    if (ui) this.tweens.add({ targets: ui.ui, alpha: 0, duration: 220, onComplete: () => ui.ui.destroy() });
+    this.orderCameras();
+    this.input.setDefaultCursor('default');
+    // the snap: a wooden stop, a soft bell, and lamplight running down the new seam
+    this.audio.play('unfoldSnap');
+    this.audio.play('softBell');
+    const k = fold.axis === 'x';
+    const to = fold.openTo;
+    const kept = fold.keptTo;
+    const gutter = k
+      ? { x: fold.side === 'left' ? (to.x + to.w + kept.x) / 2 : (kept.x + kept.w + to.x) / 2, y: kept.y + kept.h / 2, w: 70, h: kept.h * 1.05 }
+      : { x: kept.x + kept.w / 2, y: fold.side === 'top' ? (to.y + to.h + kept.y) / 2 : (kept.y + kept.h + to.y) / 2, w: kept.w * 1.04, h: 70 };
+    const flash = this.add.image(gutter.x, gutter.y, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(gutter.w, gutter.h).setAlpha(0.75);
+    this.bezelLayer.add(flash);
+    this.tweens.add({ targets: flash, alpha: 0, duration: 900, ease: 'Sine.easeOut', onComplete: () => flash.destroy() });
+    if (!reducedMotionActive()) {
+      // the kept windows settle into their slots with a small bump
+      fold.keep.forEach((win) => {
+        const view = this.views[win.tile];
+        if (!view) return;
+        this.tweens.add({ targets: view.rect, scale: 1.012, duration: 90, yoyo: true, ease: 'Sine.easeOut', onUpdate: () => view.apply(), onComplete: () => view.apply() });
+      });
+    }
+    this.fold = null;
+    this.unfoldTitle();
+  }
+
+  /** After the unfold: the act's name, small, on the sill below the grown wall. */
+  unfoldTitle() {
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
     this.titleMain.setText(act.heading ?? `${ROMAN[act.number] ?? act.number} · ${act.title}`);
     const titleY = Math.min(this.layout.view.h - 58, this.layout.y + this.layout.h + 96);
+    const openDelay = 0;
+    const openMs = 400;
     this.titleBox.setScale(0.7).setAlpha(0).setY(titleY + 8);
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: titleY, delay: openDelay + openMs * 0.5, duration: 600, ease: 'Sine.easeOut' });
     this.tweens.add({ targets: this.titleBox, alpha: 0, delay: openDelay + openMs * 0.5 + 2600, duration: 700, ease: 'Sine.easeIn', onComplete: () => this.titleBox.setScale(1) });
-    let grown = false;
-    this.finishGrowth = () => {
-      if (grown) return;
-      grown = true;
-      shutters.forEach((shutter) => shutter.destroy());
-      this.growing = false;
-      Object.values(this.views).forEach((view) => { view.moving = false; view.setRect(this.model.slotRect(view.id)); });
-    };
-    this.time.delayedCall(openDelay + openMs + 120, this.finishGrowth);
     this.armIntroFailsafe(growScheduleMs({ openDelay, openMs }));
   }
 
+  /** Dev `N` while folded: open the wall (the next `N` skips the act). */
+  devUnfold() {
+    if (!this.foldActive()) return false;
+    this.unfold.finish();
+    this.completeFold();
+    return true;
+  }
+
+  /** The keyboard while folded: Tab focuses the pull, hold the arrow or press Enter. */
+  foldKey(event) {
+    const key = event.key;
+    const arrows = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
+    const ours = arrows.includes(key) || KEYS.has(key);
+    if (ours && !this.keyboardMode) this.keyboardMode = true;
+    if (ours) this.foldFocus = true;
+    if (this.services.devMode && (key === 'n' || key === 'N') && !event.repeat) return this.devUnfold();
+    const dirKey = this.foldDirKey();
+    if (key === dirKey) {
+      this.keysDown.add(key);
+      if (!this.foldKeyHeld) { this.foldKeyHeld = true; this.audio.play('unfoldGrab'); }
+      return true;
+    }
+    if (key === 'Enter' || key === ' ') {
+      if (!event.repeat && this.unfold.commit() === 'snap') this.onFoldSnap();
+      return true;
+    }
+    if (key === 'h' || key === 'H') { this.requestHint(); return true; }
+    if (arrows.includes(key) || key === 'Backspace' || key === 'f' || key === 'F' || key === 'l' || key === 'L') {
+      // nothing else to do yet: the pull jumps and its key blinks
+      this.keyStripBlink = { key: FOLD_CAPS[this.fold.side], until: this.clock + 1400 };
+      this.nudgeFold();
+      return true;
+    }
+    return ours;
+  }
+
+  foldKeyUp(key) {
+    if (!this.foldActive() || key !== this.foldDirKey() || !this.foldKeyHeld) return;
+    this.foldKeyHeld = false;
+    const result = this.unfold.releaseKey();
+    if (result === 'snap') this.onFoldSnap();
+    else if (result === 'spring' && this.unfold.progress > 0.02) this.audio.play('unfoldBack');
+  }
+
+  /** Tier 1 while folded: the pull and the seam glow. */
+  pulseFold() {
+    const grip = this.foldGripPoint();
+    const reduce = reducedMotionActive();
+    this.beacon(grip.x, grip.y, 58);
+    this.shimmer(grip.x, grip.y, reduce);
+    const s = this.fold.seam;
+    this.time.delayedCall(320, () => { if (this.fold) this.hintGlow((s.x0 + s.x1) / 2, (s.y0 + s.y1) / 2, 260); });
+  }
+
   introduce() {
-    if (this.growth) { this.growIntro(this.growth); return; }
+    if (this.growth) { this.startFold(this.growth); return; }
     const reduce = reducedMotionActive();
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
@@ -836,7 +1151,6 @@ export class PanelScene extends Phaser.Scene {
       this.blackout.setAlpha(0);
       Object.values(this.views).forEach((view) => { this.tweens.killTweensOf(view.cover); view.cover.setAlpha(0); });
     }
-    this.finishGrowth?.();
   }
 
   // ---------------------------------------------------------------------------
@@ -1685,6 +1999,13 @@ export class PanelScene extends Phaser.Scene {
   /** SHOW ME: tier 2 at once (pause menu → `nightfall:hint`, or H). */
   requestHint() {
     if (!this.sys?.isActive() || !this.model) return false;
+    if (this.foldActive()) {
+      if (this.unfold.busy || this.fading) return false;
+      this.hints.setStep(`${this.act.id}:unfold`, 'unfold');
+      if (this.hints.request().includes('caption')) this.hintCaption({ id: 'unfold' });
+      this.pulseFold();
+      return this.playGhost({ kind: 'unfold', verb: 'unfold' }, 'request');
+    }
     const step = this.model.currentStep();
     if (!step?.hint || this.model.isLocked() || this.fading || this.growing) return false;
     // the Conductor's tier-3 line comes back with SHOW ME (alpha R1-3)
@@ -1700,6 +2021,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   updateHints(dt) {
+    if (this.foldActive()) { this.updateFoldHints(dt); return; }
     const m = this.model;
     const step = m.currentStep();
     const key = step?.hint ? `${this.act.id}:${step.id}` : null;
@@ -1714,6 +2036,18 @@ export class PanelScene extends Phaser.Scene {
       if (event === 'pulse') { this.idleHints += 1; this.pulseForStep(step); }
       else if (event === 'ghost' || event === 'first') this.playGhost(pickGesture(m, step), event);
       else if (event === 'caption') this.hintCaption(step);
+    });
+  }
+
+  /** The hint tiers while the wall is folded: the pull, then the hand, then a line. */
+  updateFoldHints(dt) {
+    this.hints.setStep(`${this.act.id}:unfold`, 'unfold');
+    const u = this.unfold;
+    const active = u.state === 'folded' && !this.fading && !this.ghost && !(this.caption && !this.caption.auto);
+    this.hints.update(dt, { active }).forEach((event) => {
+      if (event === 'pulse') { this.idleHints += 1; this.pulseFold(); }
+      else if (event === 'ghost' || event === 'first') this.playGhost({ kind: 'unfold', verb: 'unfold' }, event);
+      else if (event === 'caption') this.hintCaption({ id: 'unfold' });
     });
   }
 
@@ -1753,6 +2087,14 @@ export class PanelScene extends Phaser.Scene {
     if (g.kind === 'lens') {
       const lens = m.state.lens;
       return { from: { x: lens.x, y: lens.y }, to: this.views[g.tile].screen(g.u, g.v) };
+    }
+    if (g.kind === 'unfold' && this.fold) {
+      // take hold of the pull's grip and draw it out to where the new edge goes
+      const from = this.foldGripPoint(0);
+      const reach = this.fold.pointerTravel * 0.5;
+      const dx = this.fold.axis === 'x' ? this.fold.sign * reach : 0;
+      const dy = this.fold.axis === 'y' ? this.fold.sign * reach : 0;
+      return { from, to: { x: from.x + dx, y: from.y + dy } };
     }
     return null;
   }
@@ -1881,6 +2223,16 @@ export class PanelScene extends Phaser.Scene {
       }
       tweens.push({ s: 0.84, duration: 60, onStart: () => { carriedA = 0.9; if (reduce) path(pts.from, pts.to); } });
       tweens.push(...move(pts.to, 1150), { ...release, onStart: () => { carriedA = 0.45; ripple(pts.to.x, pts.to.y); } }, hold(380));
+    } else if (gesture.kind === 'unfold') {
+      // take hold of the pull and draw the wall open part way: it follows the
+      // hand (below the snap point) and settles back when the hand lets go
+      const demo = () => {
+        if (reduce || !this.fold) return;
+        const along = this.fold.axis === 'x' ? proxy.x - pts.from.x : proxy.y - pts.from.y;
+        this.foldDemo = clamp((along * this.fold.sign) / this.fold.pointerTravel, 0, 0.4);
+      };
+      tweens.push(...move(pts.from, 700), press(pts.from), { s: 0.84, duration: 160, onStart: () => { if (reduce) path(pts.from, pts.to); } });
+      tweens.push(...move(pts.to, 1300).map((tw) => ({ ...tw, onUpdate: () => { apply(); demo(); } })), hold(260), release, hold(420));
     } else if (gesture.kind === 'lens') {
       // take hold of the lens, carry its ghost onto the target, then click through it
       const ghostLens = this.add.image(0, 0, 'nsv-lens-rim');
@@ -1899,7 +2251,7 @@ export class PanelScene extends Phaser.Scene {
     apply();
     const chain = this.tweens.chain({
       targets: proxy,
-      tweens: tweens.map((t) => ({ ...t, onUpdate: apply })),
+      tweens: tweens.map((t) => ({ ...t, onUpdate: t.onUpdate ?? apply })),
       onComplete: () => { if (this.ghost?.layer === layer) { this.ghost = null; layer.destroy(); } },
     });
     this.ghostCount += 1;
@@ -1918,7 +2270,7 @@ export class PanelScene extends Phaser.Scene {
     this.input.on('pointerupoutside', (p) => this.onPointerUp(p));
     this.input.on('wheel', (p, _objs, _dx, dy) => {
       this.userInput();
-      if (dy > 0 && !this.growing) {
+      if (dy > 0 && !this.growing && !this.foldActive()) {
         const slot = this.slotAt(p.x, p.y);
         const tile = slot ? this.model.tileAt(slot.index) : null;
         if (tile && this.model.canZoomOut(tile) && !this.views[tile].zooming) this.model.zoomOut(tile);
@@ -1946,6 +2298,7 @@ export class PanelScene extends Phaser.Scene {
   onPointerDown(p) {
     this.userInput();
     if (this.keyboardMode) { this.keyboardMode = false; this.refreshSelection(); }
+    if (this.foldActive() && !this.fading) { this.foldPointerDown(p); return; }
     if (this.fading || this.growing) return;
     if (this.cardView || this.model.state.card) { this.model.closeCard(); return; }
     // a spoken line takes the click; a passing caption never blocks play
@@ -1998,6 +2351,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   onPointerMove(p) {
+    if (this.foldActive()) { this.foldPointerMove(p); return; }
     const press = this.press;
     if (press) {
       const dist = Math.hypot(p.x - press.x, p.y - press.y);
@@ -2034,6 +2388,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   onPointerUp(p) {
+    if (this.foldPointer) { this.foldPointerUp(p); return; }
     const press = this.press;
     this.press = null;
     if (!press) return;
@@ -2165,7 +2520,7 @@ export class PanelScene extends Phaser.Scene {
     if (globalThis.NIGHTFALL_PAUSED || globalThis.NIGHTFALL_STONE_OFFER) return;
     if (!this.sys.isActive()) return;
     const key = event.key;
-    if (!down) { this.keysDown.delete(key); return; }
+    if (!down) { this.keysDown.delete(key); this.foldKeyUp(key); return; }
     const handled = this.onKey(event);
     if (handled) {
       event.preventDefault();
@@ -2177,6 +2532,7 @@ export class PanelScene extends Phaser.Scene {
     const key = event.key;
     const m = this.model;
     this.userInput();
+    if (this.foldActive() && !this.fading) return this.foldKey(event);
     if (this.fading || this.growing) return ['Tab', ' ', 'Enter'].includes(key);
     if (this.services.devMode && (key === 'n' || key === 'N') && !event.repeat) {
       this.devSkip();
@@ -2425,6 +2781,7 @@ export class PanelScene extends Phaser.Scene {
   keyStripItems() {
     const m = this.model;
     const arrows = '← ↑ ↓ →';
+    if (this.foldActive()) return [[FOLD_CAPS[this.fold.side], 'HOLD · UNFOLD'], ['ENTER', 'UNFOLD'], ['H', 'SHOW ME'], ['ESC', 'PAUSE']];
     if (this.lensFocus && m.state.lens.enabled) return [[arrows, 'MOVE THE LENS'], ['ENTER', 'CLICK THROUGH IT'], ['L', 'LET GO']];
     if (this.kbHeld) return [[arrows, 'CARRY'], ['SPACE', 'PUT DOWN'], ['⌫', 'PUT BACK']];
     if (this.floating) return [[arrows, 'CARRY THE FRAME'], ['SPACE', 'DROP IT'], ['⌫', 'PUT BACK']];
@@ -2494,7 +2851,7 @@ export class PanelScene extends Phaser.Scene {
   updateKeyStrip(dt = 16) {
     const strip = this.keyStrip;
     if (!strip) return;
-    const show = this.keyboardMode && !this.caption && !this.model.state.card && !this.fading && !this.growing && !this.model.state.ended;
+    const show = this.keyboardMode && !this.caption && !this.model.state.card && !this.fading && (!this.growing || this.foldActive()) && !this.model.state.ended;
     if (show) {
       const items = this.keyStripItems();
       const sig = `${items.map((item) => item.join(':')).join('|')}#${this.textScale}#${this.sockets?.visible}`;
@@ -2589,7 +2946,9 @@ export class PanelScene extends Phaser.Scene {
     if (this.introGuard.due()) this.settleIntro('frame');
     const dt = Math.min(delta, this.services.maxDt ?? 50);
     this.clock += dt;
-    this.model.update(dt);
+    // the act's script waits until the player has unfolded the wall
+    if (this.foldActive()) this.updateFold(delta);
+    else this.model.update(dt);
     const reduce = reducedMotionActive();
 
     // lamps between the windows flicker
@@ -2820,6 +3179,15 @@ export class PanelScene extends Phaser.Scene {
           seam: this.lastSeamCue ?? null,
         },
         growing: this.growing,
+        unfold: this.foldActive() ? {
+          state: this.unfold.state,
+          progress: Number(this.unfold.progress.toFixed(3)),
+          demo: Number((this.foldDemo ?? 0).toFixed(3)),
+          side: this.fold.side,
+          pull: (() => { const g = this.foldGripPoint(); return { x: Math.round(g.x), y: Math.round(g.y) }; })(),
+          travel: Math.round(this.fold.pointerTravel),
+          key: this.foldDirKey(),
+        } : null,
         title: { alpha: Number(this.titleBox.alpha.toFixed(2)), failsafeMs: this.introGuard.remaining === null ? null : Math.round(this.introGuard.remaining), settled: this.introSettled },
         audioUnlocked: Boolean(this.audio.unlocked),
       },

@@ -11,7 +11,8 @@ Chapter 1 is a Gorogoa-style panel puzzle on its own page (`night-service.html`
 | `actorRig.js`, `art/figures.js` | Jointed Butch / Conductor / Mara / train. |
 | `art/ink.js`, `art/wallArt.js` | Canvas kit: jittered ink, wood, brass, paper tags, sepia, the carriage wall. |
 | `acts/*.js` | Act 0 (1×1, zoom), Act 0.5 (1×2, swap; zoom + swap), Act 1 (2×2), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
-| `hints.js`, `hintLines.js`, `art/hintArt.js` | The wordless hint tiers (when, and which gesture), the Conductor's tier-3 lines, the ghost hand and the sliding wall panels. |
+| `hints.js`, `hintLines.js`, `art/hintArt.js` | The wordless hint tiers (when, and which gesture), the Conductor's tier-3 lines, the ghost hand, the unfold's brass pull and tag. |
+| `unfold.js` | The player unfolds the wall between acts that `growFrom` each other: fold geometry (which side, the seam, the pull), the layout at any progress, and the drag / spring / snap / keyboard state machine. Pure, tested in `tests/nightService/unfold.test.mjs`. |
 | `art/actNArt.js`, `art/actNFx.js` | Each act's drawings and custom presentation effects. |
 | `audio.js` | Synth SFX on the SFX bus, rail ambience, quiet music loop. |
 
@@ -26,7 +27,8 @@ export const ACT2 = defineAct({
                                          // (1×1 / 1×2 pass `tile: CARRIAGE_TILE` so the wall can grow,
                                          // and `display: 1.7` to show that tile larger on screen:
                                          // tile coordinates stay the same, the canvases paint at screen res)
-  growFrom: { act: 'act0', keep: { desk: 'office' } }, // optional: grow in place from the previous act
+  growFrom: { act: 'act0', keep: { desk: 'office' } }, // optional: open folded on the previous act's wall;
+                                         // the player drags the brass pull to unfold it (unfold.js)
   slots: ['rack', 'window', 'aisle', 'board'],   // row-major starting layout
   start: { bell: 1, items: ['punch'] },  // chapter state when starting here fresh
   assets: ['fields', 'memory'],          // panoramas to load (worldAssets.js)
@@ -201,7 +203,7 @@ solver from random states instead (`act3.test.mjs`).
 ## Dev routes (DEV_MODE only; production ignores them)
 
 `?act=0|0.5|1|2|3`, `?step=<step id>` (alone it finds the act), `?from=act0`
-(open the act as if that act just ended, so the wall grows in), `?dtmax=1000`
+(open the act as if that act just ended: folded, waiting for the player to unfold it), `?dtmax=1000`
 (real-time steps for slow headless renderers), `N` skips the act.
 `window.render_game_to_text()` returns the model state plus screen positions
 of slots, enabled hotspots and zoom-out glyphs.

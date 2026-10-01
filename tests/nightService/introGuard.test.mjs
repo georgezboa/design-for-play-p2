@@ -40,7 +40,8 @@ test('N1: PanelScene clears the act title by wall clock, not by a scene-clock ki
   assert.doesNotMatch(introduce, /killTweensOf\(this\.titleBox\)/, 'no kill-then-fade on the scene clock');
   assert.doesNotMatch(introduce, /this\.time\.delayedCall/, 'the fade-out rides the tween clock');
   assert.match(introduce, /this\.armIntroFailsafe\(introScheduleMs\(/);
-  assert.match(scene, /growIntro\(plan\) \{[\s\S]*?this\.armIntroFailsafe\(growScheduleMs\(/);
+  // the grown wall's sill title (after the player unfolds it, round 3)
+  assert.match(scene, /unfoldTitle\(\) \{[\s\S]*?this\.armIntroFailsafe\(growScheduleMs\(/);
   // checked every frame and by a real timer
   assert.match(scene, /update\(time, delta\) \{\s*if \(this\.introGuard\.due\(\)\) this\.settleIntro\('frame'\);/);
   assert.match(scene, /setTimeout\?\.\(\(\) => \{ if \(this\.sys\?\.isActive\(\) && this\.introGuard\.due\(\)\) this\.settleIntro\('timer'\);/);
@@ -49,4 +50,8 @@ test('N1: PanelScene clears the act title by wall clock, not by a scene-clock ki
   assert.match(settle, /this\.blackout\.setAlpha\(0\)/);
   assert.match(settle, /view\.cover\.setAlpha\(0\)/);
   assert.match(settle, /if \(!this\.fading && !this\.model\.state\.ended\)/, 'never cancels an act-end fade');
+  // round 3: the fail-safe clears covers and titles only; it never unfolds the wall for the player
+  assert.doesNotMatch(settle, /unfold|Fold|growth|Growth/);
+  const fold = scene.slice(scene.indexOf('  startFold(plan) {'), scene.indexOf('  buildFoldUi('));
+  assert.doesNotMatch(fold, /armIntroFailsafe/, 'no deadline while the wall waits folded');
 });

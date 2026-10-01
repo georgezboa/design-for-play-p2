@@ -1,10 +1,11 @@
-// The ghost hand (tier-2 hints) and the sliding wall panels (grid growth).
+// The ghost hand (tier-2 hints) and the unfold's brass pull and paper tag
+// (grid growth: the player unfolds the carriage wall, unfold.js).
 //
 // The hand is a paper glove in the chapter's ink style: ivory card with a
 // hand-jittered warm outline, a brass cuff button, pointing with the index
 // finger. It is drawn translucent over the windows, never over captions.
 
-import { PAL, brassFill, ink, inkEllipse, rivet, roundRectPath, speckle, wood } from './ink.js';
+import { PAL, brassFill, ink, inkEllipse, rivet, roundRectPath, speckle } from './ink.js';
 
 /** Canvas size of the hand (at 1×) and where its fingertip is (the gesture point). */
 export const GHOST_HAND = Object.freeze({ w: 92, h: 128, tip: [30, 6] });
@@ -70,44 +71,134 @@ export function paintGhostHand(c, paper = null) {
   c.restore();
 }
 
+// ---------------------------------------------------------------------------
+// The unfold (Acts 0 → 0.5 → 1): a brass pull on the fold and its paper tag.
+
+/** Canvas size of the pull, drawn opening towards -x (PanelScene rotates it). */
+export const UNFOLD_PULL = Object.freeze({ w: 96, h: 176, anchor: [70, 88] });
+/** Canvas size of the pull's paper tag (screen px at 1920×1080). */
+export const UNFOLD_TAG = Object.freeze({ w: 272, h: 70, eyelet: [17, 35] });
+
 /**
- * One leaf of a sliding wall panel over a window slot that is about to open.
- * `side` 'L' or 'R': the brass meeting edge is on the inside.
+ * The pull: a riveted brass plate on the window's edge (anchor = the edge)
+ * and a D-shaped grip standing proud of it towards the side the wall opens,
+ * with two engraved chevrons pointing the way.
  */
-export function paintShutter(c, w, h, side = 'L', seed = 1) {
-  wood(c, 0, 0, w, h, { base: '#2a1b11', seed: 900 + seed, vertical: false, grain: 'rgba(0,0,0,0.3)' });
-  const g = side === 'L' ? c.createLinearGradient(w, 0, w - 60, 0) : c.createLinearGradient(0, 0, 60, 0);
-  g.addColorStop(0, 'rgba(0,0,0,0.35)');
-  g.addColorStop(1, 'rgba(0,0,0,0)');
-  c.fillStyle = g;
-  c.fillRect(0, 0, w, h);
-  // a raised inner panel
-  const inset = 22;
-  c.fillStyle = 'rgba(0,0,0,0.18)';
-  roundRectPath(c, inset, inset, w - inset * 2, h - inset * 2, 10);
-  c.fill();
+export function paintUnfoldPull(c) {
+  const [ax, ay] = UNFOLD_PULL.anchor;
   c.save();
-  roundRectPath(c, inset, inset, w - inset * 2, h - inset * 2, 10);
-  c.lineWidth = 1.4;
-  c.strokeStyle = PAL.ink;
-  c.globalAlpha = 0.45;
+  c.shadowColor = 'rgba(0,0,0,0.6)';
+  c.shadowBlur = 10;
+  c.shadowOffsetX = 3;
+  c.shadowOffsetY = 5;
+  // the plate, straddling the edge
+  const px = ax - 15;
+  const py = ay - 70;
+  c.fillStyle = brassFill(c, px, py, 30, 140, true);
+  roundRectPath(c, px, py, 30, 140, 9);
+  c.fill();
+  c.shadowColor = 'transparent';
+  c.strokeStyle = 'rgba(40, 26, 10, 0.85)';
+  c.lineWidth = 1.6;
+  roundRectPath(c, px, py, 30, 140, 9);
   c.stroke();
+  rivet(c, ax, py + 13, 4);
+  rivet(c, ax, py + 127, 4);
+  // the arms of the grip
+  [ay - 46, ay + 46].forEach((y) => {
+    c.fillStyle = brassFill(c, 18, y - 6, ax - 18, 12);
+    roundRectPath(c, 18, y - 6, ax - 18, 12, 5);
+    c.fill();
+    c.strokeStyle = 'rgba(40, 26, 10, 0.8)';
+    c.lineWidth = 1.2;
+    roundRectPath(c, 18, y - 6, ax - 18, 12, 5);
+    c.stroke();
+  });
+  // the grip bar
+  c.shadowColor = 'rgba(0,0,0,0.55)';
+  c.shadowBlur = 8;
+  c.shadowOffsetX = 2;
+  c.shadowOffsetY = 4;
+  c.fillStyle = brassFill(c, 8, ay - 62, 22, 124, true);
+  roundRectPath(c, 8, ay - 62, 22, 124, 11);
+  c.fill();
+  c.shadowColor = 'transparent';
+  c.strokeStyle = 'rgba(40, 26, 10, 0.9)';
+  c.lineWidth = 1.8;
+  roundRectPath(c, 8, ay - 62, 22, 124, 11);
+  c.stroke();
+  c.strokeStyle = 'rgba(255, 240, 200, 0.55)';
+  c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(13, ay - 50);
+  c.lineTo(13, ay + 50);
+  c.stroke();
+  // chevrons pointing outward (-x), engraved in the plate
+  c.strokeStyle = 'rgba(40, 24, 8, 0.85)';
+  c.lineWidth = 2.6;
+  c.lineCap = 'round';
+  c.lineJoin = 'round';
+  [-16, 2].forEach((dy) => {
+    c.beginPath();
+    c.moveTo(ax + 5, ay + dy - 7);
+    c.lineTo(ax - 4, ay + dy + 0.5);
+    c.lineTo(ax + 5, ay + dy + 8);
+    c.stroke();
+  });
   c.restore();
-  // the brass meeting edge, with a finger pull
-  const ex = side === 'L' ? w - 7 : 0;
-  c.fillStyle = brassFill(c, ex, 0, 7, h, true);
-  c.fillRect(ex, 0, 7, h);
-  const px = side === 'L' ? w - 26 : 14;
-  c.fillStyle = brassFill(c, px, h / 2 - 22, 12, 44, true);
-  roundRectPath(c, px, h / 2 - 22, 12, 44, 5);
+}
+
+/** The pull's paper tag: DRAG · UNFOLD, typed, with the eyelet on the left. */
+export function paintUnfoldTag(c, paper = null, text = 'DRAG · UNFOLD') {
+  const { w, h } = UNFOLD_TAG;
+  const [ex, ey] = UNFOLD_TAG.eyelet;
+  const body = () => {
+    c.beginPath();
+    c.moveTo(4, h / 2);
+    c.lineTo(26, 6);
+    c.lineTo(w - 6, 6);
+    c.lineTo(w - 6, h - 6);
+    c.lineTo(26, h - 6);
+    c.closePath();
+  };
+  c.save();
+  c.shadowColor = 'rgba(0,0,0,0.5)';
+  c.shadowBlur = 8;
+  c.shadowOffsetY = 3;
+  body();
+  c.fillStyle = PAL.paper;
   c.fill();
-  c.fillStyle = '#0d0907';
-  roundRectPath(c, px + 3, h / 2 - 16, 6, 32, 3);
-  c.fill();
-  for (let y = 16; y < h - 8; y += 46) {
-    rivet(c, side === 'L' ? 10 : w - 10, y, 3);
-    rivet(c, side === 'L' ? w - 16 : 16, y, 2.6);
+  c.restore();
+  if (paper) {
+    c.save();
+    body();
+    c.clip();
+    c.globalCompositeOperation = 'multiply';
+    c.globalAlpha = 0.35;
+    c.drawImage(paper, 0, 0, w * 2, h * 2);
+    c.restore();
   }
-  ink(c, [[0, 1], [w, 1]], { w: 1.6, alpha: 0.6 });
-  ink(c, [[0, h - 1], [w, h - 1]], { w: 1.6, alpha: 0.6 });
+  c.save();
+  body();
+  c.clip();
+  speckle(c, 0, 0, w, h, { count: 120, color: 'rgba(90, 60, 30, 0.12)', size: 1.2, seed: 41 });
+  c.restore();
+  body();
+  c.strokeStyle = 'rgba(80, 60, 40, 0.7)';
+  c.lineWidth = 1.4;
+  c.stroke();
+  // eyelet with a brass ring
+  c.fillStyle = brassFill(c, ex - 7, ey - 7, 14, 14);
+  c.beginPath(); c.arc(ex, ey, 7, 0, Math.PI * 2); c.fill();
+  c.fillStyle = '#2a1a10';
+  c.beginPath(); c.arc(ex, ey, 3.4, 0, Math.PI * 2); c.fill();
+  // a ruled line, then the type
+  c.strokeStyle = 'rgba(107, 42, 34, 0.45)';
+  c.lineWidth = 1;
+  c.beginPath(); c.moveTo(40, h - 15); c.lineTo(w - 18, h - 15); c.stroke();
+  c.fillStyle = '#3a2216';
+  c.font = '700 25px "Space Mono", ui-monospace, monospace';
+  c.textBaseline = 'middle';
+  c.textAlign = 'center';
+  c.fillText(text, (36 + w - 10) / 2, h / 2 - 2);
 }
