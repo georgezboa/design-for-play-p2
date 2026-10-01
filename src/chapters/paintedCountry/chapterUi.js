@@ -282,6 +282,7 @@ export class RestartHold {
 
   update(dt, pad = null) {
     if (this.confirming) {
+      this.lastTick = null;
       const a = Boolean(pad?.A);
       const b = Boolean(pad?.B);
       if (a && !this.padPrev.a) this.confirm();
@@ -289,8 +290,13 @@ export class RestartHold {
       this.padPrev = { a, b };
       return;
     }
+    // Wall-clock time, not the frame's clamped dt: at 1 fps a one-second hold
+    // took twenty seconds and the card never came (alpha A3-1).
+    const now = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    const realDt = this.lastTick == null ? dt : Math.min(0.5, Math.max(0, (now - this.lastTick) / 1000));
+    this.lastTick = now;
     const held = this.key.isDown || Boolean(pad?.buttons?.[8]?.pressed);
-    this.progress = held ? this.progress + dt : 0;
+    this.progress = held ? this.progress + Math.max(dt, realDt) : 0;
     if (this.progress > 0.12) {
       this.tag.show('HOLD R · RESTART ROOM', VIEW_SIZE.w - 120, 86, { progress: this.progress / RESTART_HOLD_SECONDS, screen: true });
     } else {

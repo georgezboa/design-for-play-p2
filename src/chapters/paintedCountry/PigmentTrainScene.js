@@ -14,7 +14,7 @@ import { buildPaperGrain, draftLine, draftRect, makeRandom } from './paperSurfac
 import { BrushInput } from './brushInput.js';
 import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt, showTitleCard } from './chapterUi.js';
 import { drawGreyCell } from './platePencil.js';
-import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { collectMagicStone, magicStoneSnapshot, magicStoneCountLabel } from '../../shell/magicStones.js';
 import { devParam } from '../../devMode.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part III, the train yard.
@@ -270,7 +270,10 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.walker = this.add.rectangle(this.fusedEntry ? 2110 : TRAIN_ENTRY_X, 410, 18, 62, 0xffffff, 0);
     this.physics.add.existing(this.walker);
     this.physics.add.collider(this.walker, this.floor);
-    this.walker.body.setCollideWorldBounds(false);
+    // The yard's ends are the body's own bounds (alpha A3-1): writing
+    // walker.x every frame let Arcade add a slow frame's whole step on top.
+    this.walker.body.setBoundsRectangle(new Phaser.Geom.Rectangle(42 - 9, -200, WORLD.w - 44 - 42 + 18, WORLD.h + 400));
+    this.walker.body.setCollideWorldBounds(true);
     this.figure = this.add.graphics().setDepth(28);
     this.playerFacing = 1;
     this.playerAnimation = 'idle';
@@ -338,7 +341,6 @@ export class PigmentTrainScene extends Phaser.Scene {
     }
     this.walker.body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
     if (move.jump && this.walker.body.blocked.down) this.walker.body.setVelocityY(JUMP_VELOCITY);
-    this.walker.x = Phaser.Math.Clamp(this.walker.x, 42, WORLD.w - 44);
   }
 
   updateFigure() {
@@ -494,7 +496,8 @@ export class PigmentTrainScene extends Phaser.Scene {
   handleEvents() {
     this.chapter.drainEvents().forEach((event) => {
       if (event.type === 'home-plate-thinned') {
-        noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y - 6, 'THE GREY THINS · ONCE MORE', { hold: 1000 });
+        // Under the plate: the wash tag owns the space above it (alpha A3-5).
+        noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y + HOME_PLATE.h + 32, 'THE GREY THINS · ONCE MORE', { hold: 1000 });
       } else if (event.type === 'home-plate-revealed' && !this.stoneCollected) {
         this.time.delayedCall(500, () => this.collectStone());
       }
@@ -506,8 +509,16 @@ export class PigmentTrainScene extends Phaser.Scene {
     collectMagicStone('chapter-4');
     this.stoneCollected = true;
     const snapshot = magicStoneSnapshot();
-    noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y - 10, `PIGMENT STONE · ${snapshot.count} / ${snapshot.total}`, { tone: 'good', hold: 2200 });
+    this.tag.hide();
+    noteAt(this, PIGMENT_STONE.x, HOME_PLATE.y + HOME_PLATE.h + 32, `PIGMENT STONE · ${magicStoneCountLabel(snapshot)}`, { tone: 'good', hold: 1700 });
     this.cameras.main.flash(240, 224, 162, 74);
+    // The shell's one-time "first stone" card waits while a stone beat is on
+    // screen (pauseMenu.js checks NIGHTFALL_STONE_OFFER), so it comes after
+    // this line has faded instead of freezing it half-way.
+    globalThis.NIGHTFALL_STONE_OFFER = true;
+    const release = () => { globalThis.NIGHTFALL_STONE_OFFER = false; };
+    this.time.delayedCall(2400, release);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, release);
   }
 
   boardTrain() {

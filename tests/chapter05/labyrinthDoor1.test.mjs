@@ -376,7 +376,8 @@ test('Wing IV is a reachable two-floor hunt with an unmarked final fragment', ()
     if (floor === 1) assert.ok(seen.has(`${layout.exit.cell.x},${layout.exit.cell.y}`));
   }
   assert.match(labyrinthScene, /toMini\(this\.layout\.exit/);
-  assert.match(labyrinthScene, /ESCAPE \$\{arrows\[idx\]\}/);
+  // Alpha A3-6: the escape readout walks the maze (nearestByPath) too.
+  assert.match(labyrinthScene, /ESCAPE \$\{exitRoute\.arrow\}/);
   assert.match(labyrinthScene, /const x0 = VIEW\.w - size - 18/);
 });
 

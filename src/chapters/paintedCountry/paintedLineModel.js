@@ -22,6 +22,13 @@ export const TRAIN = Object.freeze({ length: 14, topRow: 18, startFront: 16, ste
 export const FINISH_FRONT = 136;
 export const VARNISH_COATS = 2;
 
+// Gentle stakes (alpha round 1: "the train waits, so there is no pressure").
+// A train kept standing for COAT_BELLS bells in a row loses one coat of its
+// borrowed paint to the weather, down to MAX_COATS_LOST. Nothing fails: it
+// only shows on the train and in how the platform remembers the run.
+export const COAT_BELLS = 3;
+export const MAX_COATS_LOST = 3;
+
 // Ground and track, in columns [from, to). The gaps between are the archive's.
 export const GROUND_SPANS = Object.freeze([
   { from: 0, to: 26 },
@@ -45,6 +52,21 @@ export const BARRIERS = Object.freeze([
 export const TRAIN_COLOURS = Object.freeze(['green', 'red', 'blue', 'yellow', 'orange', 'violet']);
 
 export const key = (c, r) => r * LINE.cols + c;
+
+// What the train's paint looks like after `coatsLost` coats (1 = fresh).
+export const coatAlpha = (coatsLost) => 1 - 0.2 * Math.min(MAX_COATS_LOST, Math.max(0, coatsLost));
+
+// The platform remembers the run: the same ending, told slightly differently.
+export function platformLines(coatsLost = 0) {
+  const kept = coatsLost <= 0;
+  return {
+    coatLost: coatsLost <= 1 ? 'THE TRAIN STANDS TOO LONG · A COAT OF PAINT RUNS OFF' : 'ANOTHER COAT RUNS OFF WHILE IT WAITS',
+    arrival: kept
+      ? 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.'
+      : 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED, AND SOME RAN OFF ON THE WAY.',
+    departure: kept ? 'A PENCIL TRAIN STILL RUNS.' : 'A PENCIL TRAIN STILL RUNS. THE DAMP KEEPS WHAT IT TOOK.',
+  };
+}
 
 export function createPaintedLine() {
   const ground = new Set();
@@ -72,6 +94,8 @@ export function createPaintedLine() {
     blocks,
     varnish,
     returned: [],
+    standingBells: 0,
+    coatsLost: 0,
     complete: false,
     // Kept explicit for QA: there is no way to lose this.
     failed: false,
@@ -166,6 +190,17 @@ export function createPaintedLine() {
     } else {
       state.waiting = null;
     }
+    // Standing still at a break the player has not cleared yet.
+    if (moved === 0 && state.waiting) {
+      state.standingBells += 1;
+      if (state.standingBells >= COAT_BELLS && state.coatsLost < MAX_COATS_LOST) {
+        state.standingBells = 0;
+        state.coatsLost += 1;
+        emit('coat-lost', { coatsLost: state.coatsLost, at: state.front });
+      }
+    } else {
+      state.standingBells = 0;
+    }
     return { moved, waiting: state.waiting };
   }
 
@@ -223,6 +258,7 @@ export function createPaintedLine() {
         varnishLeft: state.varnish.size,
         painted: state.painted.size,
         returned: [...state.returned],
+        coatsLost: state.coatsLost,
         complete: state.complete,
         failed: state.failed,
         obstaclesAhead: obstaclesAhead().length,

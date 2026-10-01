@@ -54,6 +54,7 @@ import {
 import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell } from './platePencil.js';
 import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
+import { createFallGuard, placeBody } from './fallGuard.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part I, "Under the gouache".
 //
@@ -135,14 +136,28 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.lastPlateCell = null;
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
-    this.tutorialSeen = { bridge: false, wash: false, varnish: false, pigment: false };
+    this.tutorialSeen = { move: false, bridge: false, wash: false, varnish: false, pigment: false };
+    this.hasJumped = false;
     this.activeTutorial = null;
     this.noteThrottle = {};
     this.hintedSmallMark = new Set();
     this.notesPulse = false;
     this.locked = false;
     this.mara = null;
-    this.lastSafe = { x: 200, y: 360 };
+    // Falls: see fallGuard.js (alpha A3-1). Section starts sit on the
+    // carriage's own floor, which no wash can remove: the cold end, just over
+    // the first hole, just past the long wall, and just over the second hole.
+    this.fallGuard = createFallGuard({
+      start: { x: 200, y: FLOOR_Y - 30 },
+      sections: [
+        { x: FLOOR_SPANS[1].from * CELL + 2 * CELL, y: FLOOR_Y - 30 },
+        { x: 109 * CELL + 10, y: FLOOR_Y - 30 },
+        { x: FLOOR_SPANS[2].from * CELL + 2 * CELL, y: FLOOR_Y - 30 },
+      ],
+      bodyWidth: 16,
+      fallY: VIEW.h + 120,
+      isFloorAt: (x, y) => this.car.isTerrain(colOf(x), rowOf(y + 34)),
+    });
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
@@ -399,7 +414,8 @@ export class PaintedCountryScene extends Phaser.Scene {
   buildVarnish() {
     this.varnishLayer = this.graphics(DEPTH.VARNISH);
     this.varnishStamps = VARNISH_RECTS.map((rect) => this.add
-      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows / 2) * CELL, 'OFFICIAL RECORD', {
+      // Low in the gloss, clear of the (lowered) orchard plate's title.
+      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows * 0.72) * CELL, 'OFFICIAL RECORD', {
         fontFamily: MONO, fontSize: '16px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 4,
       })
       .setOrigin(0.5)
@@ -1083,18 +1099,20 @@ export class PaintedCountryScene extends Phaser.Scene {
       return;
     }
     body.setVelocityX(move.left && !move.right ? -MOVE_SPEED : move.right && !move.left ? MOVE_SPEED : 0);
-    if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
+    if (move.jump && body.blocked.down) {
+      body.setVelocityY(JUMP_VELOCITY);
+      this.hasJumped = true;
+    }
+  }
 
-    if (body.blocked.down) {
-      const below = this.car.isTerrain(colOf(this.walker.x), rowOf(this.walker.y + 34));
-      if (below) this.lastSafe = { x: this.walker.x, y: this.walker.y };
-    }
-    // Falling through the paper costs nothing that was drawn.
-    if (this.walker.y > VIEW.h + 120) {
-      this.car.fell();
-      this.walker.setPosition(this.lastSafe.x, this.lastSafe.y - 10);
-      body.setVelocity(0, 0);
-    }
+  // Falling through the paper costs nothing that was drawn. Runs every frame,
+  // under cards and the plate viewer too, because the physics does.
+  stepFall(dt) {
+    const body = this.walker.body;
+    const put = this.fallGuard.step({ x: this.walker.x, y: this.walker.y, grounded: body.blocked.down, dt });
+    if (!put) return;
+    if (put.kind === 'respawn') this.car.fell();
+    placeBody(body, put.x, put.y - 10);
   }
 
   // The door opens, and someone is already walking through it: Mara, painted,
@@ -1173,6 +1191,18 @@ export class PaintedCountryScene extends Phaser.Scene {
   // Spatial prompts, not global instructions: the gap, the grey block.
   updateTutorials() {
     const b = this.brush;
+    // The first tag of the chapter: walking and jumping (alpha A3-4: Space
+    // paints here, and testers reached for it to jump).
+    if (!this.tutorialSeen.move) {
+      const walked = this.walker.x >= 280 || (this.hasJumped && Math.abs(this.walker.x - 200) > 60);
+      if (walked) {
+        this.dismissTutorial('move');
+        this.tutorialSeen.move = true;
+      } else {
+        const text = b.device === 'pad' ? 'LEFT STICK · WALK   ·   Y · JUMP' : 'A / D · WALK   ·   W · JUMP';
+        if (this.showTutorial('move', text, this.walker.x, FLOOR_Y - 84)) return true;
+      }
+    }
     if (!this.tutorialSeen.bridge && this.walker.x >= 300 && this.walker.x < 700) {
       if (this.showTutorial('bridge', `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`, 25 * CELL, FLOOR_Y - 96)) return true;
     } else if (this.activeTutorial === 'bridge' && this.walker.x >= 700) {
@@ -1323,6 +1353,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     const dt = Math.min(delta, 50) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
+    this.stepFall(dt);
     if (this.restart.blocking) {
       this.walker.body.setVelocityX(0);
       this.drawFigure();
@@ -1445,6 +1476,7 @@ export class PaintedCountryScene extends Phaser.Scene {
         y: Math.round(this.walker.y),
         onGround: this.walker.body.blocked.down,
       },
+      fall: this.fallGuard.snapshot(),
       pointer: {
         mode: b.mode,
         device: b.device,

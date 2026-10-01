@@ -71,7 +71,10 @@ export const SEALED_RECTS = [{ col: 129, row: 8, cols: 15, rows: 14 }];
 
 // Bay C: the brush is dry. Painting a cell here spends one pigment; washing
 // your own paint here gives it back; stripping a grey cell here recovers one.
-export const PIGMENT_ZONE = Object.freeze({ fromCol: 96, start: 0 });
+// A grey cell washed here gives two pigment (alpha round 1 pacing: the
+// staircase over the hole was a cell-by-cell chore); your own paint washed
+// back still refunds one.
+export const PIGMENT_ZONE = Object.freeze({ fromCol: 96, start: 0, perGrey: 2 });
 
 // ------------------------------------------------------------------- signs
 export const SIGN = Object.freeze({
@@ -136,8 +139,10 @@ export const PAINTINGS = [
     primarySign: SIGN.LANTERN,
     sharedSign: SIGN.HAWTHORN,
     scene: 'orchard',
+    // Alpha round 1 pacing: hung 40 px lower, so a four-cell stair (one
+    // jump from the floor) reaches it instead of a six-cell double stair.
     x: 1320,
-    y: 148,
+    y: 188,
     w: 200,
     h: 112,
     markRect: { c: 5, r: 1, w: 3, h: 5 },
@@ -155,8 +160,9 @@ export const PAINTINGS = [
     primarySign: SIGN.APPLE,
     sharedSign: SIGN.HAWTHORN,
     scene: 'drawing',
+    // 40 px lower: a five-cell tower over the hole instead of seven.
     x: 2240,
-    y: 120,
+    y: 160,
     w: 200,
     h: 112,
     markRect: { c: 1, r: 2, w: 4, h: 5 },

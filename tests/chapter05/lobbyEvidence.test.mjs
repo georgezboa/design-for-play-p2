@@ -24,7 +24,9 @@ test('the axe opens one pane, then leaves Butch\'s hand', () => {
   assert.match(source, /exit\(\) \{[\s\S]*?this\.fireAxeTaken = false;[\s\S]*?this\.putAxeAway\(\);/, 'an unused axe goes back in its cabinet');
   assert.match(source, /blackKnifeLongSideGlass\.visible = false/);
   assert.match(source, /glassShardEvidence\.visible = true/);
-  assert.match(source, /pointerOnly: true/);
+  // Alpha A3-8: the only pickup that wanted CLICK; now E like the rest.
+  assert.doesNotMatch(source, /pointerOnly: true/);
+  assert.match(source, /prompt: 'E · TAKE THE SMALL DARK STONE'/);
 });
 
 test('the central case is the pending exhibit; the lost desk replaces it', () => {

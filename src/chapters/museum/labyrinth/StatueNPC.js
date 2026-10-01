@@ -223,7 +223,8 @@ export class StatueNPC {
 
     this.state = 'hunting';
 
-    this.followPathTo(time, worldToCell(player.x, player.y), TUNING.statueSpeed, { x: dx, y: dy, distance: dist });
+    const speed = TUNING.statueSpeed * (context.speedScale ?? 1);
+    this.followPathTo(time, worldToCell(player.x, player.y), speed, { x: dx, y: dy, distance: dist });
   }
 
   followPathTo(time, goal, speed, fallback = null) {

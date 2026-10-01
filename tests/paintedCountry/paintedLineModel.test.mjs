@@ -150,3 +150,34 @@ test('at the platform each borrowed colour goes back to the resident who lent it
   assert.equal(line.returnColour('green'), false);
   assert.ok(line.drainEvents().some((e) => e.type === 'colours-returned'));
 });
+
+// Alpha round 1 (P2): the chase had no pressure, because the train waits.
+// Standing still for COAT_BELLS bells costs a coat of paint; nothing fails.
+test('a train kept standing loses a coat of paint every few bells, never fails', async () => {
+  const { COAT_BELLS, MAX_COATS_LOST, coatAlpha, createPaintedLine: create, platformLines } = await import('../../src/chapters/paintedCountry/paintedLineModel.js');
+  const line = create();
+  let bells = 0;
+  while (!line.state.waiting && bells < 20) { line.bell(); bells += 1; }
+  assert.ok(line.state.waiting, 'reached a break');
+  line.drainEvents();
+  for (let i = 0; i < COAT_BELLS - 1; i += 1) line.bell();
+  assert.equal(line.state.coatsLost, 0, 'a short wait costs nothing');
+  line.bell();
+  assert.equal(line.state.coatsLost, 1);
+  assert.ok(line.drainEvents().some((e) => e.type === 'coat-lost' && e.coatsLost === 1));
+  for (let i = 0; i < COAT_BELLS * 10; i += 1) line.bell();
+  assert.equal(line.state.coatsLost, MAX_COATS_LOST, 'capped');
+  assert.equal(line.snapshot().failed, false);
+  assert.equal(line.snapshot().coatsLost, MAX_COATS_LOST);
+  assert.ok(coatAlpha(MAX_COATS_LOST) >= 0.35 && coatAlpha(0) === 1);
+  // A train that keeps moving loses nothing.
+  const quick = create();
+  quick.obstaclesAhead().forEach(({ col, reason }) => {
+    if (reason === 'gap') quick.paint(col, 22);
+    else for (let r = 18; r < 22; r += 1) while (quick.isSolid(col, r)) quick.wash(col, r);
+  });
+  while (!quick.state.arrived) quick.bell();
+  assert.equal(quick.state.coatsLost, 0);
+  assert.notEqual(platformLines(0).departure, platformLines(2).departure);
+  assert.equal(platformLines(0).arrival, 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.');
+});

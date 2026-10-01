@@ -104,6 +104,12 @@ export const labyrinthCues = {
     tone({ freq: 220, to: 160, dur: 0.14, type: 'triangle', vol: 0.09 });
     scrape({ freq: 640, dur: 0.12, vol: 0.04, delay: 0.02 });
   },
+  // A hunter closing in unseen (alpha round 1) — a low grind of stone on
+  // stone from somewhere you are not looking.
+  statueNear() {
+    scrape({ freq: 150, q: 0.9, dur: 0.55, vol: 0.075 });
+    tone({ freq: 62, to: 48, dur: 0.5, type: 'sawtooth', vol: 0.045, delay: 0.04 });
+  },
   // A statue lands a hit — stone on stone, low and short.
   statueHit() {
     tone({ freq: 96, to: 52, dur: 0.3, type: 'sawtooth', vol: 0.1 });
