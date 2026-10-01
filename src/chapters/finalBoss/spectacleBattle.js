@@ -7,7 +7,7 @@
 //   II  BORROWED LIGHT · ON THE BELL — Chapter 2's four-second bell and the
 //       one-line rule: bridges, billboards and signal lamps fire on the bell.
 //   III ECHO CITY · TWO TRUE THINGS — the voiced argument about Mara.
-//   IV  THE PAINTED COUNTRY — absorb the colour, return it (8 / 17 / 28).
+//   IV  THE PAINTED COUNTRY — absorb the colour, return it (16 / 34 / 52).
 // Then the night service arrives and Butch boards it: the train keeps
 // running, with Butch still aboard (docs/STORY_BIBLE.md, normal ending).
 //
@@ -42,11 +42,12 @@ import {
 import { DEV_MODE, devParam } from '../../devMode.js';
 import * as bellAudio from '../borrowedLight/audio.js';
 import {
-  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_WINDOW_DAMAGE, ECHO_WINDOW_SECONDS, LANE_X, LENS_RADIUS, PANEL_SEAMS, STRANDED_GRACE_S,
+  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, PANEL_SEAMS, STRANDED_GRACE_S,
   createBellArena, createDeathLedger, createEchoDebate, difficultyPreset, ghostTrainRevealed, laneOf, orbitLens,
-  paintReturnDamage, punchCase, trainHits, underLens,
+  paintReturnDamage, punchCase, spreadWorldTags, trainHits, underLens,
 } from './finaleModel.js';
 import { ECHO_EXCHANGES } from './echoExchanges.js';
+import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference } from './finaleQuality.js';
 import {
   CONDUCTOR_RAIN_SPEC, LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
   paintClaimCase, paintConductorCarBackdrop, paintInkButch, paintInkConductor, paintInkTrain, paintInkTrainFront, paintLampNode,
@@ -91,6 +92,11 @@ const ARENA = { minX: -13.2, maxX: 13.2, minZ: -7.35, maxZ: 8.2 };
 const CONDUCTOR_Z = -15.8;
 const PHASE_START_HP = [400, 300, 200, 100];
 const ECHO_COMBAT_INTERVAL = 10;
+// Movement III: Butch says it to his face from in front of this line.
+const ECHO_FRONT_EDGE_Z = -3.4;
+// How long a deflection's one-line reason stays up before the volley.
+const ECHO_DEFLECT_READ_SECONDS = 2.8;
+const ECHO_DEFLECT_FALLBACK = 'He files that. Try the true thing.';
 const PAINT_HOLD_SECONDS = 0.68;
 const CLAIMS = [
   '1978-0388 · A. KOVAC', '1978-0391 · HAT BOX', '1978-0397 · E. MARSH', '1978-0402 · UMBRELLA',
@@ -175,6 +181,28 @@ function fitModel(root, targetHeight, targetWidth = Infinity) {
   root.position.z -= center.z;
   root.position.y -= fitted.min.y;
   return shadows(root);
+}
+
+// The LOW tier's material: a lit PBR material becomes Lambert with the same
+// colour, maps, transparency and shader hook. One replacement per source
+// material, so meshes that shared a material still share one.
+function cheapMaterial(material, cache) {
+  if (!material?.isMeshStandardMaterial) return material;
+  if (cache.has(material)) return cache.get(material);
+  const cheap = new THREE.MeshLambertMaterial({
+    name: material.name, color: material.color, map: material.map, alphaMap: material.alphaMap, alphaTest: material.alphaTest,
+    emissive: material.emissive, emissiveMap: material.emissiveMap, emissiveIntensity: material.emissiveIntensity,
+    transparent: material.transparent, opacity: material.opacity, side: material.side, depthWrite: material.depthWrite,
+    vertexColors: material.vertexColors, fog: material.fog, toneMapped: material.toneMapped,
+  });
+  if (material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile) cheap.onBeforeCompile = material.onBeforeCompile;
+  if (material.customProgramCacheKey !== THREE.Material.prototype.customProgramCacheKey) {
+    const key = material.customProgramCacheKey.bind(material);
+    cheap.customProgramCacheKey = () => `${key()}-lambert`;
+  }
+  cheap.userData = { ...material.userData, finaleCheap: true };
+  cache.set(material, cheap);
+  return cheap;
 }
 
 function flatBox(w, h, d, material) {
@@ -483,13 +511,18 @@ class SpectacleBattle {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x0b0806);
     this.scene.fog = new THREE.FogExp2(0x0b0806, 0.014);
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.6));
+    // Render quality (finaleQuality.js, alpha R4-1): LOW GRAPHICS starts the
+    // stage without MSAA, shadows or PBR shading at a reduced pixel ratio; a
+    // slow machine drops to the same tier once it has been measured.
+    this.quality = createFinaleQualityMonitor({ preference: finaleQualityPreference(globalThis.NIGHTFALL_SETTINGS ?? readSettings()) });
+    const low = this.quality.tier === 'low';
+    this.renderer = new THREE.WebGLRenderer({ antialias: !low, powerPreference: 'high-performance' });
+    this.renderer.setPixelRatio(finalePixelRatio(this.quality.tier, devicePixelRatio));
     this.renderer.setSize(container.clientWidth, container.clientHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1.3;
-    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.enabled = !low;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     container.appendChild(this.renderer.domElement);
     this.camera = new THREE.PerspectiveCamera(47, container.clientWidth / container.clientHeight, 0.1, 160);
@@ -548,12 +581,43 @@ class SpectacleBattle {
     this.hemi = new THREE.HemisphereLight(0xffe2b8, 0x140c08, 2.2);
     this.key = new THREE.DirectionalLight(0xffe7c0, 3.6);
     this.key.position.set(-7, 16, 10);
-    this.key.castShadow = true;
+    this.key.castShadow = this.quality.tier !== 'low';
     this.key.shadow.mapSize.set(2048, 2048);
     Object.assign(this.key.shadow.camera, { left: -18, right: 18, top: 16, bottom: -16 });
     this.rim = new THREE.PointLight(AMBER, 36, 30, 2);
     this.rim.position.set(0, 6, -7);
     this.scene.add(this.hemi, this.key, this.rim);
+  }
+
+  // LOW tier, applied once (alpha R4-1): the setting, or measured slow frames.
+  applyLowQuality(reason = 'setting') {
+    if (this.quality.force(reason) === null && this.lowApplied) return;
+    this.lowApplied = true;
+    this.renderer.setPixelRatio(finalePixelRatio('low', devicePixelRatio));
+    this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
+    this.renderer.shadowMap.enabled = false;
+    this.key.castShadow = false;
+    this.cheapenScene();
+  }
+
+  cheapenScene() {
+    if (this.quality.tier !== 'low') return;
+    this.cheapMaterials ||= new Map();
+    this.scene.traverse((object) => {
+      if (!object.isMesh) return;
+      object.castShadow = false;
+      object.receiveShadow = false;
+      object.material = Array.isArray(object.material)
+        ? object.material.map((material) => cheapMaterial(material, this.cheapMaterials))
+        : cheapMaterial(object.material, this.cheapMaterials);
+    });
+  }
+
+  // One played frame's wall time for the slow-machine check: only frames of
+  // a movement in play count (not the board, a load or a world change).
+  sampleQuality(frameSeconds) {
+    if (this.quality.decided || this.mode !== 'play' || this.transition || this.dialoguePause || globalThis.NIGHTFALL_PAUSED) return;
+    if (this.quality.sample(frameSeconds) === 'low') this.applyLowQuality('slow-frames');
   }
 
   buildWorlds() {
@@ -1098,6 +1162,13 @@ class SpectacleBattle {
   }
 
   buildHud() {
+    // A new world is held behind black until the GPU has drawn it (alpha
+    // A4-10: on a slow GPU the canvas lagged the DOM, so Movement II opened
+    // as its HUD and tags over the black of the fall).
+    this.veil = document.createElement('div');
+    this.veil.className = 'nf-world-veil';
+    this.veil.setAttribute('aria-hidden', 'true');
+    this.container.appendChild(this.veil);
     this.hud = document.createElement('div');
     this.hud.className = 'battle-hud hidden';
     this.hud.style.cssText = 'position:absolute;inset:0;z-index:8;pointer-events:none;';
@@ -1212,6 +1283,59 @@ class SpectacleBattle {
     this.lastToast = text;
   }
 
+  // Hold the veil over the stage from now until a frame of the new world
+  // has finished on the GPU. `cameraUp`: wait for the falling camera to be
+  // back above the new floor first.
+  holdWorldVeil({ cameraUp = false } = {}) {
+    this.dropWorldFence();
+    this.veilState = { cameraUp, frames: 0, fence: null, since: performance.now() };
+    this.veil.classList.remove('is-lifting');
+    this.veil.classList.add('is-held');
+  }
+
+  dropWorldFence() {
+    const fence = this.veilState?.fence;
+    if (!fence) return;
+    try { this.renderer.getContext().deleteSync(fence); } catch {}
+  }
+
+  // After each render: has the GPU drawn the new world yet?
+  checkWorldVeil() {
+    const state = this.veilState;
+    if (!state) return;
+    if (this.transition?.kind === 'world-fall' && !this.transition.switched) return;
+    if (this.transition?.kind === 'verified') return;
+    if (state.cameraUp && this.camera.position.y < 1.5) return;
+    state.frames += 1;
+    const gl = this.renderer.getContext();
+    let drawn = state.frames >= 3;
+    if (typeof gl.fenceSync === 'function') {
+      if (!state.fence) {
+        state.fence = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
+        gl.flush();
+        return;
+      }
+      drawn = gl.getSyncParameter(state.fence, gl.SYNC_STATUS) === gl.SIGNALED && state.frames >= 2;
+    }
+    // Never hold longer than a few seconds, whatever the GPU reports.
+    if (!drawn && performance.now() - state.since < 6000) return;
+    this.liftWorldVeil();
+  }
+
+  liftWorldVeil() {
+    this.dropWorldFence();
+    this.veilState = null;
+    this.veil.classList.remove('is-held');
+    this.veil.classList.add('is-lifting');
+    clearTimeout(this.veilTimer);
+    this.veilTimer = setTimeout(() => this.veil.classList.remove('is-lifting'), 600);
+    const pending = this.pendingTitleCard;
+    this.pendingTitleCard = null;
+    pending?.();
+  }
+
+  get worldVeiled() { return Boolean(this.veilState); }
+
   hint(text) {
     if (!text) { this.hintEl.classList.remove('show'); this.hintText = ''; this.hud.classList.remove('has-hint'); return; }
     if (this.hintText === text && this.hintEl.classList.contains('show')) return;
@@ -1230,6 +1354,12 @@ class SpectacleBattle {
   }
 
   playVoice(cue, onEnded = null) {
+    // A cue made of two recordings (echoExchanges.js) plays them in order.
+    if (Array.isArray(cue?.parts) && cue.parts.length) {
+      const parts = cue.parts;
+      const playFrom = (index) => this.playVoice(parts[index], index + 1 < parts.length ? () => playFrom(index + 1) : onEnded);
+      return playFrom(0);
+    }
     if (!cue?.url || !this.voiceAudio || !soundEnabled) { setTimeout(() => onEnded?.(), Math.min(4200, 900 + (cue?.text?.length ?? 0) * 45)); return false; }
     this.voiceAudio.pause();
     this.voiceAudio.src = cue.url;
@@ -1296,6 +1426,7 @@ class SpectacleBattle {
     await runSliced((function* upload(renderer) {
       for (const texture of uploads) { renderer.initTexture(texture); yield; }
     }(this.renderer)), { budgetMs: 8 });
+    this.cheapenScene();
   }
 
   // Movement III draws the two Chapter 3 rigs, their animation library and
@@ -1326,7 +1457,18 @@ class SpectacleBattle {
 
   cloneAsset(id, height, width = Infinity) {
     const source = this.assets.get(id);
-    return source ? fitModel(source.root.clone(true), height, width) : null;
+    if (!source) return null;
+    const root = fitModel(source.root.clone(true), height, width);
+    if (this.quality.tier === 'low') {
+      this.cheapMaterials ||= new Map();
+      root.traverse((child) => {
+        if (!child.isMesh) return;
+        child.castShadow = false;
+        child.receiveShadow = false;
+        child.material = Array.isArray(child.material) ? child.material.map((m) => cheapMaterial(m, this.cheapMaterials)) : cheapMaterial(child.material, this.cheapMaterials);
+      });
+    }
+    return root;
   }
 
   installConductor() {
@@ -1426,6 +1568,12 @@ class SpectacleBattle {
     this.playerRoot.position.set(0, 0, 6.1);
     this.conductorRoot.position.set(0, -2.8, CONDUCTOR_Z);
     this.conductorRoot.visible = true;
+    this.holdWorldVeil();
+    // Open on the fight's own framing (behind the veil), not the board's.
+    const pose = this.gameplayCameraPose();
+    this.camera.position.copy(pose.position);
+    this.cameraTarget.copy(pose.target);
+    this.camera.lookAt(this.cameraTarget);
     this.setWorld(startMovement);
     // Face the camera at once: on a slow machine the half-turn in could
     // leave both figures edge-on for seconds (A4-10).
@@ -1442,7 +1590,10 @@ class SpectacleBattle {
     const phase = PHASES[index];
     const card = () => showTitleCard({ kicker: `MOVEMENT ${phase.number}`, main: phase.world, sub: phase.rule, keys: MOVEMENT_KEYS[index], duration: index === 3 ? 5200 : 4400, parent: this.hud });
     clearTimeout(this.titleTimer);
-    if (first) this.titleTimer = setTimeout(card, 1250); else card();
+    this.pendingTitleCard = null;
+    // The card waits for the world it names to be on screen.
+    const show = () => { if (this.worldVeiled) this.pendingTitleCard = card; else card(); };
+    if (first) this.titleTimer = setTimeout(show, 1250); else show();
     if (index === 0) this.startLostProperty();
     if (index === 1) this.startBellArena();
     if (index === 2) this.startEchoCity();
@@ -1459,6 +1610,7 @@ class SpectacleBattle {
     this.holeVisuals?.forEach((hole) => { hole.visible = false; });
     this.closeCaption();
     this.dialoguePause = false;
+    this.showFrontEdge(false);
     this.activeHoles = [];
     this.playerRoot.visible = true;
     this.departureTrain.visible = false;
@@ -1980,7 +2132,8 @@ class SpectacleBattle {
   // ======================================================== Movement III
 
   startEchoCity() {
-    this.echo = { clock: 6, window: 0, windowSpent: false, stage: 'combat', lastOutcome: null };
+    this.echo = { clock: 6, window: 0, windowSpent: false, stage: 'combat', lastOutcome: null, deflectClock: 0 };
+    this.showFrontEdge(false);
     this.boss.attackClock = 1.4;
   }
 
@@ -2010,32 +2163,72 @@ class SpectacleBattle {
       if (outcome.result === 'window') {
         this.closeCaption();
         this.dialoguePause = false;
-        this.echo.stage = 'window';
-        this.echo.window = ECHO_WINDOW_SECONDS * D().bossWindow;
-        this.echo.windowSpent = false;
-        this.boss.exposed = this.echo.window;
-        this.boss.reaction = reply.reaction ?? 'shame';
-        this.boss.gestureTime = 1.4;
-        this.playConductorAction('Fixing_Kneeling', true);
-        this.toast('HE HAS NO ANSWER · GO TO THE FRONT EDGE', 2.6);
+        this.openEchoWindow(reply);
         return;
       }
       this.showCaption(reply.rebut);
       this.playVoice(reply.rebut, () => {
-        this.closeCaption();
+        // Why it was deflected, in one line, before the square answers
+        // with a volley (alpha R4-4). The player can move while reading;
+        // nothing is thrown until it closes.
         this.dialoguePause = false;
-        this.echo.stage = 'combat';
-        this.echo.clock = ECHO_COMBAT_INTERVAL;
-        this.toast('DEFLECTED · HE WILL COME BACK TO IT');
-        // The deflection costs something: the square answers with a volley.
-        this.boss.attackClock = 0.1;
+        this.echo.stage = 'deflected';
+        this.echo.deflectClock = ECHO_DEFLECT_READ_SECONDS;
+        this.showCaption({ speaker: 'DEFLECTED', text: reply.deflect ?? ECHO_DEFLECT_FALLBACK }, { meta: 'HE WILL COME BACK TO IT' });
+        this.voiceState = { playing: false, speaker: 'DEFLECTED', tone: null, text: reply.deflect ?? ECHO_DEFLECT_FALLBACK };
       });
     });
   }
 
+  // The true answer landed: he has no answer until Butch says it to his
+  // face. The window stays open, with a lit front edge, a tag on it and a
+  // HUD line, until the hit is delivered (alpha R4-3: a 2.6 s toast during
+  // the volley was missed).
+  openEchoWindow(reply = null) {
+    this.echo.stage = 'window';
+    this.echo.window = 0;
+    this.echo.windowSpent = false;
+    this.boss.exposed = 1;
+    this.boss.reaction = reply?.reaction ?? 'shame';
+    this.boss.gestureTime = 1.4;
+    this.playConductorAction('Fixing_Kneeling', true);
+    this.showFrontEdge(true);
+    this.updateEchoWindowCue();
+  }
+
+  inEchoStrikeZone() {
+    return this.player.z <= ECHO_FRONT_EDGE_Z;
+  }
+
+  updateEchoWindowCue() {
+    if (this.echo.stage !== 'window') return;
+    this.hint(this.inEchoStrikeZone()
+      ? 'HE HAS NO ANSWER · <kbd>SPACE</kbd> · SAY IT TO HIS FACE'
+      : 'HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>SPACE</kbd>');
+  }
+
+  showFrontEdge(visible) {
+    if (visible && !this.frontEdge) {
+      const depth = ECHO_FRONT_EDGE_Z - ARENA.minZ;
+      const width = ARENA.maxX - ARENA.minX;
+      const group = new THREE.Group();
+      const zone = new THREE.Mesh(new THREE.PlaneGeometry(width, depth), new THREE.MeshBasicMaterial({ color: AMBER, transparent: true, opacity: 0.16, depthWrite: false, toneMapped: false }));
+      zone.rotation.x = -Math.PI / 2;
+      zone.position.set(0, 0.05, ARENA.minZ + depth / 2);
+      const line = new THREE.Mesh(new THREE.PlaneGeometry(width, 0.16), new THREE.MeshBasicMaterial({ color: 0xffd08a, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false }));
+      line.rotation.x = -Math.PI / 2;
+      line.position.set(0, 0.06, ECHO_FRONT_EDGE_Z);
+      group.add(zone, line);
+      group.renderOrder = 3;
+      this.frontEdge = group;
+      this.scene.add(group);
+    }
+    if (this.frontEdge) this.frontEdge.visible = visible;
+  }
+
   punchEchoWindow() {
     if (this.echo.stage !== 'window' || this.echo.windowSpent) return false;
-    if (this.player.z > -3.4) { this.toast('CLOSER · THE FRONT EDGE'); return true; }
+    if (!this.inEchoStrikeZone()) { this.toast('CLOSER · THE LIT FRONT EDGE'); return true; }
     this.echo.windowSpent = true;
     this.hitBoss(ECHO_WINDOW_DAMAGE, 'shame');
     this.toast('SAID TO HIS FACE');
@@ -2049,6 +2242,16 @@ class SpectacleBattle {
     this.echo.clock = ECHO_COMBAT_INTERVAL;
     this.boss.exposed = 0;
     this.boss.attackClock = 0.8;
+    this.showFrontEdge(false);
+    if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint('');
+  }
+
+  endEchoDeflection() {
+    this.closeCaption();
+    this.echo.stage = 'combat';
+    this.echo.clock = ECHO_COMBAT_INTERVAL;
+    // The deflection costs something: the square answers with a volley.
+    this.boss.attackClock = 0.1;
   }
 
   showCaption(cue, { choices = null, meta = '' } = {}) {
@@ -2077,8 +2280,14 @@ class SpectacleBattle {
       this.echo.clock = Math.max(0, this.echo.clock - dt);
       if (this.echo.clock <= 0 && !this.transition) this.openExchange();
     } else if (this.echo.stage === 'window') {
-      this.echo.window = Math.max(0, this.echo.window - dt);
-      if (this.echo.window <= 0) { this.toast('THE MOMENT PASSED'); this.endEchoWindow(); }
+      this.echo.window += dt;
+      this.boss.exposed = 1;
+      this.updateEchoWindowCue();
+      const pulse = 0.5 + 0.5 * Math.sin(this.elapsed * 5.2);
+      if (this.frontEdge) this.frontEdge.children[0].material.opacity = (this.inEchoStrikeZone() ? 0.26 : 0.16) + pulse * 0.12;
+    } else if (this.echo.stage === 'deflected') {
+      this.echo.deflectClock -= dt;
+      if (this.echo.deflectClock <= 0) this.endEchoDeflection();
     }
   }
 
@@ -2424,6 +2633,7 @@ class SpectacleBattle {
 
   finishVerifiedTransition() {
     const tr = this.transition;
+    this.holdWorldVeil();
     window.removeEventListener('keydown', this.stampKey);
     this.stampScene?.remove();
     this.stampScene = null;
@@ -2440,6 +2650,11 @@ class SpectacleBattle {
     this.transition = null;
     this.trauma = 0.42;
     this.enterMovement(this.phase);
+  }
+
+  // The pose for Butch at the spawn point the fall lands him on.
+  landingCameraPose() {
+    return this.gameplayCameraPose({ x: 0, y: 0, z: 6.2 }, 0);
   }
 
   updateTransition(dt) {
@@ -2477,6 +2692,7 @@ class SpectacleBattle {
       this.cameraTarget.y = -8 * fall;
       if (!tr.switched && t > 0.54) {
         tr.switched = true;
+        this.holdWorldVeil({ cameraUp: true });
         this.phase = tr.nextPhase;
         this.boss.phaseRound = 0;
         this.setWorld(this.phase);
@@ -2488,8 +2704,9 @@ class SpectacleBattle {
     } else {
       const land = THREE.MathUtils.smootherstep(t, 0.64, 1);
       this.playerRoot.position.y = THREE.MathUtils.lerp(5, 0, land);
-      this.camera.position.lerp(new THREE.Vector3(0, 10.8, 17.8), 1 - Math.exp(-dt * 5));
-      this.cameraTarget.lerp(new THREE.Vector3(0, 1.1, -1.5), 1 - Math.exp(-dt * 5));
+      const pose = this.landingCameraPose();
+      this.camera.position.lerp(pose.position, 1 - Math.exp(-dt * 5));
+      this.cameraTarget.lerp(pose.target, 1 - Math.exp(-dt * 5));
     }
     if (t >= 1) {
       this.player.x = 0; this.player.y = 0; this.player.z = 6.2; this.player.vy = 0; this.player.grounded = true;
@@ -2582,7 +2799,8 @@ class SpectacleBattle {
     tile.rotation.y = yaw;
     tile.rotation.z = index % 2 === 0 ? -0.12 : 0.12;
     root.add(tile);
-    const edge = flatBox(2.08, 2.08, 0.1, new THREE.MeshStandardMaterial({ color: 0x46618c, emissive: 0x1b315c, emissiveIntensity: 0.35, roughness: 0.92 }));
+    const edgeParams = { color: 0x46618c, emissive: 0x1b315c, emissiveIntensity: 0.35 };
+    const edge = flatBox(2.08, 2.08, 0.1, this.quality.tier === 'low' ? new THREE.MeshLambertMaterial(edgeParams) : new THREE.MeshStandardMaterial({ ...edgeParams, roughness: 0.92 }));
     edge.position.y = 9;
     edge.rotation.y = yaw;
     root.add(edge);
@@ -2798,7 +3016,7 @@ class SpectacleBattle {
       this.bell.tutorial = tutorial === 'done' ? 'done' : ['combo', 'punch'].includes(tutorial) ? 'combo' : tutorial.startsWith('lamp') ? 'lamp' : 'bridge';
       if (tutorial === 'done') this.bell.arena.setBeams(true);
     }
-    if (this.phase === 2) { this.echo.stage = 'combat'; this.echo.clock = 5; }
+    if (this.phase === 2) { this.echo.stage = 'combat'; this.echo.clock = 5; this.showFrontEdge(false); if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint(''); }
     this.hitStop = 0.1;
     this.trauma = 0.25;
     this.spawnImpact(x, 1.1, z, AMBER);
@@ -2810,13 +3028,18 @@ class SpectacleBattle {
   }
 
   // After three deaths in one movement the line offers to go gentler.
+  // The offer replaces the death card rather than landing on top of it, and
+  // carries what tore the layer (alpha round 2: the card covered it).
   offerStory() {
     this.dialoguePause = true;
     this.storyOffer = true;
+    clearTimeout(this.deathCardTimer);
+    this.deathCardEl.classList.remove('show');
+    const what = escapeHtml(this.lastHit?.label ?? HIT_SOURCES.hit);
     const backdrop = document.createElement('div');
-    backdrop.className = 'nf-card-backdrop';
+    backdrop.className = 'nf-card-backdrop nf-story-offer';
     backdrop.setAttribute('role', 'dialog');
-    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">A NOTE FROM THE ARCHIVE</p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: more paper layers, slower trains, longer windows.</p><p>Nothing is lost. The movement starts again either way.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
+    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">A LAYER TORN · MOVEMENT ${PHASES[this.phase].number} STARTS AGAIN</p><p class="nf-story-offer__what">What tore it: <b>${what}</b></p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: more paper layers, slower trains, longer windows.</p><p>Nothing is lost. The movement starts again either way.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
     this.hud.append(backdrop);
     backdrop.style.pointerEvents = 'auto';
     const close = (toStory) => {
@@ -3048,13 +3271,23 @@ class SpectacleBattle {
     this.updateEffects(dt);
   }
 
+  // Where the fight camera sits for the current player and Conductor. A
+  // world fall lands on this pose, so a movement opens framed as it plays
+  // (alpha A4-3: landing on a higher framing put the Conductor's head
+  // under the hint at the start of Movement II).
+  gameplayCameraPose(player = this.player, bossX = this.boss.x) {
+    return {
+      position: new THREE.Vector3(player.x * 0.12, 11.8 + player.y * 0.15, 19.8 + player.z * 0.06),
+      target: new THREE.Vector3((player.x + bossX) * 0.12, 3.4, -5.2),
+    };
+  }
+
   updateCamera(dt) {
     if (this.mode === 'cinematic') {
       const trainView = this.departureTrain.position.clone().add(new THREE.Vector3(-9, 6.5, 13));
       this.camera.position.lerp(trainView, 1 - Math.exp(-dt * 3));
     } else if (!this.transition || this.transition.kind === 'verified') {
-      const ideal = new THREE.Vector3(this.player.x * 0.12, 11.8 + this.player.y * 0.15, 19.8 + this.player.z * 0.06);
-      const target = new THREE.Vector3((this.player.x + this.boss.x) * 0.12, 3.4, -5.2);
+      const { position: ideal, target } = this.gameplayCameraPose();
       this.camera.position.lerp(ideal, 1 - Math.exp(-dt * 3.5));
       this.cameraTarget.lerp(target, 1 - Math.exp(-dt * 4));
     }
@@ -3121,20 +3354,23 @@ class SpectacleBattle {
   updateWorldTags() {
     this.tags.begin();
     const p = this.player;
-    if (this.mode === 'play' && !this.transition && !this.dialoguePause) {
+    if (this.mode === 'play' && !this.transition && !this.dialoguePause && !this.worldVeiled) {
       if (this.phase === 0) {
         const closest = this.lost.cases.filter((item) => item.landed && !item.returned)
           .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+        const caseTags = [];
         this.lost.cases.forEach((item) => {
           if (!item.landed || item.returned) return;
           const near = item === closest && Math.hypot(item.x - p.x, item.z - p.z) <= CASE_REACH;
           if (!near && !item.revealed) return;
           const pt = this.screenPoint(item.x, 2.2, item.z);
           if (!pt) return;
-          if (item.revealed && near) this.tags.tag('<kbd>SPACE</kbd> · RETURN', pt.x, pt.y);
-          else if (item.revealed) this.tags.tag(escapeHtml(item.claim), pt.x, pt.y, { dim: true });
-          else this.tags.tag('LENS · READ THE TAG', pt.x, pt.y, { dim: true });
+          if (item.revealed && near) caseTags.push({ text: '<kbd>SPACE</kbd> · RETURN', x: pt.x, y: pt.y, priority: 2 });
+          else if (item.revealed) caseTags.push({ text: escapeHtml(item.claim), x: pt.x, y: pt.y, dim: true });
+          else caseTags.push({ text: 'LENS · READ THE TAG', x: pt.x, y: pt.y, dim: true, priority: near ? 1 : 0 });
         });
+        // Never one tag over another (the prompt keeps its place).
+        spreadWorldTags(caseTags).forEach((tag) => this.tags.tag(tag.text, tag.x, tag.y, { dim: Boolean(tag.dim) }));
       } else if (this.phase === 1 && this.bell.arena) {
         const arena = this.bell.arena;
         const nearest = arena.nearestNode(p.x, p.z);
@@ -3161,7 +3397,7 @@ class SpectacleBattle {
         }
       } else if (this.phase === 2 && this.echo.stage === 'window') {
         const pt = this.screenPoint(this.boss.x * 0.5, 1.8, ARENA.minZ + 1.2);
-        if (pt) this.tags.tag(p.z < -3.4 ? '<kbd>SPACE</kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE', pt.x, pt.y);
+        if (pt) this.tags.tag(this.inEchoStrikeZone() ? '<kbd>SPACE</kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · COME HERE', pt.x, pt.y);
       }
     }
     this.tags.end();
@@ -3171,12 +3407,15 @@ class SpectacleBattle {
     this.updateCamera(dt);
     this.updateHud(dt);
     this.renderer.render(this.scene, this.camera);
+    this.checkWorldVeil();
   }
 
   animate(now) {
     requestAnimationFrame(this.animate);
-    const dt = Math.min(0.033, Math.max(0, (now - this.lastFrame) / 1000));
+    const wall = Math.max(0, (now - this.lastFrame) / 1000);
+    const dt = Math.min(0.033, wall);
     this.lastFrame = now;
+    this.sampleQuality(wall);
     if (globalThis.NIGHTFALL_PAUSED) { this.render(0); return; }
     this.update(dt);
     // Behind the departure board the stage is dimmed and still: redraw it
@@ -3346,10 +3585,15 @@ const syncMotionToggles = () => {
   });
 };
 syncMotionToggles();
-window.addEventListener('nightfall:settings', () => {
+window.addEventListener('nightfall:settings', (event) => {
   syncMotionToggles();
   if (game.voiceAudio) game.voiceAudio.volume = 0.9 * globalBus('master');
+  // LOW GRAPHICS ticked in the pause menu takes effect at once (MSAA, fixed
+  // with the context, stays as the page was loaded).
+  if ((event.detail ?? globalThis.NIGHTFALL_SETTINGS)?.lowGraphics === true) game.applyLowQuality('setting');
 });
+// The settings may already ask for LOW before the shared menu applied them.
+if (game.quality.tier === 'low') game.applyLowQuality('setting');
 
 // QA/automation surface only: none of these globals exist in a production build.
 if (DEV_MODE) {
@@ -3357,7 +3601,7 @@ if (DEV_MODE) {
   window.render_game_to_text = () => {
     const arena = game.bell.arena;
     return JSON.stringify({
-      chapter: 'chapter06-final-boss', mode: game.mode, difficulty, phase: game.phase, phaseTitle: PHASES[game.phase].title, world: PHASES[game.phase].world,
+      chapter: 'chapter06-final-boss', mode: game.mode, difficulty, quality: { ...game.quality.snapshot(), pixelRatio: game.renderer.getPixelRatio(), shadows: game.renderer.shadowMap.enabled, antialias: Boolean(game.renderer.getContextAttributes()?.antialias) }, phase: game.phase, phaseTitle: PHASES[game.phase].title, world: PHASES[game.phase].world,
       music: music.qa(), assetsReady: game.assetsReady, assetErrors: game.assetErrors,
       player: { x: +game.player.x.toFixed(2), y: +game.player.y.toFixed(2), z: +game.player.z.toFixed(2), hp: game.player.hp, maxHp: game.player.maxHp, grounded: game.player.grounded, color: game.player.color, respawns: game.player.respawns, inv: +game.player.inv.toFixed(2), action: game.phase === 2 ? game.butchActionState : game.puppet?.action },
       boss: { hp: game.boss.hp, maxHp: game.boss.maxHp, phaseStartHp: game.boss.phaseStartHp, x: +game.boss.x.toFixed(2), exposed: game.boss.exposed > 0, lastDamageCause: game.boss.lastDamageCause ?? null, lastDamage: game.boss.lastDamage ?? null, form: game.conductorRoot.userData.form, phaseRound: game.boss.phaseRound },
@@ -3367,7 +3611,7 @@ if (DEV_MODE) {
       echo: { stage: game.echo.stage, clock: +game.echo.clock.toFixed(2), window: +game.echo.window.toFixed(2), open: game.debate.isOpen, exchange: game.debate.current?.id ?? null, opened: game.debate.opened, history: game.debate.history(), lastOutcome: game.echo.lastOutcome },
       paint: { tutorial: game.paintTutorial?.stage, lastReturn: game.lastPaintReturn ?? null, hold: { active: game.paintHold.active, button: game.paintHold.button, completed: game.paintHold.completed } },
       transition: game.transition ? { kind: game.transition.kind, next: PHASES[game.transition.nextPhase].world, progress: +(game.transition.time / game.transition.duration).toFixed(2) } : null,
-      ui: { toast: game.lastToast ?? null, hint: game.hintText ?? '', tags: game.tags.texts(), caption: game.caption.hidden ? null : game.caption.textContent.trim().slice(0, 200), voice: game.voiceState, lastHit: game.lastHit ?? null, lastDeath: game.lastDeath ?? null, deathCard: game.deathCardEl.classList.contains('show') ? game.deathCardEl.textContent : null },
+      ui: { veiled: game.worldVeiled, titleCard: Boolean(game.hud.querySelector('.nf-title-card')), storyOfferWhat: game.hud.querySelector('.nf-story-offer__what')?.textContent ?? null, toast: game.lastToast ?? null, hint: game.hintText ?? '', tags: game.tags.texts(), caption: game.caption.hidden ? null : game.caption.textContent.trim().slice(0, 200), voice: game.voiceState, lastHit: game.lastHit ?? null, lastDeath: game.lastDeath ?? null, deathCard: game.deathCardEl.classList.contains('show') ? game.deathCardEl.textContent : null },
       hazards: game.hazards.map((h) => ({ type: h.type, x: +(h.x ?? 0).toFixed(2), z: +(h.z ?? 0).toFixed(2), landed: Boolean(h.landed) })),
       rescue: { stage: game.mode === 'departure' ? 'night-service-arrival' : game.mode === 'cinematic' ? 'train-departure' : null, boardable: Boolean(game.departureBoardable) },
     });
