@@ -975,10 +975,11 @@ export class LabyrinthScene extends Phaser.Scene {
     this.player.lives -= 1;
     this.player.invulnUntil = this.time.now + TUNING.invulnMs;
     this.primaryHunterId = null;
-    this.hunterReliefUntil = this.time.now + TUNING.hunterReliefAfterHitMs;
+    this.hunterReliefUntil = this.time.now + TUNING.hunterReliefAfterHitMs * wingThreatTuning(this.currentWingId).reliefScale;
     for (const statue of this.statues) {
       if (statue.wing !== this.currentWingId) continue;
       statue.canDamage = false;
+      statue.telegraph = null;
       statue.justHit = false;
       if (['hunting', 'frozen'].includes(statue.state)) {
         statue.state = 'patrolling';
@@ -1435,7 +1436,10 @@ export class LabyrinthScene extends Phaser.Scene {
       });
       if (statue.telegraph.warning) {
         warnings.push(statue);
-        if (statue.telegraph.started || time - (statue.lastGrindAt ?? -Infinity) > 1600) {
+        // The warning restarts each time the player looks away, so keep the
+        // grind from stuttering when the gaze flickers at the cone's edge.
+        const sinceGrind = time - (statue.lastGrindAt ?? -Infinity);
+        if ((statue.telegraph.started && sinceGrind > 600) || sinceGrind > 1600) {
           statue.lastGrindAt = time;
           labyrinthCues.statueNear();
         }
