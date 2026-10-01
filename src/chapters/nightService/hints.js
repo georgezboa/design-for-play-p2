@@ -176,6 +176,47 @@ export function stepVerb(model, step = model.currentStep()) {
 }
 
 // ---------------------------------------------------------------------------
+// standing cues (always on, not idle tiers)
+
+/** Key in the shared `seen` set once a frame has been lifted (its tag retires). */
+export const FRAME_TAG_SEEN = 'tag:frame';
+/** Where the frame tag's eyelet sits when a frame names no `tag` (tile-local). */
+const FRAME_TAG_DEFAULT = Object.freeze({ u: 0.1, v: 0.075 });
+
+/**
+ * The first liftable frame wears a paper tag, HOLD · LIFT THE FRAME, while
+ * lifting it is the current step's move and until a frame has been lifted
+ * once in the chapter (alpha R3 · R1). Returns where to hang it, or null.
+ * @returns {null | { tile:string, frame:string, u:number, v:number }}
+ */
+export function frameTagFor(model, seen = new Set(), step = model.currentStep()) {
+  const hint = step?.hint;
+  if (seen.has(FRAME_TAG_SEEN) || !hint?.frame || !hint.tile) return null;
+  const frame = model.frameOn(hint.tile);
+  if (!frame || !model.canLiftFrame(frame)) return null;
+  const at = model.frameDef(frame)?.tag ?? FRAME_TAG_DEFAULT;
+  return { tile: hint.tile, frame, u: at.u, v: at.v };
+}
+
+/** A walker that has stood this long gets a cue (a short pause at a joint is not "stuck"). */
+export const WAIT_CUE_MS = 900;
+
+/**
+ * Walkers standing at a gap the player has to close (alpha R3 · R2), so the
+ * scene can ring them and turn them to look back. Trains are left out (the
+ * lens and the seams cue them); `zoomOut` names a window whose ⤢ glyph is the
+ * way on (it only has the missing edge one step further out).
+ * @returns {Array<{ actor:string, tile:string, x:number, y:number, to:string|null, reason:string, zoomOut:string|null }>}
+ */
+export function waitingWalkers(model, { skip = ['train', 'farTrain'] } = {}) {
+  return Object.keys(model.state.actors)
+    .filter((id) => !skip.includes(id) && model.state.actors[id].visible)
+    .map((id) => model.waitingFor(id))
+    .filter(Boolean)
+    .map((wait) => ({ ...wait, zoomOut: wait.zoomOut && model.canZoomOut(wait.zoomOut) ? wait.zoomOut : null }));
+}
+
+// ---------------------------------------------------------------------------
 // timing
 
 /**

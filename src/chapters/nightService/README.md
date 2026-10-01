@@ -62,7 +62,14 @@ rack: {
     id: 'windowFrame', draw(ctx) {}, edges: {…}, accepts: ['orchard'], requires: cond,
     grip: { rect: [x, y, w, h], hole: [x, y, w, h] }, // where press-and-hold lifts it
                                     // (default: a wide band all round the window; a solid
-                                    // `rect` for a window drawn inside the room, Act 3)
+                                    // `rect` for a window drawn inside the room, Act 3).
+                                    // A still hold of 120 ms lifts it, and so does a drag
+                                    // that starts on the grip; a drag from the `hole` (the
+                                    // picture) still moves the window. Gate `requires` off
+                                    // once the frame's job is done so the window drags again.
+    tag: { u, v },                  // where HOLD · LIFT THE FRAME hangs (tile-local eyelet):
+                                    // shown while lifting is the step's move, until any frame
+                                    // has been lifted once in the chapter (hints.js frameTagFor)
   },
   states: {
     default: {                      // a SceneDef
@@ -98,8 +105,10 @@ rack: {
 **The lens and clicks.** A still click inside the lens acts on the 1978 layer
 first (`era: 'past'` / `'both'`); when no 1978 hotspot is under it, the click
 falls through to the present hotspot or ⤢ glyph underneath, so the lens never
-swallows a click. Moving from a press on the lens drags it; a still hold on
-a frame's grip, inside the lens glass, still lifts the frame.
+swallows a click. Moving from a press on the lens drags it; a still hold (250 ms) on
+a frame's grip, inside the lens glass, still lifts the frame. The lens centre
+is clamped to the board of windows (`model.lensBounds()`), and its rim fades
+while a spoken line's caption bar sits under it.
 
 **Links.** Adjacent slots link when facing edges share `type` and their `at`
 values differ by ≤ 0.03. Edges come from the tile's *current* state (so zoom
@@ -150,6 +159,10 @@ Moving to a waypoint on another tile needs an active link between the two tiles
 `lensOver` for Act 3's viaduct); `retreat: {x, y}` backs it off to a safe spot
 while the condition fails. A broken link stops the actor at the edge, and
 mid-gutter it steps back; it resumes by itself when the link returns.
+`model.waitingFor(actor)` says why a walker stands still; after ~0.9 s the
+scene rings her in amber, she glances back now and then, and when the way on
+is one step back out of the next window its ⤢ glyph breathes (hints.js
+`waitingWalkers`; trains are cued by the lens and the seams instead).
 
 An open archive card pauses the script (reading is never rushed). `lockInput`
 also drops whatever the player is holding.

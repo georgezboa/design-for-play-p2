@@ -695,6 +695,29 @@ export function createPanelModel(act, options = {}) {
     });
   }
 
+  /**
+   * Why a walker is standing still (alpha R3 · R2), or null while it walks
+   * (or has nowhere to go). `to` is the tile it wants to cross into (null for
+   * a wait inside its own tile), `reason` is 'link' (the facing edge is not
+   * joined) or 'requires' (a condition, e.g. the lens over the hedge), and
+   * `zoomOut` names the neighbour whose wider view has the missing edge: one
+   * step back out of it (its ⤢ glyph) is the way on.
+   * @returns {null | {actor:string, tile:string, x:number, y:number, to:string|null, reason:'link'|'requires', zoomOut:string|null}}
+   */
+  function waitingFor(actorId) {
+    const actor = s.actors[actorId];
+    if (!actor?.walk || !actor.blocked) return null;
+    const target = actor.walk.path[actor.walk.index];
+    if (!target) return null;
+    const to = target.tile !== actor.tile ? target.tile : null;
+    const linked = !to || crossingAllowed(actor, target);
+    const reason = linked ? 'requires' : 'link';
+    let zoomOut = null;
+    const other = to ? s.tiles[to] : null;
+    if (!linked && other && target.state && other.state !== target.state && other.zoomStack.some((entry) => entry.state === target.state)) zoomOut = to;
+    return { actor: actorId, tile: actor.tile, x: actor.x, y: actor.y, to, reason, zoomOut };
+  }
+
   function setBlocked(actor, blocked) {
     if (actor.blocked === blocked) return;
     actor.blocked = blocked;
@@ -930,11 +953,19 @@ export function createPanelModel(act, options = {}) {
     return accepted;
   }
 
+  /** Where the lens centre may go: the board of windows (screen px). */
+  function lensBounds() {
+    return { x0: layout.x, y0: layout.y, x1: layout.x + layout.w, y1: layout.y + layout.h };
+  }
+
   function moveLens(x, y) {
     if (!s.lens.enabled || lockedOut()) return false;
     touch();
-    s.lens.x = Math.max(0, Math.min(layout.view.w, x));
-    s.lens.y = Math.max(0, Math.min(layout.view.h, y));
+    // its centre stays on the board (the windows), never out on the bezel
+    // or under the caption bar (alpha R3 · R4)
+    const b = lensBounds();
+    s.lens.x = Math.max(b.x0, Math.min(b.x1, x));
+    s.lens.y = Math.max(b.y0, Math.min(b.y1, y));
     events.emit('lens', { ...s.lens });
     pump();
     return true;
@@ -1111,6 +1142,7 @@ export function createPanelModel(act, options = {}) {
     canDrag,
     canZoomOut,
     canLiftFrame,
+    waitingFor,
     isLocked: lockedOut,
     currentStep,
     timeOfDay,
@@ -1133,6 +1165,7 @@ export function createPanelModel(act, options = {}) {
     liftFrame,
     dropFrame,
     moveLens,
+    lensBounds,
     advanceDialogue,
     closeCard,
     update,

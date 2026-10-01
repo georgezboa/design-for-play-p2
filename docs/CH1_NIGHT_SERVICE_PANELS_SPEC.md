@@ -22,7 +22,7 @@ You are a night-train lost-property clerk. The carriage windows are paintings yo
 | Drag a panel to another slot (swap) | press on panel body + drag, release on target slot | arrows select a panel, Space picks it up / puts it down |
 | Zoom in | click a zoom hotspot (a subtle amber shimmer on hover) | Tab cycles hotspots in the selected panel, Enter activates |
 | Zoom out | right-click the panel, mouse wheel down, or the small "⤢" corner glyph | Backspace |
-| Lift a frame layer | press-and-hold 250 ms anywhere on the frame (its grip: a wide band over the brass, or the whole window in Act 3; a "lift" cursor and a glow on hover, a filling ring while held), then drag it out; drop it on another panel to overlay, or on an empty gutter to return it | F lifts the selected panel's frame (or the one liftable frame); arrows move it; Space drops it |
+| Lift a frame layer | press-and-hold 120 ms anywhere on the frame, or simply drag from it (its grip: a wide band over the brass, or the whole window in Act 3; a "lift" cursor and a glow on hover, a filling ring while held; the first liftable frame wears a HOLD · LIFT THE FRAME tag), then drag it out (a drag from the picture inside moves the window); drop it on another panel to overlay, or on an empty gutter to return it | F lifts the selected panel's frame (or the one liftable frame); arrows move it; Space drops it |
 | Punch-hole lens (from Act 2) | drag the round lens anywhere; clicks inside the lens act on the 1978 layer first, then fall through to the present (the lens never swallows a click) | L toggles lens focus; arrows move it; Enter clicks through it |
 | Read an archive card | click the paper item | Enter; Esc closes |
 | Pause | Esc | Esc |
@@ -162,9 +162,9 @@ Top row:
 - **"orchard house"**: its upstairs window is circled on the postcard.
 
 Bottom row, rails:
-- **"carriage"**: Butch with the case in a carriage, with a rail exit on the RIGHT `at 0.85`.
-- **"gap"**: a broken viaduct where the present rail is missing. In the 1978 layer the rail is intact at `at 0.85` on both sides, as a past-era edge.
-- **"platform"**: the Bellwether platform, with a rail entering LEFT `at 0.85`.
+- **"carriage"**: Butch with the case in a carriage, with a rail exit on the RIGHT `at 0.75` (raised from 0.85 in alpha round 3 so the viaduct stands high over its cut).
+- **"gap"**: a broken viaduct where the present rail is missing. In the 1978 layer the rail is intact at `at 0.75` on both sides, as a past-era edge.
+- **"platform"**: the Bellwether platform, with a rail entering LEFT `at 0.75`.
 
 Steps:
 1. **Two rooms, one window.** Lift the city room's window frame and drop it onto the orchard house. Inside the frame, the orchard house's upstairs window lines up with the city window, making one picture of both homes. A silhouette of Mara appears in the combined window, turns, and leaves the frame. This is the story beat: she was one person in two true places.

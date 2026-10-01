@@ -19,10 +19,10 @@ import Phaser from 'phaser';
 import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
-import { createHintDirector, pickGesture, stepVerb, unmetSeam } from './hints.js';
+import { FRAME_TAG_SEEN, WAIT_CUE_MS, createHintDirector, frameTagFor, pickGesture, stepVerb, unmetSeam, waitingWalkers } from './hints.js';
 import { HINT_SPEAKER, hintLine } from './hintLines.js';
 import { INTRO_FAILSAFE_SLACK_MS, createIntroGuard, growScheduleMs, introScheduleMs } from './introGuard.js';
-import { GHOST_HAND, UNFOLD_PULL, UNFOLD_TAG, paintGhostHand, paintUnfoldPull, paintUnfoldTag } from './art/hintArt.js';
+import { FRAME_TAG, GHOST_HAND, UNFOLD_PULL, UNFOLD_TAG, paintGhostHand, paintUnfoldPull, paintUnfoldTag } from './art/hintArt.js';
 import { createUnfold, onFold, peekOffset, planUnfold, unfoldLayout } from './unfold.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
@@ -47,8 +47,17 @@ const GRADES = {
 const SERIF = 'Georgia, "Times New Roman", "DejaVu Serif", serif';
 const MONO = '"Space Mono", ui-monospace, monospace';
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V'];
-/** Press-and-hold on a frame this long (still) and it lifts (spec §3). */
-const FRAME_HOLD_MS = 250;
+/**
+ * Press-and-hold on a frame this long (still) and it lifts (spec §3). A press
+ * on the frame art itself lifts it quickly, and a drag that starts there
+ * carries the frame (the picture inside it still moves the window); inside
+ * the lens glass a press usually means "move the lens", so it waits longer
+ * (alpha R3 · R1).
+ */
+const FRAME_HOLD_MS = 120;
+const LENS_FRAME_HOLD_MS = 250;
+/** The first liftable frame of the chapter wears this tag until it is lifted once. */
+const FRAME_TAG_TEXT = 'HOLD · LIFT THE FRAME';
 /** Inside this far from the lens rim a press is on the glass, not the rim. */
 const LENS_RIM = 18;
 /** The keys the panel scene answers (besides the arrows). */
@@ -360,6 +369,7 @@ export class PanelScene extends Phaser.Scene {
     this.bezelLayer.bringToTop(this.targetG);
     this.bezelLayer.bringToTop(this.crossLayer);
     this.bezelLayer.bringToTop(this.gripG);
+    this.buildFrameTag();
     this.bezelCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'bezel');
     this.dragCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'drag');
     this.topCam = this.cameras.add(0, 0, this.layout.view.w, this.layout.view.h, false, 'top');
@@ -427,6 +437,9 @@ export class PanelScene extends Phaser.Scene {
       this.introGuard.disarm();
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
+      window.removeEventListener('blur', this.onBlur);
+      this.events.off('pause', this.onBlur);
+      this.events.off('resume', this.onBlur);
     });
 
     this.buildSockets();
@@ -730,7 +743,13 @@ export class PanelScene extends Phaser.Scene {
     m.on('drag:end', (payload) => this.onDragEnd(payload));
     m.on('link:on', (link) => this.onLinkOn(link));
     m.on('link:mismatch', (list) => this.onMismatch(list));
-    m.on('frame:lift', ({ frame, from }) => { this.rebuildFrames(this.views[from]); this.startFloatingFrame(frame, from); this.audio.play('lift'); });
+    m.on('frame:lift', ({ frame, from }) => {
+      // the frame tag has done its job once any frame has been lifted
+      this.hintSeen.add(FRAME_TAG_SEEN);
+      this.rebuildFrames(this.views[from]);
+      this.startFloatingFrame(frame, from);
+      this.audio.play('lift');
+    });
     m.on('frame:drop', ({ frame, onto }) => { this.endFloatingFrame(frame, onto); Object.values(this.views).forEach((view) => this.rebuildFrames(view)); this.audio.play('settle'); });
     m.on('bell', (bell) => this.onBell(bell));
     m.on('card', ({ card }) => this.showCard(card));
@@ -1227,6 +1246,8 @@ export class PanelScene extends Phaser.Scene {
       this.bezelLayer.bringToTop(this.targetG);
       this.bezelLayer.bringToTop(this.crossLayer);
       this.bezelLayer.bringToTop(this.gripG);
+      this.bezelLayer.bringToTop(this.waitG);
+      this.bezelLayer.bringToTop(this.frameTagUi.root);
     }
     this.orderCameras();
   }
@@ -2282,6 +2303,11 @@ export class PanelScene extends Phaser.Scene {
     this.onKeyUp = (event) => this.handleKey(event, false);
     window.addEventListener('keydown', this.onKeyDown, true);
     window.addEventListener('keyup', this.onKeyUp, true);
+    // pausing (Esc), resuming and losing focus all end a drag in progress
+    this.onBlur = () => this.cancelHeldInput();
+    window.addEventListener('blur', this.onBlur);
+    this.events.on('pause', this.onBlur);
+    this.events.on('resume', this.onBlur);
   }
 
   busyView(tile) {
@@ -2295,6 +2321,29 @@ export class PanelScene extends Phaser.Scene {
     this.hints?.input();
     if (this.ghost) this.cancelGhost();
     this.audio.unlock();
+  }
+
+  /**
+   * The hand went away without a release we saw: the pause menu opened or
+   * closed mid-drag, the page lost focus, or the button came up outside it
+   * (alpha R3 · R3). Let go of whatever was held, where it is: a fold drag
+   * springs back (or opens, past the threshold), a carried window or frame
+   * lands, a held arrow stops, and a still press never turns into a click.
+   */
+  cancelHeldInput() {
+    if (this.foldPointer) {
+      this.foldPointer = false;
+      const result = this.unfold?.cancel();
+      if (result === 'snap') this.onFoldSnap();
+      else if (result === 'spring' && this.unfold.progress > 0.02) this.audio.play('unfoldBack');
+      this.input.setDefaultCursor('default');
+    }
+    if (this.foldKeyHeld) this.foldKeyUp(this.foldDirKey());
+    this.keysDown.clear();
+    const press = this.press;
+    if (!press) return;
+    if (press.kind === 'frame' || this.drag || press.moved) this.onPointerUp(this.input.activePointer);
+    else { press.holdTimer?.remove(); this.press = null; }
   }
 
   onPointerDown(p) {
@@ -2320,7 +2369,7 @@ export class PanelScene extends Phaser.Scene {
       // moving drags the lens; a still click acts through it (1978 first,
       // then the present underneath); a still hold on a frame lifts it
       this.press = { kind: 'lens', x: p.x, y: p.y, dx: lens.x - p.x, dy: lens.y - p.y, moved: false, time: this.time.now };
-      if (tile && !this.busyView(tile) && fromLens < lens.r - LENS_RIM) this.armFrameHold(tile, slot, p);
+      if (tile && !this.busyView(tile) && fromLens < lens.r - LENS_RIM) this.armFrameHold(tile, slot, p, LENS_FRAME_HOLD_MS);
       return;
     }
     if (!tile || this.busyView(tile)) return;
@@ -2334,25 +2383,36 @@ export class PanelScene extends Phaser.Scene {
   }
 
   /** A press on a frame's grip (its painted frame, generously): hold still to lift it. */
-  armFrameHold(tile, slot, p) {
+  armFrameHold(tile, slot, p, holdMs = FRAME_HOLD_MS) {
     const frame = this.model.frameGripAt(tile, (p.x - slot.x) / slot.w, (p.y - slot.y) / slot.h);
     const press = this.press;
     if (!frame || !press) return;
     press.grip = { tile, frame, x: p.x, y: p.y };
-    press.holdTimer = this.time.delayedCall(FRAME_HOLD_MS, () => {
+    press.holdMs = holdMs;
+    press.holdTimer = this.time.delayedCall(holdMs, () => {
       if (this.press !== press || press.moved) return;
-      press.kind = 'frame';
-      press.grip = null;
-      if (this.model.liftFrame(frame) && this.floating) {
-        // keep the frame where the hand took hold of it
-        this.floating.offX = this.floating.holder.x - p.x;
-        this.floating.offY = this.floating.holder.y - p.y;
-        this.moveFloating(p.x, p.y);
-      }
+      this.liftPressedFrame(press, frame, p);
     });
   }
 
+  /** The press becomes a carried frame, held where the hand took hold of it. */
+  liftPressedFrame(press, frame, at) {
+    press.holdTimer?.remove();
+    press.kind = 'frame';
+    press.grip = null;
+    if (this.model.liftFrame(frame) && this.floating) {
+      this.floating.offX = this.floating.holder.x - at.x;
+      this.floating.offY = this.floating.holder.y - at.y;
+      this.moveFloating(at.x, at.y);
+      return true;
+    }
+    return false;
+  }
+
   onPointerMove(p) {
+    // a held drag whose release we never saw (it came up while paused, or
+    // outside the page): let go now, never follow a pointer with no button
+    if (!p.isDown && (this.foldPointer || this.press)) { this.cancelHeldInput(); return; }
     if (this.foldActive()) { this.foldPointerMove(p); return; }
     const press = this.press;
     if (press) {
@@ -2364,6 +2424,10 @@ export class PanelScene extends Phaser.Scene {
         this.model.moveLens(p.x + press.dx, p.y + press.dy);
       } else if (press.kind === 'frame') {
         this.moveFloating(p.x, p.y);
+      } else if (press.kind === 'tile' && press.moved && !this.drag && press.grip && this.model.canLiftFrame(press.grip.frame)) {
+        // a drag that starts on the frame itself carries the frame (the
+        // picture inside it still moves the window): alpha R3 · R1
+        if (this.liftPressedFrame(press, press.grip.frame, press)) this.moveFloating(p.x, p.y);
       } else if (press.kind === 'tile' && press.moved && !this.drag) {
         press.holdTimer?.remove();
         press.grip = null;
@@ -2506,7 +2570,7 @@ export class PanelScene extends Phaser.Scene {
     }
     if (holding) {
       // press-and-hold: a ring fills around the fingertip until the frame lifts
-      const t = clamp((this.time.now - press.time) / FRAME_HOLD_MS, 0, 1);
+      const t = clamp((this.time.now - press.time) / (press.holdMs ?? FRAME_HOLD_MS), 0, 1);
       g.lineStyle(8, 0x0b0705, 0.6);
       g.strokeCircle(holding.x, holding.y, 24);
       g.lineStyle(4, 0xfff4dc, 0.95);
@@ -2516,13 +2580,117 @@ export class PanelScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * The paper tag on the first liftable frame (HOLD · LIFT THE FRAME) and the
+   * amber ring round a walker waiting at a gap (alpha R3 · R1, R2). Both live
+   * on the bezel layer, in screen space, over the windows.
+   */
+  buildFrameTag() {
+    const key = 'nsv-frame-tag';
+    if (!this.textures.exists(key)) {
+      const tex = this.textures.createCanvas(key, FRAME_TAG.w * 2, FRAME_TAG.h * 2);
+      const c = tex.getContext();
+      c.scale(2, 2);
+      paintUnfoldTag(c, this.env.paper, FRAME_TAG_TEXT, FRAME_TAG);
+      tex.refresh();
+    }
+    const root = this.add.container(0, 0).setAlpha(0);
+    const string = this.add.graphics();
+    const tag = this.add.image(0, 0, key).setOrigin(FRAME_TAG.eyelet[0] / FRAME_TAG.w, FRAME_TAG.eyelet[1] / FRAME_TAG.h).setScale(0.42);
+    const glint = this.add.image(0, 0, 'nsv-glint').setBlendMode('ADD');
+    root.add([string, tag, glint]);
+    this.bezelLayer.add(root);
+    this.frameTagUi = { root, string, tag, glint, alpha: 0, target: null };
+    this.waitG = this.add.graphics();
+    this.bezelLayer.add(this.waitG);
+    this.bezelLayer.bringToTop(root);
+    this.waitClock = {};
+  }
+
+  updateFrameTag(dt) {
+    const ui = this.frameTagUi;
+    if (!ui) return;
+    const want = this.growing || this.fading ? null : frameTagFor(this.model, this.hintSeen);
+    const target = want && !this.busyView(want.tile) && !this.floating ? want : null;
+    if (target) ui.target = target;
+    ui.alpha = clamp(ui.alpha + (target ? dt / 380 : -dt / 200), 0, 1);
+    ui.root.setAlpha(ui.alpha).setVisible(ui.alpha > 0);
+    if (!ui.alpha || !ui.target) return;
+    const slot = this.model.slotRect(ui.target.tile);
+    if (!slot) { ui.root.setVisible(false); return; }
+    const reduce = reducedMotionActive();
+    const t = this.clock / 1000;
+    const k = this.layout.scale ?? 1;
+    const tw = FRAME_TAG.w * 0.84 * k;
+    // the eyelet is pinned to the brass; keep the whole tag inside the window
+    const ex = clamp(slot.x + ui.target.u * slot.w, slot.x + 10, slot.x + slot.w - tw - 10);
+    const ey = slot.y + ui.target.v * slot.h;
+    const sway = reduce ? 0.03 : 0.03 + Math.sin(t * 1.6) * 0.025;
+    ui.tag.setPosition(ex, ey).setRotation(sway).setScale(0.42 * k);
+    ui.string.clear();
+    ui.string.fillStyle(0x2a1a10, 0.9);
+    ui.string.fillCircle(ex, ey, 3.2 * k);
+    // the amber glint at the far end (the "you can act on this" mark)
+    const gx = (FRAME_TAG.w - FRAME_TAG.eyelet[0] - 14) * 0.84 * k;
+    const gy = (-FRAME_TAG.h / 2 + 12) * 0.84 * k;
+    const shine = Math.max(0, Math.sin(t * 1.3)) ** 8;
+    ui.glint.setPosition(ex + gx * Math.cos(sway) - gy * Math.sin(sway), ey + gx * Math.sin(sway) + gy * Math.cos(sway))
+      .setAlpha(0.4 + shine * 0.6).setScale(0.55 + shine * 0.3);
+  }
+
+  /**
+   * A walker standing at a gap the player has to close: after a moment she
+   * gets a small amber ring, glances back now and then, and when the way on
+   * is one step back out of the next window, that window's ⤢ glyph breathes.
+   * Returns the tiles whose glyph should breathe.
+   */
+  updateWaitCues(dt) {
+    const g = this.waitG;
+    g.clear();
+    this.waitLook = {};
+    const glyphs = new Set();
+    if (this.growing || this.fading) return glyphs;
+    const waits = waitingWalkers(this.model);
+    const now = new Set(waits.map((w) => w.actor));
+    Object.keys(this.waitClock).forEach((id) => { if (!now.has(id)) delete this.waitClock[id]; });
+    const reduce = reducedMotionActive();
+    waits.forEach((wait) => {
+      const ms = (this.waitClock[wait.actor] ?? 0) + dt;
+      this.waitClock[wait.actor] = ms;
+      if (ms < WAIT_CUE_MS) return;
+      if (wait.zoomOut) glyphs.add(wait.zoomOut);
+      const view = this.views[wait.tile];
+      const entry = this.rigs[wait.actor];
+      if (!view || !entry || this.busyView(wait.tile)) return;
+      // she turns to look back over her shoulder for a moment every few seconds
+      if (!reduce) this.waitLook[wait.actor] = ((ms - WAIT_CUE_MS) % 3200) > 2300;
+      const scale = (this.model.sceneOf(wait.tile, this.model.state.tiles[wait.tile].state)?.actorScale ?? 1) * entry.scale;
+      const fig = (entry.rig.height ?? 60) * scale * view.rect.scale * view.base;
+      const feet = view.screen(wait.x, wait.y);
+      const r = Math.max(20, fig * 0.62);
+      const k = 0.5 + Math.sin(this.clock / (reduce ? 900 : 420)) * 0.5;
+      const grow = reduce ? 0 : k * 4;
+      const fade = clamp((ms - WAIT_CUE_MS) / 500, 0, 1);
+      const cy = feet.y - fig * 0.5;
+      g.lineStyle(9, 0x0b0705, 0.35 * fade);
+      g.strokeEllipse(feet.x, cy, (r + grow) * 1.5, (r + grow) * 2.2);
+      g.lineStyle(3, 0xffb050, (0.55 + k * 0.4) * fade);
+      g.strokeEllipse(feet.x, cy, (r + grow) * 1.5, (r + grow) * 2.2);
+      g.lineStyle(1.2, 0xfff0d0, (0.3 + k * 0.3) * fade);
+      g.strokeEllipse(feet.x, cy, (r + grow - 4) * 1.5, (r + grow - 4) * 2.2);
+    });
+    return glyphs;
+  }
+
   // ---------- keyboard ----------
 
   handleKey(event, down) {
+    const key = event.key;
+    // a key coming up always counts (even paused): a held arrow must never
+    // keep unfolding the wall after the menu closes
+    if (!down) { this.keysDown.delete(key); this.foldKeyUp(key); return; }
     if (globalThis.NIGHTFALL_PAUSED || globalThis.NIGHTFALL_STONE_OFFER) return;
     if (!this.sys.isActive()) return;
-    const key = event.key;
-    if (!down) { this.keysDown.delete(key); this.foldKeyUp(key); return; }
     const handled = this.onKey(event);
     if (handled) {
       event.preventDefault();
@@ -2964,6 +3132,8 @@ export class PanelScene extends Phaser.Scene {
     // `hint.zoomOut` (always) or `hint.zoomOutCue` (a condition): the ⤢ glyph breathes
     const cueHint = cueStep?.hint;
     const zoomOutCue = cueHint?.zoomOut || (cueHint?.zoomOutCue && this.model.evaluate(cueHint.zoomOutCue)) ? cueHint.tile : null;
+    // a walker waiting for a window to step back out also makes its glyph breathe
+    const waitGlyphs = this.updateWaitCues(dt);
     Object.values(this.views).forEach((view) => {
       const run = (list) => list?.forEach((fn) => fn(this.clock, dt));
       run(view.current?.animators);
@@ -2986,7 +3156,7 @@ export class PanelScene extends Phaser.Scene {
       const canOut = this.model.canZoomOut(view.id) && !view.zooming;
       view.glyph.setVisible(canOut);
       // when stepping back is the lesson, the glyph keeps breathing
-      const cue = canOut && zoomOutCue === view.id;
+      const cue = canOut && (zoomOutCue === view.id || waitGlyphs.has(view.id));
       view.glyphGlow.setVisible(cue);
       if (cue) {
         const k = 0.5 + Math.sin(this.clock / (reduce ? 700 : 300)) * 0.5;
@@ -3013,6 +3183,7 @@ export class PanelScene extends Phaser.Scene {
     this.syncActors(dt);
     this.drawLinks();
     this.drawGrip();
+    this.updateFrameTag(dt);
     this.drawFocus();
     this.updateKeyStrip(dt);
 
@@ -3020,6 +3191,10 @@ export class PanelScene extends Phaser.Scene {
     this.lensView.setVisible(lens.enabled);
     if (lens.enabled) {
       this.lensView.setPosition(lens.x, lens.y);
+      // under a spoken line the lens steps back (it is drawn below the caption
+      // bar, but its rim must not read as sitting on it: alpha R3 · R4)
+      const under = this.lensUnderCaption(lens);
+      this.lensView.setAlpha(clamp(this.lensView.alpha + (under ? -dt / 260 : dt / 260), 0.18, 1));
       // (a hint pulse tweens the rim's scale: leave it alone meanwhile)
       if (!this.tweens.isTweening(this.lensView)) this.lensView.setScale(1 + (this.lensFocus ? Math.sin(this.clock / 200) * 0.015 : 0));
       if (this.lensFocus && this.keysDown.size) {
@@ -3041,6 +3216,19 @@ export class PanelScene extends Phaser.Scene {
     if (!this.model.isLocked() && !this.fading) this.idleMs += dt;
     this.updateHints(dt);
     void reduce;
+  }
+
+  /** Does the lens rim reach into the caption bar while a line is showing? */
+  lensUnderCaption(lens) {
+    const box = this.captionBox;
+    if (!box?.visible || box.alpha < 0.05) return false;
+    const w = this.captionBg.width;
+    const h = this.captionBg.height;
+    const x0 = box.x - w / 2;
+    const y0 = box.y - h;
+    const nx = clamp(lens.x, x0, x0 + w);
+    const ny = clamp(lens.y, y0, y0 + h);
+    return Math.hypot(lens.x - nx, lens.y - ny) < lens.r + 20;
   }
 
   /** A pulsing amber ring around an interactable (hotspot or 1978 edge anchor). */
@@ -3123,7 +3311,9 @@ export class PanelScene extends Phaser.Scene {
         rig.root.setPosition(actor.x * view.w, actor.y * view.h);
         const visible = actor.visible && (!actor.state || actor.state === tileState) && !view.zooming && view.current?.stateId === tileState;
         rig.root.setVisible(visible);
-        rig.root.setScale(actor.facing * scale, scale);
+        // a walker kept waiting glances back now and then (updateWaitCues)
+        const facing = this.waitLook?.[id] ? -actor.facing : actor.facing;
+        rig.root.setScale(facing * scale, scale);
       }
       rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying });
       if (moving && id === 'butch') {

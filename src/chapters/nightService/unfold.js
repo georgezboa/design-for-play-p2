@@ -162,7 +162,8 @@ export function onFold(fold, x, y, { progress = 0, pullRadius = 96, band = 150 }
  *   folded → (grab) dragging → (release) snapping → done
  *                                       ↘ springing → folded
  * Keyboard: `holdKey(dt)` while the arrow is down, `releaseKey()` on key up,
- * `commit()` (Enter) snaps it open from wherever it is.
+ * `commit()` (Enter) snaps it open from wherever it is. `cancel()` lets go
+ * of a drag whose release never arrived (pause, blur).
  */
 export function createUnfold(fold, options = {}) {
   const o = { ...UNFOLD, ...options };
@@ -224,6 +225,17 @@ export function createUnfold(fold, options = {}) {
       if (state !== 'dragging') return null;
       const flick = this.velocity() >= o.flickSpeed && progress >= o.flickMin;
       return progress >= o.threshold || flick ? snap() : spring();
+    },
+    /**
+     * The hand went away without a release we saw (the game paused mid-drag,
+     * the window lost focus, the button came up outside the page): let go
+     * where it is. Past the threshold it still opens; a flick never counts.
+     * Nothing to do (null) unless a drag or a held key is in progress.
+     */
+    cancel() {
+      if (state !== 'dragging') return null;
+      samples = [];
+      return progress >= o.threshold ? snap() : spring();
     },
     /** Arrow held in the opening direction. */
     holdKey(dt) {

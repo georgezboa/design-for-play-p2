@@ -89,10 +89,15 @@ export const ACT2 = defineAct({
       frame: {
         id: 'windowFrame',
         draw: drawBrassFrame,
-        // press-and-hold anywhere on the brass (and a little past it)
+        // press-and-hold anywhere on the brass (and a little past it), or
+        // drag from the brass; a drag from the picture inside moves the window
         grip: { rect: [0, 0, 1, 1], hole: [0.09, 0.15, 0.82, 0.7] },
-        // the frame lifts once the orchard has been seen (taught when it is the only move)
-        requires: { flag: 'orchardSeen' },
+        // HOLD · LIFT THE FRAME hangs on the top bar until a frame is lifted
+        tag: { u: 0.1, v: 0.075 },
+        // the frame lifts once the orchard has been seen (taught when it is the
+        // only move), and rests again once the train has arrived: from then on
+        // a drag anywhere on the window moves the window
+        requires: { all: [{ flag: 'orchardSeen' }, { notFlag: 'caseAtEdge' }] },
       },
       states: { default: { draw: drawCarriageView } },
     },

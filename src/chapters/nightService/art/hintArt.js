@@ -148,10 +148,13 @@ export function paintUnfoldPull(c) {
   c.restore();
 }
 
+/** The first liftable frame's tag (HOLD · LIFT THE FRAME): same paper, longer. */
+export const FRAME_TAG = Object.freeze({ w: 380, h: 70, eyelet: [17, 35] });
+
 /** The pull's paper tag: DRAG · UNFOLD, typed, with the eyelet on the left. */
-export function paintUnfoldTag(c, paper = null, text = 'DRAG · UNFOLD') {
-  const { w, h } = UNFOLD_TAG;
-  const [ex, ey] = UNFOLD_TAG.eyelet;
+export function paintUnfoldTag(c, paper = null, text = 'DRAG · UNFOLD', size = UNFOLD_TAG) {
+  const { w, h } = size;
+  const [ex, ey] = size.eyelet;
   const body = () => {
     c.beginPath();
     c.moveTo(4, h / 2);
