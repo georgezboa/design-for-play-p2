@@ -24,6 +24,7 @@ import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin } from './menuNavigation.js';
 import { missingStoneNotice } from './magicStones.js';
 import { dressCarriageWall } from './titleCarriage.js';
+import { mountTitlePlate } from './titlePlate.js';
 import { clearCreditsQuery } from './endCredits.js';
 
 // The title always shows the player's own three slots, never a test route's
@@ -57,7 +58,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   const root = document.createElement('main');
   root.id = 'nightfall-title';
   // One wall of the night train (titleMenu.css, titleCarriage.js): the key
-  // art is the view through a brass-bezelled carriage window with the
+  // art (titlePlate.js, painted at runtime in Chapter 1's ink language) is
+  // the view through a brass-bezelled carriage window with the
   // wordmark gilded on its glass, and the menu is the departures board
   // beside it, where the selected line becomes a punched paper ticket.
   root.innerHTML = `
@@ -67,7 +69,6 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
       <div class="nf-lamps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <div class="nf-window">
         <div class="nf-window-glass">
-          <img class="nf-title-backdrop" src="/assets/ui/nightfall-title-window.jpg" alt="" aria-hidden="true" />
           <div class="nf-rain" aria-hidden="true"><i></i><i></i><i></i></div>
           <div class="nf-glass" aria-hidden="true"></div>
           <header class="nf-wordmark">
@@ -99,6 +100,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   `;
   document.body.append(root);
   dressCarriageWall(root);
+  // the view through the window: the night service waiting at Bellwether
+  mountTitlePlate(root.querySelector('.nf-window-glass'));
   const actions = root.querySelector('.nf-main-actions');
   const status = root.querySelector('.nf-status');
   const dialog = root.querySelector('#nf-dialog');
