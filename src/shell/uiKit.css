@@ -93,6 +93,7 @@
 }
 .nf-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--nf-walnut); }
 .nf-tag::after { content: ''; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 0 0 0 5px; background: var(--nf-amber); box-shadow: 0 0 6px 2px rgba(224, 162, 74, 0.7); animation: nf-glint 2.2s ease-in-out infinite; }
+.nf-tag[hidden] { display: none; }
 .nf-tag kbd { font: inherit; color: var(--nf-oxblood); }
 
 /* ---------- chapter title card ---------- */

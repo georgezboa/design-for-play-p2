@@ -3488,7 +3488,9 @@ export function showNormalEndingCard() {
   return showArchiveCard({
     stamp: 'CLAIM 1978-0412 · STATUS: OPEN',
     title: 'The orchard case remains on board.',
-    lines: ['The night service keeps running. Butch is still aboard, still looking one stop ahead.'],
+    // The film before it shows Butch reunited with the Mara ahead. Canon: that
+    // is the echo, and he rides on with her. The card keeps it ambiguous.
+    lines: ['The night service keeps running. Butch rides on beside the Mara ahead.', 'No one has punched her ticket.'],
     close: 'ENTER · CREDITS',
     autoMs: 12000,
     lockMs: 1400,

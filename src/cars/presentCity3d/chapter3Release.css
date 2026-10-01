@@ -181,3 +181,10 @@ body[data-chapter3-dream-rendering='active'] .c3-vignette {
 :root[data-reduced-motion='true'] .c3-bell.is-ringing .c3-bell__icon,
 :root[data-reduced-motion='true'] .is-pulsing,
 :root[data-reduced-motion='true'] .c3-objective.is-new { animation: none; }
+
+/* LOW GRAPHICS · SLOWER COMPUTERS: CSS filters over the WebGL canvas are
+   expensive on software compositing, so the glows become plain outlines. */
+:root[data-low-graphics='true'] .c3-tag.is-emphasis,
+:root[data-low-graphics='true'] .c3-board__tag:hover,
+:root[data-low-graphics='true'] .c3-board__tag:focus-visible,
+:root[data-low-graphics='true'] .c3-bell.is-due .c3-bell__icon { filter: none; }

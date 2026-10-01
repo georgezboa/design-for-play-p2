@@ -1,4 +1,4 @@
-# NIGHTFALL — Story bible (canon v1, 2026-09-28)
+# NIGHTFALL — Story bible (canon v1.1, 2026-09-30)
 
 Decided by Claude on George's delegation ("你来决定"). Everything here is deliberately collected in one file so George can veto or edit a line and the chapters can follow. Where a chapter contradicts this file, this file wins.
 
@@ -37,8 +37,9 @@ Decided by Claude on George's delegation ("你来决定"). Everything here is de
 - They are records the archive could not file. Holding all five lets Butch reach the line's last carriage.
 
 ## Endings
-- **Normal ending** (0–4 stones): Butch outlasts the Conductor. The train keeps running with Butch still aboard, still looking one stop ahead.
-  - Add one short archive card before the credits: "CLAIM 1978-0412 · STATUS: OPEN · The orchard case remains on board."
+- **Normal ending** (0–4 stones): Butch outlasts the Conductor. The ending film shows him finally reaching the Mara ahead and riding on beside her. That Mara is the echo: the Conductor is gone, but the line keeps running because Butch never gets off.
+  - One short archive card follows the film, before the credits: "CLAIM 1978-0412 · STATUS: OPEN · The orchard case remains on board." / "The night service keeps running. Butch rides on beside the Mara ahead." / "No one has punched her ticket."
+  - Butch's belief that Mara "disappeared" (the 2-3 film, Ch2–3 dialogue) is his mistake, not the file's. The true ending corrects it: "The property was lost, not Mara."
 - **True ending, "The Unfiled Ending"** (5 stones): the hidden fight is against **the Black Ticket**, the Conductor's true form: the ticket that never gets punched, the line that never ends.
   - After it, the reveal: the Mara ahead was an echo the Conductor filed to keep Butch riding. The real Mara lived both her lives in 1978.
   - Butch gets off at **Bellwether** and leaves the orchard case at Rosa's door.
