@@ -18,6 +18,15 @@
 // runs more than five lines before the player acts (a choice, a click, a
 // walk). Topic answers no longer repeat the question the menu just showed;
 // the queue number, the guided walk and Lev's world briefing are gone.
+//
+// Round 3 logic pass (owner feedback "Ch3 lost logic when parts were cut",
+// 2026-10-01): the set-ups a later beat leans on are back — the seven
+// o'clock train and "another mark" on the platform, the two rows of fire
+// letters and Petar's work order at dusk, the oil line as the first row at
+// night, the time jump to the dawn bench. Restored lines are the 1.0
+// recordings word for word where one exists. Every HUD objective names only
+// what the player has been told by then (CHAPTER3_OBJECTIVES below;
+// tests/car03/chapter3OpeningModel.test.mjs walks the script in order).
 
 export const OPENING_POSITIONS = Object.freeze({
   // In the sun on the platform paving in front of the shelter, where the
@@ -93,19 +102,24 @@ export const SCANNER_FIELDS = Object.freeze({
 });
 
 // ---------------------------------------------------------------- arrival
-// The conductor's call and Butch's one line, then the claim card itself.
+// The conductor's call (and when the train comes back for him), Butch's
+// reason for getting off, then the claim card itself. G4: the seven o'clock
+// train and Mara's promised "mark" are set up here; the station finale and
+// the fire letters pay them off.
 export const ARRIVAL_DIALOGUE = Object.freeze([
   { speaker: 'CONDUCTOR', text: 'Echo City. Passengers leaving the train, please step onto the platform. Keep the doorway clear.' },
+  { speaker: 'CONDUCTOR', text: 'The night service calls back at seven tomorrow. Be on the platform.' },
   { speaker: 'BUTCH', text: 'I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.' },
+  { speaker: 'BUTCH', text: 'She said she would leave another mark where she could. The last one pointed here.' },
 ]);
-export const ARRIVAL_BEFORE_CARD = 2;
+export const ARRIVAL_BEFORE_CARD = 4;
 
 export const LEV_INTRO_DIALOGUE = Object.freeze([
   { speaker: 'LEV', text: 'Keep that card out.' },
   { speaker: 'BUTCH', text: 'Why?' },
   { speaker: 'LEV', text: 'That claim number went through our station reader yesterday. Twice.' },
   { speaker: 'LEV', text: 'Lev Ardin. Civic Movement Investigation Office.' },
-  { speaker: 'LEV', text: 'Two tickets forty-three, one seat, both valid. And someone poured lamp oil into the paving. We start with the oil.' },
+  { speaker: 'LEV', text: 'Two tickets forty-three, one seat, both valid. And someone poured a line of lamp oil into the paving. We start with the oil.' },
 ]);
 
 // ---------------------------------------------------------------- oil seam
@@ -154,6 +168,12 @@ export const TRANSPORT_ENTRANCE_DIALOGUE = Object.freeze([
   { speaker: 'TOMA', text: 'Public hall is open. What business are you bringing inside?' },
   { speaker: 'BUTCH', text: 'Yesterday\'s ticket forty-three. Both of them.' },
   { speaker: 'TOMA', text: 'Nika runs the ticket terminal. The window on the right.' },
+]);
+
+// G11: Nika names Sava before he speaks; his silent figure carries a hover
+// tag ("Sava · issue records") and one look line.
+export const SAVA_LOOK = Object.freeze([
+  { speaker: 'BUTCH', text: 'Sava keeps the issue records. Every search at that terminal goes out under his stamp.' },
 ]);
 
 export const NIKA_OPENING = Object.freeze([
@@ -220,7 +240,7 @@ export const TICKET_BOARD_CARDS = Object.freeze([
   }),
   Object.freeze({
     id: 'market-sale',
-    stamp: 'MARKET WARD · SALE 14:12',
+    stamp: 'MARKET WARD · EDA\'S STALL · 14:12',
     title: 'Lamp oil ×2',
     lines: Object.freeze(['Paid in cash, stamped SEAT 43.', 'Carried by the porter, Olek.']),
     at: Object.freeze([0.17, 0.76]),
@@ -276,7 +296,8 @@ export const EDA_TOPIC_RESPONSES = Object.freeze({
 });
 
 export const EDA_CONCLUSION = Object.freeze([
-  { speaker: 'EDA', text: 'Olek carried the two cans for her. He is taking the cart through the ward crossing now.' },
+  // G9: the rose scarf is said aloud here, so Olek's "Only the scarf" lands.
+  { speaker: 'EDA', text: 'Olek carried the two cans for her, the woman in the rose scarf. He is taking the cart through the ward crossing now.' },
   { speaker: 'LEV', text: 'That crossing has a scanner. It flags anyone who crosses alone. Walk beside Olek, in step, and it reads you as one party.' },
 ]);
 
@@ -289,7 +310,8 @@ export const OLEK_WALK_BARKS = Object.freeze([
 
 export const MARKET_CROSSED_DIALOGUE = Object.freeze([
   { speaker: 'OLEK', text: 'That is the trick of it. Two people in step and the machine counts one party.' },
-  { speaker: 'LEV', text: 'The service joint is at the south edge of the clock paving. The light is going; we should see it before dark.' },
+  // G1: the two rows are named before Butch leans on "the second line".
+  { speaker: 'LEV', text: 'The service joint at the south edge of the clock paving feeds the old fire letters, two rows in the grooves. The light is going; we should see it before dark.' },
 ]);
 
 // Walk-beside feedback shown in the world and on the caption line.
@@ -307,9 +329,14 @@ export const SCANNER_WORDS = Object.freeze({
 });
 
 // ---------------------------------------------------------------- dusk
+// G1: the beat opens on Petar's work order (CHAPTER3_DOCUMENTS.
+// MAINTENANCE_ORDER_C441), so the man at the cut is introduced by the paper
+// he signed; all four lines are the 1.0 recordings.
 export const CUT_INTERFACE_OPENING = Object.freeze([
+  { speaker: 'BUTCH', text: 'Completion signed P. Kolar. Petar Kolar.' },
   { speaker: 'PETAR', text: 'Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.' },
   { speaker: 'BUTCH', text: 'The branch you cut supplied the second line of a ground message.' },
+  { speaker: 'PETAR', text: 'I did not see a message. I worked from the access chamber below the paving.' },
 ]);
 
 export function cutInterfaceMenu(observed = []) {
@@ -339,12 +366,23 @@ export const CUT_INTERFACE_RESPONSES = Object.freeze({
 
 export const CUT_INTERFACE_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'Petar cut the branch. Later, someone placed both ends where a person could reconnect them by hand.' },
+  // G5: the repair the night beat asks for is set up here (1.0 recording).
+  { speaker: 'BUTCH', text: 'But the second line was not simply destroyed. A way to restore it was left here.' },
   { speaker: 'LEV', text: 'Record that much. The archive is closing and the next train is tomorrow morning. I booked you a room at the Copper Heron.' },
+  // G10: the optional Echo Stone fire, ~60 m west, has a pointer now.
+  { speaker: 'PETAR', text: 'If you want warmth first, the laundry crew keep a fire by the west wall at dusk. Seline has been showing everyone something she found.' },
 ]);
 
 // ---------------------------------------------------------------- hotel
+// Hana greets him as he comes in (1.0 recording), so the objective can name her.
+export const HOTEL_ARRIVAL_DIALOGUE = Object.freeze([
+  { speaker: 'HANA', text: 'Two rooms left. The next passenger train is tomorrow morning, so I assume you need one.' },
+]);
+
+// G7: the ledger card (Room 6, a SEAT 43 stub) opens first; Butch asks
+// about what he has just read.
 export const HANA_OPENING = Object.freeze([
-  { speaker: 'BUTCH', text: 'A guest on seat forty-three. Did she stay here?' },
+  { speaker: 'BUTCH', text: 'That stub on your ledger is seat forty-three. Did she stay here?' },
   { speaker: 'HANA', text: 'Yes. Room six. She paid cash and asked me not to write a name.' },
 ]);
 
@@ -374,7 +412,8 @@ export const HANA_TOPIC_RESPONSES = Object.freeze({
 export const HANA_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'We will take the room. Leave my name in the book.' },
   { speaker: 'HANA', text: 'That is generally how the book works.' },
-  { speaker: 'LEV', text: 'Sleep. I will meet you on the platform before seven.' },
+  // G3: Lev comes for Butch in the morning (he finds him in the square).
+  { speaker: 'LEV', text: 'Sleep. I will find you before the first train.' },
 ]);
 
 export const SLEEP_DIALOGUE = Object.freeze([
@@ -394,21 +433,30 @@ export const FIRE_LETTERS = Object.freeze({
   second: 'KEEP MOVING. — M.',
 });
 
+// G6: the afternoon's oil line is named as the first row; the clamp line
+// (1.0 recording) tells the player what the loose ends are for.
 export const NIGHT_FIRST_LINE = Object.freeze([
-  { speaker: 'BUTCH', text: 'The first row is burning in the old paving grooves.' },
   { speaker: 'GROUND LETTERS', text: FIRE_LETTERS.first },
   { speaker: 'BUTCH', text: 'Another mark. She said she would leave one where she could.' },
+  { speaker: 'BUTCH', text: 'This afternoon\'s oil line. It was never a spill. It was the first row.' },
   { speaker: 'BUTCH', text: 'The lower row is dark. The cut ends are beside it, exactly where they were at dusk.' },
+  { speaker: 'BUTCH', text: 'Both ends overlap by a hand width. The old clamp is open.' },
 ]);
 
+// G3: the night ends on the seven o'clock train and a narrated time jump,
+// then the screen goes dark; the dawn bench is its own run after the dark.
 export const NIGHT_SECOND_LINE = Object.freeze([
   { speaker: 'GROUND LETTERS', text: FIRE_LETTERS.second },
   { speaker: 'BUTCH', text: 'It lit on the bell. As if she knew the minute I would kneel here.' },
+  { speaker: 'BUTCH', text: 'Keep moving. The night service calls at seven.' },
+  { speaker: 'NARRATION', text: 'The letters burn down before four. At first light Lev finds Butch still in the square and walks him up the old service path.' },
 ]);
 
 // ---------------------------------------------------------------- dawn
-// The night's two lines and the dawn bench together stay within five.
+// G2: the bench opens on the two 1.0 lines that give "it" its train.
 export const SUNRISE_BENCH_DIALOGUE = Object.freeze([
+  { speaker: 'BUTCH', text: 'Do you come up here often?' },
+  { speaker: 'LEV', text: 'When the first train is late.' },
   { speaker: 'BUTCH', text: 'Is it late today?' },
   { speaker: 'LEV', text: 'No.' },
   { speaker: 'BUTCH', text: 'All right.' },
@@ -425,14 +473,17 @@ export const CAMPFIRE_SELINE_STONE_DIALOGUE = Object.freeze([
   { speaker: 'BUTCH', text: 'Cold as the archive stacks. I will keep it out of the municipal ledger.' },
 ]);
 
+// G10: Rada answers for herself (1.0 recording) instead of being a name.
 export const CAMPFIRE_SELINE_DIALOGUE = Object.freeze([
   { speaker: 'SELINE', text: 'Rada says this is a celebration. It is really an excuse to keep me from going back for another shift.' },
+  { speaker: 'RADA', text: 'Nothing official. Seline finished her first paid week at the laundry, Miro found sugar, and nobody has been arrested. We decided that was enough.' },
   { speaker: 'BUTCH', text: 'Will it work?' },
   { speaker: 'SELINE', text: 'Until the tea is gone. After that I become responsible again.' },
 ]);
 
+// G10: reads for a player who never met Seline at dusk.
 export const MORNING_STONE_PICKUP = Object.freeze([
-  { speaker: 'BUTCH', text: 'Something blue catches in the cold ashes beneath Seline\'s abandoned coat.' },
+  { speaker: 'BUTCH', text: 'Something blue catches in the cold ashes, under a coat someone left by the fire.' },
 ]);
 
 // ---------------------------------------------------------------- station
@@ -465,6 +516,44 @@ export const CHAPTER_END_CARD = Object.freeze({
   kicker: 'CHAPTER 3 · COMPLETE',
   title: 'ECHO CITY',
   line: 'Two tickets, one passenger. The orchard case rides on.',
+});
+
+// ---------------------------------------------------------------- objectives
+// The HUD task card (Chapter3OpeningRuntime.objectiveText). G13: each names
+// only people, places and objects the player has already heard or read by
+// the time it shows; the ordered-mention test walks the script to check.
+export const CHAPTER3_OBJECTIVES = Object.freeze({
+  stepOff: 'STEP OFF THE NIGHT SERVICE',
+  meetLev: 'MEET THE MAN ON THE PLATFORM',
+  oilLine: 'INSPECT THE OIL LINE',
+  ministry: 'GO TO THE MINISTRY',
+  publicHall: 'ENTER THE PUBLIC HALL',
+  nika: 'ASK NIKA ABOUT SEAT 43',
+  publicTable: 'LAY BOTH TICKETS ON THE PUBLIC TABLE',
+  fileTickets: 'FILE THE TWO TICKETS',
+  eda: 'ASK EDA WHO BOUGHT THE OIL',
+  marketScanner: 'CROSS THE MARKET SCANNER BESIDE OLEK',
+  keepPaceOlek: 'KEEP PACE WITH OLEK',
+  walkThrough: 'WALK THROUGH TOGETHER',
+  serviceJoint: 'FIND THE SERVICE JOINT BY THE CLOCK',
+  copperHeron: 'CHECK IN AT THE COPPER HERON',
+  hana: 'CHECK IN WITH HANA',
+  upstairs: 'GO UPSTAIRS',
+  sleep: 'SLEEP',
+  night: 'NIGHT',
+  roomDoor: 'OPEN THE ROOM DOOR',
+  followFire: 'FOLLOW THE FIRE TO THE SQUARE',
+  readLetters: 'READ THE BURNING LETTERS',
+  clamp: 'DRAG THE LOOSE FEED INTO THE CLAMP',
+  bell: 'WAIT FOR THE BELL',
+  secondRow: 'READ THE SECOND ROW',
+  dawn: 'DAWN',
+  platform: 'MEET THE NIGHT SERVICE ON THE PLATFORM',
+  stationScanner: 'WALK BESIDE HER THROUGH THE SCANNER',
+  keepPaceHer: 'KEEP PACE BESIDE HER',
+  board: 'BOARD THE NIGHT SERVICE',
+  leaves: 'THE NIGHT SERVICE LEAVES ECHO CITY',
+  complete: 'CHAPTER 3 COMPLETE',
 });
 
 // ---------------------------------------------------------------- guidance

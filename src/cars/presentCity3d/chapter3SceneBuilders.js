@@ -378,6 +378,44 @@ export function makeDarkSeam(scene, surfaceHeightAt = null) {
 // destination the player has to walk to across the city (the ministry
 // front, Eda's stall). Unlit, no shadows: cheap on LOW. Normal blending, so
 // it still reads over the pale afternoon paving.
+// A view-space fresnel rim added to a lit material's emission, so a small
+// figure keeps a warm edge against cobbles in every light (round 3 art pass:
+// Butch read as a tiny grey shape). Works with skinned meshes and costs one
+// dot product per pixel; the shader key keeps rimmed and plain programs apart.
+export function applyRimLight(root, { color = 0xffc27a, strength = 0.85, power = 2.4 } = {}) {
+  let count = 0;
+  root?.traverse((child) => {
+    if (!child.isMesh) return;
+    for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
+      if (!material || !('emissive' in material) || material.userData.chapter3Rim) continue;
+      const rimColor = new THREE.Color(color);
+      material.userData.chapter3Rim = { color: rimColor, strength, power };
+      const previous = material.onBeforeCompile;
+      material.onBeforeCompile = (shader, renderer) => {
+        previous?.call(material, shader, renderer);
+        shader.uniforms.chapter3RimColor = { value: rimColor };
+        shader.uniforms.chapter3RimStrength = { value: strength };
+        shader.uniforms.chapter3RimPower = { value: power };
+        shader.fragmentShader = shader.fragmentShader
+          .replace('#include <common>', '#include <common>\nuniform vec3 chapter3RimColor;\nuniform float chapter3RimStrength;\nuniform float chapter3RimPower;')
+          .replace('#include <emissivemap_fragment>', [
+            '#include <emissivemap_fragment>',
+            'vec3 chapter3RimView = isOrthographic ? vec3( 0.0, 0.0, 1.0 ) : normalize( vViewPosition );',
+            // The geometric normal, not the normal-mapped one: a smooth edge
+            // instead of speckled cloth detail.
+            'float chapter3Rim = pow( 1.0 - saturate( dot( nonPerturbedNormal, chapter3RimView ) ), chapter3RimPower );',
+            'totalEmissiveRadiance += chapter3RimColor * chapter3Rim * chapter3RimStrength;',
+          ].join('\n'));
+      };
+      const previousKey = material.customProgramCacheKey?.bind(material);
+      material.customProgramCacheKey = () => `${previousKey ? previousKey() : ''}|chapter3-rim`;
+      material.needsUpdate = true;
+      count += 1;
+    }
+  });
+  return count;
+}
+
 export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', color = 0xf0a640, height = 9 } = {}) {
   const canvas = document.createElement('canvas');
   canvas.width = 4;

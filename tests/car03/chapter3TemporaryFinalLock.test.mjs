@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v41', () => {
+describe('Chapter 3 integrated final lock v42', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -76,10 +76,21 @@ describe('Chapter 3 integrated final lock v41', () => {
     // v40: chapter3Quality pins the LOW tier when the shared Settings
     // checkbox LOW GRAPHICS · SLOWER COMPUTERS is on (alpha round 1, F2/F3).
     // v41 (alpha round 2, engineer G2, 2026-09-30): objective tags show near Butch and along the oil line, HOLD TAB after 20 s idle; ministry directions match the map, "twice" only after two passes, beacons at Toma and Eda; clamp near-misses never walk; LOWEST tier; QA starts chapter3-oil / chapter3-ministry. Files: +1 (chapter3Guidance): 26 -> 27.
+    // v42 (round 3 owner feedback "Ch3 lost logic when parts were cut",
+    // engineer H3, 2026-10-01): reopened for the logic pass G1–G15. Set-ups
+    // restored (seven o'clock train, "another mark", the two fire rows,
+    // Petar's C-441 work order at dusk, the repair line, the oil line as the
+    // first row, the dawn time jump and bench lines, Hana's greeting, the
+    // rose scarf, Rada); HUD objectives move to CHAPTER3_OBJECTIVES and name
+    // only what has been told; Sava has a hover tag; the dusk fire smokes
+    // from a distance; dead hotel door interactions removed. Art: amber lamp
+    // globes with halo and light pool (setLampGlow by clock), road setts on
+    // the full-contrast limestone, a tight rim on Butch, street camera
+    // 3.6 -> 4.0. Toma's composition unchanged. Files: 27 -> 27.
     assert.equal(sourceFiles.length, 27);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'adae9f12ab4365b309bd29a1f7775c94a7acccc6246702784cae2a8ac41b6b6c',
+      '684dfab2979e29cd45f0cb9b873d214cf7ffef522b67c31cfaa8ba10be8106fc',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

@@ -21,10 +21,17 @@ export const DEV_ROUTES = Object.freeze([
   { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone and the hotel cut.', route: '/borrowed-light.html?section=B' },
   { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Eight-bell departure; the train remembers.', route: '/borrowed-light.html?section=C' },
   { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · THE PLATFORM', detail: 'The night service drops Butch with the claim card.', route: '/car03-3d.html' },
+  // Round 3: 3.1a/3.1b open the oil line and the ministry walk; 3.4 starts
+  // at the dusk cut (the dusk save's own start) and 3.4a at the optional
+  // fire; 3.5 starts at the hotel door and 3.5a at the clamp.
+  { id: '3.1a', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'THE OIL LINE', detail: 'Look at the oil in the paving with Lev.', route: '/car03-3d.html?playtest=chapter3-oil' },
+  { id: '3.1b', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'TO THE MINISTRY', detail: 'The walk past the fountain to Toma’s door.', route: '/car03-3d.html?playtest=chapter3-ministry' },
   { id: '3.2', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'TICKET 43 BOARD', detail: 'The lens, the ticket stack and one punch.', route: '/car03-3d.html?playtest=chapter3-board' },
   { id: '3.3', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'MARKET SCANNER · WALK BESIDE', detail: 'Cross the ward scanner in step with Olek.', route: '/car03-3d.html?playtest=chapter3-market' },
-  { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'DUSK · THE CUT FEED', detail: 'Petar’s cut and the campfire at dusk.', route: '/car03-3d.html?playtest=chapter3-magic-stone' },
-  { id: '3.5', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'COPPER HERON · NIGHT FIRE', detail: 'The wire into the clamp, on the next bell.', route: '/car03-3d.html?playtest=chapter3-wire' },
+  { id: '3.4', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'DUSK · THE CUT FEED', detail: 'Petar’s work order and the cut by the clock.', route: '/car03-3d.html?playtest=chapter3-dusk' },
+  { id: '3.4a', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'DUSK · THE LAUNDRY FIRE', detail: 'The optional fire by the west wall.', route: '/car03-3d.html?playtest=chapter3-magic-stone' },
+  { id: '3.5', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'COPPER HERON', detail: 'Hana’s ledger, the room and the night.', route: '/car03-3d.html?playtest=chapter3-hotel' },
+  { id: '3.5a', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'NIGHT FIRE · THE CLAMP', detail: 'The loose feed into the clamp, on the next bell.', route: '/car03-3d.html?playtest=chapter3-wire' },
   { id: '3.6', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-dusk', title: 'STATION SCANNER · FINALE', detail: 'The station scanner; board the night service.', route: '/car03-3d.html?playtest=chapter3-station' },
   { id: '4.1', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'GALLERY · UNDER THE GOUACHE', detail: 'Paint and wash the gallery car; three plates and the door.', route: '/painted-country.html' },
   { id: '4.2', group: 'CHAPTER 4 · THE PAINTED COUNTRY', checkpoint: 'chapter-4-start', title: 'STUDIO · THE STILL LIFE', detail: 'Six colours, as Rosa remembered them.', route: '/painted-country.html?qa=drawing' },

@@ -123,6 +123,31 @@ export function chapter3LightForClock(clock) {
   };
 }
 
+// How strongly the street lamps glow (0..1) at a chapter clock time: barely
+// on in the afternoon sun, warming through dusk, full at night, fading at
+// dawn (round 3 art pass, P2 lamps).
+const LAMP_GLOW_KEYS = Object.freeze([
+  [14 * 60, 0.12],
+  [17 * 60 + 20, 0.5],
+  [20 * 60 + 30, 0.9],
+  [21 * 60 + 30, 1],
+  [24 * 60 + 5 * 60 + 30, 1],
+  [24 * 60 + 6 * 60 + 20, 0.45],
+  [24 * 60 + 7 * 60 + 30, 0.25],
+]);
+
+export function chapter3LampGlowForClock(clock) {
+  const minute = absoluteClockMinute(clock);
+  if (minute <= LAMP_GLOW_KEYS[0][0]) return LAMP_GLOW_KEYS[0][1];
+  for (let index = 1; index < LAMP_GLOW_KEYS.length; index += 1) {
+    const [toMinute, toLevel] = LAMP_GLOW_KEYS[index];
+    if (minute > toMinute) continue;
+    const [fromMinute, fromLevel] = LAMP_GLOW_KEYS[index - 1];
+    return THREE.MathUtils.lerp(fromLevel, toLevel, (minute - fromMinute) / Math.max(1, toMinute - fromMinute));
+  }
+  return LAMP_GLOW_KEYS.at(-1)[1];
+}
+
 function colorSnapshot(color) {
   return color ? color.clone() : new THREE.Color(0x000000);
 }

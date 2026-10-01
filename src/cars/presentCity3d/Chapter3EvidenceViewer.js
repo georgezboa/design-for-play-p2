@@ -24,9 +24,11 @@ export const CHAPTER3_DOCUMENTS = Object.freeze({
     id: 'maintenance-order-c441',
     stamp: 'PUBLIC WORKS · ORDER C-441',
     title: 'Isolate the lower branch',
+    // Shown at the start of the dusk beat (G1): it introduces Petar by the
+    // name he signed and the branch he cut.
     lines: Object.freeze([
       'An unregistered branch under the clock paving lost pressure.',
-      'Cut and cleaned by P. Kolar. Main feed left in service.',
+      'Cut and cleaned by <b>P. Kolar</b>, 17:10. Main feed left in service.',
     ]),
   }),
 });

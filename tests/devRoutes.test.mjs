@@ -39,6 +39,26 @@ test('every checkpoint, legacy ids included, resumes on a production page', () =
   }
 });
 
+test('Chapter 3 nodes open the beat they name, in play order (round 3, G15)', () => {
+  const main = read('src/car03-3d-main.js');
+  const starts = Object.fromEntries([...main.matchAll(/'(chapter3-[a-z-]+)': '([a-z-]+)'/g)].map(([, param, start]) => [param, start]));
+  const ch3 = DEV_ROUTES.filter(({ id }) => id.startsWith('3.'));
+  assert.deepEqual(ch3.map(({ id }) => id), ['3.1', '3.1a', '3.1b', '3.2', '3.3', '3.4', '3.4a', '3.5', '3.5a', '3.6']);
+  const param = (entry) => new URL(entry.route, 'http://nightfall.local').searchParams.get('playtest');
+  const byId = Object.fromEntries(ch3.map((entry) => [entry.id, param(entry)]));
+  for (const [id, playtest] of Object.entries(byId)) {
+    if (playtest) assert.ok(starts[playtest], `${id}: ${playtest} is a playtest start`);
+  }
+  assert.equal(byId['3.1'], null);
+  assert.equal(starts[byId['3.1a']], 'oil-seam');
+  assert.equal(starts[byId['3.1b']], 'ministry-walk');
+  assert.equal(starts[byId['3.4']], 'cut-interface', '3.4 starts at the dusk cut, like the dusk save');
+  assert.equal(byId['3.4a'], 'chapter3-magic-stone', '3.4a is the optional fire');
+  assert.equal(starts[byId['3.5']], 'hotel', '3.5 starts at the Copper Heron');
+  assert.equal(starts[byId['3.5a']], 'wire');
+  assert.equal(starts[byId['3.6']], 'station');
+});
+
 test('index.html boots no game: title, credits, legacy ?play=1 resume and the dev launcher only', () => {
   const main = read('src/main.js');
   assert.doesNotMatch(main, /from 'phaser'|new Phaser\.Game|\.\/scenes\//);
