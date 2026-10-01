@@ -7,15 +7,24 @@
 //
 // The battle music (face-the-fear.mp3) has no recorded provenance and is
 // listed for replacement in docs/MUSIC_REPLACEMENT_PLAN.md.
+//
+// Round 3: the drops were packed edge to edge, so a dozen frames ran into
+// (or were sliced by) their frame. Every frame is now re-packed with
+// SHEET_PAD px of clear margin left, right and top (the bottom stays flush on
+// the rails), and each straight cut is feathered into the smoke; meta.json
+// lists them. Boss.js measures the body inside the padding (bodyWidth /
+// bodyHeight), so the hurt-box and the eye/baton/chimney points are where
+// they were.
+export const SHEET_PAD = Object.freeze({ left: 24, right: 24, top: 24, bottom: 0 });
 
 export const CONDUCTOR_SHEETS = {
-  'conductor-idle':   { path: '/assets/black-knife/images/conductor/idle.webp',   sheet: { frameWidth: 399, frameHeight: 428 }, frameRate: 8,  repeat: -1 },
-  'conductor-move':   { path: '/assets/black-knife/images/conductor/move.webp',   sheet: { frameWidth: 409, frameHeight: 386 }, frameRate: 10, repeat: -1 },
-  'conductor-baton':  { path: '/assets/black-knife/images/conductor/baton.webp',  sheet: { frameWidth: 410, frameHeight: 599 }, frameRate: 10, repeat: 0 },
-  'conductor-locom':  { path: '/assets/black-knife/images/conductor/locom.webp',  sheet: { frameWidth: 410, frameHeight: 375 }, frameRate: 12, repeat: -1 },
-  'conductor-magic':  { path: '/assets/black-knife/images/conductor/magic.webp',  sheet: { frameWidth: 409, frameHeight: 572 }, frameRate: 9,  repeat: 0 },
-  'conductor-damage': { path: '/assets/black-knife/images/conductor/damage.webp', sheet: { frameWidth: 378, frameHeight: 392 }, frameRate: 10, repeat: 0 },
-  'conductor-defeat': { path: '/assets/black-knife/images/conductor/defeat.webp', sheet: { frameWidth: 396, frameHeight: 368 }, frameRate: 4,  repeat: 0 },
+  'conductor-idle':   { path: '/assets/black-knife/images/conductor/idle.webp',   sheet: { frameWidth: 447, frameHeight: 452 }, frameRate: 8,  repeat: -1 },
+  'conductor-move':   { path: '/assets/black-knife/images/conductor/move.webp',   sheet: { frameWidth: 457, frameHeight: 410 }, frameRate: 10, repeat: -1 },
+  'conductor-baton':  { path: '/assets/black-knife/images/conductor/baton.webp',  sheet: { frameWidth: 458, frameHeight: 623 }, frameRate: 10, repeat: 0 },
+  'conductor-locom':  { path: '/assets/black-knife/images/conductor/locom.webp',  sheet: { frameWidth: 458, frameHeight: 399 }, frameRate: 12, repeat: -1 },
+  'conductor-magic':  { path: '/assets/black-knife/images/conductor/magic.webp',  sheet: { frameWidth: 457, frameHeight: 596 }, frameRate: 9,  repeat: 0 },
+  'conductor-damage': { path: '/assets/black-knife/images/conductor/damage.webp', sheet: { frameWidth: 426, frameHeight: 416 }, frameRate: 10, repeat: 0 },
+  'conductor-defeat': { path: '/assets/black-knife/images/conductor/defeat.webp', sheet: { frameWidth: 444, frameHeight: 392 }, frameRate: 4,  repeat: 0 },
 };
 
 export const IMAGE_MANIFEST = {

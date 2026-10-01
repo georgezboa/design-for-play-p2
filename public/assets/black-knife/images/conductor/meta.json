@@ -1,44 +1,172 @@
 {
   "idle": {
-    "frameWidth": 399,
-    "frameHeight": 428,
+    "frameWidth": 447,
+    "frameHeight": 452,
     "frames": 5,
-    "medianH": 421
+    "medianH": 421,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 2,
+        "cuts": [
+          "L26"
+        ]
+      },
+      {
+        "frame": 3,
+        "cuts": [
+          "L21"
+        ]
+      },
+      {
+        "frame": 4,
+        "cuts": [
+          "L0"
+        ]
+      }
+    ]
   },
   "move": {
-    "frameWidth": 409,
-    "frameHeight": 386,
+    "frameWidth": 457,
+    "frameHeight": 410,
     "frames": 5,
-    "medianH": 337
+    "medianH": 337,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 2,
+        "cuts": [
+          "L0"
+        ]
+      },
+      {
+        "frame": 4,
+        "cuts": [
+          "L20"
+        ]
+      }
+    ]
   },
   "baton": {
-    "frameWidth": 410,
-    "frameHeight": 599,
+    "frameWidth": 458,
+    "frameHeight": 623,
     "frames": 5,
-    "medianH": 483
+    "medianH": 483,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 2,
+        "cuts": [
+          "R404"
+        ]
+      },
+      {
+        "frame": 3,
+        "cuts": [
+          "L0",
+          "R409"
+        ]
+      }
+    ]
   },
   "locom": {
-    "frameWidth": 410,
-    "frameHeight": 375,
+    "frameWidth": 458,
+    "frameHeight": 399,
     "frames": 5,
-    "medianH": 332
+    "medianH": 332,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 1,
+        "cuts": [
+          "L0"
+        ]
+      }
+    ]
   },
   "magic": {
-    "frameWidth": 409,
-    "frameHeight": 572,
+    "frameWidth": 457,
+    "frameHeight": 596,
     "frames": 5,
-    "medianH": 478
+    "medianH": 478,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 0,
+        "cuts": [
+          "R401"
+        ]
+      },
+      {
+        "frame": 2,
+        "cuts": [
+          "L0",
+          "R408"
+        ]
+      },
+      {
+        "frame": 4,
+        "cuts": [
+          "L4"
+        ]
+      }
+    ]
   },
   "damage": {
-    "frameWidth": 378,
-    "frameHeight": 392,
+    "frameWidth": 426,
+    "frameHeight": 416,
     "frames": 3,
-    "medianH": 383
+    "medianH": 383,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    }
   },
   "defeat": {
-    "frameWidth": 396,
-    "frameHeight": 368,
+    "frameWidth": 444,
+    "frameHeight": 392,
     "frames": 2,
-    "medianH": 356
+    "medianH": 356,
+    "pad": {
+      "left": 24,
+      "right": 24,
+      "top": 24,
+      "bottom": 0
+    },
+    "feathered": [
+      {
+        "frame": 1,
+        "cuts": [
+          "L0"
+        ]
+      }
+    ]
   }
 }
