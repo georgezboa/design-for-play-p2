@@ -16,7 +16,8 @@ import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
 import { reducedMotionActive } from '../../shell/motion.js';
 import { createTimetable, rememberedSequence } from './timetableModel.js';
-import { CONTROLLER, createControllerState, stepController } from './controller.js';
+import { CONTROLLER, createControllerState, stepController, tapHoldMs } from './controller.js';
+import { placeTeachTag, signRects } from './teachTag.js';
 import {
   BENCH,
   BOARD_X,
@@ -484,6 +485,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     });
     kb.addCapture(['SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
     this.jumpQueued = false;
+    this.jumpHoldMs = 0;
+    this.jumpDownAt = null;
+    this.jumpUpAt = null;
     // A long frame can hand the same DOM keydown to a Key twice; every
     // press must act once.
     const seen = new WeakSet();
@@ -492,16 +496,24 @@ export class BorrowedLightScene extends Phaser.Scene {
         if (seen.has(event)) return;
         seen.add(event);
       }
-      fn();
+      fn(event);
     };
-    const jumpDown = () => {
+    const stamp = (event) => (Number.isFinite(event?.timeStamp) ? event.timeStamp : performance.now());
+    const queueJump = (event) => {
+      this.jumpQueued = true;
+      this.jumpDownAt = stamp(event);
+      this.jumpUpAt = null;
+    };
+    const jumpDown = (event) => {
       if (this.hud.cardOpen) { this.hud.closeCard(); return; }
       if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
-      this.jumpQueued = true;
+      queueJump(event);
     };
     this.keys.space.on('down', once(jumpDown));
-    this.keys.up.on('down', once(() => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; }));
-    this.keys.w.on('down', once(() => { if (!this.hud.dialogOpen && !this.hud.cardOpen) this.jumpQueued = true; }));
+    this.keys.up.on('down', once((event) => { if (!this.hud.dialogOpen && !this.hud.cardOpen) queueJump(event); }));
+    this.keys.w.on('down', once((event) => { if (!this.hud.dialogOpen && !this.hud.cardOpen) queueJump(event); }));
+    // Remember when the tap ended (see controller.js tapHoldMs).
+    for (const key of [this.keys.space, this.keys.up, this.keys.w]) key.on('up', (_key, event) => { this.jumpUpAt = stamp(event); });
     this.keys.e.on('down', once(() => this.interact()));
     this.keys.enter.on('down', once(() => { if (this.hud.cardOpen) this.hud.closeCard(); else if (this.hud.dialogOpen) this.hud.advanceDialog(); }));
     this.keys.f.on('down', once(() => this.punch()));
@@ -1142,7 +1154,17 @@ export class BorrowedLightScene extends Phaser.Scene {
     const { body, ctrl } = this.player;
     const grounded = body.blocked.down || body.touching.down;
     let input = { ...this.readInput(), jumpPressed: false };
-    if (this.jumpQueued) { input.jumpPressed = true; this.jumpQueued = false; }
+    if (this.jumpQueued) {
+      input.jumpPressed = true;
+      this.jumpQueued = false;
+      // A tap already released by this step still holds the jump for as
+      // long as the key was really down (R2-2).
+      this.jumpHoldMs = input.jumpHeld ? 0 : tapHoldMs({ downAt: this.jumpDownAt, upAt: this.jumpUpAt, timescale: this.timescale });
+    }
+    if (this.jumpHoldMs > 0) {
+      input.jumpHeld = true;
+      this.jumpHoldMs -= dt;
+    }
     if (this.locked === 'auto' && this.autoRun) {
       input = { left: false, right: true, jumpHeld: false, jumpPressed: false };
       if (this.autoRun.chase) this.autoRun.targetX = this.boardX() + 10;
@@ -1174,6 +1196,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     body.setVelocity(out.vx, vy);
     this.player.pose = out.pose;
+    // QA: a whole hop can fit inside one slow rendered frame, so the text
+    // state keeps the last jump's peak (feet y) as well as the live pose.
+    if (out.jumped) this.lastJump = { count: (this.lastJump?.count ?? 0) + 1, fromY: Math.round(this.feetY), peakY: Math.round(this.feetY) };
+    else if (this.lastJump && !grounded) this.lastJump.peakY = Math.min(this.lastJump.peakY, Math.round(this.feetY));
     if (out.jumped) {
       this.flags.jumped = true;
       sfx.jumpSound();
@@ -1426,7 +1452,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (edge('A', pad.A)) {
       if (this.hud.cardOpen) this.hud.closeCard();
       else if (this.hud.dialogOpen) this.hud.advanceDialog();
-      else this.jumpQueued = true;
+      else {
+        this.jumpQueued = true;
+        this.jumpDownAt = null;
+        this.jumpUpAt = null;
+      }
     }
     if (edge('X', pad.X)) this.interact();
     if (edge('R1', pad.R1)) this.punch();
@@ -1900,7 +1930,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (!this.flags.jumped && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
     const queued = Object.values(this.tt.snapshot().queued).length > 0;
     if (!this.flags.listened && this.flags.listenHinted && queued && !this.currentTarget) {
-      return { x: this.feetX, y: this.feetY - 150, text: HINTS.listen };
+      // Near Butch, clear of the hanging neon (R2-1: it covered LAUNDRY).
+      return { follow: true, text: HINTS.listen };
     }
     return null;
   }
@@ -1909,7 +1940,21 @@ export class BorrowedLightScene extends Phaser.Scene {
     const pt = this.promptText;
     const teach = this.locked || this.hud.dialogOpen || this.hud.cardOpen ? null : this.teachPrompt();
     this.teachText.setVisible(Boolean(teach));
-    if (teach) this.teachText.setText(teach.text).setPosition(teach.x, teach.y);
+    if (teach) {
+      this.teachText.setText(teach.text);
+      const at = teach.follow
+        ? placeTeachTag({
+          feetX: this.feetX,
+          feetY: this.feetY,
+          bodyH: BODY_H + 16,
+          tagW: this.teachText.width,
+          tagH: this.teachText.height,
+          rects: this.signRects ?? (this.signRects = signRects(SIGNS)),
+        })
+        : teach;
+      this.teachText.setPosition(at.x, at.y);
+      this.teachAt = at.at ?? null;
+    }
     if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
     // Something already read keeps its E (you can read it again) but no
     // longer advertises it.
@@ -1955,6 +2000,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         grounded: this.player.ctrl.grounded,
         pose: this.player.pose,
         facing: this.player.ctrl.facing,
+        lastJump: this.lastJump ?? null,
       },
       locked: this.locked,
       respawning: this.respawning,
@@ -1977,6 +2023,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       card: this.hud.cardOpen,
       prompt: this.promptText.visible ? this.promptText.text : null,
       teach: this.teachText.visible ? this.teachText.text : null,
+      teachAt: this.teachText.visible ? { x: Math.round(this.teachText.x), y: Math.round(this.teachText.y), at: this.teachAt ?? null } : null,
       darkDecks: Object.fromEntries((this.darkDecks ?? []).map((deck) => [deck.platform.id, { solid: deck.solid, reveal: Number(deck.reveal.toFixed(2)), shown: Number(deck.shown.toFixed(2)) }])),
       caption: this.hud.saying && this.hud.caption.visible && !this.hud.dialogOpen ? this.hud.saying.text : null,
       mara: this.mara ? { sighting: this.mara.s.id, phase: this.mara.phase, x: Math.round(this.mara.x) } : null,
