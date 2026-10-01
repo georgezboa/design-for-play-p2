@@ -13,6 +13,11 @@
 //
 // Checklist menus offer Continue after one topic; every fact the next beat
 // needs is folded into the conclusion lines, so no topic is ever required.
+//
+// Alpha round 1 length pass (target 30–35 min first time): no conversation
+// runs more than five lines before the player acts (a choice, a click, a
+// walk). Topic answers no longer repeat the question the menu just showed;
+// the queue number, the guided walk and Lev's world briefing are gone.
 
 export const OPENING_POSITIONS = Object.freeze({
   // In the sun on the platform paving in front of the shelter, where the
@@ -88,25 +93,19 @@ export const SCANNER_FIELDS = Object.freeze({
 });
 
 // ---------------------------------------------------------------- arrival
+// The conductor's call and Butch's one line, then the claim card itself.
 export const ARRIVAL_DIALOGUE = Object.freeze([
   { speaker: 'CONDUCTOR', text: 'Echo City. Passengers leaving the train, please step onto the platform. Keep the doorway clear.' },
-  { speaker: 'CONDUCTOR', text: 'The night service calls back at seven tomorrow. Be on the platform.' },
   { speaker: 'BUTCH', text: 'I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.' },
-  { speaker: 'BUTCH', text: 'She said she would leave another mark where she could. The last one pointed here.' },
 ]);
+export const ARRIVAL_BEFORE_CARD = 2;
 
 export const LEV_INTRO_DIALOGUE = Object.freeze([
   { speaker: 'LEV', text: 'Keep that card out.' },
   { speaker: 'BUTCH', text: 'Why?' },
-  { speaker: 'LEV', text: 'Because that claim number went through our station reader yesterday. Twice.' },
+  { speaker: 'LEV', text: 'That claim number went through our station reader yesterday. Twice.' },
   { speaker: 'LEV', text: 'Lev Ardin. Civic Movement Investigation Office.' },
-  { speaker: 'LEV', text: 'Two tickets numbered forty-three, one seat, both valid. The Transport Ministry printed them.' },
-  { speaker: 'LEV', text: 'Several shopkeepers reported lamp oil in the paving. There is a dark line between the station and the square.' },
-  { speaker: 'LEV', text: 'We start with the thing that will still be here in ten minutes. The oil.' },
-]);
-
-export const WORLD_BRIEFING_DIALOGUE = Object.freeze([
-  { speaker: 'LEV', text: 'Here. Stay on this side of the joint.' },
+  { speaker: 'LEV', text: 'Two tickets forty-three, one seat, both valid. And someone poured lamp oil into the paving. We start with the oil.' },
 ]);
 
 // ---------------------------------------------------------------- oil seam
@@ -143,7 +142,6 @@ export const SEAM_TOPIC_RESPONSES = Object.freeze({
 export const SEAM_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.' },
   { speaker: 'BUTCH', text: 'Someone placed it deliberately.' },
-  { speaker: 'LEV', text: 'That is also my conclusion. The repeated turns are the strongest reason.' },
   { speaker: 'LEV', text: 'Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is east, past the clock.' },
 ]);
 
@@ -151,18 +149,11 @@ export const SEAM_CONCLUSION = Object.freeze([
 export const TRANSPORT_ENTRANCE_DIALOGUE = Object.freeze([
   { speaker: 'TOMA', text: 'Public hall is open. What business are you bringing inside?' },
   { speaker: 'BUTCH', text: 'Yesterday\'s ticket forty-three. Both of them.' },
-  { speaker: 'TOMA', text: 'Take a number from the brass machine. Nika runs the ticket terminal.' },
-]);
-
-export const TRANSPORT_QUEUE_DIALOGUE = Object.freeze([
-  { speaker: 'BUTCH', text: 'A brass lever, a paper roll, and a slot polished by thousands of hands.' },
-  { speaker: 'BUTCH', text: 'M-17.' },
-  { speaker: 'CLERK', text: 'M-seventeen. The terminal window.' },
+  { speaker: 'TOMA', text: 'Nika runs the ticket terminal. The window on the right.' },
 ]);
 
 export const NIKA_OPENING = Object.freeze([
   { speaker: 'NIKA', text: 'Sava authorized the search. I can show you timestamps, not conclusions.' },
-  { speaker: 'BUTCH', text: 'Good. Start with what the system recorded.' },
 ]);
 
 export function nikaTopicMenu(asked = []) {
@@ -177,13 +168,11 @@ export function nikaTopicMenu(asked = []) {
 
 export const NIKA_TOPIC_RESPONSES = Object.freeze({
   'nika-reservation': [
-    { speaker: 'BUTCH', text: 'Who holds seat forty-three tomorrow?' },
     { speaker: 'NIKA', text: 'Tomorrow, seven ten. One cash reservation under M. Venn, made yesterday at fifteen thirty-eight.' },
     { speaker: 'BUTCH', text: 'Mara Venn.' },
     { speaker: 'NIKA', text: 'Possibly. The reservation contains no photograph and no identity number. I can prove the name and time, not the passenger.' },
   ],
   'nika-sale': [
-    { speaker: 'BUTCH', text: 'What else was charged to that seat?' },
     { speaker: 'NIKA', text: 'A market sale at fourteen twelve. Two cans of lamp oil, stamped with the seat number. Eda\'s stall.' },
   ],
 });
@@ -250,14 +239,12 @@ export const TICKET_BOARD_FILED_CARD = Object.freeze({
 export const TICKET_BOARD_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'One seat, one claim, two tickets. The archive printed her twice.' },
   { speaker: 'LEV', text: 'Two true things, filed as two people.' },
-  { speaker: 'BUTCH', text: 'The duplicate is a clerical ghost. The oil is not. It was bought on the same seat.' },
-  { speaker: 'LEV', text: 'Then Eda\'s stall. The market is west, past the clock.' },
+  { speaker: 'BUTCH', text: 'The duplicate is a clerical ghost. The oil is not: it was bought on the same seat. Eda\'s stall, west past the clock.' },
 ]);
 
 // ---------------------------------------------------------------- market
 export const EDA_OPENING = Object.freeze([
   { speaker: 'EDA', text: 'If this is about the smell, I already called Sanitation. They sent me a complaint form instead of a cleaner.' },
-  { speaker: 'LEV', text: 'We are not here to assign the cleaning bill. We found lamp oil in the paving and need to identify the supply.' },
 ]);
 
 export function edaTopicMenu(asked = []) {
@@ -273,24 +260,20 @@ export function edaTopicMenu(asked = []) {
 
 export const EDA_TOPIC_RESPONSES = Object.freeze({
   'eda-order': [
-    { speaker: 'BUTCH', text: 'What did Mara buy?' },
     { speaker: 'EDA', text: 'Two five litre cans of lamp oil and one bottle of stone solvent. She paid cash.' },
     { speaker: 'EDA', text: 'She asked where the old public fire letters connected to the street supply. I told her to ask the archive.' },
   ],
   'eda-collector': [
-    { speaker: 'BUTCH', text: 'Who collected it?' },
     { speaker: 'EDA', text: 'Olek loaded the cans after she paid him. She left first.' },
   ],
   'eda-face': [
-    { speaker: 'BUTCH', text: 'What did she look like?' },
-    { speaker: 'EDA', text: 'A good coat, a teal scarf, a ticket in her glove. She kept her face to the street the whole time.' },
+    { speaker: 'EDA', text: 'A good coat, a rose scarf, a ticket in her glove. She kept her face to the street the whole time.' },
   ],
 });
 
 export const EDA_CONCLUSION = Object.freeze([
   { speaker: 'EDA', text: 'Olek carried the two cans for her. He is taking the cart through the ward crossing now.' },
-  { speaker: 'LEV', text: 'Market Ward put a scanner on that crossing after the oil complaint. It flags anyone who crosses alone.' },
-  { speaker: 'LEV', text: 'An hour of forms, if it flags you. Walk beside Olek and it reads you as one party.' },
+  { speaker: 'LEV', text: 'That crossing has a scanner. It flags anyone who crosses alone. Walk beside Olek, in step, and it reads you as one party.' },
 ]);
 
 // Olek talks while Butch keeps pace with him (short walking captions).
@@ -311,15 +294,18 @@ export const SCANNER_WORDS = Object.freeze({
   warning: 'WARNING',
   ok: 'PATTERN OK',
   flagged: 'ALONE · WALK BESIDE SOMEONE',
-  matchPrompt: 'WALK BESIDE',
+  matchPrompt: 'WALK IN STEP',
   release: 'LET GO',
+  // The pips bar while matched (alpha round 1: "forward" read as screen-up).
+  holdHint: 'HOLD <kbd>E</kbd> · WALK IN STEP',
+  wrongWay: 'THE ARCH IS THE OTHER WAY · HOLD <kbd>E</kbd>',
+  releaseHint: 'WALK BACK · LET GO',
 });
 
 // ---------------------------------------------------------------- dusk
 export const CUT_INTERFACE_OPENING = Object.freeze([
   { speaker: 'PETAR', text: 'Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.' },
   { speaker: 'BUTCH', text: 'The branch you cut supplied the second line of a ground message.' },
-  { speaker: 'PETAR', text: 'I did not see a message. I worked from the access chamber below the paving.' },
 ]);
 
 export function cutInterfaceMenu(observed = []) {
@@ -336,7 +322,6 @@ export function cutInterfaceMenu(observed = []) {
 export const CUT_INTERFACE_RESPONSES = Object.freeze({
   'cut-cut': [
     { speaker: 'BUTCH', text: 'Both faces carry the same fresh compression marks as Petar\'s cutter. One branch, one cut.' },
-    { speaker: 'LEV', text: 'That confirms his tool and his admission. It does not tell us what happened after he left.' },
   ],
   'cut-placement': [
     { speaker: 'BUTCH', text: 'Neither end fell back into the access channel. They are resting side by side in the shallow groove.' },
@@ -350,14 +335,11 @@ export const CUT_INTERFACE_RESPONSES = Object.freeze({
 
 export const CUT_INTERFACE_CONCLUSION = Object.freeze([
   { speaker: 'BUTCH', text: 'Petar cut the branch. Later, someone placed both ends where a person could reconnect them by hand.' },
-  { speaker: 'BUTCH', text: 'But the second line was not simply destroyed. A way to restore it was left here.' },
   { speaker: 'LEV', text: 'Record that much. The archive is closing and the next train is tomorrow morning. I booked you a room at the Copper Heron.' },
 ]);
 
 // ---------------------------------------------------------------- hotel
 export const HANA_OPENING = Object.freeze([
-  { speaker: 'HANA', text: 'Two rooms left. The next passenger train is tomorrow morning, so I assume you need one.' },
-  { speaker: 'LEV', text: 'One room for him. Before you write the name, we need to ask about a previous guest.' },
   { speaker: 'BUTCH', text: 'A guest on seat forty-three. Did she stay here?' },
   { speaker: 'HANA', text: 'Yes. Room six. She paid cash and asked me not to write a name.' },
 ]);
@@ -375,15 +357,12 @@ export function hanaTopicMenu(asked = []) {
 
 export const HANA_TOPIC_RESPONSES = Object.freeze({
   'hana-register': [
-    { speaker: 'BUTCH', text: 'Why agree to leave the line blank?' },
     { speaker: 'HANA', text: 'People miss trains, leave spouses, lose papers and sometimes want one quiet night. I have done it for years. She did not invent the arrangement.' },
   ],
   'hana-departure': [
-    { speaker: 'BUTCH', text: 'When did she leave?' },
     { speaker: 'HANA', text: 'Before dawn. I was setting the stove. She returned the key, crossed toward the square, and did not ask for a carriage.' },
   ],
   'hana-face': [
-    { speaker: 'BUTCH', text: 'Did you see her face?' },
     { speaker: 'HANA', text: 'No. Not once. She kept the scarf up and her back to the lamp. I remember thinking she was very good at it.' },
   ],
 });
@@ -401,7 +380,6 @@ export const SLEEP_DIALOGUE = Object.freeze([
 
 export const NIGHT_WAKE_DIALOGUE = Object.freeze([
   { speaker: 'BUTCH', text: 'The lamp is out. The wick is still warm.' },
-  { speaker: 'BUTCH', text: 'No dream I have ever kept smelled of lamp oil.' },
   { speaker: 'BUTCH', text: 'If the square is really burning, the street will say so. Get up. Look.' },
 ]);
 
@@ -417,20 +395,16 @@ export const NIGHT_FIRST_LINE = Object.freeze([
   { speaker: 'GROUND LETTERS', text: FIRE_LETTERS.first },
   { speaker: 'BUTCH', text: 'Another mark. She said she would leave one where she could.' },
   { speaker: 'BUTCH', text: 'The lower row is dark. The cut ends are beside it, exactly where they were at dusk.' },
-  { speaker: 'BUTCH', text: 'Both ends overlap by a hand width. The old clamp is open.' },
 ]);
 
 export const NIGHT_SECOND_LINE = Object.freeze([
   { speaker: 'GROUND LETTERS', text: FIRE_LETTERS.second },
   { speaker: 'BUTCH', text: 'It lit on the bell. As if she knew the minute I would kneel here.' },
-  { speaker: 'BUTCH', text: 'Keep moving. The night service calls at seven.' },
-  { speaker: 'NARRATION', text: 'Both lines continue burning. Wind pushes the flames in one direction, but neither sentence breaks.' },
 ]);
 
 // ---------------------------------------------------------------- dawn
+// The night's two lines and the dawn bench together stay within five.
 export const SUNRISE_BENCH_DIALOGUE = Object.freeze([
-  { speaker: 'BUTCH', text: 'Do you come up here often?' },
-  { speaker: 'LEV', text: 'When the first train is late.' },
   { speaker: 'BUTCH', text: 'Is it late today?' },
   { speaker: 'LEV', text: 'No.' },
   { speaker: 'BUTCH', text: 'All right.' },
@@ -465,7 +439,7 @@ export const STATION_APPROACH_DIALOGUE = Object.freeze([
 
 export const STATION_MARA_SIGHTED = Object.freeze([
   { speaker: 'BUTCH', text: 'Mara.' },
-  { speaker: 'NARRATION', text: 'The woman in the teal scarf does not turn. She waits at the scanner line, one step ahead.' },
+  { speaker: 'NARRATION', text: 'The woman in the rose scarf does not turn. She waits at the scanner line, one step ahead.' },
 ]);
 
 export const STATION_SCAN_RESULT = Object.freeze({
