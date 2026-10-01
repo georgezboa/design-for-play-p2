@@ -70,17 +70,29 @@
 .nf-card__close { margin-top: 18px; font: calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.14em; color: #6b5640; text-transform: uppercase; background: none; border: 0; cursor: pointer; padding: 0; }
 .nf-card__close:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 4px; }
 
-/* ---------- paper-tag prompt (interactable marker) ---------- */
+/* ---------- paper-tag prompt (interactable marker) ----------
+ * The notched end is painted by the background (two corner triangles), not
+ * cut by clip-path, and the shadow is a plain box-shadow: no CSS filter. A
+ * `filter: drop-shadow` here, over a WebGL canvas, re-rasterised the tag and
+ * its animated glint every frame and cost 100+ ms/frame on software
+ * compositing (alpha R3-1). The glint sits inside the corner, as the old
+ * clip-path showed it. */
 .nf-tag {
+  --nf-tag-paper: var(--nf-paper);
   position: fixed; transform: translate(-50%, -100%); pointer-events: none; z-index: 8800;
   display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 22px;
   font: 700 calc(13px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.12em; text-transform: uppercase;
-  color: var(--nf-paper-ink); background: var(--nf-paper);
-  clip-path: polygon(12px 0, 100% 0, 100% 100%, 12px 100%, 0 50%);
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+  color: var(--nf-paper-ink);
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--nf-tag-paper) 50%) 0 0 / 12px 50.5% no-repeat,
+    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--nf-tag-paper) 50%) 0 100% / 12px 50.5% no-repeat,
+    linear-gradient(var(--nf-tag-paper), var(--nf-tag-paper)) 12px 0 / calc(100% - 12px) 100% no-repeat;
+  /* a negative spread keeps the shadow off the notch (outer shadows never
+     paint inside the box): it falls under the tag, as the drop-shadow did */
+  box-shadow: 6px 5px 8px -4px rgba(0, 0, 0, 0.55);
 }
 .nf-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--nf-walnut); }
-.nf-tag::after { content: ''; position: absolute; right: -6px; top: -6px; width: 10px; height: 10px; border-radius: 50%; background: var(--nf-amber); box-shadow: 0 0 12px 4px rgba(224, 162, 74, 0.7); animation: nf-glint 2.2s ease-in-out infinite; }
+.nf-tag::after { content: ''; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 0 0 0 5px; background: var(--nf-amber); box-shadow: 0 0 6px 2px rgba(224, 162, 74, 0.7); animation: nf-glint 2.2s ease-in-out infinite; }
 .nf-tag kbd { font: inherit; color: var(--nf-oxblood); }
 
 /* ---------- chapter title card ---------- */
@@ -99,6 +111,25 @@
 @keyframes nf-title { 0% { opacity: 0; } 15% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .nf-caption__next, .nf-tag::after { animation: none; } }
 :root[data-reduced-motion='true'] .nf-caption__next, :root[data-reduced-motion='true'] .nf-tag::after { animation: none; }
+
+/* ---------- LOW GRAPHICS (Settings; applySettings sets data-low-graphics) ----------
+ * Over a WebGL canvas on a software compositor every soft shadow and every
+ * looping animation is a repaint per frame: the kit drops them. The tag keeps
+ * its shape and gets a solid darker edge instead of a shadow. */
+:root[data-low-graphics='true'] .nf-tag {
+  box-shadow: none;
+  background:
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--nf-tag-paper) 50%) 0 0 / 12px 50.5% no-repeat,
+    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--nf-tag-paper) 50%) 0 100% / 12px 50.5% no-repeat,
+    linear-gradient(#9c8a68, #9c8a68) 12px 100% / calc(100% - 12px) 2px no-repeat,
+    linear-gradient(var(--nf-tag-paper), var(--nf-tag-paper)) 12px 0 / calc(100% - 12px) 100% no-repeat;
+}
+:root[data-low-graphics='true'] .nf-tag::after { animation: none; box-shadow: none; }
+:root[data-low-graphics='true'] .nf-caption__next { animation: none; }
+:root[data-low-graphics='true'] .nf-caption { box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6); }
+:root[data-low-graphics='true'] .nf-card { box-shadow: 0 0 0 2px rgba(5, 4, 3, 0.55); }
+:root[data-low-graphics='true'] .nf-title-card__main { text-shadow: 0 3px 0 rgba(0, 0, 0, 0.8); }
+:root[data-low-graphics='true'] .nf-stones i.is-held { box-shadow: none; }
 
 /* ---------- leaving for the title (shell/titleReturn.js) ---------- */
 .nf-title-return {

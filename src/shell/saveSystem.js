@@ -217,8 +217,11 @@ export function createSaveStore(storage = globalThis.localStorage, { scratch = r
 
 // A test route's scratch save: the node's checkpoint, and the stones of the
 // player's active slot (so stone-gated routes behave as they would for them).
+// `stones: 'all'` seeds all five instead, for the nodes that open the
+// five-stone route itself (devRoutes.js 6.5 / 6.6), which would otherwise
+// bounce back to the Conductor on a slot without them (alpha R4-7).
 // Called by the router just before it navigates.
-export function seedRouterSave(checkpointId, { storage = globalThis.localStorage } = {}) {
+export function seedRouterSave(checkpointId, { storage = globalThis.localStorage, stones = null } = {}) {
   const real = createSaveStore(storage, { scratch: false });
   const source = real.readAll()[real.getActiveSlot()];
   const id = checkpointById(checkpointId) ? checkpointId : 'chapter-1-start';
@@ -228,7 +231,7 @@ export function seedRouterSave(checkpointId, { storage = globalThis.localStorage
     slot: 0,
     checkpointId: id,
     unlocked: [...new Set(['chapter-1-start', id])],
-    magicStones: [...(source?.magicStones ?? [])],
+    magicStones: stones === 'all' ? [...MAGIC_STONE_IDS] : [...(source?.magicStones ?? [])],
     notices: [...(source?.notices ?? [])],
     createdAt: now,
     updatedAt: now,
@@ -264,6 +267,9 @@ export function applySettings(settings = readSettings()) {
   const root = document.documentElement;
   root.style.setProperty('--nightfall-text-scale', String(settings.textScale / 100));
   root.dataset.reducedMotion = settings.reducedMotion ? 'true' : 'false';
+  // CSS hook for the shared LOW GRAPHICS setting (uiKit.css, pauseMenu.css,
+  // and any chapter's `:root[data-low-graphics='true']` rules).
+  root.dataset.lowGraphics = settings.lowGraphics === true ? 'true' : 'false';
   document.querySelectorAll('audio, video').forEach((media) => {
     media.volume = volumeForChannel(settings, media.dataset?.nightfallAudioChannel);
   });

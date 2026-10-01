@@ -368,6 +368,12 @@
 .nf-pause-notice .nf-stones i { border-color: #8a6934; background: rgba(42, 29, 20, .18); }
 .nf-pause-notice .nf-stones i.is-held { background: radial-gradient(circle at 35% 35%, #ffd79a, #e0a24a 60%, #7a4a18); }
 
+/* LOW GRAPHICS: no backdrop blur (a full-screen filter over the live
+   canvas, every frame) and no looping glint. */
+:root[data-low-graphics='true'] .nf-pause-backdrop { backdrop-filter: none; background: rgba(6, 4, 2, .88); }
+:root[data-low-graphics='true'] .nf-pause-card { box-shadow: 0 0 0 1px rgba(20, 12, 6, .9); }
+:root[data-low-graphics='true'] .nf-pause-action .nf-pause-action__label::after { animation: none !important; }
+
 @keyframes nf-pause-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .nf-pause-card { animation: none; } .nf-pause-action { transition: none; } }
 :root[data-reduced-motion='true'] .nf-pause-card { animation: none; }
@@ -382,4 +388,25 @@
   .nf-pause-card h2 { font-size: calc(28px * var(--nf-p)); }
   .nf-pause-action { min-height: 38px; font-size: calc(16px * var(--nf-p)); }
   .nf-pause-stones__meaning { font-size: calc(13px * var(--nf-p)); }
+}
+/* Short, wide windows (1280×720 and the like, alpha N3): a wider card, three
+   columns (the board, then the key legend split in two), a tighter head, and
+   the stones on one line, so the whole card fits without scrolling at 100%
+   text and only the legend grows at larger text sizes. */
+@media (max-height: 820px) and (min-width: 900px) {
+  .nf-pause-card { width: min(1180px, calc(100vw - 32px)); padding-bottom: 10px; }
+  .nf-pause-ornament { padding-top: .55em; }
+  .nf-pause-ornament b { font-size: 11px; }
+  .nf-pause-eyebrow { margin-top: .15em; }
+  .nf-pause-card h2 { margin: 0; font-size: calc(36px * var(--nf-p)); }
+  .nf-pause-checkpoint { margin-top: .2em; padding: .38em 1em .32em; }
+  .nf-pause-body { grid-template-columns: minmax(0, .9fr) minmax(0, 2fr); gap: 22px; margin-top: 12px; }
+  .nf-pause-action { min-height: 40px; padding-block: .42em; }
+  .nf-pause-controls { padding: .65em .9em .55em; }
+  .nf-pause-controls__title { margin-bottom: .4em; }
+  .nf-pause-controls-note { display: block; columns: 2; column-gap: 1.6em; column-rule: 1px dashed rgba(176, 138, 74, .2); }
+  .nf-pause-controls-note div { break-inside: avoid; grid-template-columns: minmax(0, .82fr) minmax(0, 1.25fr); gap: .7em; padding: .3em 0; }
+  .nf-pause-stones { grid-auto-flow: column; justify-content: center; align-items: center; gap: 1.2em; margin-top: 10px; padding: .45em 1em .35em; }
+  .nf-pause-stones__meaning { font-size: calc(14px * var(--nf-p)); }
+  .nf-pause-foot { padding-top: .35em; }
 }
