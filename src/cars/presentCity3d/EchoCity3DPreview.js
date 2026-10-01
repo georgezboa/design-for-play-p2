@@ -274,6 +274,22 @@ async function makeMaterialSet(renderer) {
         metalness: 0,
       });
     },
+    // Round 3 art pass (P2): the roads read as flat dark planes. The dark
+    // albedo has almost no contrast (about six grey levels), so roads use
+    // the full-contrast limestone toned down to the same darkness, with a
+    // deeper bump so the low sun and the lamps pick out the setts.
+    roadPaving(width, depth) {
+      const repeat = [Math.max(1, width / 4.6), Math.max(1, depth / 4.6)];
+      return new THREE.MeshStandardMaterial({
+        color: 0x6c5a4b,
+        map: cloneTexture(limestone, repeat, true),
+        bumpMap: cloneTexture(height, repeat),
+        bumpScale: 0.2,
+        roughnessMap: cloneTexture(roughness, repeat),
+        roughness: 0.93,
+        metalness: 0,
+      });
+    },
     districtPaving(width, depth) {
       const repeat = [Math.max(1, width / 5), Math.max(1, depth / 5)];
       return new THREE.MeshStandardMaterial({
@@ -436,10 +452,10 @@ function addDistrictRoads(scene, walkMeshes, materials) {
   for (const road of DISTRICT_ROADS) {
     const [width, depth] = road.size;
     const material = alignMaterialToWorld(
-      materials.darkPaving(width, depth),
+      materials.roadPaving(width, depth),
       road.center[0] - width * 0.5,
       road.center[1] - depth * 0.5,
-      5.5,
+      4.6,
     );
     const street = new THREE.Mesh(
       new THREE.BoxGeometry(width, 0.045, depth),
@@ -836,7 +852,46 @@ function addLandmarkIslands(scene, materials) {
   scene.add(fountainWater);
 }
 
+// A soft radial falloff on a small canvas, white so a material colour tints it.
+function radialGlowTexture(size = 64, stops = [[0, 1], [0.35, 0.55], [1, 0]]) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const context = canvas.getContext('2d');
+  const gradient = context.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+  for (const [at, alpha] of stops) gradient.addColorStop(at, `rgba(255, 255, 255, ${alpha})`);
+  context.fillStyle = gradient;
+  context.fillRect(0, 0, size, size);
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  return texture;
+}
+
+// Round 3 art pass (P2): the lamp globes were plain white spheres. They are
+// amber glass now, with an additive halo sprite and a light-pool decal on
+// the paving instead of a real light per lamp (cheap on every tier: two
+// unlit transparent quads, shared materials). setLampGlow() fades all three
+// with the time of day.
+function lampGlowMaterials() {
+  return {
+    globe: new THREE.MeshStandardMaterial({ color: 0xe9a457, emissive: 0xff8a2e, emissiveIntensity: 0.9, roughness: 0.35 }),
+    halo: new THREE.SpriteMaterial({
+      map: radialGlowTexture(64, [[0, 0.95], [0.22, 0.5], [0.55, 0.12], [1, 0]]),
+      color: 0xffa24a, transparent: true, opacity: 0.45, depthWrite: false,
+      blending: THREE.AdditiveBlending, fog: false, toneMapped: false,
+    }),
+    pool: new THREE.MeshBasicMaterial({
+      map: radialGlowTexture(64, [[0, 0.75], [0.45, 0.32], [1, 0]]),
+      color: 0xff9a44, transparent: true, opacity: 0.18, depthWrite: false,
+      blending: THREE.AdditiveBlending, toneMapped: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    }),
+  };
+}
+
 function addLamp(scene, materials, x, z) {
+  materials.lampGlow ??= lampGlowMaterials();
+  const glow = materials.lampGlow;
   const group = new THREE.Group();
   group.name = 'street-lamp';
   const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.12, 3.9, 12), materials.iron);
@@ -847,12 +902,23 @@ function addLamp(scene, materials, x, z) {
   crown.position.y = 3.85;
   crown.castShadow = true;
   group.add(crown);
-  const bulb = new THREE.Mesh(
-    new THREE.SphereGeometry(0.18, 16, 10),
-    new THREE.MeshStandardMaterial({ color: 0xffd69a, emissive: 0xffa84c, emissiveIntensity: 2.2, roughness: 0.4 }),
-  );
+  const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 10), glow.globe);
+  bulb.name = 'street-lamp-globe';
   bulb.position.y = 4.15;
   group.add(bulb);
+  const halo = new THREE.Sprite(glow.halo);
+  halo.name = 'street-lamp-halo';
+  halo.position.y = 4.15;
+  halo.scale.setScalar(1.7);
+  halo.renderOrder = 3;
+  group.add(halo);
+  const pool = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.2), glow.pool);
+  pool.name = 'street-lamp-pool';
+  pool.rotation.x = -Math.PI / 2;
+  // Paving tops out at ~0.16 m around the lamps (group sits at 0.3).
+  pool.position.y = -0.12;
+  pool.renderOrder = 1;
+  group.add(pool);
   group.position.set(x, 0.3, z);
   scene.add(group);
 }
@@ -1384,6 +1450,20 @@ export class EchoCity3DPreview {
       caster.casting = near;
       for (const mesh of caster.meshes) mesh.castShadow = near;
     }
+  }
+
+  // Street-lamp glow, 0 (bright afternoon) .. 1 (night): the amber globes,
+  // their halos and the light pools on the paving, all on shared materials.
+  setLampGlow(level) {
+    const glow = this.materials?.lampGlow;
+    if (!glow) return false;
+    const value = THREE.MathUtils.clamp(Number(level) || 0, 0, 1);
+    if (this.lampGlowLevel !== undefined && Math.abs(this.lampGlowLevel - value) < 0.005) return false;
+    this.lampGlowLevel = value;
+    glow.globe.emissiveIntensity = 0.55 + 0.9 * value;
+    glow.halo.opacity = 0.18 + 0.6 * value;
+    glow.pool.opacity = 0.04 + 0.34 * value;
+    return true;
   }
 
   // LOW: a lower pixel ratio, no shadow maps, one light fewer, cheaper
