@@ -28,6 +28,18 @@ import { ACT3_FX } from '../art/act3Fx.js';
 const lensOverGap = { lensOver: { tile: 'gap', x: 0.5, y: RAIL_AT } };
 const lensOverHedge = { lensOver: { tile: 'hawthorn', x: HEDGE.lens[0], y: HEDGE.lens[1] } };
 
+// The composition goals, as seams that must meet (hints.js unmetSeam): tier 1
+// and SHOW ME light both ends of the first one still apart (alpha R1-2).
+const LANE_SEAMS = [
+  { a: 'city', side: 'right', b: 'hawthorn', at: PATH_AT },
+  { a: 'hawthorn', side: 'right', b: 'orchard', at: PATH_AT },
+];
+const STAIR_SEAM = { a: 'orchard', side: 'bottom', b: 'platform', at: STAIR_AT };
+const RAIL_SEAMS = [
+  { a: 'carriage', side: 'right', b: 'gap', at: RAIL_AT },
+  { a: 'gap', side: 'right', b: 'platform', at: RAIL_AT },
+];
+
 /** Mara's first stretch: out of the city room, into the lane, up to the hedge. */
 const TO_HEDGE = [
   { tile: 'city', x: 1, y: PATH_AT },
@@ -177,7 +189,7 @@ export const ACT3 = defineAct({
     {
       id: 'hedge',
       when: { arrived: 'toHedge' },
-      hint: { actor: 'mara', tile: 'hawthorn', ghost: { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }] } },
+      hint: { actor: 'mara', tile: 'hawthorn', seams: [LANE_SEAMS[0]], ghost: { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }] } },
       do: [
         { actorPose: { actor: 'mara', pose: 'idle' } },
         { sfx: 'settle' },
@@ -195,6 +207,7 @@ export const ACT3 = defineAct({
       hint: {
         actor: 'mara',
         tile: 'hawthorn',
+        seams: [...LANE_SEAMS, STAIR_SEAM],
         ghost: [
           { when: { all: [{ actorAt: { actor: 'mara', tile: 'hawthorn' } }, { not: lensOverHedge }] }, lens: { tile: 'hawthorn', u: HEDGE.lens[0], v: HEDGE.lens[1] } },
           { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }, { tile: 'orchard', slot: 2 }] },
@@ -211,6 +224,7 @@ export const ACT3 = defineAct({
       hint: {
         tile: 'gap',
         lens: true,
+        seams: RAIL_SEAMS,
         ghost: [
           { drag: [{ tile: 'carriage', slot: 3 }, { tile: 'gap', slot: 4 }, { tile: 'platform', slot: 5 }] },
           { lens: { tile: 'gap', u: 0.5, v: RAIL_AT } },

@@ -6,17 +6,21 @@
 //
 //   tier 1 ·  25 s  a soft pulse on the relevant element (repeats)
 //   tier 2 ·  60 s  the ghost hand performs the exact gesture once, then fades
-//   tier 3 · 120 s  one in-fiction line from the Conductor (hintLines.js)
+//   tier 3 · 120 s  one in-fiction line from the Conductor (hintLines.js),
+//                   again every 60 s while the player stays stuck
 //
 // The first time a verb appears in the chapter the ghost hand demonstrates it
 // after only 8 s of idling. The pause menu's SHOW ME (a `nightfall:hint`
-// window event) plays tier 2 at once. PanelScene draws all of it; this file
+// window event) plays tier 2 at once, and brings the Conductor's line back
+// once this step has reached tier 3 or on a second SHOW ME. PanelScene draws all of it; this file
 // only decides when, and which gesture, so node tests can check the timing.
 
 export const HINT_TIERS = Object.freeze({ pulse: 25000, ghost: 60000, caption: 120000 });
 export const FIRST_USE_MS = 8000;
 export const PULSE_REPEAT_MS = 12000;
 export const GHOST_REPEAT_MS = 45000;
+// The tier-3 line is on screen for 6.5 s: it comes back on a long idle.
+export const CAPTION_REPEAT_MS = 60000;
 
 /** The verbs the ghost hand can demonstrate. */
 export const VERBS = Object.freeze(['drag', 'zoom', 'click', 'zoomOut', 'frame', 'lens', 'lensClick']);
@@ -67,6 +71,33 @@ export function resolveDrag(model, spec) {
       if (colOf(a) - colOf(b) === dc && rowOf(a) - rowOf(b) === dr) return move(rel.tile, b);
       return null;
     }
+  }
+  return null;
+}
+
+const SEAM_STEP = Object.freeze({ right: [1, 0], left: [-1, 0], bottom: [0, 1], top: [0, -1] });
+
+/**
+ * A composition goal's cue (tier 1): the first seam of `seams` whose two
+ * windows do not yet sit side by side. A seam is `{ a, side, b, at }`: tile
+ * `a`'s `side` edge must meet tile `b`'s opposite edge, `at` (0..1) along it.
+ * Placement only: a seam that also needs the lens (a 1978 edge) counts as met
+ * once the windows are in place. Returns null when every seam is in place.
+ * @returns {null | { a, b, side, at, index, slotA, slotB }}
+ */
+export function unmetSeam(model, seams) {
+  const { cols, rows } = model.layout;
+  const list = asList(seams);
+  for (let index = 0; index < list.length; index += 1) {
+    const seam = list[index];
+    const [dc, dr] = SEAM_STEP[seam?.side] ?? [];
+    const slotA = model.slotOf(seam?.a);
+    const slotB = model.slotOf(seam?.b);
+    if (dc === undefined || slotA < 0 || slotB < 0) continue;
+    const col = (slotA % cols) + dc;
+    const row = Math.floor(slotA / cols) + dr;
+    const inPlace = col >= 0 && col < cols && row >= 0 && row < rows && row * cols + col === slotB;
+    if (!inPlace) return { a: seam.a, b: seam.b, side: seam.side, at: seam.at ?? 0.5, index, slotA, slotB };
   }
   return null;
 }
@@ -152,19 +183,25 @@ export function stepVerb(model, step = model.currentStep()) {
  * @param {object} [o]
  * @param {Set<string>} [o.seen]  verbs already demonstrated (shared across acts)
  */
-export function createHintDirector({ tiers = HINT_TIERS, firstUseMs = FIRST_USE_MS, pulseRepeat = PULSE_REPEAT_MS, ghostRepeat = GHOST_REPEAT_MS, seen = new Set() } = {}) {
+export function createHintDirector({
+  tiers = HINT_TIERS, firstUseMs = FIRST_USE_MS, pulseRepeat = PULSE_REPEAT_MS, ghostRepeat = GHOST_REPEAT_MS,
+  captionRepeat = CAPTION_REPEAT_MS, seen = new Set(),
+} = {}) {
   let idle = 0;
   let stepKey = null;
   let verb = null;
   let nextPulse = tiers.pulse;
   let nextGhost = tiers.ghost;
-  let captionDone = false;
+  let nextCaption = tiers.caption;
   let firstArmed = false;
+  // this step has reached tier 3 once / how many SHOW MEs it has had
+  let captionReached = false;
+  let requests = 0;
 
   function rearm() {
     nextPulse = tiers.pulse;
     nextGhost = tiers.ghost;
-    captionDone = false;
+    nextCaption = tiers.caption;
   }
 
   return {
@@ -191,6 +228,8 @@ export function createHintDirector({ tiers = HINT_TIERS, firstUseMs = FIRST_USE_
       verb = nextVerb ?? null;
       idle = 0;
       rearm();
+      captionReached = false;
+      requests = 0;
       firstArmed = Boolean(verb) && !seen.has(verb);
       return true;
     },
@@ -223,18 +262,24 @@ export function createHintDirector({ tiers = HINT_TIERS, firstUseMs = FIRST_USE_
         out.push('ghost');
         nextGhost = Math.max(idle, nextGhost) + ghostRepeat;
       }
-      if (!captionDone && idle >= tiers.caption) {
-        captionDone = true;
+      if (idle >= nextCaption) {
+        captionReached = true;
         out.push('caption');
+        nextCaption = Math.max(idle, nextCaption) + captionRepeat;
       }
       return out;
     },
-    /** SHOW ME: tier 2 now. The idle clock is not reset (showing is not solving). */
+    /**
+     * SHOW ME: tier 2 now, plus the Conductor's line again once this step
+     * has reached tier 3 or on its second SHOW ME. The idle clock is not
+     * reset (showing is not solving).
+     */
     request() {
       if (!stepKey) return [];
       if (verb) seen.add(verb);
       firstArmed = false;
-      return ['ghost'];
+      requests += 1;
+      return captionReached || requests >= 2 ? ['ghost', 'caption'] : ['ghost'];
     },
   };
 }

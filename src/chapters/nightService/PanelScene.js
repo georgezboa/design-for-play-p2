@@ -18,8 +18,9 @@ import Phaser from 'phaser';
 import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
-import { createHintDirector, pickGesture, stepVerb } from './hints.js';
+import { createHintDirector, pickGesture, stepVerb, unmetSeam } from './hints.js';
 import { HINT_SPEAKER, hintLine } from './hintLines.js';
+import { INTRO_FAILSAFE_SLACK_MS, createIntroGuard, growScheduleMs, introScheduleMs } from './introGuard.js';
 import { GHOST_HAND, paintGhostHand, paintShutter } from './art/hintArt.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
@@ -238,6 +239,11 @@ export class PanelScene extends Phaser.Scene {
     this.idleHints = 0;
     this.ghostCount = 0;
     this.hintCaptions = 0;
+    // the intro's wall-clock fail-safe (introGuard.js)
+    this.introGuard = createIntroGuard();
+    this.introSettled = null;
+    this.introTimer = null;
+    this.finishGrowth = null;
     // verbs the ghost hand has shown, shared by every act of this page
     this.hintSeen = this.services.hintSeen ?? new Set();
     this.services.hintSeen = this.hintSeen;
@@ -355,6 +361,8 @@ export class PanelScene extends Phaser.Scene {
     this.events.once('shutdown', () => {
       window.removeEventListener('nightfall:settings', onSettings);
       window.removeEventListener('nightfall:hint', onHint);
+      globalThis.clearTimeout?.(this.introTimer);
+      this.introGuard.disarm();
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
     });
@@ -776,11 +784,16 @@ export class PanelScene extends Phaser.Scene {
     this.titleBox.setScale(0.7).setAlpha(0).setY(titleY + 8);
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: titleY, delay: openDelay + openMs * 0.5, duration: 600, ease: 'Sine.easeOut' });
     this.tweens.add({ targets: this.titleBox, alpha: 0, delay: openDelay + openMs * 0.5 + 2600, duration: 700, ease: 'Sine.easeIn', onComplete: () => this.titleBox.setScale(1) });
-    this.time.delayedCall(openDelay + openMs + 120, () => {
+    let grown = false;
+    this.finishGrowth = () => {
+      if (grown) return;
+      grown = true;
       shutters.forEach((shutter) => shutter.destroy());
       this.growing = false;
       Object.values(this.views).forEach((view) => { view.moving = false; view.setRect(this.model.slotRect(view.id)); });
-    });
+    };
+    this.time.delayedCall(openDelay + openMs + 120, this.finishGrowth);
+    this.armIntroFailsafe(growScheduleMs({ openDelay, openMs }));
   }
 
   introduce() {
@@ -796,12 +809,34 @@ export class PanelScene extends Phaser.Scene {
     });
     this.tweens.add({ targets: this.blackout, alpha: 0, delay: hold, duration: 800, ease: 'Sine.easeOut' });
     this.titleBox.y = this.layout.view.h / 2 + 8;
+    // In and out on the one tween clock (a scene-clock timer can run ahead of
+    // lag-smoothed tweens on a slow renderer and strand the card: N1) ...
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: this.layout.view.h / 2, duration: 700, delay: 200, ease: 'Sine.easeOut' });
-    this.time.delayedCall(200 + 700 + Math.max(200, hold - 500), () => {
-      // a long frame can leave the fade-in still running: it must not win
-      this.tweens.killTweensOf(this.titleBox);
-      this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 700, ease: 'Sine.easeIn' });
-    });
+    this.tweens.add({ targets: this.titleBox, alpha: 0, delay: 200 + 700 + Math.max(200, hold - 500), duration: 700, ease: 'Sine.easeIn' });
+    // ... and a wall-clock deadline that clears whatever is left, at any frame rate
+    this.armIntroFailsafe(introScheduleMs({ hold, tiles: Object.keys(this.views).length, reduce }));
+  }
+
+  /** Real time (not game time) by which the intro must be gone (introGuard.js). */
+  armIntroFailsafe(scheduleMs) {
+    const ms = scheduleMs + INTRO_FAILSAFE_SLACK_MS;
+    this.introGuard.arm(ms);
+    // a timer too, so the card clears even if frames stall altogether
+    globalThis.clearTimeout?.(this.introTimer);
+    this.introTimer = globalThis.setTimeout?.(() => { if (this.sys?.isActive() && this.introGuard.due()) this.settleIntro('timer'); }, ms + 50);
+  }
+
+  /** The fail-safe: the act title, the blackout and the covers snap to their end state. */
+  settleIntro(reason = 'frame') {
+    this.introSettled = reason;
+    this.tweens.killTweensOf(this.titleBox);
+    this.titleBox.setAlpha(0).setScale(1);
+    if (!this.fading && !this.model.state.ended) {
+      this.tweens.killTweensOf(this.blackout);
+      this.blackout.setAlpha(0);
+      Object.values(this.views).forEach((view) => { this.tweens.killTweensOf(view.cover); view.cover.setAlpha(0); });
+    }
+    this.finishGrowth?.();
   }
 
   // ---------------------------------------------------------------------------
@@ -1569,8 +1604,54 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: view.ring, alpha: { from: 1, to: 0.7 }, duration: 500, yoyo: true });
   }
 
+  /**
+   * The composition goal (`hint.seams`): both ends of the first seam still
+   * apart glow, joined by a dashed amber thread, so the player sees which
+   * two edges have to meet, not only the next swap (alpha R1-2).
+   */
+  pulseSeam(step) {
+    const seam = step?.hint?.seams ? unmetSeam(this.model, step.hint.seams) : null;
+    if (!seam) return null;
+    const rectA = this.model.slotRect(seam.a);
+    const rectB = this.model.slotRect(seam.b);
+    if (!rectA || !rectB) return null;
+    const OPP = { left: 'right', right: 'left', top: 'bottom', bottom: 'top' };
+    const pa = edgePoint(rectA, seam.side, seam.at);
+    const pb = edgePoint(rectB, OPP[seam.side], seam.at);
+    const reduce = reducedMotionActive();
+    [pa, pb].forEach((pt, i) => this.time.delayedCall(i * 260, () => {
+      this.hintGlow(pt.x, pt.y, 130);
+      this.shimmer(pt.x, pt.y, reduce);
+      this.beacon(pt.x, pt.y, 42);
+    }));
+    // the thread between the two ends (straight across the wall)
+    const g = this.add.graphics();
+    this.beaconLayer.add(g);
+    const len = Math.hypot(pb.x - pa.x, pb.y - pa.y);
+    const state = { a: 0 };
+    const draw = () => {
+      g.clear();
+      const dash = 16;
+      const gap = 12;
+      const ux = (pb.x - pa.x) / Math.max(1, len);
+      const uy = (pb.y - pa.y) / Math.max(1, len);
+      [[9, 0x1a0f08, 0.55], [4, 0xffc46a, 0.95]].forEach(([width, color, alpha]) => {
+        g.lineStyle(width, color, alpha * state.a);
+        for (let d = 0; d < len; d += dash + gap) {
+          const e = Math.min(len, d + dash);
+          g.lineBetween(pa.x + ux * d, pa.y + uy * d, pa.x + ux * e, pa.y + uy * e);
+        }
+      });
+    };
+    this.tweens.add({ targets: state, a: 1, duration: 600, yoyo: true, hold: 1400, repeat: reduce ? 0 : 1, ease: 'Sine.easeInOut', onUpdate: draw, onComplete: () => g.destroy() });
+    this.seamCues = (this.seamCues ?? 0) + 1;
+    this.lastSeamCue = { a: seam.a, b: seam.b, side: seam.side };
+    return seam;
+  }
+
   /** Tier 1: pulse whatever the ghost hand would point at (or the step's own hint). */
   pulseForStep(step) {
+    this.pulseSeam(step);
     const g = pickGesture(this.model, step);
     if (!g) { this.pulseHint(step?.hint); return; }
     if (g.kind === 'click') this.pulseHint({ tile: g.tile, hotspot: g.hotspot });
@@ -1606,9 +1687,14 @@ export class PanelScene extends Phaser.Scene {
     if (!this.sys?.isActive() || !this.model) return false;
     const step = this.model.currentStep();
     if (!step?.hint || this.model.isLocked() || this.fading || this.growing) return false;
-    this.hints.request();
+    // the Conductor's tier-3 line comes back with SHOW ME (alpha R1-3)
+    if (this.hints.request().includes('caption')) this.time.delayedCall(450, () => this.hintCaption(this.model.currentStep()));
     const gesture = pickGesture(this.model, step);
-    if (gesture) return this.playGhost(gesture, 'request');
+    if (gesture) {
+      // the goal as well as the next move
+      this.pulseSeam(step);
+      return this.playGhost(gesture, 'request');
+    }
     this.pulseForStep(step);
     return true;
   }
@@ -2500,6 +2586,7 @@ export class PanelScene extends Phaser.Scene {
   // per frame
 
   update(time, delta) {
+    if (this.introGuard.due()) this.settleIntro('frame');
     const dt = Math.min(delta, this.services.maxDt ?? 50);
     this.clock += dt;
     this.model.update(dt);
@@ -2729,8 +2816,11 @@ export class PanelScene extends Phaser.Scene {
           ghost: this.ghost ? { kind: this.ghost.gesture.kind, verb: this.ghost.gesture.verb, reason: this.ghost.reason } : null,
           ghosts: this.ghostCount,
           captions: this.hintCaptions,
+          seamCues: this.seamCues ?? 0,
+          seam: this.lastSeamCue ?? null,
         },
         growing: this.growing,
+        title: { alpha: Number(this.titleBox.alpha.toFixed(2)), failsafeMs: this.introGuard.remaining === null ? null : Math.round(this.introGuard.remaining), settled: this.introSettled },
         audioUnlocked: Boolean(this.audio.unlocked),
       },
     };

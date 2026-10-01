@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { ACTS, ACT_ORDER, startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { createPanelModel, framePoints, tilePoint } from '../../src/chapters/nightService/panelModel.js';
 import {
-  FIRST_USE_MS, HINT_TIERS, PULSE_REPEAT_MS, createHintDirector, pickGesture, resolveDrag, stepVerb,
+  CAPTION_REPEAT_MS, FIRST_USE_MS, HINT_TIERS, PULSE_REPEAT_MS, createHintDirector, pickGesture, resolveDrag, stepVerb, unmetSeam,
 } from '../../src/chapters/nightService/hints.js';
 import { HINT_LINES, hintLine } from '../../src/chapters/nightService/hintLines.js';
 import { ONE_ANSWER_ACT } from '../../src/chapters/nightService/acts/oneAnswer.js';
@@ -30,7 +30,7 @@ test('hint tiers: pulse at 25 s, ghost hand at 60 s, the Conductor at 120 s', ()
   assert.equal(at('pulse')[0], 25000);
   assert.equal(at('pulse')[1], 25000 + PULSE_REPEAT_MS, 'tier 1 repeats softly');
   assert.equal(at('ghost')[0], 60000);
-  assert.deepEqual(at('caption'), [120000], 'tier 3 once per idle stretch');
+  assert.deepEqual(at('caption'), [120000], 'tier 3 once in the first 130 s');
   assert.equal(at('first').length, 0, 'a verb already shown is not demonstrated early');
   assert.equal(d.tier, 3);
 });
@@ -95,6 +95,58 @@ test('SHOW ME plays tier 2 at once without resetting the clock', () => {
   assert.equal(d.idle, 3000);
   assert.ok(d.seen.has('lensClick'));
   assert.ok(!run(d, 6000).some((e) => e.event === 'first'), 'no second demo after SHOW ME');
+});
+
+test('R1-3: the tier-3 line comes back on a long idle, and with SHOW ME', () => {
+  const d = createHintDirector({ seen: new Set(['drag']) });
+  d.setStep('act3:hedge', 'drag');
+  const events = run(d, 250000);
+  const captions = events.filter((e) => e.event === 'caption').map((e) => e.at);
+  assert.deepEqual(captions, [120000, 120000 + CAPTION_REPEAT_MS, 120000 + 2 * CAPTION_REPEAT_MS], 'repeats every 60 s while stuck');
+  // once the step has reached tier 3, SHOW ME brings the line back too
+  assert.deepEqual(d.request(), ['ghost', 'caption']);
+  d.input();
+  assert.deepEqual(d.request(), ['ghost', 'caption'], 'still this step: the line is not spent');
+  // a fresh step: the first SHOW ME is the hand, the second adds the line
+  d.setStep('act3:lane', 'lens');
+  assert.deepEqual(d.request(), ['ghost']);
+  assert.deepEqual(d.request(), ['ghost', 'caption']);
+  d.setStep('act3:bridge', 'drag');
+  assert.deepEqual(d.request(), ['ghost'], 'counted per step');
+});
+
+test('R1-2: Act III composition steps cue the seam that has to meet', () => {
+  const arrange = (model, order) => order.forEach((tile, i) => {
+    if (tile && model.state.slots[i] !== tile) model.swap(i, model.state.slots.indexOf(tile));
+  });
+  const hedge = createPanelModel(ACTS.act3, { carry: startCarry('act3'), step: 'hedge' });
+  const step = hedge.currentStep();
+  assert.equal(step.id, 'hedge');
+  assert.ok(step.hint.seams?.length, 'the hedge step names its seam');
+  assert.deepEqual(
+    (({ a, b, side }) => ({ a, b, side }))(unmetSeam(hedge, step.hint.seams)),
+    { a: 'city', b: 'hawthorn', side: 'right' },
+    'the city room must meet the hawthorn lane',
+  );
+  arrange(hedge, ['city', 'hawthorn']);
+  assert.equal(unmetSeam(hedge, step.hint.seams), null, 'in place: no seam cue');
+  // the lane: the second top-row seam, then the stair down to the platform
+  const lane = createPanelModel(ACTS.act3, { carry: startCarry('act3'), step: 'lane' });
+  const laneSeams = lane.act.steps.find((s) => s.id === 'lane').hint.seams;
+  arrange(lane, ['city', 'orchard', 'hawthorn']);
+  assert.equal(unmetSeam(lane, laneSeams).a, 'city');
+  arrange(lane, ['city', 'hawthorn', 'orchard']);
+  assert.deepEqual((({ a, b }) => ({ a, b }))(unmetSeam(lane, laneSeams)), { a: 'orchard', b: 'platform' });
+  arrange(lane, ['city', 'hawthorn', 'orchard', null, null, 'platform']);
+  assert.equal(unmetSeam(lane, laneSeams), null);
+  // the bridge: carriage → gap → platform (placement only; the lens is its own cue)
+  const bridge = createPanelModel(ACTS.act3, { carry: startCarry('act3'), step: 'bridge' });
+  const railSeams = bridge.act.steps.find((s) => s.id === 'bridge').hint.seams;
+  arrange(bridge, ['hawthorn', 'orchard', 'city', 'platform', 'gap', 'carriage']);
+  assert.deepEqual((({ a, b }) => ({ a, b }))(unmetSeam(bridge, railSeams)), { a: 'carriage', b: 'gap' });
+  arrange(bridge, [null, null, null, 'carriage', 'gap', 'platform']);
+  assert.equal(unmetSeam(bridge, railSeams), null, 'placed, though 1978 still has to hold the span');
+  assert.equal(unmetSeam(bridge, undefined), null);
 });
 
 test('resolveDrag finds the panel to move and the slot to drop it on', () => {
