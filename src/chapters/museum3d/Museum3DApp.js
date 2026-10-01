@@ -40,6 +40,7 @@ import { music } from '../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from './chapter05Score.js';
 import { DEV_MODE, devParam } from '../../devMode.js';
 import { readSettings } from '../../shell/saveSystem.js';
+import { LobbyObjectiveTag, lobbyObjective } from './systems/LobbyObjective.js';
 import {
   LOW_FILL,
   applyRendererQuality,
@@ -164,6 +165,9 @@ export class Museum3DApp {
     this.dialogue = new DialogueSystem(subtitleEl);
     this.audioGuide = new AudioGuide(this.dialogue);
     this.cards = new ArchiveCardView();
+    this.objective = new LobbyObjectiveTag(document);
+    this._pendingCaseOpened = false;
+    this._welcomeStartedAt = null;
     this.director = new TransitionDirector({
       fadeEl,
       onNeedRelock: () => this._showLockOverlay('CLICK TO RESUME'),
@@ -274,7 +278,10 @@ export class Museum3DApp {
         const first = !this._hasEnteredMuseum;
         this._hasEnteredMuseum = true;
         this.lockOverlay.classList.add('hidden');
-        if (first && this.activeSceneName === 'lobby') this.scenes.get('lobby').playWelcome();
+        if (first && this.activeSceneName === 'lobby') {
+          this.scenes.get('lobby').playWelcome();
+          this._welcomeStartedAt = performance.now();
+        }
       } else if (!this.director.isBusy && !this.directionExhibit.opened) {
         this._showLockOverlay('CLICK TO RESUME');
       }
@@ -344,6 +351,21 @@ export class Museum3DApp {
     const scale = low ? lowFillScale(this.activeSceneName, phase) : 0;
     this._lowFill.userData.hemisphere.intensity = LOW_FILL.hemisphere * scale;
     this._lowFill.userData.overhead.intensity = LOW_FILL.overhead * scale;
+  }
+
+  // The lobby's first objective tag: after the welcome (or 8 s into it),
+  // until the pending case has been opened once.
+  _syncObjective(snapshot) {
+    const started = this._welcomeStartedAt;
+    const welcomeDone = this._hasEnteredMuseum && (started === null
+      ? !this.dialogue.isPlaying
+      : (!this.dialogue.isPlaying || performance.now() - started > 8000));
+    const text = this.activeSceneName === 'lobby'
+      ? lobbyObjective(snapshot, { opened: this._pendingCaseOpened, welcomeDone })
+      : null;
+    this.objective.update(text, {
+      hidden: this.cards.isOpen || this.directionExhibit.opened || this.dialogue.isChoosing || Boolean(globalThis.NIGHTFALL_PAUSED),
+    });
   }
 
   // Once per frame: feed the governor, keep late-built objects on the tier.
@@ -523,7 +545,9 @@ export class Museum3DApp {
     if (directionId === CHAPTER05_DIRECTIONS.LABYRINTH) {
       preloadChapter(resolveFinalBossDestination().preloadChapterId);
     }
-    return this.directionExhibit.open(directionId);
+    const opened = this.directionExhibit.open(directionId);
+    if (opened && directionId === CHAPTER05_DIRECTIONS.ONE_ANSWER) this._pendingCaseOpened = true;
+    return opened;
   }
 
   _onDirectionClosed(directionId, completed) {
@@ -709,6 +733,7 @@ export class Museum3DApp {
       lastFrameAt = measurable ? frameStart : null;
       const dt = Math.min(this.clock.getDelta(), 0.05);
       if (globalThis.NIGHTFALL_PAUSED) {
+        this.objective.update(null);
         this.renderer.render(this.scene, this.camera);
         return;
       }
@@ -719,6 +744,7 @@ export class Museum3DApp {
       // drawing the museum behind it so the framed page gets the frame budget.
       if (this.directionExhibit.opened) {
         this.interaction.update(); // applies `hidden`: no tag over the frame
+        this.objective.update(null);
         this.dialogue.update(dt);
         return;
       }
@@ -738,6 +764,7 @@ export class Museum3DApp {
       }
       this.interaction.update();
       this.dialogue.update(dt);
+      this._syncObjective(snapshot);
       music.setDialogueActive(this.dialogue.isPlaying);
       this.renderer.render(this.scene, this.camera);
     });
