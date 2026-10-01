@@ -105,6 +105,7 @@ export function installQaHooks(app) {
       note: 'coords in meters; origin at active scene root; +x east, +z south; yaw 0 faces -z',
       phase: s.phase,
       scene: app.activeSceneName,
+      quality: { ...app.quality.snapshot(), applied: app._qualityApplied, pixelRatio: app.renderer.getPixelRatio(), shadows: app.renderer.shadowMap.enabled },
       player: {
         x: Number(app.controller.position.x.toFixed(2)),
         y: Number(app.controller.position.y.toFixed(2)),

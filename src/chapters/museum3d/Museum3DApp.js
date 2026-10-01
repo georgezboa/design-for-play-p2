@@ -39,6 +39,17 @@ import { navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { music } from '../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from './chapter05Score.js';
 import { DEV_MODE, devParam } from '../../devMode.js';
+import { readSettings } from '../../shell/saveSystem.js';
+import {
+  LOW_FILL,
+  applyRendererQuality,
+  applySceneQuality,
+  createQualityGovernor,
+  lowFillScale,
+  probeSoftwareRenderer,
+  qualityPreference,
+  syncLowMaterials,
+} from './systems/QualityTier.js';
 
 export const LOBBY_SPAWN = Object.freeze({ x: -6.5, z: 0, yaw: -Math.PI / 2 });
 export const CORRIDOR_SPAWN = Object.freeze({ x: 9.5, z: 0, yaw: -Math.PI / 2 });
@@ -104,12 +115,23 @@ export class Museum3DApp {
     // Keeping the drawing buffer is useful for automated canvas captures, but
     // is expensive during normal play. QA opts into the slower capture path.
     this.captureMode = captureMode;
+    // Adaptive quality (alpha A3-7, systems/QualityTier.js). A software
+    // rasteriser is known before the renderer exists, so it never gets MSAA.
+    const probe = probeSoftwareRenderer(document);
+    let preference = 'auto';
+    try { preference = qualityPreference(readSettings()); } catch { preference = 'auto'; }
+    this.quality = createQualityGovernor({ software: probe.software, preference });
+    this.quality.state.rendererName = probe.name;
+    this._qualityCache = new Map();
+    this._qualityApplied = null;
+    this._qualitySweepAt = 0;
+    this._highPixelRatio = captureMode ? 1 : 1.35;
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: !probe.software,
       preserveDrawingBuffer: captureMode,
       powerPreference: 'high-performance',
     });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, captureMode ? 1 : 1.35));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, this._highPixelRatio));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -277,6 +299,65 @@ export class Museum3DApp {
 
     this.clock = new THREE.Clock();
     this._sceneGuards = { corridor: false, echo: false, museum: false, collapse: false };
+
+    // The pause menu's settings can force the tier ('low' / 'high' / 'auto').
+    window.addEventListener('nightfall:settings', (event) => {
+      const next = this.quality.setPreference(qualityPreference(event.detail ?? {}));
+      if (next) this.applyQuality(next);
+    });
+  }
+
+  // Apply a render tier to the renderer and every built space. Safe to call
+  // again: only objects added since the last pass change.
+  applyQuality(tier = this.quality.tier) {
+    const Lambert = THREE.MeshLambertMaterial;
+    for (const ctl of this.scenes.values()) applySceneQuality(ctl.root, tier, { Lambert, cache: this._qualityCache });
+    applySceneQuality(this.scene, tier, { Lambert, cache: this._qualityCache });
+    applyRendererQuality(this.renderer, this.scene, tier, {
+      software: this.quality.state.software,
+      environment: this._activeEnvironment ?? this._environmentTexture,
+      devicePixelRatio: window.devicePixelRatio || 1,
+      highPixelRatio: this._highPixelRatio,
+    });
+    this._qualityApplied = tier;
+    if (tier === 'high') this._qualityCache.clear();
+    this._syncLowFill();
+    if (this.coordinateEl) this.coordinateEl.dataset.quality = tier;
+  }
+
+  // The low tier's stand-in for the rect lights and the room environment.
+  _syncLowFill(phase = this.model.getSnapshot().phase) {
+    const low = this._qualityApplied === 'low';
+    if (!this._lowFill && !low) return;
+    if (!this._lowFill) {
+      const hemisphere = new THREE.HemisphereLight(0xfff3dc, 0xb8a888, 0);
+      const overhead = new THREE.DirectionalLight(0xfff1dd, 0);
+      overhead.position.set(0, 10, 0);
+      overhead.target.position.set(0, 0, 0);
+      this._lowFill = new THREE.Group();
+      this._lowFill.name = 'low-quality-fill';
+      this._lowFill.add(hemisphere, overhead, overhead.target);
+      this._lowFill.userData = { hemisphere, overhead };
+    }
+    if (low && this._lowFill.parent !== this.scene) this.scene.add(this._lowFill);
+    if (!low && this._lowFill.parent) this._lowFill.parent.remove(this._lowFill);
+    const scale = low ? lowFillScale(this.activeSceneName, phase) : 0;
+    this._lowFill.userData.hemisphere.intensity = LOW_FILL.hemisphere * scale;
+    this._lowFill.userData.overhead.intensity = LOW_FILL.overhead * scale;
+  }
+
+  // Once per frame: feed the governor, keep late-built objects on the tier.
+  _stepQuality(frameMs) {
+    const next = this.quality.sample(frameMs);
+    if (next) this.applyQuality(next);
+    if (this._qualityApplied !== 'low') return;
+    this._syncLowFill();
+    const now = performance.now();
+    if (now - this._qualitySweepAt > 1000) {
+      this._qualitySweepAt = now;
+      applySceneQuality(this.scene, 'low', { Lambert: THREE.MeshLambertMaterial, cache: this._qualityCache });
+    }
+    syncLowMaterials(this._qualityCache);
   }
 
   _sceneContext(collisionWorld) {
@@ -372,14 +453,16 @@ export class Museum3DApp {
     this.scene.add(next.root);
     this.scene.background = next.background;
     this.scene.fog = next.root.userData.fog ?? null;
-    this.scene.environment = Object.hasOwn(next.root.userData, 'environment')
+    this._activeEnvironment = Object.hasOwn(next.root.userData, 'environment')
       ? next.root.userData.environment
       : this._environmentTexture;
+    this.scene.environment = this._qualityApplied === 'low' ? null : this._activeEnvironment;
     this.renderer.toneMappingExposure = next.root.userData.rendererExposure ?? 0.92;
     this.controller.collisionWorld = next.collisionWorld;
     this.interaction.clear();
     next.registerInteractions();
     this._syncChapterScore();
+    if (this._qualityApplied === 'low') this.applyQuality('low');
   }
 
   _syncChapterScore() {
@@ -614,8 +697,16 @@ export class Museum3DApp {
     this.setActiveScene(name);
     this.getActiveScene().enter(this.model.getSnapshot());
     this._applyInitialSpawn();
+    if (this.quality.tier === 'low') this.applyQuality('low');
 
+    // Frame-to-frame time of museum frames only: a pause, a hidden tab or a
+    // framed exhibit breaks the chain instead of reading as a slow frame.
+    let lastFrameAt = null;
     this.renderer.setAnimationLoop(() => {
+      const frameStart = performance.now();
+      const measurable = !globalThis.NIGHTFALL_PAUSED && !this.directionExhibit.opened && !document.hidden;
+      if (measurable && lastFrameAt !== null) this._stepQuality(frameStart - lastFrameAt);
+      lastFrameAt = measurable ? frameStart : null;
       const dt = Math.min(this.clock.getDelta(), 0.05);
       if (globalThis.NIGHTFALL_PAUSED) {
         this.renderer.render(this.scene, this.camera);
