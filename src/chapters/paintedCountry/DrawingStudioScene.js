@@ -6,7 +6,11 @@ import {
   createDrawingStudio,
 } from './drawingStudioModel.js';
 import { PAPER } from './paperPalette.js';
-import { drawPaintedPlayer } from './paintedPlayerFigure.js';
+import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
+import { addLayers, ensurePair } from './art/artTextures.js';
+import { paintCountry } from './art/countryArt.js';
+import { paintDoor } from './art/carriageArt.js';
+import { KEEPSAKE, paintEasel, paintKeepsake, paintStillLife } from './art/studioArt.js';
 import {
   buildPaperGrain,
   draftLine,
@@ -48,6 +52,8 @@ const DEPTH = Object.freeze({ BACK: 0, ROOM: 6, OBJECT: 14, PAINT: 18, BOARD: 23
 const CANVAS = Object.freeze({ x: 880, y: 140, w: 330, h: 250 });
 const SHELF = Object.freeze({ x: 480, y: 356, w: 380 });
 const EXIT = Object.freeze({ x: 1440, y: 300, w: 80, h: FLOOR_Y - 300 });
+const STUDIO_WINDOWS = Object.freeze([{ x: 54, w: 280 }, { x: 1230, w: 200 }]);
+let stillLifeKeys = null;
 
 const SOURCE_LAYOUT = Object.freeze(STUDIO_SOURCES.map((source, index) => {
   const x = SHELF.x + 34 + index * 52;
@@ -92,6 +98,7 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   preload() {
+    preloadPaintedPlayer(this);
     if (!this.cache.audio.exists('chapter4-drawing-music')) {
       this.load.audio('chapter4-drawing-music', '/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3');
     }
@@ -149,29 +156,39 @@ export class DrawingStudioScene extends Phaser.Scene {
     g.fillStyle(PAPER.sheetLow, 1).fillRect(0, FLOOR_Y, WORLD.w, WORLD.h - FLOOR_Y);
     hatchRect(g, this.rnd, 0, FLOOR_Y, WORLD.w, 70, { spacing: 17, alpha: 0.18, flip: true });
 
-    // Part I's warm paper windows and folded hills continue through the room.
-    [{ x: 54, w: 280 }, { x: 1230, w: 200 }].forEach(({ x, w }, index) => {
+    // Part I's windows continue through the room: the orchard outside, in
+    // pencil, until the still life is as she remembered it.
+    this.windowViews = STUDIO_WINDOWS.map(({ x, w }, index) => {
       g.fillStyle(PAPER.sheetHigh, 0.96).fillRect(x, 118, w, 196);
-      g.lineStyle(1.5, PAPER.graphiteSoft, 0.72);
-      draftRect(g, this.rnd, x, 118, w, 196, { overshoot: 7, jitter: 0.7 });
-      const hillY = 234 + (index % 2) * 12;
-      g.fillStyle(PAPER.sheetMid, 0.82).fillTriangle(x, 314, x + w * 0.42, hillY, x + w * 0.7, 314);
-      g.fillStyle(PAPER.sheetLow, 0.66).fillTriangle(x + w * 0.42, hillY, x + w, 282, x + w, 314);
-      g.lineStyle(1.1, PAPER.graphiteFaint, 0.48);
-      draftLine(g, this.rnd, x, 294, x + w, 276, { overshoot: 0, jitter: 1.8, segments: 12 });
+      const view = addLayers(this, `ch4-studio-window-${index}`, () => paintCountry({
+        w, h: 196, seed: 0x57d + index * 41, horizon: 0.32, washScale: 0.5, density: 0.6,
+        features: index === 0
+          ? [{ kind: 'orchard', x: 20, s: 0.7, n: 3 }, { kind: 'hawthorn', x: 190, s: 0.9 }]
+          : [{ kind: 'house', x: 40, s: 0.8, lit: true }, { kind: 'tree', x: 150, s: 0.7 }],
+      }), { x, y: 118, depth: DEPTH.BACK + 1, washAlpha: 0 });
+      const frame = this.graphics(DEPTH.BACK + 2);
+      frame.lineStyle(1.5, PAPER.graphiteSoft, 0.8);
+      draftRect(frame, this.rnd, x, 118, w, 196, { overshoot: 7, jitter: 0.7 });
+      frame.lineStyle(1.2, PAPER.graphiteSoft, 0.7);
+      draftRect(frame, this.rnd, x - 8, 110, w + 16, 212, { overshoot: 4, jitter: 0.6 });
+      frame.fillStyle(PAPER.kraft, 0.55).fillRect(x - 12, 314, w + 24, 8);
+      return view;
     });
     g.lineStyle(1.8, PAPER.graphite, 0.82);
     draftLine(g, this.rnd, 0, 92, WORLD.w, 92, { overshoot: 0, jitter: 0.8, segments: 50 });
     draftLine(g, this.rnd, 0, 358, WORLD.w, 358, { overshoot: 0, jitter: 0.8, segments: 50 });
     draftLine(g, this.rnd, 0, FLOOR_Y, WORLD.w, FLOOR_Y, { overshoot: 0, jitter: 0.9, segments: 55 });
 
-    // The shelf.
+    // The shelf: a kraft board on two drawn brackets.
     const room = this.graphics(DEPTH.ROOM);
-    room.fillStyle(PAPER.kraft, 0.5).fillRect(SHELF.x, SHELF.y, SHELF.w, 12);
+    room.fillStyle(PAPER.kraft, 0.7).fillRect(SHELF.x, SHELF.y, SHELF.w, 12);
     room.lineStyle(1.7, PAPER.graphite, 0.82);
     draftRect(room, this.rnd, SHELF.x, SHELF.y, SHELF.w, 12, { overshoot: 5 });
-    draftLine(room, this.rnd, SHELF.x + 20, SHELF.y + 12, SHELF.x + 20, FLOOR_Y, { overshoot: 2 });
-    draftLine(room, this.rnd, SHELF.x + SHELF.w - 20, SHELF.y + 12, SHELF.x + SHELF.w - 20, FLOOR_Y, { overshoot: 2 });
+    hatchRect(room, this.rnd, SHELF.x + 2, SHELF.y + 6, SHELF.w - 4, 6, { spacing: 5, alpha: 0.3 });
+    [SHELF.x + 20, SHELF.x + SHELF.w - 20].forEach((bx) => {
+      draftLine(room, this.rnd, bx, SHELF.y + 12, bx, FLOOR_Y, { overshoot: 2 });
+      draftLine(room, this.rnd, bx, SHELF.y + 40, bx + (bx < SHELF.x + 100 ? 22 : -22), SHELF.y + 12, { overshoot: 2 });
+    });
 
     // The title strip: the room's name lives up here, where no tag can land.
     this.add.text(24, 26, "THE STUDIO  ·  ROSA'S STILL LIFE", {
@@ -186,33 +203,57 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.floor = floor;
   }
 
+  // The keepsakes, drawn (art/studioArt.js): pencil over a wash of the
+  // colour each one lends.
   buildSources() {
-    this.sourceArt = this.graphics(DEPTH.PAINT);
+    this.sourceArt = SOURCE_LAYOUT.map((layout) => {
+      const keys = ensurePair(this, `ch4-keepsake-${layout.kind}`, () => paintKeepsake(layout.kind));
+      const top = layout.y - KEEPSAKE.base;
+      const pigment = this.studio.pigment(this.studio.source(layout.id).pigment);
+      const wash = this.add.image(layout.x, top, keys.wash).setOrigin(0.5, 0).setDepth(DEPTH.PAINT).setTint(pigment.color);
+      const pencil = this.add.image(layout.x, top, keys.pencil).setOrigin(0.5, 0).setDepth(DEPTH.PAINT + 0.1);
+      return { layout, wash, pencil };
+    });
     this.focusArt = this.graphics(DEPTH.PAINT + 2);
     this.streamArt = this.graphics(DEPTH.PROMPT - 2);
     this.markerArt = this.graphics(DEPTH.PROMPT - 3);
   }
 
   buildCanvas() {
-    const g = this.graphics(DEPTH.BOARD - 2);
     const { x, y, w, h } = CANVAS;
+    // the easel, then the stretched paper, then her colours, then her pencil
+    const easelKeys = ensurePair(this, 'ch4-studio-easel', () => paintEasel(w + 240, FLOOR_Y - y + 60, { x: 120, y: 40, w, h }));
+    this.add.image(x - 120, y - 40, easelKeys.wash).setOrigin(0).setDepth(DEPTH.BOARD - 3);
+    this.add.image(x - 120, y - 40, easelKeys.pencil).setOrigin(0).setDepth(DEPTH.BOARD - 2.9);
+    const g = this.graphics(DEPTH.BOARD - 2);
+    g.fillStyle(0x6b5640, 0.12).fillRect(x - 10, y - 10, w + 28, h + 28);
     g.fillStyle(PAPER.sheetHigh, 1).fillRect(x - 14, y - 14, w + 28, h + 28);
     g.lineStyle(1.8, PAPER.graphite, 0.8);
     draftRect(g, this.rnd, x - 14, y - 14, w + 28, h + 28, { overshoot: 7, jitter: 0.8 });
-    draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 - 70, FLOOR_Y, { overshoot: 5 });
-    draftLine(g, this.rnd, x + w * 0.5, y + h + 14, x + w * 0.5 + 70, FLOOR_Y, { overshoot: 5 });
     this.add.text(x + w / 2, y - 30, '"THE ORCHARD IN SUMMER" · ROSA, 9', {
       fontFamily: MONO, fontSize: '11px', color: '#5c574f', letterSpacing: 1.2,
     }).setOrigin(0.5, 1).setDepth(DEPTH.BOARD);
-    this.fillArt = this.graphics(DEPTH.BOARD);
-    this.pencilArt = this.graphics(DEPTH.BOARD + 1);
+    if (!stillLifeKeys || !this.textures.exists(stillLifeKeys.pencil)) {
+      const art = paintStillLife(REGION_SHAPES, w, h);
+      this.textures.addCanvas('ch4-still-life:pencil', art.pencil);
+      Object.entries(art.regions).forEach(([id, canvas]) => this.textures.addCanvas(`ch4-still-life:${id}`, canvas));
+      stillLifeKeys = { pencil: 'ch4-still-life:pencil' };
+    }
+    this.regionArt = Object.fromEntries(REGION_ORDER.map((id) => [id, this.add.image(x, y, `ch4-still-life:${id}`).setOrigin(0).setVisible(false)]));
+    // the sky first, so the sun sits in it; the leaves before the apple
+    ['sky', 'sun', 'leaves', 'apple', 'plums', 'fox'].forEach((id, i) => this.regionArt[id].setDepth(DEPTH.BOARD + i * 0.01));
+    this.fillArt = null;
+    this.pencilArt = this.add.image(x, y, stillLifeKeys.pencil).setOrigin(0).setDepth(DEPTH.BOARD + 1);
     this.selectionArt = this.graphics(DEPTH.BOARD + 2);
     this.frameArt = this.graphics(DEPTH.BOARD + 3);
+    // the door to the train: drawn, and its doorway behind it
     this.doorArt = this.graphics(DEPTH.BOARD);
+    this.doorFace = addLayers(this, 'ch4-studio-door', () => paintDoor(EXIT.w, EXIT.h), {
+      x: EXIT.x, y: EXIT.y, depth: DEPTH.BOARD + 0.05, washAlpha: 1, groups: ['red', 'yellow'],
+    });
     this.doorLabel = this.add.text(EXIT.x + EXIT.w / 2, EXIT.y - 18, 'TO THE PAINTED TRAIN', {
       fontFamily: MONO, fontSize: '11px', color: '#8d8579', letterSpacing: 1.3,
     }).setOrigin(0.5, 1).setDepth(DEPTH.BOARD);
-    this.drawPencil();
   }
 
   buildPlayer() {
@@ -220,7 +261,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.physics.add.existing(this.walker);
     this.physics.add.collider(this.walker, this.floor);
     this.walker.body.setCollideWorldBounds(true);
-    this.figure = this.add.graphics().setDepth(DEPTH.FIGURE);
+    this.figure = createPaintedPlayer(this, DEPTH.FIGURE);
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
     this.cameras.main.setDeadzone(280, 190);
   }
@@ -291,117 +332,36 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.redrawDoor();
   }
 
-  // Seven keepsakes from the orchard house, one per colour. Taking a colour
-  // does not use the object up.
   redrawSources() {
-    const g = this.sourceArt;
-    g.clear();
-    SOURCE_LAYOUT.forEach((layout) => {
-      const item = this.studio.source(layout.id);
-      const pigment = this.studio.pigment(item.pigment);
+    this.sourceArt.forEach(({ layout, wash }) => {
       const pulling = this.hold.key === `take:${layout.id}` ? Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1) : 0;
-      const { x, y } = layout;
-      g.lineStyle(1.5, PAPER.graphite, 0.86);
-      g.fillStyle(pigment.color, 0.88 - pulling * 0.3);
-      if (layout.kind === 'cup') {
-        g.fillRoundedRect(x - 12, y - 25, 23, 22, 3).strokeRoundedRect(x - 12, y - 25, 23, 22, 3);
-        g.strokeCircle(x + 13, y - 15, 7);
-      } else if (layout.kind === 'book') {
-        g.fillRoundedRect(x - 16, y - 16, 32, 13, 3).strokeRoundedRect(x - 16, y - 16, 32, 13, 3);
-        g.fillRoundedRect(x - 14, y - 28, 28, 12, 3).strokeRoundedRect(x - 14, y - 28, 28, 12, 3);
-      } else if (layout.kind === 'tin' || layout.kind === 'jar') {
-        g.fillRect(x - 11, y - 27, 22, 24).strokeRect(x - 11, y - 27, 22, 24);
-        g.strokeEllipse(x, y - 27, 22, 6);
-        g.strokeEllipse(x, y - 3, 22, 6);
-        if (layout.kind === 'tin') {
-          g.lineStyle(1, PAPER.graphite, 0.6).lineBetween(x - 7, y - 16, x + 7, y - 16);
-        }
-      } else if (layout.kind === 'bottle') {
-        g.fillRoundedRect(x - 9, y - 28, 18, 25, 5).strokeRoundedRect(x - 9, y - 28, 18, 25, 5);
-        g.fillRect(x - 4, y - 37, 8, 10).strokeRect(x - 4, y - 37, 8, 10);
-      } else if (layout.kind === 'vase') {
-        g.fillEllipse(x, y - 17, 27, 29).strokeEllipse(x, y - 17, 27, 29);
-        g.lineBetween(x - 7, y - 33, x + 7, y - 33);
-        g.strokeCircle(x + 15, y - 20, 6);
-      } else if (layout.kind === 'ribbon') {
-        g.fillTriangle(x, y - 17, x - 18, y - 29, x - 14, y - 9);
-        g.fillTriangle(x, y - 17, x + 18, y - 29, x + 14, y - 9);
-        g.strokeTriangle(x, y - 17, x - 18, y - 29, x - 14, y - 9);
-        g.strokeTriangle(x, y - 17, x + 18, y - 29, x + 14, y - 9);
-        g.fillCircle(x, y - 17, 6).strokeCircle(x, y - 17, 6);
-      }
+      wash.setAlpha(0.9 - pulling * 0.35);
     });
   }
 
-  // Rosa's pencil: always on top, whatever colour is under it.
-  drawPencil() {
-    const g = this.pencilArt;
-    const ox = CANVAS.x;
-    const oy = CANVAS.y;
-    const rnd = makeRandom(0x5711);
-    g.clear();
-    g.lineStyle(2, PAPER.graphite, 0.78);
-    draftLine(g, rnd, ox, oy + 74, ox + CANVAS.w, oy + 70, { overshoot: 0, jitter: 1.4, segments: 10 });
-    draftLine(g, rnd, ox, oy + 228, ox + CANVAS.w, oy + 222, { overshoot: 0, jitter: 1.6, segments: 10 });
-    // the tree
-    REGION_SHAPES.leaves.circles.forEach((c) => g.strokeCircle(ox + c.x, oy + c.y, c.r));
-    g.lineStyle(3, PAPER.graphite, 0.7);
-    draftLine(g, rnd, ox + 96, oy + 150, ox + 96, oy + 226, { overshoot: 0, jitter: 1 });
-    g.lineStyle(2, PAPER.graphite, 0.8);
-    const apple = REGION_SHAPES.apple;
-    g.strokeCircle(ox + apple.x, oy + apple.y, apple.r);
-    g.lineBetween(ox + apple.x, oy + apple.y - apple.r, ox + apple.x + 3, oy + apple.y - apple.r - 7);
-    const sun = REGION_SHAPES.sun;
-    g.strokeCircle(ox + sun.x, oy + sun.y, sun.r);
-    for (let i = 0; i < 8; i += 1) {
-      const a = (i / 8) * Math.PI * 2;
-      g.lineBetween(ox + sun.x + Math.cos(a) * (sun.r + 5), oy + sun.y + Math.sin(a) * (sun.r + 5), ox + sun.x + Math.cos(a) * (sun.r + 13), oy + sun.y + Math.sin(a) * (sun.r + 13));
-    }
-    // the bowl of plums
-    REGION_SHAPES.plums.circles.forEach((c) => g.strokeCircle(ox + c.x, oy + c.y, c.r));
-    g.beginPath();
-    g.arc(ox + 227, oy + 208, 34, 0.1, Math.PI - 0.1, false);
-    g.strokePath();
-    g.lineBetween(ox + 193, oy + 212, ox + 261, oy + 212);
-    // the fox by the gate
-    const fox = REGION_SHAPES.fox;
-    g.strokeEllipse(ox + fox.x, oy + fox.y, 64, 26);
-    g.strokeTriangle(ox + fox.x + 30, oy + fox.y - 20, ox + fox.x + 48, oy + fox.y - 8, ox + fox.x + 30, oy + fox.y + 2);
-    g.lineBetween(ox + fox.x + 34, oy + fox.y - 20, ox + fox.x + 38, oy + fox.y - 30);
-    g.lineBetween(ox + fox.x - 32, oy + fox.y, ox + fox.x - 46, oy + fox.y - 16);
-    [-20, -8, 10, 22].forEach((dx) => g.lineBetween(ox + fox.x + dx, oy + fox.y + 12, ox + fox.x + dx, oy + fox.y + 24));
-    // a gate, and the path up to it
-    g.lineStyle(1.4, PAPER.graphiteSoft, 0.8);
-    [288, 302, 316].forEach((xx) => g.lineBetween(ox + xx, oy + 190, ox + xx, oy + 226));
-    g.lineBetween(ox + 282, oy + 198, ox + 322, oy + 198);
-  }
+  // Rosa's pencil is a texture now (art/studioArt.js), always on top.
+  drawPencil() {}
 
-  paintRegion(g, id, pigmentId, alpha = 0.82) {
+  // A region painted with a colour: her wash for that place, tinted.
+  paintRegion(id, pigmentId) {
     const pigment = this.studio.pigment(pigmentId);
-    if (!pigment) return;
-    const s = REGION_SHAPES[id];
-    const ox = CANVAS.x;
-    const oy = CANVAS.y;
-    g.fillStyle(pigment.color, alpha);
-    if (s.type === 'circle') g.fillCircle(ox + s.x, oy + s.y, s.r - 1);
-    else if (s.type === 'circles') s.circles.forEach((c) => g.fillCircle(ox + c.x, oy + c.y, c.r - 1));
-    else if (s.type === 'rect') paintedFill(g, this.rnd, ox + s.x + 2, oy + s.y + 2, s.w - 4, s.h - 4, pigment.color, { alpha, inset: 1 });
-    else if (s.type === 'fox') {
-      g.fillEllipse(ox + s.x, oy + s.y, 62, 24);
-      g.fillTriangle(ox + s.x + 30, oy + s.y - 20, ox + s.x + 48, oy + s.y - 8, ox + s.x + 30, oy + s.y + 2);
+    const image = this.regionArt[id];
+    if (!pigment) {
+      image.setVisible(false);
+      return;
+    }
+    if (!image.visible || image.tintTopLeft !== pigment.color) {
+      image.setTint(pigment.color).setVisible(true).setAlpha(0.2);
+      this.tweens.killTweensOf(image);
+      this.tweens.add({ targets: image, alpha: 0.9, duration: 420, ease: 'Sine.easeOut' });
     }
   }
 
   redrawCanvas() {
-    const g = this.fillArt;
-    g.clear();
     this.selectionArt.clear();
     this.frameArt.clear();
     const snapshot = this.studio.snapshot();
-    // the sky first, so the sun sits in it; the leaves before the apple
-    ['sky', 'sun', 'leaves', 'apple', 'plums', 'fox'].forEach((id) => {
-      if (snapshot.fills[id]) this.paintRegion(g, id, snapshot.fills[id]);
-    });
+    REGION_ORDER.forEach((id) => this.paintRegion(id, snapshot.fills[id]));
     if (this.hoverRegionId) {
       const c = regionCentre(this.hoverRegionId);
       this.selectionArt.lineStyle(2.4, UI.amberInk, 0.9).strokeCircle(CANVAS.x + c.x, CANVAS.y + c.y, 12);
@@ -423,14 +383,24 @@ export class DrawingStudioScene extends Phaser.Scene {
     const g = this.doorArt;
     g.clear();
     const complete = this.studio.isComplete();
-    g.fillStyle(complete ? PAPER.sheetHigh : PAPER.sheetMid, complete ? 1 : 0.72).fillRect(EXIT.x, EXIT.y, EXIT.w, EXIT.h);
-    g.lineStyle(2, complete ? PAPER.graphite : PAPER.graphiteSoft, complete ? 0.9 : 0.62);
+    // the doorway behind the door: pencil light, once it stands open
+    g.fillStyle(PAPER.sheetHigh, 1).fillRect(EXIT.x, EXIT.y, EXIT.w, EXIT.h);
+    g.lineStyle(1.2, PAPER.graphiteFaint, 0.8);
+    for (let x = EXIT.x + 14; x < EXIT.x + EXIT.w; x += 18) g.lineBetween(x, EXIT.y + 6, x - 24, EXIT.y + EXIT.h);
+    g.lineStyle(2, PAPER.graphite, 0.9);
     draftRect(g, makeRandom(0x9955), EXIT.x, EXIT.y, EXIT.w, EXIT.h, { overshoot: 6, jitter: 0.8 });
-    g.strokeCircle(EXIT.x + EXIT.w - 14, EXIT.y + 88, 4);
-    if (complete) {
-      g.lineStyle(1.2, PAPER.graphiteFaint, 0.8);
-      for (let x = EXIT.x + 14; x < EXIT.x + EXIT.w; x += 18) g.lineBetween(x, EXIT.y + 6, x - 24, EXIT.y + EXIT.h);
-    }
+    const face = this.doorFace.images();
+    if (complete && !this.doorOpened) {
+      this.doorOpened = true;
+      this.tweens.add({ targets: face, alpha: 0, duration: 700, ease: 'Sine.easeIn' });
+      // the orchard outside takes its colour back
+      this.windowViews.forEach((view, i) => view.bloomAll({ duration: 1800, delay: 200 + i * 200, stagger: 120 }));
+    } else if (!complete && this.doorOpened) {
+      this.doorOpened = false;
+      this.tweens.killTweensOf(face);
+      face.forEach((image) => image.setAlpha(1));
+      this.windowViews.forEach((view) => Object.keys(view.washes).forEach((id) => view.bloom(id, { to: 0, duration: 500 })));
+    } else if (complete) face.forEach((image) => image.setAlpha(0));
   }
 
   sourceAt(x, y) {

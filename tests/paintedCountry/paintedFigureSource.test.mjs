@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
+import { BUTCH_FRAMES, butchPose } from '../../src/chapters/paintedCountry/paintedPlayerPose.js';
 
 const read = (path) => readFile(new URL(`../../src/chapters/paintedCountry/${path}`, import.meta.url), 'utf8');
 const sceneSource = await read('PaintedCountryScene.js');
@@ -10,17 +11,32 @@ const lineSource = await read('PaintedLineScene.js');
 const playerFigureSource = await read('paintedPlayerFigure.js');
 const mainSource = await readFile(new URL('../../src/paintedCountry-main.js', import.meta.url), 'utf8');
 
-test('the teammate gallery keeps its original code-drawn Butch', () => {
+test('Butch is the pencil walk cycle, not a code-drawn silhouette (round 3 art uplift)', () => {
   assert.match(sceneSource, /drawFigure\(\)/);
   assert.match(sceneSource, /drawPaintedPlayer\(this\.figure, this\.walker, this\.brush\)/);
-  assert.match(playerFigureSource, /figure\.fillRect\(x - 8, feetY - 46, 16, 28\)/);
-  assert.doesNotMatch(sceneSource, /latestButch|frame-[0-3]\.png/);
+  assert.match(playerFigureSource, /assets\/butch-pencil\/butch-pencil-sheet\.png\?url/);
+  assert.match(playerFigureSource, /scene\.load\.spritesheet\(BUTCH_SHEET\.key/);
+  assert.doesNotMatch(playerFigureSource, /figure\.fillRect\(x - 8, feetY - 46, 16, 28\)/, 'the black rectangle with a ball head is gone');
+  for (const source of [sceneSource, studioSource, trainSource, lineSource]) {
+    assert.match(source, /preloadPaintedPlayer\(this\)/);
+    assert.match(source, /this\.figure = createPaintedPlayer\(this, /);
+  }
 });
 
 test('the figure aims its brush at the brush cursor, whichever hand drives it', () => {
-  assert.match(playerFigureSource, /Math\.atan2\(pointer\.worldY - shoulderY, pointer\.worldX - x\)/);
-  assert.match(playerFigureSource, /figure\.lineTo\(tipX, tipY\)/);
-  assert.match(playerFigureSource, /figure\.fillCircle\(tipX, tipY, 4\.6\)/);
+  assert.match(playerFigureSource, /Math\.atan2\(pointer\.worldY - handY, pointer\.worldX - handX\)/);
+  assert.match(playerFigureSource, /g\.fillCircle\(tipX, tipY, 4\.2\)/);
+});
+
+test('Butch walks with his stride, jumps and falls in their own poses, and faces where he goes', () => {
+  assert.deepEqual(butchPose({ vx: 0, grounded: true }).frame, BUTCH_FRAMES.idle);
+  assert.equal(butchPose({ vx: 0, vy: -300, grounded: false }).frame, BUTCH_FRAMES.jump);
+  assert.equal(butchPose({ vx: 0, vy: 200, grounded: false }).frame, BUTCH_FRAMES.fall);
+  const frames = [0, 13, 26, 39, 52].map((stride) => butchPose({ vx: 200, grounded: true, stride }).frame);
+  assert.deepEqual(frames, [0, 1, 2, 3, 0], 'the walk advances with distance, so the feet never skate');
+  assert.equal(butchPose({ vx: -200, grounded: true }).facing, -1);
+  assert.equal(butchPose({ vx: 0, grounded: true, facing: -1, aimX: 500, x: 100 }).facing, 1, 'standing still he turns to the brush');
+  assert.equal(butchPose({ vx: 0, grounded: true, facing: -1, aimX: 110, x: 100 }).facing, -1);
 });
 
 test('every Chapter 4 room reuses the same brush-wielding protagonist and the same brush input', () => {

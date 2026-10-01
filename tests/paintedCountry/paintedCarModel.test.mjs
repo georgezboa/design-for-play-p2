@@ -14,17 +14,16 @@ import {
   FLOOR_ROW,
   FLOOR_SPANS,
   GRID,
-  MARK_ART,
   PAINTINGS,
   PIGMENT_ZONE,
   PLATE_GRID,
   READ_RADIUS,
   SIGN,
-  SIGN_ART,
   SIGN_LABELS,
   VARNISH_COATS,
   WRONG_ANSWER_LINES,
 } from '../../src/chapters/paintedCountry/carLayout.js';
+import { MARK_SIGNS } from '../../src/chapters/paintedCountry/art/marksArt.js';
 
 // Chapter 4 · Part I, "Under the gouache" (release 1.0 rework): the Colour
 // Link cards are gone, the plates are washed clear instead, the sign set is
@@ -68,11 +67,11 @@ test('nothing on screen gives the answer away', () => {
   assert.equal(DOOR.prompt, 'WHICH MARK DID SHE LEAVE IN ALL THREE?');
 });
 
-test('every sign has a door plate and a bare mark, and the gallery JPGs are gone', () => {
+test('every sign is drawn in the chapter\'s pencil, and the old flat icons and gallery JPGs are gone', () => {
+  assert.deepEqual([...MARK_SIGNS].sort(), Object.values(SIGN).sort());
   Object.values(SIGN).forEach((sign) => {
-    assert.match(SIGN_ART[sign], /^assets\/chapter04\/icons\/sign-[a-z]+\.webp$/);
-    assert.ok(existsSync(new URL(`../../public/${SIGN_ART[sign]}`, import.meta.url)), SIGN_ART[sign]);
-    assert.ok(existsSync(new URL(`../../public/${MARK_ART[sign]}`, import.meta.url)), MARK_ART[sign]);
+    assert.equal(existsSync(new URL(`../../public/assets/chapter04/icons/sign-${sign}.webp`, import.meta.url)), false);
+    assert.equal(existsSync(new URL(`../../public/assets/chapter04/icons/mark-${sign}.webp`, import.meta.url)), false);
   });
   ['middleage', 'duga', 'cyberpunk'].forEach((name) => {
     assert.equal(existsSync(new URL(`../../public/assets/chapter04/gallery/${name}.jpg`, import.meta.url)), false);

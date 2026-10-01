@@ -7,7 +7,10 @@ import {
   TRAIN_BUILD_RULES,
   createChapter4Expansion,
 } from './chapter4ExpansionModel.js';
-import { drawPaintedPlayer } from './paintedPlayerFigure.js';
+import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
+import { addLayers, ensurePair } from './art/artTextures.js';
+import { paintTrain } from './art/trainArt.js';
+import { YARD_SOURCE, paintYardBackdrop, paintYardSource } from './art/yardArt.js';
 import { drawPigmentHalo, haloPointToward } from './pigmentHalo.js';
 import { PAPER } from './paperPalette.js';
 import { buildPaperGrain, draftLine, draftRect, makeRandom } from './paperSurface.js';
@@ -38,7 +41,6 @@ const FLOOR_Y = 474;
 const MOVE_SPEED = 220;
 const JUMP_VELOCITY = -620;
 const TRAIN_ENTRY_X = 116;
-const SOURCE_SCALE = 0.68;
 const TRAIN_SCALE = 0.82;
 const TRAIN_ORIGIN = Object.freeze({ x: 2260, y: 468 });
 const TRAIN_MIRROR_X = 2600;
@@ -61,6 +63,28 @@ const TRAIN_PARTS = Object.freeze([
   { id: 'violet', type: 'roof', x: 2482, y: 326, w: 430, h: 40 },
 ]);
 
+// The drawing of the train (art/trainArt.js) uses the parts' own hit rects,
+// in the train's local (unmirrored) frame; the smokebox is at local left.
+const partRect = (id) => {
+  const { x, y, w, h } = TRAIN_PARTS.find((part) => part.id === id);
+  return { x, y, w, h };
+};
+const YARD_TRAIN_SPEC = Object.freeze({
+  S: 1,
+  nose: -1,
+  boiler: partRect('red'),
+  stack: partRect('yellow'),
+  cab: partRect('orange'),
+  carriage: partRect('blue'),
+  roof: partRect('violet'),
+  wheels: TRAIN_PARTS.find((part) => part.id === 'green').circles,
+  frame: { x0: 2255, x1: 2941, y: 447, h: 19 },
+});
+// Draw order, back to front; the wheels go over the bodies.
+const TRAIN_DRAW_ORDER = ['red', 'yellow', 'orange', 'blue', 'violet'];
+
+let yardTrainKeys = null;
+
 function cssColor(value) {
   return `#${value.toString(16).padStart(6, '0')}`;
 }
@@ -78,6 +102,7 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   preload() {
+    preloadPaintedPlayer(this);
     if (!this.cache.audio.exists('chapter4-consequence-music')) {
       this.load.audio('chapter4-consequence-music', '/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3');
     }
@@ -138,17 +163,24 @@ export class PigmentTrainScene extends Phaser.Scene {
     g.fillStyle(PAPER.sheetHigh, 0.94).fillRect(0, 94, WORLD.w, 270);
     g.fillStyle(PAPER.sheetLow, 0.9).fillRect(0, FLOOR_Y, WORLD.w, WORLD.h - FLOOR_Y);
 
-    g.lineStyle(1.3, PAPER.graphiteFaint, 0.45);
-    for (let x = 54; x < WORLD.w; x += 126) {
-      draftLine(g, this.rnd, x, 106, x + 80, 340, { overshoot: 0, jitter: 0.6, segments: 9 });
-    }
+    // The street behind the six places, still in pencil: it drifts behind
+    // the yard at half speed. Its washes stay down until the line ahead
+    // gives the colours back.
+    this.backdrop = addLayers(this, 'ch4-yard-street', () => paintYardBackdrop(2100, 220), {
+      x: 0, y: FLOOR_Y - 220, depth: 1, scrollFactor: 0.45, washAlpha: 0.12, pencilAlpha: 0.42,
+    });
     g.lineStyle(2, PAPER.graphite, 0.78);
     draftLine(g, this.rnd, 0, FLOOR_Y, WORLD.w, FLOOR_Y, { overshoot: 0, jitter: 0.8, segments: 60 });
+    // the yard's ground: cinders and sleepers, hatched
+    const ground = this.add.graphics().setDepth(2);
+    const gr = makeRandom(0x9e7);
+    ground.lineStyle(1, PAPER.graphiteSoft, 0.32);
+    for (let x = 4; x < WORLD.w; x += 9 + gr() * 8) ground.lineBetween(x, FLOOR_Y + 6 + gr() * 4, x - 6, FLOOR_Y + 14 + gr() * 6);
+    ground.lineStyle(1.4, PAPER.graphite, 0.5);
+    for (let x = 2120; x < WORLD.w; x += 24) ground.lineBetween(x, FLOOR_Y + 3, x - 6, FLOOR_Y + 12);
 
     for (let i = 0; i < PIGMENTS.length && !this.fusedEntry; i += 1) {
       const x = SOURCE_X[i];
-      g.lineStyle(1.2, PAPER.graphiteFaint, 0.55);
-      draftLine(g, this.rnd, x - 116, 118, x + 116, 118, { jitter: 0.5, segments: 7 });
       this.add.text(x, 100, SOURCE_TITLES[i], {
         fontFamily: MONO,
         fontSize: '12px',
@@ -178,9 +210,16 @@ export class PigmentTrainScene extends Phaser.Scene {
         x: SOURCE_X[index],
         y: 358,
         rect: new Phaser.Geom.Rectangle(SOURCE_X[index] - 64, 276, 128, 194),
-        art: this.add.graphics().setDepth(12),
       };
-      source.art.setScale(SOURCE_SCALE).setPosition(source.x * (1 - SOURCE_SCALE), FLOOR_Y * (1 - SOURCE_SCALE));
+      // The place in pencil, and the one thing in it that holds its colour.
+      const keys = ensurePair(this, `ch4-yard-source-${index}`, () => {
+        const art = paintYardSource(index, cssColor(pigment.color));
+        return { pencil: art.pencil, wash: art.live };
+      });
+      const top = FLOOR_Y - 4 - YARD_SOURCE.ground;
+      source.live = this.add.image(source.x, top, keys.wash).setOrigin(0.5, 0).setDepth(11.9);
+      source.art = this.add.image(source.x, top, keys.pencil).setOrigin(0.5, 0).setDepth(12);
+      source.liveAlpha = 1;
       source.label = this.add.text(source.x, 492, pigment.source, {
         fontFamily: MONO,
         fontSize: '11px',
@@ -243,11 +282,33 @@ export class PigmentTrainScene extends Phaser.Scene {
     s.fillStyle(0xffffff, 0.7).fillCircle(cx - 3, cy - 6, 2.4);
   }
 
+  // The painted train is one pencil drawing in six parts (art/trainArt.js):
+  // an unpainted part is a faint construction drawing; painting it firms the
+  // pencil and blooms its colour in.
   buildTrain() {
-    this.trainArt = this.add.graphics().setDepth(10);
+    const keys = this.ensureTrainTextures();
+    this.trainArt = this.add.container(0, 0).setDepth(10);
+    this.trainParts = {};
+    const chassis = this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0);
+    this.trainArt.add(chassis);
+    TRAIN_DRAW_ORDER.forEach((id) => {
+      const k = keys.parts[id];
+      const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(this.chapter.pigment(id).color).setAlpha(0);
+      const pencil = this.add.image(k.x, k.y, k.pencil).setOrigin(0).setAlpha(0.5);
+      this.trainArt.add([wash, pencil]);
+      this.trainParts[id] = { wash, pencil, shown: false };
+    });
+    this.wheelArt = YARD_TRAIN_SPEC.wheels.map((w) => {
+      const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(this.chapter.pigment('green').color).setAlpha(0);
+      const pencil = this.add.image(w.x, w.y, keys.wheel.pencil).setAlpha(0.5);
+      this.trainArt.add([wash, pencil]);
+      return { wash, pencil };
+    });
+    this.trainParts.green = { wash: null, pencil: null, shown: false };
     this.positionTrainArt();
     this.referenceArt = this.add.graphics().setDepth(9);
-    this.referenceArt.setScale(-1, 1).setPosition(4656, 0);
+    this.referenceTrain = this.add.container(0, 0).setDepth(9.5);
+    this.buildReferenceTrain(keys);
     this.referenceLabel = this.add.text(2328, 146, 'THE PAINTED TRAIN, AS DRAWN', {
       fontFamily: MONO,
       fontSize: '11px',
@@ -260,10 +321,49 @@ export class PigmentTrainScene extends Phaser.Scene {
       color: '#6f675c',
       letterSpacing: 1.1,
     }).setOrigin(0.5).setDepth(14);
-    this.drawReferenceTrain();
     this.ringArt = this.add.graphics().setDepth(90);
     this.focusArt = this.add.graphics().setDepth(91);
     this.markerArt = this.add.graphics().setDepth(89);
+  }
+
+  ensureTrainTextures() {
+    if (yardTrainKeys && this.textures.exists(yardTrainKeys.chassis.pencil)) return yardTrainKeys;
+    const art = paintTrain(YARD_TRAIN_SPEC);
+    const register = (name, part) => {
+      this.textures.addCanvas(`${name}:pencil`, part.pencil);
+      if (part.wash) this.textures.addCanvas(`${name}:wash`, part.wash);
+      return { pencil: `${name}:pencil`, wash: `${name}:wash`, x: part.x, y: part.y };
+    };
+    yardTrainKeys = {
+      chassis: register('ch4-yard-train-chassis', { pencil: art.chassis.pencil, x: art.chassis.x, y: art.chassis.y }),
+      parts: Object.fromEntries(TRAIN_DRAW_ORDER.map((id) => [id, register(`ch4-yard-train-${id}`, art.parts[id])])),
+      wheel: register('ch4-yard-train-wheel', art.wheel),
+    };
+    return yardTrainKeys;
+  }
+
+  // "The painted train, as drawn": the same drawing, small and finished, on
+  // a pinned card, so the player sees what they are making.
+  buildReferenceTrain(keys) {
+    const g = this.referenceArt;
+    g.fillStyle(0x6b5640, 0.12).fillRect(2134, 163, 398, 92);
+    g.fillStyle(PAPER.sheetHigh, 1).fillRect(2130, 158, 398, 92);
+    g.lineStyle(1.2, PAPER.graphiteSoft, 0.8);
+    draftRect(g, makeRandom(0x4ef), 2130, 158, 398, 92, { overshoot: 3, jitter: 0.5 });
+    g.fillStyle(UI.brass, 1).fillCircle(2140, 166, 2.6).fillCircle(2518, 166, 2.6);
+    const box = this.referenceTrain;
+    const k = 0.42;
+    box.setScale(-k, k).setPosition(2508 + k * 2222, 172 - k * 316);
+    box.add(this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0));
+    TRAIN_DRAW_ORDER.forEach((id) => {
+      const p = keys.parts[id];
+      box.add(this.add.image(p.x, p.y, p.wash).setOrigin(0).setTint(this.chapter.pigment(id).color).setAlpha(0.9));
+      box.add(this.add.image(p.x, p.y, p.pencil).setOrigin(0));
+    });
+    YARD_TRAIN_SPEC.wheels.forEach((w) => {
+      box.add(this.add.image(w.x, w.y, keys.wheel.wash).setTint(this.chapter.pigment('green').color).setAlpha(0.9));
+      box.add(this.add.image(w.x, w.y, keys.wheel.pencil));
+    });
   }
 
   buildPlayer() {
@@ -274,7 +374,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     // walker.x every frame let Arcade add a slow frame's whole step on top.
     this.walker.body.setBoundsRectangle(new Phaser.Geom.Rectangle(42 - 9, -200, WORLD.w - 44 - 42 + 18, WORLD.h + 400));
     this.walker.body.setCollideWorldBounds(true);
-    this.figure = this.add.graphics().setDepth(28);
+    this.figure = createPaintedPlayer(this, 28);
     this.playerFacing = 1;
     this.playerAnimation = 'idle';
     this.cameras.main.startFollow(this.walker, true, 0.1, 0.13);
@@ -633,6 +733,7 @@ export class PigmentTrainScene extends Phaser.Scene {
   refreshPresentation() {
     this.sources.forEach((source) => {
       source.art.setVisible(!this.fusedEntry);
+      source.live.setVisible(!this.fusedEntry);
       source.label.setVisible(!this.fusedEntry);
       if (!this.fusedEntry) this.drawSource(source);
     });
@@ -709,237 +810,48 @@ export class PigmentTrainScene extends Phaser.Scene {
     };
   }
 
+  // A place keeps its colour until Butch borrows it; while he draws it out
+  // the wash thins, then it is pencil only (a ghost of the colour stays).
   drawSource(source) {
-    const g = source.art;
     const item = this.chapter.pigment(source.id);
     const live = !item.collected;
-    const color = live ? source.color : PAPER.graphiteFaint;
-    g.clear();
     const suctionProgress = this.hold.key === `source:${source.id}`
       ? Phaser.Math.Clamp(this.hold.progress / HOLD_SECONDS, 0, 1)
       : 0;
-    g.setAlpha(live ? 1 - suctionProgress * 0.58 : 1);
-    g.lineStyle(2, PAPER.graphite, live ? 0.86 : 0.42);
-    const x = source.x;
-    const floor = FLOOR_Y - 8;
-
-    if (source.index === 0) {
-      g.fillStyle(PAPER.sheetHigh, 0.9).fillRect(x - 70, floor - 176, 140, 176);
-      g.strokeRect(x - 70, floor - 176, 140, 176);
-      for (let i = 0; i < 5; i += 1) {
-        g.fillStyle(i % 2 === 0 && live ? color : PAPER.sheetLow, 0.9).fillTriangle(x - 72 + i * 29, floor - 176, x - 43 + i * 29, floor - 176, x - 57 + i * 29, floor - 146);
-      }
-      g.strokeRect(x - 35, floor - 105, 70, 105);
-    } else if (source.index === 1) {
-      g.lineStyle(5, PAPER.graphiteSoft, 0.55).lineBetween(x, floor, x, floor - 190);
-      g.fillStyle(color, live ? 0.9 : 0.16).fillRoundedRect(x - 31, floor - 172, 62, 72, 7);
-      g.lineStyle(2, PAPER.graphite, 0.84).strokeRoundedRect(x - 31, floor - 172, 62, 72, 7);
-      g.lineBetween(x - 20, floor - 112, x + 20, floor - 160);
-    } else if (source.index === 2) {
-      g.lineStyle(4, PAPER.graphiteSoft, 0.6).lineBetween(x - 38, floor, x - 38, floor - 190);
-      g.fillStyle(color, live ? 0.9 : 0.12).fillTriangle(x - 35, floor - 185, x + 62, floor - 154, x - 35, floor - 123);
-      g.lineStyle(2, PAPER.graphite, 0.84).strokeTriangle(x - 35, floor - 185, x + 62, floor - 154, x - 35, floor - 123);
-    } else if (source.index === 3) {
-      g.fillStyle(PAPER.sheetLow, 0.8).fillRoundedRect(x - 76, floor - 48, 152, 48, 5);
-      g.strokeRoundedRect(x - 76, floor - 48, 152, 48, 5);
-      for (let i = 0; i < 7; i += 1) {
-        const fx = x - 60 + i * 20;
-        g.lineStyle(2, live ? PAPER.verdigris : PAPER.graphiteFaint, 0.72).lineBetween(fx, floor - 46, fx + (i % 2 ? 8 : -7), floor - (live ? 112 : 70));
-        g.fillStyle(color, live ? 0.85 : 0.14).fillCircle(fx + (i % 2 ? 8 : -7), floor - (live ? 118 : 72), 8);
-      }
-    } else if (source.index === 4) {
-      g.fillStyle(PAPER.sheetLow, 0.82).fillEllipse(x, floor - 46, 145, 72);
-      g.lineStyle(2, PAPER.graphite, 0.84).strokeEllipse(x, floor - 46, 145, 72);
-      g.fillStyle(color, live ? 0.86 : 0.12).fillEllipse(x, floor - 78, 118, 36);
-      g.strokeEllipse(x, floor - 78, 118, 36);
-      g.lineBetween(x - 58, floor - 78, x - 58, floor - 160);
-      g.lineBetween(x + 58, floor - 78, x + 58, floor - 160);
-      g.lineBetween(x - 58, floor - 160, x + 58, floor - 160);
-    } else {
-      g.lineStyle(2, PAPER.graphiteSoft, 0.6).lineBetween(x - 78, floor - 166, x + 78, floor - 166);
-      g.fillStyle(color, live ? 0.88 : 0.1).fillRect(x - 65, floor - 158, 130, 130);
-      g.lineStyle(2, PAPER.graphite, 0.84).strokeRect(x - 65, floor - 158, 130, 130);
-      for (let xx = x - 65; xx < x + 65; xx += 32) g.lineBetween(xx, floor - 158, xx, floor - 28);
-      for (let yy = floor - 158; yy < floor - 28; yy += 32) g.lineBetween(x - 65, yy, x + 65, yy);
-    }
-
-    if (!live) {
-      g.lineStyle(3, PAPER.fault, 0.65);
-      g.lineBetween(x - 42, floor - 135, x - 6, floor - 96);
-      g.lineBetween(x - 6, floor - 96, x + 32, floor - 130);
-      g.lineBetween(x - 6, floor - 96, x + 18, floor - 64);
-    }
+    const target = live ? 1 - suctionProgress * 0.7 : 0.06;
+    source.liveAlpha += (target - source.liveAlpha) * (live ? 1 : 0.12);
+    source.live.setAlpha(source.liveAlpha);
+    source.art.setAlpha(live ? 1 : 0.82);
     source.label.setColor(live ? cssColor(source.color) : '#8d8579');
   }
 
-  drawReferenceTrain() {
-    const g = this.referenceArt;
-    const x = 2142;
-    const y = 164;
-    g.clear();
-    g.fillStyle(PAPER.sheetHigh, 0.94).fillRoundedRect(x - 12, y - 5, 398, 88, 4);
-    g.lineStyle(1.3, PAPER.graphiteSoft, 0.72).strokeRoundedRect(x - 12, y - 5, 398, 88, 4);
-
-    g.fillStyle(PAPER.kraft, 0.72).fillRoundedRect(x, y + 58, 360, 8, 3);
-    g.lineStyle(1.4, PAPER.graphite, 0.82).strokeRoundedRect(x, y + 58, 360, 8, 3);
-
-    g.fillStyle(this.chapter.pigment('red').color, 0.84).fillRoundedRect(x + 18, y + 25, 101, 35, 14);
-    g.strokeRoundedRect(x + 18, y + 25, 101, 35, 14);
-    g.fillCircle(x + 20, y + 42, 17);
-    g.strokeCircle(x + 20, y + 42, 17);
-
-    g.fillStyle(this.chapter.pigment('yellow').color, 0.86).fillRoundedRect(x + 49, y + 5, 18, 22, 3);
-    g.strokeRoundedRect(x + 49, y + 5, 18, 22, 3);
-    g.fillRoundedRect(x + 43, y, 30, 8, 4);
-    g.strokeRoundedRect(x + 43, y, 30, 8, 4);
-
-    g.fillStyle(this.chapter.pigment('orange').color, 0.86).fillRect(x + 116, y + 12, 48, 48);
-    g.strokeRect(x + 116, y + 12, 48, 48);
-    g.fillStyle(PAPER.sheetHigh, 0.84).fillRect(x + 126, y + 21, 25, 17);
-    g.strokeRect(x + 126, y + 21, 25, 17);
-
-    g.fillStyle(this.chapter.pigment('blue').color, 0.86).fillRoundedRect(x + 163, y + 25, 180, 35, 4);
-    g.strokeRoundedRect(x + 163, y + 25, 180, 35, 4);
-    [176, 211, 246, 281].forEach((windowX) => {
-      g.fillStyle(PAPER.sheetHigh, 0.84).fillRect(x + windowX, y + 33, 24, 14);
-      g.strokeRect(x + windowX, y + 33, 24, 14);
-    });
-
-    g.fillStyle(this.chapter.pigment('violet').color, 0.86);
-    g.beginPath();
-    g.moveTo(x + 109, y + 25);
-    g.lineTo(x + 122, y + 6);
-    g.lineTo(x + 339, y + 6);
-    g.lineTo(x + 351, y + 25);
-    g.closePath();
-    g.fillPath();
-    g.strokePath();
-
-    g.fillStyle(this.chapter.pigment('green').color, 0.88);
-    [46, 137, 224, 315].forEach((wheelX) => {
-      g.fillCircle(x + wheelX, y + 66, 15);
-      g.strokeCircle(x + wheelX, y + 66, 15);
-      g.fillStyle(PAPER.sheetHigh, 0.72).fillCircle(x + wheelX, y + 66, 5);
-      g.strokeCircle(x + wheelX, y + 66, 5);
-      g.fillStyle(this.chapter.pigment('green').color, 0.88);
-    });
-    g.lineStyle(2.5, PAPER.graphiteSoft, 0.68).lineBetween(x + 46, y + 67, x + 315, y + 67);
-  }
-
   drawTrain() {
-    const g = this.trainArt;
     const shake = this.time.now < this.trainShakeUntil ? Math.sin(this.time.now / 38) * 5 : 0;
-    const dx = 0;
     this.positionTrainArt(shake);
-    const outlineAlpha = 0.88;
-    const partFill = (id) => {
-      const item = this.chapter.pigment(id);
-      return {
-        color: item.built ? item.color : PAPER.sheetHigh,
-        alpha: item.built ? 0.9 : 0.38,
-      };
-    };
-    const useFill = (id) => {
-      const fill = partFill(id);
-      g.fillStyle(fill.color, fill.alpha);
-      g.lineStyle(2.2, PAPER.graphite, outlineAlpha);
-    };
-
-    g.clear();
-
-    // A neutral frame joins every painted component into one believable machine.
-    g.fillStyle(PAPER.kraft, this.chapter.pigment('green').built ? 0.68 : 0.2);
-    g.lineStyle(2.3, PAPER.graphite, outlineAlpha);
-    g.fillRoundedRect(2255 + dx, 447, 686, 19, 5);
-    g.strokeRoundedRect(2255 + dx, 447, 686, 19, 5);
-    g.lineBetween(2240 + dx, 466, 2962 + dx, 466);
-    g.lineBetween(2268 + dx, 485, 2928 + dx, 485);
-    g.lineBetween(2230 + dx, 456, 2255 + dx, 456);
-    g.lineBetween(2941 + dx, 456, 2968 + dx, 456);
-    g.strokeCircle(2222 + dx, 456, 8);
-    g.strokeCircle(2976 + dx, 456, 8);
-
-    // Engine boiler: the round nose and long body now meet the cab directly.
-    useFill('red');
-    g.fillRoundedRect(2288 + dx, 372, 212, 84, 30);
-    g.strokeRoundedRect(2288 + dx, 372, 212, 84, 30);
-    g.fillCircle(2292 + dx, 414, 40);
-    g.strokeCircle(2292 + dx, 414, 40);
-    g.lineBetween(2319 + dx, 392, 2477 + dx, 392);
-    g.lineBetween(2319 + dx, 437, 2477 + dx, 437);
-    g.lineBetween(2490 + dx, 379, 2490 + dx, 448);
-    g.fillStyle(PAPER.sheetHigh, 0.84).fillCircle(2278 + dx, 397, 9);
-    g.strokeCircle(2278 + dx, 397, 9);
-
-    // Chimney and whistle share one yellow silhouette and visibly seat on the boiler.
-    useFill('yellow');
-    g.fillRoundedRect(2367 + dx, 329, 36, 47, 4);
-    g.strokeRoundedRect(2367 + dx, 329, 36, 47, 4);
-    g.fillRoundedRect(2353 + dx, 316, 64, 16, 7);
-    g.strokeRoundedRect(2353 + dx, 316, 64, 16, 7);
-    g.fillCircle(2431 + dx, 354, 10);
-    g.strokeCircle(2431 + dx, 354, 10);
-    g.lineBetween(2403 + dx, 353, 2421 + dx, 353);
-
-    // Cab bridges the engine and carriage instead of floating between them.
-    useFill('orange');
-    g.fillRect(2496 + dx, 340, 102, 116);
-    g.strokeRect(2496 + dx, 340, 102, 116);
-    g.fillStyle(PAPER.sheetHigh, 0.86).fillRoundedRect(2515 + dx, 359, 55, 43, 4);
-    g.strokeRoundedRect(2515 + dx, 359, 55, 43, 4);
-    g.lineBetween(2542 + dx, 359, 2542 + dx, 402);
-    g.lineBetween(2579 + dx, 414, 2579 + dx, 452);
-    g.strokeCircle(2570 + dx, 431, 3);
-
-    // Carriage body continues from the cab, with a repeating window rhythm.
-    useFill('blue');
-    g.fillRoundedRect(2594 + dx, 372, 306, 84, 7);
-    g.strokeRoundedRect(2594 + dx, 372, 306, 84, 7);
-    [2620, 2679, 2738, 2797].forEach((windowX) => {
-      g.fillStyle(PAPER.sheetHigh, 0.84).fillRoundedRect(windowX + dx, 389, 39, 31, 3);
-      g.strokeRoundedRect(windowX + dx, 389, 39, 31, 3);
+    Object.entries(this.trainParts).forEach(([id, part]) => {
+      const built = this.chapter.pigment(id).built;
+      if (built === part.shown) return;
+      part.shown = built;
+      const images = id === 'green' ? this.wheelArt : [part];
+      images.forEach(({ wash, pencil }) => {
+        this.tweens.killTweensOf([wash, pencil]);
+        if (!built) {
+          wash.setAlpha(0);
+          pencil.setAlpha(0.5);
+          return;
+        }
+        // The colour blooms in and the construction drawing firms up.
+        this.tweens.add({ targets: wash, alpha: 0.92, duration: 700, ease: 'Sine.easeOut' });
+        this.tweens.add({ targets: pencil, alpha: 1, duration: 360, ease: 'Sine.easeOut' });
+      });
     });
-    g.lineBetween(2855 + dx, 380, 2855 + dx, 454);
-    g.strokeCircle(2866 + dx, 431, 3);
-    g.lineBetween(2608 + dx, 437, 2885 + dx, 437);
-
-    // One continuous roof locks cab and carriage into the same vehicle.
-    useFill('violet');
-    g.beginPath();
-    g.moveTo(2482 + dx, 365);
-    g.lineTo(2503 + dx, 326);
-    g.lineTo(2892 + dx, 326);
-    g.lineTo(2912 + dx, 365);
-    g.closePath();
-    g.fillPath();
-    g.strokePath();
-    g.lineBetween(2502 + dx, 347, 2892 + dx, 347);
-
-    // Wheels, axles, and a single connecting rod make the undercarriage read as one system.
-    useFill('green');
-    const wheels = TRAIN_PARTS.find((part) => part.id === 'green').circles;
+    // The train is whole: the street behind it warms a little too.
+    if (this.chapter.state.trainBuilt && !this.yardBloomed) {
+      this.yardBloomed = true;
+      this.backdrop.bloomAll({ to: 0.5, duration: 1800, delay: 500, stagger: 120 });
+    }
     const wheelSpin = -this.trainOffset / 18;
-    wheels.forEach((circle) => {
-      const wheelFill = partFill('green');
-      g.fillStyle(wheelFill.color, wheelFill.alpha);
-      g.fillCircle(circle.x + dx, circle.y, circle.r);
-      g.strokeCircle(circle.x + dx, circle.y, circle.r);
-      g.fillStyle(PAPER.sheetHigh, 0.66).fillCircle(circle.x + dx, circle.y, 11);
-      g.strokeCircle(circle.x + dx, circle.y, 11);
-      for (let spoke = 0; spoke < 8; spoke += 1) {
-        const angle = (Math.PI * 2 * spoke) / 8 + wheelSpin;
-        g.lineBetween(
-          circle.x + dx + Math.cos(angle) * 12,
-          circle.y + Math.sin(angle) * 12,
-          circle.x + dx + Math.cos(angle) * (circle.r - 5),
-          circle.y + Math.sin(angle) * (circle.r - 5),
-        );
-      }
-    });
-    g.lineStyle(5, PAPER.graphiteSoft, 0.68);
-    g.lineBetween(2358 + dx, 466, 2854 + dx, 466);
-    g.lineStyle(2, PAPER.sheetHigh, 0.7);
-    g.lineBetween(2358 + dx, 464, 2854 + dx, 464);
+    this.wheelArt.forEach(({ wash, pencil }) => { wash.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
   }
 
   partWorldBounds(part) {
