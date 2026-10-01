@@ -28,7 +28,7 @@ import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './p
 import { buildRig } from './actorRig.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
 import { PAL, brassFill, ink, roundRectPath, paperGrain } from './art/ink.js';
-import { PAPER_URL, WORLDS } from './worldAssets.js';
+import { PAPER_URL, TRAIN_KEY, TRAIN_URL, WORLDS } from './worldAssets.js';
 import { reducedMotionActive } from '../../shell/motion.js';
 import { magicStoneSnapshot } from '../../shell/magicStones.js';
 
@@ -257,6 +257,8 @@ export class PanelScene extends Phaser.Scene {
   preload() {
     if (!this.textures.exists('nsv-paper')) this.load.image('nsv-paper', PAPER_URL);
     const act = this.resolveAct();
+    const hasTrain = Object.values(act.actors ?? {}).some((actor) => actor.rig === 'train');
+    if (hasTrain && !this.textures.exists(TRAIN_KEY)) this.load.image(TRAIN_KEY, TRAIN_URL);
     const worlds = new Set(['fields', ...(act.assets ?? [])].filter((name) => WORLDS[name]));
     worlds.forEach((name) => WORLDS[name].chunks.forEach(({ key, url }) => {
       if (!this.textures.exists(key)) this.load.image(key, url);

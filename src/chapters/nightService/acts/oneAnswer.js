@@ -62,7 +62,7 @@ export const ONE_ANSWER_ACT = defineAct({
   // duplicate filed at the bottom, the city line facing the wall
   slots: ['tag', 'stub', 'plate', 'duplicate'],
   start: { bell: 1, items: ['punch'] },
-  assets: ['city', 'memory'],
+  assets: ['memory'],
   fx: ONE_ANSWER_FX,
   // dev `N`: file the exhibit at once (never a Chapter 1 checkpoint)
   devSkip: [{ endChapter: true }],

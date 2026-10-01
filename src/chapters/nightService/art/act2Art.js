@@ -422,10 +422,21 @@ function aisleBase(c, env, w, h, { past = false }) {
   backWall(c, w, h, floorY, { seed: 251, tone: past ? ['#3a2a1a', '#4a3421'] : ['#16262b', '#1d3237'] });
   // the ceiling, with the open hatch the case will come through
   wood(c, -20, -20, w + 40, h * 0.1 + 20, { base: '#1d140d', seed: 252 });
-  c.fillStyle = '#070504';
-  c.fillRect(w * (DROP_AT - 0.07), -20, w * 0.14, h * 0.1 + 20);
+  // the open hatch: the rack's lamplight falls through it from above
+  const hx = w * (DROP_AT - 0.07);
+  const hw = w * 0.14;
+  c.fillStyle = vgrad(c, -20, h * 0.1, [[0, '#3a2414'], [0.6, '#140c07'], [1, '#070504']]);
+  c.fillRect(hx, -20, hw, h * 0.1 + 20);
+  glow(c, hx + hw / 2, -10, hw * 0.7, 'rgba(255, 190, 110, 0.8)', 0.25);
   c.fillStyle = brassFill(c, -20, h * 0.1 - 3, w + 40, 5);
   c.fillRect(-20, h * 0.1 - 3, w + 40, 5);
+  // its flap, swung down on a brass hinge
+  c.save();
+  c.translate(hx + hw, h * 0.1);
+  c.rotate(1.2);
+  wood(c, 0, -4, hw * 0.9, 7, { base: '#3a2818', seed: 253 });
+  c.restore();
+  rivet(c, hx + hw, h * 0.1, 3);
   ink(c, [[w * (DROP_AT - 0.07), -6], [w * (DROP_AT - 0.07), h * 0.1]], { w: 2 });
   ink(c, [[w * (DROP_AT + 0.07), -6], [w * (DROP_AT + 0.07), h * 0.1]], { w: 2 });
   // window band

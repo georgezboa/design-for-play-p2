@@ -106,7 +106,8 @@ function waxSeal(c, x, y, r, { broken = false } = {}) {
 
 function platformBase(c, env, w, h) {
   const past = PAST(env);
-  cropFull(c, env, 'nsv-w03-0', [1960, 140, 1000, 556], w, h);
+  // the far town at dusk (world 07; no daytime city in a night exhibit)
+  cropFull(c, env, 'nsv-w07-1', [3000, 60, 1000, 556], w, h);
   c.fillStyle = past ? 'rgba(80, 50, 20, 0.2)' : 'rgba(10, 16, 38, 0.58)';
   c.fillRect(-30, -30, w + 60, h + 60);
   // lit windows across the far city at night

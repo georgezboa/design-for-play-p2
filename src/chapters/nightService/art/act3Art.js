@@ -3,7 +3,7 @@
 // viaduct (whole in 1978) and the Bellwether platform. Linked edges line up:
 // the lane at 0.62, the rails at 0.85, the stair at x 0.55.
 
-import { PAL, brassFill, glow, ink, inkEllipse, inkRect, rivet, rng, roundRectPath, speckle, vgrad, wood } from './ink.js';
+import { PAL, brassFill, glow, ink, inkEllipse, rivet, rng, roundRectPath, speckle, vgrad, wood } from './ink.js';
 import { backWall, finish } from './act1Art.js';
 import { crop, cropFull } from './act2Art.js';
 
@@ -60,7 +60,9 @@ function cityRoomBase(c, env, w, h) {
   backWall(c, w, h, floorY, { seed: 301, tone: PAST(env) ? ['#6a5a3a', '#7a6848'] : ['#2b3a36', '#34463f'] });
   // the wall around the window, cut through to the view
   const [gx, gy, gw, gh] = CITY_GLASS;
-  crop(c, env, 'nsv-w03-0', [2050, 120, 700, 650], gx * w, gy * h, gw * w, gh * h);
+  // the view: misty rooftops by the terminal at dusk (world 07; the old
+  // daytime-city view did not belong to a night chapter)
+  crop(c, env, 'nsv-w07-1', [3200, 60, 700, 650], gx * w, gy * h, gw * w, gh * h);
   c.fillStyle = PAST(env) ? 'rgba(255, 190, 120, 0.2)' : 'rgba(20, 30, 60, 0.35)';
   c.fillRect(gx * w, gy * h, gw * w, gh * h);
   // bed with a folded blanket
@@ -219,14 +221,15 @@ function hedge(c, w, h, seed) {
   for (let i = 0; i < 26; i += 1) {
     const bx = x0 + random() * (w - x0 + 10);
     const by = y - 50 + random() * 60;
-    ink(c, [[bx, by], [bx + (random() - 0.5) * 22, by - 6 - random() * 14], [bx + (random() - 0.5) * 30, by - 12 - random() * 18]], { w: 1.1, alpha: 0.55, jitter: 0.8, bleed: false });
+    ink(c, [[bx, by], [bx + (random() - 0.5) * 22, by - 6 - random() * 14], [bx + (random() - 0.5) * 30, by - 12 - random() * 18]], { w: 1.3, color: '#3a2a1c', alpha: 0.85, jitter: 0.8, bleed: false });
   }
   // may blossom, pale in the night
   for (let i = 0; i < 40; i += 1) {
     c.fillStyle = 'rgba(235, 228, 210, 0.55)';
     c.beginPath(); c.arc(x0 + random() * (w - x0), y - 58 + random() * 60, 1 + random() * 1.4, 0, Math.PI * 2); c.fill();
   }
-  ink(c, [[x0 - 4, y + 20], [x0 + 6, y - 40], [x0 + 30, y - 62]], { w: 1.8, alpha: 0.7 });
+  // the lamplit rim of the hedge where the lane runs into it
+  ink(c, [[x0 - 4, y + 20], [x0 + 6, y - 40], [x0 + 30, y - 62]], { w: 2.2, color: '#3c5432', alpha: 0.8, bleed: false });
 }
 
 function openGate(c, w, h) {
@@ -255,10 +258,25 @@ function hawthornBase(c, env, w, h) {
   c.restore();
   lane(c, w, h, { seed: 311, past: PAST(env) });
   hawthornTree(c, w * 0.2, h * PATH_AT + 4, 1.25, 312);
-  // a low dry-stone wall behind the lane
-  c.fillStyle = '#4a4436';
-  for (let x = w * 0.36; x < w + 20; x += 22) { c.fillRect(x, h * PATH_AT - 22 + (x % 3), 20, 18); }
-  ink(c, [[w * 0.36, h * PATH_AT - 24], [w + 10, h * PATH_AT - 24]], { w: 1.6, alpha: 0.8 });
+  // a low dry-stone wall behind the lane: rounded stones in two courses,
+  // moss on the coping (painted, no outline over the picture)
+  const stones = rng(314);
+  const tones = PAST(env) ? ['#7a6a4c', '#6a5c42', '#8a7856'] : ['#4a4436', '#3c382e', '#57513f'];
+  const wallTop = h * PATH_AT - 24;
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  c.fillRect(w * 0.36 - 2, wallTop + 2, w * 0.66, 22);
+  [0, 1].forEach((row) => {
+    for (let x = w * 0.36 + row * 9; x < w + 20; x += 15 + stones() * 9) {
+      const sw = 14 + stones() * 9;
+      const sh = 9 + stones() * 2.5;
+      c.fillStyle = tones[Math.floor(stones() * tones.length)];
+      roundRectPath(c, x, wallTop + row * 10 + stones() * 1.5, sw, sh, 3.5);
+      c.fill();
+      c.fillStyle = 'rgba(255, 230, 190, 0.08)';
+      c.fillRect(x + 2, wallTop + row * 10 + 1, sw - 4, 2);
+    }
+  });
+  speckle(c, w * 0.36, wallTop - 2, w * 0.66, 6, { count: 90, color: PAST(env) ? 'rgba(120, 140, 70, 0.5)' : 'rgba(70, 96, 52, 0.6)', size: 2.4, seed: 315 });
   if (PAST(env)) openGate(c, w, h);
   else hedge(c, w, h, 313);
 }
@@ -346,7 +364,8 @@ function rails(c, w, h, from, to, { past = false } = {}) {
   for (let x = from + 4; x < to; x += 20) { c.fillStyle = past ? '#5a4028' : '#2a1d14'; c.fillRect(x, y + 2, 10, 14); }
   c.fillStyle = brassFill(c, from, y - 3, to - from, 5);
   c.fillRect(from, y - 3, to - from, 4);
-  ink(c, [[from, y - 3], [to, y - 3]], { w: 2.4, bleed: false });
+  // a lamplit highlight along the railhead (brass, not an ivory outline)
+  ink(c, [[from, y - 3], [to, y - 3]], { w: 1.8, color: PAL.brassLight, alpha: 0.85, bleed: false });
 }
 
 export function drawCarriageScene(ctx) {
@@ -371,42 +390,103 @@ export function drawCarriageScene(ctx) {
   });
 }
 
+// The viaduct is a timber trestle with a brass-strapped deck, in the same
+// wood-and-brass kit as the carriage (not grey slabs): broken in the present
+// (splintered deck ends, a twisted rail, planks hanging into the cut), whole
+// and lamplit in 1978.
+function timberDeck(c, x0, x1, y, { past, seed }) {
+  const tone = past ? '#7a5634' : '#35261a';
+  wood(c, x0, y + 3, x1 - x0, 16, { base: tone, seed, planks: 2, grain: 'rgba(0,0,0,0.35)', light: past ? 'rgba(255,220,170,0.12)' : 'rgba(255,220,170,0.05)' });
+  // sleeper ends along the face of the deck
+  c.fillStyle = past ? 'rgba(50,30,14,0.55)' : 'rgba(0,0,0,0.5)';
+  for (let x = x0 + 6; x < x1 - 4; x += 20) c.fillRect(x, y + 4, 9, 4);
+  // brass strap along the parapet edge, with bolts
+  c.fillStyle = brassFill(c, x0, y + 17, x1 - x0, 3);
+  c.fillRect(x0, y + 17, x1 - x0, 3);
+  for (let x = x0 + 14; x < x1 - 6; x += 44) rivet(c, x, y + 18.5, 1.8);
+  // the shadow the deck throws on the trestles
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  c.fillRect(x0, y + 20, x1 - x0, 4);
+}
+
+function trestle(c, x, y, h, { past, seed }) {
+  const tone = past ? '#6a4a2c' : '#2b2017';
+  const top = y + 22;
+  const len = h + 30 - top;
+  const leg = (lx, angle, s) => {
+    c.save();
+    c.translate(lx, top);
+    c.rotate(angle);
+    wood(c, -5, 0, 10, len, { base: tone, seed: s, vertical: true, grain: 'rgba(0,0,0,0.4)' });
+    c.fillStyle = 'rgba(0,0,0,0.35)';
+    c.fillRect(3, 0, 2, len);
+    c.restore();
+  };
+  leg(x, 0.1, seed);
+  leg(x + 52, -0.1, seed + 1);
+  // X bracing and a cap beam, bolted with brass
+  const braceY = top + Math.min(36, len * 0.5);
+  const brace = past ? '#4a3220' : '#1c140d';
+  ink(c, [[x + 2, top + 4], [x + 50, braceY]], { w: 3.2, color: brace, alpha: 0.95, bleed: false, jitter: 0.3 });
+  ink(c, [[x + 50, top + 4], [x + 2, braceY]], { w: 3.2, color: brace, alpha: 0.95, bleed: false, jitter: 0.3 });
+  wood(c, x - 8, top - 2, 68, 7, { base: tone, seed: seed + 2 });
+  [[x, top + 1], [x + 52, top + 1], [x + 26, (top + braceY) / 2 + 2]].forEach(([bx, by]) => rivet(c, bx, by, 2.2));
+}
+
+function splinteredEnd(c, x, y, dir, { seed }) {
+  // the broken deck end: jagged timber, one plank hanging into the cut
+  const random = rng(seed);
+  c.fillStyle = '#35261a';
+  c.beginPath();
+  c.moveTo(x, y + 3);
+  for (let i = 0; i <= 5; i += 1) c.lineTo(x + dir * (4 + random() * 14), y + 3 + (16 * i) / 5);
+  c.lineTo(x, y + 20);
+  c.closePath();
+  c.fill();
+  ink(c, [[x, y + 3], [x + dir * 12, y + 8], [x + dir * 6, y + 13], [x + dir * 14, y + 19]], { w: 1.2, color: '#1a120c', alpha: 0.9, bleed: false });
+  c.save();
+  c.translate(x + dir * 6, y + 12);
+  c.rotate(dir * (0.9 + random() * 0.3));
+  wood(c, -3, 0, 7, 44, { base: '#3e2c1d', seed: seed + 3, vertical: true, grain: 'rgba(0,0,0,0.4)' });
+  c.restore();
+}
+
 function viaduct(c, w, h, { broken, past }) {
   const y = RAIL_AT * h;
-  const deck = (x0, x1) => {
-    c.fillStyle = past ? '#8a6a48' : '#3a3530';
-    c.fillRect(x0, y + 4, x1 - x0, 16);
-    ink(c, [[x0, y + 20], [x1, y + 20]], { w: 1.6, alpha: 0.8 });
-  };
-  const arch = (x) => {
-    c.fillStyle = past ? '#7a5a3a' : '#322d28';
-    c.beginPath();
-    c.moveTo(x, h + 20); c.lineTo(x, y + 20); c.lineTo(x + w * 0.2, y + 20); c.lineTo(x + w * 0.2, h + 20);
-    c.lineTo(x + w * 0.16, h + 20); c.quadraticCurveTo(x + w * 0.1, y + 36, x + w * 0.04, h + 20); c.closePath();
-    c.fill();
-    ink(c, [[x, h + 10], [x, y + 20], [x + w * 0.2, y + 20], [x + w * 0.2, h + 10]], { w: 1.6, alpha: 0.7 });
-  };
   if (broken) {
-    deck(-20, w * 0.36);
-    deck(w * 0.64, w + 20);
-    arch(w * 0.08);
-    arch(w * 0.72);
+    [0.06, 0.74].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 360 + i * 5 }));
+    timberDeck(c, -20, w * 0.36, y, { past, seed: 351 });
+    timberDeck(c, w * 0.64, w + 20, y, { past, seed: 352 });
+    splinteredEnd(c, w * 0.36, y, 1, { seed: 353 });
+    splinteredEnd(c, w * 0.64, y, -1, { seed: 354 });
     rails(c, w, h, -20, w * 0.34);
     rails(c, w, h, w * 0.66, w + 20);
-    // broken ends: rubble and twisted rail
-    ink(c, [[w * 0.34, y - 3], [w * 0.38, y + 10], [w * 0.37, y + 24]], { w: 2.6, color: PAL.brassLight, bleed: false });
-    ink(c, [[w * 0.66, y - 3], [w * 0.62, y + 14]], { w: 2.6, color: PAL.brassLight, bleed: false });
+    // the rails' broken ends twist down into the cut
+    ink(c, [[w * 0.34, y - 3], [w * 0.36, y + 4], [w * 0.372, y + 18], [w * 0.366, y + 30]], { w: 2.2, color: PAL.brass, alpha: 0.85, bleed: false });
+    ink(c, [[w * 0.66, y - 3], [w * 0.642, y + 8], [w * 0.646, y + 22]], { w: 2.2, color: PAL.brass, alpha: 0.85, bleed: false });
+    // fallen timbers in the channel, in shadow
     const random = rng(341);
-    for (let i = 0; i < 24; i += 1) { c.fillStyle = '#3a3530'; c.fillRect(w * (0.34 + random() * 0.32), y + 30 + random() * (h - y), 6 + random() * 10, 4 + random() * 6); }
+    for (let i = 0; i < 5; i += 1) {
+      c.save();
+      c.globalAlpha = 0.85;
+      c.translate(w * (0.4 + random() * 0.2), h - 10 - random() * 22);
+      c.rotate((random() - 0.5) * 1.4);
+      wood(c, -16, -3, 32 + random() * 18, 6, { base: '#2c2017', seed: 370 + i });
+      c.restore();
+    }
   } else {
-    deck(-20, w + 20);
-    [0.08, 0.4, 0.72].forEach(arch);
+    [0.06, 0.4, 0.74].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 380 + i * 5 }));
+    timberDeck(c, -20, w + 20, y, { past, seed: 351 });
     rails(c, w, h, -20, w + 20, { past });
-    // 1978: lamps along the parapet
+    // 1978: lamps on brass posts along the parapet
     [0.2, 0.5, 0.8].forEach((u) => {
-      ink(c, [[w * u, y + 4], [w * u, y - 46]], { w: 2.4, color: '#2a1d14', bleed: false });
-      c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(w * u, y - 50, 6, 0, Math.PI * 2); c.fill();
-      glow(c, w * u, y - 50, 70, 'rgba(255,210,130,0.95)', 0.6);
+      const px = w * u;
+      c.fillStyle = brassFill(c, px - 2, y - 46, 4, 50, true);
+      c.fillRect(px - 2, y - 46, 4, 50);
+      c.fillStyle = PAL.brassDark;
+      c.fillRect(px - 6, y - 58, 12, 4);
+      c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(px, y - 50, 6, 0, Math.PI * 2); c.fill();
+      glow(c, px, y - 50, 70, 'rgba(255,210,130,0.95)', 0.6);
     });
   }
 }
@@ -437,29 +517,58 @@ function platformBase(c, env, w, h) {
   c.fillStyle = past ? '#6a5236' : '#1d2226';
   c.fillRect(-20, far - 2, w + 40, h * 0.06);
   ink(c, [[-4, far], [w + 4, far]], { w: 2, color: PAL.brassLight, alpha: 0.9, bleed: false });
-  // the platform between the tracks
-  c.fillStyle = vgrad(c, h * 0.7, h * 0.83, [[0, past ? '#b8a07a' : '#5a534a'], [1, past ? '#8a7050' : '#3a342e']]);
-  c.fillRect(-20, h * 0.7, w * 0.94 + 20, h * 0.13);
-  c.fillStyle = past ? '#e8d4a0' : '#d8c070';
-  c.fillRect(-20, h * 0.825, w * 0.94 + 20, 4);
-  ink(c, [[-4, h * 0.7], [w * 0.94, h * 0.7], [w * 0.94, h * 0.83]], { w: 2 });
+  // the platform between the tracks: wet stone flags lit by the lamp (painted
+  // into the scene, no ink outline over the painting)
+  const top = h * 0.7;
+  const pw = w * 0.94 + 20;
+  c.fillStyle = vgrad(c, top, h * 0.83, [[0, past ? '#a89068' : '#4a443d'], [1, past ? '#7a6244' : '#2c2823']]);
+  c.fillRect(-20, top, pw, h * 0.13);
+  c.save();
+  c.beginPath(); c.rect(-20, top, pw, h * 0.13); c.clip();
+  speckle(c, -20, top, pw, h * 0.13, { count: 260, color: past ? 'rgba(60,40,20,0.18)' : 'rgba(0,0,0,0.22)', size: 2.2, seed: 345 });
+  c.strokeStyle = past ? 'rgba(60,40,20,0.35)' : 'rgba(0,0,0,0.38)';
+  c.lineWidth = 1.2;
+  for (let x = 18; x < pw; x += 46) { c.beginPath(); c.moveTo(x, top + 6); c.lineTo(x - 6, h * 0.83); c.stroke(); }
+  c.beginPath(); c.moveTo(-20, top + h * 0.065); c.lineTo(pw, top + h * 0.065); c.stroke();
+  // the lamp's pool of light on the wet stone
+  const pool = c.createRadialGradient(w * 0.82, top + 20, 4, w * 0.82, top + 20, w * 0.32);
+  pool.addColorStop(0, 'rgba(255, 200, 120, 0.32)');
+  pool.addColorStop(1, 'rgba(255, 200, 120, 0)');
+  c.fillStyle = pool;
+  c.fillRect(-20, top, pw, h * 0.13);
+  c.restore();
+  // a worn coping along the platform's edge, and its shadow
+  c.fillStyle = past ? 'rgba(232, 212, 160, 0.75)' : 'rgba(200, 176, 120, 0.5)';
+  c.fillRect(-20, h * 0.822, pw, 3);
+  c.fillStyle = 'rgba(0,0,0,0.45)';
+  c.fillRect(-20, top - 2, pw, 3);
+  c.fillRect(w * 0.94 - 3, top, 3, h * 0.13);
   // the stair from the hill arrives at the top edge, x = STAIR_AT
+  // (a timber stair between brass-capped stringers, like the carriage)
   const sx = w * STAIR_AT;
   for (let i = 0; i <= 8; i += 1) {
     const t = i / 8;
     const yy = -4 + (h * 0.7 + 4) * t;
-    c.fillStyle = '#6d5a44';
-    c.fillRect(sx - 22 + t * 30, yy, 44, 5);
+    wood(c, sx - 22 + t * 30, yy, 44, 6, { base: past ? '#8a6640' : '#4e3a28', seed: 390 + i });
+    c.fillStyle = 'rgba(0,0,0,0.4)';
+    c.fillRect(sx - 22 + t * 30, yy + 6, 44, 2);
   }
-  ink(c, [[sx - 24, -6], [sx + 6, h * 0.7]], { w: 2.2 });
-  ink(c, [[sx + 24, -6], [sx + 54, h * 0.7]], { w: 2.2 });
+  [[-24, 6], [24, 54]].forEach(([a, b], i) => {
+    c.save();
+    c.beginPath(); c.moveTo(sx + a - 3, -6); c.lineTo(sx + a + 3, -6); c.lineTo(sx + b + 3, h * 0.7); c.lineTo(sx + b - 3, h * 0.7); c.closePath();
+    c.fillStyle = past ? '#6a4a2c' : '#2e2218';
+    c.fill();
+    c.restore();
+    ink(c, [[sx + a, -6], [sx + b, h * 0.7]], { w: 1.6, color: PAL.brassLight, alpha: 0.6, bleed: false, seed: 395 + i });
+  });
   // bench, lamp and the station nameboard
   const bx = w * 0.12;
   wood(c, bx, h * 0.745, w * 0.2, 8, { base: '#5a3a22', seed: 351 });
   wood(c, bx, h * 0.71, w * 0.2, 6, { base: '#5a3a22', seed: 352 });
-  ink(c, [[bx + 6, h * 0.753], [bx + 4, h * 0.8]], { w: 2 });
-  ink(c, [[bx + w * 0.2 - 6, h * 0.753], [bx + w * 0.2 - 4, h * 0.8]], { w: 2 });
-  inkRect(c, bx, h * 0.745, w * 0.2, 8, { w: 1.6 });
+  ink(c, [[bx + 6, h * 0.753], [bx + 4, h * 0.8]], { w: 2.4, color: '#1a1410', bleed: false });
+  ink(c, [[bx + w * 0.2 - 6, h * 0.753], [bx + w * 0.2 - 4, h * 0.8]], { w: 2.4, color: '#1a1410', bleed: false });
+  c.fillStyle = 'rgba(0,0,0,0.35)';
+  c.fillRect(bx + 4, h * 0.8, w * 0.2 - 4, 3);
   const lx = w * 0.82;
   ink(c, [[lx, h * 0.72], [lx, h * 0.36]], { w: 3, color: '#1a1410', bleed: false });
   c.fillStyle = '#ffe2a0'; c.beginPath(); c.arc(lx, h * 0.34, 7, 0, Math.PI * 2); c.fill();
@@ -473,7 +582,11 @@ function platformBase(c, env, w, h) {
   c.fillStyle = '#eadfc6';
   c.font = '700 19px "Space Mono", monospace';
   c.fillText('BELLWETHER', nx + 20, ny + 15);
-  inkRect(c, nx, ny - 8, 160, 32, { w: 1.6 });
+  c.save();
+  c.lineWidth = 2;
+  c.strokeStyle = brassFill(c, nx, ny - 8, 160, 32);
+  roundRectPath(c, nx, ny - 8, 160, 32, 5); c.stroke();
+  c.restore();
   if (past) {
     c.fillStyle = '#e8d4a0'; roundRectPath(c, nx + 30, ny + 28, 100, 16, 3); c.fill();
     c.fillStyle = '#6b2a22'; c.font = '700 10px "Space Mono", monospace'; c.fillText('REQUEST STOP', nx + 38, ny + 40);
@@ -483,7 +596,8 @@ function platformBase(c, env, w, h) {
   c.fillStyle = '#1a1612'; c.fillRect(-20, y + 2, w + 40, h - y);
   rails(c, w, h, -20, w * 0.92, { past });
   c.fillStyle = '#6b2a22'; c.fillRect(w * 0.92, y - 24, 14, 24);
-  ink(c, [[w * 0.92, y - 24], [w * 0.92 + 14, y - 24], [w * 0.92 + 14, y], [w * 0.92, y]], { w: 1.4, closed: true });
+  c.fillStyle = brassFill(c, w * 0.92, y - 24, 14, 4); c.fillRect(w * 0.92, y - 24, 14, 4);
+  ink(c, [[w * 0.92, y - 24], [w * 0.92 + 14, y - 24], [w * 0.92 + 14, y], [w * 0.92, y]], { w: 1.4, closed: true, color: '#1a1410', bleed: false });
 }
 
 export function drawPlatform(ctx) {

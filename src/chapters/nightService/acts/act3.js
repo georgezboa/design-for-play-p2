@@ -70,7 +70,7 @@ export const ACT3 = defineAct({
   // the lens rests over the city room's bed (1978: her coat, her open case),
   // clear of the orchard window
   start: { bell: 3, items: ['punch', 'lens'], lens: { x: 1372, y: 262 } },
-  assets: ['fields', 'memory', 'city'],
+  assets: ['fields', 'memory'],
   fx: ACT3_FX,
   cards: {
     A3: {

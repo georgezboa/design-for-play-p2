@@ -239,11 +239,23 @@ function buildMara(scene) {
   };
 }
 
+/** The painted night train (worldAssets TRAIN_URL): 150 tile px long, wheels on the rail. */
+const TRAIN_IMAGE = Object.freeze({ key: 'nsv-train-night', width: 150, railAt: 0.905 });
+
 function buildTrain(scene) {
-  ensurePartTextures(scene, 'train', TRAIN_PARTS);
   const root = scene.add.container(0, 0);
-  const body = img(scene, 'train', TRAIN_PARTS, 'body', 0, 0);
-  const lamp = glowImage(scene, 72, -22, 90, 0xffd890, 0.7);
+  let body;
+  let lamp;
+  if (scene.textures.exists(TRAIN_IMAGE.key)) {
+    // the painted carriage from the chapter's own art, not a toy rectangle
+    body = scene.add.image(0, 0, TRAIN_IMAGE.key).setOrigin(0.5, TRAIN_IMAGE.railAt);
+    body.setScale(TRAIN_IMAGE.width / body.width);
+    lamp = glowImage(scene, 70, -14, 90, 0xffd890, 0.7);
+  } else {
+    ensurePartTextures(scene, 'train', TRAIN_PARTS);
+    body = img(scene, 'train', TRAIN_PARTS, 'body', 0, 0);
+    lamp = glowImage(scene, 72, -22, 90, 0xffd890, 0.7);
+  }
   root.add([body, lamp]);
   return {
     root,
