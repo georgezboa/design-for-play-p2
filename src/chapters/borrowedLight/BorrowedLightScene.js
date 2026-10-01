@@ -1302,7 +1302,13 @@ export class BorrowedLightScene extends Phaser.Scene {
       const glow = this.tt.afterglowOf(node.id);
       if (glow > 0) lights.push(afterglowLight(nodeHead(node), glow));
     });
-    if (this.tt.carried() && this.player.visible) lights.push(carriedLight(this.player.lampAt ?? { x: this.feetX + 20, y: this.feetY - 60 }));
+    // The light Butch carries. Solidity (the fixed step) places it from his
+    // feet this step; the drawn lamp position is a rendered frame behind, and
+    // on a slow frame (or right after a respawn) that is too far.
+    if (this.tt.carried() && this.player.visible) {
+      const at = visual && this.player.lampAt ? this.player.lampAt : { x: this.feetX + 20 * this.player.ctrl.facing, y: this.feetY - 60 };
+      lights.push(carriedLight(at));
+    }
     return lights.filter(Boolean);
   }
 
