@@ -20,8 +20,17 @@
 //   the next bell (a second press can never switch a machine off). Only a
 //   machine the city HOLDS open can be CUT: it keeps CUT_GRACE_MS of power
 //   (flickering for the last FLICKER_MS) and frees its line at once.
-// - Forgiveness: a punch within CATCH_MS after a bell still catches that bell;
-//   a second press within REPEAT_GUARD_MS of a punch is ignored.
+// - Forgiveness: a punch within CATCH_MS after a bell still catches that bell,
+//   unless the node is half of a puzzle pair (`noCatch`) or another punch is
+//   already waiting in its district (round 3: a caught half split A3's pair).
+// - A press never takes a punch back (round 3, R3-1: a second press meant for
+//   the next pole silently cancelled the first). Pressing a queued node again
+//   is harmless ('already'); taking it back is its own deliberate verb,
+//   takeBack() (the scene: hold F on the node).
+// - Lifts wait for a rider (R3-3): when a `waitsForRider` machine's bell
+//   comes and the scene's shouldWait(machineId) says its rider is still on
+//   the way, it holds one ring of its line, and so does everything else
+//   queued in its district, so a pair keeps its order.
 // - Borrowed light (section B): Butch's lamp can take the light out of a lit
 //   `borrowable` machine (it switches off) and carry it, one charge at a
 //   time, to a DEAD node (a node with no line of its own), which fires on the
@@ -42,14 +51,15 @@ export const BELL_MS = 4000;
 export const FLICKER_MS = 600;
 export const MEMORY_MS = 6000;
 export const CUT_GRACE_MS = 2000;
-export const CATCH_MS = 250;
-export const REPEAT_GUARD_MS = 450;
+export const CATCH_MS = 120;
 export const LINES = Object.freeze(['amber', 'teal', 'rose']);
 export const PHASES = Object.freeze(['odd', 'even']);
 
 const HOLD = 'hold';
 
 const circuitOf = (node) => (node.dead ? `dead:${node.machine}` : node.circuit ?? node.line);
+// The room a node belongs to: holds and catches look at the whole room.
+const districtOfNode = (node) => node.district ?? circuitOf(node);
 
 // Does a circuit with this phase ring on bell number `index`?
 export const ringsOn = (phase, index) => !phase || (phase === 'odd' ? index % 2 === 1 : index % 2 === 0);
@@ -95,11 +105,19 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   memoryMs = MEMORY_MS,
   cutGraceMs = CUT_GRACE_MS,
   catchMs = CATCH_MS,
-  repeatGuardMs = REPEAT_GUARD_MS,
   startMs = 0,
+  // (machineId) => true while a lift's rider is still walking to it.
+  shouldWait = null,
 } = {}) {
   const { machineCircuit, machineColor, circuitPhase } = assertDefinition({ nodes, machines });
-  const nodeById = new Map(nodes.map((node) => [node.id, { ...node, dead: Boolean(node.dead), phase: node.dead ? null : node.phase ?? null, circuit: circuitOf(node) }]));
+  const nodeById = new Map(nodes.map((node) => [node.id, {
+    ...node,
+    dead: Boolean(node.dead),
+    phase: node.dead ? null : node.phase ?? null,
+    circuit: circuitOf(node),
+    district: districtOfNode(node),
+    noCatch: Boolean(node.noCatch),
+  }]));
   const defById = new Map(machines.map((machine) => [machine.id, { travel: 600, ...machine }]));
 
   let bellMs = initialBellMs;
@@ -111,6 +129,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   let carried = null; // { source, sourceNode, restore, from }
   const queue = new Map(); // circuit -> nodeId
   const queuedAt = new Map(); // nodeId -> timeMs of the punch
+  const waited = new Set(); // nodeIds that already held a bell for their rider
+  const holds = new Map(); // district -> bell index its queue waits for
+  let waitFor = shouldWait;
   const given = new Map(); // dead nodeId -> charge waiting for the bell
   const afterglow = new Map(); // nodeId -> remaining ms
   const history = []; // { nodeId, machineId, bell }
@@ -134,8 +155,25 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   const lineOf = (machineId) => machineColor.get(machineId) ?? null;
   const phaseOfCircuit = (circuit) => circuitPhase.get(circuit) ?? null;
   const nextIndex = () => bellIndex + 1;
-  // Bells until a queued node on this circuit fires: 1 (the next) or 2.
-  const bellsUntil = (circuit) => (ringsOn(phaseOfCircuit(circuit), nextIndex()) ? 1 : 2);
+  // The bell a node queued now would fire on: its line's next bell, or later
+  // if its district is holding for a lift's rider.
+  const fireBellOf = (node) => {
+    let k = Math.max(nextIndex(), holds.get(node.district) ?? 0);
+    const phase = node.dead ? null : phaseOfCircuit(node.circuit);
+    while (!ringsOn(phase, k)) k += 1;
+    return k;
+  };
+  // Bells until a queued node fires: 1 (the next), 2, …
+  const bellsUntilNode = (node) => fireBellOf(node) - bellIndex;
+  // Another punch waiting in this node's district (a pair in the making).
+  const districtBusy = (node) => [...queue.values()].some((id) => id !== node.id && nodeById.get(id).district === node.district)
+    || [...given.keys()].some((id) => id !== node.id && nodeById.get(id).district === node.district)
+    || holds.has(node.district);
+  // A punch just after a bell catches it, only when it cannot split a pair
+  // and is not a lift leaving before its rider gets there.
+  const canCatch = (node) => sinceBell < catchMs && bellIndex > 0 && !node.noCatch
+    && ringsOn(phaseOfCircuit(node.circuit), bellIndex) && !districtBusy(node)
+    && !(defById.get(node.machine).waitsForRider && waitFor?.(node.machine));
 
   // A circuit is busy while one of its machines is powered by it and not cut.
   const busyMachineOn = (circuit) => {
@@ -213,8 +251,10 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
         }
       }
       if (def.kind === 'counterweight') {
-        // The brake is released while powered: the loaded cage sinks.
-        if (poweredMs > 0 && machine.load) travelFor(id, machine, poweredMs, machine.load === 'a' ? 1 : 0);
+        // The brake is released while powered: the loaded cage sinks. A
+        // ballasted pair (a ledge the city holds up) sinks on its own.
+        const load = machine.load ?? def.ballast ?? null;
+        if (poweredMs > 0 && load) travelFor(id, machine, poweredMs, load === 'a' ? 1 : 0);
         continue;
       }
       // A machine that switches off mid-step travels out, then home.
@@ -240,15 +280,33 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   const ringBell = (events) => {
     bellIndex += 1;
     sinceBell = 0;
-    const fired = [];
+    for (const [district, until] of holds) if (until < bellIndex) holds.delete(district);
+    const heldNow = (node) => (holds.get(node.district) ?? 0) > bellIndex;
+    const due = [];
     const waiting = [];
     for (const [circuit, nodeId] of queue) {
-      if (ringsOn(phaseOfCircuit(circuit), bellIndex)) fired.push(nodeId);
+      if (ringsOn(phaseOfCircuit(circuit), bellIndex) && !heldNow(nodeById.get(nodeId))) due.push(nodeId);
       else waiting.push(nodeId);
     }
-    fired.forEach((nodeId) => { queue.delete(nodeById.get(nodeId).circuit); queuedAt.delete(nodeId); });
-    const givenNow = [...given];
-    given.clear();
+    const dueGiven = [...given].filter(([nodeId]) => !heldNow(nodeById.get(nodeId)));
+    // A lift whose rider is still on the way holds this ring of its line,
+    // and its whole district waits with it (a pair keeps its order).
+    for (const nodeId of [...due, ...dueGiven.map(([id]) => id)]) {
+      const node = nodeById.get(nodeId);
+      const def = defById.get(node.machine);
+      const machine = state.get(node.machine);
+      if (!def.waitsForRider || waited.has(nodeId) || machine.powered || machine.level > 0 || !waitFor?.(node.machine)) continue;
+      waited.add(nodeId);
+      let until = bellIndex + 1;
+      while (!ringsOn(node.dead ? null : phaseOfCircuit(node.circuit), until)) until += 1;
+      holds.set(node.district, Math.max(holds.get(node.district) ?? 0, until));
+      events.push({ type: 'lift-wait', machineId: node.machine, nodeId, untilBell: until });
+    }
+    const fired = due.filter((nodeId) => !heldNow(nodeById.get(nodeId)));
+    due.filter((nodeId) => heldNow(nodeById.get(nodeId))).forEach((nodeId) => waiting.push(nodeId));
+    const givenNow = dueGiven.filter(([nodeId]) => !heldNow(nodeById.get(nodeId)));
+    fired.forEach((nodeId) => { queue.delete(nodeById.get(nodeId).circuit); queuedAt.delete(nodeId); waited.delete(nodeId); });
+    givenNow.forEach(([nodeId]) => { given.delete(nodeId); waited.delete(nodeId); });
     events.push({ type: 'bell', index: bellIndex, parity: bellIndex % 2 ? 'odd' : 'even', fired: [...fired, ...givenNow.map(([id]) => id)], waiting });
     for (const nodeId of fired) fire(nodeId, events);
     for (const [nodeId, charge] of givenNow) fire(nodeId, events, { light: charge });
@@ -291,10 +349,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       if (given.has(nodeId)) return { result: 'given', nodeId, line };
       return { result: 'dead', nodeId, line, lit: machine.powered };
     }
-    if (queue.get(circuit) === nodeId) {
-      const recent = timeMs - (queuedAt.get(nodeId) ?? -Infinity) < repeatGuardMs;
-      return { result: recent ? 'already' : 'unqueue', nodeId, line };
-    }
+    // Pressing a queued node again never takes it back (R3-1).
+    if (queue.get(circuit) === nodeId) return { result: 'already', nodeId, line, inBells: bellsUntilNode(node), waiting: waited.has(nodeId) };
     if (machine.powered && !machine.cut && !machine.light) {
       return machine.held ? { result: 'cut', nodeId, line } : { result: 'renew', nodeId, line };
     }
@@ -302,8 +358,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     if (holder) return { result: 'busy', nodeId, line, holder };
     const cancelled = queue.get(circuit) ?? null;
     return cancelled
-      ? { result: 'replace', nodeId, line, cancelled, inBells: bellsUntil(circuit) }
-      : { result: 'queue', nodeId, line, inBells: bellsUntil(circuit) };
+      ? { result: 'replace', nodeId, line, cancelled, inBells: bellsUntilNode(node) }
+      : { result: 'queue', nodeId, line, inBells: bellsUntilNode(node) };
   };
 
   const punch = (nodeId) => {
@@ -313,13 +369,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     const machine = state.get(node.machine);
     if (node.dead) return { result: given.has(nodeId) ? 'given' : 'dead', nodeId, line };
 
-    if (queue.get(circuit) === nodeId) {
-      // A second press right after the first is the same punch, not a take-back.
-      if (timeMs - (queuedAt.get(nodeId) ?? -Infinity) < repeatGuardMs) return { result: 'already', nodeId, line };
-      queue.delete(circuit);
-      queuedAt.delete(nodeId);
-      return { result: 'unqueued', nodeId, line };
-    }
+    // A second press, however late, is the same punch: never a take-back.
+    if (queue.get(circuit) === nodeId) return { result: 'already', nodeId, line, inBells: bellsUntilNode(node) };
     if (machine.powered && !machine.cut && !machine.light) {
       if (machine.held) {
         machine.held = false;
@@ -329,35 +380,48 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       }
       // Its own line is running it: renew at the next bell (or now, if a bell
       // has only just rung).
-      if (sinceBell < catchMs && ringsOn(phaseOfCircuit(circuit), bellIndex) && bellIndex > 0) {
+      if (canCatch(node)) {
         const events = [];
         fire(nodeId, events, { elapsed: sinceBell });
         return { result: 'renewed', nodeId, line, caught: true, events };
       }
       queue.set(circuit, nodeId);
       queuedAt.set(nodeId, timeMs);
-      return { result: 'renew', nodeId, line, inBells: bellsUntil(circuit) };
+      return { result: 'renew', nodeId, line, inBells: bellsUntilNode(node) };
     }
     const holder = busyMachineOn(circuit);
     if (holder) return { result: 'busy', nodeId, line, holder };
     // Just after a bell that would have fired it: catch that bell.
-    if (sinceBell < catchMs && bellIndex > 0 && ringsOn(phaseOfCircuit(circuit), bellIndex) && !queue.has(circuit)) {
+    if (!queue.has(circuit) && canCatch(node)) {
       const events = [];
       fire(nodeId, events, { elapsed: sinceBell });
       return { result: 'caught', nodeId, line, events };
     }
     const cancelled = queue.get(circuit) ?? null;
-    if (cancelled) queuedAt.delete(cancelled);
+    if (cancelled) { queuedAt.delete(cancelled); waited.delete(cancelled); }
     queue.set(circuit, nodeId);
     queuedAt.set(nodeId, timeMs);
-    const inBells = bellsUntil(circuit);
+    const inBells = bellsUntilNode(node);
     return cancelled
       ? { result: 'replaced', nodeId, line, cancelled, inBells }
       : { result: 'queued', nodeId, line, inBells };
   };
 
+  // The deliberate take-back (the scene: hold F on a punched node).
+  const takeBack = (nodeId) => {
+    const node = nodeById.get(nodeId);
+    if (!node) return { result: 'unknown', nodeId };
+    if (queue.get(node.circuit) !== nodeId) return { result: 'not-queued', nodeId, line: node.line };
+    queue.delete(node.circuit);
+    queuedAt.delete(nodeId);
+    if (waited.delete(nodeId)) holds.delete(node.district);
+    return { result: 'unqueued', nodeId, line: node.line };
+  };
+
   // ---- borrowed light -----------------------------------------------------
-  const borrowPreview = (nodeId) => {
+  // `riding`: the machine Butch stands on (or rides). Borrowing its light
+  // would switch it off under him, so the lamp refuses: STEP OFF FIRST.
+  const borrowPreview = (nodeId, { riding = null } = {}) => {
     const node = nodeById.get(nodeId);
     if (!node) return { result: 'unknown', nodeId };
     const def = defById.get(node.machine);
@@ -371,13 +435,14 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     }
     if (!def.borrowable) return { result: 'fixed', nodeId };
     if (!machine.powered) return { result: 'dark', nodeId };
+    if (riding && riding === node.machine) return { result: 'step-off', nodeId, machineId: node.machine };
     return { result: 'borrow', nodeId, machineId: node.machine };
   };
 
   // E at a node: borrow its machine's light, take back a light given to it,
   // give the carried light to a dead node, or take it home to its source.
-  const lamp = (nodeId) => {
-    const preview = borrowPreview(nodeId);
+  const lamp = (nodeId, options = {}) => {
+    const preview = borrowPreview(nodeId, options);
     const node = nodeById.get(nodeId);
     const events = [];
     switch (preview.result) {
@@ -430,6 +495,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     const cleared = [...queue.values()];
     queue.clear();
     queuedAt.clear();
+    waited.clear();
+    holds.clear();
     return cleared;
   };
 
@@ -490,9 +557,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     const toBell = bellMs - sinceBell;
     const changes = [];
     for (const [circuit, nodeId] of queue) {
-      changes.push({ machineId: nodeById.get(nodeId).machine, nodeId, to: 'on', inBells: bellsUntil(circuit) });
+      changes.push({ machineId: nodeById.get(nodeId).machine, nodeId, to: 'on', inBells: bellsUntilNode(nodeById.get(nodeId)) });
     }
-    for (const nodeId of given.keys()) changes.push({ machineId: nodeById.get(nodeId).machine, nodeId, to: 'on', inBells: 1, borrowed: true });
+    for (const nodeId of given.keys()) changes.push({ machineId: nodeById.get(nodeId).machine, nodeId, to: 'on', inBells: bellsUntilNode(nodeById.get(nodeId)), borrowed: true });
     for (const [id, machine] of state) {
       if (machine.powered && !machine.held && machine.remaining <= toBell) {
         if (!changes.some((change) => change.machineId === id)) changes.push({ machineId: id, nodeId: machine.poweredBy, to: 'off', inBells: 1 });
@@ -514,7 +581,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       phase: node.phase,
       dead: node.dead,
       queued,
-      inBells: queued ? bellsUntil(node.circuit) : null,
+      inBells: queued ? bellsUntilNode(node) : null,
+      waiting: waited.has(nodeId),
       given: given.has(nodeId),
       powering,
       poweringMachine: machine.powered,
@@ -548,6 +616,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       lightSource: machine.light?.source ?? null,
       lentOut: machine.lentOut,
       load: machine.load,
+      // A lift holding a bell for its rider (its node waited once).
+      waiting: [...waited].some((nodeId) => nodeById.get(nodeId).machine === machineId),
     };
   };
 
@@ -584,8 +654,11 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     update,
     punch,
     punchPreview,
+    takeBack,
     lamp,
     borrowPreview,
+    setShouldWait: (fn) => { waitFor = typeof fn === 'function' ? fn : null; },
+    holdOf: (district) => holds.get(district) ?? null,
     dropLight,
     carried: () => (carried ? { ...carried } : null),
     clearQueue,
