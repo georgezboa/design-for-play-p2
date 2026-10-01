@@ -12,11 +12,49 @@
 //                 hold and a confirm
 
 import { CELL, GRID_H, GRID_W, TUNING } from './labyrinthData.js';
+import { bfs, reconstructPath } from './mazeGenerator.js';
 
 export const RESTART_HOLD_MS = 1500;
 
 export function pacesLabel(paces) {
   return `${paces} ${paces === 1 ? 'PACE' : 'PACES'}`;
+}
+
+const ARROWS = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
+
+/** The 8-way arrow for a direction (screen space: +y is down). */
+export function arrowFor(dx, dy) {
+  const angle = Math.atan2(dy, dx);
+  return ARROWS[(Math.round(((angle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) + 8) % 8];
+}
+
+/**
+ * The nearest target by walking distance (alpha A3-6: "KEY ↓ 2 PACES" used
+ * to count straight through walls). One BFS over the walkable grid from
+ * Butch's cell; unreachable targets (behind a locked gate) are skipped.
+ * The arrow points along the path, `lookAhead` cells out, not through stone.
+ * @returns {{ target, paces:number, arrow:string, toward:{x,y} } | null}
+ */
+export function nearestByPath(walls, fromCell, targets, { lookAhead = 3 } = {}) {
+  if (!walls?.length || !fromCell || !targets?.length) return null;
+  const result = bfs(walls, fromCell);
+  let best = null;
+  for (const target of targets) {
+    const cell = target.cell ?? { x: Math.floor(target.x / CELL), y: Math.floor(target.y / CELL) };
+    if (cell.x < 0 || cell.y < 0 || cell.x >= result.w || cell.y >= result.h) continue;
+    const d = result.dist[cell.y * result.w + cell.x];
+    if (d < 0) continue;
+    if (!best || d < best.paces) best = { target, cell, paces: d };
+  }
+  if (!best) return null;
+  const path = best.paces > 0 ? (reconstructPath(result, fromCell, best.cell) ?? []) : [];
+  const step = path.length ? path[Math.min(lookAhead, path.length) - 1] : best.cell;
+  return {
+    target: best.target,
+    paces: Math.max(1, best.paces),
+    arrow: arrowFor(step.x - fromCell.x, step.y - fromCell.y),
+    toward: step,
+  };
 }
 
 function unit(x, y) {

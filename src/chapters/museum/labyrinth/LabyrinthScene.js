@@ -34,8 +34,8 @@ import { ensureLabyrinthTextures, ensureRadialMask, ensureTilesetTexture, TILE_F
 import { buildLayout, worldToCell } from './mazeGenerator.js';
 import { cloneWalls, playerCanReachTargets, stateWouldCrush } from './wingMechanics.js';
 import { StatueNPC } from './StatueNPC.js';
-import { applyWingEntryRules, choosePrimaryHunterId, statueCanDamage } from './labyrinthEncounterRules.js';
-import { cellKey, keysLostOnGameOver, markSeen, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
+import { applyWingEntryRules, choosePrimaryHunterId, statueCanDamage, stepTelegraph, wingThreatTuning } from './labyrinthEncounterRules.js';
+import { cellKey, keysLostOnGameOver, markSeen, nearestByPath, pacesLabel, resolveFacing, restartHoldPhase, seenAt, visionConePoints } from './labyrinthRules.js';
 
 // unsurveyed cells on the survey map: darker than the surveyed floor
 const MINIMAP_FOG = 0x0a2230;
@@ -565,6 +565,7 @@ export class LabyrinthScene extends Phaser.Scene {
         const gy = y0 + ly;
         const solid = source[gy][gx];
         this.layout.walls[gy][gx] = solid;
+        this.wallsVersion = (this.wallsVersion ?? 0) + 1;
         this.wallLayer.putTileAt(solid ? TILE_WALL : TILE_FLOOR, gx, gy);
       }
     }
@@ -652,6 +653,13 @@ export class LabyrinthScene extends Phaser.Scene {
     if (this.hud) this.hud.destroy();
     const hud = this.add.container(0, 0).setScrollFactor(0).setDepth(100);
 
+    // A walnut plate behind the four readouts (alpha A3-6): at the spawn the
+    // entry torches' glow sat right under them and washed them out.
+    this.hudPlate = this.add.graphics();
+    this.hudPlateWidth = 0;
+    this.threatG = this.add.graphics();
+    this.threatMarkerCount = 0;
+
     this.livesText = this.add.text(16, 12, '', {
       fontFamily: FONT, fontSize: '14px', color: css(PAL.red), fontStyle: 'bold',
     });
@@ -684,7 +692,7 @@ export class LabyrinthScene extends Phaser.Scene {
         backgroundColor: '#060609cc', padding: { x: 10, y: 5 }, letterSpacing: 2,
       })
       .setOrigin(0.5);
-    hud.add([this.livesText, this.keysText, this.shieldText, this.torchText, this.wingLabel, this.controlsText, this.captionText, this.interactText]);
+    hud.add([this.threatG, this.hudPlate, this.livesText, this.keysText, this.shieldText, this.torchText, this.wingLabel, this.controlsText, this.captionText, this.interactText]);
 
     // End-of-run overlay (game over / win). Same container, swapped text.
     const dim = this.add.rectangle(VIEW.w / 2, VIEW.h / 2, VIEW.w, VIEW.h, PAL.void, 0.78).setVisible(false);
@@ -896,32 +904,30 @@ export class LabyrinthScene extends Phaser.Scene {
       mm.markers.fillTriangle(ex, ey - 4.5, ex - 4.5, ey, ex, ey + 4.5);
     }
 
-    // Nearest-key readout: 8-way arrow + distance in paces.
-    let nearest = null;
-    let nearestD = Infinity;
-    for (const k of this.layout.keys) {
-      if (k.collected || (k.wing === 3 && k.floor !== this.activeFloor)) continue;
-      if (!seenAt(this.seenCells, k.x, k.y)) continue;
-      const d = Phaser.Math.Distance.Between(this.playerSprite.x, this.playerSprite.y, k.x, k.y);
-      if (d < nearestD) {
-        nearestD = d;
-        nearest = k;
-      }
-    }
+    // Nearest-key readout: walking distance in paces and the way to walk
+    // (a BFS over the maze, alpha A3-6), not a straight line through walls.
+    // Recomputed when Butch changes cell or the set of targets changes.
+    const seenKeys = this.layout.keys.filter((k) => !k.collected
+      && !(k.wing === 3 && k.floor !== this.activeFloor)
+      && seenAt(this.seenCells, k.x, k.y));
     const missing = TUNING.keysTotal - this.player.keysCollected;
-    if (nearest) {
-      const dirAngle = Math.atan2(nearest.y - this.playerSprite.y, nearest.x - this.playerSprite.x);
-      const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
-      const idx = (Math.round(((dirAngle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) + 8) % 8;
-      const paces = Math.max(1, Math.round(nearestD / CELL));
-      mm.nearestText.setText(`KEY ${arrows[idx]} ${pacesLabel(paces)}  ·  ${missing} LEFT`);
+    const here = worldToCell(this.playerSprite.x, this.playerSprite.y);
+    const route = (targets, tag) => {
+      const sig = `${tag}|${here.x},${here.y}|${this.activeFloor}|${this.wallsVersion ?? 0}|${targets.map((t) => `${t.x},${t.y}`).join(';')}`;
+      if (this._routeCache?.sig !== sig) this._routeCache = { sig, value: nearestByPath(this.layout.walls, here, targets) };
+      return this._routeCache.value;
+    };
+    const keyRoute = seenKeys.length ? route(seenKeys, 'key') : null;
+    if (keyRoute) {
+      mm.nearestText.setText(`KEY ${keyRoute.arrow} ${pacesLabel(keyRoute.paces)}  ·  ${missing} LEFT`);
+    } else if (seenKeys.length) {
+      // Seen, but not reachable yet (behind a gate that is still locked).
+      mm.nearestText.setText(`KEY BEYOND A LOCKED GATE  ·  ${missing} LEFT`);
     } else if (allKeys && exitSeen) {
-      const exit = this.layout.exit;
-      const dirAngle = Math.atan2(exit.y - this.playerSprite.y, exit.x - this.playerSprite.x);
-      const arrows = ['→', '↘', '↓', '↙', '←', '↖', '↑', '↗'];
-      const idx = (Math.round(((dirAngle + Math.PI * 2) % (Math.PI * 2)) / (Math.PI / 4)) + 8) % 8;
-      const paces = Math.max(1, Math.round(Phaser.Math.Distance.Between(this.playerSprite.x, this.playerSprite.y, exit.x, exit.y) / CELL));
-      mm.nearestText.setText(`ESCAPE ${arrows[idx]} ${pacesLabel(paces)}`);
+      const exitRoute = route([this.layout.exit], 'exit');
+      mm.nearestText.setText(exitRoute
+        ? `ESCAPE ${exitRoute.arrow} ${pacesLabel(exitRoute.paces)}`
+        : 'EVERY KEY  ·  FIND THE SEAL');
     } else if (allKeys) {
       mm.nearestText.setText('EVERY KEY  ·  FIND THE SEAL');
     } else {
@@ -1208,6 +1214,7 @@ export class LabyrinthScene extends Phaser.Scene {
     if (!playerCanReachTargets(prospectiveWalls, playerCell, moving.routeCells)) return false;
     for (const change of finalChanges) {
       this.layout.walls[change.y][change.x] = change.solid;
+      this.wallsVersion = (this.wallsVersion ?? 0) + 1;
       this.layout.floorWalls[0][change.y][change.x] = change.solid;
       this.layout.floorWalls[1][change.y][change.x] = change.solid;
       this.wallLayer.putTileAt(change.solid ? TILE_WALL : TILE_FLOOR, change.x, change.y);
@@ -1317,6 +1324,7 @@ export class LabyrinthScene extends Phaser.Scene {
       if (gate.locked && this.player.keysCollected >= gate.requiredKeys) {
         gate.locked = false;
         this.layout.walls[gate.cell.y][gate.cell.x] = false;
+        this.wallsVersion = (this.wallsVersion ?? 0) + 1;
         this.layout.floorWalls[0][gate.cell.y][gate.cell.x] = false;
         this.layout.floorWalls[1][gate.cell.y][gate.cell.x] = false;
         this.wallLayer.putTileAt(TILE_FLOOR, gate.cell.x, gate.cell.y);
@@ -1380,9 +1388,12 @@ export class LabyrinthScene extends Phaser.Scene {
     let hitThisFrame = false;
     let blockedThisFrame = false;
     const litDanger = this.currentWingId > 0 && this.player.torchLit;
-    const activeHunterRadius = litDanger
+    // The Entry Hall's statues are slower and wake later (alpha round 1).
+    const threat = wingThreatTuning(this.currentWingId);
+    const activeHunterRadius = threat.activationScale * (litDanger
       ? TUNING.torchAttractionRadius
-      : (this.player.torchLit ? TUNING.activationRadius : TUNING.darkActivationRadius);
+      : (this.player.torchLit ? TUNING.activationRadius : TUNING.darkActivationRadius));
+    const warnings = [];
     const huntersPaused = time < Math.max(this.wingEntryGraceUntil, this.hunterReliefUntil);
     this.primaryHunterId = huntersPaused
       ? null
@@ -1406,16 +1417,35 @@ export class LabyrinthScene extends Phaser.Scene {
         time,
         { x: this.playerSprite.x, y: this.playerSprite.y, facing: this.player.facing },
         {
-          activationRadius: litDanger ? TUNING.torchAttractionRadius : (this.player.torchLit ? TUNING.activationRadius : TUNING.darkActivationRadius),
+          activationRadius: activeHunterRadius,
           visionRange: this.player.torchLit ? TUNING.visionRange : TUNING.darkVisionRadius * 1.3,
           allowHunt: isPrimaryHunter,
+          speedScale: threat.speedScale,
         },
       );
+      // A hunter announces itself (stone grind + an edge marker) before its
+      // touch can cost a life, so no hit comes from nowhere.
+      const distance = Phaser.Math.Distance.Between(this.playerSprite.x, this.playerSprite.y, statue.x, statue.y);
+      statue.telegraph = stepTelegraph(statue.telegraph, {
+        hunting: isPrimaryHunter && (statue.state === 'hunting' || statue.state === 'frozen'),
+        seen: statue.seen,
+        distance,
+        now: time,
+        telegraphMs: threat.telegraphMs,
+      });
+      if (statue.telegraph.warning) {
+        warnings.push(statue);
+        if (statue.telegraph.started || time - (statue.lastGrindAt ?? -Infinity) > 1600) {
+          statue.lastGrindAt = time;
+          labyrinthCues.statueNear();
+        }
+      }
       statue.canDamage = statueCanDamage({
         isPrimaryHunter,
         state: statue.state,
         now: time,
         wingGraceUntil: this.wingEntryGraceUntil,
+        telegraphReady: statue.telegraph.ready,
       });
       spr.img.setDepth(statue.y);
       spr.eye.setPosition(statue.x, statue.y - 42);
@@ -1460,6 +1490,7 @@ export class LabyrinthScene extends Phaser.Scene {
       }
       statue.justHit = false;
     });
+    this.drawThreatMarkers(warnings, time);
     chaseMusic.setChasing(chasingClose);
     if (chasingClose) chaseMusic.setIntensity(1 - Math.max(0, Math.min(1, nearestHunt / TUNING.chaseProximity)));
     if (hitThisFrame) this.onHit();
@@ -1497,6 +1528,64 @@ export class LabyrinthScene extends Phaser.Scene {
           : (stair ? STRINGS.stairHint : ''),
     );
     if (this.currentWingId === 3) this.wingLabel.setText(`THE LAST GALLERY · FLOOR ${this.activeFloor === 0 ? 'I' : 'II'}`);
+    this.drawHudPlate();
+  }
+
+  // A red chevron at the edge of the view for every hunter closing in from
+  // outside Butch's gaze, pointing the way it comes from.
+  drawThreatMarkers(statues, time) {
+    const g = this.threatG;
+    if (!g) return;
+    g.clear();
+    this.threatMarkerCount = statues.length;
+    if (!statues.length) return;
+    const cam = this.cameras.main;
+    const toScreen = (x, y) => ({ x: (x - cam.worldView.x) * cam.zoom, y: (y - cam.worldView.y) * cam.zoom });
+    const p = toScreen(this.playerSprite.x, this.playerSprite.y);
+    const m = 46;
+    const pulse = 0.6 + 0.4 * Math.sin(time / 110);
+    statues.forEach((statue) => {
+      const s = toScreen(statue.x, statue.y);
+      let dx = s.x - p.x;
+      let dy = s.y - p.y;
+      const len = Math.hypot(dx, dy) || 1;
+      dx /= len;
+      dy /= len;
+      let at;
+      if (s.x > m && s.x < VIEW.w - m && s.y > m && s.y < VIEW.h - m) {
+        // On screen but behind him: mark it, just short of the statue.
+        at = { x: s.x - dx * 34, y: s.y - dy * 34 };
+      } else {
+        const tx = dx > 0 ? (VIEW.w - m - p.x) / dx : dx < 0 ? (m - p.x) / dx : Infinity;
+        const ty = dy > 0 ? (VIEW.h - m - p.y) / dy : dy < 0 ? (m - p.y) / dy : Infinity;
+        const t = Math.max(0, Math.min(tx, ty));
+        at = { x: p.x + dx * t, y: p.y + dy * t };
+      }
+      const nx = -dy;
+      const ny = dx;
+      // A hot signal red with an ivory rim: the maze's blood red is too dark
+      // to read against the unlit stone.
+      g.fillStyle(0x060609, 0.82).fillCircle(at.x, at.y, 24);
+      g.lineStyle(2, 0xeadfc6, 0.85).strokeCircle(at.x, at.y, 24);
+      g.fillStyle(0xff4a32, 0.55 + 0.45 * pulse);
+      // A long, narrow arrowhead, so its direction reads at a glance.
+      g.fillTriangle(
+        at.x + dx * 20, at.y + dy * 20,
+        at.x - dx * 12 + nx * 9, at.y - dy * 12 + ny * 9,
+        at.x - dx * 12 - nx * 9, at.y - dy * 12 - ny * 9,
+      );
+      g.lineStyle(3, 0xff4a32, 0.6 * pulse).strokeCircle(at.x, at.y, 28 + 6 * pulse);
+    });
+  }
+
+  drawHudPlate() {
+    const width = Math.ceil(Math.max(this.livesText.width, this.keysText.width, this.shieldText.width, this.torchText.width)) + 24;
+    if (width === this.hudPlateWidth) return;
+    this.hudPlateWidth = width;
+    const g = this.hudPlate;
+    g.clear();
+    g.fillStyle(0x0b0907, 0.84).fillRoundedRect(6, 6, width, 84, 4);
+    g.lineStyle(1, 0xb08a4a, 0.55).strokeRoundedRect(6, 6, width, 84, 4);
   }
 
   // The cone the statues test (TUNING.visionConeDeg, the current vision
@@ -1583,6 +1672,8 @@ export class LabyrinthScene extends Phaser.Scene {
       chasing: chaseMusic.isChasing(),
       primaryHunterId: this.primaryHunterId,
       damagingHunters: this.statues?.filter((statue) => statue.canDamage).map((statue) => statue.id),
+      threatMarkers: this.threatMarkerCount ?? 0,
+      keyReadout: this.minimap?.nearestText?.text ?? null,
       hunterReliefMs: Math.max(0, Math.round(Math.max(this.wingEntryGraceUntil, this.hunterReliefUntil) - this.time.now)),
       artifactReady: this.artifactReady,
       artifactTaken: this.artifactTaken,
