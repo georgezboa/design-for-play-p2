@@ -535,7 +535,7 @@ export class ServiceLobby {
       enabled: () => inLobby()
         && !magicStoneSnapshot().collected.includes('black-knife')
         && this.fireAxeTaken && !this.blackKnifeGlassBroken,
-      prompt: 'E · BREAK THE SOUTH PANE',
+      prompt: () => this.blackKnifeGlassPrompt(),
       showWhenInactive: true,
       action: () => this.tryBreakBlackKnifeGlass(),
     });
@@ -611,6 +611,15 @@ export class ServiceLobby {
       && ['lobby', 'return'].includes(this.ctx.model.getSnapshot().phase)
       && player.x >= 1.75 && player.x <= 5.0
       && player.z >= 1.25 && player.z <= 3.25;
+  }
+
+  /**
+   * Alpha round 2 (R3-4): the pane's raycast proxy can be aimed at from
+   * farther than the axe reaches, where E does nothing. Out of reach the tag
+   * says so instead of offering a key that will not work.
+   */
+  blackKnifeGlassPrompt() {
+    return this.canBreakBlackKnifeGlass() ? 'E · BREAK THE SOUTH PANE' : 'STEP CLOSER TO THE SOUTH PANE';
   }
 
   tryBreakBlackKnifeGlass() {
