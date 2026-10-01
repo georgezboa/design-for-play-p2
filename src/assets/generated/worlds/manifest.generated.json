@@ -110,7 +110,7 @@
     {
       "id": "world-07-memory",
       "sourceFile": "world_07_memory_panorama_fullres.png",
-      "sourceSha256": "aa015b233bdc0e49b0d00a8205181f8529eb84a3113cc19b0c325c289839c465",
+      "sourceSha256": "65bc7f52efb25ad659c3d1575db077581f2615377ab6f5762a52c81e30a32807",
       "sourceWidth": 11408,
       "sourceHeight": 941,
       "textureKeys": [
@@ -122,7 +122,7 @@
           "x": 0,
           "width": 4096,
           "height": 941,
-          "bytes": 399286
+          "bytes": 399283
         },
         {
           "file": "world-07-memory/chunk-01.jpg",
