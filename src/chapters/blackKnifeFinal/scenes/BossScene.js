@@ -10,6 +10,8 @@ import * as bellAudio from '../../borrowedLight/audio.js';
 import Player from '../entities/Player.js';
 import Boss from '../entities/Boss.js';
 import Hud from '../entities/Hud.js';
+import { battle } from '../battleBridge.js';
+import { createFinaleQualityMonitor, finaleQualityPreference } from '../../finalBoss/finaleQuality.js';
 
 // The hidden finale — THE BLACK TICKET, the Conductor's true form: the ticket
 // that never gets punched (docs/STORY_BIBLE.md). Mathias's side-scrolling
@@ -31,7 +33,11 @@ export default class BossScene extends Phaser.Scene {
 
   create() {
     this.stateFlag = 'menu';
-    this.settings = window.__conductorSettings ?? { shake: true, flash: false, sound: true };
+    this.settings = battle.settings ?? { shake: true, flash: false, sound: true };
+    // LOW GRAPHICS (or a slow machine, measured in play): half the particles.
+    // Antialias is set from the same setting when the game is made (main.js).
+    this.quality = createFinaleQualityMonitor({ preference: finaleQualityPreference(globalThis.NIGHTFALL_SETTINGS ?? readSettings()) });
+    battle.quality = this.quality;
     this.sfx = createSfx(this);
     this.buildBackground();
 
@@ -58,15 +64,14 @@ export default class BossScene extends Phaser.Scene {
     };
     window.addEventListener('keydown', this._shieldKeyHandler);
 
-    window.__startBattle = () => this.beginIntro();
-    window.__battleScene = this;
-    window.__pauseBattle = () => this.pauseBattle();
-    window.__resumeBattle = () => this.resumeBattle();
+    battle.start = () => this.beginIntro();
+    battle.scene = this;
+    battle.pause = () => this.pauseBattle();
+    battle.resume = () => this.resumeBattle();
     this.events.on('shutdown', () => {
       this.hintEl?.remove();
       window.removeEventListener('keydown', this._shieldKeyHandler);
-      window.__startBattle = null; window.__battleScene = null;
-      window.__pauseBattle = null; window.__resumeBattle = null;
+      Object.assign(battle, { start: null, scene: null, pause: null, resume: null });
     });
   }
 
@@ -732,13 +737,17 @@ export default class BossScene extends Phaser.Scene {
     }
   }
 
+  get lowGraphics() { return this.quality?.tier === 'low' || globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true; }
+
   emitBurst(x, y, count, color = COLORS.white) {
-    for (let i = 0; i < count; i += 1) {
+    const total = this.lowGraphics ? Math.ceil(count / 2) : count;
+    for (let i = 0; i < total; i += 1) {
       this.particles.push({ x, y, vx: Phaser.Math.FloatBetween(-260, 260), vy: Phaser.Math.FloatBetween(-260, 260), life: 0.6, color });
     }
   }
 
   emitSmoke(x, y) {
+    if (this.lowGraphics && (this.smokeTick = (this.smokeTick ?? 0) + 1) % 2) return;
     const color = this.boss?.enraged ? COLORS.amber : COLORS.smoke;
     this.particles.push({ x, y, vx: Phaser.Math.FloatBetween(10, 60), vy: Phaser.Math.FloatBetween(-90, -50), life: 1.1, color, size: Phaser.Math.Between(4, 9) });
   }
@@ -747,6 +756,7 @@ export default class BossScene extends Phaser.Scene {
   update(_t, deltaMs) {
     const dt = Math.min(0.033, deltaMs / 1000);
     if (this.stateFlag === 'menu') return;
+    if (this.stateFlag === 'play') this.quality?.sample(deltaMs / 1000);
 
     // NOTE: pause is driven from a DOM keydown listener in main.js — some
     // browsers swallow Escape before Phaser's keyboard plugin sees it.
