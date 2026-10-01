@@ -31,7 +31,7 @@ test('respawn: punches reset visibly, borrowed light goes home, the walkway rese
 });
 
 test('the chase\'s quick bell lives only in its stretch of section A', () => {
-  assert.match(scene, /const quick = this\.section === CHASE\.section && !this\.respawning && this\.feetX >= CHASE\.fromX && this\.feetX < CHASE\.toX;/);
+  assert.match(scene, /const quick = this\.section === CHASE\.section && this\.feetX >= CHASE\.fromX && this\.feetX < CHASE\.toX;/);
   assert.match(scene, /enterSection\(next\) \{[\s\S]*?this\.tt\.setBellMs\(BELL_MS\);/);
 });
 

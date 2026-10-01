@@ -1135,7 +1135,8 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   // The chase (A8): from Mara's look back to her roof, the bell quickens.
   updateChase() {
-    const quick = this.section === CHASE.section && !this.respawning && this.feetX >= CHASE.fromX && this.feetX < CHASE.toX;
+    // It holds through a fall and respawn (the lamp before it is inside the stretch).
+    const quick = this.section === CHASE.section && this.feetX >= CHASE.fromX && this.feetX < CHASE.toX;
     const want = quick ? CHASE.bellMs : BELL_MS;
     if (this.tt.bellMs === want) return;
     this.tt.setBellMs(want);
