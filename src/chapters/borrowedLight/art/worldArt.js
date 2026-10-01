@@ -1,6 +1,7 @@
-// Chapter 2 · BORROWED LIGHT — world dressing: sky, the graded painted
-// panorama, procedural skylines, facades, props, signs, lamps, the train,
-// rain, splashes, puddles, mist and the blackout overlay.
+// Chapter 2 · BORROWED LIGHT — world dressing: sky, the painted rainy
+// skyline far off, procedural skylines, facades, props, signs, lamps, the
+// train (and the viaduct it runs on), rain, splashes, puddles, mist and the
+// blackout overlay.
 
 import Phaser from 'phaser';
 import { DEPTH, HEX, INK, INK_HEX, LINE_COLORS, PALETTE, hashString, rng } from './palette.js';
@@ -15,6 +16,7 @@ import {
   paintPuddle,
   paintRadial,
   paintRain,
+  paintRainSkyline,
   paintSign,
   paintSkylineStrip,
   paintSplash,
@@ -81,60 +83,28 @@ export function buildSharedTextures(scene) {
   addCanvasTexture(scene, 'bl-clouds', clouds);
 }
 
-// The world-04 painted panorama, graded darker and colder so it sits far
-// behind the rain: desaturated, dimmed, a little soft, tinted toward teal.
-export function gradePanorama(scene, keys) {
-  const graded = [];
-  keys.forEach((key, index) => {
-    if (!scene.textures.exists(key)) return;
-    const src = scene.textures.get(key).getSourceImage();
-    const scale = 0.5;
-    const canvas = makeCanvas(src.width * scale, src.height * scale);
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = true;
-    try { ctx.filter = 'saturate(0.34) brightness(0.8) contrast(0.9) blur(1.1px)'; } catch { /* no canvas filter */ }
-    ctx.drawImage(src, 0, 0, canvas.width, canvas.height);
-    ctx.filter = 'none';
-    // Cold grade + a veil of rain haze that thickens toward the ground.
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = 'rgb(120,150,165)';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.globalCompositeOperation = 'source-over';
-    const veil = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    veil.addColorStop(0, 'rgba(8,14,20,0.4)');
-    veil.addColorStop(0.5, 'rgba(18,28,34,0.16)');
-    veil.addColorStop(1, 'rgba(40,52,58,0.55)');
-    ctx.fillStyle = veil;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    // Feather the top edge into the sky so there is no seam.
-    ctx.globalCompositeOperation = 'destination-out';
-    const feather = ctx.createLinearGradient(0, 0, 0, canvas.height * 0.3);
-    feather.addColorStop(0, 'rgba(0,0,0,1)');
-    feather.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = feather;
-    ctx.fillRect(0, 0, canvas.width, canvas.height * 0.3);
-    ctx.globalCompositeOperation = 'source-over';
-    graded.push(addCanvasTexture(scene, `bl-pano-${index}`, canvas));
-  });
-  return graded;
-}
-
 // ---------------------------------------------------------------------------
 // Background layers. Returns { panorama: [], far: [], mid: [], sky, clouds }.
-export function buildBackground(scene, panoramaKeys) {
+export function buildBackground(scene) {
   const layers = { panorama: [], far: [], mid: [] };
   layers.sky = scene.add.image(0, 0, 'bl-sky').setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setDepth(DEPTH.sky);
   layers.clouds = scene.add.tileSprite(0, 40, VIEW_W, 300, 'bl-clouds').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.sky + 1).setAlpha(0.9);
 
-  // Painted panorama at scroll 0.1: ~2000 px of travel across the chapter.
-  const graded = gradePanorama(scene, panoramaKeys);
+  // The painted rainy skyline at scroll 0.1 (~2900 px of travel across the
+  // chapter). Painted small, shown ×1.9: soft, like distance in the rain.
+  const panoScale = 1.9;
+  const span = WORLD.width * 0.1 + VIEW_W + 600;
   let px = -200;
-  const panoScale = 1.9; // graded canvases are half size
-  graded.forEach((key) => {
-    const img = scene.add.image(px, 150, key).setOrigin(0, 0).setScale(panoScale).setScrollFactor(0.1, 0.04).setDepth(DEPTH.panorama);
+  let i = 0;
+  while (px < span) {
+    const key = `bl-pano-${i % 3}`;
+    if (!scene.textures.exists(key)) addCanvasTexture(scene, key, paintRainSkyline({ seed: 61 + (i % 3) }));
+    const img = scene.add.image(px, 110, key).setOrigin(0, 0).setScale(panoScale).setScrollFactor(0.1, 0.04).setDepth(DEPTH.panorama);
+    if (i % 2 === 1) img.setFlipX(true);
     layers.panorama.push(img);
     px += img.displayWidth - 4;
-  });
+    i += 1;
+  }
 
   // Far skyline (scroll 0.25) and mid skyline (scroll 0.5), painted strips.
   const strip = (key, seed, tone, windows, baseY) => addCanvasTexture(scene, key, paintSkylineStrip({ seed, tone, windows, baseY }));
@@ -365,6 +335,45 @@ export function buildTrain(scene, { x, y, cars = 3, key = 'start' }) {
       head.y = container.y - 90;
     },
   };
+}
+
+// The viaduct a far train runs on (art audit: "the train floats with
+// nothing under it"): a deck and arched piers, in the train's own local
+// space (floor at y = 0), fading down into the haze. Call it after the
+// train's container has its scroll factor, scale and depth.
+export function addViaduct(scene, train, { from = -600, to = train.length + 900, depth = 900 } = {}) {
+  const g = scene.add.graphics();
+  g.fillStyle(0x10171b, 1).fillRect(from, 0, to - from, 30);
+  g.fillStyle(0x0a0f12, 1).fillRect(from, 30, to - from, 10);
+  g.lineStyle(2, INK_HEX, 0.35).lineBetween(from, 1, to, 1);
+  // Rails on the deck.
+  g.lineStyle(3, 0x2a2622, 1).lineBetween(from, -4, to, -4);
+  const pier = 150;
+  for (let x = from; x < to; x += pier) {
+    // Pier and arch.
+    g.fillStyle(0x10171b, 1);
+    g.fillRect(x, 40, 34, depth);
+    g.beginPath();
+    g.moveTo(x + 34, 40);
+    g.lineTo(x + pier, 40);
+    g.lineTo(x + pier, 70);
+    g.arc(x + 34 + (pier - 34) / 2, 120, (pier - 34) / 2, 0, Math.PI, true);
+    g.lineTo(x + 34, 70);
+    g.closePath();
+    g.fillPath();
+    g.lineStyle(1.6, INK_HEX, 0.18).lineBetween(x, 40, x, 40 + depth * 0.5);
+  }
+  // Fade into the haze.
+  const haze = scene.add.image(from, 60, 'bl-px').setOrigin(0, 0).setDisplaySize(to - from, depth).setTint(0x0c1a22).setAlpha(0.45);
+  // Its own container with the train's transform: the train leaves, the
+  // viaduct stays.
+  const tc = train.container;
+  const c = scene.add.container(tc.x, tc.y, [g, haze])
+    .setScrollFactor(tc.scrollFactorX, tc.scrollFactorY)
+    .setScale(tc.scaleX, tc.scaleY)
+    .setDepth(tc.depth - 0.05)
+    .setAlpha(tc.alpha);
+  return c;
 }
 
 // ---------------------------------------------------------------------------

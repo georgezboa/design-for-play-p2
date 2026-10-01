@@ -1,16 +1,17 @@
-# Chapter 2 · BORROWED LIGHT — side-scrolling rebuild spec (v1, 2026-09-28)
+# Chapter 2 · BORROWED LIGHT — side-scrolling spec (v2, 2026-10-01)
 
-Status: READY (product decision 2026-09-28). This replaces the cyberpunk parkour (`src/cars/cyberpunkParkour/`).
-The chapter title changes from the mixed "CYBERPUNK PARKOUR / THE SAFETY TEST / BORROWED GRID" to **BORROWED LIGHT**. The Chapter 5 mini-game `borrowed-grid.html` keeps its own name.
-Chapter 1 has become a mouse-driven panel puzzle (see `CH1_NIGHT_SERVICE_PANELS_SPEC.md`). Chapter 2 is deliberately a contrast: a movement chapter with the same visual language (paper tags with an amber glint, the ticket punch, the bell) and the same story thread.
+Status: READY (round 3 owner feedback, 2026-10-01). v1 (2026-09-28) replaced the cyberpunk parkour (`src/cars/cyberpunkParkour/`). v2 keeps the bell-and-punch core and the story beats, makes the nodes reliable and honest, adds lamps, and develops the core into three new mechanics (each taught alone, then combined, then twisted) so the chapter is not just a parkour run.
+The chapter title is **BORROWED LIGHT**. The Chapter 5 mini-game `borrowed-grid.html` keeps its own name.
+Chapter 1 is a mouse-driven panel puzzle (see `CH1_NIGHT_SERVICE_PANELS_SPEC.md`). Chapter 2 is deliberately a contrast: a movement chapter with the same visual language (paper tags with an amber glint, the ticket punch, the bell) and the same story thread.
 
 ## 1. Fantasy
-The train stops at an archived city whose lights run on time borrowed from the train. Butch chases Mara across wet rooftops. She is always one roof ahead. He punches the city's grid nodes so that lifts, bridges and signs switch on at the next bell, exactly when he needs them.
+The train stops at an archived city whose lights run on time borrowed from the train. Butch chases Mara across wet rooftops. She is always one roof ahead. He punches the city's grid nodes so that lifts, bridges and signs switch on at the next bell, exactly when he needs them. When the city takes its light back, he carries what light is left in his own lamp.
 
 ## 2. Story beats
 - **Start:** the train pulls into a rooftop terminal in the rain. A ROOFTOP MECHANIC (NPC) recognises the punch: "She came through three nights ago. Took the same roofs. Said you'd be along." This is the only NPC.
-- **Midpoint:** the city starts taking its light back (blackout). Through a dark hotel window Butch sees Mara's ticket stub pinned to the glass. It is a punched city-line ticket, matching the Chapter 1 file.
-- **End:** at the evacuation platform a letter waits on a bench: "Butch — … keep moving." Mara has boarded the train ahead. Keep the exact letter text from `CyberpunkParkourScene.js`. This sets up Chapter 3's "Train Mara".
+- **The chase (end of A):** Mara waits one roof ahead across a gap of window cradles, looks back, and runs when Butch is nearly across; the city's bell quickens while she does. She drops toward the hotel as the blackout falls.
+- **Midpoint:** the city takes its light back (blackout). Through a dark hotel window Butch sees Mara's ticket stub pinned to the glass: a punched city-line ticket, matching the Chapter 1 file.
+- **End:** at the evacuation platform a letter waits on a bench: "Butch — … keep moving." Mara has boarded the train ahead. The letter text is kept word for word. This sets up Chapter 3's "Train Mara".
 - Do not write lines that define Butch's relation to Mara.
 
 ## 3. Controls
@@ -18,70 +19,78 @@ The train stops at an archived city whose lights run on time borrowed from the t
 |---|---|---|
 | Move | A / D, ← → | left stick |
 | Jump | Space (hold for height) | A / × |
-| Interact / read | E | X / □ |
-| Punch the targeted node | F or left mouse (auto-targets the nearest node in range, about 220 px, highlighted) | RB / R1 |
+| Interact / read; borrow / give light (blackout) | E | X / □ |
+| Punch the marked node | F, or left-click (a click on a node in reach punches that node) | RB / R1 |
 | Listen (preview what the next bell will do: ghost outlines of the machines that will move) | hold Q | LB / L1 |
 | Pause | Esc | Start |
 
-## 4. Core system: the city's timetable
-- A **bell** rings every **4.0 s**. A meter at the top centre shows the next bell. This is the same bell graphic and sound family as Chapter 1.
-- **Grid nodes** are lamp boxes on poles and walls, each with a paper tag. Punching a node queues it (the tag shows a hole). On the next bell every queued node fires and powers its linked machine for that machine's `duration`:
-  - lift platform rises;
-  - telescopic bridge extends;
-  - billboard becomes a solid lit platform;
-  - vent fan updraft;
-  - shutter opens;
-  - points switch.
-  - Then the machine returns, telegraphed with a 0.6 s flicker before it switches off.
-- **One line, one borrowed moment.** Each node belongs to a coloured line (amber, teal, rose). Punching a second node on the same line cancels the first (its tag hole seals with a small fizzle). This is the puzzle constraint.
-- Machines and their power state are always visible in the world: cables glow along the line when queued, and brighten on the bell.
-- **Failure:** falling off drops the player into rain mist, followed by a 0.6 s fade and a respawn at the last passed street-lamp checkpoint. There are no spikes, no electrocution and no precision pixel jumps. Queued punches clear on respawn.
+## 4. Core system: the city's timetable (`timetableModel.js`, pure, tested)
+- A **bell** rings every **4.0 s** (2.5 s during the chase). A meter at the top centre shows the next bell, with the same bell graphic and sound family as Chapter 1.
+- **Grid nodes** are lamp boxes on poles with a paper tag. Punching a node queues it (the tag shows a hole). On the next bell every queued node fires and powers its linked machine for that machine's `duration`: lift, telescopic bridge, lit billboard platform, vent updraft, points, window cradle, sign. Then the machine flickers for 0.6 s and returns.
+- **One line, one borrowed moment.** Each node belongs to a coloured line (amber, teal, rose) in its district. A line carries one claim at a time: a second punch on the same line replaces the first (the first tag's hole seals); while the line powers a machine it is busy and refuses other nodes. A line the city holds open can be **cut** (2 s grace, then it frees).
+- **Two-phase lines (v2).** Some lines ring only on odd bells (stamped **I** on their tags) or only on even bells (**II**). A punch on them waits, queued, for its own bell. Where a district has phased lines, the meter shows the number of the coming bell, and the line tags under it carry the stamps.
+- **Borrowed light (v2, section B).** Some nodes are **dead**: no line reaches them (cut cable, cracked lens, stamped-through tag). Butch's lamp can take the light out of a lit *borrowable* machine (the city's lanterns, and the machines in the borrow rooms). Taking it switches the source off: a bridge retracts, a lift goes home. He carries one charge at a time (his lamp burns warm white; a lantern glyph shows on the HUD). E at a dead node gives it; the node fires on the next bell. The light remembers its source: when the machine it powers switches off, or when Butch falls, it flies home and the source is restored, so nothing can be stranded. The carried light is borrowed light: it shows (and holds) the dark decks around Butch.
+- **Counterweight pair (v2, section C).** Two cages on one axle; the walkway cage hangs on a larger drum. While the brake is released (powered, on the bell like every machine), the cage Butch stands in sinks and the other rises; locked otherwise.
+- **Forgiveness and honesty (round 3 fixes, §8).** A punch up to 250 ms after a bell catches that bell. A second press within 450 ms is the same punch, not a take-back. Punching a running timed machine renews it at the next bell instead of switching it off. The marked node is exactly what F, E or a click acts on, and its tag says beforehand what the press will do (PUNCH · RINGS ON II, SAME LINE · AMBER FORGETS THE OTHER, LINE BUSY, TAKE BACK, RENEW, CUT, BORROW, GIVE…). A press with nothing in reach names the nearest node: OUT OF REACH.
+- Machines and their power state are always visible in the world: cables glow along the line when queued and brighten on the bell; borrowed light runs warm white.
+- **Failure:** falling off drops the player into rain mist, a 0.6 s fade, and a respawn at the last passed street-lamp checkpoint (the lamp lights when passed). No spikes, no electrocution, no precision pixel jumps. Queued punches clear on respawn — the tags seal visibly and a line says so; borrowed light goes home; the counterweight resets.
 
-## 5. Sections (about 12–15 min total)
-### A · RAIN ROOFTOPS (about 4 min). Learn the punch; then timing; then the one-line rule.
-1. **A gap with a telescopic bridge.** Its node is right beside the start. The mechanic's first line points at it. The player punches, the bell rings, the bridge extends, and the player crosses.
-2. **A lift up to a higher roof.** Punch the lift and the lift rises on the bell.
+## 5. Sections (about 22–28 min total)
+Each new mechanic: taught alone (safe), combined with an earlier one, then one twist.
+
+### A · RAIN ROOFTOPS (about 9–10 min). The punch, timing, the one-line rule; then two bells.
+1. **A gap with a telescopic bridge.** Its node is right beside the start; the mechanic points at it.
+2. **A lift up to a higher roof.**
 3. **A lift then a bridge on different lines.** Punch both and ride the lift up; the bridge is already out when the player arrives.
-4. **The one-line rule.** Two nodes on the same amber line power a bridge and a billboard. Only the billboard route continues; the bridge leads to a view of Mara one roof ahead, who jumps off-screen.
-5. **A vent updraft.** Punch the fan and ride the updraft.
-**Lamp checkpoints** sit after steps 2 and 4.
+4. **The one-line rule.** Two nodes on one amber line power a bridge or a billboard. Only the billboard route continues; the bridge leads to a view of Mara one roof ahead.
+5. **A vent updraft.**
+6. **TWO BELLS (teach, safe).** A bridge on a rose line stamped II: punched while the next bell is I, it waits a bell, and says so. A tag teaches "THE BELL COUNTS · I · II".
+7. **I THEN II (combine with 3).** A lift on teal I and a bridge on amber II at its top. Punched while the next bell is I: up on the first bell, across on the next. Punched while the next is II, the bridge comes out first and is gone before the lift is up (ride down, try again).
+8. **THE CHASE (twist).** Mara waits one roof ahead. The bell quickens to 2.5 s. Three window cradles over the gap lower on I, II, I; each overlaps the next by about a second. The last cradle's node stands at the roof edge, in reach from the first cradle: punch it after the first bell, or it lowers with the first and is gone. Mara runs when Butch is on the last cradle, and drops toward the hotel. Generous: no fail state beyond a fall; a lamp before and after.
 
-### B · BLACKOUT (about 4–5 min). The city takes its light back.
-- It enters with a cut: every sign dies, the rain gets louder, and the screen darkens. Butch's lamp gives a small radius. Keep it readable: platform edges carry a faint rim.
-- **Memory light:** a node the player punched in this section leaves an afterglow for 6 s after its bell. The afterglow illuminates the surrounding roofs, revealing platforms that are solid but unseen in the dark.
-- **Twist:** power for the hotel lift is only available if the player deliberately cuts (unpunches, by punching its node again) a line that is currently holding a bridge open, then crosses before it retracts. This is a timing twist on the one-line rule.
-- **GRID STONE (optional):** a high ledge visible only in the afterglow of a specific punched node. Reaching it needs one extra lift. Grant it through the `magicStones.js` API with id `chapter-2`. Update its clue text.
+Lamps: at the start, after A2, before A3, between A3/A4, after A4, after A5, before A7, before the chase, after the chase.
+
+### B · BLACKOUT (about 8–10 min). The city takes its light back.
+- It enters with a cut: every sign dies, the rain gets louder, the screen darkens (to a readable 74%: silhouettes and edges stay visible). Butch's lamp gives a small radius; platform edges carry a faint rim.
+- **Memory light:** a node punched in this section leaves an afterglow for 6 s after its bell; the afterglow reveals the dark decks.
+- **Hotel twist:** power for the hotel lift is only available if the player deliberately cuts the held teal line holding a bridge open, then crosses before it retracts.
+- **GRID STONE (optional):** a high ledge shown only in the afterglow of the stone lift's node. Granted through `magicStones.js` with id `chapter-2`.
 - **Hotel window:** Mara's punched ticket stub is pinned to the glass. E reads archive card B1.
-- A lamp checkpoint sits at the section start and after the hotel.
+- **B5 · BORROW (teach, safe).** A lit city lantern and the dead bridge to the water tower. E at the lantern takes its light; E at the dead node gives it; the bridge extends on the bell; when it switches off, the light flies home to the lantern.
+- **B6 · combine (with memory light).** On the tower, take the light back out of the bridge you just crossed (the way back is gone) and carry it: the dark decks to the next roof stand only in the light Butch carries.
+- **B7 · twist.** A dead lift up and a dead bridge at the top: give the light to the lift, ride up, step off, take the light back out of the lift (taking it while riding brings the lift home with you), give it to the bridge. A second lantern by the lamp here guarantees a fresh light after any fall.
+- Lamps: section start, after the dark decks, before the cut, after the hotel, at the first lantern, at the second lantern. No lamp on the tower or the decks: a fall there goes back to the lantern.
 
-### C · EVACUATION PLATFORM (about 4 min). A departure countdown.
-- The train's departure bell counts down 8 bells, shown in the bell meter as a distinct ring colour.
-- Chain lines to light the platform lamps and throw the points: points switch, platform lift, final bridge.
-- There is no fail state at the end. If the player is late or stuck when the countdown ends, the train "remembers" the punches made in this section and fires them itself in sequence, so the final bridge lowers and Butch runs aboard. Players who solve it in time get a slightly calmer ending shot (the train waits with its door open).
-- Mara's letter is on the bench. E reads it (keep the old letter text).
-- Then: save `chapter-3-start` → `playCinematic` `2-3.mp4` with the chapter-3 preload gate → `/car03-3d.html`. This is the same exit as today.
+### C · EVACUATION PLATFORM (about 4–5 min). A departure countdown.
+- The train's departure bell counts down **12 bells** from the letter, shown as rose pips around the meter.
+- Chain lines: the points (amber), the lift to the gantry (teal), then **C3 · the counterweight walkway**: stand in cage A beside the gantry and release its brake (its node shares the lift's teal line, so it waits until the lift is done). Butch's weight takes the cage down 110 px and brings the walkway up 360 px, flush with the platform; step across. Teach and combine (with the one-line rule and the countdown) in one room; a respawn resets the pair.
+- No fail state at the end. If the countdown ends first, the train "remembers" the punches made in this section and fires them itself in sequence (the walkway is set in place), so Butch runs aboard; players in time get the calmer ending shot (the train waits with its door open).
+- Mara's letter is on the bench. E reads it.
+- Then: save `chapter-3-start` → `playCinematic` `2-3.mp4` with the chapter-3 preload gate → `/car03-3d.html`.
 
 ## 6. Tech
-- A new page `borrowed-light.html` + `src/borrowedLight-main.js`, with its own Phaser game at **1920×1080**, antialiased, Arcade physics. The shared shell is used:
-  - pause menu with per-chapter controls, settings, reduce motion (drop rain and camera shake), text size;
-  - saves, stones, cinematics and the desktop bridge.
-- Data-driven level: `src/chapters/borrowedLight/level.js` (geometry, nodes, lines, machines, checkpoints, triggers). Keep the pure `timetableModel.js` (bell clock, queue, one-line rule, machine timers, memory light) free of Phaser, with node tests.
-- **Player:** new controller with coyote time 100 ms, jump buffer 120 ms and variable jump height. Target a tuned feel: max run about 420 px/s, jump apex about 180 px.
-- **Camera:** it follows with lookahead, and on bells briefly frames the machine that just moved when it's off-screen, but only if it is part of the current puzzle.
-- **Art (placeholder-but-presentable):** the far background is a painted panorama from `src/assets/generated/worlds/world-04-retro-cyberpunk`, graded darker and colder so it sits behind a rain layer. It uses the same visual language as Chapter 1, and the result should read as "the same night seen from a roof", not as a different game:
-  - Mid and near rooftops are procedural silhouettes: near-black walnut and teal with warm window lights and ink rim lines in `#eadfc6`.
-  - Rain streaks, puddle reflections and neon kept low-saturation (amber, teal, rose only).
-  - Paper tags with an amber glint mark nodes.
-  - Butch has a coat, cap and lamp, matching Chapter 1's figure but larger (about 110 px) with a proper run/jump/fall/land cycle.
-- **Save checkpoints:** `chapter-2-start`, `chapter-2-midpoint` (the start of section B) and `chapter-2-platform` (the start of section C). Remap the existing ids to the new page so old saves load.
-- **QA (DEV_MODE only):**
-  - `render_game_to_text` returns section, player position and velocity, queued nodes, machine states, bell phase, checkpoint and stone.
-  - Dev routes `?section=A|B|C`.
-  - Scripted solve tests on the model.
-  - A headless Playwright run that plays section A with real key input.
+- Page `borrowed-light.html` + `src/borrowedLight-main.js`, its own Phaser game at **1920×1080**, antialiased, Arcade physics, with the shared shell (pause menu with per-chapter controls, settings, reduce motion, text size, saves, stones, cinematics, desktop bridge).
+- Data-driven level: `level.js` (geometry, nodes, lines, phases, dead nodes, machines, checkpoints, triggers). Sections B and C are authored in their v1 coordinates and shifted by the room the new A and B content takes, so every v1 relation is kept.
+- Pure modules with node tests: `timetableModel.js` (bell clock, queue, one-line rule, phases, borrowed light, counterweight, memory light, countdown), `targeting.js` (the one target a press acts on), `memoryLight.js` (what the light reveals), `controller.js`.
+- **Player:** coyote 100 ms, jump buffer 120 ms, variable jump height; max run ≈ 420 px/s, apex ≈ 180 px.
+- **Camera:** follows with lookahead; on bells briefly frames a machine that just moved off-screen if it is part of the current puzzle.
+- **Art:** the far backdrop is a painted rainy skyline in the chapter's teal and amber (`paintRainSkyline`, after the approach of the finale's `paintEchoSkyline`), with no lettering; the retro-cyberpunk panorama is no longer used. Mid and near rooftops are procedural silhouettes (facades vary by bay, household and floor; a few boarded or television-lit windows), ink rims in `#eadfc6`, low-saturation neon (amber, teal, rose only), paper tags with an amber glint. The far train runs on a viaduct.
+- **Save checkpoints:** `chapter-2-start`, `chapter-2-midpoint` (start of B) and `chapter-2-platform` (start of C).
+- **QA (DEV_MODE only):** `render_game_to_text` (section, player, bell index / phase / interval / next parity, queued, given, carried, machines, target and its prompt, lamps lit, chase, checkpoint, stone); routes `?section=A|B|C` and `?lamp=<id>` (start at a lamp inside the section, e.g. `?section=A&lamp=lamp-a7` for the chase); `window.__borrowedLight` hooks; scripted solves of every room on the model; a targeting sweep over every standing spot.
 
 ## 7. Acceptance
-- Every mechanic is readable from the world: cables and tags show what a node powers before the bell.
-- Nothing is required that the player hasn't been shown; there are no hidden "8 objects + 4 cars" completion checks.
-- There are no dead ends: every machine resets, and every queued punch can be changed.
+- Every mechanic is readable from the world: cables, tags, stamps and the meter show what a node does before the bell; the marked node's tag says what a press will do.
+- Nothing is required that the player has not been shown.
+- No dead ends: every machine resets, every queued punch can be changed, borrowed light always goes home.
+- No fall costs more than ~20 s of replay (a lamp before every room).
 - Checks pass: build, tests, a prod build that ignores dev routes, and `git diff --check`.
+
+## 8. Round 3 · "the nodes sometimes don't work" — causes found and fixed
+1. **Highlight ≠ punch.** The highlight was drawn from one nearest-node pick and the press re-picked on the key event, so with two poles close together (A3, A4, the chase) the highlighted and the punched node could differ, and the pick flipped while walking between them. Now one sticky pick per frame (`targeting.js`) is both the highlight and the target.
+2. **A press out of reach did nothing.** No sound, no tag. Now it names the nearest node: OUT OF REACH (and a click on a node out of reach says so instead of punching another).
+3. **A second press switched machines off.** Pressing again on a running machine (to be sure, or F + click) cut it to 2 s. Now it renews it at the next bell; only city-held lines are cut.
+4. **A quick double press took the punch back.** Now a second press within 450 ms is the same punch.
+5. **A punch just after the bell waited four more seconds.** Now it catches that bell (250 ms).
+6. **The one-line rule cancelled silently.** "FORGOTTEN" appeared at the old node, often off-screen. Now the tag warns before the press (SAME LINE · AMBER FORGETS THE OTHER) and the punched node says it.
+7. **Respawn cleared punches without a word.** Now the tags seal visibly and a line says PUNCHES FORGOTTEN.
+8. **The mouse ignored where it was clicked.** A click on a node in reach now punches that node.

@@ -151,7 +151,7 @@ export function bell({ departure = false, soft = false } = {}) {
 export function machineOn(kind = 'bridge') {
   const c = live(); if (!c) return;
   const t = c.currentTime;
-  const low = { lift: 70, bridge: 95, billboard: 140, fan: 60, shutter: 110, points: 85, drawbridge: 65, sign: 180 }[kind] ?? 90;
+  const low = { lift: 70, bridge: 95, billboard: 140, fan: 60, shutter: 110, points: 85, drawbridge: 65, sign: 180, cradle: 100, lantern: 200, counterweight: 60 }[kind] ?? 90;
   osc(c, 'triangle', low * 1.6, t, 0.12, { peak: 0.28, to: low });
   noise(c, t, 0.1, { peak: 0.18, freq: 400, q: 0.8 });
   osc(c, 'sawtooth', low, t + 0.05, kind === 'fan' ? 0.9 : 0.5, { peak: 0.06, to: low * 1.4 });
@@ -190,6 +190,47 @@ export function lampLit() {
   osc(c, 'sine', 660, t, 0.5, { peak: 0.06 });
   osc(c, 'sine', 990, t + 0.06, 0.6, { peak: 0.04 });
   noise(c, t, 0.2, { peak: 0.05, freq: 3000 });
+}
+
+// v2 · borrowed light: the lamp drinks a light (rising), gives it (falling),
+// and a spent light flying home (a soft breath with a low glint).
+export function borrowLight() {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  osc(c, 'sine', 330, t, 0.5, { peak: 0.09, to: 880 });
+  osc(c, 'sine', 495, t + 0.05, 0.55, { peak: 0.05, to: 1320 });
+  noise(c, t, 0.4, { peak: 0.06, freq: 1200, to: 5200, q: 0.8 });
+}
+
+export function giveLight() {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  osc(c, 'sine', 990, t, 0.45, { peak: 0.08, to: 392 });
+  osc(c, 'triangle', 660, t + 0.04, 0.4, { peak: 0.04, to: 262 });
+  noise(c, t, 0.3, { peak: 0.05, freq: 4200, to: 900, q: 0.8 });
+}
+
+export function lightHome() {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  noise(c, t, 0.6, { peak: 0.07, freq: 600, to: 2400, q: 0.6, attack: 0.08 });
+  osc(c, 'sine', 523.25, t + 0.3, 0.9, { peak: 0.05 });
+}
+
+// The chase: the city's bell quickens (a tight double strike).
+export function quicken() {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  [0, 0.16].forEach((dt) => osc(c, 'sine', 784, t + dt, 0.5, { peak: 0.08 }));
+  noise(c, t, 0.06, { peak: 0.1, freq: 5000 });
+}
+
+// The counterweight's brake letting go: a ratchet and a long rope creak.
+export function brakeRelease() {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  for (let i = 0; i < 5; i += 1) noise(c, t + i * 0.05, 0.03, { peak: 0.14, freq: 1800, q: 3 });
+  osc(c, 'sawtooth', 70, t + 0.2, 1.6, { peak: 0.05, to: 55 });
 }
 
 export function stoneChime() {

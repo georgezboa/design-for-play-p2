@@ -7,13 +7,13 @@
 // The start section comes from `?section=A|B|C`. A dev build honours it as a
 // QA route; production honours it only when the active save has unlocked
 // that section's checkpoint (the route a Continue / Load uses), so a
-// hand-edited URL cannot skip ahead. `?timescale=` and `?intro=0` are
-// dev-only.
+// hand-edited URL cannot skip ahead. `?timescale=`, `?intro=0` and
+// `?lamp=<id>` (start at a lamp inside the section) are dev-only.
 
 import Phaser from 'phaser';
 import './fonts/fonts.css';
 import { BorrowedLightScene, BORROWED_LIGHT_VIEW } from './chapters/borrowedLight/BorrowedLightScene.js';
-import { resolveStartSection } from './chapters/borrowedLight/level.js';
+import { resolveStartLamp, resolveStartSection } from './chapters/borrowedLight/level.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { DEV_MODE, devParam } from './devMode.js';
@@ -33,6 +33,8 @@ const section = resolveStartSection({
   devMode: DEV_MODE,
   unlocked: [...(activeSave?.unlocked ?? []), activeSave?.checkpointId].filter(Boolean),
 });
+// Dev QA only: ?lamp=<id> starts at a lamp inside the section (room routes).
+const lamp = resolveStartLamp({ search: window.location.search, devMode: DEV_MODE, section });
 const qaTimescale = DEV_MODE && devParam('timescale') !== null;
 const timescale = qaTimescale ? Number(devParam('timescale')) || 1 : 1;
 const skipIntro = DEV_MODE && devParam('intro') === '0';
@@ -68,7 +70,7 @@ async function boot() {
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false, fps: 60 } },
     scene: [],
   });
-  game.scene.add('BorrowedLight', BorrowedLightScene, true, { section, devMode: DEV_MODE, timescale, skipIntro, qaTimescale });
+  game.scene.add('BorrowedLight', BorrowedLightScene, true, { section, lamp, devMode: DEV_MODE, timescale, skipIntro, qaTimescale });
 
   game.canvas.setAttribute('tabindex', '0');
   game.canvas.setAttribute('role', 'application');
@@ -92,6 +94,7 @@ async function boot() {
       teleport: (x, feetY) => scene()?.placePlayer(x, feetY),
       punch: (id) => scene()?.tt.punch(id),
       hold: (id) => scene()?.tt.hold(id),
+      lamp: (id) => { const s = scene(); const node = s?.sectionNodes().find((n) => n.id === id); if (node) s.lampAction(node); return s?.tt.carried() ?? null; },
       snap: () => scene()?.snapCamera(),
       // Slow a scripted run down further for a precise beat (QA timescale only).
       timescale: (v) => scene()?.setQaTimescale(v),

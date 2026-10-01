@@ -85,7 +85,7 @@ function wetStreaks(ctx, x, y, w, h, r, alpha = 0.05) {
 
 // ---------------------------------------------------------------------------
 // Windows.
-export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false, warmth = 1, curtain = r() < 0.45, figure = r() < 0.08 } = {}) {
+export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false, warmth = 1, curtain = r() < 0.45, figure = r() < 0.08, tint = 'warm', boarded = false } = {}) {
   ctx.save();
   const path = () => {
     ctx.beginPath();
@@ -101,7 +101,37 @@ export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false,
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(x - 3, y - 3, w + 6, h + 7);
   path();
-  if (lit) {
+  if (boarded) {
+    // Boarded up: weathered planks across the opening.
+    ctx.fillStyle = '#1d1712';
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    for (let py = y + 4; py < y + h; py += 11) {
+      ctx.fillStyle = r() < 0.5 ? '#2c231b' : '#241d17';
+      ctx.fillRect(x - 2, py, w + 4, 8);
+      ctx.fillStyle = 'rgba(234,223,198,0.06)';
+      ctx.fillRect(x - 2, py, w + 4, 1);
+    }
+    ctx.restore();
+    ctx.restore();
+    return;
+  }
+  if (lit && tint === 'tv') {
+    // A television's cold, flickering blue-green.
+    const g = ctx.createRadialGradient(x + w * 0.5, y + h * 0.6, 2, x + w * 0.5, y + h * 0.55, Math.max(w, h) * 0.8);
+    g.addColorStop(0, rgba('#bfe3dc', 0.75 * warmth));
+    g.addColorStop(0.55, rgba('#4f8a86', 0.7 * warmth));
+    g.addColorStop(1, rgba('#102526', 0.95));
+    ctx.fillStyle = g;
+  } else if (lit && tint === 'lamp') {
+    // A single low lamp deep in the room: dim, deep amber.
+    const g = ctx.createRadialGradient(x + w * (0.25 + r() * 0.5), y + h * 0.8, 1, x + w * 0.5, y + h * 0.7, Math.max(w, h) * 0.75);
+    g.addColorStop(0, rgba('#f0b865', 0.8 * warmth));
+    g.addColorStop(0.45, rgba('#8a4f22', 0.8));
+    g.addColorStop(1, rgba('#24130a', 0.96));
+    ctx.fillStyle = g;
+  } else if (lit) {
     const g = ctx.createRadialGradient(x + w * 0.5, y + h * 0.55, 2, x + w * 0.5, y + h * 0.5, Math.max(w, h) * 0.8);
     g.addColorStop(0, rgba('#f7d29a', 0.9 * warmth));
     g.addColorStop(0.5, rgba('#d99a52', 0.85 * warmth));
@@ -163,8 +193,9 @@ export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false,
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     const halo = ctx.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) * 1.25);
-    halo.addColorStop(0, rgba(PALETTE.window, 0.09 * warmth));
-    halo.addColorStop(1, rgba(PALETTE.window, 0));
+    const haloColor = tint === 'tv' ? '#9fd9cf' : PALETTE.window;
+    halo.addColorStop(0, rgba(haloColor, (tint === 'lamp' ? 0.05 : 0.09) * warmth));
+    halo.addColorStop(1, rgba(haloColor, 0));
     ctx.fillStyle = halo;
     ctx.fillRect(x - w, y - h, w * 3, h * 3);
     ctx.restore();
@@ -394,25 +425,55 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
   }
   grain(ctx, w + pad, facadeH, r, { alpha: 0.05 });
 
-  // Windows.
+  // Windows. Round 3 (art audit: "a huge repeated grid of identical
+  // windows"): each column is a bay of its own kind — single, paired, a
+  // blank party wall, a balcony — households light whole columns, floors
+  // differ in height, and a few windows are boarded or lit by a television.
   if (st.cols) {
     const [ww, wh] = st.win;
     const cols = Math.max(1, Math.floor((w - 50) / st.cols));
     const offset = x0 + (w - cols * st.cols) / 2 + (st.cols - ww) / 2;
+    const bays = Array.from({ length: cols }, () => {
+      const roll = r();
+      return {
+        kind: st.ribbon ? 'ribbon' : roll < 0.12 ? 'blank' : roll < 0.3 ? 'pair' : roll < 0.42 ? 'balcony' : 'single',
+        household: r() < 0.28 ? 2.2 : r() < 0.4 ? 0.25 : 1,
+        tint: r() < 0.14 ? 'tv' : r() < 0.3 ? 'lamp' : 'warm',
+      };
+    });
+    let wyJitter = 0;
     for (let row = 0; row < 7; row += 1) {
-      const wy = top + 60 + row * st.rows;
+      wyJitter += row ? (r() - 0.5) * 8 : 0;
+      const wy = top + 60 + row * st.rows + wyJitter;
       if (wy + wh > top + facadeH - 10) break;
       // Floors are lived in unevenly: some rows mostly lit, some asleep.
       const rowMood = r() < 0.35 ? 1.8 : r() < 0.5 ? 0.35 : 1;
       for (let c = 0; c < cols; c += 1) {
-        if (r() < 0.07) continue;
+        const bay = bays[c];
+        if (bay.kind === 'blank' || r() < 0.05) continue;
         const wx = offset + c * st.cols;
-        const litChance = blackout ? 0 : Math.min(0.85, st.lit * rowMood * (1 - row * 0.08));
+        const litChance = blackout ? 0 : Math.min(0.85, st.lit * rowMood * bay.household * (1 - row * 0.08));
         const warmth = 0.55 + r() * 0.45;
+        const lit = r() < litChance;
+        const boarded = !lit && r() < 0.05;
         if (st.ribbon) {
-          paintWindow(ctx, wx - 8, wy, st.cols - 6, wh, r, { lit: r() < litChance, curtain: false, figure: false, warmth: warmth * 0.8 });
+          paintWindow(ctx, wx - 8, wy, st.cols - 6, wh, r, { lit, curtain: false, figure: false, warmth: warmth * 0.8, tint: bay.tint === 'tv' ? 'tv' : 'warm' });
+        } else if (bay.kind === 'pair') {
+          const nw = ww * 0.42;
+          paintWindow(ctx, wx, wy + 6, nw, wh - 6, r, { lit, arch: false, warmth, tint: bay.tint, boarded, figure: false });
+          paintWindow(ctx, wx + ww - nw, wy + 6, nw, wh - 6, r, { lit: lit && r() < 0.7, arch: false, warmth, tint: bay.tint, figure: false });
         } else {
-          paintWindow(ctx, wx, wy, ww, wh, r, { lit: r() < litChance, arch: st.arch && row % 2 === 0, warmth });
+          paintWindow(ctx, wx, wy, ww, wh, r, { lit, arch: st.arch && row % 2 === 0, warmth, tint: bay.tint, boarded });
+          if (bay.kind === 'balcony' && row < 5) {
+            // A shallow iron balcony with a pot or two.
+            ctx.fillStyle = '#0c0a08';
+            ctx.fillRect(wx - 10, wy + wh + 2, ww + 20, 4);
+            for (let bx2 = wx - 8; bx2 <= wx + ww + 8; bx2 += 6) ctx.fillRect(bx2, wy + wh - 16, 1.5, 18);
+            ctx.fillRect(wx - 10, wy + wh - 18, ww + 20, 2.5);
+            if (r() < 0.5) { ctx.fillStyle = '#1c2a20'; ctx.beginPath(); ctx.arc(wx + 4 + r() * (ww - 8), wy + wh - 20, 6, 0, Math.PI * 2); ctx.fill(); }
+            ctx.fillStyle = rgba(INK, 0.14);
+            ctx.fillRect(wx - 10, wy + wh - 18, ww + 20, 1);
+          }
           if (r() < 0.12) {
             // A window unit dripping in the rain.
             ctx.fillStyle = '#1a2226';
@@ -1272,5 +1333,139 @@ export function paintBillboard(w, h, text, lit) {
   ctx.fillText(text, w / 2, h * 0.46, w - 40);
   ctx.font = `400 ${Math.round(h * 0.15)}px "Space Mono", monospace`;
   ctx.fillText('THE LAST ARCHIVE LINE · EVERY STOP BY NIGHT', w / 2, h * 0.8, w - 60);
+  return canvas;
+}
+
+// ---------------------------------------------------------------------------
+// The far backdrop (round 3): a painted, rainy skyline in the chapter's own
+// teal and amber, replacing the retro-cyberpunk panorama (its readable signs
+// and pixel art were another game's). Approach after paintEchoSkyline() in
+// src/chapters/finalBoss/finaleWorldArt.js, re-done here: two hazed layers of
+// silhouettes, a warm city glow in the rain, a few landmark shapes (a
+// gasholder, a clock tower, a viaduct, a mast) and no lettering anywhere.
+// Painted small and shown ×1.9, so it reads soft, like distance in the rain.
+export function paintRainSkyline({ width = 1200, height = 520, seed = 61 } = {}) {
+  const r = rng(seed);
+  const raw = makeCanvas(width, height);
+  const ctx = raw.getContext('2d');
+  // The city's own light low in the haze.
+  for (let i = 0; i < 3; i += 1) {
+    const gx = width * (0.15 + r() * 0.7);
+    const g = ctx.createRadialGradient(gx, height * 0.78, 0, gx, height * 0.78, width * (0.25 + r() * 0.2));
+    g.addColorStop(0, 'rgba(224,162,74,0.20)');
+    g.addColorStop(0.5, 'rgba(160,110,70,0.08)');
+    g.addColorStop(1, 'rgba(160,110,70,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, width, height);
+  }
+  const layer = (body, alpha, minH, maxH, windowsA) => {
+    let x = -20;
+    while (x < width + 20) {
+      const bw = 34 + r() * 90;
+      const bh = minH + r() * (maxH - minH);
+      const top = height - bh;
+      ctx.fillStyle = rgba(body, alpha);
+      ctx.fillRect(x, top, bw, bh);
+      const crown = r();
+      if (crown < 0.14) {
+        // Dome.
+        ctx.beginPath(); ctx.arc(x + bw / 2, top, bw * 0.32, Math.PI, 0); ctx.fill();
+        ctx.fillRect(x + bw / 2 - 1.5, top - bw * 0.32 - 14, 3, 14);
+      } else if (crown < 0.26) {
+        // Spire.
+        ctx.beginPath(); ctx.moveTo(x + bw * 0.3, top); ctx.lineTo(x + bw / 2, top - 40 - r() * 50); ctx.lineTo(x + bw * 0.7, top); ctx.fill();
+      } else if (crown < 0.42) {
+        // Water tower on legs.
+        const tx = x + bw * (0.2 + r() * 0.4);
+        ctx.fillRect(tx, top - 26, 18, 16);
+        ctx.beginPath(); ctx.moveTo(tx - 2, top - 26); ctx.lineTo(tx + 9, top - 34); ctx.lineTo(tx + 20, top - 26); ctx.fill();
+        ctx.fillRect(tx + 2, top - 10, 2, 10); ctx.fillRect(tx + 14, top - 10, 2, 10);
+      } else if (crown < 0.55) {
+        // Stepped setback.
+        ctx.fillRect(x + bw * 0.2, top - 18, bw * 0.6, 18);
+      } else if (crown < 0.62) {
+        // Chimney stacks.
+        ctx.fillRect(x + bw * 0.2, top - 22, 6, 22);
+        ctx.fillRect(x + bw * 0.55, top - 30, 6, 30);
+      }
+      // A few floors awake.
+      if (windowsA > 0) {
+        for (let wy = top + 8; wy < height - 6; wy += 9) {
+          if (r() < 0.55) continue;
+          for (let wx = x + 4; wx < x + bw - 4; wx += 7) {
+            if (r() < 0.82) continue;
+            ctx.fillStyle = r() < 0.9 ? `rgba(240,184,101,${windowsA * (0.4 + r() * 0.6)})` : `rgba(159,217,207,${windowsA * 0.6})`;
+            ctx.fillRect(wx, wy, 2.5, 3.5);
+          }
+        }
+      }
+      x += bw + (r() < 0.25 ? r() * 16 : -2);
+    }
+  };
+  // Far: low, cold, mostly mist.
+  layer('#3a4f58', 0.55, 90, 230, 0.35);
+  // A landmark or two per panel, in the far layer's colour.
+  const landmarks = ['gasholder', 'clock', 'viaduct', 'mast', 'gasholder', 'viaduct'];
+  const marks = [landmarks[seed % landmarks.length], landmarks[(seed + 3) % landmarks.length]];
+  marks.forEach((mark, i) => {
+    const mx = width * (0.2 + i * 0.5 + r() * 0.15);
+    ctx.fillStyle = 'rgba(46,62,70,0.7)';
+    ctx.strokeStyle = 'rgba(46,62,70,0.75)';
+    if (mark === 'gasholder') {
+      const gw = 120;
+      const gh = 120;
+      const gy = height - 150 - gh;
+      ctx.fillRect(mx, gy + 30, gw, gh + 120);
+      ctx.lineWidth = 2;
+      for (let k = 0; k <= 6; k += 1) { ctx.beginPath(); ctx.moveTo(mx - 8 + k * (gw + 16) / 6, gy); ctx.lineTo(mx - 8 + k * (gw + 16) / 6, gy + gh + 150); ctx.stroke(); }
+      for (const yy of [gy, gy + gh * 0.5]) { ctx.beginPath(); ctx.moveTo(mx - 8, yy); ctx.lineTo(mx + gw + 8, yy); ctx.stroke(); }
+    } else if (mark === 'clock') {
+      const tw = 44;
+      const tTop = height - 360;
+      ctx.fillRect(mx, tTop, tw, 360);
+      ctx.beginPath(); ctx.moveTo(mx - 6, tTop); ctx.lineTo(mx + tw / 2, tTop - 60); ctx.lineTo(mx + tw + 6, tTop); ctx.fill();
+      ctx.fillStyle = 'rgba(240,200,140,0.35)';
+      ctx.beginPath(); ctx.arc(mx + tw / 2, tTop + 34, 12, 0, Math.PI * 2); ctx.fill();
+    } else if (mark === 'viaduct') {
+      const vy = height - 120;
+      const vw = 360;
+      ctx.fillRect(mx - vw / 2, vy, vw, 14);
+      for (let ax = mx - vw / 2; ax < mx + vw / 2; ax += 44) {
+        ctx.fillRect(ax, vy + 14, 10, 106);
+        ctx.beginPath(); ctx.arc(ax + 27, vy + 40, 17, Math.PI, 0); ctx.lineTo(ax + 44, vy + 14); ctx.lineTo(ax + 10, vy + 14); ctx.fill();
+      }
+      // A lit train crossing it.
+      ctx.fillStyle = 'rgba(240,184,101,0.45)';
+      for (let k = 0; k < 9; k += 1) ctx.fillRect(mx - 120 + k * 22, vy - 10, 12, 5);
+    } else if (mark === 'mast') {
+      ctx.lineWidth = 2;
+      const base = height - 120;
+      ctx.beginPath(); ctx.moveTo(mx - 18, base); ctx.lineTo(mx, base - 300); ctx.lineTo(mx + 18, base); ctx.stroke();
+      for (let k = 1; k < 8; k += 1) { const yy = base - k * 37; const hw = 18 * (1 - k / 8); ctx.beginPath(); ctx.moveTo(mx - hw, yy); ctx.lineTo(mx + hw, yy); ctx.stroke(); }
+      ctx.fillStyle = 'rgba(201,128,136,0.8)';
+      ctx.beginPath(); ctx.arc(mx, base - 302, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  });
+  // Near-far: darker, taller, more awake.
+  layer('#1f2c33', 0.82, 50, 170, 0.6);
+  // Rain haze thickening toward the roofs, and a veil of streaks.
+  const haze = ctx.createLinearGradient(0, height * 0.3, 0, height);
+  haze.addColorStop(0, 'rgba(56,72,82,0)');
+  haze.addColorStop(1, 'rgba(56,72,82,0.55)');
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, 0, width, height);
+  ctx.strokeStyle = 'rgba(190,210,215,0.06)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < 260; i += 1) {
+    const sx = r() * width;
+    const sy = r() * height;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - 4, sy + 18 + r() * 14); ctx.stroke();
+  }
+  // Soften: distance in the rain.
+  const canvas = makeCanvas(width, height);
+  const out = canvas.getContext('2d');
+  try { out.filter = 'blur(1.2px)'; } catch { /* no canvas filter */ }
+  out.drawImage(raw, 0, 0);
+  out.filter = 'none';
   return canvas;
 }

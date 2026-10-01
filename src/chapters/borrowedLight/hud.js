@@ -3,9 +3,11 @@
 // The bell meter sits at the top centre: a brass bell inside a ring that
 // fills over the 4 s between bells (the same bell as Chapter 1), with three
 // paper tags beneath it showing each line's claim. The departure countdown
-// adds an outer rose ring of eight pips. Also: world prompts, the caption
-// bar (typewriter), archive / letter cards, title cards and toasts. Text
-// follows the TEXT SIZE setting.
+// adds an outer rose ring of pips (twelve bells in v2). Where lines ring on
+// bells I / II, a numeral beside the meter shows which bell is next; a small
+// lantern on the left shows a light Butch is carrying. Also: world prompts,
+// the caption bar (typewriter), archive / letter cards, title cards and
+// toasts. Text follows the TEXT SIZE setting.
 
 import Phaser from 'phaser';
 import { DEPTH, FONTS, INK, INK_HEX, LINE_COLORS } from './art/palette.js';
@@ -33,6 +35,11 @@ export class BorrowedLightHud {
     this.drawBellGlyph();
     this.meterLabel = this.text(CX, CY + R + 58, '', 13, INK, { alpha: 0.7, letter: 3 });
     this.nextLabel = this.text(CX, CY + R + 58, '', 13, '#e6aab0', { alpha: 0.9, letter: 3 });
+    // v2 · two-phase bells: which bell comes next (I or II), beside the meter.
+    this.parityLabel = this.text(CX + R + 58, CY - 2, '', 30, '#e6dcc2', { font: FONTS.display, alpha: 0, letter: 4 });
+    this.paritySub = this.text(CX + R + 58, CY + 24, 'NEXT', 11, '#b08a4a', { alpha: 0, letter: 3 });
+    // v2 · the light Butch carries, left of the meter.
+    this.carryLabel = this.text(CX - R - 70, CY + 24, 'LIGHT', 11, '#f6e2b4', { alpha: 0, letter: 3 });
 
     this.listenDim = scene.add.image(0, 0, 'bl-px').setOrigin(0).setScrollFactor(0).setDisplaySize(1920, 1080).setTint(0x0a1a20).setAlpha(0).setDepth(DEPTH.ghost - 1);
     this.listenLabel = this.text(CX, CY + R + 80, 'LISTENING · NEXT BELL', 14, '#9fd9cf', { alpha: 0, letter: 4 });
@@ -124,7 +131,7 @@ export class BorrowedLightHud {
   }
 
   // ---- bell meter --------------------------------------------------------
-  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt }) {
+  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt, nextParity = null, phases = {}, quick = false, carried = false }) {
     const g = this.meter;
     g.clear();
     this.bellSwing *= Math.pow(0.02, dt / 1000);
@@ -136,10 +143,10 @@ export class BorrowedLightHud {
     // Backing disc.
     g.fillStyle(0x0b0907, 0.78).fillCircle(CX, CY, R + 14);
     g.lineStyle(2, 0xb08a4a, 0.85).strokeCircle(CX, CY, R + 14);
-    // Track and progress.
+    // Track and progress (rose while the chase quickens the bell).
     g.lineStyle(6, 0x2a1d14, 1).strokeCircle(CX, CY, R);
     const start = -Math.PI / 2;
-    g.lineStyle(6, 0xe0a24a, 0.95);
+    g.lineStyle(6, quick ? 0xc98088 : 0xe0a24a, 0.95);
     g.beginPath();
     g.arc(CX, CY, R, start, start + Math.PI * 2 * Math.max(0.001, phase), false);
     g.strokePath();
@@ -152,7 +159,7 @@ export class BorrowedLightHud {
     if (msToBell < 500) g.lineStyle(10, 0xf2c27a, 0.22 * (1 - msToBell / 500)).strokeCircle(CX, CY, R);
     if (this.ringFlash > 0) g.lineStyle(3, 0xf2c27a, this.ringFlash).strokeCircle(CX, CY, R + 14 + (1 - this.ringFlash) * 40);
 
-    // Departure ring: eight rose pips.
+    // Departure ring: one rose pip per departure bell.
     if (countdown) {
       const rr = R + 26;
       g.lineStyle(3, 0x503035, 1).strokeCircle(CX, CY, rr);
@@ -182,7 +189,38 @@ export class BorrowedLightHud {
       } else if (state === 'held') {
         g.fillStyle(color.hex, 1).fillRect(x - 8, y + 10 + swing * 20, 16, 5);
       }
+      // Phase stamp: I or II, the bell this line rings on.
+      if (phases[line]) {
+        const bars = phases[line] === 'even' ? [-4, 4] : [0];
+        g.lineStyle(2.4, 0x2a1d14, state === 'idle' ? 0.5 : 0.95);
+        bars.forEach((o) => g.lineBetween(x + o, y + 20 + swing * 20, x + o, y + 25 + swing * 20));
+        const on = nextParity === phases[line];
+        if (on) g.lineStyle(2, color.glow, 0.5 + 0.4 * Math.sin(t * 5)).strokeRect(x - 15, y - 7 + swing * 20, 30, 36);
+      }
     });
+    // The next bell's number, only where lines ring on I / II.
+    const phased = Object.values(phases).some(Boolean);
+    const pa = phased ? 1 : 0;
+    this.parityLabel.setText(nextParity === 'even' ? 'II' : 'I').setAlpha(pa);
+    this.paritySub.setAlpha(pa * 0.85);
+    if (phased) {
+      g.fillStyle(0x0b0907, 0.78).fillRoundedRect(CX + R + 30, CY - 30, 56, 66, 8);
+      g.lineStyle(1.5, 0xb08a4a, 0.85).strokeRoundedRect(CX + R + 30, CY - 30, 56, 66, 8);
+    }
+    // The light Butch carries: a small lantern glyph.
+    this.carryLabel.setAlpha(carried ? 0.9 : 0);
+    if (carried) {
+      const lx = CX - R - 70;
+      const ly = CY - 8;
+      const flick = 0.85 + 0.15 * Math.sin(t * 9);
+      g.fillStyle(0x0b0907, 0.78).fillRoundedRect(lx - 28, CY - 30, 56, 66, 8);
+      g.lineStyle(1.5, 0xb08a4a, 0.85).strokeRoundedRect(lx - 28, CY - 30, 56, 66, 8);
+      g.fillStyle(0xf6e2b4, 0.25 * flick).fillCircle(lx, ly, 20);
+      g.fillStyle(0x0b0907, 1).fillTriangle(lx - 10, ly - 12, lx + 10, ly - 12, lx, ly - 20);
+      g.fillStyle(0xf2c27a, flick).fillRect(lx - 7, ly - 12, 14, 18);
+      g.fillStyle(0xfff3d6, flick).fillEllipse(lx, ly - 3, 6, 10);
+      g.lineStyle(1.4, 0x0b0907, 1).strokeRect(lx - 7, ly - 12, 14, 18);
+    }
     this.meterLabel.setText(departure ? '' : '');
     this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(CY + R + 72);
   }
