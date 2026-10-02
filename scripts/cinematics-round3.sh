@@ -41,3 +41,9 @@ ffmpeg -v error -y -i "$IN/4-5.mp4" -filter_complex "$FC" -map "[v]" -map "[a]" 
 ffmpeg -v error -y -i "$IN/4-5.mp4" -filter_complex "$FC" -map "[v]" -map "[a]" -t 35.0 -r 30 \
   -c:v libvpx-vp9 -b:v 800k -minrate 400k -maxrate 1300k -deadline good -cpu-used 3 -row-mt 1 -pix_fmt yuv420p \
   -c:a libopus -b:a 128k "$OUT/4-5.webm"
+
+# Round 3b (alpha round 3): 1-2 ended on a 2 s crossfade into the old pixel
+# prototype screen ("CHAPTER ONE // CYBERPUNK PARKOUR"). Cut at 31.0 s with a
+# 0.7 s fade; run on the regraded film from above.
+# ffmpeg -i 1-2.mp4 -t 31.0 -vf "fade=t=out:st=30.3:d=0.7" -af "afade=t=out:st=30.1:d=0.9" -c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 160k 1-2.cut.mp4
+# ffmpeg -i 1-2.cut.mp4 -c:v libvpx-vp9 -crf 34 -b:v 0 -row-mt 1 -c:a libopus -b:a 112k 1-2.cut.webm
