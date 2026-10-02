@@ -11,7 +11,7 @@
 // Plus the shared pieces: difficulty presets and the death ledger that offers
 // STORY after three deaths in one movement.
 
-import { BELL_MS, createTimetable } from '../borrowedLight/timetableModel.js';
+import { BELL_MS, CH2_RULES, createTimetable } from '../borrowedLight/timetableModel.js';
 
 // ---------------------------------------------------------------------------
 // Difficulty
@@ -205,7 +205,11 @@ function planRng(seed) {
 
 export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, startMs = 0, beams = true } = {}) {
   const preset = difficultyPreset(difficulty);
-  const timetable = createTimetable(bellArenaTimetable(preset), { startMs, memoryMs: 0 });
+  // Chapter 2's re-press rule (alpha round 3, K2): punching a queued lamp
+  // again is the same punch, never a silent take-back ("UNPUNCHED"). The
+  // finale keeps the legacy, wider bell catch: its 3D arena runs at a few
+  // frames a second on slow machines.
+  const timetable = createTimetable(bellArenaTimetable(preset), { startMs, memoryMs: 0, repress: CH2_RULES.repress });
   const random = planRng(seed);
   let round = 0;
   let beamsOn = beams;

@@ -1960,7 +1960,7 @@ class SpectacleBattle {
     const result = arena.punch(node.id);
     if (result.result === 'queued') { bellAudio.punchClack(); this.toast(`${node.label} · QUEUED FOR THE BELL`); }
     else if (result.result === 'replaced') { bellAudio.punchClack(); bellAudio.fizzle(); this.toast('ONE LINE, ONE BORROWED MOMENT · THE FIRST PUNCH SEALS'); }
-    else if (result.result === 'unqueued') { bellAudio.fizzle(); this.toast(`${node.label} · UNPUNCHED`); }
+    else if (result.result === 'already') { bellAudio.refused(); this.toast(`${node.label} · ALREADY PUNCHED · IT GOES ON THE BELL`); }
     else if (result.result === 'busy') {
       bellAudio.refused();
       this.toast(node.line === 'amber'
@@ -3380,7 +3380,8 @@ class SpectacleBattle {
           if (!isNear && !status.queued) return;
           const pt = this.screenPoint(node.x, 2.5, node.z);
           if (!pt) return;
-          this.tags.tag(isNear ? `<kbd>SPACE</kbd> · ${node.label}` : `${node.label} · QUEUED`, pt.x, pt.y, { color: LINE_CSS[node.line], queued: status.queued, dim: !isNear });
+          // a queued lamp says so even up close: SPACE there adds nothing
+          this.tags.tag(isNear && !status.queued ? `<kbd>SPACE</kbd> · ${node.label}` : `${node.label} · QUEUED`, pt.x, pt.y, { color: LINE_CSS[node.line], queued: status.queued, dim: !isNear });
         });
         const exposure = arena.exposure;
         if (exposure && arena.onFrontPlatform(p.z)) {

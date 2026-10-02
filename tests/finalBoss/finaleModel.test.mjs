@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access } from 'node:fs/promises';
+import fs from 'node:fs';
 
 import {
   BELL_ARENA, CASE_RETURN_DAMAGE, LANE_X, LIGHT_DAMAGE, OFFBEAT_MS, PAINT_DAMAGE_BY_CHARGE,
@@ -272,4 +273,17 @@ test('A4-6: a player stranded on the far roof gets a return plank, which folds a
   for (let t = 0; t < RETURN_PLANK_MS; t += 50) off = off.concat(arena.update(50).filter((event) => event.type === 'return-off'));
   assert.deepEqual(off.map((event) => event.machineId), [id]);
   assert.equal(arena.fallsAt(LANE_X.east, gapZ), true, 'it folds again: it is not a free crossing');
+});
+
+test('alpha round 3 (K2): a second press on a queued lamp is the same punch, never a silent take-back', () => {
+  const arena = createBellArena();
+  assert.equal(arena.punch('lamp-west').result, 'queued');
+  settle(arena, 600); // well past the legacy 450 ms repeat guard
+  const again = arena.punch('lamp-west');
+  assert.equal(again.result, 'already');
+  assert.equal(arena.timetable.nodeStatus('lamp-west').queued, true, 'still queued for the bell');
+  assert.ok(arena.preview().machines.some((change) => change.machineId === 'lamp-west' && change.to === 'on'));
+  const battle = fs.readFileSync(new URL('../../src/chapters/finalBoss/spectacleBattle.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(battle, /UNPUNCHED/);
+  assert.match(battle, /result\.result === 'already'\) \{ bellAudio\.refused\(\); this\.toast\(`\$\{node\.label\} · ALREADY PUNCHED/);
 });
