@@ -1,25 +1,23 @@
 /*
  * NIGHTFALL title screen, its dialogs and the credits roll.
  *
- * The title is one wall of the night train, in the language Chapter 1 paints
- * around its windows (docs/CH1_NIGHT_SERVICE_PANELS_SPEC.md §5 and
- * src/shell/uiKit.css): a walnut carriage wall with brass trim and rivets, a
- * luggage rail with brass sconces washing amber light down the wall, the key
- * art as the view through a brass-bezelled window (rain on the glass, the
- * wordmark gilded on it), and the menu as a departures board beside it. The
- * selected line becomes a punched paper ticket with the amber glint, the
- * game's one mark for "you can act on this". Dialogs are brass-framed walnut
- * panels and paper archive cards; the 1111 router is the conductor's ledger.
+ * The title is one scene, full bleed: "one carriage behind". The inside of
+ * the night service at night, painted at runtime in Chapter 1's ink language
+ * (titlePlate.js, titlePlateArt.js): the big rainy window with the country
+ * passing, Butch on the bench with his lamp and the orchard case, the walnut
+ * wall, and at the right the end door with the Mara ahead beyond it. The
+ * wordmark is gilt sign-writing on the glass; the menu is a brass-framed
+ * departures plaque screwed to the wall, where the selected line becomes a
+ * punched paper ticket with the amber glint, the game's one mark for "you can
+ * act on this". Dialogs are brass-framed walnut panels and paper archive
+ * cards; the 1111 router is the conductor's ledger.
  *
+ * The painter places things with custom properties on #nightfall-title
+ * (--nf-glass-*, --nf-mark-*, --nf-plaque-*, data-layout="wide|narrow").
  * Palette and fonts come from uiKit.css (--nf-walnut, --nf-brass, --nf-ivory,
- * --nf-amber, --nf-oxblood, --nf-serif, --nf-mono, --nf-display). The walnut,
- * rain and paper tiles (--nf-tex-*) are painted once by titleCarriage.js;
- * every rule has a flat fallback until they arrive.
- *
- * The window art is painted at runtime by titlePlate.js in Chapter 1's ink
- * language: the night service waiting at Bellwether in the rain, one brass
- * lamp and Butch on the wet platform. Its lamp flicker and steam are the
- * .nf-plate-* layers below, placed by custom properties the painter sets.
+ * --nf-amber, --nf-oxblood, --nf-serif, --nf-mono, --nf-display). The walnut
+ * and paper tiles (--nf-tex-*) for the dialogs are painted once by
+ * titleCarriage.js; every rule has a flat fallback until they arrive.
  */
 
 :root {
@@ -36,339 +34,73 @@
 }
 
 #nightfall-title {
-  --nf-side: clamp(14px, 2.4vw, 64px);
-  --nf-top: clamp(34px, 5.6vh, 86px);
-  --nf-bottom: clamp(42px, 7.4vh, 108px);
-  --nf-pad: clamp(12px, 1.35vw, 34px);
-  --nf-gap: clamp(12px, 1.35vw, 34px);
-  --nf-board: clamp(360px, 28vw, 720px);
-  --nf-bezel: clamp(9px, .82vw, 21px);
-  --nf-radius: clamp(12px, 1.1vw, 24px);
   position: fixed;
   inset: 0;
   z-index: 1000;
   overflow: hidden;
   contain: strict;
   color: var(--nf-ivory);
-  background: var(--nf-walnut);
+  background: #140d08;
   font-family: var(--nf-serif);
   font-size: calc(clamp(13.5px, 1.05vmin + 6.5px, 25px) * var(--nightfall-text-scale));
   letter-spacing: .02em;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- the carriage wall ---------- */
+/* ---------- the scene: one carriage, full bleed (titlePlate.js) ---------- */
 
-.nf-wall {
+/* Until the painter's chunk has painted: the wall and a dark pane of glass,
+   so the wordmark and the plaque are readable from the first frame. */
+.nf-scene {
   position: absolute;
+  z-index: 0;
   inset: 0;
   pointer-events: none;
+  user-select: none;
   background:
-    radial-gradient(ellipse 75% 70% at 50% 42%, transparent 35%, rgba(0, 0, 0, .62) 100%),
+    linear-gradient(180deg, #0c1424, #1c2e42 74%, #10181f 74%) var(--nf-glass-x, 3vw) var(--nf-glass-y, 15vh) / var(--nf-glass-w, 55vw) var(--nf-glass-h, 53vh) no-repeat,
+    radial-gradient(ellipse 80% 70% at 45% 45%, transparent 30%, rgba(0, 0, 0, .6) 100%),
     var(--nf-tex-wall, repeating-linear-gradient(90deg, rgba(0,0,0,.35) 0 2px, transparent 2px 141px)) 0 0 / 1024px 100% repeat-x,
     var(--nf-walnut);
 }
+.nf-scene canvas { position: absolute; display: block; pointer-events: none; }
+.nf-scene-room,
+.nf-scene-fx { left: 0; top: 0; width: 100%; height: 100%; }
+#nightfall-title[data-scene="painted"] .nf-scene { background: #0b0806; }
 
-/* the luggage rail across the very top, on dark brass brackets */
-.nf-rail {
-  position: absolute;
-  z-index: 1;
-  left: 0;
-  right: 0;
-  top: calc(var(--nf-top) * .3);
-  height: clamp(4px, .42vmin, 9px);
-  background: var(--nf-brass-grad);
-  box-shadow: 0 3px 6px rgba(0, 0, 0, .65);
-  pointer-events: none;
-}
-.nf-rail::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -60%;
-  bottom: -60%;
-  background: repeating-linear-gradient(90deg, transparent 0 40px, var(--nf-brass-dark) 40px 46px, transparent 46px 180px);
-  z-index: -1;
-}
-
-.nf-carriage {
-  position: absolute;
-  z-index: 2;
-  left: var(--nf-side);
-  right: var(--nf-side);
-  top: var(--nf-top);
-  bottom: var(--nf-bottom);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--nf-board);
-  gap: var(--nf-gap);
-  padding: var(--nf-pad);
-  border-radius: calc(var(--nf-radius) + 8px);
-  background: var(--nf-tex-panel, none) 0 0 / 100% 512px repeat-y, #2a1b11;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, .7);
-  isolation: isolate;
-}
-/* brass trim with a fine highlight inside it */
-.nf-carriage::before {
-  content: "";
-  position: absolute;
-  z-index: -1;
-  inset: 0;
-  border: clamp(3px, .3vmin, 6px) solid var(--nf-brass);
-  border-top-color: var(--nf-brass-hi);
-  border-bottom-color: var(--nf-brass-lo);
-  border-radius: inherit;
-  outline: 1px solid rgba(255, 230, 170, .26);
-  outline-offset: calc(clamp(3px, .3vmin, 6px) * -1 - 5px);
-  box-shadow: 0 0 0 1px rgba(20, 12, 6, .8), inset 0 0 0 1px rgba(20, 12, 6, .7), inset 0 0 36px rgba(0, 0, 0, .55);
-  pointer-events: none;
-}
-/* rivets along the trim */
-.nf-carriage::after {
-  --r: clamp(5px, .46vmin, 9px);
-  content: "";
-  position: absolute;
-  z-index: 5;
-  inset: calc(var(--r) * -.5 + clamp(3px, .3vmin, 6px) * .5);
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    var(--nf-rivet) 22px 0 / 46px var(--r) repeat-x,
-    var(--nf-rivet) 22px 100% / 46px var(--r) repeat-x,
-    var(--nf-rivet) 0 22px / var(--r) 46px repeat-y,
-    var(--nf-rivet) 100% 22px / var(--r) 46px repeat-y;
-  -webkit-mask: linear-gradient(#000, #000) center / calc(100% - 4 * var(--nf-radius)) 100% no-repeat, linear-gradient(#000, #000) center / 100% calc(100% - 4 * var(--nf-radius)) no-repeat;
-  mask: linear-gradient(#000, #000) center / calc(100% - 4 * var(--nf-radius)) 100% no-repeat, linear-gradient(#000, #000) center / 100% calc(100% - 4 * var(--nf-radius)) no-repeat;
-}
-
-/* brass sconces on the rail: warm light washing down the wall */
-.nf-lamps { position: absolute; z-index: 6; inset: 0; pointer-events: none; }
-.nf-lamps i {
-  --w: clamp(30px, 3.2vmin, 68px);
-  position: absolute;
-  top: calc(var(--w) * -.12);
-  width: calc(var(--w) * .66);
-  height: calc(var(--w) * .2);
-  translate: -50% 0;
-  border-radius: 50%;
-  background: #ffe3a8;
-  box-shadow: 0 0 10px 3px rgba(255, 200, 120, .55);
-}
-.nf-lamps i::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  bottom: 45%;
-  width: var(--w);
-  height: calc(var(--w) * .38);
-  translate: -50% 0;
-  background: var(--nf-brass-grad);
-  clip-path: polygon(0 100%, 100% 100%, 76% 0, 24% 0);
-  filter: drop-shadow(0 1px 0 rgba(40, 25, 10, .8));
-}
-.nf-lamps i::after {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: clamp(320px, 56vmin, 900px);
-  height: clamp(260px, 46vmin, 760px);
-  translate: -50% -22%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 184, 96, .26), rgba(255, 170, 80, .1) 45%, rgba(255, 160, 70, 0) 100%);
-  animation: nf-lamp 7.3s steps(1, end) infinite;
-}
-.nf-lamps i:nth-child(1) { left: calc(var(--nf-pad) * .5); }
-.nf-lamps i:nth-child(2) { left: calc((100% - var(--nf-board) - var(--nf-gap)) * .5); }
-.nf-lamps i:nth-child(3) { left: calc(100% - var(--nf-pad) - var(--nf-board) - var(--nf-gap) * .5); }
-.nf-lamps i:nth-child(4) { left: calc(100% - var(--nf-pad) * .5); }
-.nf-lamps i:nth-child(2)::after { animation-duration: 11.1s; animation-delay: -3s; }
-.nf-lamps i:nth-child(3)::after { animation-duration: 9.7s; animation-delay: -6s; }
-.nf-lamps i:nth-child(4)::after { animation-duration: 13.3s; animation-delay: -1s; }
-
-/* the brass sill under the windows, with the maker's plate */
-.nf-sill {
-  position: absolute;
-  z-index: 2;
-  left: calc(var(--nf-side) - 12px);
-  right: calc(var(--nf-side) - 12px);
-  bottom: calc(var(--nf-bottom) - clamp(10px, 1.1vmin, 22px) - clamp(8px, .9vmin, 18px));
-  height: clamp(8px, .9vmin, 18px);
-  border-radius: 6px;
-  background:
-    var(--nf-rivet) 60px 50% / 120px 55% repeat-x,
-    var(--nf-brass-grad);
-  box-shadow: 0 8px 10px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 238, 190, .4);
-  pointer-events: none;
-}
-.nf-build-mark {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  translate: -50% -50%;
-  margin: 0;
-  padding: .42em 2.2em .38em;
-  white-space: nowrap;
-  border-radius: 3px;
-  color: var(--nf-paper-ink);
-  background:
-    var(--nf-rivet) .8em 50% / .5em .5em no-repeat,
-    var(--nf-rivet) calc(100% - .8em) 50% / .5em .5em no-repeat,
-    var(--nf-brass-grad);
-  box-shadow: 0 0 0 1px rgba(40, 25, 10, .75), inset 0 1px 0 rgba(255, 238, 190, .6), 0 3px 6px rgba(0, 0, 0, .5);
-  font: 700 max(9.5px, .54em)/1 var(--nf-mono);
-  letter-spacing: .28em;
-  text-shadow: 0 1px 0 rgba(255, 238, 190, .45);
-}
-
-/* ---------- the window ---------- */
-
-.nf-window,
-.nf-menu {
-  position: relative;
-  min-width: 0;
-  min-height: 0;
-  padding: var(--nf-bezel);
-  border-radius: calc(var(--nf-radius) + var(--nf-bezel) * .6);
-  background:
-    var(--nf-rivet) calc(var(--nf-bezel) * .5 + 3px) calc(var(--nf-bezel) * .5 + 3px) / calc(var(--nf-bezel) * .5) calc(var(--nf-bezel) * .5) no-repeat,
-    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 - 3px) calc(var(--nf-bezel) * .5 + 3px) / calc(var(--nf-bezel) * .5) calc(var(--nf-bezel) * .5) no-repeat,
-    var(--nf-rivet) calc(var(--nf-bezel) * .5 + 3px) calc(100% - var(--nf-bezel) * .5 - 3px) / calc(var(--nf-bezel) * .5) calc(var(--nf-bezel) * .5) no-repeat,
-    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 - 3px) calc(100% - var(--nf-bezel) * .5 - 3px) / calc(var(--nf-bezel) * .5) calc(var(--nf-bezel) * .5) no-repeat,
-    var(--nf-brass-grad);
-  box-shadow:
-    0 0 0 1px rgba(20, 12, 6, .8),
-    0 10px 24px rgba(0, 0, 0, .55),
-    inset 0 2px 0 rgba(255, 238, 190, .55),
-    inset 0 -2px 0 rgba(40, 25, 10, .6);
-}
-
-.nf-window-glass {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: var(--nf-radius);
-  background: #0b0806;
-  box-shadow: 0 0 0 2px rgba(40, 25, 10, .75);
-  container-type: size;
-  isolation: isolate;
-}
-
-.nf-title-backdrop {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  user-select: none;
-}
-
-/* the platform lamp breathing, and the engine's steam lying back over the roofs */
-.nf-plate-lamp {
-  position: absolute;
-  z-index: 0;
-  left: var(--nf-plate-lamp-x, 62%);
-  top: var(--nf-plate-lamp-y, 42%);
-  width: 34cqh;
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(255, 200, 120, .22), rgba(255, 180, 90, .07) 55%, rgba(255, 170, 80, 0) 100%);
-  mix-blend-mode: screen;
-  pointer-events: none;
-  animation: nf-lamp 6.1s steps(1, end) infinite;
-}
-.nf-plate-steam { position: absolute; z-index: 0; inset: 0; overflow: hidden; pointer-events: none; }
-.nf-plate-steam i {
-  position: absolute;
-  right: -20cqh;
-  top: calc(var(--nf-plate-steam-y, 31%) - 9cqh);
-  width: 34cqh;
-  height: 14cqh;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(214, 216, 210, .2), rgba(214, 216, 210, .08) 60%, rgba(214, 216, 210, 0) 100%);
-  opacity: 0;
-  will-change: transform, opacity;
-  animation: nf-steam 19s linear infinite;
-}
-.nf-plate-steam i:nth-child(2) { animation-delay: -6.3s; top: calc(var(--nf-plate-steam-y, 31%) - 13cqh); scale: 1.3; }
-.nf-plate-steam i:nth-child(3) { animation-delay: -12.6s; top: calc(var(--nf-plate-steam-y, 31%) - 6cqh); scale: .85; }
-@keyframes nf-steam {
-  0% { transform: translate(0, 0) scale(.7); opacity: 0; }
-  12% { opacity: 1; }
-  70% { opacity: .7; }
-  100% { transform: translate(-115cqw, -10cqh) scale(1.6); opacity: 0; }
-}
-
-/* rain on the glass: two sheets of streaks and the beads resting on it */
-.nf-rain { position: absolute; z-index: 1; inset: 0; overflow: hidden; pointer-events: none; }
-.nf-rain i {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: -512px;
-  bottom: 0;
-  background: var(--nf-tex-rain, none) 0 0 / 512px 512px;
-  opacity: .42;
-  will-change: transform;
-  animation: nf-rain-fall 1.05s linear infinite;
-}
-.nf-rain i:nth-child(2) {
-  top: 0;
-  background: var(--nf-tex-drops, none) 0 0 / 420px 420px;
-  opacity: .78;
-  will-change: auto;
-  animation: none;
-}
-.nf-rain i:nth-child(3) { display: none; }
-
-.nf-glass {
-  position: absolute;
-  z-index: 2;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 60% 34% at 50% -6%, rgba(255, 190, 110, .16), transparent 70%),
-    linear-gradient(112deg, transparent 22%, rgba(255, 240, 214, .05) 34%, rgba(255, 240, 214, .015) 44%, transparent 52%, transparent 70%, rgba(255, 240, 214, .035) 78%, transparent 84%),
-    radial-gradient(ellipse 80% 78% at 50% 48%, transparent 58%, rgba(8, 5, 4, .5) 100%);
-  box-shadow: inset 0 0 calc(var(--nf-bezel) * 2) calc(var(--nf-bezel) * .5) rgba(0, 0, 0, .78);
-}
-
-/* the wordmark, gilded on the glass over the night sky */
+/* the wordmark: gilt sign-writing on the window glass, top left, over the sky */
 .nf-wordmark {
   position: absolute;
   z-index: 3;
-  right: 4.2cqw;
-  top: max(6cqh, 18px);
-  width: max(36cqw, 200px);
+  left: var(--nf-mark-x, 6vw);
+  top: var(--nf-mark-y, 19vh);
+  width: var(--nf-mark-w, 32vw);
   margin: 0;
-  text-align: center;
+  font-size: calc(var(--nf-mark-w, 32vw) * .2);
+  text-align: left;
   pointer-events: none;
 }
 .nf-wordmark h1 {
   margin: 0;
-  font: 400 min(8.6cqw, 17cqh) / .9 var(--nf-display);
+  font: 400 1em / .9 var(--nf-display);
   letter-spacing: .05em;
-  padding-left: .05em;
+  white-space: nowrap;
   color: transparent;
-  background: linear-gradient(180deg, #faf2dc 0%, var(--nf-ivory) 42%, #e3c890 78%, var(--nf-brass-hi) 100%);
+  background: linear-gradient(180deg, #faf2dc 0%, var(--nf-ivory) 40%, #e3c890 74%, var(--nf-brass-hi) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   filter:
     drop-shadow(0 0 .6px rgba(176, 138, 74, .95))
-    drop-shadow(.03em .045em 0 rgba(26, 14, 6, .85))
-    drop-shadow(0 0 .35em rgba(224, 162, 74, .22));
+    drop-shadow(.025em .04em 0 rgba(26, 14, 6, .9))
+    drop-shadow(0 0 .3em rgba(224, 162, 74, .2));
 }
 .nf-wordmark-rule {
   position: relative;
   display: block;
-  width: 96%;
-  height: max(2px, .3cqw);
-  margin: max(8px, 1.5cqw) auto max(7px, 1.25cqw);
-  background: linear-gradient(90deg, transparent, var(--nf-brass) 12%, var(--nf-brass-hi) 50%, var(--nf-brass) 88%, transparent);
+  width: 100%;
+  height: max(2px, .03em);
+  margin: .11em 0 .1em;
+  background: linear-gradient(90deg, var(--nf-brass-hi), var(--nf-brass) 60%, transparent);
   box-shadow: 0 1px 0 rgba(26, 14, 6, .7);
 }
 .nf-wordmark-rule::before,
@@ -376,52 +108,73 @@
   content: "";
   position: absolute;
   top: 50%;
-  width: max(4px, .55cqw);
+  width: max(4px, .06em);
   aspect-ratio: 1;
   translate: 0 -50%;
   rotate: 45deg;
   background: var(--nf-brass-hi);
 }
-.nf-wordmark-rule::before { left: 9%; }
-.nf-wordmark-rule::after { right: 9%; }
+.nf-wordmark-rule::before { left: 0; }
+.nf-wordmark-rule::after { left: 46%; }
 .nf-wordmark-rule b {
   position: absolute;
-  left: 50%;
+  left: 23%;
   top: 50%;
-  width: max(9px, 1.25cqw);
+  width: max(8px, .13em);
   aspect-ratio: 1;
   translate: -50% -50%;
   rotate: 45deg;
-  border: max(1.5px, .2cqw) solid var(--nf-brass-hi);
-  background: #1c130d;
-  box-shadow: 0 0 0 max(2px, .25cqw) rgba(28, 19, 13, .9), 0 0 10px rgba(224, 162, 74, .35);
+  border: max(1.5px, .022em) solid var(--nf-brass-hi);
+  background: #141a24;
+  box-shadow: 0 0 0 max(2px, .03em) rgba(14, 18, 26, .9), 0 0 10px rgba(224, 162, 74, .35);
 }
 .nf-wordmark p {
   margin: 0;
-  padding-left: .42em;
   color: var(--nf-brass-hi);
-  font: 700 max(10px, min(1.6cqw, 3.1cqh)) / 1.2 var(--nf-mono);
-  letter-spacing: .42em;
+  font: 700 max(9px, .152em) / 1.2 var(--nf-mono);
+  letter-spacing: .41em;
   white-space: nowrap;
   text-shadow: 0 1px 0 rgba(26, 14, 6, .9), 0 0 12px rgba(0, 0, 0, .8);
 }
-/* a tall window (4:3 screens, big text): the wordmark crosses the top */
-@container (max-aspect-ratio: 23/20) {
-  .nf-wordmark { right: 50%; width: 76cqw; translate: 50% 0; }
-  .nf-wordmark h1 { font-size: min(15cqw, 16cqh); }
-  .nf-wordmark p { font-size: max(10px, min(2.7cqw, 3.2cqh)); letter-spacing: .34em; padding-left: .34em; }
-}
 
-/* ---------- the departures board ---------- */
+/* ---------- the departures plaque, screwed to the walnut wall ---------- */
 
+/* A brass-framed enamel timetable on the wall between the window and the end
+   door (wide), or on the facing seat's back below the window (narrow). Its
+   zone comes from titlePlate.js (--nf-plaque-*); it sits centred in it. */
 .nf-menu {
+  --nf-bezel: clamp(7px, .62vw, 14px);
+  --nf-radius: clamp(6px, .55vw, 12px);
+  position: absolute;
+  z-index: 4;
+  left: var(--nf-plaque-x, 62vw);
+  top: calc(var(--nf-plaque-y, 13vh) + var(--nf-plaque-h, 77vh) / 2);
+  width: var(--nf-plaque-w, 27vw);
+  max-height: var(--nf-plaque-h, 77vh);
+  translate: 0 -50%;
   display: flex;
   flex-direction: column;
-  padding: calc(var(--nf-bezel) + clamp(12px, 1.5vmin, 30px)) calc(var(--nf-bezel) + clamp(10px, 1.2vmin, 26px));
+  min-width: 0;
+  min-height: 0;
+  padding: calc(var(--nf-bezel) + clamp(10px, 1.3vmin, 26px)) calc(var(--nf-bezel) + clamp(8px, 1vmin, 22px));
+  border-radius: calc(var(--nf-radius) + var(--nf-bezel) * .6);
   isolation: isolate;
   text-align: left;
+  background:
+    var(--nf-rivet) calc(var(--nf-bezel) * .5 - 1px) calc(var(--nf-bezel) * .5 - 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
+    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 + 1px) calc(var(--nf-bezel) * .5 - 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
+    var(--nf-rivet) calc(var(--nf-bezel) * .5 - 1px) calc(100% - var(--nf-bezel) * .5 + 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
+    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 + 1px) calc(100% - var(--nf-bezel) * .5 + 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
+    var(--nf-brass-grad);
+  box-shadow:
+    0 0 0 1px rgba(20, 12, 6, .85),
+    0 2px 0 1px rgba(20, 12, 6, .5),
+    0 18px 34px rgba(0, 0, 0, .62),
+    0 4px 10px rgba(0, 0, 0, .5),
+    inset 0 2px 0 rgba(255, 238, 190, .55),
+    inset 0 -2px 0 rgba(40, 25, 10, .6);
 }
-/* the board face: dark walnut behind the brass bezel */
+/* the enamel face: near-black teal, lit from the carriage lamp above */
 .nf-menu::before {
   content: "";
   position: absolute;
@@ -429,10 +182,22 @@
   inset: var(--nf-bezel);
   border-radius: var(--nf-radius);
   background:
-    radial-gradient(ellipse 90% 40% at 50% 0%, rgba(255, 184, 96, .09), transparent 70%),
-    var(--nf-tex-panel, none) 0 0 / 100% 512px repeat-y,
-    #1a110b;
-  box-shadow: 0 0 0 2px rgba(40, 25, 10, .75), inset 0 0 calc(var(--nf-bezel) * 2) rgba(0, 0, 0, .8);
+    radial-gradient(ellipse 80% 34% at 50% 0%, rgba(255, 190, 110, .16), transparent 72%),
+    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 50%, rgba(0, 0, 0, .45) 100%),
+    linear-gradient(180deg, #13201f, #0d1716 60%, #0a1211);
+  box-shadow: 0 0 0 2px rgba(40, 25, 10, .8), inset 0 0 calc(var(--nf-bezel) * 2.2) rgba(0, 0, 0, .75);
+}
+/* the passing trackside lamp's band of light crossing it (titlePlateArt.js) */
+.nf-menu::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(104deg, transparent calc(var(--nf-sweep-x, -50%) - 34%), rgba(255, 196, 120, .55) var(--nf-sweep-x, -50%), transparent calc(var(--nf-sweep-x, -50%) + 34%));
+  opacity: var(--nf-sweep, 0);
+  mix-blend-mode: screen;
 }
 
 .nf-menu-header,
@@ -1281,62 +1046,52 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 /* ---------- motion ---------- */
 
 @keyframes nf-panel-in { from { opacity: 0; transform: translateY(8px) scale(.992); } to { opacity: 1; transform: none; } }
-@keyframes nf-rain-fall { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(0, 512px, 0); } }
-/* an old filament: steady, with the odd dip */
-@keyframes nf-lamp {
-  0%, 100% { opacity: 1; }
-  41% { opacity: .82; }
-  42% { opacity: 1; }
-  43% { opacity: .9; }
-  44%, 88% { opacity: 1; }
-  89% { opacity: .86; }
-  90% { opacity: 1; }
-}
 
 html[data-reduced-motion="true"] *, html[data-reduced-motion="true"] *::before, html[data-reduced-motion="true"] *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
-/* Reduce Motion keeps the lamps lit and the beads on the glass, and drops the
-   falling rain, the flicker, the drifting steam and the glint's pulse (spec §5). */
-html[data-reduced-motion="true"] .nf-rain i:first-child,
-html[data-reduced-motion="true"] .nf-plate-steam { display: none; }
-html[data-reduced-motion="true"] .nf-rain i,
-html[data-reduced-motion="true"] .nf-lamps i::after,
-html[data-reduced-motion="true"] .nf-plate-lamp,
+/* Reduce Motion: the scene paints one still frame (titlePlate.js motionConfig)
+   with no passing light; the glint stops pulsing. */
+html[data-reduced-motion="true"] .nf-menu::after { display: none; }
 html[data-reduced-motion="true"] .nf-action-label::after,
 html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 @media (prefers-reduced-motion: reduce) {
-  .nf-rain i:first-child, .nf-plate-steam { display: none; }
-  .nf-rain i, .nf-lamps i::after, .nf-plate-lamp, .nf-action-label::after, .nf-slot::after { animation: none !important; }
+  .nf-menu::after { display: none; }
+  .nf-action-label::after, .nf-slot::after { animation: none !important; }
 }
 
-/* ---------- smaller and shorter windows ---------- */
+/* ---------- smaller and shorter screens ---------- */
 
-@media (max-height: 680px) and (min-aspect-ratio: 5/4) {
-  .nf-main-actions .nf-action { padding-block: 5px; min-height: 40px; }
-  .nf-main-actions .nf-action-detail { font-size: .54em; }
-  .nf-hint { display: none; }
+/* the lines grow with the plaque and always fit its width on one line */
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-label { font-size: clamp(13px, min(2.3vh, calc(var(--nf-board) * .041)), 30px); white-space: nowrap; }
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: clamp(9px, calc(var(--nf-board) * .025), 15px); letter-spacing: .1em; white-space: nowrap; }
+/* the key hints keep to one line across the plaque */
+#nightfall-title[data-layout="wide"] .nf-hint { flex-wrap: nowrap; font-size: clamp(8.5px, calc(var(--nf-board) * .026), 13px); }
+@media (max-height: 760px) {
+  #nightfall-title[data-layout="wide"] .nf-main-actions .nf-action { padding-block: clamp(5px, 1.2vh, 12px); min-height: 40px; }
+  #nightfall-title[data-layout="wide"] .nf-board-columns { margin-top: clamp(6px, 1.2vh, 14px); }
 }
-@media (max-height: 540px) and (min-aspect-ratio: 5/4) {
-  .nf-main-actions .nf-action-detail { display: none; }
-  .nf-menu-footer { gap: 0; padding-top: .5em; }
+@media (max-height: 680px) {
+  #nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: .54em; }
+  #nightfall-title[data-layout="wide"] .nf-hint { display: none; }
+}
+@media (max-height: 540px) {
+  #nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { display: none; }
+  #nightfall-title[data-layout="wide"] .nf-menu-footer { gap: 0; padding-top: .5em; }
 }
 
-/* narrow or portrait: the window above, the board below it */
+/* narrow or portrait: the window and Butch above, the plaque on the facing
+   seat's back below them (titlePlate.js narrowLayout) */
+#nightfall-title[data-layout="narrow"] .nf-menu { padding: calc(var(--nf-bezel) + 8px) calc(var(--nf-bezel) + 10px); }
+#nightfall-title[data-layout="narrow"] :is(.nf-hint, .nf-board-columns) { display: none; }
+#nightfall-title[data-layout="narrow"] .nf-menu-header { margin-bottom: .2em; }
+#nightfall-title[data-layout="narrow"] .nf-main-actions { gap: 0; padding: .2em 0; }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action { min-height: 40px; padding-block: clamp(5px, 1vh, 12px); }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-label { font-size: clamp(13px, min(2.4vh, calc(var(--nf-board) * .042)), 22px); white-space: nowrap; }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: clamp(9px, calc(var(--nf-board) * .025), 13px); letter-spacing: .1em; white-space: nowrap; }
+#nightfall-title[data-layout="narrow"][data-plaque="compact"] :is(.nf-menu-header, .nf-main-actions .nf-action-detail) { display: none; }
+#nightfall-title[data-layout="narrow"] .nf-menu-footer { padding-top: .45em; }
+
+/* narrow screens: the dialogs fill them */
 @media (max-aspect-ratio: 5/4), (max-width: 760px) {
-  #nightfall-title { --nf-board: auto; --nf-side: 12px; --nf-pad: 10px; --nf-gap: 10px; --nf-top: 30px; --nf-bottom: 34px; }
-  .nf-carriage { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(120px, 1fr) auto; }
-  .nf-lamps i:nth-child(2), .nf-lamps i:nth-child(3) { left: 50%; }
-  .nf-lamps i:nth-child(3) { display: none; }
-  .nf-wordmark { width: 60cqw; right: 50%; translate: 50% 0; }
-  .nf-wordmark h1 { font-size: min(14cqw, 26cqh); }
-  .nf-wordmark p { font-size: max(9px, min(2.6cqw, 5cqh)); }
-  .nf-menu { padding: calc(var(--nf-bezel) + 8px) calc(var(--nf-bezel) + 8px); }
-  .nf-menu-header, .nf-hint, .nf-board-columns { display: none; }
-  .nf-main-actions { gap: 0; padding: .2em 0; }
-  .nf-main-actions .nf-action { min-height: 40px; padding-block: 6px; }
-  .nf-main-actions .nf-action-detail { display: none; }
-  .nf-menu-footer { padding-top: .45em; }
-  .nf-sill { bottom: 10px; }
-  .nf-build-mark { display: none; }
   .nf-dialog { width: calc(100vw - 20px); max-height: calc(100vh - 20px); }
   .nf-dialog-inner { max-height: calc(100vh - 74px); padding: .7em 1em 1.2em; }
   .nf-dialog.nf-dialog--credits-roll { width: 100vw; height: 100vh; max-height: none; }

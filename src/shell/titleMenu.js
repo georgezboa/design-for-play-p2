@@ -24,7 +24,7 @@ import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin } from './menuNavigation.js';
 import { missingStoneNotice } from './magicStones.js';
 import { dressCarriageWall } from './titleCarriage.js';
-import { mountTitlePlate } from './titlePlate.js';
+import { mountTitleScene } from './titlePlate.js';
 import { clearCreditsQuery } from './endCredits.js';
 
 // The title always shows the player's own three slots, never a test route's
@@ -57,42 +57,31 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   clearHiddenRouter();
   const root = document.createElement('main');
   root.id = 'nightfall-title';
-  // One wall of the night train (titleMenu.css, titleCarriage.js): the key
-  // art (titlePlate.js, painted at runtime in Chapter 1's ink language) is
-  // the view through a brass-bezelled carriage window with the
-  // wordmark gilded on its glass, and the menu is the departures board
-  // beside it, where the selected line becomes a punched paper ticket.
+  // One carriage behind (titlePlate.js, titleMenu.css): the whole screen is
+  // the inside of the night service, painted at runtime in Chapter 1's ink
+  // language. The wordmark is gilded on its window glass, and the menu is
+  // the departures plaque on its wall, where the selected line becomes a
+  // punched paper ticket.
   root.innerHTML = `
-    <div class="nf-wall" aria-hidden="true"></div>
-    <div class="nf-rail" aria-hidden="true"></div>
-    <div class="nf-carriage">
-      <div class="nf-lamps" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-      <div class="nf-window">
-        <div class="nf-window-glass">
-          <div class="nf-rain" aria-hidden="true"><i></i><i></i><i></i></div>
-          <div class="nf-glass" aria-hidden="true"></div>
-          <header class="nf-wordmark">
-            <h1>NIGHTFALL</h1>
-            <span class="nf-wordmark-rule" aria-hidden="true"><b></b></span>
-            <p>THE LAST ARCHIVE LINE</p>
-          </header>
-        </div>
-      </div>
-      <section class="nf-menu" aria-label="NIGHTFALL main menu">
-        <header class="nf-menu-header">
-          <span class="nf-menu-rule"></span>
-          <p class="nf-kicker">NIGHT SERVICE · DEPARTURES</p>
-          <span class="nf-menu-rule"></span>
-        </header>
-        <p class="nf-board-columns" aria-hidden="true"><span>No.</span><span>SERVICE</span><span>LINE 01</span></p>
-        <nav class="nf-main-actions" aria-label="Main menu"></nav>
-        <footer class="nf-menu-footer">
-          <p class="nf-status" role="status" aria-live="polite"></p>
-          <p class="nf-hint"><span><kbd>↑</kbd><kbd>↓</kbd> SELECT</span> <span><kbd>ENTER</kbd> CONFIRM</span> <span><kbd>F</kbd> FULLSCREEN</span></p>
-        </footer>
-      </section>
-    </div>
-    <div class="nf-sill" aria-hidden="true"><p class="nf-build-mark">ARCHIVE LINE 01 · NIGHT SERVICE</p></div>
+    <div class="nf-scene" aria-hidden="true"></div>
+    <header class="nf-wordmark">
+      <h1>NIGHTFALL</h1>
+      <span class="nf-wordmark-rule" aria-hidden="true"><b></b></span>
+      <p>THE LAST ARCHIVE LINE</p>
+    </header>
+    <section class="nf-menu" aria-label="NIGHTFALL main menu">
+      <header class="nf-menu-header">
+        <span class="nf-menu-rule"></span>
+        <p class="nf-kicker">NIGHT SERVICE · DEPARTURES</p>
+        <span class="nf-menu-rule"></span>
+      </header>
+      <p class="nf-board-columns" aria-hidden="true"><span>No.</span><span>SERVICE</span><span>LINE 01</span></p>
+      <nav class="nf-main-actions" aria-label="Main menu"></nav>
+      <footer class="nf-menu-footer">
+        <p class="nf-status" role="status" aria-live="polite"></p>
+        <p class="nf-hint"><span><kbd>↑</kbd><kbd>↓</kbd> SELECT</span> <span><kbd>ENTER</kbd> CONFIRM</span> <span><kbd>F</kbd> FULLSCREEN</span></p>
+      </footer>
+    </section>
     <dialog class="nf-dialog" id="nf-dialog">
       <div class="nf-dialog-ornament" aria-hidden="true"><span></span><b>◇</b><span></span></div>
       <div class="nf-dialog-inner"></div>
@@ -100,8 +89,10 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   `;
   document.body.append(root);
   dressCarriageWall(root);
-  // the view through the window: the night service waiting at Bellwether
-  mountTitlePlate(root.querySelector('.nf-window-glass'));
+  // The scene stops moving whenever it cannot be seen: under a dialog, in a
+  // background tab, once a chapter is on its way (titlePlate.js).
+  const scene = mountTitleScene(root);
+  root.__scene = scene;
   const actions = root.querySelector('.nf-main-actions');
   const status = root.querySelector('.nf-status');
   const dialog = root.querySelector('#nf-dialog');
@@ -138,6 +129,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     stopCreditsMusic();
     stopCreditsRoll();
     if (dialog.open) dialog.close();
+    scene.hold('dialog', false);
     dialog.classList.remove('nf-dialog--credits-roll');
     panel.classList.remove('nf-credits-panel');
     root.dataset.chapterSelect = 'closed';
@@ -153,6 +145,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
       lastFocusedAction = document.activeElement;
       dialog.showModal();
     }
+    // the dialog's backdrop dims the scene; it holds still under it
+    scene.hold('dialog', true);
   };
   dialog.addEventListener('cancel', (event) => {
     event.preventDefault();
@@ -363,6 +357,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     status.textContent = `SLOT ${index + 1} · NIGHT SERVICE AWAKENING`;
     closeDialog();
     padPoll.stop();
+    scene.hold('loading', true);
+    scene.destroy();
     root.remove();
     playCinematic({
       id: 'opening',
@@ -518,6 +514,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     seedRouterSave(chapter.checkpoint, { stones: chapter.stones ?? null });
     activateHiddenRouter();
     closeDialog();
+    scene.hold('loading', true);
     root.remove();
     window.location.assign(chapter.route);
   };
@@ -566,6 +563,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
         closeDialog();
         if (quitGame()) return; // desktop app: close the application
         root.classList.add('is-exiting');
+        scene.destroy();
         root.innerHTML = `
           <div class="nf-exit-screen" role="status">
             <p>NIGHT SERVICE ENDED</p>
