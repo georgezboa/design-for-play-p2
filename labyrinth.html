@@ -16,12 +16,12 @@
         align-items: center;
         justify-content: center;
       }
-      /* Fit the 1280×800 stage inside any window. A fixed 800px box centred
-         in a shorter (e.g. 16:9) window pushed its top edge — and the KEYS /
-         LIVES HUD — off-screen. */
+      /* Fit the 1280×800 (16:10) stage inside any window, as large as it
+         goes (alpha R3 · R7: capped at 1280×800 the HUD type read tiny on a
+         1600×900 screen). */
       #game {
-        width: min(1280px, 100vw);
-        height: min(800px, 100vh);
+        width: min(100vw, calc(100vh * 1.6));
+        height: min(100vh, calc(100vw / 1.6));
         box-shadow: 0 24px 70px rgba(0, 0, 0, 0.85);
       }
       .embedded body { background: #07090b; overflow: hidden; }

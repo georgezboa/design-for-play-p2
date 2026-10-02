@@ -45,6 +45,16 @@ import * as chaseMusic from './chaseMusic.js';
 
 const FONT = 'Courier New, monospace';
 
+// HUD type follows the UI kit (alpha R3 · R7): nothing under 13 px, all of
+// it times the global TEXT SIZE setting (shell/saveSystem.js textScale).
+export const HUD_MIN_PX = 13;
+const hudScale = () => Phaser.Math.Clamp((globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100, 0.8, 1.6);
+export const hudPx = (size, scale = hudScale()) => Math.round(Math.max(HUD_MIN_PX, size) * scale);
+// The camera may run this far past the maze's outer wall, so the corner
+// HUD plate and the survey map sit over void, not over the spawn tile or
+// the far corners (alpha R3 · R7: the plate covered Butch's first tile).
+export const CAMERA_MARGIN = { x: 2 * CELL, y: 2 * CELL };
+
 function css(hex) {
   return `#${hex.toString(16).padStart(6, '0')}`;
 }
@@ -67,6 +77,9 @@ export class LabyrinthScene extends Phaser.Scene {
     chaseMusic.init(this.sound);
     this.cameras.main.setBackgroundColor(css(PAL.void));
     this.startRun();
+    const onSettings = () => this.layoutHudText();
+    window.addEventListener('nightfall:settings', onSettings);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => window.removeEventListener('nightfall:settings', onSettings));
 
     this.keys = this.input.keyboard.addKeys({
       left: Phaser.Input.Keyboard.KeyCodes.LEFT,
@@ -182,7 +195,7 @@ export class LabyrinthScene extends Phaser.Scene {
     if (this.coneG) this.coneG.destroy();
     this.coneG = this.add.graphics().setDepth(55);
 
-    this.cameras.main.setBounds(0, 0, WORLD_W, WORLD_H);
+    this.cameras.main.setBounds(-CAMERA_MARGIN.x, -CAMERA_MARGIN.y, WORLD_W + 2 * CAMERA_MARGIN.x, WORLD_H + 2 * CAMERA_MARGIN.y);
     this.cameras.main.startFollow(this.playerSprite, true, 0.14, 0.14);
     this.cameras.main.setZoom(1);
     this.cameras.main.flash(220, 10, 10, 14);
@@ -661,34 +674,34 @@ export class LabyrinthScene extends Phaser.Scene {
     this.threatMarkerCount = 0;
 
     this.livesText = this.add.text(16, 12, '', {
-      fontFamily: FONT, fontSize: '14px', color: css(PAL.red), fontStyle: 'bold',
+      fontFamily: FONT, fontSize: `${hudPx(16)}px`, color: css(PAL.red), fontStyle: 'bold',
     });
     this.keysText = this.add.text(16, 33, '', {
-      fontFamily: FONT, fontSize: '12px', color: css(PAL.amber), fontStyle: 'bold', letterSpacing: 2,
+      fontFamily: FONT, fontSize: `${hudPx(14)}px`, color: css(PAL.amber), fontStyle: 'bold', letterSpacing: 2,
     });
     this.shieldText = this.add.text(16, 52, '', {
-      fontFamily: FONT, fontSize: '12px', color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 2,
+      fontFamily: FONT, fontSize: `${hudPx(14)}px`, color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 2,
     });
     this.torchText = this.add.text(16, 71, '', {
-      fontFamily: FONT, fontSize: '11px', color: css(PAL.torchCore), fontStyle: 'bold', letterSpacing: 2,
+      fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.torchCore), fontStyle: 'bold', letterSpacing: 2,
     });
     this.wingLabel = this.add
       .text(VIEW.w - 16, 12, '', {
-        fontFamily: FONT, fontSize: '11px', color: css(PAL.graphiteSoft), align: 'right', letterSpacing: 4,
+        fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.graphiteSoft), align: 'right', letterSpacing: 4,
       })
       .setOrigin(1, 0);
     this.controlsText = this.add.text(14, VIEW.h - 22, STRINGS.controls, {
-      fontFamily: FONT, fontSize: '10px', color: css(0x8a7a5e),
-    });
+      fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(0xa8977a),
+    }).setOrigin(0, 1);
     this.captionText = this.add
       .text(VIEW.w / 2, VIEW.h - 50, '', {
-        fontFamily: FONT, fontSize: '13px', color: css(PAL.ivory), fontStyle: 'italic',
-        align: 'center', wordWrap: { width: 820 },
+        fontFamily: FONT, fontSize: `${hudPx(16)}px`, color: css(PAL.ivory), fontStyle: 'italic',
+        align: 'center', wordWrap: { width: 760 },
       })
-      .setOrigin(0.5, 0);
+      .setOrigin(0.5, 1);
     this.interactText = this.add
       .text(VIEW.w / 2, VIEW.h - 84, '', {
-        fontFamily: FONT, fontSize: '12px', color: css(PAL.torchCore), fontStyle: 'bold',
+        fontFamily: FONT, fontSize: `${hudPx(14)}px`, color: css(PAL.torchCore), fontStyle: 'bold',
         backgroundColor: '#140d09cc', padding: { x: 10, y: 5 }, letterSpacing: 2,
       })
       .setOrigin(0.5);
@@ -698,12 +711,12 @@ export class LabyrinthScene extends Phaser.Scene {
     const dim = this.add.rectangle(VIEW.w / 2, VIEW.h / 2, VIEW.w, VIEW.h, PAL.void, 0.78).setVisible(false);
     const line1 = this.add
       .text(VIEW.w / 2, VIEW.h / 2 - 120, '', {
-        fontFamily: FONT, fontSize: '19px', color: css(PAL.ivory), fontStyle: 'bold', align: 'center', wordWrap: { width: 700 }, letterSpacing: 2,
+        fontFamily: FONT, fontSize: `${hudPx(20)}px`, color: css(PAL.ivory), fontStyle: 'bold', align: 'center', wordWrap: { width: 700 }, letterSpacing: 2,
       })
       .setOrigin(0.5);
     const line2 = this.add
       .text(VIEW.w / 2, VIEW.h / 2 - 76, '', {
-        fontFamily: FONT, fontSize: '12px', color: css(PAL.amber), align: 'center', letterSpacing: 1,
+        fontFamily: FONT, fontSize: `${hudPx(14)}px`, color: css(PAL.amber), align: 'center', letterSpacing: 1,
       })
       .setOrigin(0.5);
     hud.add([dim, line1, line2]);
@@ -717,7 +730,7 @@ export class LabyrinthScene extends Phaser.Scene {
     const fragGlow = this.add.image(0, 0, textureKey('fragment-glow')).setBlendMode(Phaser.BlendModes.ADD);
     const fragShard = this.add.image(0, 0, textureKey('fragment'));
     const take = this.add.text(0, 96, STRINGS.fragmentTakeHint, {
-      fontFamily: FONT, fontSize: '12px', color: css(PAL.ivory), letterSpacing: 3,
+      fontFamily: FONT, fontSize: `${hudPx(14)}px`, color: css(PAL.ivory), letterSpacing: 3,
       backgroundColor: '#140d09cc', padding: { x: 12, y: 6 },
     }).setOrigin(0.5);
     fragment.add([fragGlow, fragShard, take]);
@@ -729,7 +742,7 @@ export class LabyrinthScene extends Phaser.Scene {
     // without ever cutting away from the walked, continuous labyrinth.
     const wingCard = this.add
       .text(VIEW.w / 2, VIEW.h * 0.3, '', {
-        fontFamily: FONT, fontSize: '22px', color: css(PAL.ivory), fontStyle: 'bold',
+        fontFamily: FONT, fontSize: `${hudPx(24)}px`, color: css(PAL.ivory), fontStyle: 'bold',
         align: 'center', letterSpacing: 8,
       })
       .setOrigin(0.5)
@@ -739,6 +752,31 @@ export class LabyrinthScene extends Phaser.Scene {
     this.currentWingId = null;
 
     this.hud = hud;
+    this.layoutHudText();
+  }
+
+  // Sizes and stacks the HUD type for the current TEXT SIZE (on build and
+  // on every settings change): the four readouts in their plate, the
+  // controls line along the bottom edge, the caption and prompt above it.
+  layoutHudText() {
+    if (!this.livesText?.active) return;
+    const sizes = [[this.livesText, 16], [this.keysText, 14], [this.shieldText, 14], [this.torchText, 13], [this.wingLabel, 13],
+      [this.controlsText, 13], [this.captionText, 16], [this.interactText, 14]];
+    for (const [text, size] of sizes) text.setFontSize(hudPx(size));
+    let y = 12;
+    for (const text of [this.livesText, this.keysText, this.shieldText, this.torchText]) {
+      text.setPosition(16, y);
+      y += Math.ceil(text.height) + 4;
+    }
+    this.hudPlateHeight = y - 2;
+    this.hudPlateWidth = 0;
+    this.drawHudPlate();
+    this.controlsText.setPosition(14, VIEW.h - 10);
+    // the caption sits on its bottom edge, just above the controls line
+    const captionBottom = VIEW.h - 20 - Math.ceil(this.controlsText.height);
+    this.captionText.setY(captionBottom);
+    this.interactText.setY(captionBottom - Math.ceil(hudPx(16) * 1.3) - 10 - Math.ceil(this.interactText.height) / 2);
+    if (this.minimap) this.layoutMinimapText();
   }
 
   showWingCard(text) {
@@ -771,21 +809,13 @@ export class LabyrinthScene extends Phaser.Scene {
     // A walnut plate in a brass frame (the UI kit's panel), holding the key
     // pips, the readout, the label and the survey itself, so none of them
     // floats over the maze on its own.
-    const plateTop = y0 - 64;
+    // the plate is drawn by layoutMinimapText, sized to the label type
     const panel = this.add.graphics();
-    panel.fillStyle(0x1c130d, 0.94).fillRoundedRect(x0 - 12, plateTop, size + 24, size + 12 + (y0 - plateTop), 6);
-    panel.fillStyle(PAL.mapBackground, 1).fillRect(x0 - 3, y0 - 3, size + 6, size + 6);
     const border = this.add.graphics();
-    border.lineStyle(2, PAL.brass, 0.95).strokeRoundedRect(x0 - 12, plateTop, size + 24, size + 12 + (y0 - plateTop), 6);
-    border.lineStyle(1, PAL.safe, 0.35).strokeRoundedRect(x0 - 8, plateTop + 4, size + 16, size + 4 + (y0 - plateTop), 4);
-    border.lineStyle(1, PAL.brass, 0.8).strokeRect(x0 - 3, y0 - 3, size + 6, size + 6);
-    for (const [rx, ry] of [[x0 - 6, plateTop + 6], [x0 + size + 6, plateTop + 6], [x0 - 6, y0 + size + 6], [x0 + size + 6, y0 + size + 6]]) {
-      border.fillStyle(PAL.brass, 1).fillCircle(rx, ry, 2);
-    }
 
     const label = this.add
       .text(x0, y0 - 8, 'SURVEY · FLOOR I', {
-        fontFamily: FONT, fontSize: '11px', color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 4,
+        fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.safe), fontStyle: 'bold', letterSpacing: 3,
       })
       .setOrigin(0, 1);
 
@@ -798,7 +828,7 @@ export class LabyrinthScene extends Phaser.Scene {
 
     const nearestText = this.add
       .text(x0, y0 - 25, '', {
-        fontFamily: FONT, fontSize: '11px', color: css(PAL.amber), fontStyle: 'bold', wordWrap: { width: size },
+        fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.amber), fontStyle: 'bold', wordWrap: { width: size },
       })
       .setOrigin(0, 1);
 
@@ -811,8 +841,36 @@ export class LabyrinthScene extends Phaser.Scene {
     }
 
     container.add([panel, border, label, wallsBake, markers, nearestText, ...pipRow]);
-    this.minimap = { x0, y0, size, scale, markers, nearestText, pipRow, wallsBake, label, container };
+    this.minimap = { x0, y0, size, scale, markers, nearestText, pipRow, wallsBake, label, container, panel, border };
+    this.layoutMinimapText();
     this.redrawMinimapWalls();
+  }
+
+  // Stacks the survey's label, readout and key pips above the map for the
+  // current type size, and draws the walnut plate around all of them.
+  layoutMinimapText() {
+    const { x0, y0, size, label, nearestText, pipRow, panel, border } = this.minimap;
+    label.setFontSize(hudPx(13)).setPosition(x0, y0 - 8);
+    nearestText.setFontSize(hudPx(13));
+    // the readout wraps to two lines at most (KEY BEYOND A LOCKED GATE ...):
+    // reserve both, so the pips never jump when it changes
+    const lineH = Math.ceil(hudPx(13) * 1.2);
+    const nearestBottom = y0 - 8 - Math.ceil(label.height) - 5;
+    nearestText.setPosition(x0, nearestBottom);
+    const pipY = nearestBottom - 2 * lineH - 12;
+    pipRow.forEach((pip) => pip.setY(pipY));
+    const plateTop = pipY - 16;
+    const plateH = size + 12 + (y0 - plateTop);
+    panel.clear();
+    panel.fillStyle(0x1c130d, 0.94).fillRoundedRect(x0 - 12, plateTop, size + 24, plateH, 6);
+    panel.fillStyle(PAL.mapBackground, 1).fillRect(x0 - 3, y0 - 3, size + 6, size + 6);
+    border.clear();
+    border.lineStyle(2, PAL.brass, 0.95).strokeRoundedRect(x0 - 12, plateTop, size + 24, plateH, 6);
+    border.lineStyle(1, PAL.safe, 0.35).strokeRoundedRect(x0 - 8, plateTop + 4, size + 16, plateH - 8, 4);
+    border.lineStyle(1, PAL.brass, 0.8).strokeRect(x0 - 3, y0 - 3, size + 6, size + 6);
+    for (const [rx, ry] of [[x0 - 6, plateTop + 6], [x0 + size + 6, plateTop + 6], [x0 - 6, y0 + size + 6], [x0 + size + 6, y0 + size + 6]]) {
+      border.fillStyle(PAL.brass, 1).fillCircle(rx, ry, 2);
+    }
   }
 
   get seenCells() {
@@ -1598,8 +1656,9 @@ export class LabyrinthScene extends Phaser.Scene {
     this.hudPlateWidth = width;
     const g = this.hudPlate;
     g.clear();
-    g.fillStyle(0x0b0907, 0.84).fillRoundedRect(6, 6, width, 84, 4);
-    g.lineStyle(1, 0xb08a4a, 0.55).strokeRoundedRect(6, 6, width, 84, 4);
+    const height = this.hudPlateHeight ?? 84;
+    g.fillStyle(0x0b0907, 0.84).fillRoundedRect(6, 6, width, height, 4);
+    g.lineStyle(1, 0xb08a4a, 0.55).strokeRoundedRect(6, 6, width, height, 4);
   }
 
   // The cone the statues test (TUNING.visionConeDeg, the current vision
