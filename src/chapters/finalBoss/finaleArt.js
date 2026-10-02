@@ -16,7 +16,7 @@
 import { PAL, amberGlint, glow as inkGlow, ink, inkEllipse, inkRect, paperTag, rivet, rng, roundRectPath, sepia, speckle, vgrad, wood, brassFill } from '../nightService/art/ink.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from '../nightService/art/wallArt.js';
 import { drawConductorCar, drawDesk, drawDoor, drawLockers, drawWindow } from '../nightService/art/act1Art.js';
-import { drawCarriageScene, drawCityRoom, drawHouse, drawPlatform } from '../nightService/art/act3Art.js';
+import { PLATFORM_DY, drawCarriageScene, drawCityRoom, drawHouse, drawPlatform } from '../nightService/art/act3Art.js';
 import { BUTCH_PARTS, CONDUCTOR_PARTS, RES, TRAIN_PARTS } from '../nightService/art/figures.js';
 import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART, drawConductorHeadOver } from './conductorFigure.js';
 import { PAPER_URL, WORLDS } from '../nightService/worldAssets.js';
@@ -847,9 +847,10 @@ export function paintEndingPanel(beat, sources) {
   const panel = paintChapterOnePanel(draw, { w, h, era: beat === 'city' ? 'past' : 'present', hide: ['act3-bench-case'], ...sources });
   const c = panel.getContext('2d');
   if (beat === 'platform') {
-    // Butch, off the train at Bellwether, the orchard case in his arms
+    // Butch, off the train at Bellwether, the orchard case in his arms; he
+    // stands on the platform deck, which Ch1 laid out from the raised rail
     const butch = paintInkButch({ pose: 'case', scale: 3 });
-    c.drawImage(butch, w * 0.56, h * 0.745 - butch.height * 0.62 + 6, butch.width * 0.62, butch.height * 0.62);
+    c.drawImage(butch, w * 0.56, h * (0.745 + PLATFORM_DY) - butch.height * 0.62 + 6, butch.width * 0.62, butch.height * 0.62);
   }
   if (beat === 'door') {
     // Rosa's door: the orchard house's porch in the foreground (clapboard,
