@@ -415,7 +415,7 @@ export class LabyrinthScene extends Phaser.Scene {
     this.gateSprite.refreshBody();
     this.entityLayer.add(this.gateSprite);
     this.gateLabel = this.add
-      .text(g.x, g.y - 46, '', { fontFamily: FONT, fontSize: '11px', color: css(PAL.bloodRed), fontStyle: 'bold', letterSpacing: 3 })
+      .text(g.x, g.y - 46, '', { fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.bloodRed), fontStyle: 'bold', letterSpacing: 3 })
       .setOrigin(0.5, 1);
     this.entityLayer.add(this.gateLabel);
 
@@ -435,7 +435,7 @@ export class LabyrinthScene extends Phaser.Scene {
       img.labData = gate;
       const label = this.add
         .text(pos.x, pos.y - 40, `→ ${gate.toName}`, {
-          fontFamily: FONT, fontSize: '10px', color: css(PAL.bloodRed), fontStyle: 'bold', align: 'center', wordWrap: { width: 140 }, letterSpacing: 1,
+          fontFamily: FONT, fontSize: `${hudPx(13)}px`, color: css(PAL.bloodRed), fontStyle: 'bold', align: 'center', wordWrap: { width: 180 }, letterSpacing: 1,
         })
         .setOrigin(0.5, 1);
       this.entityLayer.add([img, label]);
