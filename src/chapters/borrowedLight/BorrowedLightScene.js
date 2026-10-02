@@ -13,6 +13,12 @@
 // all act on, with an honest prompt of what a press will do; two-phase bells
 // and the quick-bell chase (A6–A8); borrowed light (B5–B7); the counterweight
 // walkway (C3); a lamp before and after every room.
+//
+// Alpha round 3 fixes: a press never takes a punch back (hold F / the click
+// / RB on a punched node to take it back, with a filling ring); the pick
+// switches at the midpoint while running; the lamp will not borrow the light
+// of the machine Butch stands on (STEP OFF FIRST); lifts wait a bell for a
+// rider on the way; C4 · TWO WEIGHTS (the drop ledge and a second walkway).
 
 import Phaser from 'phaser';
 import { music } from '../../shared/musicDirector.js';
@@ -20,8 +26,8 @@ import { createSaveStore } from '../../shell/saveSystem.js';
 import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
 import { reducedMotionActive } from '../../shell/motion.js';
-import { BELL_MS, createTimetable, rememberedSequence } from './timetableModel.js';
-import { chestAt, nearestMiss, nodeAtPoint, pickTarget } from './targeting.js';
+import { BELL_MS, CH2_RULES, createTimetable, rememberedSequence } from './timetableModel.js';
+import { MOVING_VX, chestAt, nearestMiss, nodeAtPoint, pickTarget } from './targeting.js';
 import { CONTROLLER, createControllerState, stepController, tapHoldMs } from './controller.js';
 import { placeTeachTag, signRects } from './teachTag.js';
 import {
@@ -61,6 +67,8 @@ import {
   nodeHead,
   platformById,
   sectionAt,
+  settleStartLevels,
+  standsOn,
   timetableDefinition,
 } from './level.js';
 import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, TEACH, stoneToast } from './story.js';
@@ -92,6 +100,10 @@ const BODY_W = 40;
 const BODY_H = 96;
 const CHEST = 64;
 const SECTION_LABEL = { A: 'A · RAIN ROOFTOPS', B: 'B · BLACKOUT', C: 'C · EVACUATION PLATFORM' };
+// Hold F (or the click, or RB) this long on a punched node to take it back.
+export const TAKE_BACK_MS = 500;
+// A lift waits a bell for a rider this far away (≈ 1.5 s of running).
+export const RIDER_APPROACH_PX = Math.round(CONTROLLER.maxRun * 1.5);
 
 export class BorrowedLightScene extends Phaser.Scene {
   constructor() {
@@ -136,12 +148,17 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.onLiftId = null;
     this.stepAcc = 0;
 
-    this.tt = createTimetable(timetableDefinition());
+    this.tt = createTimetable(timetableDefinition(), CH2_RULES);
     // The city holds some machines open; the node that holds it shows lit,
     // so "punch its lit tag to cut" always points at something visible.
     const holderNode = (machineId) => machineById(machineId)?.heldBy ?? NODES.find((n) => n.machine === machineId)?.id ?? null;
     this.holderNode = holderNode;
     MACHINES.filter((m) => m.heldAtStart).forEach((m) => { this.tt.hold(m.id, holderNode(m.id)); this.tt.settle(m.id, 1); });
+    // The drop ledge starts held up over the C4 gap.
+    settleStartLevels(this.tt);
+    // A lift whose rider is still walking to it waits a bell (R3-3).
+    this.tt.setShouldWait((machineId) => this.liftShouldWait(machineId));
+    this.takeBack = null;
 
     const cam = this.cameras.main;
     cam.setBounds(-300, WORLD.top, WORLD.width + 300, WORLD.bottom - WORLD.top);
@@ -173,9 +190,14 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hud = new BorrowedLightHud(this);
     // World prompts are paper tags (ivory paper, walnut ink), like every
     // chapter's tags. The teach tag carries first-use keys (jump, listen).
-    const tagStyle = { fontFamily: FONTS.mono, fontSize: '16px', fontStyle: 'bold', color: '#2a1d14', backgroundColor: '#e6dcc2', padding: { x: 12, y: 6 } };
+    const tagStyle = { fontFamily: FONTS.mono, fontSize: '16px', fontStyle: 'bold', color: '#2a1d14', backgroundColor: '#e6dcc2', padding: { x: 12, y: 6 }, align: 'center', lineSpacing: 4 };
     this.promptText = this.add.text(0, 0, '', tagStyle)
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
+    // A1: E · TALK on the mechanic while the first pole shows its own tag.
+    this.talkText = this.add.text(0, 0, HINTS.talk, tagStyle)
+      .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
+    // The take-back ring: fills while F is held on a punched node.
+    this.holdG = this.add.graphics().setDepth(DEPTH.ghost + 1);
     this.teachText = this.add.text(0, 0, '', tagStyle)
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
     this.hintText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '14px', color: '#e6aab0', align: 'center' })
@@ -194,6 +216,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.hud.applyTextScale();
       const k = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
       this.promptText.setFontSize(`${Math.round(16 * k)}px`);
+      this.talkText.setFontSize(`${Math.round(16 * k)}px`);
       this.teachText.setFontSize(`${Math.round(16 * k)}px`);
       this.hintText.setFontSize(`${Math.round(14 * k)}px`);
     };
@@ -420,9 +443,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (machine.kind === 'lift') {
         entry.zone = addCar(entry, null, machine.x, machine.w, machine.y0).zone;
       } else if (machine.kind === 'counterweight') {
-        const { a, b } = cagesAt(machine, 0);
-        addCar(entry, 'a', a.x, a.w, a.y);
-        addCar(entry, 'b', b.x, b.w, b.y);
+        const cages = cagesAt(machine, 0);
+        // The drop ledge's iron box is not a car: only its ledge is ridden.
+        (machine.riders ?? ['a', 'b']).forEach((side) => addCar(entry, side, cages[side].x, cages[side].w, cages[side].y));
         entry.zone = entry.cars[0].zone;
       } else if (['bridge', 'billboard', 'points', 'drawbridge', 'shutter', 'cradle'].includes(machine.kind)) {
         const zone = this.add.zone(machine.x, machine.y, 10, 10);
@@ -543,12 +566,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     for (const key of [this.keys.space, this.keys.up, this.keys.w]) key.on('up', (_key, event) => { this.jumpUpAt = stamp(event); });
     this.keys.e.on('down', once(() => this.interact()));
     this.keys.enter.on('down', once(() => { if (this.hud.cardOpen) this.hud.closeCard(); else if (this.hud.dialogOpen) this.hud.advanceDialog(); }));
-    this.keys.f.on('down', once(() => this.punch()));
+    this.keys.f.on('down', once(() => this.punch({ source: 'key' })));
     this.input.on('pointerdown', (pointer) => {
       if (pointer.rightButtonDown()) return;
       if (this.hud.cardOpen) { this.hud.closeCard(); return; }
       if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
-      this.punch({ pointer });
+      this.punch({ pointer, source: 'pointer' });
     });
     this.padPrev = {};
   }
@@ -821,7 +844,7 @@ export class BorrowedLightScene extends Phaser.Scene {
             this.countdownRelease = this.time.delayedCall(1500, () => this.tt.holdCountdown(false));
             if (this.fellThroughDark && !this.flags.darkDeckToasted) {
               this.flags.darkDeckToasted = true;
-              this.hud.toast(DARK_DECK_HINT, '#9fd9cf', 3600);
+              this.hud.toast(DARK_DECK_HINT, '#cfeee8', 3600);
             } else if (this.respawnNote) {
               this.hud.toast(this.respawnNote, '#e6dcc2', 2600);
             }
@@ -848,11 +871,15 @@ export class BorrowedLightScene extends Phaser.Scene {
   // One target per frame: what is highlighted is what F / E / a click act on.
   updateTarget() {
     const blocked = this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen || !this.player.visible;
+    // Running: no stickiness, the pick switches at the midpoint, and a pole
+    // already punched yields to the next one (alpha r3, R3-1).
     const pick = blocked ? null : pickTarget({
       chest: chestAt(this.feetX, this.feetY),
       facing: this.player.ctrl.facing,
       nodes: this.sectionNodes(),
       prevId: this.prevTargetId,
+      moving: Math.abs(this.player.body.velocity.x) > MOVING_VX,
+      spent: (node) => this.tt.isQueued(node.id),
     });
     this.currentTarget = pick?.node ?? null;
     this.prevTargetId = this.currentTarget?.id ?? null;
@@ -862,6 +889,63 @@ export class BorrowedLightScene extends Phaser.Scene {
   // The node a press acts on: the highlighted one (computed this frame).
   pressTarget() {
     return this.currentTarget ?? this.updateTarget();
+  }
+
+  // The borrowable machine under Butch (standing on it, riding it, or in
+  // the air just above it): its light cannot be borrowed from there (R3-2).
+  ridingMachine() {
+    const grounded = this.player.ctrl.grounded;
+    for (const m of MACHINES) {
+      if (!m.borrowable || m.section !== this.section || m.kind === 'lantern') continue;
+      const st = this.tt.machineStatus(m.id);
+      if (!st.powered && st.level <= 0) continue;
+      if (standsOn(m, st.level, this.feetX, this.feetY, grounded ? {} : { tol: 10, above: 260 })) return m.id;
+    }
+    return null;
+  }
+
+  // R3-3: a lift waits a bell while its rider is still walking to it: on
+  // its floor, outside the cage, within ~1.5 s of running.
+  liftShouldWait(machineId) {
+    const m = machineById(machineId);
+    if (!m || m.kind !== 'lift' || m.section !== this.section || this.respawning || !this.player.visible) return false;
+    if (Math.abs(this.feetY - m.y0) > 40) return false;
+    if (standsOn(m, 0, this.feetX, this.feetY, { slack: 0, tol: 40 })) return false;
+    const d = this.feetX < m.x ? m.x - this.feetX : this.feetX - (m.x + m.w);
+    return d > 0 && d <= RIDER_APPROACH_PX;
+  }
+
+  // Hold F (the click, or RB) on a punched node to take the punch back.
+  updateTakeBack(dt) {
+    const hb = this.takeBack;
+    this.holdG.clear();
+    if (!hb) return;
+    const pad = this.input.gamepad?.pad1;
+    const held = hb.source === 'key' ? this.keys.f.isDown : hb.source === 'pointer' ? this.input.activePointer.isDown : Boolean(pad?.R1);
+    const there = this.tt.isQueued(hb.nodeId) && (hb.source === 'pointer' || this.currentTarget?.id === hb.nodeId);
+    if (!held || !there || this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen) { this.takeBack = null; return; }
+    hb.ms += dt;
+    const node = nodeById(hb.nodeId);
+    const head = nodeHead(node);
+    const color = LINE_COLORS[node.line];
+    const k = Math.min(1, hb.ms / TAKE_BACK_MS);
+    if (hb.ms > 90) {
+      const g = this.holdG;
+      g.lineStyle(7, 0x0b0907, 0.75).strokeCircle(head.x, head.y + 20, 34);
+      g.lineStyle(4, color.glow, 0.95).beginPath();
+      g.arc(head.x, head.y + 20, 34, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * k, false);
+      g.strokePath();
+    }
+    if (hb.ms < TAKE_BACK_MS) return;
+    this.takeBack = null;
+    this.holdG.clear();
+    const res = this.tt.takeBack(hb.nodeId);
+    if (res.result !== 'unqueued') return;
+    sfx.fizzle();
+    const view = this.nodeViews.get(hb.nodeId);
+    if (view) view.sealing = 1;
+    this.floatHint(hb.nodeId, HINTS.takenBack, color.css, 1400);
+    this.lastPunch = { nodeId: hb.nodeId, result: 'unqueued', at: this.clock };
   }
 
   // Nothing in reach: name the nearest node rather than doing nothing.
@@ -882,7 +966,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.lightTrails.push({ from: { ...from }, to: { ...to }, t: 0, ms, color });
   }
 
-  punch({ pointer = null } = {}) {
+  punch({ pointer = null, source = null } = {}) {
     if (this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen) return;
     // One press, one punch: a keydown can arrive twice in one long frame.
     const now = performance.now();
@@ -902,8 +986,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (!node) { this.missFeedback(); return; }
     // F at a dead node with a light in the lamp gives it (same as E).
     if (node.dead && this.section === 'B') {
-      const pre = this.tt.borrowPreview(node.id);
-      if (['give', 'retrieve', 'return', 'borrow'].includes(pre.result)) { this.lampAction(node); return; }
+      const pre = this.tt.borrowPreview(node.id, { riding: this.ridingMachine() });
+      if (['give', 'retrieve', 'return', 'borrow', 'step-off'].includes(pre.result)) { this.lampAction(node); return; }
     }
     const view = this.nodeViews.get(node.id);
     const res = this.tt.punch(node.id);
@@ -946,11 +1030,13 @@ export class BorrowedLightScene extends Phaser.Scene {
         break;
       }
       case 'already':
-        this.floatHint(node.id, HINTS.already, color.css, 1200);
-        break;
-      case 'unqueued':
-        sfx.fizzle();
-        view.sealing = 1;
+        // Never a take-back (R3-1): the tag says it is punched and when it
+        // rings; holding the press takes it back on purpose. The marked
+        // node's own tag already says so; a click on another node floats it.
+        sfx.flickerTick();
+        view.busyShake = Math.max(view.busyShake, 0.35);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, this.tt.machineStatus(node.machine).waiting ? HINTS.liftWaits : HINTS.punched(node.phase, res.inBells), color.css, 1400);
+        if (source) this.takeBack = { nodeId: node.id, source, ms: 0 };
         break;
       case 'busy': {
         sfx.refused();
@@ -982,7 +1068,7 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   // E at a node (section B): borrow a light, give it, take it back, put it home.
   lampAction(node) {
-    const res = this.tt.lamp(node.id);
+    const res = this.tt.lamp(node.id, { riding: this.ridingMachine() });
     res.events?.forEach((event) => this.onModelEvent(event));
     this.lastPunch = { nodeId: node.id, result: res.result, at: this.clock };
     const head = nodeHead(node);
@@ -1010,8 +1096,13 @@ export class BorrowedLightScene extends Phaser.Scene {
         this.lightTrail(lamp, { x: head.x, y: head.y - 4 });
         break;
       default: {
-        const text = { full: HINTS.full, fixed: HINTS.fixed, live: HINTS.live, lit: HINTS.lit, dark: HINTS.nothing }[res.result];
-        if (text) { sfx.refused(); this.floatHint(node.id, text, '#e6dcc2', 1800); }
+        const text = { full: HINTS.full, fixed: HINTS.fixed, live: HINTS.live, lit: HINTS.lit, dark: HINTS.nothing, 'step-off': HINTS.stepOff }[res.result];
+        if (!text) break;
+        sfx.refused();
+        if (view) view.busyShake = Math.max(view.busyShake, 0.6);
+        // The marked node's tag already reads STEP OFF FIRST / ONE LIGHT…
+        const tagSays = node.id === this.currentTarget?.id && ['step-off', 'full', 'lit'].includes(res.result);
+        if (!tagSays) this.floatHint(node.id, text, '#e6dcc2', 1800);
         break;
       }
     }
@@ -1025,7 +1116,12 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   floatHintAt(x, y, text, color, ms = 2000) {
-    this.hintText.setText(text).setColor(color).setPosition(x, y).setAlpha(1);
+    this.hintText.setText(text).setColor(color);
+    // Kept inside the view (g04: the dark-deck hint ran off the right edge).
+    const view = this.cameras.main.worldView;
+    const half = this.hintText.width / 2 + 24;
+    if (view.width > half * 2) x = Phaser.Math.Clamp(x, view.x + half, view.right - half);
+    this.hintText.setPosition(x, y).setAlpha(1);
     this.tweens.killTweensOf(this.hintText);
     this.tweens.add({ targets: this.hintText, alpha: 0, y: y - 26, delay: ms, duration: 500 });
   }
@@ -1209,6 +1305,16 @@ export class BorrowedLightScene extends Phaser.Scene {
         if (!fall) this.lightTrail(from, to, { ms: Math.min(1400, 400 + Math.hypot(to.x - from.x, to.y - from.y) * 0.4) });
         if (!fall) sfx.lightHome();
         if (!fall && event.reason === 'spent' && Math.abs(to.x - this.feetX) > 900) this.hud.toast(HINTS.lightHome, '#f6e2b4', 1800);
+        break;
+      }
+      case 'lift-wait': {
+        // The lift holds its bell for Butch: its lamp blinks, and the tag
+        // says why (R3-3).
+        // The node's own tag carries the whole line; over the cage, the
+        // part that says where to stand.
+        sfx.flickerTick();
+        const lift = machineById(event.machineId);
+        this.floatHintAt(lift.x + lift.w / 2, lift.y0 - 120, HINTS.standInCage, LINE_COLORS[nodeById(event.nodeId).line].css, 2600);
         break;
       }
       case 'countdown':
@@ -1500,8 +1606,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     const seq = rememberedSequence(this.tt.history(this.departure.startBell), DEPARTURE_CHAIN);
     seq.forEach((machineId, i) => {
       this.time.delayedCall(650 * i + 400, () => {
-        // The walkway is remembered in place, its brake set.
-        if (machineById(machineId).kind === 'counterweight') { this.tt.settle(machineId, 1); this.tt.release(machineId); } else this.tt.hold(machineId, this.holderNode(machineId));
+        // The walkways are remembered in place, their brakes set; the drop
+        // ledge is remembered dropped.
+        const remembered = machineById(machineId);
+        if (remembered.kind === 'counterweight') { this.tt.settle(machineId, remembered.ballast ? 0 : 1); this.tt.release(machineId); } else this.tt.hold(machineId, this.holderNode(machineId));
         NODES.filter((n) => n.machine === machineId).forEach((n) => { const v = this.nodeViews.get(n.id); if (v) v.pulse = 0; });
         this.lightPlatformLamp(machineId);
         sfx.machineOn(machineById(machineId).kind);
@@ -1642,6 +1750,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.updateCamera(dt);
     this.updateCulling();
     this.updateTarget();
+    this.updateTakeBack(dt);
     this.drawWorld(t, dt);
     this.drawPlayer(t, dt);
     this.fx.update(dt);
@@ -1673,7 +1782,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       }
     }
     if (edge('X', pad.X)) this.interact();
-    if (edge('R1', pad.R1)) this.punch();
+    if (edge('R1', pad.R1)) this.punch({ source: 'pad' });
     const start = pad.buttons[9]?.pressed;
     if (edge('start', start)) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
   }
@@ -1805,7 +1914,8 @@ export class BorrowedLightScene extends Phaser.Scene {
         drawGhost(this.ghostG, machine, change.to, line, t);
         // A plain label on each ghost: what the next bell does to it.
         const b = machineBounds(machine, change.to === 'on' ? 1 : Math.max(0.05, this.tt.machineStatus(machine.id).level));
-        const verb = change.to === 'on'
+        const verb = change.to === 'on' && machine.ballast ? 'DROPS'
+          : change.to === 'on'
           ? { bridge: 'EXTENDS', lift: 'RISES', billboard: 'LIGHTS · SOLID', fan: 'BLOWS', shutter: 'OPENS', points: 'THROWS', drawbridge: 'LOWERS', sign: 'LIGHTS', cradle: 'LOWERS', lantern: 'LIGHTS', counterweight: 'BRAKE RELEASES' }[machine.kind]
           : 'SWITCHES OFF';
         const top = machine.kind === 'fan' ? Math.max(machine.yTop + 60, machine.yBottom - 260) : b.y;
@@ -2139,7 +2249,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (!this.flags.darkDeckHinted) {
         this.flags.darkDeckHinted = true;
         // Under the broken rim, in the dark gap: clear of Butch and the node tags.
-        this.floatHintAt((rim.x0 + rim.x1) / 2 + 60, rim.y + 52, DARK_DECK_HINT, '#9fd9cf', 3600);
+        this.floatHintAt((rim.x0 + rim.x1) / 2 + 60, rim.y + 52, DARK_DECK_HINT, '#cfeee8', 3600);
       }
     }
   }
@@ -2203,6 +2313,17 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (this.feetX > gantry.x + 200 && Math.abs(this.feetY - gantry.y) < 12 && this.feetX < gantry.x + gantry.w + 240) return { follow: true, text: TEACH.cage.text };
     }
     if (this.section !== 'A') return null;
+    // The chase (A8): no other teach tags (HOLD Q popped up on cradle 1);
+    // only the one that says where the last pole is punched from.
+    if (this.feetX >= CHASE.fromX && this.feetX < CHASE.toX) {
+      const cradle = machineById('a-cradle1');
+      const last = this.tt.nodeStatus('a-n14');
+      const firstDown = this.tt.machineStatus('a-cradle1').powered || this.tt.isQueued('a-n12');
+      if (firstDown && !last.queued && !last.powering && !this.tt.machineStatus('a-cradle3').powered) {
+        return { x: cradle.x + cradle.w / 2 + 40, y: cradle.y - cradle.hoist - 112, text: HINTS.fromCradle };
+      }
+      return null;
+    }
     const onRoomsRoof = this.feetX > 5160 && this.feetX < 5545 && Math.abs(this.feetY - 460) < 12;
     if (!this.flags.jumped && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
     // A6: the bell counts I, II — taught until the first phased punch.
@@ -2235,12 +2356,18 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.teachText.setPosition(at.x, at.y);
       this.teachAt = at.at ?? null;
     }
+    this.talkText.setVisible(false);
     if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
     // Something already read keeps its E (you can read it again) but no
     // longer advertises it.
     const raw = this.interactTarget();
     const target = (raw === 'window' && this.flags.cardRead) || (raw === 'letter' && this.flags.letterRead) ? null : raw;
-    if (target) {
+    // A1 (alpha r3, d08): by the mechanic and the first pole at once, the
+    // pole keeps its punch tag; E · TALK stays on the mechanic until his
+    // first lines are done.
+    if (target === 'mechanic' && this.currentTarget) {
+      if (!this.flags.mechanicTalked) this.talkText.setPosition(MECHANIC.x, MECHANIC.y - 208).setVisible(true);
+    } else if (target) {
       const [x, y, label] = target === 'mechanic'
         // Above the kiosk awning (its valance hangs 160–196 px up), clear of it.
         ? [MECHANIC.x, MECHANIC.y - 208, HINTS.talk]
@@ -2261,10 +2388,11 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   // The targeted node's tag says exactly what F (or E) will do to it.
   promptFor(node) {
+    const riding = this.section === 'B' ? this.ridingMachine() : null;
     if (node.dead) {
       if (this.section !== 'B') return HINTS.dead;
-      const b = this.tt.borrowPreview(node.id).result;
-      return { give: HINTS.give, retrieve: HINTS.retrieve, return: HINTS.putBack, borrow: HINTS.borrow, lit: HINTS.lit, full: HINTS.full }[b] ?? HINTS.dead;
+      const b = this.tt.borrowPreview(node.id, { riding }).result;
+      return { give: HINTS.give, retrieve: HINTS.retrieve, return: HINTS.putBack, borrow: HINTS.borrow, lit: HINTS.lit, full: HINTS.full, 'step-off': HINTS.stepOff }[b] ?? HINTS.dead;
     }
     const pre = this.tt.punchPreview(node.id);
     const color = LINE_COLORS[node.line];
@@ -2272,17 +2400,19 @@ export class BorrowedLightScene extends Phaser.Scene {
     let label = HINTS.punch;
     switch (pre.result) {
       case 'replace': label = `${HINTS.punch} · ${HINTS.forgets(color.name)}`; break;
-      case 'unqueue': label = HINTS.takeBack; break;
-      case 'already': label = HINTS.already; break;
+      // Punched: says when it rings, and how to take it back on purpose.
+      case 'already': label = pre.waiting ? HINTS.liftWaits : `${HINTS.punched(node.phase, pre.inBells)}\n${HINTS.holdTakeBack}`; break;
       case 'renew': label = HINTS.renew; break;
       case 'cut': label = HINTS.cutPrompt; break;
       case 'busy': label = this.tt.machineStatus(pre.holder)?.held ? 'LINE HOLDING · CUT ITS LIT TAG' : HINTS.busyTimed; break;
       default: break;
     }
-    if (machine.kind === 'counterweight' && pre.result === 'queue') label = HINTS.brake;
+    if (machine.kind === 'counterweight' && pre.result === 'queue') label = machine.ballast ? HINTS.dropBrake : HINTS.brake;
     if (node.phase && (pre.result === 'queue' || pre.result === 'replace')) label += ` · ${HINTS.ringsOn(node.phase)}`;
+    // A8: before cradle 1's bell, the last pole is better punched from it.
+    if (node.id === 'a-n14' && pre.result === 'queue' && !this.tt.machineStatus('a-cradle1').powered) label += `\n${HINTS.lastPoleEarly}`;
     // In the blackout a lit, borrowable machine can also lend its light.
-    if (this.section === 'B' && this.tt.borrowPreview(node.id).result === 'borrow') label += ' · E BORROW';
+    if (this.section === 'B' && this.tt.borrowPreview(node.id, { riding }).result === 'borrow') label += ' · E BORROW';
     return label;
   }
 
@@ -2318,6 +2448,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       target: this.currentTarget?.id ?? null,
       targetPrompt: this.currentTarget && this.promptText.visible ? this.promptText.text : null,
       lastPunch: this.lastPunch ?? null,
+      takeBack: this.takeBack ? { nodeId: this.takeBack.nodeId, ms: Math.round(this.takeBack.ms) } : null,
+      riding: this.ridingMachine(),
+      talkTag: this.talkText.visible,
       listen: this.listening ? this.tt.preview() : null,
       checkpoint: this.activeLamp,
       lampsLit: this.lamps.filter((lamp) => lamp.lit).map((lamp) => lamp.id),

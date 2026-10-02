@@ -373,10 +373,16 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       hazard(g, x, y, w, 26);
       g.fillStyle(0x0a0908, 1).fillRect(x, y + 22, w, 6);
       g.lineStyle(2.6, INK_HEX, 0.9).lineBetween(x - 2, y + 1, x + w + 2, y + 1);
-      // Lamp on the car.
+      // Lamp on the car. Waiting a bell for its rider (R3-3) it blinks, and
+      // a ring on the deck says "in here".
+      const wait = status.waiting ? 0.5 + 0.5 * Math.sin(t * 11) : 0;
       g.fillStyle(0x07090a, 1).fillCircle(x + w - 22, y - 46, 6);
-      g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(x + w - 22, y - 46, 4.5);
-      images.glow?.setPosition(x + w / 2, y - 10).setDisplaySize(w * 1.8, 170).setTint(color.hex).setAlpha(0.25 * on);
+      g.fillStyle(on > 0 || wait > 0.5 ? color.hex : color.dim, 1).fillCircle(x + w - 22, y - 46, 4.5);
+      if (status.waiting) {
+        g.lineStyle(3, color.glow, 0.35 + 0.5 * wait).strokeEllipse(x + w / 2, y - 2, w - 30, 22);
+        g.fillStyle(color.glow, 0.5 * wait).fillCircle(x + w - 22, y - 46, 9);
+      }
+      images.glow?.setPosition(x + w / 2, y - 10).setDisplaySize(w * 1.8, 170).setTint(color.hex).setAlpha(Math.max(0.25 * on, 0.3 * wait));
       break;
     }
     case 'billboard': {
@@ -562,6 +568,7 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       break;
     }
     case 'counterweight': {
+      if (machine.style === 'ledge') { drawDropLedge(g, machine, level, on, color, images, t); break; }
       // Two cages on one axle: a small drum for cage A, a big one for the
       // walkway B, so a short ride down brings the walkway a long way up.
       const { a, b } = cagesAt(machine, level);
@@ -640,6 +647,78 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
   if (ghost) g.setAlpha(0.35); else g.setAlpha(1);
 }
 
+// C4 · the drop ledge: a long ledge the city holds up over the gap on a
+// brake, heavier than the iron box on the other end of its rope. Released,
+// it sinks into line with the deck (rest, level 0); held, it hangs high.
+function drawDropLedge(g, machine, level, on, color, images, t) {
+  const { a, b } = cagesAt(machine, level);
+  const top = machine.yB1 - 130;
+  const lx = machine.xB - 14;
+  const rx = machine.xB + machine.wB + 4;
+  const bottom = machine.yA1 + 120;
+  // Frame: two lattice masts and a head beam over the ledge's run.
+  g.fillStyle(0x0d1012, 1);
+  g.fillRect(lx, top, 10, bottom - top);
+  g.fillRect(rx, top, 10, bottom - top);
+  g.fillRect(a.x - 10, top - 12, rx + 10 - (a.x - 10), 14);
+  g.lineStyle(2, 0x0d1012, 1);
+  for (let my = top + 30; my < bottom - 40; my += 60) {
+    g.lineBetween(lx, my, lx + 10, my + 60);
+    g.lineBetween(rx + 10, my, rx, my + 60);
+  }
+  g.lineStyle(1.3, INK_HEX, 0.3).lineBetween(a.x - 10, top - 12, rx + 10, top - 12);
+  // One wheel over the ledge's near end; the rope runs box ↔ ledge.
+  const axle = { x: machine.xB + 30, y: top + 36 };
+  const turn = (machine.yB0 - b.y) / 50;
+  g.fillStyle(0x1b1612, 1).fillCircle(axle.x, axle.y, 34);
+  g.lineStyle(3, 0x0a0908, 1).strokeCircle(axle.x, axle.y, 34);
+  g.lineStyle(2, 0x2c2620, 1);
+  for (let i = 0; i < 5; i += 1) {
+    const ang = turn + (i * TAU) / 5;
+    g.lineBetween(axle.x, axle.y, axle.x + Math.cos(ang) * 32, axle.y + Math.sin(ang) * 32);
+  }
+  g.fillStyle(0x0a0908, 1).fillCircle(axle.x, axle.y, 5);
+  g.lineStyle(1.4, INK_HEX, 0.4).strokeCircle(axle.x, axle.y, 34);
+  const boxX = a.x + a.w / 2;
+  const hang = [b.x + 26, b.x + b.w - 26];
+  g.lineStyle(2.4, 0x0a0908, 1);
+  g.lineBetween(axle.x - 34, axle.y, boxX, axle.y).lineBetween(boxX, axle.y, boxX, a.y);
+  g.lineBetween(axle.x + 34, axle.y, hang[1], axle.y);
+  for (const hx of hang) g.lineBetween(hx, axle.y, hx, b.y - 40);
+  // The iron counter-box: stacked plates, lighter than the ledge.
+  g.fillStyle(0x16130f, 1).fillRect(a.x, a.y, a.w, 74);
+  g.lineStyle(1.4, 0x2c2620, 1);
+  for (let py = a.y + 14; py < a.y + 74; py += 14) g.lineBetween(a.x + 3, py, a.x + a.w - 3, py);
+  g.lineStyle(1.4, INK_HEX, 0.45).strokeRect(a.x, a.y, a.w, 74);
+  // The ledge: a heavy deck with rails and a hazard nose at each end.
+  g.fillStyle(0x2a241e, 1).fillRect(b.x, b.y, b.w, 20);
+  g.fillStyle(0x0a0908, 0.9).fillRect(b.x, b.y + 16, b.w, 5);
+  hazard(g, b.x, b.y, 28, 20);
+  hazard(g, b.x + b.w - 28, b.y, 28, 20);
+  g.lineStyle(2, 0x0e0c0a, 1);
+  for (let tx = b.x + 34; tx < b.x + b.w - 30; tx += 46) g.lineBetween(tx, b.y, tx, b.y - 30);
+  g.lineBetween(b.x + 30, b.y - 30, b.x + b.w - 30, b.y - 30);
+  g.lineBetween(hang[0], b.y - 40, b.x + 30, b.y - 30).lineBetween(hang[1], b.y - 40, b.x + b.w - 30, b.y - 30);
+  const flush = level < 0.03;
+  g.lineStyle(flush ? 2.6 : 1.6, INK_HEX, flush ? 0.9 : 0.55).lineBetween(b.x, b.y + 1, b.x + b.w, b.y + 1);
+  // Held up: two tag clips on the rope say the city holds it there.
+  if (!flush) {
+    const sway = Math.sin(t * 1.7) * 2;
+    for (const hx of hang) g.fillStyle(0xe6dcc2, 0.8).fillRect(hx - 5 + sway, b.y - 74, 10, 14);
+  }
+  // Brake drum and lever on the deck's end, lit while released.
+  const bk = machine.brakeAt;
+  g.fillStyle(0x1b1612, 1).fillRect(bk.x - 16, bk.y - 34, 32, 34);
+  g.lineStyle(1.6, 0xb08a4a, 0.75).strokeRect(bk.x - 16, bk.y - 34, 32, 34);
+  g.fillStyle(0x07090a, 1).fillCircle(bk.x, bk.y - 17, 6);
+  g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(bk.x, bk.y - 17, 4.2);
+  const lever = on > 0 ? -1.1 : -0.25;
+  g.lineStyle(4, 0x0c0b0a, 1).lineBetween(bk.x - 10, bk.y - 30, bk.x - 10 - Math.cos(lever) * 28, bk.y - 30 + Math.sin(lever) * 28);
+  g.lineStyle(2, 0x0a0908, 1).lineBetween(bk.x, bk.y - 34, axle.x - 20, axle.y + 26);
+  if (on > 0) g.lineStyle(3, color.hex, 0.8 * on).lineBetween(b.x, b.y + 5, b.x + b.w, b.y + 5);
+  images.glow?.setPosition(b.x + b.w / 2, b.y + 8).setDisplaySize(b.w + 120, 120).setTint(color.hex).setAlpha(0.25 * on);
+}
+
 // Listen: a dashed ghost outline of where a machine will be after the bell.
 export function drawGhost(g, machine, to, line, t) {
   const color = LINE_COLORS[line];
@@ -656,11 +735,13 @@ export function drawGhost(g, machine, to, line, t) {
     }
   };
   if (machine.kind === 'counterweight') {
-    // Both cages where the ride leaves them.
-    const { a, b: walk } = cagesAt(machine, 1);
-    g.fillStyle(color.hex, 0.14 + 0.06 * Math.sin(t * 7)).fillRect(walk.x, walk.y, walk.w, 18).fillRect(a.x, a.y, a.w, 18);
+    // The cages where the ride leaves them (the drop ledge: dropped).
+    const cages = cagesAt(machine, machine.ballast ? 0 : 1);
+    const shown = (machine.riders ?? ['a', 'b']).map((side) => cages[side]);
+    g.fillStyle(color.hex, 0.14 + 0.06 * Math.sin(t * 7));
+    for (const c of shown) g.fillRect(c.x, c.y, c.w, 18);
     g.lineStyle(4, color.glow, pulse);
-    for (const c of [a, walk]) {
+    for (const c of shown) {
       dash(c.x, c.y, c.x + c.w, c.y);
       dash(c.x, c.y + 18, c.x + c.w, c.y + 18);
     }

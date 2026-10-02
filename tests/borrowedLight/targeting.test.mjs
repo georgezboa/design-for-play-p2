@@ -141,3 +141,61 @@ test('the scene acts on the node it highlights (one target, chosen once per fram
   assert.doesNotMatch(scene, /if \(!node\) return;\n\s+const view = this\.nodeViews\.get\(node\.id\);\n\s+const res = this\.tt\.punch/, 'no silent return when nothing is in reach');
   assert.match(scene, /HINTS\.outOfReach/);
 });
+
+// Alpha r3, R3-1 (e28): in the chase the poles stand 100–140 px apart and the
+// sticky pick stayed on the punched pole until 10–20 px past the midpoint.
+test('moving: the target switches at the midpoint (or before, toward the pole ahead), never after', () => {
+  const close = [['a-n12', 'a-n13'], ['a-n13', 'a-n14'], ['a-n4', 'a-n3'], ['a-n6', 'a-n5'], ['a-n11', 'a-n10']];
+  for (const [l, r] of close) {
+    const a = nodeById(l);
+    const b = nodeById(r);
+    const nodes = nodesIn(a.section);
+    const mid = (a.x + b.x) / 2;
+    // Walking from a to b, and back.
+    for (const [from, to, facing] of [[a, b, 1], [b, a, -1]]) {
+      let prev = from.id;
+      let switchedAt = null;
+      for (let x = from.x; facing > 0 ? x <= to.x : x >= to.x; x += 2 * facing) {
+        const pick = pickTarget({ chest: chestAt(x, a.y), facing, nodes, prevId: prev, moving: true });
+        if (pick?.node.id === to.id && switchedAt === null) switchedAt = x;
+        prev = pick?.node.id ?? prev;
+      }
+      assert.ok(switchedAt !== null, `${from.id} → ${to.id}`);
+      const past = (switchedAt - mid) * facing;
+      assert.ok(past <= 1, `${from.id} → ${to.id}: switched ${past} px past the midpoint`);
+      assert.ok(past >= -30, `${from.id} → ${to.id}: switched ${-past} px early`);
+    }
+  }
+});
+
+test('moving: no back-and-forth while running across any surface', () => {
+  for (const surface of surfaces()) {
+    const section = nodesIn(sectionAt((surface.x0 + surface.x1) / 2));
+    for (const facing of [1, -1]) {
+      let prev = null;
+      const seen = [];
+      const xs = [];
+      for (let x = surface.x0; x <= surface.x1; x += 5) xs.push(x);
+      if (facing < 0) xs.reverse();
+      for (const x of xs) {
+        const id = pickTarget({ chest: chestAt(x, surface.y), facing, nodes: section, prevId: prev, moving: true })?.node.id ?? null;
+        if (id !== prev) seen.push(id);
+        prev = id;
+      }
+      const nodesSeen = seen.filter(Boolean);
+      assert.equal(new Set(nodesSeen).size, nodesSeen.length, `${surface.id} (facing ${facing}): ${seen.join(' → ')}`);
+    }
+  }
+});
+
+test('a punched pole yields to its unpunched neighbour once Butch steps toward it', () => {
+  const a = nodeById('a-n12');
+  const b = nodeById('a-n13');
+  const nodes = nodesIn('A');
+  const spent = (node) => node.id === a.id;
+  // Standing at the punched pole it is still the target (hold F to take back).
+  assert.equal(pickTarget({ chest: chestAt(a.x, a.y), facing: 1, nodes, prevId: a.id, spent }).node.id, a.id);
+  // A third of the way to the next pole, the press goes to the next pole.
+  const x = a.x + (b.x - a.x) / 3;
+  assert.equal(pickTarget({ chest: chestAt(x, a.y), facing: 1, nodes, prevId: a.id, spent, moving: true }).node.id, b.id);
+});

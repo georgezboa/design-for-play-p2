@@ -25,6 +25,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['MOVE', 'A / D · ← →'],
     ['JUMP', 'SPACE · HOLD FOR HEIGHT'],
     ['PUNCH NODE', 'F / LEFT CLICK (THE MARKED NODE)'],
+    ['TAKE BACK A PUNCH', 'HOLD F / HOLD CLICK ON IT'],
     ['LISTEN (NEXT BELL)', 'HOLD Q'],
     ['BORROW / GIVE LIGHT', 'E AT A LIT / DEAD NODE (BLACKOUT)'],
     ['INTERACT / READ', 'E'],

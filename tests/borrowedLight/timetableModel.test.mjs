@@ -5,12 +5,31 @@ import {
   CATCH_MS,
   CUT_GRACE_MS,
   FLICKER_MS,
+  CH2_RULES,
+  LEGACY_CATCH_MS,
   MEMORY_MS,
   REPEAT_GUARD_MS,
-  createTimetable,
+  createTimetable as createAnyTimetable,
   rememberedSequence,
   ringsOn,
 } from '../../src/chapters/borrowedLight/timetableModel.js';
+
+// Chapter 2 plays by its round-3 rules; the defaults are the legacy rules
+// another chapter (the finale's bell arena) still uses.
+const createTimetable = (definition, options = {}) => createAnyTimetable(definition, { ...CH2_RULES, ...options });
+
+test('the legacy defaults are unchanged for other users of the model (the finale)', () => {
+  const tt = createAnyTimetable(def());
+  tt.punch('n-lift');
+  tt.update(REPEAT_GUARD_MS - 100);
+  assert.equal(tt.punch('n-lift').result, 'already', 'a quick double press is one punch');
+  tt.update(200);
+  assert.equal(tt.punchPreview('n-lift').result, 'unqueue');
+  assert.equal(tt.punch('n-lift').result, 'unqueued');
+  const late = createAnyTimetable(def());
+  late.update(BELL_MS + LEGACY_CATCH_MS - 20);
+  assert.equal(late.punch('n-lift').result, 'caught');
+});
 
 const def = () => ({
   nodes: [
@@ -99,18 +118,28 @@ test('one line, one borrowed moment: a second punch on a line replaces the first
   assert.equal(tt.machineStatus('lift').powered, true);
 });
 
-test('punching a queued node again takes the punch back, but not a double press', () => {
+// Alpha r3, R3-1: a second F / click on a queued node used to cancel it
+// with only a sound; with close poles a press meant for the next pole did.
+test('a press never takes a punch back; taking back is its own deliberate verb', () => {
   const tt = createTimetable(def());
   tt.punch('n-lift');
-  // R3 · a quick second press (or F + click) is the same punch.
-  tt.update(REPEAT_GUARD_MS - 100);
-  assert.equal(tt.punch('n-lift').result, 'already');
-  assert.equal(tt.isQueued('n-lift'), true);
-  tt.update(200);
-  assert.equal(tt.punchPreview('n-lift').result, 'unqueue');
-  assert.equal(tt.punch('n-lift').result, 'unqueued');
-  tt.update(BELL_MS);
-  assert.equal(tt.machineStatus('lift').powered, false);
+  for (const later of [100, 600, 2000]) {
+    tt.update(later);
+    assert.equal(tt.punchPreview('n-lift').result, 'already');
+    const again = tt.punch('n-lift');
+    assert.equal(again.result, 'already', `a press ${later} ms later`);
+    assert.equal(again.inBells, 1, 'and it says when it rings');
+    assert.equal(tt.isQueued('n-lift'), true);
+  }
+  tt.update(tt.msToBell());
+  assert.equal(tt.machineStatus('lift').powered, true, 'the punch held');
+  // The deliberate take-back (hold F on the node).
+  const t2 = createTimetable(def());
+  t2.punch('n-bridge');
+  assert.equal(t2.takeBack('n-lift').result, 'not-queued');
+  assert.deepEqual(t2.takeBack('n-bridge'), { result: 'unqueued', nodeId: 'n-bridge', line: 'amber' });
+  t2.update(BELL_MS);
+  assert.equal(t2.machineStatus('bridge').powered, false);
 });
 
 test('a line that is powering a machine is busy until it switches off', () => {
@@ -215,12 +244,13 @@ test('respawn clears the queue but leaves running machines alone', () => {
 // R3 · a punch a hair after the bell used to wait four more seconds.
 test('a punch just after a bell catches that bell', () => {
   const tt = createTimetable(def());
-  tt.update(BELL_MS + 120);
+  assert.equal(CATCH_MS, 120);
+  tt.update(BELL_MS + 100);
   const caught = tt.punch('n-lift');
   assert.equal(caught.result, 'caught');
   assert.ok(caught.events.some((event) => event.type === 'power' && event.machineId === 'lift'));
   assert.equal(tt.machineStatus('lift').powered, true);
-  assert.equal(tt.machineStatus('lift').remaining, 5000 - 120, 'timed from the bell it caught');
+  assert.equal(tt.machineStatus('lift').remaining, 5000 - 100, 'timed from the bell it caught');
   // Outside the window it waits for the next bell as before.
   const late = createTimetable(def());
   late.update(BELL_MS + CATCH_MS + 1);
@@ -605,4 +635,168 @@ test('counterweight: the loaded cage sinks while the brake is released, locked o
   tt.resetMachine('pair');
   assert.equal(tt.machineStatus('pair').level, 0);
   assert.equal(tt.machineStatus('pair').load, null);
+});
+
+// ---------------------------------------------------------------------------
+// Round 3 · alpha r3 fixes.
+const pairDef = ({ noCatch = false } = {}) => ({
+  nodes: [
+    { id: 'n-lift', line: 'teal', machine: 'lift', circuit: 'P:teal', district: 'P', ...(noCatch ? { noCatch } : {}) },
+    { id: 'n-bridge', line: 'rose', machine: 'bridge', circuit: 'P:rose', district: 'P', ...(noCatch ? { noCatch } : {}) },
+    { id: 'n-solo', line: 'amber', machine: 'board', circuit: 'Q:amber', district: 'Q' },
+  ],
+  machines: [
+    { id: 'lift', kind: 'lift', duration: 5000, travel: 1300, waitsForRider: true },
+    { id: 'bridge', kind: 'bridge', duration: 6000, travel: 600 },
+    { id: 'board', kind: 'billboard', duration: 5000, travel: 200 },
+  ],
+});
+
+test('R3-4: a bell catch never splits a pair (noCatch nodes, or a partner already waiting)', () => {
+  // A pair node does not catch the bell just gone: both ring together next.
+  const tt = createTimetable(pairDef({ noCatch: true }));
+  tt.update(BELL_MS + 50);
+  assert.equal(tt.punch('n-bridge').result, 'queued');
+  assert.equal(tt.punch('n-lift').result, 'queued');
+  tt.update(tt.msToBell());
+  assert.equal(tt.machineStatus('bridge').powered, true);
+  assert.equal(tt.machineStatus('lift').powered, true);
+  // Without the flag a lone punch still catches…
+  const t2 = createTimetable(pairDef());
+  t2.update(BELL_MS + 30);
+  assert.equal(t2.punch('n-bridge').result, 'caught', 'a lone punch still catches');
+  // …and a punch waiting in another room does not stop it…
+  const t4 = createTimetable(pairDef());
+  t4.update(BELL_MS + 300);
+  t4.punch('n-solo'); // another room's punch does not block P
+  t4.update(t4.msToBell() + 30);
+  assert.equal(t4.punch('n-lift').result, 'caught', 'another room does not block the catch');
+  const t5 = createTimetable({
+    nodes: [...pairDef().nodes, { id: 'n-bridge2', line: 'amber', machine: 'bridge2', circuit: 'P:amber', district: 'P', phase: 'even' }],
+    machines: [...pairDef().machines, { id: 'bridge2', kind: 'bridge', duration: 6000, travel: 600 }],
+  });
+  t5.update(BELL_MS + 30); // bell I rang 30 ms ago
+  assert.equal(t5.punch('n-bridge2').result, 'queued', 'waits for bell II');
+  assert.equal(t5.punch('n-lift').result, 'queued', 'a partner is waiting in the room: no catch');
+});
+
+test('R3-3: a lift waits one bell for a rider still on the way; its room waits with it', () => {
+  let approaching = true;
+  const tt = createTimetable(pairDef(), { shouldWait: (id) => id === 'lift' && approaching });
+  tt.punch('n-lift');
+  tt.punch('n-bridge');
+  tt.punch('n-solo');
+  let events = tt.update(BELL_MS);
+  const wait = events.find((e) => e.type === 'lift-wait');
+  assert.deepEqual(wait, { type: 'lift-wait', machineId: 'lift', nodeId: 'n-lift', untilBell: 2 });
+  assert.equal(tt.machineStatus('lift').powered, false, 'the lift holds');
+  assert.equal(tt.machineStatus('lift').waiting, true);
+  assert.equal(tt.machineStatus('bridge').powered, false, 'its pair holds with it');
+  assert.equal(tt.machineStatus('board').powered, true, 'another room is not held');
+  assert.equal(tt.isQueued('n-lift'), true);
+  assert.equal(tt.nodeStatus('n-lift').inBells, 1);
+  // Only once: the next bell goes, rider or not.
+  events = tt.update(BELL_MS);
+  assert.ok(!events.some((e) => e.type === 'lift-wait'));
+  assert.deepEqual(events.find((e) => e.type === 'bell').fired.sort(), ['n-bridge', 'n-lift']);
+  assert.equal(tt.machineStatus('lift').powered, true);
+  assert.equal(tt.machineStatus('lift').waiting, false);
+  // A rider already aboard (shouldWait false) never waits.
+  approaching = false;
+  tt.update(6000);
+  tt.punch('n-lift');
+  events = tt.update(tt.msToBell());
+  assert.ok(!events.some((e) => e.type === 'lift-wait'));
+  assert.equal(tt.machineStatus('lift').powered, true);
+});
+
+test('R3-3: on two-phase lines a waiting lift keeps I-then-II in order (I→III, II→IV)', () => {
+  const tt = createTimetable({
+    nodes: [
+      { id: 'n-lift', line: 'teal', machine: 'lift', circuit: 'P:teal', district: 'P', phase: 'odd' },
+      { id: 'n-bridge', line: 'amber', machine: 'bridge', circuit: 'P:amber', district: 'P', phase: 'even' },
+    ],
+    machines: [
+      { id: 'lift', kind: 'lift', duration: 6000, travel: 1300, waitsForRider: true },
+      { id: 'bridge', kind: 'bridge', duration: 6000, travel: 600 },
+    ],
+  }, { shouldWait: () => true });
+  tt.punch('n-bridge');
+  tt.punch('n-lift');
+  const fired = [];
+  for (let bell = 1; bell <= 4; bell += 1) fired.push(tt.update(BELL_MS).find((e) => e.type === 'bell').fired);
+  assert.deepEqual(fired, [[], [], ['n-lift'], ['n-bridge']]);
+});
+
+test('R3-3: a taken-back waiting lift frees its room; a respawn clears waits', () => {
+  const tt = createTimetable(pairDef(), { shouldWait: () => true });
+  tt.punch('n-lift');
+  tt.punch('n-bridge');
+  tt.update(BELL_MS);
+  assert.equal(tt.holdOf('P'), 2);
+  tt.takeBack('n-lift');
+  assert.equal(tt.holdOf('P'), null);
+  tt.update(BELL_MS);
+  assert.equal(tt.machineStatus('bridge').powered, true);
+  tt.update(7000);
+  tt.punch('n-lift');
+  tt.update(tt.msToBell());
+  assert.equal(tt.machineStatus('lift').waiting, true);
+  tt.clearQueue();
+  assert.equal(tt.machineStatus('lift').waiting, false);
+  assert.equal(tt.holdOf('P'), null);
+});
+
+test('R3-3: a light given to a dead lift waits for its rider too', () => {
+  const tt = createTimetable({
+    nodes: [
+      { id: 'n-lantern', line: 'amber', machine: 'lantern', dead: true, district: 'B' },
+      { id: 'n-lift', line: 'teal', machine: 'lift', dead: true, district: 'B' },
+    ],
+    machines: [
+      { id: 'lantern', kind: 'lantern', duration: 'hold', borrowable: true },
+      { id: 'lift', kind: 'lift', duration: 6000, travel: 1400, borrowable: true, waitsForRider: true },
+    ],
+  }, { shouldWait: () => true });
+  tt.hold('lantern', 'n-lantern');
+  tt.lamp('n-lantern');
+  tt.lamp('n-lift');
+  tt.update(tt.msToBell());
+  assert.equal(tt.machineStatus('lift').powered, false);
+  assert.equal(tt.nodeStatus('n-lift').given, true);
+  tt.update(BELL_MS);
+  assert.equal(tt.machineStatus('lift').powered, true);
+  assert.equal(tt.machineStatus('lift').borrowed, true);
+});
+
+test('R3-2: the lamp refuses to borrow the light of the machine Butch stands on', () => {
+  const tt = createTimetable(borrowDef());
+  tt.hold('lantern', 'n-lantern');
+  tt.lamp('n-lantern');
+  tt.lamp('n-bridge');
+  tt.update(tt.msToBell() + 700);
+  assert.equal(tt.borrowPreview('n-bridge-far', { riding: 'bridge' }).result, 'step-off');
+  const refused = tt.lamp('n-bridge-far', { riding: 'bridge' });
+  assert.equal(refused.result, 'step-off');
+  assert.equal(tt.machineStatus('bridge').powered, true, 'the bridge stays out under him');
+  assert.equal(tt.carried(), null);
+  // Off it, the same press borrows.
+  assert.equal(tt.lamp('n-bridge-far', { riding: null }).result, 'borrowed');
+});
+
+test('C4: a ballasted pair (the drop ledge) sinks on its own when its brake is released', () => {
+  const tt = createTimetable({
+    nodes: [{ id: 'n-drop', line: 'rose', machine: 'drop' }],
+    machines: [{ id: 'drop', kind: 'counterweight', duration: 3000, travel: 1600, ballast: 'b' }],
+  });
+  tt.settle('drop', 1); // held up
+  tt.update(5000);
+  assert.equal(tt.machineStatus('drop').level, 1, 'locked while the brake holds');
+  tt.punch('n-drop');
+  tt.update(tt.msToBell() + 1600);
+  assert.equal(tt.machineStatus('drop').level, 0, 'dropped into line');
+  // Butch standing on the ledge (load b) keeps it there.
+  tt.setLoad('drop', 'b');
+  tt.update(4000);
+  assert.equal(tt.machineStatus('drop').level, 0);
 });

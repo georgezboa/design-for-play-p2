@@ -7,6 +7,13 @@
 // Now one function picks the target each frame (sticky, so it does not flip
 // between two near poles), the highlight shows exactly that node, and a press
 // with nothing in reach reports the nearest node as OUT OF REACH.
+//
+// Round 3 (alpha r3, R3-1): with poles 100–140 px apart the sticky pick
+// stayed on the old pole until 10–20 px past the midpoint, so a press meant
+// for the next pole hit the one just punched. While Butch is moving the pick
+// is not sticky: it switches at the midpoint, and a pole behind him (in the
+// direction he is moving) counts as further away. A node a press would do
+// nothing to (already punched) yields to a neighbour that is about as close.
 
 import { NODE_POLE, PUNCH_RANGE } from './level.js';
 
@@ -30,17 +37,25 @@ export function reachOf(node, chest, facing = 1) {
   return { node, d, score: d + (behind ? BEHIND_PX : 0) };
 }
 
+// A node a press would do nothing to counts as this much further away.
+export const SPENT_PX = 40;
+// Butch counts as moving above this run speed (px/s).
+export const MOVING_VX = 40;
+
 // The node a press acts on, or null. `prevId` is last frame's target.
-export function pickTarget({ chest, facing = 1, nodes, prevId = null, range = PUNCH_RANGE }) {
+// `moving`: Butch is running (no stickiness, switch at the midpoint).
+// `spent(node)`: true for a node a press would not change (already punched).
+export function pickTarget({ chest, facing = 1, nodes, prevId = null, range = PUNCH_RANGE, moving = false, spent = null }) {
   let best = null;
   let prev = null;
   for (const node of nodes) {
     const reach = reachOf(node, chest, facing);
     if (reach.d > range) continue;
+    if (spent?.(node)) reach.score += SPENT_PX;
     if (!best || reach.score < best.score) best = reach;
     if (node.id === prevId) prev = reach;
   }
-  if (prev && best && prev.score <= best.score + STICKY_PX) return prev;
+  if (!moving && prev && best && prev.score <= best.score + STICKY_PX) return prev;
   return best;
 }
 

@@ -57,6 +57,9 @@ export class BorrowedLightHud {
 
     // Toast.
     this.toastText = this.text(CX, 980, '', 18, INK, { alpha: 0, letter: 4 });
+    // Alpha r3 (g04): a toast over the blackout read dark on dark. It sits
+    // on its own soft walnut-black band, like the title card.
+    this.toastBand = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 1).setAlpha(0);
 
     // Caption bar.
     this.caption = scene.add.container(0, 0).setScrollFactor(0).setDepth(DEPTH.dialog).setVisible(false);
@@ -265,10 +268,19 @@ export class BorrowedLightHud {
   toast(message, color = INK, ms = 2200) {
     const scene = this.scene;
     this.toastText.setText(message).setColor(color);
-    scene.tweens.killTweensOf(this.toastText);
-    this.toastText.setAlpha(0);
-    scene.tweens.add({ targets: this.toastText, alpha: 1, duration: 220 });
-    scene.tweens.add({ targets: this.toastText, alpha: 0, duration: 600, delay: ms });
+    const w = this.toastText.width + 120;
+    const h = this.toastText.height + 26;
+    const band = this.toastBand;
+    band.clear();
+    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0, 0.82, 0, 0.82).fillRect(CX - w / 2 - 60, 980 - h / 2, 60, h);
+    band.fillStyle(0x03070b, 0.82).fillRect(CX - w / 2, 980 - h / 2, w, h);
+    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0.82, 0, 0.82, 0).fillRect(CX + w / 2, 980 - h / 2, 60, h);
+    band.lineStyle(1, 0xb08a4a, 0.45).lineBetween(CX - w / 2, 980 - h / 2, CX + w / 2, 980 - h / 2).lineBetween(CX - w / 2, 980 + h / 2, CX + w / 2, 980 + h / 2);
+    const parts = [this.toastText, band];
+    scene.tweens.killTweensOf(parts);
+    parts.forEach((o) => o.setAlpha(0));
+    scene.tweens.add({ targets: parts, alpha: 1, duration: 220 });
+    scene.tweens.add({ targets: parts, alpha: 0, duration: 600, delay: ms });
   }
 
   showStones(snapshot) {
