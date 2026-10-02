@@ -55,7 +55,7 @@ test('A3-6: on a real maze the readout equals the BFS walk to the nearest key', 
 test('A3-6: the HUD has a plate behind it, so the spawn torches cannot wash it out', () => {
   assert.match(scene, /this\.hudPlate = this\.add\.graphics\(\)/);
   assert.match(scene, /hud\.add\(\[this\.threatG, this\.hudPlate, this\.livesText/);
-  assert.match(scene, /fillRoundedRect\(6, 6, width, 84, 4\)/);
+  assert.match(scene, /fillRoundedRect\(6, 6, width, height, 4\)/);
 });
 
 test('a hunter from outside the gaze warns before it can hit', () => {

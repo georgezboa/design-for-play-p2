@@ -47,3 +47,13 @@ ffmpeg -v error -y -i "$IN/4-5.mp4" -filter_complex "$FC" -map "[v]" -map "[a]" 
 # 0.7 s fade; run on the regraded film from above.
 # ffmpeg -i 1-2.mp4 -t 31.0 -vf "fade=t=out:st=30.3:d=0.7" -af "afade=t=out:st=30.1:d=0.9" -c:v libx264 -crf 20 -preset slow -pix_fmt yuv420p -movflags +faststart -c:a aac -b:a 160k 1-2.cut.mp4
 # ffmpeg -i 1-2.cut.mp4 -c:v libvpx-vp9 -crf 34 -b:v 0 -row-mt 1 -c:a libopus -b:a 112k 1-2.cut.webm
+
+# Round 3c (alpha round 3, L2): 4-5 still ended on a ~3 s hold over the old
+# grey museum (tilting up to its smeared sign), which doesn't match the
+# walnut lobby. Butch's last line ("That sounds more like a city...") is on
+# screen until 32.62 s. Keep the picture to 31.2 s (the dark floor, just
+# before the tilt-up at 31.3 s), hold that frame under the line and fade it
+# out 32.4-33.3 s; the sound runs to 33.3 s with a 0.6 s fade from 32.7 s,
+# so no speech is cut. 35.0 s -> 33.3 s. Run on the 4-5 film from above.
+# ffmpeg -i 4-5.mp4 -vf "trim=0:31.2,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.1,fade=t=out:st=32.4:d=0.9,format=yuv420p" -af "atrim=0:33.3,asetpts=PTS-STARTPTS,afade=t=out:st=32.7:d=0.6" -t 33.3 -r 30 -c:v libx264 -preset slow -crf 22 -maxrate 1500k -bufsize 3000k -profile:v high -movflags +faststart -c:a aac -b:a 160k -ar 48000 4-5.cut.mp4
+# ffmpeg -i 4-5.mp4 -vf "trim=0:31.2,setpts=PTS-STARTPTS,tpad=stop_mode=clone:stop_duration=2.1,fade=t=out:st=32.4:d=0.9,format=yuv420p" -af "atrim=0:33.3,asetpts=PTS-STARTPTS,afade=t=out:st=32.7:d=0.6" -t 33.3 -r 30 -c:v libvpx-vp9 -b:v 800k -minrate 400k -maxrate 1300k -deadline good -cpu-used 3 -row-mt 1 -pix_fmt yuv420p -c:a libopus -b:a 128k 4-5.cut.webm

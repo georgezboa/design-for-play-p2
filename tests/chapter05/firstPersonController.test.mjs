@@ -206,3 +206,44 @@ test('a raised platform blocks walking, catches a jump, and releases the player 
   assert.equal(controller.isGrounded, true);
   controller.dispose();
 });
+
+test('alpha R3: a pointer-lock look spike cannot spin Butch round (first locked move and huge deltas are dropped)', async () => {
+  const fakeWindow = new FakeEventTarget();
+  const fakeDocument = new FakeEventTarget();
+  fakeDocument.pointerLockElement = null;
+  fakeDocument.exitPointerLock = () => {};
+  globalThis.window = fakeWindow;
+  globalThis.document = fakeDocument;
+
+  const { FirstPersonController, LOOK_SPIKE_PX } = await import(
+    `../../src/chapters/museum3d/player/FirstPersonController.js?spike=${Date.now()}`
+  );
+  const domElement = new FakeEventTarget();
+  const camera = { position: { set() {} }, rotation: { set() {} }, rotateY() {}, rotateX() {} };
+  const controller = new FirstPersonController(camera, domElement, null);
+  controller.setPose(-6.5, 0, -Math.PI / 2);
+  const move = (movementX, movementY = 0) => fakeDocument.dispatchEvent({ type: 'mousemove', movementX, movementY });
+
+  fakeDocument.pointerLockElement = domElement;
+  fakeDocument.dispatchEvent({ type: 'pointerlockchange' });
+  // the click's own travel from the corner of the screen, delivered locked
+  move(800, 450);
+  assert.equal(controller.getYaw(), -Math.PI / 2, 'the first locked move carries pre-lock travel');
+  move(10, 0);
+  assert.ok(Math.abs(controller.getYaw() - (-Math.PI / 2 - 10 * PLAYER.lookSensitivity)) < 1e-9, 'ordinary look still turns');
+  const before = controller.getYaw();
+  move(LOOK_SPIKE_PX + 200, 0);
+  assert.equal(controller.getYaw(), before, 'a one-off spike is ignored');
+  move(-LOOK_SPIKE_PX + 10, 0);
+  assert.notEqual(controller.getYaw(), before, 'a fast flick under the cap still counts');
+
+  // unlocking re-arms the guard for the next click-to-resume
+  fakeDocument.pointerLockElement = null;
+  fakeDocument.dispatchEvent({ type: 'pointerlockchange' });
+  fakeDocument.pointerLockElement = domElement;
+  fakeDocument.dispatchEvent({ type: 'pointerlockchange' });
+  const resumed = controller.getYaw();
+  move(120, 0);
+  assert.equal(controller.getYaw(), resumed);
+  controller.dispose();
+});
