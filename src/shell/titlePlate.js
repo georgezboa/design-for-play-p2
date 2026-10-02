@@ -217,13 +217,34 @@ export function butchSweepProgress(L) {
 }
 
 /**
+ * The trackside for the still frame (Reduce Motion): no telegraph pole behind
+ * Butch's head and no trackside lamp in the glass to pull the eye.
+ */
+export function stillNear(L) {
+  const gap = L.poleGap;
+  const head = L.butch.head.x - L.glass.x;
+  const gw = L.glass.w;
+  let best = 0;
+  let bestScore = -Infinity;
+  for (let s = 0; s < gap * LAMP_EVERY; s += gap / 40) {
+    const pole = ((head + s) % gap + gap) % gap;
+    const clear = Math.min(pole, gap - pole) / gap;
+    const lamps = [-1, 0, 1].map((j) => lampWorldX(L, j) - s);
+    const lampInView = lamps.some((x) => x > -gw * 0.25 && x < gw * 1.25);
+    const score = clear - (lampInView ? 1 : 0);
+    if (score > bestScore + 1e-9) { best = s; bestScore = score; }
+  }
+  return best;
+}
+
+/**
  * Everything that moves, at scene time `t` (seconds). With `cfg.animate`
  * false the scene is still: no sweep, no sway, the lamp hangs straight.
  */
 export function frameState(t, L, cfg = motionConfig()) {
   const time = cfg.animate ? t : 0;
   const speeds = layerSpeeds(L.glass.w);
-  const scroll = { far: time * speeds.far, mid: time * speeds.mid, near: time * speeds.near };
+  const scroll = { far: time * speeds.far, mid: time * speeds.mid, near: cfg.animate ? time * speeds.near : stillNear(L) };
   const bob = cfg.animate ? 1.1 * Math.sin(time * 2.3) + 0.45 * Math.sin(time * 5.9 + 1.3) : 0;
   const lampAngle = cfg.animate ? 0.024 * Math.sin(time * 1.21) + 0.006 * Math.sin(time * 3.4 + 0.7) : 0;
   const flicker = cfg.animate ? 0.5 + 0.5 * Math.sin(time * 9.1) * Math.sin(time * 3.7 + 2) : 0.5;

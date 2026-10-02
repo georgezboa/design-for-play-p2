@@ -5,7 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  LAMP_EVERY, MAX_PIXELS, backingScale, butchSweepProgress, frameState, layerSpeeds, motionConfig, sceneLayout, sweepTime,
+  LAMP_EVERY, MAX_PIXELS, backingScale, butchSweepProgress, frameState, lampWorldX, layerSpeeds, motionConfig, sceneLayout, sweepTime,
 } from '../src/shell/titlePlate.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -99,6 +99,18 @@ test('Reduce Motion paints one still frame; LOW GRAPHICS thins the rain and drop
     assert.equal(b.sweep, null, 'no passing light');
     assert.equal(b.bob, 0, 'no sway');
     assert.equal(b.lampAngle, 0, 'the lamp hangs straight');
+  }
+  // the still frame keeps the telegraph poles off Butch's head and the lamps out of the glass
+  for (const [w, h] of ALL) {
+    const S = sceneLayout(w, h);
+    const { scroll } = frameState(0, S, still);
+    const head = S.butch.head.x - S.glass.x;
+    const pole = (((head + scroll.near) % S.poleGap) + S.poleGap) % S.poleGap;
+    assert.ok(Math.min(pole, S.poleGap - pole) > S.poleGap * 0.3, `${w}x${h}: no pole behind his head`);
+    for (const j of [-1, 0, 1]) {
+      const x = lampWorldX(S, j) - scroll.near;
+      assert.ok(x < -S.glass.w * 0.25 || x > S.glass.w * 1.25, `${w}x${h}: no lamp in the still glass`);
+    }
   }
   const low = motionConfig({ low: true });
   assert.equal(low.animate, true);
