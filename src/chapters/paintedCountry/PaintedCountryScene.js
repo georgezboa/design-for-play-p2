@@ -32,6 +32,7 @@ import { addFrames, addLayers, ensureCanvasTexture } from './art/artTextures.js'
 import { paintCountry } from './art/countryArt.js';
 import { paintCarriage, paintDoor } from './art/carriageArt.js';
 import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
+import { draftBlockEdges, shadePit } from './art/pencilEdges.js';
 import {
   buildPaperGrain,
   draftLine,
@@ -180,6 +181,8 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildPlayer();
     this.paintLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.PAINT);
     this.blockLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.BLOCK);
+    // the grey's pencil contour, redrawn with the stamps (alpha R3 · R6)
+    this.blockEdges = this.add.graphics().setDepth(DEPTH.BLOCK + 0.5);
     this.brushCursor = this.graphics(DEPTH.CURSOR);
     this.doorLayer = this.graphics(DEPTH.DOOR);
     this.markerLayer = this.graphics(DEPTH.CURSOR - 1);
@@ -366,6 +369,7 @@ export class PaintedCountryScene extends Phaser.Scene {
       const h = this.graphics(DEPTH.WALL + 1);
       h.fillStyle(PAPER.sheetHigh, 1);
       h.fillRect(hole.x, FLOOR_Y, hole.w, WORLD.h - FLOOR_Y);
+      shadePit(h, hole.x, FLOOR_Y, hole.w, WORLD.h - FLOOR_Y, { seed: 0x9170 + i });
       h.lineStyle(1.6, PAPER.deckle, 0.95);
       [hole.x, hole.x + hole.w].forEach((x) =>
         draftLine(h, this.rnd, x, FLOOR_Y, x, WORLD.h, { overshoot: 0, jitter: 2.6, segments: 10 }),
@@ -868,6 +872,7 @@ export class PaintedCountryScene extends Phaser.Scene {
       const cy = Math.floor(key / GRID.w);
       b.create(cx * CELL - off, cy * CELL - off, `grey-${(cx * 5 + cy) % CELL_STAMP.variants}`);
     });
+    draftBlockEdges(this.blockEdges, this.car.state.blocks, GRID.w, CELL);
   }
 
   drawFigure() {

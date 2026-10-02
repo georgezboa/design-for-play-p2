@@ -21,6 +21,7 @@ import { paintCountry } from './art/countryArt.js';
 import { paintTrain } from './art/trainArt.js';
 import { RESIDENT, paintResident } from './art/figuresArt.js';
 import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
+import { draftBlockEdges, shadePit } from './art/pencilEdges.js';
 import { buildPaperGrain, draftLine, draftRect, hatchRect, makeRandom, paintedFill } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
 import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt } from './chapterUi.js';
@@ -139,6 +140,8 @@ export class PaintedLineScene extends Phaser.Scene {
     this.paintArt = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.PAINT);
     this.railArt = this.add.graphics().setDepth(DEPTH.PAINT + 0.5);
     this.blockArt = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.BLOCK);
+    // the grey's pencil contour, redrawn with the stamps (alpha R3 · R6)
+    this.blockEdges = this.add.graphics().setDepth(DEPTH.BLOCK + 0.5);
     this.buildTrain();
     this.dripArt = this.add.graphics().setDepth(DEPTH.TRAIN + 0.5);
     this.steamArt = this.add.graphics().setDepth(DEPTH.TRAIN + 1);
@@ -253,6 +256,7 @@ export class PaintedLineScene extends Phaser.Scene {
     for (let i = 0; i < GROUND_SPANS.length - 1; i += 1) {
       const x = GROUND_SPANS[i].to * CELL;
       const w = (GROUND_SPANS[i + 1].from - GROUND_SPANS[i].to) * CELL;
+      shadePit(g, x, TRACK_Y, w, LINE_WORLD.h - TRACK_Y, { seed: 0x9180 + i });
       g.lineStyle(1.6, PAPER.deckle, 0.95);
       [x, x + w].forEach((xx) => draftLine(g, this.rnd, xx, TRACK_Y, xx, LINE_WORLD.h, { overshoot: 0, jitter: 2.6, segments: 10 }));
     }
@@ -423,6 +427,7 @@ export class PaintedLineScene extends Phaser.Scene {
       const coats = this.line.varnishAt(c, r);
       if (coats > 0) b.create(c * CELL - off, r * CELL - off, `varnish-${Math.min(2, coats)}`);
     });
+    draftBlockEdges(this.blockEdges, this.line.state.blocks, LINE.cols, CELL);
   }
 
   partRects(frontX) {

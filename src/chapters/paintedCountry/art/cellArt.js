@@ -14,6 +14,8 @@ import { dab } from './pencilKit.js';
 export const CELL_STAMP = Object.freeze({ cell: 20, bleed: 2, size: 24, variants: 4 });
 
 const INDIGO = '#46618c';
+/** The grey coat's hatching period (px); divides the cell so it tiles. */
+export const GREY_HATCH = 5;
 
 // The atlas's frame names and rectangles (the same ones paintCellAtlas
 // draws), without drawing it.
@@ -62,6 +64,31 @@ export function paintCellAtlas() {
       c.strokeStyle = k === 1 ? '#a39e95' : HUE.greyDark;
       c.lineWidth = 1 + r() * 1.5;
       c.beginPath(); c.moveTo(x, yy); c.quadraticCurveTo(x + size / 2, yy + (r() - 0.5) * 3, x + size, yy + (r() - 0.5) * 2); c.stroke();
+    }
+    // graphite hatching over the coat (alpha R3 · R6: it read as a flat grey
+    // fill). 45° strokes on a 5 px period measured from the cell's corner:
+    // 5 divides the 20 px cell, so the strokes run on unbroken from cell to
+    // cell however a block is laid.
+    c.beginPath(); c.rect(x + bleed - 1, bleed - 1, cell + 2, cell + 2); c.clip();
+    c.globalAlpha = 0.4;
+    c.strokeStyle = '#55514b';
+    c.lineWidth = 0.9;
+    for (let k = -size; k <= size * 2; k += GREY_HATCH) {
+      // stamp-local x + y = 2 * bleed + k is world x + y ≡ 0 (mod GREY_HATCH)
+      const s = 2 * bleed + k;
+      c.beginPath(); c.moveTo(x + s, 0); c.lineTo(x + s - size, size); c.stroke();
+    }
+    // a lighter cross-hatch the other way on twice the period (also tiles:
+    // world x - y ≡ 0 mod 10)
+    c.globalAlpha = 0.22;
+    for (let k = -size; k <= size * 2; k += GREY_HATCH * 2) {
+      c.beginPath(); c.moveTo(x + k, 0); c.lineTo(x + k + size, size); c.stroke();
+    }
+    // the paper's tooth through the coat: a few lifted and a few dark grains
+    for (let k = 0; k < 14; k += 1) {
+      c.globalAlpha = 0.18 + r() * 0.2;
+      c.fillStyle = k % 3 === 0 ? '#b9b4aa' : HUE.greyDark;
+      c.fillRect(x + bleed + r() * cell, bleed + r() * cell, 1, 1);
     }
     c.globalAlpha = 1;
     c.restore();
