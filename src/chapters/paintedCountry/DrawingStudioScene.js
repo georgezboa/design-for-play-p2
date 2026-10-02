@@ -42,6 +42,11 @@ import { devParam } from '../../devMode.js';
 
 const VIEW = Object.freeze({ w: 960, h: 600 });
 const WORLD = Object.freeze({ w: 1640, h: 600 });
+// Where Butch may walk: the camera stops at the room's ends, so a walker
+// held only by the world bounds could stand with half his figure (and the
+// brush) past the frame (alpha R3). Keep his body this far inside each end.
+export const STUDIO_WALK_INSET = 48;
+export const STUDIO_WALK = Object.freeze({ x0: STUDIO_WALK_INSET, x1: WORLD.w - STUDIO_WALK_INSET });
 const FLOOR_Y = 486;
 const MOVE_SPEED = 210;
 const JUMP_VELOCITY = -620;
@@ -120,7 +125,7 @@ export class DrawingStudioScene extends Phaser.Scene {
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
-    this.physics.world.setBounds(0, 0, WORLD.w, WORLD.h);
+    this.physics.world.setBounds(STUDIO_WALK.x0, 0, STUDIO_WALK.x1 - STUDIO_WALK.x0, WORLD.h);
 
     this.buildRoom();
     this.buildSources();
