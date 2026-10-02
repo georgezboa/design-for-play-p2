@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { W, H, COLORS, BOSS, DEPTHS } from '../constants.js';
+import { W, BOSS, BOSS_EDGE_MARGIN, BOSS_RAIL_DROP, DEPTHS, nearRailY } from '../constants.js';
 import { SHEET_PAD } from '../assets.js';
 
 // The Black Ticket — the Conductor's true form: the ticket that never gets
@@ -16,9 +16,8 @@ export default class Boss {
     this.enraged = false;
     this.state = 'intro';
     this.baseX = W * 0.8;
-    this.baseY = H + 4;      // sprite is bottom-anchored on the tracks
     this.x = W + 320;         // starts off-screen for the intro chug-in
-    this.y = this.baseY;
+    this.y = Boss.railY(this.x); // bottom-anchored: wheels on the near rail
     this.bobT = Math.random() * 10;
     this.hitFlash = 0;
     this.flinchCd = 0;
@@ -78,6 +77,12 @@ export default class Boss {
     });
   }
 
+  // The engine's base at x: on the near rail, which climbs to the right.
+  static railY(x) { return nearRailY(x) + BOSS_RAIL_DROP; }
+  get baseY() { return Boss.railY(this.baseX); }
+  // The furthest right the engine may stand with its whole body in frame.
+  get maxX() { return W - this.bodyWidth / 2 - BOSS_EDGE_MARGIN; }
+
   get hpFrac() { return Math.max(0, this.hp / BOSS.maxHp); }
   // The drawing inside its frame's clear margin (assets.js SHEET_PAD).
   get bodyWidth() { return this.sprite.displayWidth - (SHEET_PAD.left + SHEET_PAD.right) * Math.abs(this.sprite.scaleX); }
@@ -120,7 +125,7 @@ export default class Boss {
   // Pick a new station to chug toward. aggressive=true advances on the player.
   reposition(aggressive = false) {
     const min = aggressive ? W * 0.52 : W * 0.68;
-    const max = aggressive ? W * 0.66 : W * 0.88;
+    const max = Math.min(aggressive ? W * 0.66 : W * 0.88, this.maxX);
     this.moveTarget = Phaser.Math.Between(Math.floor(min), Math.floor(max));
   }
 
@@ -143,6 +148,9 @@ export default class Boss {
         if (!this.busy) this.playAnim('idle');
       }
     }
+
+    // On the rail wherever he stands (the intro tween and the recoil move x)
+    this.y = Boss.railY(this.x);
 
     // Idle bob, faster when enraged
     const speed = this.enraged ? 2.8 : 1.6;

@@ -5,6 +5,17 @@
 export const W = 1100;
 export const H = 560;
 
+// The near brass rail of the perspective line (BossScene draws it), rising
+// from the bottom-left to the right. The Black Ticket's engine runs on it
+// (alpha R3: bottom-anchored under the frame, his wheels were cut off and
+// sat under the PAUSE / SOUND chips and the hint tag).
+export const NEAR_RAIL = Object.freeze({ left: H - 18, right: H - 92 });
+export const nearRailY = (x) => NEAR_RAIL.left + (NEAR_RAIL.right - NEAR_RAIL.left) * (x / W);
+// How far the engine's base sits below the rail line (its wheels on it).
+export const BOSS_RAIL_DROP = 10;
+// The engine's body keeps this far inside the right edge of the frame.
+export const BOSS_EDGE_MARGIN = 14;
+
 // The finale palette (src/shell/finale.css): walnut night, brass, ivory
 // paper, amber light, oxblood stamps. The legacy key names stay so the
 // attack code reads the same; each now maps to a finale colour.

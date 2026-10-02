@@ -1,7 +1,7 @@
 import Phaser from 'phaser';
 import {
   W, H, COLORS, BOSS, PLAYER, DEPTHS, ASSIST, BELL_SECONDS, PARRY_WINDOW, PHASE_CARDS,
-  nearestBellOffset, phaseStartHp,
+  NEAR_RAIL, nearestBellOffset, phaseStartHp,
 } from '../constants.js';
 import { createSfx } from '../sfx.js';
 import { readSettings, volumeForChannel } from '../../../shell/saveSystem.js';
@@ -128,7 +128,7 @@ export default class BossScene extends Phaser.Scene {
     g.fillStyle(COLORS.oxblood, 0.55).fillRect(tx, ty + th - 58, tw, 22);
     // brass rails in perspective, as on the Chapter 1 line
     g.lineStyle(3, COLORS.brass, 0.9);
-    g.lineBetween(0, H - 18, W, H - 92);
+    g.lineBetween(0, NEAR_RAIL.left, W, NEAR_RAIL.right);
     g.lineBetween(0, H - 78, W, H - 128);
     for (let i = 0; i < 24; i += 1) {
       const t = i / 24;
