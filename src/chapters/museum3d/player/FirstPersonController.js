@@ -20,6 +20,13 @@ const KEY_MAP = {
 };
 
 const PITCH_LIMIT = 1.2;
+// Pointer-lock look spikes (alpha R3: the lobby click spun Butch round to
+// face the ROOM 101 sign, and W then walked him into it). The first locked
+// mousemove can carry the whole pre-lock travel of the pointer (the jump
+// from wherever it was to the click), and Chrome is known to emit one-off
+// huge movementX/Y values: drop the first locked event and any event past
+// this many pixels (far beyond a real flick within one event).
+export const LOOK_SPIKE_PX = 280;
 const LANDING_EPSILON = 0.04;
 const STEP_HEIGHT = 0.28;
 const FALLBACK_TAP_DISTANCE = 0.18;
@@ -44,6 +51,7 @@ export class FirstPersonController {
     this._fallbackActive = false;
     this._dragging = false;
     this._lastPointer = { x: 0, y: 0 };
+    this._lookPrimed = false;
     this._reportedActive = false;
     this._lockFallbackTimer = null;
 
@@ -77,6 +85,11 @@ export class FirstPersonController {
       if (this.isLocked) {
         dx = e.movementX;
         dy = e.movementY;
+        if (!this._lookPrimed) {
+          this._lookPrimed = true;
+          return;
+        }
+        if (Math.abs(dx) > LOOK_SPIKE_PX || Math.abs(dy) > LOOK_SPIKE_PX) return;
       } else if (this._fallbackActive && this._dragging) {
         dx = e.clientX - this._lastPointer.x;
         dy = e.clientY - this._lastPointer.y;
@@ -107,6 +120,7 @@ export class FirstPersonController {
     this._onLockChange = () => {
       const locked = this.isLocked;
       if (locked) this._fallbackActive = false;
+      else this._lookPrimed = false;
       this._notifyActiveChange();
     };
     document.addEventListener('pointerlockchange', this._onLockChange);
