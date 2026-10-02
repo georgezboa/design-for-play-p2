@@ -1061,10 +1061,22 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 /* ---------- smaller and shorter screens ---------- */
 
 /* the lines grow with the plaque and always fit its width on one line */
-#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-label { font-size: clamp(13px, min(2.3vh, calc(var(--nf-board) * .041)), 30px); white-space: nowrap; }
-#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: clamp(9px, calc(var(--nf-board) * .025), 15px); letter-spacing: .1em; white-space: nowrap; }
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.3vh, var(--nf-board) * .041), 30px) * var(--nightfall-text-scale)); }
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 15px) * var(--nightfall-text-scale)); letter-spacing: .1em; }
+/* Large text on a short screen: the timetable scrolls inside the plaque, its
+   header and footer stay put. The side padding keeps the ticket's notch and
+   its tilt inside the scroll box. */
+#nightfall-title .nf-main-actions {
+  grid-auto-rows: max-content;
+  min-height: 0;
+  overflow: hidden auto;
+  margin-inline: -1.1em;
+  padding-inline: 1.1em;
+  scrollbar-width: thin;
+  scrollbar-color: var(--nf-brass) transparent;
+}
 /* the key hints keep to one line across the plaque */
-#nightfall-title[data-layout="wide"] .nf-hint { flex-wrap: nowrap; font-size: clamp(8.5px, calc(var(--nf-board) * .026), 13px); }
+#nightfall-title[data-layout="wide"] .nf-hint { font-size: calc(clamp(8.5px, var(--nf-board) * .026, 13px) * var(--nightfall-text-scale)); }
 @media (max-height: 760px) {
   #nightfall-title[data-layout="wide"] .nf-main-actions .nf-action { padding-block: clamp(5px, 1.2vh, 12px); min-height: 40px; }
   #nightfall-title[data-layout="wide"] .nf-board-columns { margin-top: clamp(6px, 1.2vh, 14px); }
@@ -1085,8 +1097,8 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 #nightfall-title[data-layout="narrow"] .nf-menu-header { margin-bottom: .2em; }
 #nightfall-title[data-layout="narrow"] .nf-main-actions { gap: 0; padding: .2em 0; }
 #nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action { min-height: 40px; padding-block: clamp(5px, 1vh, 12px); }
-#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-label { font-size: clamp(13px, min(2.4vh, calc(var(--nf-board) * .042)), 22px); white-space: nowrap; }
-#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: clamp(9px, calc(var(--nf-board) * .025), 13px); letter-spacing: .1em; white-space: nowrap; }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.4vh, var(--nf-board) * .042), 22px) * var(--nightfall-text-scale)); }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 13px) * var(--nightfall-text-scale)); letter-spacing: .1em; }
 #nightfall-title[data-layout="narrow"][data-plaque="compact"] :is(.nf-menu-header, .nf-main-actions .nf-action-detail) { display: none; }
 #nightfall-title[data-layout="narrow"] .nf-menu-footer { padding-top: .45em; }
 

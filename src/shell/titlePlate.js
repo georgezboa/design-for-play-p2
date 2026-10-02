@@ -387,8 +387,13 @@ export function mountTitleScene(root) {
 
   const controller = {
     hold(reason, on) {
+      const had = holds.has(reason);
       if (on) holds.add(reason); else holds.delete(reason);
       root.dataset.sceneHold = [...holds].join(' ');
+      // One last still frame as the loop stops: the page always has a fresh
+      // frame to commit, so a dialog's opening animation starts at once even
+      // where nothing else on the page is moving.
+      if (on && !had && outside.isConnected) draw(frozen ?? elapsed);
       schedule();
     },
     relayout,

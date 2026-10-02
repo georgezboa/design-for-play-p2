@@ -13,6 +13,8 @@ import {
 import { GLASS_MARGIN, LAMP_EVERY, lampWorldX } from './titlePlate.js';
 
 const TAU = Math.PI * 2;
+/** The view outside is painted at this fraction of the room's resolution. */
+const OUTSIDE_SCALE = 0.72;
 
 function canvasOf(w, h) {
   const element = document.createElement('canvas');
@@ -279,7 +281,7 @@ function paintGround(c, P, h) {
   const random = rng(6301);
   c.save();
   c.lineCap = 'round';
-  for (let i = 0; i < 70; i += 1) {
+  for (let i = 0; i < Math.round(P * 0.11); i += 1) {
     const x = random() * P;
     const y = top + 3 + random() * (h + M - top);
     const len = 30 + random() * 120;
@@ -294,9 +296,9 @@ function paintGround(c, P, h) {
 // ---------------------------------------------------------------------------
 // outside, live: telegraph poles and wires, trackside lamps, rain
 
-function drawPoles(c, L, scroll, h) {
+function drawPoles(c, L, scroll, h, width = L.glass.w) {
   const gap = L.poleGap;
-  const w = L.glass.w;
+  const w = width;
   const top = L.wireY;
   const pw = Math.max(5, h * 0.016);
   const first = Math.floor((scroll - gap) / gap);
@@ -341,6 +343,24 @@ function drawPoles(c, L, scroll, h) {
   });
 }
 
+/**
+ * The trackside, one lamp's period long (LAMP_EVERY poles), so it tiles: the
+ * cutting, the telegraph poles and wires, the trackside lamp's post.
+ */
+function paintNear(c, L, P, h) {
+  paintGround(c, P, h);
+  drawPoles(c, L, 0, h, P);
+  const r = Math.max(4, h * 0.012);
+  const y = h * 0.6;
+  tile3(P, (dx) => {
+    const x = lampWorldX(L, 0) % P + dx;
+    c.fillStyle = '#080b0d';
+    c.fillRect(x - 2, y + r, 4, h + GLASS_MARGIN - y);
+    c.fillRect(x - r * 1.4, y - r * 1.6, r * 2.8, r * 0.8);
+  });
+}
+
+/** The trackside lamps' light: live, the only part of the trackside that is. */
 function drawTrackLamps(c, L, scroll, h) {
   const w = L.glass.w;
   const span = L.poleGap * LAMP_EVERY;
@@ -353,9 +373,6 @@ function drawTrackLamps(c, L, scroll, h) {
     // the beam it throws along the cutting, and the halo in the rain
     glow(c, x, y, h * 0.42, 'rgba(255, 176, 96, 0.9)', 0.24);
     glow(c, x, h * 0.95, h * 0.3, 'rgba(255, 170, 90, 0.9)', 0.18);
-    c.fillStyle = '#080b0d';
-    c.fillRect(x - 2, y + r, 4, h - y);
-    c.fillRect(x - r * 1.4, y - r * 1.6, r * 2.8, r * 0.8);
     c.fillStyle = '#ffe6b0';
     c.beginPath(); c.arc(x, y, r, 0, TAU); c.fill();
     glow(c, x, y, r * 6, 'rgba(255, 220, 160, 1)', 0.7);
@@ -1188,31 +1205,34 @@ export function paintScene({ L, k, cfg, canvases, root }) {
   const g = L.glass;
   const gw = g.w + M * 2;
   const gh = g.h + M * 2;
-  const size = (element, x, y, w, h) => {
-    element.width = Math.max(1, Math.round(w * k));
-    element.height = Math.max(1, Math.round(h * k));
+  // the view outside is soft behind the wet glass: it is painted, and
+  // redrawn every frame, at a lower resolution than the room
+  const ko = k * OUTSIDE_SCALE;
+  const size = (element, x, y, w, h, scale) => {
+    element.width = Math.max(1, Math.round(w * scale));
+    element.height = Math.max(1, Math.round(h * scale));
     Object.assign(element.style, { left: `${x}px`, top: `${y}px`, width: `${w}px`, height: `${h}px` });
   };
-  size(outside, g.x - M, g.y - M, gw, gh);
-  size(room, 0, 0, L.W, L.H);
-  size(fx, 0, 0, L.W, L.H);
+  size(outside, g.x - M, g.y - M, gw, gh, ko);
+  size(room, 0, 0, L.W, L.H, k);
+  size(fx, 0, 0, L.W, L.H, k);
 
   // outside layers, glass-local (0, 0 is the glass's top left)
   const strip = (P, paint, scale = 1) => {
-    const [element, c] = layer(P, gh, k * scale);
+    const [element, c] = layer(P, gh, ko * scale);
     c.translate(0, M);
     paint(c, P);
     return { element, P };
   };
-  const [sky, skyC] = layer(gw, gh, k);
+  const [sky, skyC] = layer(gw, gh, ko);
   skyC.translate(M, M);
   paintSky(skyC, L, g.w, g.h);
   const far = strip(Math.ceil(Math.max(gw * 1.4, 900)), (c, P) => paintFar(c, L, P, g.h), 0.75);
   const mid = strip(Math.ceil(Math.max(gw * 1.25, 900)), (c, P) => paintMid(c, L, P, g.h), 0.85);
-  const ground = strip(640, (c, P) => paintGround(c, P, g.h));
+  const near = strip(L.poleGap * LAMP_EVERY, (c, P) => paintNear(c, L, P, g.h));
   const rainTiles = [
-    paintRainTile(256, k, cfg.rainDensity, 6951, { min: 8, max: 30, alpha: 0.18 }),
-    cfg.rainLayers > 1 ? paintRainTile(384, k, cfg.rainDensity * 0.3, 6952, { min: 14, max: 40, alpha: 0.12, width: 1.4 }) : null,
+    paintRainTile(256, ko, cfg.rainDensity, 6951, { min: 8, max: 30, alpha: 0.18 }),
+    cfg.rainLayers > 1 ? paintRainTile(384, ko, cfg.rainDensity * 0.3, 6952, { min: 14, max: 40, alpha: 0.12, width: 1.4 }) : null,
   ].filter(Boolean);
 
   // the room
@@ -1256,6 +1276,10 @@ export function paintScene({ L, k, cfg, canvases, root }) {
   const speedsRain = [[-150, 360], [-40, 70]];
   const plaque = root?.querySelector('.nf-menu');
   let plaqueLight = '';
+  // the fx canvas starts clear; each frame clears only what the last one drew
+  fc.setTransform(1, 0, 0, 1, 0, 0);
+  fc.clearRect(0, 0, fx.width, fx.height);
+  const dirty = [];
 
   const drawStrip = (c, { element, P }, offset) => {
     const x = -(((offset % P) + P) % P);
@@ -1265,32 +1289,32 @@ export function paintScene({ L, k, cfg, canvases, root }) {
 
   function drawFrame(state) {
     // outside, glass-local, swaying with the carriage
-    oc.setTransform(k, 0, 0, k, 0, 0);
+    oc.setTransform(ko, 0, 0, ko, 0, 0);
     oc.drawImage(sky, 0, 0, gw, gh);
     oc.translate(M, M + state.bob);
     drawStrip(oc, far, state.scroll.far);
     drawStrip(oc, mid, state.scroll.mid);
-    drawStrip(oc, ground, state.scroll.near);
-    drawPoles(oc, L, state.scroll.near, g.h);
+    drawStrip(oc, near, state.scroll.near);
     drawTrackLamps(oc, L, state.scroll.near, g.h);
-    oc.setTransform(k, 0, 0, k, 0, 0);
+    oc.setTransform(ko, 0, 0, ko, 0, 0);
     patterns.forEach((pattern, i) => {
       if (!pattern) return;
       const [vx, vy] = speedsRain[i];
       const span = i ? 384 : 256;
       const ox = ((state.t * vx) % span + span) % span;
       const oy = ((state.t * vy) % span + span) % span;
-      if (pattern.setTransform && typeof DOMMatrix === 'function') pattern.setTransform(new DOMMatrix([1 / k, 0, 0, 1 / k, ox, oy]));
+      if (pattern.setTransform && typeof DOMMatrix === 'function') pattern.setTransform(new DOMMatrix([1 / ko, 0, 0, 1 / ko, ox, oy]));
       oc.globalAlpha = i ? 0.55 : 0.75;
       oc.fillStyle = pattern;
       oc.fillRect(0, 0, gw, gh);
     });
     oc.globalAlpha = 1;
 
-    // fx: the passing lamp's band of light, the ceiling lamp, his lamp's flame
-    fc.setTransform(1, 0, 0, 1, 0, 0);
-    fc.clearRect(0, 0, fx.width, fx.height);
+    // fx: the passing lamp's band of light, the ceiling lamp, his lamp's
+    // flame. Only what was drawn last frame is cleared.
     fc.setTransform(k, 0, 0, k, 0, 0);
+    dirty.forEach(([x, y, w, h]) => fc.clearRect(x - 2, y - 2, w + 4, h + 4));
+    dirty.length = 0;
     const sweep = state.sweep;
     if (sweep && lit) {
       const skew = L.H * 0.22;
@@ -1310,6 +1334,7 @@ export function paintScene({ L, k, cfg, canvases, root }) {
       const sw = Math.min(L.W, x1 + skew) - sx;
       if (sw > 0) fc.drawImage(lit, sx * k, 0, sw * k, lit.height, sx, 0, sw, L.H);
       fc.globalCompositeOperation = 'source-over';
+      dirty.push([x0, 0, x1 + skew - x0, L.H]);
     }
     if (lampSprite) {
       const cl = L.ceilingLamp;
@@ -1319,10 +1344,15 @@ export function paintScene({ L, k, cfg, canvases, root }) {
       fc.drawImage(lampSprite.element, -lampSprite.pivot[0], 0, lampSprite.w, lampSprite.h);
       fc.restore();
       const bx = cl.x + Math.sin(state.lampAngle) * (cl.y - cl.top + cl.size * 0.45);
-      glow(fc, bx, cl.y + cl.size * 0.45, cl.size * 1.6, 'rgba(255, 210, 140, 0.9)', 0.32);
+      const by = cl.y + cl.size * 0.45;
+      glow(fc, bx, by, cl.size * 1.6, 'rgba(255, 210, 140, 0.9)', 0.32);
+      const reach = Math.max(cl.size * 1.6, lampSprite.h);
+      dirty.push([cl.x - reach, cl.top - 2, reach * 2, Math.max(lampSprite.h, by + cl.size * 1.6 - cl.top) + 4]);
     }
     const lamp = L.butch.lamp;
-    glow(fc, lamp.x, lamp.glass, 46 * L.butch.s, 'rgba(255, 200, 120, 0.9)', 0.1 + state.flicker * 0.08);
+    const flame = 46 * L.butch.s;
+    glow(fc, lamp.x, lamp.glass, flame, 'rgba(255, 200, 120, 0.9)', 0.1 + state.flicker * 0.08);
+    dirty.push([lamp.x - flame, lamp.glass - flame, flame * 2, flame * 2]);
     // the plaque catches the band too
     if (plaque) {
       let value = '';
