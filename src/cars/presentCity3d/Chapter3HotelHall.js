@@ -13,7 +13,10 @@ export const HOTEL_POSITIONS = Object.freeze({
   corridorRoomExitStart: [0, 0.5, -7.35],
   butchRoomDoor: [0, 1.25, -8.55], butchRoomDoorApproach: [0, 0.5, -7.35],
   corridorStairExit: [0, 1.25, 8.55], corridorStairExitApproach: [0, 0.5, 7.35],
-  roomPlayerStart: [0.7, 0.5, -9.55], roomLev: [1.15, 0.5, -11.55],
+  // Alpha round 3 (R4): Butch arrives in the open floor between the table
+  // and the bed, not in the doorway, where the corridor's end wall hid him
+  // from the room camera.
+  roomPlayerStart: [1.0, 0.5, -12.05], roomLev: [1.15, 0.5, -11.55],
   evidenceTable: [-1.0, 0.75, -10.55], evidenceApproach: [1.25, 0.5, -9.3],
   bed: [-0.25, 0.35, -13.65], bedApproach: [2.15, 0.5, -13.15],
   washstand: [2.0, 0.45, -10.55],

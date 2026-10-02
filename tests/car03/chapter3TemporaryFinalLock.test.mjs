@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v42', () => {
+describe('Chapter 3 integrated final lock v43', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -87,10 +87,21 @@ describe('Chapter 3 integrated final lock v42', () => {
     // globes with halo and light pool (setLampGlow by clock), road setts on
     // the full-contrast limestone, a tight rim on Butch, street camera
     // 3.6 -> 4.0. Toma's composition unchanged. Files: 27 -> 27.
+    // v43 (alpha round 3 follow-ups, engineer L1, 2026-10-01): every walk
+    // objective has a compass tag (Tab, or 4 s / 8 frames after the task
+    // changes; clamped to the screen edge, arrow toward the target) and Lev's
+    // direction hint counts wall seconds; the ticket lens masks the present
+    // ink around it and fades its 1978 ink before the rim; upstairs the
+    // camera follows / frames the room (the lobby framing no longer sticks),
+    // Butch arrives clear of the doorway wall and the bed is tagged on
+    // arrival; the empty-seat line plays over a close shot of the open
+    // carriage door and says so; "Take the room" leads Hana's menu after the
+    // ledger question; on LOW / LOWEST Butch's rim becomes a clean inverted-
+    // hull outline. Toma's composition unchanged. Files: 27 -> 27.
     assert.equal(sourceFiles.length, 27);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '684dfab2979e29cd45f0cb9b873d214cf7ffef522b67c31cfaa8ba10be8106fc',
+      'da80aaad0054e2587b7ef1959018436261186178ba2515c0558c030c3720b950',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

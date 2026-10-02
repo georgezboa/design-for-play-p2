@@ -386,6 +386,9 @@ export const HANA_OPENING = Object.freeze([
   { speaker: 'HANA', text: 'Yes. Room six. She paid cash and asked me not to write a name.' },
 ]);
 
+// Alpha round 3 (pacing): the ledger question is the one the night needs.
+// Once it is asked, "Take the room" leads the menu and the other two
+// questions stay below it, optional. (Any one question still unlocks it.)
 export function hanaTopicMenu(asked = []) {
   const seen = new Set(asked);
   const choices = [
@@ -393,7 +396,15 @@ export function hanaTopicMenu(asked = []) {
     { id: 'hana-departure', label: 'Ask when she left.' },
     { id: 'hana-face', label: 'Ask whether Hana saw her face.' },
   ].filter((choice) => !seen.has(choice.id.replace('hana-', '')));
-  if (seen.size) choices.push({ id: 'hana-done', label: 'Take the room. (Continue)' });
+  const done = { id: 'hana-done', label: 'Take the room. (Continue)' };
+  if (seen.has('register')) {
+    return {
+      speaker: 'CHOOSE',
+      text: 'Take the room, or ask Hana more.',
+      choices: [done, ...choices.map((choice) => ({ ...choice, label: `${choice.label} (Optional)` }))],
+    };
+  }
+  if (seen.size) choices.push(done);
   return { speaker: 'CHOOSE', text: 'Ask Hana about the previous guest.', choices };
 }
 
@@ -507,8 +518,10 @@ export const BOARDING_DIALOGUE = Object.freeze([
   { speaker: 'LEV', text: 'It is the least glamorous part of the job.' },
 ]);
 
+// Alpha round 3 (R5): read over the close shot of the open carriage door
+// (Chapter3OpeningRuntime.boardNightService), not a wide platform shot.
 export const BOARDED_DIALOGUE = Object.freeze([
-  { speaker: 'NARRATION', text: 'Butch turns to the seat beside him. It is empty. Seat forty-three is still warm.' },
+  { speaker: 'NARRATION', text: 'Through the open door, the seat beside Butch is empty. Seat forty-three is still warm.' },
   { speaker: 'BUTCH', text: 'One step ahead. Always one step.' },
 ]);
 

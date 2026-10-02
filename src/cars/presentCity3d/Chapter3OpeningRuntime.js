@@ -69,11 +69,12 @@ import {
   hotelFurnitureAt,
 } from './chapter3HotelNavigation.js';
 import { Chapter3ReplacementAssetSystem } from './Chapter3ReplacementAssetSystem.js';
-import { CITY_MODELS, RAIL_LAYOUT, CAMERA_HOME, WORLD_NODES } from './city3dConfig.js';
+import { CITY_MODELS, RAIL_LAYOUT, CAMERA_FOLLOW, CAMERA_HOME, WORLD_NODES } from './city3dConfig.js';
 import { findPath, isWalkable } from './EchoCity3DPreview.js';
 import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js';
 import {
   FIRE_SITE,
+  addSilhouetteOutline,
   applyRimLight,
   clampInteriorPoint,
   findInteriorPath,
@@ -92,6 +93,7 @@ import {
   makePreservingObjectHighlight,
   positionFrom,
   setActorForegroundVisibility,
+  setRimLightStrength,
   smooth,
 } from './chapter3SceneBuilders.js';
 import { music } from '../../shared/musicDirector.js';
@@ -99,12 +101,22 @@ import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.j
 import { car03Audio } from '../presentCity/car03Audio.js';
 import { devParam } from '../../devMode.js';
 import {
+  COMPASS_FLASH_SECONDS,
   IDLE_LOOK_HINT_HTML,
   autoTaggedInteractions,
+  capHintClock,
   closestOnPolyline2D,
+  compassPlacement,
+  compassVisible,
+  createHintClock,
+  holdHintClock,
   idleLookHintDue,
+  tickHintClock,
   trackDestinationPass,
 } from './chapter3Guidance.js';
+
+const COMPASS_FLASH_MIN_FRAMES = 8;
+const wallNow = () => globalThis.performance?.now?.() ?? Date.now();
 
 // Chapter 3 horizontal score map. Each cue owns a narrative district/beat and
 // stays looped until the next cue is ready. musicDirector crossfades.
@@ -136,6 +148,11 @@ const STREET_ZOOM_BOOST = 0.4;
 const LOW_QUALITY_ZOOM_BOOST = 0.5;
 // How far (m) the finale camera follows the departing train before it holds.
 const FINALE_CAMERA_FOLLOW = 9;
+// LOW / LOWEST: Butch's outline instead of the rim (alpha round 3).
+const BUTCH_SILHOUETTE = Object.freeze({ color: 0xf0b25e, opacity: 0.92, widthCssPx: 2 });
+// R5 (alpha round 3): how much closer the camera sits on the carriage door
+// for the empty-seat line.
+const BOARDED_CLOSE_UP_ZOOM = 1.6;
 // Measured from vertical raycasts through the installed Hunyuan furniture kit
 // at its runtime scale/offset. Boxes include a 0.42 m player-radius margin.
 const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
@@ -156,6 +173,11 @@ const AMBIENT_CITY_ROAM_POINTS = Object.freeze(
 );
 const MORNING_START = Object.freeze({ butch: [8.4, 0.5, 11.2], lev: [9.8, 0.5, 12.0] });
 const STATION_TRIGGER = Object.freeze([-3.2, 0.5, 21.2]);
+// R4 (alpha round 3): the room camera's fixed subject, between the door and
+// the bed, and how far the bed's E and tag reach (the whole room: Butch
+// walks in 4.2 m from it, just outside the street radius).
+const HOTEL_ROOM_FRAME = Object.freeze([0.4, 0.7, -11.6]);
+const HOTEL_BED_REACH = 6.5;
 
 // About five flavour objects stay clickable in the street (hover only; Tab
 // never lights them). Everything else in the city is scenery.
@@ -311,7 +333,13 @@ export class Chapter3OpeningRuntime {
     this.autoLevFollow = false;
     this.searchHintPhase = null;
     this.searchHintElapsed = 0;
+    // R2 P1: Lev's hint counts wall seconds too (chapter3Guidance hint clock).
+    this.searchHintClock = createHintClock();
     this.searchHintLastShownAt = -Infinity;
+    // R2 P1: the compass tag (Tab, or a few seconds after the task changes).
+    this.compassFlashUntil = 0;
+    this.compassFlashPending = false;
+    this.compassShown = null;
     this.ambientAnimElapsed = 0;
     this.ambientLifeElapsed = 0;
     this.ambientLifeRoutes = null;
@@ -1017,6 +1045,14 @@ export class Chapter3OpeningRuntime {
     this.pips.innerHTML = `<span class="c3-pips__label">IN STEP</span><i></i><i></i><i></i><span class="c3-pips__hint">${SCANNER_WORDS.holdHint}</span><span class="c3-pips__key">${SCANNER_WORDS.releaseHint}</span>`;
     this.pipsHint = this.pips.querySelector('.c3-pips__hint');
     document.body.append(this.pips);
+    this.compass = document.createElement('div');
+    this.compass.className = 'nf-tag c3-compass';
+    this.compass.setAttribute('aria-hidden', 'true');
+    this.compass.hidden = true;
+    this.compass.innerHTML = '<i class="c3-compass__arrow"></i><span class="c3-compass__label"></span>';
+    this.compassArrow = this.compass.querySelector('.c3-compass__arrow');
+    this.compassLabel = this.compass.querySelector('.c3-compass__label');
+    document.body.append(this.compass);
     this.readout = document.createElement('div');
     this.readout.className = 'c3-readout';
     this.readout.hidden = true;
@@ -1149,7 +1185,7 @@ export class Chapter3OpeningRuntime {
       {
         id: 'hotel-bed', label: 'The bed', verb: 'SLEEP',
         position: this.hotelHall.bed.position, approach: HOTEL_POSITIONS.bedApproach,
-        outline: this.hotelBedOutline, interior: true,
+        outline: this.hotelBedOutline, interior: true, reach: HOTEL_BED_REACH,
         eligible: () => this.hotelArea === 'room' && state().hotelRoomEntered && !state().slept,
         activate: () => this.openSleep(),
       },
@@ -1373,6 +1409,27 @@ export class Chapter3OpeningRuntime {
     // A tight edge only: from this high camera most of a thin figure is at a
     // grazing angle, and a soft rim washed his whole coat pale by day.
     applyRimLight(rig, { color: 0xffbf73, strength: 0.85, power: 4 });
+    this.butchRig = rig;
+    this.updateButchSilhouette();
+  }
+
+  // Alpha round 3: on LOW / LOWEST the per-pixel rim read as sparkly speckle
+  // (butch-zoom.png). There Butch swaps it for a clean warm inverted-hull
+  // outline of constant screen width; the ground ring stays. HIGH keeps the
+  // rim. One way, like the tier itself.
+  updateButchSilhouette() {
+    const rig = this.butchRig;
+    if (!rig || this.preview.qualityTier === 'high') return false;
+    if (!this.butchSilhouette) {
+      setRimLightStrength(rig, 0);
+      this.butchSilhouette = addSilhouetteOutline(rig, { color: BUTCH_SILHOUETTE.color, widthPx: 1, opacity: BUTCH_SILHOUETTE.opacity, name: 'chapter3-butch-silhouette' });
+    }
+    const renderer = this.preview.renderer;
+    const size = renderer.getDrawingBufferSize(this.butchSilhouetteSize ?? (this.butchSilhouetteSize = new THREE.Vector2()));
+    this.butchSilhouette.uniforms.chapter3OutlineViewport.value.copy(size);
+    // A constant width in CSS pixels, never under one drawn pixel.
+    this.butchSilhouette.uniforms.chapter3OutlineWidth.value = Math.max(1.1, BUTCH_SILHOUETTE.widthCssPx * renderer.getPixelRatio());
+    return true;
   }
 
   updateButchMarker() {
@@ -2449,6 +2506,20 @@ export class Chapter3OpeningRuntime {
     if (firstCar) firstCar.visible = false;
     this.finalDoor.group.visible = true;
     this.hoveredId = null;
+    // Alpha round 3 (R5): the empty-seat line used to play over a wide shot
+    // of the platform. The camera closes on the carriage's open door (where
+    // the line now looks from) and holds there until the train pulls out.
+    const door = this.finalDoor.group.getWorldPosition(new THREE.Vector3());
+    const towardCamera = this.preview.camera.position.clone().sub(this.preview.controls.target).setY(0).normalize();
+    door.addScaledVector(towardCamera, 1.2).setY(0.9);
+    // The follow camera stops a dead zone short of its subject: aim past the
+    // door by that much so the door itself ends up in the middle.
+    const focus = this.preview.controls.target;
+    const [deadX, deadZ] = CAMERA_FOLLOW.deadzone;
+    if (Math.abs(door.x - focus.x) > deadX) door.x += Math.sign(door.x - focus.x) * deadX;
+    if (Math.abs(door.z - focus.z) > deadZ) door.z += Math.sign(door.z - focus.z) * deadZ;
+    this.boardedCloseUp = true;
+    this.preview.setCameraOverrideTarget(door);
     this.dialogue.show(BOARDED_DIALOGUE, { onComplete: () => { this.boardedLinesDone = true; } });
     this.updateObjective();
   }
@@ -2671,6 +2742,11 @@ export class Chapter3OpeningRuntime {
       this.preview.renderer.toneMappingExposure = nightAsleep ? 0.96 : 1.18;
     } else if (corridor) {
       this.preview.setCameraOffsetOverride(null);
+      // Alpha round 3 (R4): the lobby's fixed framing used to stay on
+      // upstairs, so the camera looked at the empty lobby, Butch stood past
+      // the top of the frame and his rig was culled. Upstairs the camera
+      // follows him again.
+      this.preview.setCameraOverrideTarget(null);
       this.preview.player.position.copy(positionFrom(state.nightRoomLeft
         ? HOTEL_POSITIONS.corridorRoomExitStart
         : HOTEL_POSITIONS.corridorPlayerStart));
@@ -2681,6 +2757,8 @@ export class Chapter3OpeningRuntime {
       this.preview.renderer.toneMappingExposure = nightAsleep ? 0.90 : state.morningStarted ? 1.22 : 1.16;
     } else {
       this.preview.setCameraOffsetOverride(null);
+      // R4: frame the whole room (door, table and bed) around its middle.
+      this.preview.setCameraOverrideTarget(positionFrom(HOTEL_ROOM_FRAME));
       this.preview.player.position.copy(positionFrom(HOTEL_POSITIONS.roomPlayerStart));
       this.lev.position.copy(positionFrom(HOTEL_POSITIONS.roomLev));
       this.lev.visible = false;
@@ -3207,6 +3285,7 @@ export class Chapter3OpeningRuntime {
     }
     this.updateCharacterAnimations(dt);
     this.updateButchMarker();
+    this.updateButchSilhouette();
     this.updateGuidanceBeacons();
     this.updateObjective();
     this.updateTags();
@@ -3325,6 +3404,8 @@ export class Chapter3OpeningRuntime {
     // LOW quality frames a little closer: less city in view, larger cast.
     if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
+    // R5: the open carriage door, close, for the empty-seat line.
+    if (this.boardedCloseUp && state.boardedTrain && state.departureSequenceMs < 11200) target = this.baseZoom + BOARDED_CLOSE_UP_ZOOM;
     if (this.fireCameraActive) target = this.baseZoom + 1.5;
     if (this.bellClamp.active && !this.bellClamp.seated) target = this.baseZoom + 1.2;
     const camera = this.preview.camera;
@@ -3411,26 +3492,34 @@ export class Chapter3OpeningRuntime {
       this.morningLevFollowing = false;
       this.autoLevFollow = false;
     }
+    const now = wallNow();
     if (!phase) {
       this.searchHintPhase = null;
       this.searchHintElapsed = 0;
+      this.searchHintClock = createHintClock();
       this.searchHintLastShownAt = -Infinity;
       return;
     }
     if (this.searchHintPhase !== phase.id) {
       this.searchHintPhase = phase.id;
       this.searchHintElapsed = 0;
+      this.searchHintClock = createHintClock();
       this.searchHintLastShownAt = -Infinity;
     }
     if (this.destinationPass.phase !== phase.id) this.destinationPass = { phase: phase.id, near: false, passes: 0 };
     trackDestinationPass(this.destinationPass, this.preview.player.position.distanceTo(phase.target));
-    if (this.interactionLocked()) return;
-    if (this.preview.player.position.distanceTo(phase.target) < 6) {
-      const nearTargetCap = phase.hintAfter ? Math.max(0, phase.hintAfter - 20) : SEARCH_HINT_NEAR_TARGET_SECONDS;
-      this.searchHintElapsed = Math.min(this.searchHintElapsed, nearTargetCap);
+    // R2 P1: wall-clock seconds (a 1 fps GPU no longer stretches 45 s to 3 min).
+    if (this.interactionLocked()) {
+      this.searchHintElapsed = holdHintClock(this.searchHintClock, now);
       return;
     }
-    this.searchHintElapsed += dt;
+    if (this.preview.player.position.distanceTo(phase.target) < 6) {
+      const nearTargetCap = phase.hintAfter ? Math.max(0, phase.hintAfter - 20) : SEARCH_HINT_NEAR_TARGET_SECONDS;
+      holdHintClock(this.searchHintClock, now);
+      this.searchHintElapsed = capHintClock(this.searchHintClock, nearTargetCap);
+      return;
+    }
+    this.searchHintElapsed = tickHintClock(this.searchHintClock, dt, now);
     const due = this.searchHintElapsed >= (phase.hintAfter ?? SEARCH_HINT_AFTER_SECONDS)
       && (this.searchHintLastShownAt < 0 || this.searchHintElapsed - this.searchHintLastShownAt >= 90);
     if (!due || !this.lev.visible) return;
@@ -3478,8 +3567,8 @@ export class Chapter3OpeningRuntime {
     this.tags.begin();
     const locked = this.interactionLocked();
     this.idleLookHintShown = false;
+    const shown = new Set();
     if (!locked) {
-      const shown = new Set();
       const eligible = this.eligibleInteractions();
       const plan = autoTaggedInteractions({
         candidates: eligible.map((interaction) => ({
@@ -3539,6 +3628,82 @@ export class Chapter3OpeningRuntime {
       }
     }
     this.tags.end();
+    this.updateCompass(locked, shown);
+  }
+
+  // R2 P1 (alpha round 3): where the current walk ends, and what its compass
+  // tag calls it. Every outdoor walk objective has one; the names are ones
+  // the player has been told by then (the task card's own words, or the
+  // target's tag).
+  compassTarget() {
+    const state = this.model.snapshot();
+    if (this.insideHotel || this.insideMinistry || state.boardedTrain || this.characterQa) return null;
+    const scannerWaiting = (id) => this.model.scannerActive(id) && !this.fieldState(id).matched;
+    if (state.explorationBriefingComplete && !state.seamInspected) {
+      const points = this.seam.points;
+      return { id: 'lamp-oil-seam', label: 'THE OIL LINE', position: points[Math.floor(points.length / 2)] };
+    }
+    if (state.seamInspected && !state.transportEntranceReached) return { id: 'transport-entrance', label: 'TOMA · THE MINISTRY DOOR', position: this.toma.position };
+    if (state.ticketBoardComplete && !state.edaComplete) return { id: 'eda', label: 'EDA · LAMP OIL', position: this.eda.position };
+    if (state.edaComplete && !state.marketCrossed && scannerWaiting('market')) return { id: 'olek-walker', label: 'OLEK · THE MARKET SCANNER', position: this.olek.position };
+    if (state.marketCrossed && !state.cutInterfaceComplete) return { id: 'cut-feed-interface', label: 'THE SERVICE JOINT · BY THE CLOCK', position: this.cutInterface.group.position };
+    if (state.cutInterfaceComplete && !state.hotelEntered) return { id: 'copper-heron-entrance', label: 'THE COPPER HERON', position: this.hotelEntrance.position };
+    if (state.nightRouteStarted && !state.nightFireObserved) return { id: 'night-burning-message', label: 'THE FIRE · THE SQUARE', position: this.groundMessage.position };
+    if (state.sunriseViewed && !state.stationReached) return { id: 'station-platform', label: 'THE NIGHT SERVICE · THE PLATFORM', position: positionFrom(STATION_TRIGGER) };
+    if (state.stationReached && scannerWaiting('station') && this.echoMara.visible) return { id: 'mara-walker', label: 'THE WOMAN IN THE ROSE SCARF', position: this.echoMara.position };
+    return null;
+  }
+
+  updateCompass(locked, taggedIds) {
+    const now = wallNow();
+    const target = this.compassTarget();
+    // The task-change flash starts when Butch is free to walk, not while
+    // the line that set the task is still on screen.
+    // At one frame a second, four wall seconds are only a few frames: the
+    // flash also lasts at least COMPASS_FLASH_MIN_FRAMES drawn frames.
+    const frame = this.preview.renderer?.info?.render?.frame ?? 0;
+    if (this.compassFlashPending && target && !locked) {
+      this.compassFlashPending = false;
+      this.compassFlashUntil = now + COMPASS_FLASH_SECONDS * 1000;
+      this.compassFlashFrame = frame;
+    }
+    const flashFramesLeft = this.compassFlashUntil > 0 ? COMPASS_FLASH_MIN_FRAMES - (frame - (this.compassFlashFrame ?? frame)) : 0;
+    const distance = target
+      ? Math.hypot(this.preview.player.position.x - target.position.x, this.preview.player.position.z - target.position.z)
+      : Infinity;
+    let screen = null;
+    if (target) {
+      const anchor = target.position.clone();
+      anchor.y = Math.max(anchor.y, 0.5) + 2.1;
+      screen = this.screenOf(anchor);
+    }
+    const visible = compassVisible({
+      hasTarget: Boolean(target),
+      locked,
+      tabHeld: this.tabHeld,
+      flashRemaining: Math.max((this.compassFlashUntil - now) / 1000, flashFramesLeft > 0 ? 0.001 : 0),
+      distance,
+      // On screen, the target's own Tab tag already names it.
+      targetTagShown: Boolean(target && screen?.onScreen && taggedIds.has(target.id)),
+    });
+    if (!visible) {
+      if (!this.compass.hidden) this.compass.hidden = true;
+      this.compassShown = null;
+      return;
+    }
+    if (this.compassLabel.textContent !== target.label) this.compassLabel.textContent = target.label;
+    this.compass.hidden = false;
+    const placement = compassPlacement(screen, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      tagWidth: this.compass.offsetWidth,
+      tagHeight: this.compass.offsetHeight,
+    });
+    this.compass.style.left = `${Math.round(placement.x)}px`;
+    this.compass.style.top = `${Math.round(placement.y)}px`;
+    this.compassArrow.style.transform = `rotate(${placement.angle}deg)`;
+    this.compass.classList.toggle('is-edge', placement.offScreen);
+    this.compassShown = { id: target.id, label: target.label, offScreen: placement.offScreen, angle: placement.angle };
   }
 
   updatePips() {
@@ -3615,6 +3780,9 @@ export class Chapter3OpeningRuntime {
     const title = this.objectiveText();
     if (title === this.lastObjectiveKey) return;
     this.lastObjectiveKey = title;
+    // R2 P1: a new task points the way for a few seconds (if it is a walk).
+    this.compassFlashPending = true;
+    this.compassFlashUntil = 0;
     if (this.elements.statusElement) this.elements.statusElement.textContent = title;
     if (this.elements.objectiveTitle) this.elements.objectiveTitle.textContent = title;
     this.elements.objectiveCard?.classList.remove('is-new');
@@ -3666,6 +3834,8 @@ export class Chapter3OpeningRuntime {
       idleSeconds: Number(this.idleElapsed.toFixed(1)),
       idleLookHint: this.idleLookHintShown,
       destinationPasses: this.destinationPass.passes,
+      compass: this.compassShown,
+      searchHintSeconds: Number(this.searchHintElapsed.toFixed(1)),
       guidanceBeacons: Object.fromEntries(Object.entries(this.guidanceBeacons ?? {}).map(([id, beacon]) => [id, beacon.visible])),
       dialogue: this.dialogue.snapshot(),
       evidenceViewer: this.evidenceViewer.snapshot(),

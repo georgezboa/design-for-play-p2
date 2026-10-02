@@ -10,7 +10,8 @@
 //     the tag appears exactly when E works (companions who follow Butch
 //     around, such as Lev in the morning, are never auto-tagged);
 // and after IDLE_LOOK_HINT_SECONDS with no input and no story tag on screen
-// it shows one small HOLD TAB · LOOK AROUND tag over Butch.
+// it shows one small HOLD TAB · LOOK AROUND tag over Butch. On a walk, Tab
+// (and a change of task) also shows the compass tag below.
 
 export const IDLE_LOOK_HINT_SECONDS = 20;
 export const IDLE_LOOK_HINT_HTML = 'HOLD <kbd>TAB</kbd> · LOOK AROUND';
@@ -54,6 +55,96 @@ export function autoTaggedInteractions({ candidates, hoveredId = null, tabHeld =
 // points at it.
 export function idleLookHintDue({ idleSeconds, locked = false, tabHeld = false, storyTargets = 0, storyTagShown = false }) {
   return !locked && !tabHeld && storyTargets > 0 && !storyTagShown && idleSeconds >= IDLE_LOOK_HINT_SECONDS;
+}
+
+// ---------------------------------------------------------------- compass
+// Alpha round 3 (R2 P1): the free walks had no direction. Holding Tab, or
+// for COMPASS_FLASH_SECONDS after the task card changes, one paper tag names
+// the walk's destination and points at it: over the target when it is on
+// screen, clamped to the screen edge (with its arrow turned toward it) when
+// it is not. It stands down within COMPASS_ARRIVED_METRES, where the
+// target's own tag takes over.
+export const COMPASS_FLASH_SECONDS = 4;
+export const COMPASS_ARRIVED_METRES = 5;
+
+// Whether the compass tag shows this frame.
+export function compassVisible({ hasTarget, locked = false, tabHeld = false, flashRemaining = 0, distance = Infinity, targetTagShown = false }) {
+  if (!hasTarget || locked) return false;
+  if (!(tabHeld || flashRemaining > 0)) return false;
+  if (distance <= COMPASS_ARRIVED_METRES) return false;
+  return !targetTagShown;
+}
+
+// Where the compass tag sits. `point` is the target's projected screen point
+// (it may lie outside the viewport); `insets` keep the tag off the HUD.
+// Returns the tag's centre, the arrow angle in degrees (0 = right, 90 =
+// down, screen convention) and whether the target is off screen.
+export function compassPlacement(point, {
+  width, height, tagWidth = 0, tagHeight = 0,
+  insets = { top: 92, right: 24, bottom: 72, left: 24 },
+  lift = 56,
+}) {
+  const left = insets.left + tagWidth / 2;
+  const right = width - insets.right - tagWidth / 2;
+  const top = insets.top + tagHeight / 2;
+  const bottom = height - insets.bottom - tagHeight / 2;
+  const clampTo = (value, low, high) => Math.min(Math.max(value, low), Math.max(low, high));
+  const onScreen = point.x >= 0 && point.x <= width && point.y >= 0 && point.y <= height;
+  if (onScreen) {
+    // Hang the tag above the target, arrow pointing down at it.
+    return { x: clampTo(point.x, left, right), y: clampTo(point.y - lift, top, bottom), angle: 90, offScreen: false };
+  }
+  // Walk from the middle of the playable area toward the target and stop at
+  // the inset edge.
+  const cx = (left + right) / 2;
+  const cy = (top + bottom) / 2;
+  const dx = point.x - cx;
+  const dy = point.y - cy;
+  const sx = Math.abs(dx) > 1e-6 ? (dx > 0 ? right - cx : cx - left) / Math.abs(dx) : Infinity;
+  const sy = Math.abs(dy) > 1e-6 ? (dy > 0 ? bottom - cy : cy - top) / Math.abs(dy) : Infinity;
+  const scale = Math.min(sx, sy, 1);
+  return {
+    x: clampTo(cx + dx * scale, left, right),
+    y: clampTo(cy + dy * scale, top, bottom),
+    angle: Math.round((Math.atan2(dy, dx) * 180) / Math.PI),
+    offScreen: true,
+  };
+}
+
+// ---------------------------------------------------------------- hint clock
+// Lev's direction hint used to count GAME seconds, which run at a quarter of
+// real time when a slow GPU draws one frame a second (MAX_FRAME_SECONDS), so
+// at 1 fps his 45 s hint took three minutes. The clock keeps both: game time
+// (QA's advanceTime steps it with no wall time passing) and wall time, and
+// reads the larger. A wall step is capped so a background tab coming back
+// does not fire a hint at once.
+export function createHintClock() {
+  return { game: 0, wall: 0, lastMs: null };
+}
+
+export function hintClockElapsed(clock) {
+  return Math.max(clock.game, clock.wall);
+}
+
+export function tickHintClock(clock, dt, nowMs, { maxWallStep = 2 } = {}) {
+  const wallStep = clock.lastMs === null ? 0 : Math.min(maxWallStep, Math.max(0, (nowMs - clock.lastMs) / 1000));
+  clock.lastMs = nowMs;
+  clock.game += Math.max(0, dt);
+  clock.wall += wallStep;
+  return hintClockElapsed(clock);
+}
+
+// Time that passes while the clock is held (dialogue, standing at the
+// target) never counts later.
+export function holdHintClock(clock, nowMs) {
+  clock.lastMs = nowMs;
+  return hintClockElapsed(clock);
+}
+
+export function capHintClock(clock, seconds) {
+  clock.game = Math.min(clock.game, seconds);
+  clock.wall = Math.min(clock.wall, seconds);
+  return hintClockElapsed(clock);
 }
 
 // Counts real passes of a destination: Butch came within `near` metres and

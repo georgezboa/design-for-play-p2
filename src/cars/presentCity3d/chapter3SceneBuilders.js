@@ -389,13 +389,18 @@ export function applyRimLight(root, { color = 0xffc27a, strength = 0.85, power =
     for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
       if (!material || !('emissive' in material) || material.userData.chapter3Rim) continue;
       const rimColor = new THREE.Color(color);
-      material.userData.chapter3Rim = { color: rimColor, strength, power };
+      // Shared uniform objects: setRimLightStrength can retune a compiled
+      // material without a recompile.
+      const uniforms = {
+        chapter3RimColor: { value: rimColor },
+        chapter3RimStrength: { value: strength },
+        chapter3RimPower: { value: power },
+      };
+      material.userData.chapter3Rim = { color: rimColor, strength, power, uniforms };
       const previous = material.onBeforeCompile;
       material.onBeforeCompile = (shader, renderer) => {
         previous?.call(material, shader, renderer);
-        shader.uniforms.chapter3RimColor = { value: rimColor };
-        shader.uniforms.chapter3RimStrength = { value: strength };
-        shader.uniforms.chapter3RimPower = { value: power };
+        Object.assign(shader.uniforms, uniforms);
         shader.fragmentShader = shader.fragmentShader
           .replace('#include <common>', '#include <common>\nuniform vec3 chapter3RimColor;\nuniform float chapter3RimStrength;\nuniform float chapter3RimPower;')
           .replace('#include <emissivemap_fragment>', [
@@ -414,6 +419,88 @@ export function applyRimLight(root, { color = 0xffc27a, strength = 0.85, power =
     }
   });
   return count;
+}
+
+export function setRimLightStrength(root, strength) {
+  let count = 0;
+  root?.traverse((child) => {
+    if (!child.isMesh) return;
+    for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
+      const rim = material?.userData?.chapter3Rim;
+      if (!rim) continue;
+      rim.strength = strength;
+      rim.uniforms.chapter3RimStrength.value = strength;
+      count += 1;
+    }
+  });
+  return count;
+}
+
+// Alpha round 3 (LOW tier): a per-pixel rim on a figure a few dozen pixels
+// tall, at a 0.55–0.8 pixel ratio, shimmers as speckle. On LOW the figure
+// gets a clean inverted-hull silhouette instead: each mesh is drawn once
+// more, back faces only, pushed out along its normal by a constant number of
+// screen pixels, in one flat colour. Skinned meshes share the rig's skeleton,
+// so the outline animates with it. Returns { meshes, uniforms }; the caller
+// keeps uniforms.chapter3OutlineViewport at the drawing-buffer size.
+// depthPush is in normalised depth (about 0.16 m per 0.001 with the city
+// camera's 0.1–320 m range).
+export function addSilhouetteOutline(root, { color = 0xe0a24a, widthPx = 1.6, opacity = 0.9, depthPush = 0.0018, name = 'chapter3-silhouette-outline' } = {}) {
+  const uniforms = {
+    chapter3OutlineWidth: { value: widthPx },
+    chapter3OutlineViewport: { value: new THREE.Vector2(1600, 900) },
+    chapter3OutlineDepthPush: { value: depthPush },
+  };
+  const material = new THREE.MeshBasicMaterial({
+    color, side: THREE.BackSide, transparent: opacity < 1, opacity, depthWrite: false, fog: false, toneMapped: false,
+  });
+  material.name = name;
+  material.onBeforeCompile = (shader) => {
+    Object.assign(shader.uniforms, uniforms);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', '#include <common>\nuniform float chapter3OutlineWidth;\nuniform vec2 chapter3OutlineViewport;\nuniform float chapter3OutlineDepthPush;')
+      .replace('#include <project_vertex>', [
+        '#include <project_vertex>',
+        '#ifdef USE_SKINNING',
+        '  vec3 chapter3OutlineNormal = normalize( normalMatrix * objectNormal );',
+        '#else',
+        '  vec3 chapter3OutlineNormal = normalize( normalMatrix * normal );',
+        '#endif',
+        '  vec2 chapter3OutlineDir = length( chapter3OutlineNormal.xy ) > 1e-4 ? normalize( chapter3OutlineNormal.xy ) : vec2( 0.0 );',
+        '  gl_Position.xy += chapter3OutlineDir * chapter3OutlineWidth * 2.0 / chapter3OutlineViewport * gl_Position.w;',
+        // Sit a little behind the figure, so a pushed-out back face never
+        // shows through a fold of the coat (only the silhouette edge does).
+        '  gl_Position.z += chapter3OutlineDepthPush * gl_Position.w;',
+      ].join('\n'));
+  };
+  material.customProgramCacheKey = () => 'chapter3-silhouette-outline';
+  const sources = [];
+  root?.traverse((child) => {
+    if (child.isMesh && !child.userData.chapter3Outline && child.name !== name) sources.push(child);
+  });
+  const meshes = [];
+  for (const source of sources) {
+    const outline = source.isSkinnedMesh
+      ? new THREE.SkinnedMesh(source.geometry, material)
+      : new THREE.Mesh(source.geometry, material);
+    if (source.isSkinnedMesh) {
+      outline.bind(source.skeleton, source.bindMatrix);
+      outline.bindMode = source.bindMode;
+    }
+    if (source.morphTargetInfluences) outline.morphTargetInfluences = source.morphTargetInfluences;
+    outline.name = name;
+    outline.userData.chapter3Outline = true;
+    outline.frustumCulled = false;
+    outline.castShadow = false;
+    outline.receiveShadow = false;
+    outline.renderOrder = (source.renderOrder ?? 0) - 1;
+    outline.position.copy(source.position);
+    outline.quaternion.copy(source.quaternion);
+    outline.scale.copy(source.scale);
+    source.parent?.add(outline);
+    meshes.push(outline);
+  }
+  return { meshes, uniforms, material };
 }
 
 export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', color = 0xf0a640, height = 9 } = {}) {

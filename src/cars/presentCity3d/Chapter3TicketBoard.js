@@ -28,16 +28,37 @@ function el(tag, className, html) {
 function cardFace(spec, { past = false } = {}) {
   const face = el('div', past ? 'c3-card__face c3-card__face--past' : 'c3-card__face');
   const data = past ? spec.past : spec;
+  // The 1978 face keeps its ink in a layer of its own so the lens can fade
+  // the ink at its rim while the paper stays a clean circle (alpha round 3).
+  const ink = past ? el('div', 'c3-card__ink') : face;
+  if (past) face.append(ink);
   if (past && !data) {
-    face.append(el('p', 'nf-card__stamp', '1978'), el('p', 'c3-card__blank', 'Not yet printed.'));
+    ink.append(el('p', 'nf-card__stamp', '1978'), el('p', 'c3-card__blank', 'Not yet printed.'));
     return face;
   }
-  face.append(
+  ink.append(
     el('p', 'nf-card__stamp', data.stamp),
     el('h3', 'nf-card__title', data.title),
     el('div', 'nf-card__lines', data.lines.map((line) => `<p>${line}</p>`).join('')),
   );
   return face;
+}
+
+// The 1978 ink: solid in the middle of the lens, gone before its brass rim.
+export function lensInkMask(x, y, radius = LENS_RADIUS) {
+  return `radial-gradient(circle at ${Math.round(x)}px ${Math.round(y)}px, #000 ${radius - 22}px, transparent ${radius - 8}px)`;
+}
+
+// The present-day ink: hidden under the lens and in a clean paper band
+// around it.
+export function lensPresentMask(x, y, radius = LENS_RADIUS) {
+  return `radial-gradient(circle at ${Math.round(x)}px ${Math.round(y)}px, transparent ${radius + 16}px, #000 ${radius + 36}px)`;
+}
+
+function setMask(node, value) {
+  if (!node) return;
+  node.style.webkitMaskImage = value;
+  node.style.maskImage = value;
 }
 
 export class Chapter3TicketBoard {
@@ -88,7 +109,10 @@ export class Chapter3TicketBoard {
       card.addEventListener('pointerdown', (event) => this.beginDrag(event, spec.id));
       card.addEventListener('focus', () => { this.focusIndex = this.focusables().indexOf(card); });
       this.table.append(card);
-      this.cards.set(spec.id, { spec, element: card, pastLayer, x: 0, y: 0, rotation: ((spec.id.length * 7) % 5 - 2) * 0.7 });
+      this.cards.set(spec.id, {
+        spec, element: card, presentLayer: present, pastLayer, pastInk: pastLayer.querySelector('.c3-card__ink'),
+        x: 0, y: 0, rotation: ((spec.id.length * 7) % 5 - 2) * 0.7,
+      });
     }
     this.lensElement = el('div', 'c3-lens');
     this.lensElement.tabIndex = 0;
@@ -192,6 +216,10 @@ export class Chapter3TicketBoard {
 
   // Each card's 1978 layer is clipped to the lens circle in card-local
   // coordinates, so the lens reads as one hole across every card beneath it.
+  // Alpha round 3 (R3): the present-day ink is masked out in a band around
+  // the lens and the 1978 ink fades out before the rim, so a glyph cut by
+  // the circle never sits against a present glyph ("N978-0412" over
+  // "M. VENN").
   updateLensLayers() {
     if (!this.root) return;
     const tableRect = this.table.getBoundingClientRect();
@@ -202,6 +230,9 @@ export class Chapter3TicketBoard {
       const localX = lensX - rect.left;
       const localY = lensY - rect.top;
       card.pastLayer.style.clipPath = `circle(${LENS_RADIUS - 6}px at ${localX}px ${localY}px)`;
+      setMask(card.pastInk, lensInkMask(localX, localY));
+      const presentRect = card.presentLayer.getBoundingClientRect();
+      setMask(card.presentLayer, lensPresentMask(lensX - presentRect.left, lensY - presentRect.top));
       const inside = localX > 18 && localY > 18 && localX < rect.width - 18 && localY < rect.height - 18;
       if (inside && TICKET_IDS.includes(card.spec.id) && this.model.seeTicketThroughLens(card.spec.id)) {
         card.element.classList.add('is-seen');

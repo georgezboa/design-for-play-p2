@@ -45,6 +45,21 @@
 
 /* ---------- paper tags in the world ---------- */
 .c3-tag { max-width: none; white-space: nowrap; }
+/* R2 P1 (alpha round 3): the walk compass. An amber paper tag centred on its
+   point (over the target, or on the screen edge toward it); the oxblood
+   arrow turns to face the destination. */
+.c3-compass {
+  --nf-tag-paper: #e9c27c;
+  transform: translate(-50%, -50%); z-index: 8840; white-space: nowrap; gap: 10px; padding-right: 14px;
+  filter: drop-shadow(0 0 10px rgba(224, 162, 74, 0.55));
+}
+.c3-compass__arrow {
+  display: inline-block; flex: none; width: 0; height: 0;
+  border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 12px solid var(--nf-oxblood);
+  transform-origin: 40% 50%;
+}
+.c3-compass__label { display: inline-block; }
+:root[data-low-graphics='true'] .c3-compass { filter: none; }
 .c3-tag.is-emphasis { z-index: 8850; filter: drop-shadow(0 4px 12px rgba(224, 162, 74, 0.45)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
 
 /* ---------- evidence card ---------- */
@@ -81,10 +96,11 @@ body.c3-board-open .nf-caption { display: none; }
 .c3-card .nf-card__lines p { margin: 0 0 3px; }
 .c3-card .nf-card__lines b { color: var(--nf-oxblood); }
 .c3-card__face--past {
-  position: absolute; inset: 0; padding: 18px 20px 16px; border-radius: 4px; pointer-events: none;
+  position: absolute; inset: 0; padding: 0; border-radius: 4px; pointer-events: none;
   color: #3b2410; background: #d9b27a radial-gradient(circle at 30% 20%, rgba(255, 236, 190, 0.6), transparent 70%);
   clip-path: circle(0 at 0 0);
 }
+.c3-card__ink { position: absolute; inset: 0; padding: 18px 20px 16px; }
 .c3-card__face--past .nf-card__stamp { color: #6b2a22; }
 .c3-card__face--past .nf-card__title { font-size: calc(28px * var(--nf-scale)); letter-spacing: 0.04em; }
 .c3-card__blank { margin: 10px 0 0; font: italic calc(15px * var(--nf-scale)) var(--nf-serif); color: rgba(59, 36, 16, 0.6); }
