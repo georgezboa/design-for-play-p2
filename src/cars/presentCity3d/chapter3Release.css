@@ -72,6 +72,21 @@
 .c3-controls__verb.is-used { opacity: 0.38; text-decoration: line-through; }
 .c3-controls__dot { color: var(--nf-walnut); }
 .sunrise-tableau-active .c3-controls, body.c3-board-open .c3-controls { display: none; }
+/* Alpha round 4 fix round (P2): on a long walk, G · LEV LEADS THE WAY under
+   the task card (a real button), and its one line over the black. */
+.c3-lead { transform: none; z-index: 7000; white-space: nowrap; pointer-events: auto; cursor: pointer; border: 0; }
+.c3-lead:hover, .c3-lead:focus-visible { --nf-tag-paper: #f3d9a4; outline: none; }
+.sunrise-tableau-active .c3-lead, body.c3-board-open .c3-lead { display: none; }
+.c3-lead-line {
+  position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 9710; margin: 0;
+  width: min(720px, calc(100vw - 64px)); text-align: center; pointer-events: none;
+  font: calc(24px * var(--nf-scale)) / 1.4 var(--nf-serif); color: var(--nf-ivory);
+  opacity: 0; transition: opacity 0.35s ease;
+}
+.c3-lead-line.visible { opacity: 1; }
+.c3-lead-line.is-narration { font-style: italic; }
+.c3-lead-line b { display: block; margin-bottom: 10px; font: 700 calc(13px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.3em; color: var(--nf-amber); }
+.c3-lead-line b:empty { display: none; }
 .c3-tag.is-emphasis { z-index: 8850; filter: drop-shadow(0 4px 12px rgba(224, 162, 74, 0.45)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
 
 /* ---------- evidence card ---------- */

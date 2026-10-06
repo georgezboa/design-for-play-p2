@@ -73,6 +73,7 @@ import {
 import { Chapter3ReplacementAssetSystem } from './Chapter3ReplacementAssetSystem.js';
 import { CITY_MODELS, RAIL_LAYOUT, CAMERA_FOLLOW, CAMERA_HOME, WORLD_NODES } from './city3dConfig.js';
 import { findPath, isWalkable } from './EchoCity3DPreview.js';
+import { LEAD_KEY, LEAD_LINE_MS, LEAD_ROUTES, leadOffer, leadOfferHtml } from './chapter3LongWalks.js';
 import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js';
 import {
   FIRE_SITE,
@@ -1116,6 +1117,26 @@ export class Chapter3OpeningRuntime {
     this.controlsTag.setAttribute('aria-label', 'Controls: click to walk, E to look, hold Tab to look around');
     this.controlsTag.hidden = true;
     document.body.append(this.controlsTag);
+    // Alpha round 4 fix round (P2, the long walks): G · LEV LEADS THE WAY
+    // under the task card while the destination is far (chapter3LongWalks).
+    this.leadTag = document.createElement('button');
+    this.leadTag.type = 'button';
+    this.leadTag.className = 'nf-tag c3-lead';
+    this.leadTag.hidden = true;
+    this.leadTag.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      this.noteInput();
+      this.leadTheWay();
+    });
+    document.body.append(this.leadTag);
+    this.leadLine = document.createElement('p');
+    this.leadLine.className = 'c3-lead-line';
+    this.leadLine.setAttribute('aria-live', 'polite');
+    document.body.append(this.leadLine);
+    this.leadShown = null;
+    this.leadTravelling = null;
+    this.leadTravels = [];
     this.readout = document.createElement('div');
     this.readout.className = 'c3-readout';
     this.readout.hidden = true;
@@ -1574,6 +1595,7 @@ export class Chapter3OpeningRuntime {
       || this.levWalkElapsed !== null
       || this.ministryTransitioning
       || this.hotelTransitioning
+      || this.leadTravelling !== null
       || this.hotelDoorElapsed !== null
       || this.levHotelExitElapsed !== null
       || this.butchBedTransition !== null
@@ -1820,6 +1842,8 @@ export class Chapter3OpeningRuntime {
     if (path.length === 0) return false;
     const target = path[path.length - 1];
     this.preview.path = path;
+    // Rooms are short: inside, Butch always walks.
+    this.preview.striding = false;
     this.preview.pathArrival = onArrival;
     this.preview.destinationMarker.material.color.setHex(0xe0a24a);
     this.preview.destinationMarker.position.set(target.x, target.y + 0.02, target.z);
@@ -1866,6 +1890,10 @@ export class Chapter3OpeningRuntime {
         event.preventDefault();
         return true;
       }
+    }
+    if (event.code === LEAD_KEY && !event.repeat && this.leadTheWay()) {
+      event.preventDefault();
+      return true;
     }
     if (event.key === 'Tab') {
       event.preventDefault();
@@ -3672,7 +3700,9 @@ export class Chapter3OpeningRuntime {
     const butchMoving = this.preview.path.length > 0 || this.directMoving;
     const levMoving = !this.dialogue.active && (this.guideElapsed !== null || this.levWalkElapsed !== null
       || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame);
-    this.characters.play('butch', this.butchActionOverride || (butchMoving ? 'walk' : 'idle'));
+    // A long walk strides, a run runs: the rig jogs (chapter3LongWalks.js).
+    const butchGait = this.directMoving ? 'walk' : this.preview.gait;
+    this.characters.play('butch', this.butchActionOverride || (butchMoving ? butchGait : 'idle'));
     this.characters.play('lev', levMoving ? 'walk' : 'idle', this.dialogue.active ? { immediate: true } : undefined);
     this.updateAmbientCharacterLoops(dt, ambientLifeStates);
   }
@@ -3872,6 +3902,125 @@ export class Chapter3OpeningRuntime {
     this.tags.end();
     this.updateCompass(locked, shown);
     this.updateControlsHint(locked);
+    this.updateLeadOffer(locked);
+  }
+
+  // ------------------------------------------------------------ long walks
+  // Which long walk is under way (chapter3LongWalks LEAD_ROUTES ids).
+  leadPhase() {
+    const search = this.currentSearchPhase();
+    if (search) return search.id;
+    const state = this.model.snapshot();
+    if (this.characterQa || this.insideHotel || this.insideMinistry) return null;
+    if (state.nightRouteStarted && !state.nightFireObserved) return 'find-fire';
+    return null;
+  }
+
+  // Where Butch stands on arrival: the destination's own approach, so its
+  // E tag is up the moment the black lifts.
+  leadArrival(route) {
+    const interaction = this.interactions.find((entry) => entry.id === route.interaction);
+    if (!interaction) return null;
+    const approach = route.butch
+      ?? (typeof interaction.approach === 'function' ? interaction.approach() : interaction.approach);
+    return { interaction, butch: positionFrom(approach) };
+  }
+
+  currentLeadOffer(locked = this.interactionLocked()) {
+    const phaseId = this.leadPhase();
+    const route = phaseId ? LEAD_ROUTES[phaseId] : null;
+    if (!route) return null;
+    const arrival = this.leadArrival(route);
+    if (!arrival) return null;
+    const player = this.preview.player.position;
+    const distance = Math.hypot(player.x - arrival.butch.x, player.z - arrival.butch.z);
+    const offer = leadOffer({
+      phaseId,
+      distance,
+      locked: locked || Boolean(this.activeField()),
+      levPresent: this.lev.visible && !this.insideHotel && !this.insideMinistry,
+      travelling: this.leadTravelling !== null,
+    });
+    return offer ? { phaseId, route: offer, arrival, distance } : null;
+  }
+
+  updateLeadOffer(locked) {
+    const offer = this.currentLeadOffer(locked);
+    if (!offer) {
+      if (!this.leadTag.hidden) this.leadTag.hidden = true;
+      this.leadShown = null;
+      return;
+    }
+    const html = leadOfferHtml(offer.route);
+    if (this.leadTag.dataset.html !== html) {
+      this.leadTag.innerHTML = html;
+      this.leadTag.dataset.html = html;
+      this.leadTag.setAttribute('aria-label', offer.route.guide === 'lev' ? 'G: Lev leads the way' : 'G: follow the firelight');
+    }
+    this.leadTag.hidden = false;
+    // Under the task card, or under the controls tag while that shows.
+    const above = (!this.controlsTag.hidden && this.controlsTag.getBoundingClientRect())
+      || this.elements.objectiveCard?.getBoundingClientRect();
+    const left = above ? above.left : 18;
+    const top = above && above.height ? above.bottom + 10 : 64;
+    this.leadTag.style.left = `${Math.round(left)}px`;
+    this.leadTag.style.top = `${Math.round(top)}px`;
+    this.leadShown = { phase: offer.phaseId, guide: offer.route.guide, distance: Number(offer.distance.toFixed(1)) };
+  }
+
+  // Fade to black, one line over it, Butch (and Lev) at the destination.
+  // Wall-clock timers throughout: a slow GPU waits the same ~3 s.
+  leadTheWay() {
+    const offer = this.currentLeadOffer();
+    if (!offer) return false;
+    const { phaseId, route, arrival } = offer;
+    this.leadTravelling = phaseId;
+    this.preview.stopWalking();
+    this.hoveredId = null;
+    this.leadTag.hidden = true;
+    this.leadLine.innerHTML = `<b>${route.line.speaker === 'NARRATION' ? '' : route.line.speaker}</b>${route.line.text}`;
+    this.leadLine.classList.toggle('is-narration', route.line.speaker === 'NARRATION');
+    this.leadLine.classList.add('visible');
+    const startedAt = wallNow();
+    const from = this.preview.player.position.clone();
+    this.cutThroughBlack(() => {
+      const butch = arrival.butch;
+      this.preview.player.position.set(butch.x, this.preview.player.position.y, butch.z);
+      const facing = arrival.interaction.position.clone().sub(butch);
+      if (facing.lengthSq() > 1e-4) this.preview.player.rotation.y = Math.atan2(facing.x, facing.z);
+      if (route.guide === 'lev' && this.lev.visible) {
+        const lev = route.lev
+          ? positionFrom(route.lev)
+          : butch.clone().add(new THREE.Vector3(-1.1, 0, 0.6));
+        this.lev.position.set(lev.x, this.lev.position.y, lev.z);
+        const toTarget = arrival.interaction.position.clone().sub(lev);
+        if (toTarget.lengthSq() > 1e-4) this.lev.rotation.y = Math.atan2(toTarget.x, toTarget.z);
+        // Lev follows from here, not along the trail he was walking.
+        if (this.morningLevFollowing) this.startMorningLevFollow();
+      }
+      this.preview.resetCamera();
+      this.updateOutlines();
+      return wait(LEAD_LINE_MS).then(() => this.leadLine.classList.remove('visible'));
+    }, {
+      after: () => {
+        this.leadTravelling = null;
+        this.leadTravels.push({
+          phase: phaseId,
+          metres: Number(from.distanceTo(this.preview.player.position).toFixed(1)),
+          seconds: Number(((wallNow() - startedAt) / 1000).toFixed(2)),
+        });
+        this.noteControlUsed('walk');
+        // Where the approach lies outside E's reach (the fire letters are
+        // read from below both rows), arriving is the click on its tag.
+        const { interaction } = arrival;
+        if (interaction.eligible() && this.interactionDistance(interaction) > (interaction.reach ?? INTERACTION_RADIUS)) {
+          this.startInteraction(interaction);
+        }
+        this.updateObjective();
+        this.updateOutlines();
+      },
+    });
+    return true;
   }
 
   // R2 P1 (alpha round 3): where the current walk ends, and what its compass
@@ -4093,6 +4242,7 @@ export class Chapter3OpeningRuntime {
       destinationPasses: this.destinationPass.passes,
       compass: this.compassShown,
       controlsHint: { visible: this.controlsHintVisible, used: [...this.controlsUsed] },
+      leadTheWay: { offer: this.leadShown, travelling: this.leadTravelling, travels: [...this.leadTravels] },
       searchHintSeconds: Number(this.searchHintElapsed.toFixed(1)),
       guidanceBeacons: Object.fromEntries(Object.entries(this.guidanceBeacons ?? {}).map(([id, beacon]) => [id, beacon.visible])),
       dialogue: this.dialogue.snapshot(),

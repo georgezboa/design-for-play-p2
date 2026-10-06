@@ -65,7 +65,10 @@ describe('Chapter 3 alpha fixes (F2)', () => {
     // Rigs (~30k triangles each, never frustum-culled) are hidden off screen,
     // and far static models leave the shadow pass on every tier.
     assert.match(runtime, /this\.charactersDrawn = this\.characters\.cullOutside\(this\.preview\.camera\);/);
-    assert.match(preview, /updateShadowLod\(dt\) \{/);
+    // Alpha round 4 fix round (P2): the far-city LOD (chapter3CityLod.js)
+    // now decides draw and shadow per step, from the live camera and sun.
+    assert.match(preview, /updateShadowLod\(\) \{/);
+    assert.match(preview, /this\.cityLod\.update\(\{/);
   });
 
   it('A2-2: the scanner walks in step on a held E, with an arrow along the lane', () => {

@@ -78,6 +78,15 @@ const gate = createAutoplayGate({
   onUnlocked: () => setSoundTag(false),
 });
 
+// Alpha round 4 fix round (P2): a page with its own sound engine (Chapter
+// 1's synthesised bus and loop, nightService/audio.js) shows the same tag
+// while the browser refuses to start it. Any key or click anywhere still
+// hides it (installUnlock below); the page starts its own sound on that
+// gesture.
+export function setSoundTagVisible(visible) {
+  setSoundTag(Boolean(visible));
+}
+
 function musicTarget(entry) {
   if (!entry) return 0;
   const settings = globalThis.NIGHTFALL_SETTINGS;
@@ -289,5 +298,5 @@ audioFocus.subscribe({
 // exposes no controls and cannot change the mix.
 if (typeof window !== 'undefined') window.NIGHTFALL_MUSIC_QA = qa;
 
-export const music = { play, stop, currentId, setDialogueActive, qa };
+export const music = { play, stop, currentId, setDialogueActive, qa, setSoundTagVisible };
 export default music;

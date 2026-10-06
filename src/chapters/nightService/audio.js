@@ -2,19 +2,56 @@
 // chime, the bell with a long decay, door, stool, and a low rail-clack bed.
 // Everything runs through one SFX bus whose gain follows the player's
 // Master × SFX settings (volumeForChannel), and an optional quiet music loop
-// uses the Music channel. Nothing plays until the first user gesture.
+// uses the Music channel. Sound starts at once where autoplay is allowed;
+// otherwise on the first gesture, with the shared "♪ CLICK FOR SOUND" tag
+// shown meanwhile (alpha round 4 fix round, P2: Chapter 1 stayed silent with
+// no tag, unlike Chapter 2 and the true ending).
 
 import { DEFAULT_SETTINGS, volumeForChannel } from '../../shell/saveSystem.js';
+import { attemptPlay, createAutoplayGate } from '../../shared/autoplayGate.js';
+import { setSoundTagVisible } from '../../shared/musicDirector.js';
 
 const MUSIC_SRC = '/assets/music/ch1/1.1_train_undertow.mp3';
+// How long a suspended AudioContext may take to start by itself before the
+// page counts autoplay as refused (only matters with music off: with music
+// on, the loop's own play() answers first).
+export const AUTOPLAY_SETTLE_MS = 900;
 
-export function createNightServiceAudio({ music = true } = {}) {
+function autoplayRefusal() {
+  return Object.assign(new Error('The AudioContext waits for a user gesture.'), { name: 'NotAllowedError' });
+}
+
+export function createNightServiceAudio({ music = true, soundTag = setSoundTagVisible, settleMs = AUTOPLAY_SETTLE_MS } = {}) {
   let ctx = null;
   let bus = null;
   let ambience = null;
   let musicEl = null;
   let unlocked = false;
+  let destroyed = false;
+  let settleTimer = null;
   const settings = () => globalThis.NIGHTFALL_SETTINGS ?? DEFAULT_SETTINGS;
+  // unknown → allowed (autoplay worked) | blocked (tag shown) → allowed on
+  // the first key or click anywhere, the tag itself included.
+  const onGesture = () => {
+    gate.gesture();
+    unlock();
+  };
+  const listenForGesture = (on) => {
+    const method = on ? 'addEventListener' : 'removeEventListener';
+    globalThis[method]?.('pointerdown', onGesture, { capture: true, passive: true });
+    globalThis[method]?.('keydown', onGesture, { capture: true, passive: true });
+  };
+  const gate = createAutoplayGate({
+    onBlocked: () => {
+      if (destroyed || unlocked) return;
+      soundTag(true);
+      listenForGesture(true);
+    },
+    onUnlocked: () => {
+      soundTag(false);
+      listenForGesture(false);
+    },
+  });
 
   function ensure() {
     if (ctx) return ctx;
@@ -36,20 +73,29 @@ export function createNightServiceAudio({ music = true } = {}) {
     if (musicEl) musicEl.volume = Math.min(1, volumeForChannel(next, 'music') * 0.32);
   }
 
+  function ensureMusic() {
+    if (musicEl || !music || typeof Audio === 'undefined') return musicEl;
+    musicEl = new Audio(MUSIC_SRC);
+    musicEl.loop = true;
+    if (musicEl.dataset) musicEl.dataset.nightfallAudioChannel = 'music';
+    syncVolume();
+    return musicEl;
+  }
+
+  // From a gesture (the scene's first input, or any key / click while the
+  // tag shows) or from a successful autoplay.
   function unlock() {
-    if (unlocked) return;
+    if (unlocked || destroyed) return;
     const c = ensure();
     if (!c) return;
     unlocked = true;
+    clearTimeout(settleTimer);
+    if (gate.state === 'blocked') gate.gesture();
+    else gate.played();
     c.resume?.().catch(() => {});
     startAmbience();
-    if (music && typeof Audio !== 'undefined') {
-      musicEl = new Audio(MUSIC_SRC);
-      musicEl.loop = true;
-      musicEl.dataset.nightfallAudioChannel = 'music';
-      syncVolume();
-      musicEl.play().catch(() => {});
-    }
+    const el = ensureMusic();
+    if (el?.paused !== false) el?.play?.()?.catch?.(() => {});
   }
 
   const now = () => ctx.currentTime;
@@ -200,15 +246,29 @@ export function createNightServiceAudio({ music = true } = {}) {
   globalThis.addEventListener?.('nightfall:settings', onSettings);
 
   // Alpha round 4: start at once where autoplay is allowed (the desktop app
-  // sets autoplayPolicy 'no-user-gesture-required'); otherwise the first
-  // gesture still calls unlock() as before.
+  // sets autoplayPolicy 'no-user-gesture-required'). Where the browser
+  // refuses (the loop's play() rejects with NotAllowedError, or the context
+  // is still suspended after AUTOPLAY_SETTLE_MS), the shared tag shows until
+  // the first key or click starts everything.
   function tryAutoplay() {
-    if (unlocked || typeof document === 'undefined') return;
+    if (unlocked || destroyed || typeof document === 'undefined') return;
     const c = ensure();
     if (!c) return;
     const go = () => { if (!unlocked && c.state === 'running') unlock(); };
-    if (c.state === 'running') go();
-    else c.resume?.().then(go).catch(() => {});
+    if (c.state === 'running') {
+      go();
+      return;
+    }
+    c.resume?.().then(go).catch(() => {});
+    const el = ensureMusic();
+    if (el) {
+      attemptPlay(gate, () => el.play()).then((result) => {
+        if (result === 'playing' && c.state === 'running') go();
+      });
+    }
+    settleTimer = setTimeout(() => {
+      if (!unlocked && c.state !== 'running') gate.rejected(autoplayRefusal());
+    }, settleMs);
   }
   globalThis.queueMicrotask?.(tryAutoplay);
 
@@ -217,7 +277,13 @@ export function createNightServiceAudio({ music = true } = {}) {
     play,
     setRailRate: (rate) => ambience?.setRate(rate),
     get unlocked() { return unlocked; },
+    /** 'unknown' | 'allowed' | 'blocked' (the tag is showing). */
+    get autoplay() { return gate.state; },
     destroy() {
+      destroyed = true;
+      clearTimeout(settleTimer);
+      listenForGesture(false);
+      if (gate.state === 'blocked') soundTag(false);
       ambience?.stop();
       ambience = null;
       musicEl?.pause();

@@ -36,8 +36,10 @@ export const CHAPTER_CONTROLS = Object.freeze({
   echoCity: list(
     // Echo City: click-to-walk streets; scanner fields switch to direct
     // movement. F is free (fullscreen is the desktop bridge's F11).
-    ['WALK', 'CLICK THE GROUND'],
+    ['WALK', 'CLICK THE GROUND · A FAR CLICK STRIDES'],
     ['RUN', 'DOUBLE-CLICK THE GROUND · HOLD SHIFT'],
+    // Alpha round 4 fix round (P2): the long walks.
+    ['LONG WALKS', 'G · LEV LEADS THE WAY (WHEN OFFERED)'],
     ['SKIP A SCRIPTED WALK', 'CLICK'],
     ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
     ['CONTINUE DIALOGUE', 'CLICK · E / ENTER'],

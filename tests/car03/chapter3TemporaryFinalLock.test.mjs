@@ -120,10 +120,21 @@ describe('Chapter 3 integrated final lock v46', () => {
     // and interior-set GLTFLoaders get the bundled Meshopt decoder
     // (setMeshoptDecoder) for the compressed GLBs; no behaviour change.
     // Files: 27 -> 27.
-    assert.equal(sourceFiles.length, 27);
+    // v47 (alpha round 4 fix round, engineer P2, 2026-10-06): the long walks
+    // and the far-city LOD (tests/car03/chapter3LongWalksLod). A walk
+    // ordered 9 m or more away strides (1.45x, the rig jogs); on the four
+    // long walks G · LEV LEADS THE WAY (FOLLOW THE FIRELIGHT at night) cuts
+    // through black with one line to the destination's approach. Static
+    // city models, the perimeter and the built street scenery are drawn only
+    // near the frame and cast only where their shadow can reach it (screen
+    // based, live camera and sun, once per drawn frame, hysteresis outside
+    // the frame). Files: +2
+    // (chapter3LongWalks, chapter3CityLod): 27 -> 29. Toma's composition
+    // unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 29);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '1742d36b189dba115068dd71850aa9f55f2429cbea21446be6926222094cb7d8',
+      'dad3e3249e93935ae7b52cdb3fa6ad9c22797457d3b5c17468be7d121941f468',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
