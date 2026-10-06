@@ -679,6 +679,8 @@ export class PanelScene extends Phaser.Scene {
     const rings = [];
     (sceneDef?.hotspots ?? []).forEach((hotspot) => {
       const era = hotspot.era ?? 'present';
+      // `quiet`: an answer to a wrong guess, never advertised
+      if (hotspot.quiet) return;
       if (!(hotspot.tag?.ring ?? (era === 'past' || Boolean(hotspot.tag?.glintOnly)))) return;
       const g = this.add.graphics();
       (era === 'past' ? past ?? present : root).add(g);
@@ -2118,8 +2120,18 @@ export class PanelScene extends Phaser.Scene {
       };
     }
     if (g.kind === 'lens') {
+      // take the lens by its rim (a press on the glass over a word reads as
+      // "click here": alpha R4 · P1), carry it so its glass lands on the
+      // target, then reach in and click the target itself
       const lens = m.state.lens;
-      return { from: { x: lens.x, y: lens.y }, to: this.views[g.tile].screen(g.u, g.v) };
+      const target = this.views[g.tile].screen(g.u, g.v);
+      const grip = this.lensGripOffset(lens, target);
+      return {
+        from: { x: lens.x + grip.x, y: lens.y + grip.y },
+        to: { x: target.x + grip.x, y: target.y + grip.y },
+        click: target,
+        lensFrom: { x: lens.x, y: lens.y },
+      };
     }
     if (g.kind === 'unfold' && this.fold) {
       // take hold of the pull's grip and draw it out to where the new edge goes
@@ -2130,6 +2142,21 @@ export class PanelScene extends Phaser.Scene {
       return { from, to: { x: from.x + dx, y: from.y + dy } };
     }
     return null;
+  }
+
+  /** Where on the lens rim the ghost hand takes hold: the side facing away from where it goes, on screen. */
+  lensGripOffset(lens, target) {
+    const r = lens.r * 0.86;
+    const { w: W, h: H } = this.layout.view;
+    // a lower rim, on the side away from the travel (so the hand never covers the target)
+    const away = target.x >= lens.x ? -1 : 1;
+    const options = [[away * 0.6, 0.8], [-away * 0.6, 0.8], [away * 0.6, -0.8], [-away * 0.6, -0.8]];
+    const fits = ([dx, dy]) => {
+      const ends = [{ x: lens.x + dx * r, y: lens.y + dy * r }, { x: target.x + dx * r, y: target.y + dy * r }];
+      return ends.every((p) => p.x > 40 && p.x < W - 40 && p.y > 40 && p.y < H - 40);
+    };
+    const [dx, dy] = options.find(fits) ?? options[0];
+    return { x: dx * r, y: dy * r };
   }
 
   /** The first of these screen points the lens does not cover (else the first). */
@@ -2169,7 +2196,11 @@ export class PanelScene extends Phaser.Scene {
     let carriedA = 0;
     const apply = () => {
       hand.setPosition(proxy.x, proxy.y).setAlpha(proxy.a).setScale((1 / 3) * proxy.s);
-      if (carried) carried.setPosition(proxy.x + carried.offX, proxy.y + carried.offY).setAlpha(proxy.a * carriedA);
+      if (carried) {
+        // a carried thing that has been set down stays put (the lens, before the click)
+        if (!carried.frozen) carried.setPosition(proxy.x + carried.offX, proxy.y + carried.offY);
+        carried.setAlpha(proxy.a * carriedA);
+      }
     };
     const ripple = (x, y) => {
       const g = this.add.graphics();
@@ -2271,13 +2302,17 @@ export class PanelScene extends Phaser.Scene {
       const ghostLens = this.add.image(0, 0, 'nsv-lens-rim');
       layer.add(ghostLens);
       carried = ghostLens;
-      carried.offX = 0;
-      carried.offY = 0;
+      // the hand holds the rim: the ghost glass rides at the lens centre
+      carried.offX = pts.lensFrom.x - pts.from.x;
+      carried.offY = pts.lensFrom.y - pts.from.y;
       carried.setAlpha(0);
       tweens.push(...move(pts.from, 700), press(pts.from), { s: 0.84, duration: 60, onStart: () => { carriedA = 0.7; if (reduce) path(pts.from, pts.to); } });
       tweens.push(...move(pts.to, 1150), release, hold(260));
-      if (gesture.click) tweens.push(press(pts.to), release, hold(420));
-      else tweens.push({ ...hold(900), onStart: () => ripple(pts.to.x, pts.to.y) });
+      if (gesture.click) {
+        // let go of the rim and reach into the glass: the click is on the target
+        tweens.push({ ...hold(1), onStart: () => { ghostLens.frozen = true; } });
+        tweens.push(...move(pts.click, 520), press(pts.click), release, hold(480));
+      } else tweens.push({ ...hold(900), onStart: () => ripple(pts.to.x, pts.to.y) });
     }
     tweens.push({ a: 0, duration: 520, ease: 'Sine.easeIn' });
     layer.add(hand);

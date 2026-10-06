@@ -74,10 +74,17 @@ test('Act 2: punching the ticket makes the lens (bell #2); the only new act is t
   const aisle = model.slotRect('aisle');
   assert.ok(lens.y > aisle.y && lens.x > aisle.x);
   // the lens-click lesson comes first, on the big REQUEST STOP plate
-  const hot = availableActions(model).filter((a) => a.kind === 'hotspot');
+  // (`quiet` hotspots only answer a wrong guess: they never advance anything)
+  const quiet = (a) => model.hotspots(a.tile).find((h) => h.id === a.id)?.quiet;
+  const hot = availableActions(model).filter((a) => a.kind === 'hotspot' && !quiet(a));
   assert.deepEqual(hot.map((a) => `${a.tile}.${a.id}`), ['board.request']);
   const plate = model.hotspots('board').find((x) => x.id === 'request');
-  assert.equal(model.clickTile('board', plate.rect[0] + 0.05, plate.rect[1] + 0.05), false, 'only in 1978 light');
+  // today's plate, outside the lens: it answers where it still works
+  const said = record(model);
+  assert.ok(model.clickTile('board', plate.rect[0] + 0.05, plate.rect[1] + 0.05));
+  settle(model);
+  assert.equal(model.hasFlag('stopRequested'), false, 'only in 1978 light');
+  assert.match(said.find(([n]) => n === 'caption')[1].text, /1978/);
   requestStop(model);
   assert.ok(model.hasFlag('stopRequested'));
   assert.equal(model.state.tiles.board.state, 'requested');
@@ -263,4 +270,31 @@ test('Act 2: no dead ends — random reachable states can still finish the act',
     const solution = solveBfs(ACT2, model.snapshot(), { maxStates: 6000 });
     assert.ok(solution, `trial ${trial} stranded at ${JSON.stringify(model.textState().grid.slots)} step ${model.textState().step}`);
   }
+});
+
+test('Act 2 (alpha R4): the rack tag through the lens before the stop says why not, and SHOW ME moves on to it after', async () => {
+  const { pickGesture } = await import('../../src/chapters/nightService/hints.js');
+  const model = fresh();
+  punch(model);
+  const early = model.hotspots('rack').find((x) => x.id === 'bellwetherEarly');
+  assert.ok(early.enabled && early.quiet && early.era === 'past');
+  lensAt(model, 'rack', early.rect[0] + early.rect[2] / 2, early.rect[1] + early.rect[3] / 2);
+  const log = record(model);
+  const r = model.slotRect('rack');
+  const u = early.rect[0] + early.rect[2] / 2;
+  const v = early.rect[1] + early.rect[3] / 2;
+  assert.ok(model.clickTile('rack', u, v, { x: r.x + u * r.w, y: r.y + v * r.h }));
+  settle(model);
+  assert.match(log.find(([n]) => n === 'caption')[1].text, /Not yet — the train hasn.t been asked to stop/);
+  assert.ok(log.some(([n, p]) => n === 'fx' && p.name === 'pulse' && p.hint.hotspot === 'request'), 'the plate is pointed out');
+  assert.equal(model.hasFlag('orchardMarked'), false);
+  // SHOW ME before the stop: the plate; right after it: the rack tag (the `mark` step)
+  assert.equal(pickGesture(model).hotspot, 'request');
+  requestStop(model);
+  assert.equal(model.currentStep().id, 'mark');
+  const g = pickGesture(model);
+  assert.equal(g.tile, 'rack');
+  assert.equal(g.hotspot, 'bellwether');
+  assert.equal(model.hotspots('rack').find((x) => x.id === 'bellwetherEarly').enabled, false);
+  assert.equal(model.hotspots('board').find((x) => x.id === 'requestDead')?.enabled ?? false, false);
 });

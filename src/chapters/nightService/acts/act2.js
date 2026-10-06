@@ -67,6 +67,18 @@ export const ACT2 = defineAct({
               do: [{ setFlag: 'orchardMarked' }],
             },
             {
+              // the same tag through the lens before the stop is requested: it
+              // answers (alpha R4 · P1), so the player does not rule it out
+              id: 'bellwetherEarly', kind: 'use', era: 'past', quiet: true,
+              rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
+              requires: { all: [{ item: 'lens' }, { notFlag: 'stopRequested' }] },
+              do: [
+                { sfx: 'mismatch' },
+                { caption: { speaker: 'BUTCH', text: 'Not yet — the train hasn\'t been asked to stop.', ms: 4200 } },
+                { fx: { name: 'pulse', hint: { tile: 'board', hotspot: 'request' } } },
+              ],
+            },
+            {
               id: 'caseTag', kind: 'zoom', to: 'tag', rect: TAG_ZOOM,
               requires: { flag: 'orchardMarked' },
               tag: { x: ORCHARD_TAG.x - 0.005, y: ORCHARD_TAG.y - 0.02, angle: 0.3, scale: 1.1 },
@@ -158,6 +170,18 @@ export const ACT2 = defineAct({
           draw: (ctx) => drawBoard(ctx, 'default'),
           drawPast: (ctx) => drawBoardPast(ctx, 'default'),
           hotspots: [{
+            // today's plate is dead: a click on it outside the lens says where
+            // it still works (alpha R4 · P1: after the ghost hand, players
+            // pressed the plate where the hand had carried the lens)
+            id: 'requestDead', kind: 'use', era: 'present', quiet: true,
+            rect: [...REQUEST_STOP],
+            requires: { all: [{ item: 'lens' }, { notFlag: 'stopRequested' }] },
+            do: [
+              { sfx: 'mismatch' },
+              { caption: { speaker: 'BUTCH', text: 'Dead today. It only rang in 1978 — look at it through the punch hole.', ms: 4600 } },
+              { fx: { name: 'pulse', hint: { lens: true } } },
+            ],
+          }, {
             // punched through the lens, in 1978 light: the stop is requested
             id: 'request', kind: 'use', era: 'past', once: true,
             rect: [...REQUEST_STOP],
