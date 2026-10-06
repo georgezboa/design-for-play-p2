@@ -108,7 +108,10 @@ describe('Chapter 3 alpha fixes (F2)', () => {
   });
 
   it('F4 note: the Echo Stone is collected after its line, never under the first-stone card', () => {
-    assert.match(runtime, /\], \{ onComplete: \(\) => collectMagicStone\('chapter-3'\) \}\);/);
-    assert.match(runtime, /onComplete: \(\) => collectMagicStone\('chapter-3'\),/);
+    // Alpha round 4: both pickups go through awardEchoStone() (the shared
+    // stone notice), still when the last line closes.
+    assert.match(runtime, /this\.openAmbientDialogue\(CAMPFIRE_SELINE_STONE_DIALOGUE, \{ onComplete: \(\) => this\.awardEchoStone\(\) \}\);/);
+    assert.match(runtime, /this\.openAmbientDialogue\(MORNING_STONE_PICKUP, \{ onComplete: \(\) => this\.awardEchoStone\(\) \}\);/);
+    assert.match(runtime, /awardEchoStone\(\) \{\n[^]*?collectMagicStone\('chapter-3'\);/);
   });
 });

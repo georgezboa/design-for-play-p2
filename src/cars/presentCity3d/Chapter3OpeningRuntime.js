@@ -46,6 +46,7 @@ import {
   TICKET_BOARD_CONCLUSION,
   TRANSPORT_ENTRANCE_DIALOGUE,
   cutInterfaceMenu,
+  echoStoneToastText,
   edaTopicMenu,
   hanaTopicMenu,
   nikaTopicMenu,
@@ -97,7 +98,8 @@ import {
   smooth,
 } from './chapter3SceneBuilders.js';
 import { music } from '../../shared/musicDirector.js';
-import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { collectMagicStone, firstStoneNotice, magicStoneRowHtml, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { stoneChime } from '../../chapters/borrowedLight/audio.js';
 import { car03Audio } from '../presentCity/car03Audio.js';
 import { devParam } from '../../devMode.js';
 import {
@@ -2224,19 +2226,35 @@ export class Chapter3OpeningRuntime {
     }
     // The stone is collected when Butch's last line closes, so the shell's
     // one-time first-stone card (~1.1 s after a first pickup) never opens
-    // over the caption.
-    const next = this.nextStoneCount();
-    this.openAmbientDialogue([
-      ...CAMPFIRE_SELINE_STONE_DIALOGUE,
-      { speaker: 'BUTCH', text: `The Echo Stone was hidden in Seline's unclaimed coat. MAGIC STONE ${next.count} / ${next.total}.` },
-    ], { onComplete: () => collectMagicStone('chapter-3') });
+    // over the caption. Alpha round 4 (P2): the count is no longer a Butch
+    // line; the stone gets the same notice as Chapter 2's (chime, a
+    // "ECHO STONE · MAGIC STONE n / 5" toast, the shell's first-stone card).
+    this.openAmbientDialogue(CAMPFIRE_SELINE_STONE_DIALOGUE, { onComplete: () => this.awardEchoStone() });
   }
 
-  // What the count will read once this chapter's stone is in the pocket.
-  nextStoneCount() {
+  // Chapter 2's stone notice (BorrowedLightScene.takeStone): the shared
+  // chime, a short toast with the count and the sockets, then the shell's
+  // one-time first-stone card when this is the journey's first stone.
+  awardEchoStone() {
+    if (magicStoneSnapshot().collected.includes('chapter-3')) return false;
+    collectMagicStone('chapter-3');
+    stoneChime();
     const snapshot = magicStoneSnapshot();
-    const has = snapshot.collected.includes('chapter-3');
-    return { count: snapshot.count + (has ? 0 : 1), total: snapshot.total };
+    const toast = this.stoneToast ?? (this.stoneToast = document.createElement('div'));
+    toast.className = 'c3-stone-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `${magicStoneRowHtml(snapshot)}<span>${echoStoneToastText(snapshot)}</span>`;
+    if (!toast.isConnected) document.body.append(toast);
+    toast.classList.remove('is-out');
+    toast.hidden = false;
+    // With the first-stone card coming (~1.1 s), the toast is gone by then.
+    const firstCardComing = Boolean(firstStoneNotice('chapter-3'));
+    window.clearTimeout(this.stoneToastTimer);
+    this.stoneToastTimer = window.setTimeout(() => {
+      toast.classList.add('is-out');
+      this.stoneToastTimer = window.setTimeout(() => { toast.hidden = true; }, 600);
+    }, firstCardComing ? 900 : 3200);
+    return true;
   }
 
   morningCampfireStoneAvailable() {
@@ -2249,12 +2267,9 @@ export class Chapter3OpeningRuntime {
 
   collectMorningCampfireStone() {
     if (!this.morningCampfireStoneAvailable()) return false;
-    const next = this.nextStoneCount();
     this.morningCampfireEchoStone.visible = false;
     this.morningStoneTaken = true;
-    this.openAmbientDialogue([...MORNING_STONE_PICKUP, { speaker: 'BUTCH', text: `The Echo Stone. MAGIC STONE ${next.count} / ${next.total}.` }], {
-      onComplete: () => collectMagicStone('chapter-3'),
-    });
+    this.openAmbientDialogue(MORNING_STONE_PICKUP, { onComplete: () => this.awardEchoStone() });
     return true;
   }
 

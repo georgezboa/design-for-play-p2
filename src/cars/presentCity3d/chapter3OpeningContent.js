@@ -512,6 +512,12 @@ export const MORNING_STONE_PICKUP = Object.freeze([
   { speaker: 'BUTCH', text: 'Something blue catches in the cold ashes, under a coat someone left by the fire.' },
 ]);
 
+// Alpha round 4 (P2): the stone is announced by the shared stone notice,
+// worded like Chapter 2's ("GRID STONE · MAGIC STONE 2 / 5"), not by a Butch
+// line (which also called the coat "Seline's" when she had just said it was
+// an unclaimed coat).
+export const echoStoneToastText = ({ count, total }) => `ECHO STONE · MAGIC STONE ${count} / ${total}`;
+
 // ---------------------------------------------------------------- station
 export const STATION_APPROACH_DIALOGUE = Object.freeze([
   { speaker: 'LEV', text: 'The platform scanner reads parties, not heads. Alone, it holds you at the line.' },
