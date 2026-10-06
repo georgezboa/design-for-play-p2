@@ -281,15 +281,18 @@ export class BorrowedLightHud {
 
   toast(message, color = INK, ms = 2200) {
     const scene = this.scene;
-    this.toastText.setText(message).setColor(color);
+    // Above the caption bar while a line is on it (alpha r4: an idle hint's
+    // toast ran under Butch's line).
+    const ty = this.caption.visible ? 820 : 980;
+    this.toastText.setText(message).setColor(color).setY(ty);
     const w = this.toastText.width + 120;
     const h = this.toastText.height + 26;
     const band = this.toastBand;
     band.clear();
-    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0, 0.82, 0, 0.82).fillRect(CX - w / 2 - 60, 980 - h / 2, 60, h);
-    band.fillStyle(0x03070b, 0.82).fillRect(CX - w / 2, 980 - h / 2, w, h);
-    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0.82, 0, 0.82, 0).fillRect(CX + w / 2, 980 - h / 2, 60, h);
-    band.lineStyle(1, 0xb08a4a, 0.45).lineBetween(CX - w / 2, 980 - h / 2, CX + w / 2, 980 - h / 2).lineBetween(CX - w / 2, 980 + h / 2, CX + w / 2, 980 + h / 2);
+    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0, 0.82, 0, 0.82).fillRect(CX - w / 2 - 60, ty - h / 2, 60, h);
+    band.fillStyle(0x03070b, 0.82).fillRect(CX - w / 2, ty - h / 2, w, h);
+    band.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0.82, 0, 0.82, 0).fillRect(CX + w / 2, ty - h / 2, 60, h);
+    band.lineStyle(1, 0xb08a4a, 0.45).lineBetween(CX - w / 2, ty - h / 2, CX + w / 2, ty - h / 2).lineBetween(CX - w / 2, ty + h / 2, CX + w / 2, ty + h / 2);
     const parts = [this.toastText, band];
     scene.tweens.killTweensOf(parts);
     parts.forEach((o) => o.setAlpha(0));

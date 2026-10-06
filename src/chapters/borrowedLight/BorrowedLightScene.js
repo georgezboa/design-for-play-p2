@@ -1905,7 +1905,13 @@ export class BorrowedLightScene extends Phaser.Scene {
     const hint = roomStep(ctx);
     this.idleHint = hint;
     this.idle.setKey(progressKey(ctx, hint));
-    for (const tier of this.idle.update(dt)) this.playIdleHint(tier, hint);
+    this.playIdleHints(this.idle.update(dt), hint);
+  }
+
+  // The fuller line goes up before the nudge, so the toast sits above it.
+  playIdleHints(tiers, hint) {
+    const order = ['pulse', 'full', 'nudge'];
+    [...tiers].sort((a, b) => order.indexOf(a) - order.indexOf(b)).forEach((tier) => this.playIdleHint(tier, hint));
   }
 
   playIdleHint(tier, hint = this.idleHint) {
@@ -1918,6 +1924,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     } else if (tier === 'nudge') {
       this.hud.toast(words.nudge, '#f2c27a', 6000);
     } else if (tier === 'full') {
+      // Butch's line first, then the nudge above it (playIdleHints orders them).
       this.hud.say({ speaker: 'BUTCH', text: words.full }, 7000);
     }
     this.lastIdleHint = { tier, step: hint.step, at: Math.round(this.clock * 10) / 10 };
@@ -1930,7 +1937,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const hint = roomStep(ctx);
     this.idleHint = hint;
     this.idle.setKey(progressKey(ctx, hint));
-    for (const tier of this.idle.request()) this.playIdleHint(tier, hint);
+    this.playIdleHints(this.idle.request(), hint);
   }
 
   pollGamepad() {

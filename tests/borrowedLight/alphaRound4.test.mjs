@@ -359,7 +359,9 @@ test('R4-6: LOW GRAPHICS renders at 0.6× with the HUD layout kept, and thins th
 // 7 · P2 polish.
 
 test('R4-7: no lamp, node pole or canopy column stands in front of a sign board', () => {
-  const boards = SIGNS.filter((s) => !s.scroll && s.layer !== 'far').map((s) => ({ t: s.text, x0: s.x - s.w / 2, x1: s.x + s.w / 2, y0: s.y, y1: s.y + (s.layer === 'hotel' ? 110 : 60) }));
+  // The painted board hangs 30 px below the sign's y (paintSign's pad); keep
+  // 12 px of air around it.
+  const boards = SIGNS.filter((s) => !s.scroll && s.layer !== 'far').map((s) => ({ t: s.text, x0: s.x - s.w / 2 - 6, x1: s.x + s.w / 2 + 6, y0: s.y + 30 - 12, y1: s.y + 30 + (s.layer === 'hotel' ? 110 : 60) + 12 }));
   const poles = [
     ...LAMPS.map((l) => ({ t: l.id, x0: l.x - 9, x1: l.x + 40, y0: l.y - 180, y1: l.y })),
     ...NODES.map((n) => ({ t: n.id, x0: n.x - 22, x1: n.x + 22, y0: n.y - 180, y1: n.y })),

@@ -330,12 +330,13 @@ export const MARA_SIGHTINGS = Object.freeze([
 // dies when the blackout starts. Alpha r4: no lamp, node pole or canopy
 // column stands in front of a board (ROOMS, PHARMACY and PLATFORM 2 had a
 // pole through their letters; tests/borrowedLight/alphaRound4.test.mjs).
+// A sign's board hangs 30 px below its y (art/paint.js paintSign pads it).
 export const SIGNS = Object.freeze([
   { x: 330, y: 548, text: 'CITY TERMINAL', color: 'amber', layer: 'near', w: 300 },
   { x: 3260, y: 196, text: 'TICKETS', color: 'teal', layer: 'near', w: 170 },
   { x: 4000, y: 556, text: 'LAUNDRY', color: 'rose', layer: 'near', w: 170 },
-  { x: 5240, y: 196, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
-  { x: 7020, y: 6, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
+  { x: 5240, y: 170, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
+  { x: 7020, y: -30, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
   { x: 8150, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
   { x: 9900, y: -60, text: 'WATCHES', color: 'teal', layer: 'near', w: 180 },
   { x: 10480, y: 300, text: 'TAILOR', color: 'rose', layer: 'near', w: 150 },
@@ -345,7 +346,7 @@ export const SIGNS = Object.freeze([
   // the mid skyline (scroll 0.5). It dies with the rest of the city.
   { x: 4520, y: 250, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'far', w: 400, scroll: 0.5 },
   { x: C(17900), y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
-  { x: D(20110), y: -170, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
+  { x: D(20110), y: -200, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));
 
 // Platform lamps along the evacuation platform, lit as the chain fires.

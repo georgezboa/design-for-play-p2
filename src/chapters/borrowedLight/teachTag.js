@@ -13,6 +13,7 @@ const SIGN_PAD = 10;
 const SIGN_H = 60;
 const HOTEL_SIGN_H = 110;
 const BRACKET_H = 40;
+const BOARD_PAD = 30;
 
 // World rectangles of the playfield signs (the parallax 'far' signs scroll
 // at another rate and are never next to Butch).
@@ -21,7 +22,8 @@ export function signRects(signs) {
     .filter((sign) => !sign.scroll && sign.layer !== 'far')
     .map((sign) => {
       const h = sign.layer === 'hotel' ? HOTEL_SIGN_H : SIGN_H;
-      return { x0: sign.x - sign.w / 2, x1: sign.x + sign.w / 2, y0: sign.y - BRACKET_H, y1: sign.y + h, text: sign.text };
+      // The painted board hangs BOARD_PAD below the sign's y (paintSign).
+      return { x0: sign.x - sign.w / 2, x1: sign.x + sign.w / 2, y0: sign.y - BRACKET_H, y1: sign.y + BOARD_PAD + h, text: sign.text };
     });
 }
 
