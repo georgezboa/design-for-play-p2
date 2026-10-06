@@ -168,6 +168,14 @@ export function paintCountry(c, w, h, { horizon = h * 0.62, seed = 8101, lights 
   });
 }
 
+let canvasOptions = {};
+/** player.js: paint into CPU-backed canvases on a software renderer. */
+export function useSoftwareCanvas(on) {
+  const next = on ? { willReadFrequently: true } : {};
+  if (Boolean(next.willReadFrequently) !== Boolean(canvasOptions.willReadFrequently)) rainTiles.clear();
+  canvasOptions = next;
+}
+
 const rainTiles = new Map();
 function rainTile(res, density, seed) {
   const key = `${res}:${density}:${seed}`;
@@ -176,7 +184,7 @@ function rainTile(res, density, seed) {
   const element = document.createElement('canvas');
   element.width = Math.ceil(size * res);
   element.height = Math.ceil(size * res);
-  const c = element.getContext('2d');
+  const c = element.getContext('2d', canvasOptions);
   c.setTransform(res, 0, 0, res, 0, 0);
   const random = rng(seed);
   c.lineCap = 'round';

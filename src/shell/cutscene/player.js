@@ -15,11 +15,14 @@ import {
   STAGE, buildTimeline, cameraAt, createSession, panelLayout, parallaxOffset, stageView,
 } from './timeline.js';
 import { createCutsceneSfx } from './sfx.js';
+import { isSoftwareRenderer } from '../framePacing.js';
+import { useSoftwareCanvas } from './painters.js';
 
 /** The largest backing store for the window canvas (device px). */
 export const MAX_PIXELS = 2560 * 1440;
 /** Layers are painted at a resolution rounded up to this step (px per stage unit). */
 const RES_STEP = 0.25;
+const WARM_BUDGET_MS = 3000;
 const ARRIVING_TEXT = 'THE NIGHT SERVICE IS ARRIVING';
 
 function settingsNow() {
@@ -38,6 +41,24 @@ export function playbackOptions(settings = settingsNow(), os = false) {
   };
 }
 
+// On a software renderer (SwiftShader, llvmpipe: no usable GPU) an
+// accelerated 2D canvas is drawn by an emulated GPU, which stalls for up to
+// a second at a time; a CPU-backed canvas is many times faster there.
+let softwareProbe = null;
+export function softwareRendering() {
+  if (softwareProbe !== null) return softwareProbe;
+  softwareProbe = false;
+  try {
+    const probe = document.createElement('canvas');
+    const gl = probe.getContext('webgl') || probe.getContext('experimental-webgl');
+    softwareProbe = gl ? isSoftwareRenderer(gl) : true;
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+  } catch { softwareProbe = false; }
+  return softwareProbe;
+}
+let contextOptions = {};
+const ctx2d = (element) => element.getContext('2d', contextOptions);
+
 function makeCanvas(w, h) {
   const element = document.createElement('canvas');
   element.width = Math.max(1, Math.ceil(w));
@@ -50,7 +71,7 @@ function makeCanvas(w, h) {
 
 function paintWall(L, k) {
   const canvas = makeCanvas(L.W * k, L.H * k);
-  const c = canvas.getContext('2d');
+  const c = ctx2d(canvas);
   c.setTransform(k, 0, 0, k, 0, 0);
   wood(c, 0, 0, L.W, L.H, { base: '#1d130c', vertical: true, seed: 7101, grain: 'rgba(0,0,0,0.34)', light: 'rgba(255,214,160,0.03)' });
   const random = rng(7102);
@@ -78,7 +99,7 @@ function paintFrame(L, k) {
   const f = L.frame;
   const pad = f * 2.2;
   const canvas = makeCanvas((w + pad * 2) * k, (h + pad * 2) * k);
-  const c = canvas.getContext('2d');
+  const c = ctx2d(canvas);
   c.setTransform(k, 0, 0, k, 0, 0);
   c.translate(pad, pad);
   c.save();
@@ -143,7 +164,9 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   root.append(caption, arriving);
   root.classList.add('is-cutscene');
 
-  const ctx = canvas.getContext('2d');
+  contextOptions = softwareRendering() ? { willReadFrequently: true } : {};
+  useSoftwareCanvas(Boolean(contextOptions.willReadFrequently));
+  const ctx = ctx2d(canvas);
   const buffer = { canvas: null, ctx: null };
   let L = null;
   let k = 1;
@@ -159,7 +182,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   let lastWall = null;
   let shownCaption = null;
   let musicStarted = false;
-  const stats = { frames: 0, samples: [] };
+  const stats = { frames: 0, samples: [], ticks: 0, longTicks: 0, maxStep: 0 };
 
   const layout = () => {
     L = panelLayout(window.innerWidth, window.innerHeight, { textScale: options.textScale });
@@ -172,7 +195,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     wall = paintWall(L, k);
     frame = paintFrame(L, k);
     buffer.canvas = makeCanvas(L.panel.w * k, L.panel.h * k);
-    buffer.ctx = buffer.canvas.getContext('2d');
+    buffer.ctx = ctx2d(buffer.canvas);
     root.style.setProperty('--nf-cap-top', `${L.captionTop + Math.min((L.H - L.captionTop) / 2, 70)}px`);
     root.style.setProperty('--nf-cap-w', `${L.captionWidth}px`);
     root.style.setProperty('--nf-arriving-top', `${L.panel.y + L.panel.h - 16}px`);
@@ -211,7 +234,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
         let entry = layers.get(id);
         if (!entry) {
           const element = makeCanvas(w * res, h * res);
-          const c = element.getContext('2d');
+          const c = ctx2d(element);
           c.setTransform(res, 0, 0, res, 0, 0);
           paint(c, w, h, this);
           entry = { canvas: element, w, h };
@@ -418,7 +441,13 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     raf = 0;
     if (destroyed) return;
     const paused = session.paused;
-    if (lastWall !== null && !paused) wallTime += Math.min(0.25, Math.max(0, (now - lastWall) / 1000));
+    if (lastWall !== null && !paused) {
+      const step = Math.max(0, (now - lastWall) / 1000);
+      wallTime += Math.min(0.25, step);
+      stats.ticks += 1;
+      if (step > 0.25) stats.longTicks += 1;
+      stats.maxStep = Math.max(stats.maxStep, step);
+    }
     lastWall = paused ? null : now;
     const before = session.status;
     fire(session.tick(now));
@@ -456,7 +485,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   const warm = (index) => {
     const shot = def.shots[index];
     if (!shot || !L) return;
-    const scratch = makeCanvas(2, 2).getContext('2d');
+    const scratch = ctx2d(makeCanvas(2, 2));
     [0, 1].forEach((local) => {
       const layer = { index, local, seconds: local * shot.duration };
       const cam = cameraAt(shot.camera, local, { reducedMotion: options.reducedMotion });
@@ -489,8 +518,13 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       reducedMotion: options.reducedMotion,
       lowGraphics: options.lowGraphics,
       textScale: options.textScale,
+      softwareCanvas: Boolean(contextOptions.willReadFrequently),
       panel: L?.panel ?? null,
       layersCached: layers.size,
+      warmMs: stats.warmMs ?? null,
+      ticks: stats.ticks,
+      longTicks: stats.longTicks,
+      maxStepMs: Math.round(stats.maxStep * 1000),
       frameMs: stats.samples.length ? Math.round((stats.samples.reduce((s, v) => s + v, 0) / stats.samples.length) * 10) / 10 : null,
     };
   };
@@ -519,15 +553,25 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
         ]);
       }
       if (destroyed) return;
-      warm(0);
-      warm(1);
+      // Paint every shot's layers behind the black overlay before the first
+      // frame, a shot per frame, so nothing paints itself mid-playback; past
+      // WARM_BUDGET_MS the rest are painted in idle moments as it plays.
+      const warmStart = performance.now();
+      let warmed = 0;
+      while (warmed < def.shots.length && (warmed < 2 || performance.now() - warmStart < WARM_BUDGET_MS)) {
+        warm(warmed);
+        warmed += 1;
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        if (destroyed) return;
+      }
+      stats.warmMs = Math.round(performance.now() - warmStart);
       startMusic();
       sfx.resume();
       if (document.hidden) session.pause('hidden');
       root.classList.add('is-ready');
       render();
       schedule();
-      warmRest(2);
+      warmRest(warmed);
     },
     pause(reason = 'menu') {
       if (destroyed) return;
