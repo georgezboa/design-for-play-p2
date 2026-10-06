@@ -44,7 +44,8 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['WALK IN STEP (SCANNERS)', 'HOLD E BESIDE A LIT WALKER · OR WASD TOWARD THE ARCH'],
     ['LET GO OF A WALKER', 'WALK BACK'],
     ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
-    ['TICKET BOARD', 'DRAG CARDS AND LENS · CLICK TO PUNCH'],
+    // Alpha round 4: in the order the punch needs.
+    ['TICKET BOARD', 'LENS OVER BOTH TICKETS · STACK THEM · CLICK TO PUNCH'],
     ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · SPACE PUNCH'],
     ['RESET CAMERA', 'R'],
     ['PAUSE', 'ESC'],
