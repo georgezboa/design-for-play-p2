@@ -160,8 +160,8 @@ test('resolveDrag finds the panel to move and the slot to drop it on', () => {
   assert.deepEqual(resolveDrag(two, { tile: 'door', leftOf: 'desk' }), { tile: 'door', from: 1, to: 0 });
   // the Act 2 drop: rack above the aisle (George's layout: rack moved to the bottom row)
   const act2 = createPanelModel(ACTS.act2, { carry: startCarry('act2') });
-  act2.swap(0, 3); // board TL, window TR, aisle BL, rack BR
-  act2.swap(1, 2); // board TL, aisle TR, window BL, rack BR  — aisle top-right, rack bottom-right
+  act2.swap(1, 3); // window TL, board TR, aisle BL, rack BR
+  act2.swap(1, 2); // window TL, aisle TR, board BL, rack BR  — aisle top-right, rack bottom-right
   const drag = resolveDrag(act2, { tile: 'rack', above: 'aisle' });
   assert.ok(drag);
   act2.swap(drag.from, drag.to);

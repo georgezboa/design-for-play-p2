@@ -116,7 +116,13 @@ test('Act 2: full scripted solution through to the act-3 checkpoint (without the
   assert.equal(model.state.tiles.rack.state, 'tilting');
   assert.equal(model.state.tiles.rack.zoomStack.length, 0);
   assert.equal(model.state.frames.windowFrame.host, 'window', 'frame goes home after the stop');
-  // rack is still above the aisle: the case falls straight into Butch's arms
+  // the rack starts beside the window, not over the aisle: the case waits at
+  // the edge until the player carries the rack over Butch's arms (alpha R4)
+  assert.ok(model.hasFlag('caseAtEdge'));
+  assert.equal(model.hasFlag('caseInArms'), false);
+  assert.equal(model.textState().step, 'firstWeight');
+  model.swap(TL, TR);
+  settle(model);
   assert.ok(model.hasFlag('caseInArms'));
   assert.equal(model.state.actors.butch.carrying, 'case');
   assert.equal(model.state.bell, 3);
@@ -140,14 +146,15 @@ test('Act 2: the case waits at the drop point until the rack is above the aisle'
   requestStop(model);
   markThroughLens(model);
   toOrchard(model);
-  // move the aisle away from under the rack before the train stops
-  model.swap(BL, BR);
+  // the act starts with the rack over the board (TR), not over the aisle
+  assert.deepEqual(model.state.slots, ['window', 'rack', 'aisle', 'board']);
+  assert.equal(model.evaluate({ above: { a: 'rack', b: 'aisle' } }), false);
   frameOntoOrchard(model);
   assert.ok(model.hasFlag('caseAtEdge'));
   assert.equal(model.hasFlag('caseInArms'), false);
   assert.equal(model.textState().step, 'firstWeight');
   assert.ok(model.mismatches().some((m) => m.tile === 'rack' && m.type === 'drop'));
-  model.swap(BR, BL);
+  model.swap(TL, TR);
   settle(model);
   assert.ok(model.hasFlag('caseInArms'));
 });
@@ -169,6 +176,9 @@ test('Act 2: the frame dropped early elsewhere, or on the tag, still works when 
   settle(model);
   assert.equal(model.hasFlag('caseAtEdge'), false);
   model.zoomIn('rack', 'postcard');
+  settle(model);
+  assert.ok(model.hasFlag('caseAtEdge'));
+  model.swap(TL, TR);
   settle(model);
   assert.ok(model.hasFlag('caseInArms'));
 });

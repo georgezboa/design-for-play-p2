@@ -1,7 +1,7 @@
 // Act 2 · THE LUGGAGE CAR (2×2). Teaches the punch lens, then the frame
 // lift; hides the Ember Stone. Spec §6 Act 2.
 //
-//   TL rack      TR window (liftable brass frame over the night fields)
+//   TL window (liftable brass frame over the night fields)   TR rack
 //   BL aisle     BR board
 //
 //   1 punch the ticket in Butch's hand → the hole becomes the lens
@@ -35,7 +35,10 @@ export const ACT2 = defineAct({
   checkpoint: 'chapter-1-act-2',
   next: 'act3',
   grid: { cols: 2, rows: 2 },
-  slots: ['rack', 'window', 'aisle', 'board'],
+  // the rack starts beside the window, not over the aisle: carrying it over
+  // Butch's arms is the last lesson's move, never solved before it is asked
+  // (alpha R4 · P2)
+  slots: ['window', 'rack', 'aisle', 'board'],
   start: { bell: 1, items: ['punch'] },
   assets: ['fields', 'memory'],
   fx: ACT2_FX,
