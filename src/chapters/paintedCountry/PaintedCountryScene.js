@@ -1346,7 +1346,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   // The one tag on screen: whatever the brush or Butch is nearest to.
   updateTag() {
-    if (this.viewer.open || this.advancingToStudio || this.locked || this.bannerUp) {
+    if (this.viewer.open || this.advancingToStudio || this.locked || this.bannerUp || this.card.open) {
       this.tag.hide();
       return;
     }
@@ -1474,15 +1474,16 @@ export class PaintedCountryScene extends Phaser.Scene {
     const move = this.brush.readMove(this.keys);
 
     if (this.card.open) {
-      const walking = move.left || move.right || move.jumpPressed;
-      if (move.interactPressed || move.enterPressed || this.brush.paintPressed || walking) this.card.dismiss();
-      if (this.card.open) {
-        this.walker.body.setVelocityX(0);
-        this.drawFigure();
-        return;
-      }
+      // The claim card does not hold Butch still (alpha round 4: a dead
+      // start). E closes it; so does walking on a little way, or time.
+      const from = this.cardOpenedAtX ?? (this.cardOpenedAtX = this.walker.x);
+      const walkedOn = Math.abs(this.walker.x - from) > 150;
+      const timedOut = this.time.now - this.card.openedAt > 7000;
+      if (move.interactPressed || move.enterPressed || this.brush.paintPressed || walkedOn || timedOut) this.card.dismiss();
       // the press that closed the card is not also a read or a stroke
       move.interactPressed = false;
+      move.enterPressed = false;
+      if (!this.card.open) this.cardOpenedAtX = null;
     }
 
     if (move.interactPressed && !this.locked && !this.advancingToStudio) this.toggleViewer();

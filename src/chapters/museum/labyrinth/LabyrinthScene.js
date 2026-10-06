@@ -49,7 +49,11 @@ const FONT = 'Courier New, monospace';
 // it times the global TEXT SIZE setting (shell/saveSystem.js textScale).
 export const HUD_MIN_PX = 13;
 // LOW GRAPHICS (pause menu): the fog of war at half resolution.
-const fogScaleFor = (settings = globalThis.NIGHTFALL_SETTINGS) => (settings?.lowGraphics === true ? 0.5 : 1);
+// A software rasteriser gets it on its own (shared/phaserRenderScale.js).
+const fogScaleFor = (settings = globalThis.NIGHTFALL_SETTINGS) => (
+  settings?.lowGraphics === true
+  || (globalThis.NIGHTFALL_SOFTWARE_GL === true && String(settings?.graphicsQuality ?? 'auto').toLowerCase() !== 'high')
+    ? 0.5 : 1);
 const hudScale = () => Phaser.Math.Clamp((globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100, 0.8, 1.6);
 export const hudPx = (size, scale = hudScale()) => Math.round(Math.max(HUD_MIN_PX, size) * scale);
 // The camera may run this far past the maze's outer wall, so the corner
@@ -1227,6 +1231,7 @@ export class LabyrinthScene extends Phaser.Scene {
     // Wall-clock time down to 10 fps (alpha round 4): a 50 ms cap made the
     // chase, the torch fuel and the restart hold run slow on weak laptops.
     const dt = Math.min(delta, 100);
+    if (this.fogRT && fogScaleFor() !== this.fogScale) this.buildFog();
     this.updateRestart(dt);
     if (this.state === 'playing') this.updatePlaying(time, dt);
     else this.coneG?.clear();

@@ -25,7 +25,9 @@ export const px = (size) => `${Math.round(Math.max(MIN_FONT_PX, size) * textScal
 // LOW GRAPHICS (the pause menu's checkbox). The page also draws at a lower
 // internal resolution (shared/phaserRenderScale.js); here the rooms drop
 // their purely decorative full-screen layers (the paper grain, the dust).
-export const lowGraphicsOn = (settings = globalThis.NIGHTFALL_SETTINGS) => settings?.lowGraphics === true;
+// A software rasteriser counts as LOW unless the player asked for HIGH.
+export const lowGraphicsOn = (settings = globalThis.NIGHTFALL_SETTINGS) => settings?.lowGraphics === true
+  || (globalThis.NIGHTFALL_SOFTWARE_GL === true && String(settings?.graphicsQuality ?? 'auto').toLowerCase() !== 'high');
 
 /** Hide `objects` while LOW GRAPHICS is on, following the setting live. */
 export function hideUnderLowGraphics(scene, objects) {

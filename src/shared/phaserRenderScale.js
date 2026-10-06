@@ -17,8 +17,25 @@
 // LOW GRAPHICS checkbox can switch it live.
 
 /** The drawing-buffer scale LOW GRAPHICS asks for (1 = full resolution). */
-export function lowGraphicsRenderScale(settings = globalThis.NIGHTFALL_SETTINGS, { low = 0.5 } = {}) {
-  return settings?.lowGraphics === true ? low : 1;
+export function lowGraphicsRenderScale(settings = globalThis.NIGHTFALL_SETTINGS, { low = 0.5, software = false } = {}) {
+  if (settings?.lowGraphics === true) return low;
+  // A software rasteriser (no usable GPU) gets the low scale on its own, as
+  // the museum's automatic LOW tier does, unless the player asked for HIGH.
+  if (software && String(settings?.graphicsQuality ?? 'auto').toLowerCase() !== 'high') return low;
+  return 1;
+}
+
+const SOFTWARE_RENDERER = /swiftshader|llvmpipe|softpipe|software|microsoft basic render|mesa offscreen/i;
+
+/** Whether a WebGL context is drawn by a software rasteriser. */
+export function isSoftwareContext(gl) {
+  try {
+    const ext = gl?.getExtension?.('WEBGL_debug_renderer_info');
+    const name = String(gl?.getParameter?.(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) ?? '');
+    return SOFTWARE_RENDERER.test(name);
+  } catch {
+    return false;
+  }
 }
 
 /** Physical drawing-buffer size for a logical size at `scale`. */
@@ -113,11 +130,15 @@ export function installPhaserRenderScale(game, initialScale = 1) {
 export function followLowGraphics(game, { low = 0.5, onChange = null } = {}) {
   const holder = { control: null };
   const install = () => {
-    holder.control = installPhaserRenderScale(game, lowGraphicsRenderScale(globalThis.NIGHTFALL_SETTINGS, { low }));
+    const software = isSoftwareContext(game?.renderer?.gl);
+    holder.software = software;
+    // for a page's own LOW choices (the Labyrinth's fog of war)
+    if (software) globalThis.NIGHTFALL_SOFTWARE_GL = true;
+    holder.control = installPhaserRenderScale(game, lowGraphicsRenderScale(globalThis.NIGHTFALL_SETTINGS, { low, software }));
     if (!holder.control) return;
     globalThis.addEventListener?.('nightfall:settings', (event) => {
       const settings = event.detail ?? globalThis.NIGHTFALL_SETTINGS;
-      holder.control.setScale(lowGraphicsRenderScale(settings, { low }));
+      holder.control.setScale(lowGraphicsRenderScale(settings, { low, software }));
       onChange?.(settings?.lowGraphics === true);
     });
   };

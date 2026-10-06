@@ -23,6 +23,8 @@ test('LOW GRAPHICS asks for a smaller drawing buffer; otherwise full size', () =
   assert.equal(lowGraphicsRenderScale({ lowGraphics: true }, { low: 0.6 }), 0.6);
   assert.equal(lowGraphicsRenderScale({ lowGraphics: false }), 1);
   assert.equal(lowGraphicsRenderScale(undefined), 1);
+  assert.equal(lowGraphicsRenderScale({}, { software: true }), 0.5, 'a software rasteriser gets it on its own');
+  assert.equal(lowGraphicsRenderScale({ graphicsQuality: 'high' }, { software: true }), 1);
   assert.deepEqual(scaledBufferSize(1280, 800, 0.5), { width: 640, height: 400, scale: 0.5 });
   assert.deepEqual(scaledBufferSize(960, 600, 0.6), { width: 576, height: 360, scale: 0.6 });
 });
