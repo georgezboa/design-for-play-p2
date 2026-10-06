@@ -66,6 +66,12 @@
 }
 .c3-compass__label { display: inline-block; }
 :root[data-low-graphics='true'] .c3-compass { filter: none; }
+/* Alpha round 4: the controls tag under the task card until walk and look
+   have been used; a used verb greys out. */
+.c3-controls { transform: none; z-index: 7000; white-space: nowrap; gap: 8px; }
+.c3-controls__verb.is-used { opacity: 0.38; text-decoration: line-through; }
+.c3-controls__dot { color: var(--nf-walnut); }
+.sunrise-tableau-active .c3-controls, body.c3-board-open .c3-controls { display: none; }
 .c3-tag.is-emphasis { z-index: 8850; filter: drop-shadow(0 4px 12px rgba(224, 162, 74, 0.45)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
 
 /* ---------- evidence card ---------- */

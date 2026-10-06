@@ -12,6 +12,7 @@ import {
   createChapter3OpeningModel,
 } from '../../src/cars/presentCity3d/chapter3OpeningModel.js';
 import { createSaveStore } from '../../src/shell/saveSystem.js';
+import { controlsHintHtml, controlsHintState } from '../../src/cars/presentCity3d/chapter3Guidance.js';
 import {
   CAMPFIRE_SELINE_STONE_DIALOGUE,
   MORNING_STONE_PICKUP,
@@ -116,6 +117,33 @@ describe('Chapter 3 alpha round 4 · mid-chapter resume points (P1)', () => {
     // Resumes inside the two interiors stage them.
     assert.match(runtime, /if \(state\.transportHallEntered && !state\.ticketBoardComplete\) \{\n\s+this\.stageMinistryHall/);
     assert.match(runtime, /if \(state\.hotelEntered && !state\.slept\) \{\n\s+this\.stageHotelInterior\(\);/);
+  });
+});
+
+describe('Chapter 3 alpha round 4 · the controls tag (P1)', () => {
+  it('names the three verbs, greys each once used, and goes after walk and look', () => {
+    const fresh = controlsHintState();
+    assert.equal(fresh.visible, true);
+    assert.deepEqual(fresh.segments.map(({ id }) => id), ['walk', 'look', 'tab']);
+    assert.equal(
+      controlsHintHtml(fresh.segments).replace(/<[^>]+>/g, '').replace(/\s+/g, ' '),
+      'CLICK TO WALK·E TO LOOK·HOLD TAB TO LOOK AROUND',
+    );
+    assert.equal(controlsHintState({ locked: true }).visible, false, 'a line or a card hides it');
+    const walked = controlsHintState({ used: ['walk'] });
+    assert.equal(walked.visible, true);
+    assert.deepEqual(walked.segments.map(({ used }) => used), [true, false, false]);
+    assert.match(controlsHintHtml(walked.segments), /c3-controls__verb is-used" data-verb="walk"/);
+    assert.equal(controlsHintState({ used: ['tab', 'walk'] }).visible, true, 'Tab is offered, not required');
+    assert.equal(controlsHintState({ used: ['walk', 'look'] }).visible, false);
+    assert.equal(controlsHintState({ used: ['look', 'walk'] }).dismissed, true);
+  });
+
+  it('marks a verb where the player uses it', () => {
+    assert.match(runtime, /this\.noteControlUsed\('walk'\);\n\s+return false;/, 'a ground click');
+    assert.match(runtime, /startInteraction\(interaction\) \{\n\s+this\.noteControlUsed\('look'\);/);
+    assert.match(runtime, /this\.tabHeld = true;\n\s+this\.noteControlUsed\('tab'\);/);
+    assert.match(runtime, /this\.updateControlsHint\(locked\);/);
   });
 });
 

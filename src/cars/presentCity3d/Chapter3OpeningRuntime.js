@@ -111,6 +111,8 @@ import {
   closestOnPolyline2D,
   compassPlacement,
   compassVisible,
+  controlsHintHtml,
+  controlsHintState,
   createHintClock,
   holdHintClock,
   idleLookHintDue,
@@ -343,6 +345,9 @@ export class Chapter3OpeningRuntime {
     this.compassFlashUntil = 0;
     this.compassFlashPending = false;
     this.compassShown = null;
+    // Alpha round 4: the controls tag (CLICK TO WALK · E TO LOOK · HOLD TAB).
+    this.controlsUsed = new Set();
+    this.controlsHintVisible = false;
     this.ambientAnimElapsed = 0;
     this.ambientLifeElapsed = 0;
     this.ambientLifeRoutes = null;
@@ -1056,6 +1061,12 @@ export class Chapter3OpeningRuntime {
     this.compassArrow = this.compass.querySelector('.c3-compass__arrow');
     this.compassLabel = this.compass.querySelector('.c3-compass__label');
     document.body.append(this.compass);
+    this.controlsTag = document.createElement('div');
+    this.controlsTag.className = 'nf-tag c3-controls';
+    this.controlsTag.setAttribute('role', 'note');
+    this.controlsTag.setAttribute('aria-label', 'Controls: click to walk, E to look, hold Tab to look around');
+    this.controlsTag.hidden = true;
+    document.body.append(this.controlsTag);
     this.readout = document.createElement('div');
     this.readout.className = 'c3-readout';
     this.readout.hidden = true;
@@ -1681,12 +1692,47 @@ export class Chapter3OpeningRuntime {
     }
     // Scanner fields use direct movement; a click never paths through them.
     if (!interaction && this.activeField()) return true;
-    if (!interaction) return false;
+    if (!interaction) {
+      // The preview paths Butch to the clicked ground.
+      this.noteControlUsed('walk');
+      return false;
+    }
     this.startInteraction(interaction);
     return true;
   }
 
+  // The controls tag greys a verb once it is used (chapter3Guidance).
+  noteControlUsed(id) {
+    if (this.controlsUsed.has(id)) return false;
+    this.controlsUsed.add(id);
+    return true;
+  }
+
+  updateControlsHint(locked) {
+    const tag = this.controlsTag;
+    if (!tag) return;
+    const hint = controlsHintState({ used: [...this.controlsUsed], locked: locked || this.characterQa });
+    this.controlsHintVisible = hint.visible;
+    if (!hint.visible) {
+      if (!tag.hidden) tag.hidden = true;
+      return;
+    }
+    const html = controlsHintHtml(hint.segments);
+    if (tag.dataset.html !== html) {
+      tag.innerHTML = html;
+      tag.dataset.html = html;
+    }
+    tag.hidden = false;
+    // Just under the task card, left-aligned with it.
+    const card = this.elements.objectiveCard?.getBoundingClientRect();
+    const left = card ? card.left : 18;
+    const top = card && card.height ? card.bottom + 10 : 64;
+    tag.style.left = `${Math.round(left)}px`;
+    tag.style.top = `${Math.round(top)}px`;
+  }
+
   startInteraction(interaction) {
+    this.noteControlUsed('look');
     this.preview.renderer.domElement.classList.remove('interaction-hover');
     const approachValues = typeof interaction.approach === 'function' ? interaction.approach() : interaction.approach;
     const approach = positionFrom(approachValues);
@@ -1765,6 +1811,7 @@ export class Chapter3OpeningRuntime {
     const movementKey = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code);
     if (movementKey) {
       this.keysHeld.add(event.code);
+      if (!this.interactionLocked()) this.noteControlUsed('walk');
       if (this.activeField()) {
         event.preventDefault();
         return true;
@@ -1773,6 +1820,7 @@ export class Chapter3OpeningRuntime {
     if (event.key === 'Tab') {
       event.preventDefault();
       this.tabHeld = true;
+      this.noteControlUsed('tab');
       this.updateOutlines();
       return true;
     }
@@ -3667,6 +3715,7 @@ export class Chapter3OpeningRuntime {
     }
     this.tags.end();
     this.updateCompass(locked, shown);
+    this.updateControlsHint(locked);
   }
 
   // R2 P1 (alpha round 3): where the current walk ends, and what its compass
@@ -3886,6 +3935,7 @@ export class Chapter3OpeningRuntime {
       idleLookHint: this.idleLookHintShown,
       destinationPasses: this.destinationPass.passes,
       compass: this.compassShown,
+      controlsHint: { visible: this.controlsHintVisible, used: [...this.controlsUsed] },
       searchHintSeconds: Number(this.searchHintElapsed.toFixed(1)),
       guidanceBeacons: Object.fromEntries(Object.entries(this.guidanceBeacons ?? {}).map(([id, beacon]) => [id, beacon.visible])),
       dialogue: this.dialogue.snapshot(),

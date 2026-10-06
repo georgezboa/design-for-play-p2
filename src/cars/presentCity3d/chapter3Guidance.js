@@ -57,6 +57,33 @@ export function idleLookHintDue({ idleSeconds, locked = false, tabHeld = false, 
   return !locked && !tabHeld && storyTargets > 0 && !storyTagShown && idleSeconds >= IDLE_LOOK_HINT_SECONDS;
 }
 
+// ---------------------------------------------------------------- controls
+// Alpha round 4 (P1, "controls never shown in Ch3"): one paper tag under the
+// task card names the three verbs from the first moment Butch can move.
+// Each verb greys out once used; the tag goes once he has walked and looked
+// (holding Tab is offered, not required). It hides while a line or a card
+// holds the screen and comes back after.
+export const CONTROLS_HINT_SEGMENTS = Object.freeze([
+  Object.freeze({ id: 'walk', html: '<kbd>CLICK</kbd> TO WALK' }),
+  Object.freeze({ id: 'look', html: '<kbd>E</kbd> TO LOOK' }),
+  Object.freeze({ id: 'tab', html: 'HOLD <kbd>TAB</kbd> TO LOOK AROUND' }),
+]);
+
+export function controlsHintState({ used = [], locked = false } = {}) {
+  const done = new Set(used);
+  const dismissed = done.has('walk') && done.has('look');
+  return {
+    visible: !dismissed && !locked,
+    dismissed,
+    segments: CONTROLS_HINT_SEGMENTS.map(({ id, html }) => ({ id, html, used: done.has(id) })),
+  };
+}
+
+export function controlsHintHtml(segments) {
+  return segments.map(({ id, html, used }) => `<span class="c3-controls__verb${used ? ' is-used' : ''}" data-verb="${id}">${html}</span>`)
+    .join('<span class="c3-controls__dot" aria-hidden="true">·</span>');
+}
+
 // ---------------------------------------------------------------- compass
 // Alpha round 3 (R2 P1): the free walks had no direction. Holding Tab, or
 // for COMPASS_FLASH_SECONDS after the task card changes, one paper tag names
