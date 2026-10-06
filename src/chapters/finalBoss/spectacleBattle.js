@@ -47,6 +47,7 @@ import {
   paintReturnDamage, punchCase, spreadWorldTags, trainHits, underLens,
 } from './finaleModel.js';
 import { ECHO_EXCHANGES } from './echoExchanges.js';
+import { completedEnding, recordEnding, showJourneyComplete } from './journeyComplete.js';
 import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference, frameSteps } from './finaleQuality.js';
 import {
   LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
@@ -438,15 +439,33 @@ function makeFloor(color, roughness = 0.9) {
   return mesh;
 }
 
+// The lens a movement falls through. Alpha round 4: its inside was solid
+// black for two seconds (it read as a render hole); now it shows the next
+// world (setPortalWorld) under a soft dark rim, so the fall reads as a fall
+// into the next carriage.
 function makePortalDisc() {
   const root = new THREE.Group();
-  const voidDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.MeshBasicMaterial({ color: 0x000000, side: THREE.DoubleSide }));
+  const voidDisc = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.MeshBasicMaterial({ color: 0x1c130d, side: THREE.DoubleSide, toneMapped: false, fog: false }));
   voidDisc.rotation.x = -Math.PI / 2;
   voidDisc.position.y = 0.08;
+  const rimCanvas = document.createElement('canvas');
+  rimCanvas.width = rimCanvas.height = 256;
+  const c = rimCanvas.getContext('2d');
+  const gradient = c.createRadialGradient(128, 128, 40, 128, 128, 128);
+  gradient.addColorStop(0, 'rgba(11, 8, 6, 0)');
+  gradient.addColorStop(0.62, 'rgba(11, 8, 6, 0.12)');
+  gradient.addColorStop(1, 'rgba(11, 8, 6, 0.92)');
+  c.fillStyle = gradient;
+  c.fillRect(0, 0, 256, 256);
+  const rimMap = new THREE.CanvasTexture(rimCanvas);
+  const vignette = new THREE.Mesh(new THREE.CircleGeometry(1, 96), new THREE.MeshBasicMaterial({ map: rimMap, transparent: true, depthWrite: false, toneMapped: false, fog: false }));
+  vignette.rotation.x = -Math.PI / 2;
+  vignette.position.y = 0.09;
   const ring = new THREE.Mesh(new THREE.TorusGeometry(1, 0.045, 10, 96), new THREE.MeshBasicMaterial({ color: AMBER }));
   ring.rotation.x = Math.PI / 2;
   ring.position.y = 0.11;
-  root.add(voidDisc, ring);
+  root.add(voidDisc, vignette, ring);
+  root.userData.fill = voidDisc;
   return root;
 }
 
@@ -1002,18 +1021,70 @@ class SpectacleBattle {
       plane.position.set(x, y, z);
       return plane;
     };
-    // The night service drawn in graphite on the Painted Country's paper.
-    const outline = paperPlane(13.2, 3.2, 0x242528, 0, 2.08, -0.05);
-    const body = paperPlane(12.9, 2.86, 0xd9d7cf, 0, 2.1);
-    const roof = paperPlane(13.35, 0.42, 0x383a3d, 0, 3.72, 0.12);
-    const lowerBand = paperPlane(12.95, 0.38, 0x8a2a1e, 0, 1.03, 0.13);
-    const windows = [-4.9, -3.35, -1.8, -0.25, 1.3, 2.85, 4.4].map((x) => paperPlane(1.12, 0.72, 0xe0a24a, x, 2.48, 0.16));
-    const wheels = [-4.45, -1.48, 1.48, 4.45].map((x) => {
-      const wheel = new THREE.Mesh(new THREE.CircleGeometry(0.43, 16), paperMaterial(0x292b2d, this.paperTexture));
-      wheel.position.set(x, 0.54, 0.18);
-      return wheel;
+    // The night service, cut from the Painted Country's paper in Chapter 1's
+    // colours (alpha round 4: it arrived as a flat box with no engine): the
+    // slate locomotive leading (it runs towards +x), its tender, and the
+    // oxblood carriage with amber windows, all on graphite wheels.
+    const ink = 0x242528;
+    const slate = 0x2a2f3a;
+    const wheel = (x, r, z = 0.18) => {
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 18), paperMaterial(0x1b1d20, this.paperTexture));
+      disc.position.set(x, r + 0.1, z);
+      const hub = new THREE.Mesh(new THREE.CircleGeometry(r * 0.32, 12), paperMaterial(0xb08a4a, this.paperTexture));
+      hub.position.set(x, r + 0.1, z + 0.02);
+      return [disc, hub];
+    };
+    // carriage (x -6.6 … 4.6)
+    const carriage = [
+      paperPlane(11.5, 3.2, ink, -1, 2.08, -0.05),
+      paperPlane(11.2, 2.86, 0x8a2a1e, -1, 2.1),
+      paperPlane(11.65, 0.42, 0x383a3d, -1, 3.72, 0.12),
+      paperPlane(11.25, 0.3, 0xb08a4a, -1, 1.05, 0.13),
+      ...[-5.4, -3.85, -2.3, -0.75, 0.8, 2.35, 3.9].map((x) => paperPlane(1.12, 0.78, 0xe0a24a, x - 0.2, 2.5, 0.16)),
+      ...[-5.4, -2.6, 0.6, 3.4].flatMap((x) => wheel(x, 0.43)),
+    ];
+    // coupling and tender (x 4.8 … 7.4)
+    const tender = [
+      paperPlane(0.5, 0.18, ink, 4.85, 1.0, 0.1),
+      paperPlane(2.5, 2.1, ink, 6.3, 1.7, -0.05),
+      paperPlane(2.3, 1.9, slate, 6.3, 1.72),
+      paperPlane(2.1, 0.32, 0x15171b, 6.3, 2.62, 0.12),
+      ...[5.7, 6.9].flatMap((x) => wheel(x, 0.36)),
+    ];
+    // locomotive (x 7.6 … 13): cab, boiler, smokebox, chimney, dome, lamp, cowcatcher
+    const cowcatcher = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([new THREE.Vector2(0, 0), new THREE.Vector2(1.1, 0), new THREE.Vector2(0, 1.0)])), paperMaterial(0x8a2a1e, this.paperTexture));
+    cowcatcher.position.set(12.4, 0.12, 0.14);
+    const loco = [
+      paperPlane(2.2, 2.9, ink, 8.6, 2.05, -0.05),
+      paperPlane(2.0, 2.7, slate, 8.6, 2.05),
+      paperPlane(1.0, 0.8, 0xe0a24a, 8.6, 2.6, 0.14),
+      paperPlane(2.5, 0.3, 0x15171b, 8.6, 3.55, 0.13),
+      paperPlane(4.0, 1.75, ink, 11.25, 1.85, -0.05),
+      paperPlane(3.8, 1.55, slate, 11.25, 1.85),
+      paperPlane(3.8, 0.16, 0xb08a4a, 11.25, 2.2, 0.12),
+      paperPlane(0.8, 1.9, 0x15171b, 12.95, 1.9, 0.11),
+      paperPlane(0.55, 1.2, ink, 12.35, 3.3, 0.06),
+      paperPlane(0.85, 0.22, ink, 12.35, 3.95, 0.07),
+      paperPlane(0.7, 0.45, 0xb08a4a, 10.4, 2.85, 0.07),
+      paperPlane(1.3, 0.2, 0xb08a4a, 11.25, 0.95, 0.13),
+      cowcatcher,
+      ...wheel(9.7, 0.62),
+      ...wheel(11.15, 0.62),
+      ...wheel(12.45, 0.34),
+    ];
+    const headlamp = new THREE.Mesh(new THREE.CircleGeometry(0.26, 16), new THREE.MeshBasicMaterial({ color: 0xfff1c8, toneMapped: false }));
+    headlamp.position.set(13.25, 2.35, 0.18);
+    const beam = new THREE.Mesh(new THREE.CircleGeometry(0.9, 24), new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: 0.32, depthWrite: false, toneMapped: false }));
+    beam.position.set(13.25, 2.35, 0.16);
+    // a puff of steam from the chimney
+    this.departureSmoke = [0, 1, 2].map((i) => {
+      const puff = new THREE.Mesh(new THREE.CircleGeometry(0.42 + i * 0.16, 18), paperMaterial(0xeae5da, this.paperTexture));
+      puff.material.transparent = true;
+      puff.position.set(12.1 - i * 0.9, 4.5 + i * 0.5, 0.04 - i * 0.01);
+      puff.userData.base = puff.position.clone();
+      return puff;
     });
-    this.departureTrain.add(outline, body, roof, lowerBand, ...windows, ...wheels);
+    this.departureTrain.add(...carriage, ...tender, ...loco, headlamp, beam, ...this.departureSmoke);
     this.departureTrain.visible = false;
     this.scene.add(this.departureTrain);
   }
@@ -1232,7 +1303,7 @@ class SpectacleBattle {
       if (event.code === 'Space') { event.preventDefault(); this.spaceAction(); }
       if (event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.code === 'KeyX') this.dash();
       if (this.debate.isOpen && /^(Digit|Numpad)[12]$/.test(event.code)) this.chooseAnswer(Number(event.code.slice(-1)) - 1);
-      if (event.code === 'KeyL' && this.phase === 0) { this.lost.lensMode = 'orbit'; this.lost.lastPointer = -Infinity; this.toast('LENS · CIRCLING BUTCH'); }
+      if (event.code === 'KeyL' && this.phase === 0) { this.lost.lensMode = 'orbit'; this.lost.lastPointer = -Infinity; this.lost.pointer = null; this.toast('LENS · CIRCLING BUTCH · MOVE THE MOUSE TO AIM IT AGAIN'); }
       if (event.code === 'KeyE') this.startKeyboardPaint(2);
       if (event.code === 'KeyR') this.startKeyboardPaint(0);
       if (event.code === 'KeyF' && this.mode !== 'menu') {
@@ -1489,9 +1560,14 @@ class SpectacleBattle {
     this.conductorFallback.visible = false;
     this.conductorRoot.add(root);
     this.conductorModel = root;
-    if (source.animations.length) {
+    // His own clips, plus the shared Chapter 3 library (the same rig as
+    // Butch's) for the reactions his file lacks: the hit and the exposed
+    // stance (alpha round 4: Fixing_Kneeling read as a crumpled model).
+    const shared = (this.assets.get('chapter3Animations')?.animations || []).filter((clip) => !source.animations.some((own) => own.name === clip.name));
+    const clips = [...shared, ...source.animations];
+    if (clips.length) {
       this.conductorMixer = new THREE.AnimationMixer(root);
-      this.conductorActions = Object.fromEntries(source.animations.map((clip) => [clip.name, this.conductorMixer.clipAction(clip)]));
+      this.conductorActions = Object.fromEntries(clips.map((clip) => [clip.name.replace(/_Rig$/, ''), this.conductorMixer.clipAction(clip)]));
       this.playConductorAction('Idle_Loop');
     }
     this.setConductorWorld(this.phase, true);
@@ -1620,6 +1696,7 @@ class SpectacleBattle {
     this.activeHoles = [];
     this.playerRoot.visible = true;
     this.departureTrain.visible = false;
+    this.hud.classList.remove('is-departing', 'is-cinematic');
     if (this.paintTransfer) {
       this.paintTransfer.visible = false;
       this.paintTransfer.children.forEach((item) => { item.visible = false; });
@@ -1703,11 +1780,20 @@ class SpectacleBattle {
 
   aimLensAt(event) {
     if (this.mode !== 'play' || this.phase !== 0) return;
-    const point = this.groundPointFromPointer(event);
-    if (!point) return;
-    this.lost.lensTarget = { x: THREE.MathUtils.clamp(point.x, ARENA.minX, ARENA.maxX), z: THREE.MathUtils.clamp(point.z, ARENA.minZ, ARENA.maxZ) };
+    this.lost.pointer = { clientX: event.clientX, clientY: event.clientY };
+    if (!this.aimLensAtPointer()) return;
     this.lost.lensMode = 'mouse';
     this.lost.lastPointer = this.elapsed;
+  }
+
+  // The ground under the last pointer position, re-read every frame while
+  // the mouse aims (the camera drifts with Butch).
+  aimLensAtPointer() {
+    const pointer = this.lost.pointer;
+    const point = pointer ? this.groundPointFromPointer(pointer) : null;
+    if (!point) return false;
+    this.lost.lensTarget = { x: THREE.MathUtils.clamp(point.x, ARENA.minX, ARENA.maxX), z: THREE.MathUtils.clamp(point.z, ARENA.minZ, ARENA.maxZ) };
+    return true;
   }
 
   startLostProperty() {
@@ -1817,10 +1903,12 @@ class SpectacleBattle {
   updateLostProperty(dt) {
     const L = this.lost;
     const p = this.player;
-    // The lens: the mouse aims it; without a mouse it circles Butch.
-    const mouseLive = L.lensMode === 'mouse' && this.elapsed - L.lastPointer < 3.5;
+    // The lens: once the mouse aims it, it stays where the mouse is (alpha
+    // round 4: it fell back to circling after 3.5 s of a still mouse while
+    // the HUD said CIRCLING); L hands it back to circling Butch.
+    const mouseLive = L.lensMode === 'mouse';
+    if (mouseLive && L.pointer) this.aimLensAtPointer();
     const goal = mouseLive ? L.lensTarget : orbitLens(p, this.elapsed, { facingX: p.facingX, facingZ: p.facingZ });
-    if (!mouseLive) L.lensMode = 'orbit';
     const k = 1 - Math.exp(-dt * (mouseLive ? 18 : 6));
     L.lens.x += (goal.x - L.lens.x) * k;
     L.lens.z += (goal.z - L.lens.z) * k;
@@ -2085,7 +2173,7 @@ class SpectacleBattle {
       if (map && mesh.face.material.map !== map) { mesh.face.material.map = map; mesh.face.material.needsUpdate = true; }
       // Butch behind the board (from the camera): it turns to glass.
       const board = BELL_ARENA.boards[id];
-      const behind = p.z < board.z + 0.2 && p.z > board.z - 5.5 && Math.abs(p.x - LANE_X[board.lane]) < 3.4 && mesh.panel.position.y > -1.2;
+      const behind = p.z < board.z + 0.2 && p.z > board.z - 5.5 && Math.abs(p.x - LANE_X[board.lane]) < 3.4;
       mesh.fade += ((behind ? 0.28 : 1) - mesh.fade) * Math.min(1, dt * 9);
       [mesh.face, mesh.frame].forEach((part) => {
         part.material.opacity = mesh.fade;
@@ -2195,15 +2283,17 @@ class SpectacleBattle {
       if (outcome.result === 'window') {
         this.closeCaption();
         this.dialoguePause = false;
+        this.player.inv = Math.max(this.player.inv, 0.9);
         this.openEchoWindow(reply);
         return;
       }
       this.showCaption(reply.rebut);
       this.playVoice(reply.rebut, () => {
         // Why it was deflected, in one line, before the square answers
-        // with a volley (alpha R4-4). The player can move while reading;
-        // nothing is thrown until it closes.
-        this.dialoguePause = false;
+        // with a volley (alpha R4-4). The square stays frozen while it is
+        // read (alpha round 4: the box covers Butch, and a hit landed
+        // while reading); nothing is thrown until it closes.
+        this.dialoguePause = true;
         this.echo.stage = 'deflected';
         this.echo.deflectClock = ECHO_DEFLECT_READ_SECONDS;
         this.showCaption({ speaker: 'DEFLECTED', text: reply.deflect ?? ECHO_DEFLECT_FALLBACK }, { meta: 'HE WILL COME BACK TO IT' });
@@ -2223,7 +2313,9 @@ class SpectacleBattle {
     this.boss.exposed = 1;
     this.boss.reaction = reply?.reaction ?? 'shame';
     this.boss.gestureTime = 1.4;
-    this.playConductorAction('Fixing_Kneeling', true);
+    // Taken aback, then standing in the light (never the kneel, which read
+    // as a crumpled model at this scale).
+    this.playConductorAction('Hit_Chest', true);
     this.showFrontEdge(true);
     this.updateEchoWindowCue();
   }
@@ -2280,6 +2372,9 @@ class SpectacleBattle {
 
   endEchoDeflection() {
     this.closeCaption();
+    this.dialoguePause = false;
+    // A beat to find Butch again after the box goes.
+    this.player.inv = Math.max(this.player.inv, 0.9);
     this.echo.stage = 'combat';
     this.echo.clock = ECHO_COMBAT_INTERVAL;
     // The deflection costs something: the square answers with a volley.
@@ -2512,7 +2607,7 @@ class SpectacleBattle {
     }
     this.boss.gestureTime = reaction === 'rage' ? 1.4 : 0.8;
     this.boss.flash = 0.18;
-    this.playConductorAction(reaction === 'pain' ? 'Walk_Loop' : reaction === 'shame' ? 'Fixing_Kneeling' : 'Interact', true);
+    this.playConductorAction(reaction === 'pain' ? 'Hit_Chest' : reaction === 'shame' ? 'Hit_Head' : 'Interact', true);
     this.hitStop = 0.055;
     this.trauma = Math.min(1, this.trauma + 0.3);
     this.spawnImpact(this.boss.x, 8.2, this.boss.z + 1, reaction === 'shame' ? 0xffd7d7 : AMBER);
@@ -2554,6 +2649,9 @@ class SpectacleBattle {
     this.player.inv = 99;
     this.departureTrain.visible = true;
     this.departureTrain.position.set(-24, 0, 1.2);
+    // The fight is over: its side panels go; the ticket bar stays to say
+    // OUTLASTED until Butch boards (alpha round 4).
+    this.hud.classList.add('is-departing');
     this.departureTimer = 0;
     this.departureBoardable = false;
     this.hint('');
@@ -2574,11 +2672,20 @@ class SpectacleBattle {
     this.cinematicTime = 0;
     this.hint('');
     this.playerRoot.position.set(this.departureTrain.position.x + 1.2, 2.6, this.departureTrain.position.z);
+    // The departure is a film moment: no fight HUD over it.
+    this.hud.classList.add('is-cinematic');
     stampAnnounce(this.hud, 'DEPARTING', { holdMs: 1800 });
     this.playMusic(BOSS_SCORE.departure);
   }
 
   updateRescue(dt) {
+    // Steam from the chimney, drifting back along the train.
+    this.departureSmoke?.forEach((puff, index) => {
+      const t = ((this.elapsed * 0.55 + index / 3) % 1);
+      puff.position.set(puff.userData.base.x - t * 3.2, puff.userData.base.y + t * 1.6, puff.userData.base.z);
+      puff.scale.setScalar(0.7 + t * 0.9);
+      puff.material.opacity = 0.85 * (1 - t);
+    });
     if (this.mode === 'departure') {
       this.departureTimer += dt;
       const speed = this.departureTrain.position.x < -3.2 ? 13.5 : 2.05;
@@ -2600,7 +2707,7 @@ class SpectacleBattle {
     } else {
       this.playerRoot.visible = false;
       this.departureTrain.position.x += 11 * dt;
-      this.cameraTarget.lerp(this.departureTrain.position.clone().add(new THREE.Vector3(0, 1.8, 0)), 1 - Math.exp(-dt * 4));
+      this.cameraTarget.lerp(this.departureTrain.position.clone().add(new THREE.Vector3(3, 1.8, 0)), 1 - Math.exp(-dt * 4));
     }
     if (t > 5.2) this.finish();
   }
@@ -2619,12 +2726,40 @@ class SpectacleBattle {
     if (this.phase === 1 && nextPhase === 2) { this.startVerifiedTransition(nextPhase); return; }
     this.transition = { kind: 'world-fall', nextPhase, time: 0, duration: 3.25, switched: false };
     this.player.inv = 4;
+    this.setPortalWorld(nextPhase);
     this.portal.visible = true;
     this.portal.position.set(0, 0, -0.2);
     this.portal.scale.setScalar(0.05);
     this.hitStop = 0.11;
     this.trauma = 0.75;
     this.tone(42, 0.8, 'sawtooth', 0.05);
+  }
+
+  // Fill the lens with the world it opens onto: its painted backdrop (the
+  // rain skyline for II, the orchard for IV), centred in the circle, or its
+  // sky colour while that art is still being painted.
+  setPortalWorld(nextPhase) {
+    const fill = this.portal.userData.fill;
+    const source = [null, this.rainSkyline, this.echoDressing?.backdrop, this.paintedDressing?.backdrop][nextPhase]?.material?.map ?? null;
+    const sky = [0x1c130d, 0x0b1418, 0x3a2420, 0xe5dfce][nextPhase] ?? 0x1c130d;
+    if (this.portalMap?.source !== source) {
+      this.portalMap?.map.dispose();
+      this.portalMap = null;
+      if (source?.image) {
+        // A clone shares the painting and its CPU mip chain: only the
+        // window onto it differs.
+        const map = source.clone();
+        map.wrapS = map.wrapT = THREE.ClampToEdgeWrapping;
+        const aspect = (source.image.width || 1) / (source.image.height || 1);
+        map.repeat.set(Math.min(1, 1 / aspect) * 1.2, 1);
+        map.offset.set((1 - map.repeat.x) / 2, 0);
+        map.needsUpdate = true;
+        this.portalMap = { source, map };
+      }
+    }
+    fill.material.map = this.portalMap?.map ?? null;
+    fill.material.color.setHex(this.portalMap ? 0xffffff : sky);
+    fill.material.needsUpdate = true;
   }
 
   // Borrowed Light → Echo City: the Conductor checks the ticket. Ten seconds,
@@ -2712,7 +2847,6 @@ class SpectacleBattle {
     if (t < 0.42) {
       const open = THREE.MathUtils.smootherstep(t, 0, 0.42);
       this.portal.scale.setScalar(0.05 + open * 8.8);
-      this.portal.rotation.y += dt * 1.8;
       this.playerRoot.position.y = this.player.y - Math.max(0, open - 0.48) * 9;
       this.camera.position.lerp(new THREE.Vector3(0, 12.8, 11.2), 1 - Math.exp(-dt * 4));
       this.cameraTarget.lerp(new THREE.Vector3(0, -1.5, -0.2), 1 - Math.exp(-dt * 5));
@@ -3278,6 +3412,8 @@ class SpectacleBattle {
     if (this.dialoguePause) {
       this.elapsed += dt * 0.08;
       this.updateEffects(dt * 0.08);
+      // The deflection's reason is read on a frozen square: only its clock runs.
+      if (this.phase === 2 && this.echo.stage === 'deflected') this.updateEchoCity(dt);
       return;
     }
     if (this.hitStop > 0) { this.hitStop -= dt; return; }
@@ -3356,11 +3492,11 @@ class SpectacleBattle {
     const ability = this.player.respawnInv > 0
       ? `STEADY · ${this.player.respawnInv.toFixed(1)}`
       : this.phase === 3
-        ? `BRUSH ${this.player.color}/3 · RETURNS ${paintReturnDamage(Math.max(1, this.player.color))} · HOLD E ABSORB · HOLD R RETURN`
+        ? `BRUSH ${this.player.color}/3 · RETURN · ${paintReturnDamage(Math.max(1, this.player.color))} · HOLD E ABSORB · HOLD R RETURN`
         : this.phase === 1
           ? `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'} · HOLD Q · LISTEN`
           : this.phase === 0
-            ? `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'} · LENS · ${this.lost.lensMode === 'mouse' ? 'MOUSE' : 'CIRCLING (L)'}`
+            ? `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'} · LENS · ${this.lost.lensMode === 'mouse' ? 'ON THE MOUSE (L: CIRCLE)' : 'CIRCLING YOU (MOUSE: AIM)'}`
             : `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'}`;
     const small = this.layers.querySelector('small');
     if (small.textContent !== ability) small.textContent = ability;
@@ -3471,6 +3607,8 @@ class SpectacleBattle {
     this.mode = 'end';
     this.hud.classList.add('hidden');
     this.stopMusic();
+    // The journey has an ending now: Continue says so (journeyComplete.js).
+    recordEnding('normal');
     playCinematic({
       id: 'ending',
       src: CINEMATICS.ending,
@@ -3598,8 +3736,23 @@ if (new URLSearchParams(window.location.search).get('from') === 'chapter5') {
   game.prepareMovement(conductorTestMovement).finally(() => game.begin({ movement: conductorTestMovement }));
 }
 
+// After an ending, Continue lands here on THE JOURNEY IS COMPLETE (alpha
+// round 4), not straight back on the fight's board.
+let journeyOpen = false;
+const journeyEnding = new URLSearchParams(window.location.search).get('from') !== 'chapter5' && conductorTestMovement === null ? completedEnding() : null;
+if (journeyEnding) {
+  journeyOpen = true;
+  // After this module has wired the start board's controls (they are
+  // detached while the journey board stands in for it).
+  queueMicrotask(() => showJourneyComplete({
+    menu,
+    ending: journeyEnding,
+    actions: [{ label: 'PLAY THE CONDUCTOR AGAIN', onSelect: ({ restore }) => { restore(); journeyOpen = false; startButton?.focus({ preventScroll: true }); } }],
+  }));
+}
+
 window.addEventListener('keydown', (event) => {
-  if (event.code === 'Enter' && game.mode === 'menu' && !menu.classList.contains('hidden') && !globalThis.NIGHTFALL_PAUSED) startFight();
+  if (event.code === 'Enter' && game.mode === 'menu' && !journeyOpen && !menu.classList.contains('hidden') && !globalThis.NIGHTFALL_PAUSED) startFight();
 });
 startButton.addEventListener('click', startFight);
 

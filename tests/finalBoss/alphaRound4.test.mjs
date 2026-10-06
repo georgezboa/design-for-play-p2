@@ -124,3 +124,68 @@ describe('Movement II reads at a glance', () => {
     assert.doesNotMatch(style, /\.battle-hud\.has-hint \.nf-toast \{ top: 138px; \}/);
   });
 });
+
+describe('after an ending, the journey says it is complete', () => {
+  const memoryStorage = () => {
+    const data = new Map();
+    return { getItem: (k) => (data.has(k) ? data.get(k) : null), setItem: (k, v) => data.set(k, String(v)), removeItem: (k) => data.delete(k) };
+  };
+
+  it('records the ending on the Chapter 6 checkpoint and reads it back; LOAD drops it', async () => {
+    const { createSaveStore } = await import('../../src/shell/saveSystem.js');
+    const { completedEnding, recordEnding } = await import('../../src/chapters/finalBoss/journeyComplete.js');
+    const store = createSaveStore(memoryStorage(), { scratch: false });
+    store.startNew(0);
+    store.markCheckpoint('chapter-6-start');
+    assert.equal(completedEnding(store), null);
+    recordEnding('normal', store);
+    assert.equal(completedEnding(store), 'normal');
+    // Opening the Chapter 6 page again (markCheckpoint) keeps it.
+    store.markCheckpoint('chapter-6-start');
+    assert.equal(completedEnding(store), 'normal');
+    assert.equal(recordEnding('bogus', store), null);
+    // Picking a checkpoint is a new run through the story.
+    store.selectCheckpoint(0, 'chapter-6-start');
+    assert.equal(completedEnding(store), null);
+  });
+
+  it('the board offers the checkpoints, the missing-stone clues and the LOAD hint after a normal ending', async () => {
+    const { CHECKPOINT_HINT, journeyCompleteCard } = await import('../../src/chapters/finalBoss/journeyComplete.js');
+    const save = { checkpointId: 'chapter-6-start', unlocked: ['chapter-1-start', 'chapter-2-start', 'chapter-6-start'], magicStones: ['chapter-1'] };
+    const normal = journeyCompleteCard(save, 'normal');
+    assert.equal(normal.title, 'THE JOURNEY IS COMPLETE');
+    assert.match(normal.kicker, /STATUS: OPEN/);
+    assert.equal(normal.clues.length, 4);
+    assert.match(normal.stones.stamp, /^1 \/ 5/);
+    assert.match(CHECKPOINT_HINT, /LOAD · CHECKPOINTS/);
+    assert.deepEqual(normal.checkpoints.map(({ id }) => id), ['chapter-1-start', 'chapter-2-start', 'chapter-6-start']);
+    const unfiled = journeyCompleteCard({ ...save, magicStones: ['chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'black-knife'] }, 'true');
+    assert.match(unfiled.kicker, /CLOSED/);
+    assert.equal(unfiled.stones, null);
+  });
+
+  it('the Conductor records the normal ending and the true ending page records its own', async () => {
+    assert.match(await source('src/chapters/finalBoss/spectacleBattle.js'), /recordEnding\('normal'\)/);
+    assert.match(await source('src/trueEnding-main.js'), /recordEnding\('true'\)/);
+    assert.match(await source('src/chapters/finalBoss/spectacleBattle.js'), /showJourneyComplete\(\{/);
+  });
+});
+
+describe('Movement III and the departure', () => {
+  it('the square freezes while a deflection is read, and the exposed pose is a stagger, never the kneel', async () => {
+    const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
+    assert.match(battle, /this\.dialoguePause = true;\s*this\.echo\.stage = 'deflected';/);
+    assert.match(battle, /if \(this\.phase === 2 && this\.echo\.stage === 'deflected'\) this\.updateEchoCity\(dt\);/);
+    assert.doesNotMatch(battle, /playConductorAction\('Fixing_Kneeling'/);
+    assert.match(battle, /this\.playConductorAction\('Hit_Chest', true\);/);
+  });
+
+  it('the lens opens onto the next world, the HUD leaves the departure, and the night service has an engine', async () => {
+    const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
+    assert.match(battle, /this\.setPortalWorld\(nextPhase\);/);
+    assert.match(battle, /this\.hud\.classList\.add\('is-cinematic'\);/);
+    assert.match(battle, /\/\/ locomotive \(x 7\.6 … 13\)/);
+    assert.match(battle, /RETURN · \$\{paintReturnDamage/);
+    assert.doesNotMatch(battle, /lastPointer < 3\.5/);
+  });
+});

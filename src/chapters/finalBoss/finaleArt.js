@@ -741,7 +741,7 @@ export function paintBillboardFace(lit) {
 export const LAMP_NODE_GLASS = Object.freeze({
   amber: Object.freeze({ idle: ['#8a5a26', '#4a2e16'], queued: ['#e0a24a', '#9a5e24'] }),
   teal: Object.freeze({ idle: ['#2f6f68', '#163935'], queued: ['#8fd8cc', '#3d8a80'] }),
-  rose: Object.freeze({ idle: ['#80434d', '#3f1d24'], queued: ['#eaa3ac', '#9c4f5b'] }),
+  rose: Object.freeze({ idle: ['#9a5462', '#4a2129'], queued: ['#eaa3ac', '#9c4f5b'] }),
 });
 // The tag's paper, tinted by its line, and the queued mantle's glow.
 export const LAMP_NODE_TAG = Object.freeze({ amber: '#f2dcae', teal: '#d2ebe5', rose: '#f3d4d8' });

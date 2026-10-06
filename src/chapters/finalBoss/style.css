@@ -142,3 +142,10 @@
   .nf-finale .battle-hud .nf-caption__choices { margin-top: 8px; }
   .nf-finale .battle-hud .nf-caption__choice { font-size: calc(15.5px * var(--nf-scale)); padding-top: 8px; padding-bottom: 8px; }
 }
+
+/* ---------- the departure (alpha round 4) ----------
+   Once the night service arrives the fight's side panels go; once Butch
+   boards, the whole fight HUD does (only the DEPARTING stamp stays). */
+.battle-hud .nf-layers, .battle-hud .nf-plaque, .battle-hud .nf-stone-row, .battle-hud .nf-ticket-bar, .battle-hud .nf-tag-layer { transition: opacity 0.6s ease; }
+.battle-hud.is-departing .nf-layers, .battle-hud.is-departing .nf-plaque, .battle-hud.is-departing .nf-stone-row { opacity: 0; }
+.battle-hud.is-cinematic .nf-ticket-bar, .battle-hud.is-cinematic .nf-tag-layer, .battle-hud.is-cinematic .nf-hint, .battle-hud.is-cinematic .nf-toast, .battle-hud.is-cinematic .nf-bell { opacity: 0; }

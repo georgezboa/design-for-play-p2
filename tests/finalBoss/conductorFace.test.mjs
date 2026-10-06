@@ -74,5 +74,5 @@ test('lamp heads are lanterns: glass in its line colour in a brass cage, never a
   assert.match(body, /c\.moveTo\(7, 11\); c\.lineTo\(14, 5\); c\.lineTo\(26, 5\); c\.lineTo\(33, 11\)/, 'a roof');
   assert.match(finaleArt, /amber: Object\.freeze\(\{ idle: \['#8a5a26', '#4a2e16'\]/, 'unlit amber glass is still amber');
   assert.match(finaleArt, /teal: Object\.freeze\(\{ idle: \['#2f6f68'/, 'teal glass is teal');
-  assert.match(finaleArt, /rose: Object\.freeze\(\{ idle: \['#80434d'/, 'rose glass is rose');
+  assert.match(finaleArt, /rose: Object\.freeze\(\{ idle: \['#9a5462'/, 'rose glass is rose');
 });
