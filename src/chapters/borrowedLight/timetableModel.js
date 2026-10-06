@@ -20,6 +20,10 @@
 //   the next bell (a second press can never switch a machine off). Only a
 //   machine the city HOLDS open can be CUT: it keeps CUT_GRACE_MS of power
 //   (flickering for the last FLICKER_MS) and frees its line at once.
+//   Chapter 2 (alpha round 4, `cutUntilBell`): a cut machine holds until the
+//   next bell that is at least CUT_GRACE_MS away, so "CUT · THE BRIDGE HOLDS
+//   UNTIL THE NEXT BELL" is true, and pressing its node again while it runs
+//   out does nothing ('cutting') instead of quietly holding it again.
 // - Forgiveness: a punch within CATCH_MS after a bell still catches that bell,
 //   unless the node is half of a puzzle pair (`noCatch`) or another punch is
 //   already waiting in its district (round 3: a caught half split A3's pair).
@@ -58,7 +62,7 @@ export const CATCH_MS = 120;
 export const LEGACY_CATCH_MS = 250;
 export const REPEAT_GUARD_MS = 450;
 // Chapter 2's rules (alpha round 3): pass these to createTimetable.
-export const CH2_RULES = Object.freeze({ catchMs: CATCH_MS, repress: 'keep' });
+export const CH2_RULES = Object.freeze({ catchMs: CATCH_MS, repress: 'keep', cutUntilBell: true });
 export const LINES = Object.freeze(['amber', 'teal', 'rose']);
 export const PHASES = Object.freeze(['odd', 'even']);
 
@@ -116,6 +120,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   // 'take-back': the legacy rule, after REPEAT_GUARD_MS.
   repress = 'take-back',
   repeatGuardMs = REPEAT_GUARD_MS,
+  // A cut holds until the next bell at least cutGraceMs away (Chapter 2).
+  cutUntilBell = false,
   startMs = 0,
   // (machineId) => true while a lift's rider is still walking to it.
   shouldWait = null,
@@ -350,6 +356,16 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     return events;
   };
 
+  // How long a cut made now would hold (Chapter 2: until the next bell at
+  // least the grace away), and in how many bells it goes.
+  const cutWindow = () => {
+    const toBell = bellMs - sinceBell;
+    if (!cutUntilBell) return { remaining: cutGraceMs, bells: null };
+    return toBell >= cutGraceMs ? { remaining: toBell, bells: 1 } : { remaining: toBell + bellMs, bells: 2 };
+  };
+  // A running cut: ms left, and which bell takes it (1 = the next).
+  const cutLeft = (machine) => ({ remaining: Math.max(0, machine.remaining), bells: machine.remaining > bellMs - sinceBell + 1 ? 2 : 1 });
+
   // What a punch on this node would do, without doing it. The scene shows it
   // on the targeted node's prompt so a punch is never a surprise.
   const punchPreview = (nodeId) => {
@@ -367,8 +383,9 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       return { result: 'already', nodeId, line, inBells: bellsUntilNode(node), waiting: waited.has(nodeId) };
     }
     if (machine.powered && !machine.cut && !machine.light) {
-      return machine.held ? { result: 'cut', nodeId, line } : { result: 'renew', nodeId, line };
+      return machine.held ? { result: 'cut', nodeId, line, ...cutWindow() } : { result: 'renew', nodeId, line };
     }
+    if (cutUntilBell && machine.powered && machine.cut) return { result: 'cutting', nodeId, line, ...cutLeft(machine) };
     const holder = busyMachineOn(circuit);
     if (holder) return { result: 'busy', nodeId, line, holder };
     const cancelled = queue.get(circuit) ?? null;
@@ -393,9 +410,10 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     if (machine.powered && !machine.cut && !machine.light) {
       if (machine.held) {
         machine.held = false;
-        machine.remaining = Math.min(machine.remaining, cutGraceMs);
+        const win = cutWindow();
+        machine.remaining = cutUntilBell ? win.remaining : Math.min(machine.remaining, cutGraceMs);
         machine.cut = true;
-        return { result: 'cut', nodeId, line, machineId: node.machine, remaining: machine.remaining };
+        return { result: 'cut', nodeId, line, machineId: node.machine, remaining: machine.remaining, ...(cutUntilBell ? { bells: win.bells } : {}) };
       }
       // Its own line is running it: renew at the next bell (or now, if a bell
       // has only just rung).
@@ -408,6 +426,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       queuedAt.set(nodeId, timeMs);
       return { result: 'renew', nodeId, line, inBells: bellsUntilNode(node) };
     }
+    // A cut machine running out: pressing its node again changes nothing.
+    if (cutUntilBell && machine.powered && machine.cut) return { result: 'cutting', nodeId, line, ...cutLeft(machine) };
     const holder = busyMachineOn(circuit);
     if (holder) return { result: 'busy', nodeId, line, holder };
     // Just after a bell that would have fired it: catch that bell.

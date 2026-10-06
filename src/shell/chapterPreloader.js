@@ -66,7 +66,7 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
   chapter1: Object.freeze({ route: '/night-service.html', assets: Object.freeze(CHAPTER1_WORLD) }),
   chapter2: Object.freeze({
     route: '/borrowed-light.html',
-    assets: Object.freeze(['/assets/music/ch1/1.3_neon_safety_test.mp3']),
+    assets: Object.freeze(['/assets/music/ch2/2.1_borrowed_light.mp3']),
   }),
   chapter3: Object.freeze({
     route: '/car03-3d.html',

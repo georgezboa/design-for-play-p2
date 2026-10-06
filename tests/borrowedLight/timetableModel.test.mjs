@@ -171,8 +171,12 @@ test('punching a running timed machine renews it instead of switching it off', (
   assert.equal(tt.machineStatus('bridge').level, 1);
 });
 
+// The legacy cut (the finale's arena): a short grace. Chapter 2 cuts until
+// the bell (tests/borrowedLight/alphaRound4.test.mjs).
+const legacyCut = { cutUntilBell: false };
+
 test('cutting a held line keeps a short grace, flickers, and frees the line at once', () => {
-  const tt = createTimetable(def());
+  const tt = createTimetable(def(), legacyCut);
   tt.hold('held');
   tt.update(AFTER);
   const cut = tt.punch('n-held');
@@ -188,7 +192,7 @@ test('cutting a held line keeps a short grace, flickers, and frees the line at o
 });
 
 test('a city-held bridge holds its line until the player deliberately cuts it (the hotel twist)', () => {
-  const tt = createTimetable(def());
+  const tt = createTimetable(def(), legacyCut);
   tt.hold('held');
   tt.update(20000 + AFTER);
   assert.equal(tt.machineStatus('held').powered, true);
@@ -211,7 +215,7 @@ test('a city-held bridge holds its line until the player deliberately cuts it (t
 });
 
 test('a cut machine can be queued again (no dead ends)', () => {
-  const tt = createTimetable(def());
+  const tt = createTimetable(def(), legacyCut);
   tt.hold('held');
   tt.update(AFTER);
   tt.punch('n-held');

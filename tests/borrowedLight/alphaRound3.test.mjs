@@ -14,7 +14,7 @@ const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
 const hud = read('src/chapters/borrowedLight/hud.js');
 
 test('R3-1: the scene plays by the round-3 rules; a press never takes a punch back', () => {
-  assert.deepEqual(CH2_RULES, { catchMs: CATCH_MS, repress: 'keep' });
+  assert.deepEqual(CH2_RULES, { catchMs: CATCH_MS, repress: 'keep', cutUntilBell: true });
   assert.match(scene, /this\.tt = createTimetable\(timetableDefinition\(\), CH2_RULES\);/);
   // The punch handler has no silent take-back branch any more.
   assert.doesNotMatch(scene, /case 'unqueued':/);
@@ -67,7 +67,7 @@ test('P2: A1 shows the punch tag with E · TALK; the chase shows no teach tag bu
   const chase = teach.indexOf('this.feetX >= CHASE.fromX && this.feetX < CHASE.toX');
   const listen = teach.indexOf('HINTS.listen');
   assert.ok(chase > 0 && listen > chase, 'the chase returns before the Listen tag');
-  assert.match(teach, /text: HINTS\.fromCradle/);
+  assert.match(teach, /HINTS\.fromCradle\b/);
   assert.equal(HINTS.fromCradle, 'PUNCH THE LAST POLE FROM HERE');
   assert.match(scene, /node\.id === 'a-n14' && pre\.result === 'queue' && !this\.tt\.machineStatus\('a-cradle1'\)\.powered/);
 });

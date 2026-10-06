@@ -9,11 +9,18 @@
 // that section's checkpoint (the route a Continue / Load uses), so a
 // hand-edited URL cannot skip ahead. `?timescale=`, `?intro=0` and
 // `?lamp=<id>` (start at a lamp inside the section) are dev-only.
+//
+// Alpha round 4: a save standing on this section's checkpoint with a resume
+// point (the last lamp lit, saveSystem markResume) starts at that lamp,
+// unless a dev / QA parameter picks the start. Game time follows the wall
+// clock (frameClock.js); LOW GRAPHICS renders at a smaller internal size.
+// The pause menu's SHOW ME asks the scene for the current room's hint.
 
 import Phaser from 'phaser';
 import './fonts/fonts.css';
-import { BorrowedLightScene, BORROWED_LIGHT_VIEW } from './chapters/borrowedLight/BorrowedLightScene.js';
-import { resolveStartLamp, resolveStartSection } from './chapters/borrowedLight/level.js';
+import { BorrowedLightScene, BORROWED_LIGHT_VIEW, VIEW_SCALE_LOW, playSectionMusic } from './chapters/borrowedLight/BorrowedLightScene.js';
+import { SECTION_CHECKPOINTS, resolveResumeLamp, resolveStartLamp, resolveStartSection } from './chapters/borrowedLight/level.js';
+import { MAX_FRAME_MS, QA_MAX_FRAME_MS, installWallClock } from './chapters/borrowedLight/frameClock.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { DEV_MODE, devParam } from './devMode.js';
@@ -23,7 +30,11 @@ import { createSaveStore } from './shell/saveSystem.js';
 
 installPhaserMotionGuard(Phaser);
 installDevMenuReturnControl();
-installPauseMenu({ controls: CHAPTER_CONTROLS.borrowedLight });
+installPauseMenu({
+  controls: CHAPTER_CONTROLS.borrowedLight,
+  // SHOW ME: the current room's hint at once (the scene's idle hints).
+  extraActions: [{ label: 'SHOW ME', onSelect: () => window.dispatchEvent(new CustomEvent('nightfall:hint')) }],
+});
 
 const store = createSaveStore();
 const activeSave = store.readAll()[store.getActiveSlot()];
@@ -34,10 +45,23 @@ const section = resolveStartSection({
   unlocked: [...(activeSave?.unlocked ?? []), activeSave?.checkpointId].filter(Boolean),
 });
 // Dev QA only: ?lamp=<id> starts at a lamp inside the section (room routes).
-const lamp = resolveStartLamp({ search: window.location.search, devMode: DEV_MODE, section });
+const devLamp = resolveStartLamp({ search: window.location.search, devMode: DEV_MODE, section });
 const qaTimescale = DEV_MODE && devParam('timescale') !== null;
 const timescale = qaTimescale ? Number(devParam('timescale')) || 1 : 1;
 const skipIntro = DEV_MODE && devParam('intro') === '0';
+// A resume point inside this section's checkpoint (the last lamp lit), when
+// the save stands on it and no QA parameter picks the start instead.
+const checkpoint = SECTION_CHECKPOINTS[section];
+const qaStart = DEV_MODE && ['lamp', 'qa', 'timescale', 'intro'].some((key) => devParam(key) !== null);
+const resumeLamp = !qaStart && activeSave?.checkpointId === checkpoint
+  ? resolveResumeLamp({ resume: store.readResume(checkpoint), section })
+  : null;
+const lamp = devLamp ?? resumeLamp;
+const lowGraphics = globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true;
+const viewScale = lowGraphics ? VIEW_SCALE_LOW : 1;
+// The score starts on arrival, through the shared music director (it plays
+// as soon as the browser allows; the scene's own call is then a no-op).
+playSectionMusic(section);
 
 async function fontsReady() {
   if (!document.fonts?.load) return;
@@ -56,10 +80,11 @@ async function boot() {
   game = new Phaser.Game({
     type: Phaser.AUTO,
     parent: 'game',
-    width: BORROWED_LIGHT_VIEW.w,
-    height: BORROWED_LIGHT_VIEW.h,
+    width: Math.round(BORROWED_LIGHT_VIEW.w * viewScale),
+    height: Math.round(BORROWED_LIGHT_VIEW.h * viewScale),
     backgroundColor: '#05080d',
-    render: { antialias: true, roundPixels: false, powerPreference: 'high-performance' },
+    // LOW GRAPHICS: no multisampling (textures stay smoothly filtered).
+    render: { antialias: true, antialiasGL: !lowGraphics, roundPixels: false, powerPreference: 'high-performance' },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     input: { gamepad: true },
     // QA (dev + ?timescale= only): a slow headless renderer must not have
@@ -70,7 +95,11 @@ async function boot() {
     physics: { default: 'arcade', arcade: { gravity: { x: 0, y: 0 }, debug: false, fps: 60 } },
     scene: [],
   });
-  game.scene.add('BorrowedLight', BorrowedLightScene, true, { section, lamp, devMode: DEV_MODE, timescale, skipIntro, qaTimescale });
+  // Game time follows the wall clock: no slow motion on a weak laptop.
+  installWallClock(game.loop, { maxMs: qaTimescale ? QA_MAX_FRAME_MS : MAX_FRAME_MS });
+  game.scene.add('BorrowedLight', BorrowedLightScene, true, {
+    section, lamp, resumed: Boolean(resumeLamp && !devLamp), devMode: DEV_MODE, timescale, skipIntro, qaTimescale, lowGraphics,
+  });
 
   game.canvas.setAttribute('tabindex', '0');
   game.canvas.setAttribute('role', 'application');

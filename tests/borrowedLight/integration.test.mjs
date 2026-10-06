@@ -77,7 +77,7 @@ test('the page is a production build input with its own title and favicon', () =
 
 test('entry: own 1920×1080 antialiased FIT Arcade game, chapter controls, dev-only QA hooks', () => {
   const main = read('src/borrowedLight-main.js');
-  assert.match(main, /installPauseMenu\(\{ controls: CHAPTER_CONTROLS\.borrowedLight \}\)/);
+  assert.match(main, /installPauseMenu\(\{\s*controls: CHAPTER_CONTROLS\.borrowedLight,/);
   assert.match(main, /antialias: true/);
   assert.match(main, /Phaser\.Scale\.FIT/);
   assert.match(main, /default: 'arcade'/);
@@ -114,7 +114,7 @@ test('story text: the mechanic line from the spec and Mara\'s letter kept word f
     'The train opened the next door before dawn. I went on.',
     'If you are following me, keep moving. I will leave another mark where I can. — Mara',
   ]);
-  assert.ok(MECHANIC_LINES.some((l) => /three nights ago\. Took the same roofs\. Said you'd be along\./.test(l.text)));
+  assert.ok(MECHANIC_LINES.some((l) => /She came through last night\. Took the same roofs\. Said you'd be along\./.test(l.text)));
   assert.ok(MECHANIC_LINES.every((l) => l.speaker === 'ROOFTOP MECHANIC'));
   // Nothing defines Butch's relation to Mara.
   const words = [...MECHANIC_LINES.map((l) => l.text), ...MARA_LETTER.lines].join(' ');
@@ -139,7 +139,7 @@ test('player-visible chapter name is BORROWED LIGHT in the router, credits and c
 
 test('reduced motion is respected: no heavy rain streaks, no lightning flash, no camera shake', () => {
   const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
-  assert.match(scene, /w\.near\.setVisible\(!reduced\)/);
+  assert.match(scene, /w\.near\.setVisible\(!reduced && !low\)/);
   assert.match(scene, /this\.flashT = reducedMotionActive\(\) \? 0 : strength/);
   assert.match(scene, /if \(!reducedMotionActive\(\)\) this\.cameras\.main\.shake/);
   assert.match(read('src/borrowedLight-main.js'), /installPhaserMotionGuard\(Phaser\)/);
