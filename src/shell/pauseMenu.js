@@ -46,6 +46,18 @@ export function describeLastCheckpoint(storage = globalThis.localStorage) {
   return `LAST CHECKPOINT · CHAPTER ${checkpoint.chapter} · ${checkpoint.title}`;
 }
 
+// The eyebrow names the chapter of this page (alpha round 4: Chapter 2's
+// pause read "NIGHT SERVICE · SUSPENDED", the name of Chapter 1).
+export function pauseEyebrow(pathname = globalThis.location?.pathname ?? '/') {
+  const raw = String(pathname).split('/').pop() || 'index.html';
+  // pages that belong to a chapter without being its checkpoint route
+  const page = { 'labyrinth.html': 'museum-3d.html', 'one-answer.html': 'museum-3d.html', 'hidden-final-boss.html': 'final-boss.html', 'true-ending.html': 'final-boss.html' }[raw] ?? raw;
+  const checkpoint = CHECKPOINTS.find(({ route, legacy }) => !legacy && route.split('?')[0].split('/').pop() === page);
+  if (!checkpoint) return 'THE NIGHT SERVICE · SUSPENDED';
+  const name = checkpoint.title.split(' · ')[0];
+  return `CHAPTER ${checkpoint.chapter} · ${name} · SUSPENDED`;
+}
+
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
@@ -99,7 +111,7 @@ export function installPauseMenu({
     <section class="nf-pause-card" role="dialog" aria-modal="true" aria-label="Pause menu">
       <div class="nf-pause-ornament" aria-hidden="true"><span></span><b>◇</b><span></span></div>
       <header class="nf-pause-head">
-        <p class="nf-pause-eyebrow">NIGHT SERVICE · SUSPENDED</p>
+        <p class="nf-pause-eyebrow">${escapeHtml(pauseEyebrow())}</p>
         <h2>PAUSED</h2>
         <p class="nf-pause-checkpoint"></p>
       </header>

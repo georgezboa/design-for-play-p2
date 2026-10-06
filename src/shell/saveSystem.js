@@ -143,10 +143,13 @@ export function createSaveStore(storage = globalThis.localStorage, { scratch = r
     if (!save) return null;
     const unlocked = [...new Set([...(save.unlocked ?? []), id])];
     const recorded = checkpointAdvances(save.checkpointId, id);
+    const nextId = recorded ? id : save.checkpointId;
     saves[slot] = {
       ...save,
-      checkpointId: recorded ? id : save.checkpointId,
+      checkpointId: nextId,
       unlocked,
+      // a resume point belongs to one checkpoint; moving on drops it
+      resume: save.resume?.checkpointId === nextId ? save.resume : null,
       updatedAt: new Date().toISOString(),
       playSeconds: Math.max(save.playSeconds ?? 0, playSeconds),
     };
@@ -172,7 +175,7 @@ export function createSaveStore(storage = globalThis.localStorage, { scratch = r
     const saves = readAll();
     const save = saves[index];
     if (!save || !(save.unlocked ?? []).includes(id) || !checkpointById(id)) return null;
-    saves[index] = { ...save, checkpointId: id, updatedAt: new Date().toISOString() };
+    saves[index] = { ...save, checkpointId: id, resume: null, updatedAt: new Date().toISOString() };
     writeAll(saves);
     setActiveSlot(index);
     return saves[index];
@@ -190,6 +193,44 @@ export function createSaveStore(storage = globalThis.localStorage, { scratch = r
     writeAll(saves);
     setActiveSlot(slot);
     globalThis.dispatchEvent?.(new CustomEvent('nightfall:magic-stone', { detail: { id, slot } }));
+    return saves[slot];
+  };
+
+  // Mid-chapter resume points (alpha round 4): a chapter page records where
+  // inside its current checkpoint the player is (an act step, a lamp, a
+  // stage, a room) so Continue does not replay the whole chapter. A resume
+  // point is kept only while the save still stands on `checkpointId`; it is
+  // dropped when the save moves to another checkpoint or LOAD picks one.
+  // `data` is a small plain object owned by the chapter (JSON-serialisable).
+  const markResume = (checkpointId, data, { slot = getActiveSlot(), playSeconds = 0 } = {}) => {
+    const saves = readAll();
+    const save = saves[slot];
+    if (!save || save.checkpointId !== checkpointId || !data || typeof data !== 'object') return null;
+    saves[slot] = {
+      ...save,
+      resume: { checkpointId, data: JSON.parse(JSON.stringify(data)), at: new Date().toISOString() },
+      updatedAt: new Date().toISOString(),
+      playSeconds: Math.max(save.playSeconds ?? 0, playSeconds),
+    };
+    writeAll(saves);
+    globalThis.dispatchEvent?.(new CustomEvent('nightfall:resume-point', { detail: { checkpointId, slot } }));
+    return saves[slot];
+  };
+
+  /** The active slot's resume data for `checkpointId`, or null. */
+  const readResume = (checkpointId, { slot = getActiveSlot() } = {}) => {
+    const save = readAll()[slot];
+    const resume = save?.resume;
+    if (!resume || resume.checkpointId !== checkpointId || save.checkpointId !== checkpointId) return null;
+    return resume.data ?? null;
+  };
+
+  const clearResume = ({ slot = getActiveSlot() } = {}) => {
+    const saves = readAll();
+    const save = saves[slot];
+    if (!save?.resume) return save ?? null;
+    saves[slot] = { ...save, resume: null };
+    writeAll(saves);
     return saves[slot];
   };
 
@@ -211,7 +252,7 @@ export function createSaveStore(storage = globalThis.localStorage, { scratch = r
 
   return {
     readAll, startNew, markCheckpoint, collectMagicStone, selectCheckpoint, remove, getActiveSlot, setActiveSlot,
-    addPlaySeconds, markNoticeSeen, scratch: Boolean(scratch),
+    addPlaySeconds, markNoticeSeen, markResume, readResume, clearResume, scratch: Boolean(scratch),
   };
 }
 
