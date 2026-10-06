@@ -191,7 +191,7 @@ export const TAG_ART = Object.freeze({ w: 90, h: 60, ox: 0.12, oy: 0.2, glint: {
  * unfold and the frame (art/hintArt.js paintUnfoldTag), shown at `scale` in
  * tile px, eyelet on the left. Its width follows the text.
  */
-export const TEXT_TAG = Object.freeze({ h: 70, eyelet: [17, 35], scale: 0.42 });
+export const TEXT_TAG = Object.freeze({ h: 70, eyelet: [17, 35], scale: 0.56 });
 export function textTagWidth(text) {
   return Math.round(64 + String(text ?? '').length * 15.6);
 }

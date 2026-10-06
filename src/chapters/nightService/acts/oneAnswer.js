@@ -105,7 +105,7 @@ export const ONE_ANSWER_ACT = defineAct({
           hotspots: [{
             // the first move: a generous target (the whole stub around the
             // hole), with the amber ring breathing round the hole itself
-            id: 'hole', kind: 'use', once: true,
+            id: 'hole', kind: 'use', once: true, requires: { notFlag: 'punched' },
             rect: [STUB_HOLE.x - 0.09, STUB_HOLE.y - 0.15, 0.18, 0.3],
             ringRect: [STUB_HOLE.x - 0.025, STUB_HOLE.y - 0.045, 0.05, 0.09],
             do: [{ setFlag: 'punched' }],
