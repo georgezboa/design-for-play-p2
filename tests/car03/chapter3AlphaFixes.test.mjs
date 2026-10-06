@@ -19,9 +19,10 @@ const page = read('car03-3d.html');
 
 describe('Chapter 3 alpha fixes (F2)', () => {
   it('A2-1: game time follows the wall clock on a slow GPU; captions read on it too', () => {
-    assert.ok(MAX_FRAME_SECONDS >= 0.25, 'a 4 fps frame is not slow motion');
+    // Alpha round 4: down to 1 fps (was 0.25 s, a 4 fps floor).
+    assert.ok(MAX_FRAME_SECONDS >= 1, 'a 1 fps frame is not slow motion');
     assert.ok(MAX_STEP_SECONDS <= 0.1, 'movement still advances in small steps');
-    assert.match(preview, /for \(let step = 0; step < steps; step \+= 1\) this\.update\(frame \/ steps\);/);
+    assert.match(preview, /for \(let step = 0; step < steps; step \+= 1\) this\.update\(frame \/ steps, \{ final: step === steps - 1 \}\);/);
     assert.doesNotMatch(preview, /Math\.min\(0\.05, Math\.max\(0\.001, \(now - this\.lastFrame\)/);
     assert.match(caption, /dt = this\.wallDelta\(dt\);/);
     assert.match(caption, /performance\.now\(\)/);
@@ -108,7 +109,10 @@ describe('Chapter 3 alpha fixes (F2)', () => {
   });
 
   it('F4 note: the Echo Stone is collected after its line, never under the first-stone card', () => {
-    assert.match(runtime, /\], \{ onComplete: \(\) => collectMagicStone\('chapter-3'\) \}\);/);
-    assert.match(runtime, /onComplete: \(\) => collectMagicStone\('chapter-3'\),/);
+    // Alpha round 4: both pickups go through awardEchoStone() (the shared
+    // stone notice), still when the last line closes.
+    assert.match(runtime, /this\.openAmbientDialogue\(CAMPFIRE_SELINE_STONE_DIALOGUE, \{ onComplete: \(\) => this\.awardEchoStone\(\) \}\);/);
+    assert.match(runtime, /this\.openAmbientDialogue\(MORNING_STONE_PICKUP, \{ onComplete: \(\) => this\.awardEchoStone\(\) \}\);/);
+    assert.match(runtime, /awardEchoStone\(\) \{\n[^]*?collectMagicStone\('chapter-3'\);/);
   });
 });

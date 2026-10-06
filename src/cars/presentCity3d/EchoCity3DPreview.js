@@ -1020,17 +1020,59 @@ function makeDestinationMarker(scene) {
   return marker;
 }
 
-// Frame pacing (see animate()).
-export const MAX_FRAME_SECONDS = 0.25;
+// Frame pacing (see animate()). Alpha round 4 (P1): game time follows the
+// wall clock down to one frame a second (it was a quarter second, so at
+// 1 fps the departure ran at a quarter speed and took minutes); a longer
+// stall (a background tab) still never dumps more than this at once.
+export const MAX_FRAME_SECONDS = 1;
 // Click-to-walk speed (m/s); a double-click or a held Shift runs.
 export const WALK_SPEED = 5.4;
 export const RUN_MULTIPLIER = 1.8;
 // How far past the view a static model's shadow can still fall into it.
 const SHADOW_REACH = 24;
 export const MAX_STEP_SECONDS = 0.1;
+// How far west the follow camera may go for a subject past the west bound
+// (the laundry fire, alpha round 4).
+export const CAMERA_WEST_REACH_X = -56;
 
-function createRenderer(container) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+// How one drawn frame of `wallSeconds` is simulated: the game time it gets
+// (the wall time, up to MAX_FRAME_SECONDS) in equal steps of at most
+// MAX_STEP_SECONDS.
+export function frameSteps(wallSeconds) {
+  const frame = Math.min(MAX_FRAME_SECONDS, Math.max(0.001, Number(wallSeconds) || 0));
+  const steps = Math.max(1, Math.ceil(frame / MAX_STEP_SECONDS - 1e-9));
+  return { frame, steps, step: frame / steps };
+}
+
+// Moves `position` (x/z) `travel` metres along `path` (waypoints, consumed
+// as they are reached). A waypoint reached mid-step no longer drops the rest
+// of the step (alpha round 4: at a low frame rate that slowed every walk
+// with corners). Returns the heading walked last (radians), or null.
+export function walkAlongPath(position, path, travel) {
+  let left = Math.max(0, travel);
+  let heading = null;
+  while (path.length && left > 1e-6) {
+    const target = path[0];
+    const dx = target.x - position.x;
+    const dz = target.z - position.z;
+    const distance = Math.hypot(dx, dz);
+    if (distance > 1e-4) heading = Math.atan2(dx, dz);
+    if (distance <= left) {
+      position.x = target.x;
+      position.z = target.z;
+      path.shift();
+      left -= distance;
+    } else {
+      position.x += (dx / distance) * left;
+      position.z += (dz / distance) * left;
+      left = 0;
+    }
+  }
+  return heading;
+}
+
+function createRenderer(container, { antialias = true } = {}) {
+  const renderer = new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -1155,7 +1197,11 @@ export class EchoCity3DPreview {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(CITY_PALETTE.sky);
     this.scene.fog = new THREE.FogExp2(CITY_PALETTE.fog, 0.0085);
-    this.renderer = createRenderer(container);
+    // Alpha round 4 (P1): a city pinned to LOW (LOW GRAPHICS · SLOWER
+    // COMPUTERS, or the stored preference) is drawn without MSAA: on a
+    // software or integrated GPU multisampling multiplies the fill cost, and
+    // the context cannot drop it later.
+    this.renderer = createRenderer(container, { antialias: this.qualityMonitor.tier !== 'low' });
     this.cameraPreset = requestedCameraPreset();
     this.camera = createCamera(container, this.cameraPreset);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -1753,26 +1799,15 @@ export class EchoCity3DPreview {
     this.renderer.setSize(width, height);
   }
 
-  update(dt) {
+  update(dt, { final = true } = {}) {
     this.elapsed += dt;
     this.camera.position.sub(this.cameraShakeOffset);
     this.cameraShakeOffset.set(0, 0, 0);
     this.controls.update();
     if (this.path.length) {
-      const target = this.path[0];
-      const delta = target.clone().sub(this.player.position);
-      delta.y = 0;
-      const distance = delta.length();
       const travel = (this.running || this.shiftHeld ? WALK_SPEED * RUN_MULTIPLIER : WALK_SPEED) * dt;
-      if (distance <= travel) {
-        this.player.position.x = target.x;
-        this.player.position.z = target.z;
-        this.path.shift();
-      } else {
-        delta.normalize();
-        this.player.position.addScaledVector(delta, travel);
-        this.player.rotation.y = Math.atan2(delta.x, delta.z);
-      }
+      const heading = walkAlongPath(this.player.position, this.path, travel);
+      if (heading !== null) this.player.rotation.y = heading;
       if (!this.path.length) {
         this.destinationMarker.visible = false;
         this.running = false;
@@ -1794,7 +1829,7 @@ export class EchoCity3DPreview {
     }
     this.updateBuildingOcclusion(dt);
     this.updateShadowLod(dt);
-    this.gameplayRuntime?.update(dt);
+    this.gameplayRuntime?.update(dt, { final });
 
     if (this.campfireLight) {
       this.campfireLight.intensity = 15.5
@@ -1826,7 +1861,13 @@ export class EchoCity3DPreview {
     const eastThresholdMaxX = subject.x > CAMERA_FOLLOW.bounds.maxX
       ? Math.min(subject.x, 55)
       : CAMERA_FOLLOW.bounds.maxX;
-    desiredX = THREE.MathUtils.clamp(desiredX, CAMERA_FOLLOW.bounds.minX, eastThresholdMaxX);
+    // Alpha round 4 (P2): the same on the west side for the laundry fire by
+    // the west wall (x ≈ -54), whose group sat in the frame's top-left
+    // corner under the task card while the camera stopped at x = -43.
+    const westThresholdMinX = subject.x < CAMERA_FOLLOW.bounds.minX
+      ? Math.max(subject.x, CAMERA_WEST_REACH_X)
+      : CAMERA_FOLLOW.bounds.minX;
+    desiredX = THREE.MathUtils.clamp(desiredX, westThresholdMinX, eastThresholdMaxX);
     desiredZ = THREE.MathUtils.clamp(desiredZ, CAMERA_FOLLOW.bounds.minZ, CAMERA_FOLLOW.bounds.maxZ);
     const desiredY = this.cameraOverrideTarget
       ? THREE.MathUtils.clamp(this.cameraOverrideTarget.y, CAMERA_HOME.target[1], 18)
@@ -1893,14 +1934,16 @@ export class EchoCity3DPreview {
   }
 
   animate(now) {
-    // Game time follows the wall clock up to a quarter second per frame: a
-    // slow GPU plays at its own frame rate, not in slow motion. Movement and
-    // timers still advance in steps of at most MAX_STEP_SECONDS.
-    const frame = Math.min(MAX_FRAME_SECONDS, Math.max(0.001, (now - this.lastFrame) / 1000));
+    // Game time follows the wall clock up to MAX_FRAME_SECONDS per frame: a
+    // slow GPU plays at its own frame rate, not in slow motion. Movement,
+    // collision and timers still advance in steps of at most
+    // MAX_STEP_SECONDS (nothing tunnels); the runtime's screen work (tags,
+    // task card, compass) runs on the frame's last step only.
+    const wall = Math.max(0.001, (now - this.lastFrame) / 1000);
+    const { frame, steps } = frameSteps(wall);
     this.lastFrame = now;
-    const steps = Math.max(1, Math.ceil(frame / MAX_STEP_SECONDS - 1e-9));
-    for (let step = 0; step < steps; step += 1) this.update(frame / steps);
-    this.quality?.sample(frame);
+    for (let step = 0; step < steps; step += 1) this.update(frame / steps, { final: step === steps - 1 });
+    this.quality?.sample(Math.min(wall, 2));
     this.render();
     this.fpsFrames += 1;
     this.fpsWindow += frame;
@@ -1919,7 +1962,7 @@ export class EchoCity3DPreview {
 
   advanceTime(ms) {
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
-    for (let index = 0; index < steps; index += 1) this.update(1 / 60);
+    for (let index = 0; index < steps; index += 1) this.update(1 / 60, { final: index === steps - 1 });
     this.render();
   }
 

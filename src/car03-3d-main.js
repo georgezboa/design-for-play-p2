@@ -3,7 +3,7 @@ import './shell/uiKit.css';
 import './cars/presentCity3d/chapter3Release.css';
 import { EchoCity3DPreview } from './cars/presentCity3d/EchoCity3DPreview.js';
 import { Chapter3OpeningRuntime } from './cars/presentCity3d/Chapter3OpeningRuntime.js';
-import { createChapter3OpeningModel } from './cars/presentCity3d/chapter3OpeningModel.js';
+import { chapter3ResumeStart, createChapter3OpeningModel } from './cars/presentCity3d/chapter3OpeningModel.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { CINEMATICS, navigateAfterCinematic } from './shell/gameFlow.js';
@@ -61,14 +61,22 @@ const playtest = query.get('playtest');
 const PLAYTEST_STARTS = Object.freeze({
   'chapter3-oil': 'oil-seam',
   'chapter3-ministry': 'ministry-walk',
+  'chapter3-ministry-hall': 'ministry-hall',
   'chapter3-board': 'ticket-board',
+  'chapter3-eda': 'market',
   'chapter3-market': 'market-scanner',
   'chapter3-dusk': 'cut-interface',
-  'chapter3-magic-stone': 'cut-interface',
+  // 3.4a: the optional laundry fire is pointed at by Petar once the cut feed
+  // is read, so the route starts there (task: the Copper Heron), not before
+  // the service joint (alpha round 4).
+  'chapter3-magic-stone': 'hotel',
   'chapter3-hotel': 'hotel',
+  'chapter3-hotel-lobby': 'hotel-lobby',
+  'chapter3-hotel-room': 'hotel-room',
   'chapter3-night': 'night-fire',
   'chapter3-wire': 'wire',
   'chapter3-morning': 'morning',
+  'chapter3-platform': 'platform-walk',
   'chapter3-station': 'station',
 });
 // Continue / Load at the mid-chapter save opens `?stage=dusk`. Production
@@ -79,12 +87,27 @@ const activeSave = store.readAll()[store.getActiveSlot()];
 const unlocked = [...(activeSave?.unlocked ?? []), activeSave?.checkpointId].filter(Boolean);
 const requestedStage = new URLSearchParams(window.location.search).get('stage');
 const resumeAtDusk = requestedStage === 'dusk' && (DEV_MODE || unlocked.includes('chapter-3-dusk'));
+// Alpha round 4 (P1): mid-chapter resume points. The page's checkpoint is
+// the dusk one when it was opened at `?stage=dusk`, otherwise the chapter
+// start; when the active save stands on that checkpoint and holds a resume
+// point for it, the chapter opens at the start of that beat. A dev / router
+// route (?playtest=, ?focus=) always wins and never records one.
+const qaOverride = Boolean(playtest || query.get('focus'));
+const pageCheckpoint = resumeAtDusk ? 'chapter-3-dusk' : 'chapter-3-start';
+const resumeStage = !qaOverride && activeSave?.checkpointId === pageCheckpoint
+  ? chapter3ResumeStart(pageCheckpoint, store.readResume(pageCheckpoint))
+  : null;
 window.addEventListener('nightfall:chapter3-checkpoint', (event) => {
   if (event.detail?.id) store.markCheckpoint(event.detail.id);
 });
+window.addEventListener('nightfall:chapter3-resume', (event) => {
+  const { checkpointId, stage } = event.detail ?? {};
+  if (!qaOverride && checkpointId && stage) store.markResume(checkpointId, { stage });
+});
+const startAt = PLAYTEST_STARTS[playtest] ?? resumeStage ?? (resumeAtDusk ? 'cut-interface' : null);
 const gameplayRuntime = new Chapter3OpeningRuntime({
   preview,
-  model: createChapter3OpeningModel({ startAt: PLAYTEST_STARTS[playtest] ?? (resumeAtDusk ? 'cut-interface' : null) }),
+  model: createChapter3OpeningModel({ startAt, resumed: Boolean(resumeStage) }),
   elements: {
     statusElement: document.querySelector('#runtime-status'),
     objectiveCard: document.querySelector('#objective-card'),
@@ -101,8 +124,8 @@ preview.attachGameplayRuntime(gameplayRuntime);
 // While the pause menu is open the city holds still and ignores keys; camera
 // shake respects REDUCE MOTION (in-game setting or OS preference).
 const runCityFrame = preview.update.bind(preview);
-preview.update = (dt) => {
-  if (!globalThis.NIGHTFALL_PAUSED) runCityFrame(dt);
+preview.update = (dt, options) => {
+  if (!globalThis.NIGHTFALL_PAUSED) runCityFrame(dt, options);
 };
 const handleCityKey = gameplayRuntime.handleKeyDown.bind(gameplayRuntime);
 gameplayRuntime.handleKeyDown = (event) => (globalThis.NIGHTFALL_PAUSED ? true : handleCityKey(event));
@@ -142,6 +165,15 @@ preview.initialize()
     return preview.loadModels();
   })
   .then(() => gameplayRuntime.initialize())
+  // Alpha round 4: lift the loading card only once the city has drawn the
+  // chapter's first real frames (a slow GPU otherwise showed the stale
+  // platform frame, then the cut, for seconds after "loaded").
+  .then(() => new Promise((resolve) => {
+    let frames = 0;
+    const tick = () => (++frames >= 3 ? resolve() : requestAnimationFrame(tick));
+    requestAnimationFrame(tick);
+    window.setTimeout(resolve, 8000);
+  }))
   .then(() => {
     preview.loadingPanel.classList.add('done');
   })

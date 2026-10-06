@@ -55,6 +55,27 @@ export function lensPresentMask(x, y, radius = LENS_RADIUS) {
   return `radial-gradient(circle at ${Math.round(x)}px ${Math.round(y)}px, transparent ${radius + 16}px, #000 ${radius + 36}px)`;
 }
 
+// Alpha round 4 (P1): the board said "lay one ticket on the other", showed
+// PUNCH BOTH as soon as they touched, then refused: "look at both tickets
+// through the lens first". The instruction now names the next step in the
+// order the punch needs (lens, stack, punch), and the PUNCH BOTH button
+// shows only when a punch would work. `board` is the model's ticketBoard.
+export const TICKET_BOARD_STEPS = Object.freeze({
+  lens: 'First, drag the 1978 lens over both tickets.',
+  lensOne: 'One ticket read through the lens. Now the other one.',
+  stack: 'Both read 1978-0412. Lay one ticket on the other.',
+  punch: 'Punch both: click the stack.',
+});
+
+export function ticketBoardGuidance(board, ticketIds = TICKET_IDS) {
+  const seen = ticketIds.filter((id) => board?.lensSeen?.includes(id)).length;
+  const lensDone = seen >= ticketIds.length;
+  if (board?.punched) return { step: 'filed', text: 'Filed as one person.', canPunch: false };
+  if (!lensDone) return { step: 'lens', text: seen ? TICKET_BOARD_STEPS.lensOne : TICKET_BOARD_STEPS.lens, canPunch: false };
+  if (!board.stacked) return { step: 'stack', text: TICKET_BOARD_STEPS.stack, canPunch: false };
+  return { step: 'punch', text: TICKET_BOARD_STEPS.punch, canPunch: true };
+}
+
 function setMask(node, value) {
   if (!node) return;
   node.style.webkitMaskImage = value;
@@ -95,8 +116,9 @@ export class Chapter3TicketBoard {
       el('p', 'c3-board__kicker', 'TRANSPORT MINISTRY · PUBLIC TABLE'),
       el('p', 'c3-board__hint', 'Two tickets for one seat.'),
     );
-    // One quiet line of instruction; the verbs themselves came from Ch1 and Ch2.
-    this.status = el('p', 'c3-board__status', 'Drag the 1978 lens over the tickets. Lay one on the other, then punch.');
+    // One quiet line naming the next step (ticketBoardGuidance); the verbs
+    // themselves came from Ch1 and Ch2.
+    this.status = el('p', 'c3-board__status', ticketBoardGuidance(this.model.snapshot().ticketBoard).text);
     this.table.append(header);
     for (const spec of TICKET_BOARD_CARDS) {
       const card = el('article', `nf-card c3-card${spec.ticket ? ' c3-card--ticket' : ''}`);
@@ -236,9 +258,22 @@ export class Chapter3TicketBoard {
       const inside = localX > 18 && localY > 18 && localX < rect.width - 18 && localY < rect.height - 18;
       if (inside && TICKET_IDS.includes(card.spec.id) && this.model.seeTicketThroughLens(card.spec.id)) {
         card.element.classList.add('is-seen');
-        this.announce(`Through the lens: ${card.spec.past.title}.`);
         this.idleSeconds = 0;
+        this.refreshGuidance();
       }
+    }
+  }
+
+  // The next step's line, and PUNCH BOTH only when a punch would file them.
+  refreshGuidance() {
+    if (!this.root || this.filed) return;
+    const guidance = ticketBoardGuidance(this.model.snapshot().ticketBoard);
+    this.announce(guidance.text);
+    this.stackTag.hidden = !guidance.canPunch;
+    if (guidance.canPunch) {
+      const [a, b] = TICKET_IDS.map((id) => this.cards.get(id));
+      this.stackTag.style.left = `${Math.max(a.x, b.x) + 60}px`;
+      this.stackTag.style.top = `${Math.min(a.y, b.y) - 70}px`;
     }
   }
 
@@ -317,33 +352,24 @@ export class Chapter3TicketBoard {
       top.y = bottom.y + 5;
       this.placeCard(top);
     }
-    if (this.model.stackTickets(stacked)) {
-      this.idleSeconds = 0;
-      if (stacked) this.announce('One ticket lies on the other.');
-    }
+    if (this.model.stackTickets(stacked)) this.idleSeconds = 0;
     const ready = this.model.snapshot().ticketBoard.stacked;
     a.element.classList.toggle('is-stacked', ready);
     b.element.classList.toggle('is-stacked', ready);
-    this.stackTag.hidden = !ready;
-    if (ready) {
-      this.stackTag.style.left = `${Math.max(a.x, b.x) + 60}px`;
-      this.stackTag.style.top = `${Math.min(a.y, b.y) - 70}px`;
-    }
+    this.refreshGuidance();
   }
 
   tryPunch() {
     if (this.filed) return false;
-    const state = this.model.snapshot().ticketBoard;
-    if (!state.stacked) {
-      this.announce('Lay one ticket on the other to punch them together.');
-      return false;
-    }
-    if (!this.model.punchTickets()) {
+    const guidance = ticketBoardGuidance(this.model.snapshot().ticketBoard);
+    if (!guidance.canPunch || !this.model.punchTickets()) {
+      // Not yet: point at the step that is missing, in the order it is needed.
       refused();
-      this.lensElement.classList.remove('is-pulsing');
-      void this.lensElement.offsetWidth;
-      this.lensElement.classList.add('is-pulsing');
-      this.announce('Look at both tickets through the lens first.');
+      const target = guidance.step === 'lens' ? this.lensElement : this.cards.get(TICKET_IDS[1])?.element;
+      target?.classList.remove('is-pulsing');
+      void target?.offsetWidth;
+      target?.classList.add('is-pulsing');
+      this.announce(guidance.text);
       return false;
     }
     punchClack();

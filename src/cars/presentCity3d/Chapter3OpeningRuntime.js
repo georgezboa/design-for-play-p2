@@ -46,6 +46,7 @@ import {
   TICKET_BOARD_CONCLUSION,
   TRANSPORT_ENTRANCE_DIALOGUE,
   cutInterfaceMenu,
+  echoStoneToastText,
   edaTopicMenu,
   hanaTopicMenu,
   nikaTopicMenu,
@@ -54,6 +55,7 @@ import {
 import { ENDING_SLICE_POSITIONS } from './chapter3EndingContent.js';
 import { Chapter3DialogueController } from './Chapter3Caption.js';
 import { Chapter3TicketBoard } from './Chapter3TicketBoard.js';
+import { cachedSnapshotModel, chapter3ResumePoint } from './chapter3OpeningModel.js';
 import { Chapter3ScannerField } from './Chapter3ScannerField.js';
 import { Chapter3BellClamp } from './Chapter3BellClamp.js';
 import { createChapter3MinistryHall, MINISTRY_POSITIONS } from './Chapter3MinistryHall.js';
@@ -91,13 +93,15 @@ import {
   makeMorningCampfireEchoStone,
   makeObjectHighlight,
   makePreservingObjectHighlight,
+  makeRoseScarf,
   positionFrom,
   setActorForegroundVisibility,
   setRimLightStrength,
   smooth,
 } from './chapter3SceneBuilders.js';
 import { music } from '../../shared/musicDirector.js';
-import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { collectMagicStone, firstStoneNotice, magicStoneRowHtml, magicStoneSnapshot } from '../../shell/magicStones.js';
+import { stoneChime } from '../../chapters/borrowedLight/audio.js';
 import { car03Audio } from '../presentCity/car03Audio.js';
 import { devParam } from '../../devMode.js';
 import {
@@ -108,6 +112,8 @@ import {
   closestOnPolyline2D,
   compassPlacement,
   compassVisible,
+  controlsHintHtml,
+  controlsHintState,
   createHintClock,
   holdHintClock,
   idleLookHintDue,
@@ -134,14 +140,26 @@ const C3_MUSIC = {
 const INTERACTION_RADIUS = 4.2;
 const SLEEP_BLACKOUT_MS = 5000;
 const HOTEL_STAGE_TRANSITION_MS = 320;
+// Alpha round 4 (P2, the hotel "faded in as a murky ghost"): interior cuts
+// swapped sets 320 ms into the blackout's 0.7 s CSS fade, i.e. half black,
+// and lifted it while the new set was still compiling. A cut now waits for
+// full black (BLACKOUT_FADE_MS), swaps, lets the city draw the new set
+// (BLACKOUT_DRAWN_FRAMES) and only then fades back in.
+const BLACKOUT_FADE_MS = 720;
+const BLACKOUT_DRAWN_FRAMES = 2;
+const BLACKOUT_FRAME_TIMEOUT_MS = 2500;
+// The bench painting's CSS fade-in (.c3-sunrise, 1.15 s).
+const SUNRISE_TABLEAU_FADE_MS = 1200;
+const wait = (ms) => new Promise((resolve) => { globalThis.setTimeout(resolve, ms); });
 // Lev points the way after this long searching (alpha round 1: 90 s felt
 // like being lost; the length target is 30–35 minutes).
 const SEARCH_HINT_AFTER_SECONDS = 45;
 const SEARCH_HINT_NEAR_TARGET_SECONDS = 30;
 const DIRECT_WALK_SPEED = 3.1;
 // The default street camera sits closer than the old 2.85 overview so the
-// cast reads at least ~48 px tall at 1080p; dialogue eases in a little more.
-const DIALOGUE_ZOOM_BOOST = 0.45;
+// cast reads at least ~48 px tall at 1080p; dialogue eases in more (alpha
+// round 4: 0.45 -> 0.8, the speakers were still small in conversation).
+const DIALOGUE_ZOOM_BOOST = 0.8;
 // Round 3 art pass (P2, Butch lost on the cobbles): the street camera sits
 // a little tighter on every tier (3.6 -> 4.0, about 11 % larger).
 const STREET_ZOOM_BOOST = 0.4;
@@ -153,6 +171,11 @@ const BUTCH_SILHOUETTE = Object.freeze({ color: 0xf0b25e, opacity: 0.92, widthCs
 // R5 (alpha round 3): how much closer the camera sits on the carriage door
 // for the empty-seat line.
 const BOARDED_CLOSE_UP_ZOOM = 1.6;
+// Alpha round 4 (P1, 3.6): the station beat pushes in on Butch and the
+// woman in the rose scarf (about 30 % larger than the street camera), and
+// the scarf itself is oversized a little so it reads at that zoom.
+const STATION_CLOSE_UP_ZOOM = 2.1;
+const ROSE_SCARF_WORLD_SCALE = 1.45;
 // Measured from vertical raycasts through the installed Hunyuan furniture kit
 // at its runtime scale/offset. Boxes include a 0.42 m player-radius margin.
 const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
@@ -265,7 +288,7 @@ class TagLayer {
 export class Chapter3OpeningRuntime {
   constructor({ preview, model, elements }) {
     this.preview = preview;
-    this.model = model;
+    this.model = cachedSnapshotModel(model);
     this.elements = elements;
     this.dialogue = new Chapter3DialogueController({ root: elements.caption });
     this.timeVisual = new Chapter3TimeVisualController(preview);
@@ -340,6 +363,9 @@ export class Chapter3OpeningRuntime {
     this.compassFlashUntil = 0;
     this.compassFlashPending = false;
     this.compassShown = null;
+    // Alpha round 4: the controls tag (CLICK TO WALK · E TO LOOK · HOLD TAB).
+    this.controlsUsed = new Set();
+    this.controlsHintVisible = false;
     this.ambientAnimElapsed = 0;
     this.ambientLifeElapsed = 0;
     this.ambientLifeRoutes = null;
@@ -522,8 +548,41 @@ export class Chapter3OpeningRuntime {
         if (cut) cut.outline = this.cutInterface.highlight;
       }
       this.applyEchoMaterial();
+      this.attachRoseScarf();
     }
     this.updateOutlines();
+  }
+
+  // The rose scarf on the Mara ahead's rig: tied to the neck bone so it moves
+  // with her walk, sized in world metres whatever the rig's own scale.
+  attachRoseScarf() {
+    const installed = this.characters.get('echo-mara');
+    const rig = installed?.loaded ? installed.visual : null;
+    if (!rig || this.roseScarf) return false;
+    let neck = null;
+    rig.traverse((object) => { if (!neck && object.isBone && /neck/i.test(object.name)) neck = object; });
+    const scarf = makeRoseScarf();
+    scarf.scale.setScalar(ROSE_SCARF_WORLD_SCALE);
+    if (neck) {
+      rig.updateMatrixWorld(true);
+      const boneScale = neck.getWorldScale(new THREE.Vector3());
+      const hostScale = this.echoMara.getWorldScale(new THREE.Vector3());
+      // The collar sits a little up the neck; the scale cancels the bone's.
+      scarf.scale.set(
+        (ROSE_SCARF_WORLD_SCALE * hostScale.x) / boneScale.x,
+        (ROSE_SCARF_WORLD_SCALE * hostScale.y) / boneScale.y,
+        (ROSE_SCARF_WORLD_SCALE * hostScale.z) / boneScale.z,
+      );
+      scarf.position.y = (0.035 * hostScale.y) / boneScale.y;
+      neck.add(scarf);
+    } else {
+      scarf.position.y = 0.93;
+      this.echoMara.add(scarf);
+    }
+    this.roseScarf = scarf;
+    this.roseScarfOnBone = Boolean(neck);
+    if (this.echoMaraFallbackScarf) this.echoMaraFallbackScarf.visible = false;
+    return true;
   }
 
   // Deferred streaming order: the market and street cast first, then the
@@ -969,16 +1028,14 @@ export class Chapter3OpeningRuntime {
     this.petar.visible = false;
     this.echoMara = makeActor(scene, { name: 'echo-mara-one-step-ahead', color: 0x1b2a2e, position: SCANNER_FIELDS.station.from, scale: 0.94 });
     this.echoMara.visible = false;
-    // Her scarf is the one colour she carries (every witness names it).
-    const scarf = new THREE.Mesh(
-      new THREE.TorusGeometry(0.2, 0.07, 8, 18),
-      new THREE.MeshStandardMaterial({ color: 0xc98088, roughness: 0.7, emissive: 0x4a1a22, emissiveIntensity: 0.6 }),
-    );
-    scarf.rotation.x = Math.PI / 2;
-    scarf.position.y = 1.5;
-    scarf.userData.echoMaterial = true;
-    scarf.userData.characterAsset = 'echo-mara';
-    this.echoMara.add(scarf);
+    // Her scarf is the one colour she carries (every witness names it). This
+    // one rides the placeholder until her rig streams in; attachRoseScarf()
+    // then ties the real one to the rig's neck (alpha round 4: the old ring
+    // floated above the rig's head, so she read as a plain grey figure).
+    this.echoMaraFallbackScarf = makeRoseScarf();
+    this.echoMaraFallbackScarf.position.y = 1.42;
+    this.echoMaraFallbackScarf.scale.setScalar(1.6);
+    this.echoMara.add(this.echoMaraFallbackScarf);
     this.campfireRada = makeActor(scene, { name: 'campfire-rada-postal-sorter', color: 0x7f493b, position: [-50.35, 0.5, 33.0], scale: 0.96 });
     this.campfireMiro = makeActor(scene, { name: 'campfire-miro-tram-mechanic', color: 0x3f5660, position: [-54.75, 0.5, 32.8], scale: 1.02 });
     this.campfireSeline = makeActor(scene, { name: 'campfire-seline-laundry-worker', color: 0x6f5874, position: [-54.15, 0.5, 35.8], scale: 0.93 });
@@ -1053,6 +1110,12 @@ export class Chapter3OpeningRuntime {
     this.compassArrow = this.compass.querySelector('.c3-compass__arrow');
     this.compassLabel = this.compass.querySelector('.c3-compass__label');
     document.body.append(this.compass);
+    this.controlsTag = document.createElement('div');
+    this.controlsTag.className = 'nf-tag c3-controls';
+    this.controlsTag.setAttribute('role', 'note');
+    this.controlsTag.setAttribute('aria-label', 'Controls: click to walk, E to look, hold Tab to look around');
+    this.controlsTag.hidden = true;
+    document.body.append(this.controlsTag);
     this.readout = document.createElement('div');
     this.readout.className = 'c3-readout';
     this.readout.hidden = true;
@@ -1277,6 +1340,9 @@ export class Chapter3OpeningRuntime {
     if (!initial.arrivalRead && !this.characterQa) {
       this.showTitleCard();
       this.openArrival();
+    } else if (/-resumed$/.test(initial.lastEvent)) {
+      // Continue from a mid-chapter resume point: the chapter's title card.
+      this.showTitleCard();
     }
     // Everything else streams in while the player is on the platform.
     this.streamDeferredAssets();
@@ -1293,8 +1359,15 @@ export class Chapter3OpeningRuntime {
       const object = this.preview.scene.getObjectByName(id);
       if (object) object.visible = false;
     }
-    if (state.nikaComplete && !state.ticketBoardComplete) {
-      this.stageMinistryHall({ at: 'board' });
+    // Alpha round 4: a resume (or QA start) inside the public hall, before
+    // Nika or at the public table.
+    if (state.transportHallEntered && !state.ticketBoardComplete) {
+      this.stageMinistryHall({ at: state.nikaComplete ? 'board' : null });
+      return;
+    }
+    // Inside the Copper Heron, before the night: the lobby (Hana) or the room.
+    if (state.hotelEntered && !state.slept) {
+      this.stageHotelInterior();
       return;
     }
     // QA starts at the oil line and on the walk to the ministry.
@@ -1306,9 +1379,20 @@ export class Chapter3OpeningRuntime {
       place(this.preview.player, OPENING_POSITIONS.seamApproach);
       place(this.lev, [4.6, 0.5, 10.6]);
     }
+    // The tickets are filed: out on the ministry steps, as the hall left him.
+    if (state.ticketBoardComplete && !state.edaComplete) {
+      place(this.preview.player, OPENING_POSITIONS.transportApproach);
+      place(this.lev, OPENING_POSITIONS.levTransportExterior);
+    }
     if (state.edaComplete && !state.marketCrossed) {
       place(this.preview.player, [-15.6, 0.5, 1.8]);
       place(this.lev, [-14.6, 0.5, 2.9]);
+    }
+    // Olek and his cart have already gone on past the market crossing.
+    if (state.marketCrossed) {
+      this.olekExitElapsed = 9;
+      this.olek.visible = false;
+      if (this.cartObject) this.cartObject.visible = false;
     }
     if (state.marketCrossed && !state.cutInterfaceComplete) {
       place(this.preview.player, OPENING_POSITIONS.cutInterfaceApproach);
@@ -1494,6 +1578,7 @@ export class Chapter3OpeningRuntime {
       || this.levHotelExitElapsed !== null
       || this.butchBedTransition !== null
       || this.sunriseTableauHoldElapsed !== null
+      || this.sunrisePending === true
       || this.nightIgnitionElapsed !== null
       || this.scannerFreezeRemaining > 0
       || (this.model.snapshot().boardedTrain && !this.model.snapshot().chapterComplete);
@@ -1657,12 +1742,47 @@ export class Chapter3OpeningRuntime {
     }
     // Scanner fields use direct movement; a click never paths through them.
     if (!interaction && this.activeField()) return true;
-    if (!interaction) return false;
+    if (!interaction) {
+      // The preview paths Butch to the clicked ground.
+      this.noteControlUsed('walk');
+      return false;
+    }
     this.startInteraction(interaction);
     return true;
   }
 
+  // The controls tag greys a verb once it is used (chapter3Guidance).
+  noteControlUsed(id) {
+    if (this.controlsUsed.has(id)) return false;
+    this.controlsUsed.add(id);
+    return true;
+  }
+
+  updateControlsHint(locked) {
+    const tag = this.controlsTag;
+    if (!tag) return;
+    const hint = controlsHintState({ used: [...this.controlsUsed], locked: locked || this.characterQa });
+    this.controlsHintVisible = hint.visible;
+    if (!hint.visible) {
+      if (!tag.hidden) tag.hidden = true;
+      return;
+    }
+    const html = controlsHintHtml(hint.segments);
+    if (tag.dataset.html !== html) {
+      tag.innerHTML = html;
+      tag.dataset.html = html;
+    }
+    tag.hidden = false;
+    // Just under the task card, left-aligned with it.
+    const card = this.elements.objectiveCard?.getBoundingClientRect();
+    const left = card ? card.left : 18;
+    const top = card && card.height ? card.bottom + 10 : 64;
+    tag.style.left = `${Math.round(left)}px`;
+    tag.style.top = `${Math.round(top)}px`;
+  }
+
   startInteraction(interaction) {
+    this.noteControlUsed('look');
     this.preview.renderer.domElement.classList.remove('interaction-hover');
     const approachValues = typeof interaction.approach === 'function' ? interaction.approach() : interaction.approach;
     const approach = positionFrom(approachValues);
@@ -1741,6 +1861,7 @@ export class Chapter3OpeningRuntime {
     const movementKey = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code);
     if (movementKey) {
       this.keysHeld.add(event.code);
+      if (!this.interactionLocked()) this.noteControlUsed('walk');
       if (this.activeField()) {
         event.preventDefault();
         return true;
@@ -1749,6 +1870,7 @@ export class Chapter3OpeningRuntime {
     if (event.key === 'Tab') {
       event.preventDefault();
       this.tabHeld = true;
+      this.noteControlUsed('tab');
       this.updateOutlines();
       return true;
     }
@@ -2224,19 +2346,35 @@ export class Chapter3OpeningRuntime {
     }
     // The stone is collected when Butch's last line closes, so the shell's
     // one-time first-stone card (~1.1 s after a first pickup) never opens
-    // over the caption.
-    const next = this.nextStoneCount();
-    this.openAmbientDialogue([
-      ...CAMPFIRE_SELINE_STONE_DIALOGUE,
-      { speaker: 'BUTCH', text: `The Echo Stone was hidden in Seline's unclaimed coat. MAGIC STONE ${next.count} / ${next.total}.` },
-    ], { onComplete: () => collectMagicStone('chapter-3') });
+    // over the caption. Alpha round 4 (P2): the count is no longer a Butch
+    // line; the stone gets the same notice as Chapter 2's (chime, a
+    // "ECHO STONE · MAGIC STONE n / 5" toast, the shell's first-stone card).
+    this.openAmbientDialogue(CAMPFIRE_SELINE_STONE_DIALOGUE, { onComplete: () => this.awardEchoStone() });
   }
 
-  // What the count will read once this chapter's stone is in the pocket.
-  nextStoneCount() {
+  // Chapter 2's stone notice (BorrowedLightScene.takeStone): the shared
+  // chime, a short toast with the count and the sockets, then the shell's
+  // one-time first-stone card when this is the journey's first stone.
+  awardEchoStone() {
+    if (magicStoneSnapshot().collected.includes('chapter-3')) return false;
+    collectMagicStone('chapter-3');
+    stoneChime();
     const snapshot = magicStoneSnapshot();
-    const has = snapshot.collected.includes('chapter-3');
-    return { count: snapshot.count + (has ? 0 : 1), total: snapshot.total };
+    const toast = this.stoneToast ?? (this.stoneToast = document.createElement('div'));
+    toast.className = 'c3-stone-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML = `${magicStoneRowHtml(snapshot)}<span>${echoStoneToastText(snapshot)}</span>`;
+    if (!toast.isConnected) document.body.append(toast);
+    toast.classList.remove('is-out');
+    toast.hidden = false;
+    // With the first-stone card coming (~1.1 s), the toast is gone by then.
+    const firstCardComing = Boolean(firstStoneNotice('chapter-3'));
+    window.clearTimeout(this.stoneToastTimer);
+    this.stoneToastTimer = window.setTimeout(() => {
+      toast.classList.add('is-out');
+      this.stoneToastTimer = window.setTimeout(() => { toast.hidden = true; }, 600);
+    }, firstCardComing ? 900 : 3200);
+    return true;
   }
 
   morningCampfireStoneAvailable() {
@@ -2249,12 +2387,9 @@ export class Chapter3OpeningRuntime {
 
   collectMorningCampfireStone() {
     if (!this.morningCampfireStoneAvailable()) return false;
-    const next = this.nextStoneCount();
     this.morningCampfireEchoStone.visible = false;
     this.morningStoneTaken = true;
-    this.openAmbientDialogue([...MORNING_STONE_PICKUP, { speaker: 'BUTCH', text: `The Echo Stone. MAGIC STONE ${next.count} / ${next.total}.` }], {
-      onComplete: () => collectMagicStone('chapter-3'),
-    });
+    this.openAmbientDialogue(MORNING_STONE_PICKUP, { onComplete: () => this.awardEchoStone() });
     return true;
   }
 
@@ -2418,26 +2553,43 @@ export class Chapter3OpeningRuntime {
           this.lev.visible = true;
           this.timeVisual.requestClock(this.model.snapshot().clock, { immediate: true });
           this.preview.resetCamera();
-          this.elements.blackout?.classList.remove('visible');
-          this.showSunrise();
+          // The bench painting comes up under the black; the square is never
+          // seen between the night and the bench (alpha round 4).
+          this.showSunrise({ underBlackout: true });
         }, SLEEP_BLACKOUT_MS - HOTEL_STAGE_TRANSITION_MS);
       },
     });
   }
 
   // Dawn is one painted beat: Butch and Lev on the bench above the city.
-  showSunrise() {
+  // Alpha round 4 (P2): "Do you come up here often?" played while the
+  // painting was still fading in over the square. The bench lines now wait
+  // until the painting is fully up (and, after the night, until the black
+  // has lifted off it).
+  showSunrise({ underBlackout = false } = {}) {
+    this.sunrisePending = true;
     this.elements.sunriseTableau?.classList.add('visible');
     this.elements.sunriseTableau?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('sunrise-tableau-active');
     const continueButton = this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue');
     if (continueButton) { continueButton.disabled = true; continueButton.hidden = true; }
-    this.dialogue.show(SUNRISE_BENCH_DIALOGUE, {
-      onComplete: () => {
-        this.sunriseTableauHoldElapsed = 0;
-        this.updateObjective();
-      },
-    });
+    const startBench = () => {
+      this.sunrisePending = false;
+      this.dialogue.show(SUNRISE_BENCH_DIALOGUE, {
+        onComplete: () => {
+          this.sunriseTableauHoldElapsed = 0;
+          this.updateObjective();
+        },
+      });
+    };
+    globalThis.setTimeout(() => {
+      if (!underBlackout) {
+        startBench();
+        return;
+      }
+      this.elements.blackout?.classList.remove('visible');
+      globalThis.setTimeout(startBench, BLACKOUT_FADE_MS);
+    }, SUNRISE_TABLEAU_FADE_MS);
   }
 
   leaveSunriseTableau() {
@@ -2475,7 +2627,9 @@ export class Chapter3OpeningRuntime {
     this.echoMara.rotation.y = Math.atan2(u.x, u.z);
     this.echoMara.visible = true;
     this.applyEchoMaterial();
+    // The pair, close: the push-in starts with Lev's warning (alpha round 4).
     this.showLines([...STATION_APPROACH_DIALOGUE, ...STATION_MARA_SIGHTED], {
+      focus: this.stationPairFocus(),
       onComplete: () => this.model.sightMara(),
     });
   }
@@ -2579,17 +2733,64 @@ export class Chapter3OpeningRuntime {
     this.updateObjective();
   }
 
+  // Resolves once the city has drawn `frames` more frames (the frame pacer
+  // runs a frame's callbacks only when the GPU has finished the last one),
+  // or after a timeout so a stuck context never holds a fade.
+  afterDrawnFrames(frames = BLACKOUT_DRAWN_FRAMES) {
+    return new Promise((resolve) => {
+      const info = this.preview.renderer?.info?.render;
+      if (typeof requestAnimationFrame !== 'function' || !info) { resolve(); return; }
+      const target = info.frame + frames;
+      const tick = () => (info.frame >= target ? resolve() : requestAnimationFrame(tick));
+      requestAnimationFrame(tick);
+      globalThis.setTimeout(resolve, BLACKOUT_FRAME_TIMEOUT_MS * 4);
+    });
+  }
+
+  // The blackout's CSS fade has finished (on a slow GPU its clock lags the
+  // wall clock, so a fixed wait swapped sets under a half-black screen).
+  untilBlack() {
+    const blackout = this.elements.blackout;
+    if (!blackout) return Promise.resolve();
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        blackout.removeEventListener('transitionend', onEnd);
+        resolve();
+      };
+      const onEnd = (event) => { if (event.propertyName === 'opacity') finish(); };
+      blackout.addEventListener('transitionend', onEnd);
+      // Already black (no transition will run), or a lost event: the fade's
+      // own length, then a generous ceiling.
+      globalThis.setTimeout(() => {
+        if (Number(globalThis.getComputedStyle?.(blackout).opacity ?? 1) >= 0.99) finish();
+      }, BLACKOUT_FADE_MS);
+      globalThis.setTimeout(finish, BLACKOUT_FADE_MS * 5);
+    });
+  }
+
+  // One clean cut through black: fade out fully, run `swap` (after `ready`,
+  // e.g. a streamed set), draw it, fade back in, then `after`.
+  cutThroughBlack(swap, { ready = null, after = null } = {}) {
+    this.elements.blackout?.classList.add('visible');
+    return Promise.all([ready, wait(BLACKOUT_FADE_MS), this.untilBlack()])
+      .then(() => swap())
+      .then(() => this.afterDrawnFrames())
+      .then(() => {
+        this.elements.blackout?.classList.remove('visible');
+        after?.();
+      });
+  }
+
   stageMinistryHall({ at = null } = {}) {
     if (this.insideMinistry || this.ministryTransitioning) return;
     this.ministryTransitioning = true;
     this.preview.stopWalking();
-    this.elements.blackout?.classList.add('visible');
-    // The hall streams in during play; hold the fade until its set is fitted.
-    const ready = Promise.all([
-      this.loadAssetGroup('ministry'),
-      new Promise((resolve) => setTimeout(resolve, HOTEL_STAGE_TRANSITION_MS)),
-    ]);
-    ready.then(() => {
+    // The hall streams in during play; the cut holds black until its set is
+    // fitted and drawn.
+    this.cutThroughBlack(() => {
       const keepVisible = new Set([
         this.ministryHall.group,
         this.preview.player,
@@ -2623,11 +2824,12 @@ export class Chapter3OpeningRuntime {
       this.preview.controls.update();
       this.insideMinistry = true;
       this.startMorningLevFollow();
-      this.ministryTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
+    }, {
+      ready: this.loadAssetGroup('ministry'),
+      after: () => { this.ministryTransitioning = false; },
     });
   }
 
@@ -2635,8 +2837,7 @@ export class Chapter3OpeningRuntime {
     if (!this.insideMinistry || this.ministryTransitioning) return;
     this.ministryTransitioning = true;
     this.preview.stopWalking();
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
+    this.cutThroughBlack(() => {
       this.ministryHall.group.visible = false;
       for (const entry of this.ministryExteriorVisibility) entry.object.visible = entry.visible;
       this.preview.player.visible = true;
@@ -2647,12 +2848,10 @@ export class Chapter3OpeningRuntime {
       this.preview.setCameraOverrideTarget(null);
       this.preview.resetCamera();
       this.insideMinistry = false;
-      this.ministryTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
-    }, 320);
+    }, { after: () => { this.ministryTransitioning = false; } });
   }
 
   stageHotelInterior() {
@@ -2664,12 +2863,10 @@ export class Chapter3OpeningRuntime {
       canvasTransform: this.preview.renderer.domElement.style.transform,
       canvasTransformOrigin: this.preview.renderer.domElement.style.transformOrigin,
     };
-    this.elements.blackout?.classList.add('visible');
-    // The hotel sets stream during play; the fade holds until they are fitted.
-    Promise.all([
-      this.loadAssetGroup('hotel'),
-      new Promise((resolve) => setTimeout(resolve, HOTEL_STAGE_TRANSITION_MS)),
-    ]).then(() => {
+    // The hotel sets stream during play; the cut holds black until they are
+    // fitted and drawn (alpha round 4: no more half-faded "ghost" interior).
+    let greet = false;
+    this.cutThroughBlack(() => {
       const keepVisible = new Set([
         this.hotelHall.group,
         this.preview.player,
@@ -2693,17 +2890,21 @@ export class Chapter3OpeningRuntime {
             ? 'corridor'
             : 'lobby';
       this.setHotelArea(targetArea);
-      this.hotelTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.hoveredId = null;
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
-      // Hana greets him at the desk, so the task card can name her.
-      if (targetArea === 'lobby' && !state.hotelCheckInComplete && !this.hotelGreeted) {
-        this.hotelGreeted = true;
-        this.showLines(HOTEL_ARRIVAL_DIALOGUE);
-      }
+      greet = targetArea === 'lobby' && !state.hotelCheckInComplete && !this.hotelGreeted;
+    }, {
+      ready: this.loadAssetGroup('hotel'),
+      after: () => {
+        this.hotelTransitioning = false;
+        // Hana greets him at the desk, so the task card can name her.
+        if (greet) {
+          this.hotelGreeted = true;
+          this.showLines(HOTEL_ARRIVAL_DIALOGUE);
+        }
+      },
     });
   }
 
@@ -2804,12 +3005,9 @@ export class Chapter3OpeningRuntime {
       return true;
     }
     this.hotelTransitioning = true;
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
-      this.setHotelArea(area, { arrival });
-      this.hotelTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
-    }, 280);
+    this.cutThroughBlack(() => this.setHotelArea(area, { arrival }), {
+      after: () => { this.hotelTransitioning = false; },
+    });
     return true;
   }
 
@@ -2845,8 +3043,7 @@ export class Chapter3OpeningRuntime {
   restoreHotelExterior({ night = false, morning = false } = {}) {
     if (!this.insideHotel || this.hotelTransitioning) return;
     this.hotelTransitioning = true;
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
+    this.cutThroughBlack(() => {
       this.hotelHall.group.visible = false;
       for (const entry of this.hotelExteriorVisibility) entry.object.visible = entry.visible;
       if (night) {
@@ -2860,7 +3057,6 @@ export class Chapter3OpeningRuntime {
       }
       this.insideHotel = false;
       this.hotelArea = null;
-      this.hotelTransitioning = false;
       this.preview.player.visible = true;
       this.preview.player.position.set(49.8, 0.5, -12.2);
       this.preview.stopWalking();
@@ -2879,11 +3075,10 @@ export class Chapter3OpeningRuntime {
       }
       this.preview.resetCamera();
       this.preview.controls.update();
-      this.elements.blackout?.classList.remove('visible');
       this.hoveredId = null;
       this.updateObjective();
       this.updateOutlines();
-    }, 320);
+    }, { after: () => { this.hotelTransitioning = false; } });
   }
   setNightDreamRendering(active) {
     const canvas = this.preview.renderer?.domElement;
@@ -3145,7 +3340,7 @@ export class Chapter3OpeningRuntime {
   }
 
   // ------------------------------------------------------------------ frame
-  update(dt) {
+  update(dt, { final = true } = {}) {
     if (!this.initialized) return;
     if (this.scannerFreezeRemaining > 0) this.scannerFreezeRemaining = Math.max(0, this.scannerFreezeRemaining - dt);
     if (this.blockedFlashRemaining > 0) {
@@ -3170,6 +3365,7 @@ export class Chapter3OpeningRuntime {
     music.setDialogueActive(this.dialogue.active);
     this.updateMusic();
     this.updateCameraZoom(dt);
+    this.updateStationCamera();
     this.updateScannerFields(dt);
     this.updateStationTrigger();
     this.updateFinalDeparture(dt);
@@ -3283,7 +3479,15 @@ export class Chapter3OpeningRuntime {
       this.timeVisual.update(dt);
       this.preview.setLampGlow?.(chapter3LampGlowForClock(clock));
     }
-    this.updateCharacterAnimations(dt);
+    this.updateResumePoint();
+    // Alpha round 4 (P1): on a slow frame the preview runs several short
+    // steps; the cast's animation and walks take the whole frame's time at
+    // once and the screen work (tags, pips, markers) runs on the last step.
+    this.frameDtAccum = (this.frameDtAccum ?? 0) + dt;
+    if (!final) return;
+    const frameDt = this.frameDtAccum;
+    this.frameDtAccum = 0;
+    this.updateCharacterAnimations(frameDt);
     this.updateButchMarker();
     this.updateButchSilhouette();
     this.updateGuidanceBeacons();
@@ -3396,6 +3600,42 @@ export class Chapter3OpeningRuntime {
     }
   }
 
+  // Alpha round 4 (P1, 3.6): from the platform until Butch boards, the
+  // camera holds the pair (Butch and the woman in the rose scarf), close.
+  stationCloseUpActive(state = this.model.snapshot()) {
+    return state.stationReached && !state.boardedTrain && this.echoMara.visible
+      && !this.insideHotel && !this.insideMinistry;
+  }
+
+  stationPairFocus() {
+    return this.preview.player.position.clone().lerp(this.echoMara.position, 0.5).setY(0.8);
+  }
+
+  // The follow camera stops a dead zone short of an override subject; aim
+  // past it by that much so `point` itself lands in the middle of the frame.
+  centredOverride(point) {
+    const focus = this.preview.controls.target;
+    const [deadX, deadZ] = CAMERA_FOLLOW.deadzone;
+    const aim = point.clone();
+    if (Math.abs(aim.x - focus.x) > 0.05) aim.x += Math.sign(aim.x - focus.x) * Math.min(deadX, Math.abs(aim.x - focus.x));
+    if (Math.abs(aim.z - focus.z) > 0.05) aim.z += Math.sign(aim.z - focus.z) * Math.min(deadZ, Math.abs(aim.z - focus.z));
+    return aim;
+  }
+
+  updateStationCamera() {
+    if (!this.stationCloseUpActive()) {
+      if (this.stationCameraHeld) {
+        this.stationCameraHeld = false;
+        if (!this.dialogue.active) this.preview.setCameraOverrideTarget(null);
+      }
+      return;
+    }
+    // A line frames its own speaker (frameSpeaker, with the pair as focus).
+    if (this.dialogue.active) return;
+    this.stationCameraHeld = true;
+    this.preview.setCameraOverrideTarget(this.centredOverride(this.stationPairFocus()));
+  }
+
   // Street zoom: closer than the old overview, a little closer in dialogue.
   updateCameraZoom(dt) {
     if (this.insideHotel || this.insideMinistry || this.preview.developerMode) return;
@@ -3404,6 +3644,8 @@ export class Chapter3OpeningRuntime {
     // LOW quality frames a little closer: less city in view, larger cast.
     if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
+    // Alpha round 4: the station beat, close on Butch and her.
+    if (this.stationCloseUpActive(state)) target = this.baseZoom + STATION_CLOSE_UP_ZOOM;
     // R5: the open carriage door, close, for the empty-seat line.
     if (this.boardedCloseUp && state.boardedTrain && state.departureSequenceMs < 11200) target = this.baseZoom + BOARDED_CLOSE_UP_ZOOM;
     if (this.fireCameraActive) target = this.baseZoom + 1.5;
@@ -3629,6 +3871,7 @@ export class Chapter3OpeningRuntime {
     }
     this.tags.end();
     this.updateCompass(locked, shown);
+    this.updateControlsHint(locked);
   }
 
   // R2 P1 (alpha round 3): where the current walk ends, and what its compass
@@ -3685,6 +3928,7 @@ export class Chapter3OpeningRuntime {
       distance,
       // On screen, the target's own Tab tag already names it.
       targetTagShown: Boolean(target && screen?.onScreen && taggedIds.has(target.id)),
+      targetOnScreen: Boolean(screen?.onScreen),
     });
     if (!visible) {
       if (!this.compass.hidden) this.compass.hidden = true;
@@ -3790,6 +4034,19 @@ export class Chapter3OpeningRuntime {
     this.elements.objectiveCard?.classList.add('is-new');
   }
 
+  // Alpha round 4 (P1): every change of beat records where Continue should
+  // resume (chapter3ResumePoint). The page (car03-3d-main.js) writes it to
+  // the save; it ignores dev / router routes.
+  updateResumePoint() {
+    if (this.characterQa) return null;
+    const point = chapter3ResumePoint(this.model.snapshot());
+    const key = point ? `${point.checkpointId}:${point.stage}` : null;
+    if (key === this.lastResumeKey) return point;
+    this.lastResumeKey = key;
+    if (point) globalThis.dispatchEvent?.(new CustomEvent('nightfall:chapter3-resume', { detail: point }));
+    return point;
+  }
+
   updateDiagnosticState() {
     this.preview.container.dataset.gameState = JSON.stringify(this.textStateCompact());
   }
@@ -3835,6 +4092,7 @@ export class Chapter3OpeningRuntime {
       idleLookHint: this.idleLookHintShown,
       destinationPasses: this.destinationPass.passes,
       compass: this.compassShown,
+      controlsHint: { visible: this.controlsHintVisible, used: [...this.controlsUsed] },
       searchHintSeconds: Number(this.searchHintElapsed.toFixed(1)),
       guidanceBeacons: Object.fromEntries(Object.entries(this.guidanceBeacons ?? {}).map(([id, beacon]) => [id, beacon.visible])),
       dialogue: this.dialogue.snapshot(),

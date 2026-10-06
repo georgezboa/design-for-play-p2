@@ -133,6 +133,46 @@ export function makeActor(scene, { name, color, position, scale = 1 }) {
   return group;
 }
 
+// Alpha round 4 (P1): the Mara ahead's rose scarf, the one colour she
+// carries and every witness names. In world metres, built along +Y (the
+// neck bone's axis): a thick collar wrap, a knot at the front and two tails
+// that hang over her chest. Unlit, so it reads at gameplay zoom at dusk and
+// dawn and on the LOW tiers (no lighting maps to lose).
+export const ROSE_SCARF_COLOR = 0xe2577a;
+export function makeRoseScarf({ color = ROSE_SCARF_COLOR } = {}) {
+  const group = new THREE.Group();
+  group.name = 'echo-mara-rose-scarf';
+  const material = new THREE.MeshBasicMaterial({ color, fog: false });
+  const shade = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(0.72), fog: false });
+  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.05, 10, 22), material);
+  collar.rotation.x = Math.PI / 2;
+  const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.04, 8, 22), shade);
+  wrap.rotation.x = Math.PI / 2;
+  wrap.position.y = -0.055;
+  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), material);
+  knot.position.set(0, -0.06, 0.11);
+  const tailGeometry = new THREE.BoxGeometry(0.085, 0.36, 0.03);
+  tailGeometry.translate(0, -0.18, 0);
+  const tailA = new THREE.Mesh(tailGeometry, material);
+  tailA.position.set(-0.03, -0.07, 0.12);
+  tailA.rotation.set(0.22, 0, 0.12);
+  const tailB = new THREE.Mesh(tailGeometry, shade);
+  tailB.position.set(0.035, -0.08, 0.125);
+  tailB.rotation.set(0.18, 0, -0.08);
+  tailB.scale.y = 0.8;
+  group.add(collar, wrap, knot, tailA, tailB);
+  group.traverse((child) => {
+    if (!child.isMesh) return;
+    child.castShadow = false;
+    child.frustumCulled = false;
+    child.userData.echoMaterial = true;
+    child.userData.characterAsset = 'echo-mara';
+  });
+  group.userData.echoMaterial = true;
+  group.userData.characterAsset = 'echo-mara';
+  return group;
+}
+
 export function makeObjectHighlight(object, color = 0x527f77) {
   const materials = [];
   object?.traverse((child) => {
@@ -520,13 +560,16 @@ export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', c
   group.name = name;
   const shaft = new THREE.Mesh(
     new THREE.CylinderGeometry(0.42, 0.62, height, 18, 1, true),
+    // Alpha round 4 (P2, "the ministry marker disappeared mid-walk"): the
+    // column draws over the roofs between it and the camera, so the walk
+    // never loses it behind a building.
     new THREE.MeshBasicMaterial({
-      color, map: texture, transparent: true, opacity: 0.5, depthWrite: false,
+      color, map: texture, transparent: true, opacity: 0.5, depthWrite: false, depthTest: false,
       side: THREE.DoubleSide, fog: false, toneMapped: false,
     }),
   );
   shaft.position.y = height / 2;
-  shaft.renderOrder = 5;
+  shaft.renderOrder = 6;
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.7, 0.88, 40),
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false }),
@@ -534,6 +577,7 @@ export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', c
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.04;
   ring.renderOrder = 5;
+  shaft.frustumCulled = false;
   group.add(shaft, ring);
   group.visible = false;
   scene.add(group);

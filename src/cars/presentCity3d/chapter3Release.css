@@ -41,6 +41,12 @@
 .c3-caption.is-bark { pointer-events: none; width: min(760px, calc(100vw - 48px)); padding: 10px 22px 12px; background: rgba(20, 13, 9, 0.86); }
 .c3-caption.is-bark .nf-caption__text { font-size: calc(19px * var(--nf-scale)); }
 .c3-caption.is-locked .nf-caption__next { display: none; }
+/* An asked topic keeps its number, greyed and struck (alpha round 4). */
+.c3-caption .nf-caption__choice.is-used,
+.c3-caption .nf-caption__choice.is-used:hover {
+  cursor: default; color: rgba(234, 223, 198, 0.42); background: transparent;
+  border-color: rgba(176, 138, 74, 0.28); text-decoration: line-through; text-decoration-color: rgba(224, 162, 74, 0.55);
+}
 .nf-caption__speaker[hidden] { display: none !important; }
 
 /* ---------- paper tags in the world ---------- */
@@ -60,6 +66,12 @@
 }
 .c3-compass__label { display: inline-block; }
 :root[data-low-graphics='true'] .c3-compass { filter: none; }
+/* Alpha round 4: the controls tag under the task card until walk and look
+   have been used; a used verb greys out. */
+.c3-controls { transform: none; z-index: 7000; white-space: nowrap; gap: 8px; }
+.c3-controls__verb.is-used { opacity: 0.38; text-decoration: line-through; }
+.c3-controls__dot { color: var(--nf-walnut); }
+.sunrise-tableau-active .c3-controls, body.c3-board-open .c3-controls { display: none; }
 .c3-tag.is-emphasis { z-index: 8850; filter: drop-shadow(0 4px 12px rgba(224, 162, 74, 0.45)) drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5)); }
 
 /* ---------- evidence card ---------- */
@@ -176,6 +188,18 @@ body.c3-board-open .nf-caption { display: none; }
 .c3-sunrise::after { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 42%, #100d10b0 108%); pointer-events: none; }
 .c3-sunrise__continue { position: absolute; z-index: 2; right: 30px; top: 26px; opacity: 0; color: var(--nf-ivory); background: rgba(20, 13, 9, 0.85); border: 1px solid var(--nf-brass) !important; padding: 10px 14px !important; border-radius: 6px; transition: opacity 0.5s ease; }
 .c3-sunrise.ready-to-leave .c3-sunrise__continue { opacity: 1; }
+
+/* ---------- the Echo Stone notice (Chapter 2's toast, in DOM) ---------- */
+.c3-stone-toast {
+  position: fixed; left: 50%; bottom: 17vh; z-index: 8600; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 14px; padding: 12px 26px; pointer-events: none;
+  font: 700 calc(15px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.16em; color: #9fd9cf;
+  background: rgba(3, 7, 11, 0.86); border-top: 1px solid rgba(176, 138, 74, 0.45); border-bottom: 1px solid rgba(176, 138, 74, 0.45);
+  animation: c3-stone-in 0.22s ease both; transition: opacity 0.6s ease;
+}
+.c3-stone-toast[hidden] { display: none; }
+.c3-stone-toast.is-out { opacity: 0; }
+@keyframes c3-stone-in { from { opacity: 0; } to { opacity: 1; } }
 
 /* ---------- fades, vignette, end card ---------- */
 .c3-blackout { position: fixed; inset: 0; z-index: 9700; pointer-events: none; opacity: 0; background: #000; transition: opacity 0.7s linear; }

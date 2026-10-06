@@ -127,15 +127,29 @@ export const SEAM_DIALOGUE = Object.freeze([
   { speaker: 'LEV', text: 'Tell me what you can see before I tell you what I think.' },
 ]);
 
+// Alpha round 4 (P1, the choices renumbered after each pick): a checklist
+// menu keeps every topic at its number. An asked topic stays where it was,
+// struck and greyed (`used`: it cannot be chosen again), and Continue
+// appears after the first topic as the LAST option, so pressing the same
+// number twice can never take it by accident.
+export function checklistMenu({ text, topics, asked = [], done }) {
+  const seen = new Set(asked);
+  const choices = topics.map(({ topic, ...choice }) => (seen.has(topic) ? { ...choice, used: true } : { ...choice }));
+  if (seen.size) choices.push({ ...done });
+  return { speaker: 'CHOOSE', text, choices };
+}
+
 export function seamMenu(observed = []) {
-  const seen = new Set(observed);
-  const choices = [
-    { id: 'seam-geometry', label: 'Follow the shape of the line.' },
-    { id: 'seam-fuel', label: 'Check the smell without touching it.' },
-    { id: 'seam-cleaning', label: 'Look at the pale marks along the edges.' },
-  ].filter((choice) => !seen.has(choice.id.replace('seam-', '')));
-  if (seen.size) choices.push({ id: 'seam-conclude', label: 'Give Lev your conclusion. (Continue)' });
-  return { speaker: 'CHOOSE', text: 'Inspect the oil line.', choices };
+  return checklistMenu({
+    text: 'Inspect the oil line.',
+    topics: [
+      { topic: 'geometry', id: 'seam-geometry', label: 'Follow the shape of the line.' },
+      { topic: 'fuel', id: 'seam-fuel', label: 'Check the smell without touching it.' },
+      { topic: 'cleaning', id: 'seam-cleaning', label: 'Look at the pale marks along the edges.' },
+    ],
+    asked: observed,
+    done: { id: 'seam-conclude', label: 'Give Lev your conclusion. (Continue)' },
+  });
 }
 
 export const SEAM_TOPIC_RESPONSES = Object.freeze({
@@ -181,13 +195,15 @@ export const NIKA_OPENING = Object.freeze([
 ]);
 
 export function nikaTopicMenu(asked = []) {
-  const seen = new Set(asked);
-  const choices = [
-    { id: 'nika-reservation', label: 'Who holds seat forty-three tomorrow?' },
-    { id: 'nika-sale', label: 'What else was charged to that seat?' },
-  ].filter((choice) => !seen.has(choice.id.replace('nika-', '')));
-  if (seen.size) choices.push({ id: 'nika-done', label: 'Print both tickets. (Continue)' });
-  return { speaker: 'CHOOSE', text: 'What do you ask Nika?', choices };
+  return checklistMenu({
+    text: 'What do you ask Nika?',
+    topics: [
+      { topic: 'reservation', id: 'nika-reservation', label: 'Who holds seat forty-three tomorrow?' },
+      { topic: 'sale', id: 'nika-sale', label: 'What else was charged to that seat?' },
+    ],
+    asked,
+    done: { id: 'nika-done', label: 'Print both tickets. (Continue)' },
+  });
 }
 
 export const NIKA_TOPIC_RESPONSES = Object.freeze({
@@ -272,14 +288,16 @@ export const EDA_OPENING = Object.freeze([
 ]);
 
 export function edaTopicMenu(asked = []) {
-  const seen = new Set(asked);
-  const choices = [
-    { id: 'eda-order', label: 'What did Mara buy?' },
-    { id: 'eda-collector', label: 'Who collected it?' },
-    { id: 'eda-face', label: 'What did she look like?' },
-  ].filter((choice) => !seen.has(choice.id.replace('eda-', '')));
-  if (seen.size) choices.push({ id: 'eda-done', label: 'Find the porter. (Continue)' });
-  return { speaker: 'CHOOSE', text: 'What do you ask Eda?', choices };
+  return checklistMenu({
+    text: 'What do you ask Eda?',
+    topics: [
+      { topic: 'order', id: 'eda-order', label: 'What did Mara buy?' },
+      { topic: 'collector', id: 'eda-collector', label: 'Who collected it?' },
+      { topic: 'face', id: 'eda-face', label: 'What did she look like?' },
+    ],
+    asked,
+    done: { id: 'eda-done', label: 'Find the porter. (Continue)' },
+  });
 }
 
 export const EDA_TOPIC_RESPONSES = Object.freeze({
@@ -340,14 +358,16 @@ export const CUT_INTERFACE_OPENING = Object.freeze([
 ]);
 
 export function cutInterfaceMenu(observed = []) {
-  const seen = new Set(observed);
-  const choices = [
-    { id: 'cut-cut', label: 'Examine the cut surfaces.' },
-    { id: 'cut-placement', label: 'Check where both loose ends were left.' },
-    { id: 'cut-reconnection', label: 'Test whether the ends can meet without tools.' },
-  ].filter((choice) => !seen.has(choice.id.replace('cut-', '')));
-  if (seen.size) choices.push({ id: 'cut-conclude', label: 'Tell Lev what the interface proves. (Continue)' });
-  return { speaker: 'CHOOSE', text: 'Inspect the broken lower feed.', choices };
+  return checklistMenu({
+    text: 'Inspect the broken lower feed.',
+    topics: [
+      { topic: 'cut', id: 'cut-cut', label: 'Examine the cut surfaces.' },
+      { topic: 'placement', id: 'cut-placement', label: 'Check where both loose ends were left.' },
+      { topic: 'reconnection', id: 'cut-reconnection', label: 'Test whether the ends can meet without tools.' },
+    ],
+    asked: observed,
+    done: { id: 'cut-conclude', label: 'Tell Lev what the interface proves. (Continue)' },
+  });
 }
 
 export const CUT_INTERFACE_RESPONSES = Object.freeze({
@@ -386,26 +406,21 @@ export const HANA_OPENING = Object.freeze([
   { speaker: 'HANA', text: 'Yes. Room six. She paid cash and asked me not to write a name.' },
 ]);
 
-// Alpha round 3 (pacing): the ledger question is the one the night needs.
-// Once it is asked, "Take the room" leads the menu and the other two
-// questions stay below it, optional. (Any one question still unlocks it.)
+// Alpha round 3 (pacing) put "Take the room" first once the ledger question
+// was asked; in round 4 (P1) a repeated "1" then skipped Hana's other two
+// questions and took the room. It is the last option again, like every
+// Continue. (Any one question still unlocks it.)
 export function hanaTopicMenu(asked = []) {
-  const seen = new Set(asked);
-  const choices = [
-    { id: 'hana-register', label: 'Ask why the register line was left blank.' },
-    { id: 'hana-departure', label: 'Ask when she left.' },
-    { id: 'hana-face', label: 'Ask whether Hana saw her face.' },
-  ].filter((choice) => !seen.has(choice.id.replace('hana-', '')));
-  const done = { id: 'hana-done', label: 'Take the room. (Continue)' };
-  if (seen.has('register')) {
-    return {
-      speaker: 'CHOOSE',
-      text: 'Take the room, or ask Hana more.',
-      choices: [done, ...choices.map((choice) => ({ ...choice, label: `${choice.label} (Optional)` }))],
-    };
-  }
-  if (seen.size) choices.push(done);
-  return { speaker: 'CHOOSE', text: 'Ask Hana about the previous guest.', choices };
+  return checklistMenu({
+    text: asked.length ? 'Ask Hana more, or take the room.' : 'Ask Hana about the previous guest.',
+    topics: [
+      { topic: 'register', id: 'hana-register', label: 'Ask why the register line was left blank.' },
+      { topic: 'departure', id: 'hana-departure', label: 'Ask when she left.' },
+      { topic: 'face', id: 'hana-face', label: 'Ask whether Hana saw her face.' },
+    ],
+    asked,
+    done: { id: 'hana-done', label: 'Take the room. (Continue)' },
+  });
 }
 
 export const HANA_TOPIC_RESPONSES = Object.freeze({
@@ -496,6 +511,12 @@ export const CAMPFIRE_SELINE_DIALOGUE = Object.freeze([
 export const MORNING_STONE_PICKUP = Object.freeze([
   { speaker: 'BUTCH', text: 'Something blue catches in the cold ashes, under a coat someone left by the fire.' },
 ]);
+
+// Alpha round 4 (P2): the stone is announced by the shared stone notice,
+// worded like Chapter 2's ("GRID STONE · MAGIC STONE 2 / 5"), not by a Butch
+// line (which also called the coat "Seline's" when she had just said it was
+// an unclaimed coat).
+export const echoStoneToastText = ({ count, total }) => `ECHO STONE · MAGIC STONE ${count} / ${total}`;
 
 // ---------------------------------------------------------------- station
 export const STATION_APPROACH_DIALOGUE = Object.freeze([
