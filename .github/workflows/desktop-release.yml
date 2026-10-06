@@ -78,23 +78,47 @@ jobs:
           path: packages
           merge-multiple: true
       - run: ls -la packages
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: playtest-${{ github.run_number }}
-          target_commitish: ${{ github.sha }}
-          name: NIGHTFALL playtest ${{ github.run_number }}
-          prerelease: true
-          make_latest: false
-          files: packages/*
-          body: |
-            NIGHTFALL — playtest build (${{ github.sha }})
+      # The gh CLI, not softprops/action-gh-release: on run #2 the release API
+      # answered 500 once and then three of the five large uploads died with
+      # no retry. Here every file is uploaded on its own with retries, and the
+      # job fails only if a file is still missing at the end.
+      - name: Publish the pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: playtest-${{ github.run_number }}
+          TITLE: NIGHTFALL playtest ${{ github.run_number }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -u
+          cat > notes.md <<'NOTES'
+          NIGHTFALL — playtest build
 
-            **Mac:** download the `.dmg` (or `-mac.zip`), drag NIGHTFALL to Applications. First launch: right-click the app → **Open** → **Open** (the build is not notarized yet).
-            **Windows:** download `-win-setup.exe` (or the `-win-x64.zip`). If SmartScreen warns, click **More info → Run anyway**.
-            **Linux:** download the `.AppImage`, `chmod +x` it, run it.
+          **Mac:** download the `.dmg` (or `-mac-universal.zip`), drag NIGHTFALL to Applications. First launch: right-click the app → **Open** → **Open** (the build is not notarized yet).
+          **Windows:** download `-win-setup.exe` (or the `-win-x64.zip`). If SmartScreen warns, click **More info → Run anyway**.
+          **Linux:** download the `.AppImage`, `chmod +x` it, run it.
 
-            About 3.5–4.5 hours; saves are automatic (CONTINUE). Settings has LOW GRAPHICS for slower computers. On the title screen, typing 1 1 1 1 opens the test router.
+          About 3.5–4.5 hours; saves are automatic (CONTINUE). Settings has LOW GRAPHICS for slower computers. On the title screen, typing 1 1 1 1 opens the test router.
 
-            **Mac：** 下载 `.dmg`，把 NIGHTFALL 拖进「应用程序」。第一次打开：右键点 App →「打开」→「打开」（还没做苹果公证）。
-            **Windows：** 下载 `-win-setup.exe`。如果 SmartScreen 拦截，点「更多信息 → 仍要运行」。
-            存档自动保存（继续游戏）。电脑比较慢可以在设置里打开 LOW GRAPHICS。
+          **Mac：** 下载 `.dmg`，把 NIGHTFALL 拖进「应用程序」。第一次打开：右键点 App →「打开」→「打开」（还没做苹果公证）。
+          **Windows：** 下载 `-win-setup.exe`。如果 SmartScreen 拦截，点「更多信息 → 仍要运行」。
+          存档自动保存（继续游戏）。电脑比较慢可以在设置里打开 LOW GRAPHICS。
+          NOTES
+          echo "Build: $SHA" >> notes.md
+          # a re-run of this job starts clean
+          gh release delete "$TAG" --yes --cleanup-tag 2>/dev/null || true
+          for attempt in 1 2 3 4 5; do
+            gh release create "$TAG" --target "$SHA" --title "$TITLE" --notes-file notes.md --prerelease && break
+            echo "create failed (attempt $attempt), retrying"; sleep $((attempt * 10))
+          done
+          missing=0
+          for f in packages/*; do
+            ok=0
+            for attempt in 1 2 3 4 5 6; do
+              if gh release upload "$TAG" "$f" --clobber; then ok=1; echo "uploaded $f"; break; fi
+              echo "upload of $f failed (attempt $attempt), retrying"; sleep $((attempt * 15))
+            done
+            [ "$ok" = 1 ] || { echo "::error::could not upload $f"; missing=1; }
+          done
+          gh release view "$TAG" --json assets --jq '.assets[] | "\(.name) \(.size)"'
+          exit $missing
