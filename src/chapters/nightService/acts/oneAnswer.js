@@ -8,11 +8,13 @@
 //              tag  (BL) ←  plate (BR)
 //
 //   intro   the Archivist's arrangement: one clean record, every window locked
-//   punch   click the conductor's hole in Mara's ticket stub: the punch-hole lens
-//   unfile  through the lens, the duplicate reservation has no FILED seal in
-//           1978 — click it there and the windows unlock
-//   plate   zoom into Plate IV: Rosa's drawing, and its lane
-//   tag     turn the orchard case's UNCLAIMED tag over: Bellwether
+//   punch   click the conductor's hole in Mara's ticket stub (PUNCH THE STUB):
+//           the punch-hole lens
+//   unfile  carry the lens onto the duplicate's red FILED seal (CARRY THE
+//           LENS HERE): in 1978 it has none — click it there and the windows
+//           unlock, and the plate and the tag answer
+//   plate   zoom into Plate IV (OPEN PLATE IV): Rosa's drawing, and its lane
+//   tag     turn the orchard case's UNCLAIMED tag over (TURN IT OVER): Bellwether
 //   route   order the windows city → orchard; the office floor is torn in the
 //           present, so the lens must hold 1978 over it while Mara crosses
 //   arrive  Mara (the echo, seen from behind) reaches the orchard gate: both
@@ -34,6 +36,18 @@ import { ONE_ANSWER_FX } from '../art/oneAnswerFx.js';
 const lensOverOffice = { lensOver: { tile: 'duplicate', x: OFFICE_LENS_AT[0], y: OFFICE_LENS_AT[1] } };
 const plateOpen = { state: { tile: 'plate', is: 'drawing' } };
 const officeEdge = { era: 'past', lensAt: [...OFFICE_LENS_AT] };
+/** The plate and the tag answer once the duplicate is unfiled (one prompt at a time). */
+const unfiled = { state: { tile: 'duplicate', is: 'open' } };
+/** The route's composition goal (hints.js unmetSeam): its three joints. */
+const ROUTE_SEAMS = Object.freeze([
+  { a: 'stub', side: 'right', b: 'duplicate', at: CITY_AT },
+  { a: 'duplicate', side: 'bottom', b: 'plate', at: DOWN_AT },
+  { a: 'tag', side: 'right', b: 'plate', at: ORCHARD_AT },
+]);
+// Hints come sooner here than in Chapter 1 (alpha R4 · P1: a stranger was
+// stuck after 14 tries): the first pulse at 10 s on the first step, 15 s after.
+const FIRST_PULSE_MS = 10000;
+const PULSE_MS = 15000;
 
 /** Mara's route: the platform, the office (whole only in 1978), the drawing, the orchard. */
 export const MARA_ROUTE = Object.freeze([
@@ -95,7 +109,8 @@ export const ONE_ANSWER_ACT = defineAct({
             rect: [STUB_HOLE.x - 0.09, STUB_HOLE.y - 0.15, 0.18, 0.3],
             ringRect: [STUB_HOLE.x - 0.025, STUB_HOLE.y - 0.045, 0.05, 0.09],
             do: [{ setFlag: 'punched' }],
-            tag: { x: STUB_HOLE.x + 0.06, y: STUB_HOLE.y - 0.1, angle: -0.3, ring: true },
+            // the first move, in words (alpha R4 · P1): the typed tag with its glint
+            tag: { x: STUB_HOLE.x + 0.05, y: STUB_HOLE.y - 0.13, angle: -0.12, ring: true, text: 'PUNCH THE STUB' },
           }],
         },
       },
@@ -112,6 +127,18 @@ export const ONE_ANSWER_ACT = defineAct({
             bottom: [{ type: 'route', at: DOWN_AT, ...officeEdge }],
           },
           hotspots: [{
+            // today the red FILED seal is all there is: a worded tag says what
+            // to bring to it, and a click on it says why (alpha R4 · P1)
+            id: 'sealToday', kind: 'use', era: 'present', quiet: true,
+            rect: [...SLIP_RECT],
+            requires: { lens: true },
+            tag: { x: SLIP_RECT[0] + 0.02, y: SLIP_RECT[1] + SLIP_RECT[3] + 0.07, angle: -0.06, text: 'CARRY THE LENS HERE' },
+            do: [
+              { sfx: 'mismatch' },
+              { caption: { speaker: 'BUTCH', text: 'FILED, today. Bring her punch hole over it — in 1978 nobody had stamped it yet.', ms: 5200 } },
+              { fx: { name: 'pulse', hint: { lens: true } } },
+            ],
+          }, {
             // in 1978 the reservation carries no seal: unfile it there
             id: 'seal', kind: 'use', era: 'past', once: true, requires: { lens: true },
             rect: [...SLIP_RECT],
@@ -137,7 +164,9 @@ export const ONE_ANSWER_ACT = defineAct({
           drawPast: drawPlateWall,
           hotspots: [{
             id: 'print', kind: 'zoom', to: 'drawing', rect: [...PRINT_RECT],
-            tag: { x: PRINT_RECT[0] + PRINT_RECT[2] + 0.03, y: PRINT_RECT[1] + 0.02, angle: 0.35 },
+            // opens once the record is unfiled: one prompt at a time
+            requires: unfiled,
+            tag: { x: PRINT_RECT[0] + PRINT_RECT[2] + 0.03, y: PRINT_RECT[1] + 0.02, angle: 0.3, text: 'OPEN PLATE IV' },
           }],
         },
         drawing: {
@@ -161,8 +190,9 @@ export const ONE_ANSWER_ACT = defineAct({
           hotspots: [{
             id: 'turn', kind: 'use', era: 'both', once: true,
             rect: [0.14, 0.12, 0.72, 0.76],
+            requires: unfiled,
             do: [{ setState: { tile: 'tag', state: 'face' } }, { sfx: 'paper' }],
-            tag: { x: 0.2, y: 0.16, angle: -0.4 },
+            tag: { x: 0.2, y: 0.16, angle: -0.2, text: 'TURN IT OVER' },
           }],
         },
         face: {
@@ -186,17 +216,23 @@ export const ONE_ANSWER_ACT = defineAct({
         { fx: { name: 'fileStamp', ms: 1100 } },
         { showCard: 'P1' },
         { unlockInput: true },
+        // the card is down: the first move shows itself at once
+        { wait: 500 },
+        { fx: { name: 'pulse', hint: { tile: 'stub', hotspot: 'hole' } } },
       ],
       skip: [],
     },
     {
       id: 'punch',
       when: { hotspot: 'stub.hole' },
-      hint: { tile: 'stub', hotspot: 'hole' },
+      hint: { tile: 'stub', hotspot: 'hole', pulseAt: FIRST_PULSE_MS },
       do: [
         { sfx: 'clack' },
         { enableLens: { tile: 'stub', u: STUB_HOLE.x + 0.14, v: STUB_HOLE.y + 0.12 } },
         { giveItem: 'lens' },
+        // the hole is a lens now: it shows itself, then where it goes
+        { wait: 400 },
+        { fx: { name: 'pulse', hint: { lens: true } } },
       ],
       skip: [{ setFlag: 'punched' }, { enableLens: { tile: 'stub', u: STUB_HOLE.x + 0.14, v: STUB_HOLE.y + 0.12 } }, { giveItem: 'lens' }],
     },
@@ -204,7 +240,7 @@ export const ONE_ANSWER_ACT = defineAct({
       id: 'unfile',
       when: { hotspot: 'duplicate.seal' },
       // the ghost hand (hints.js): carry the lens onto the seal, click through it
-      hint: { tile: 'duplicate', lens: true, ghost: { click: { tile: 'duplicate', hotspot: 'seal' } } },
+      hint: { tile: 'duplicate', lens: true, pulseAt: PULSE_MS, ghost: { click: { tile: 'duplicate', hotspot: 'seal' } } },
       do: [
         { lockInput: true },
         { sfx: 'scratch' },
@@ -229,14 +265,14 @@ export const ONE_ANSWER_ACT = defineAct({
     {
       id: 'plate',
       when: plateOpen,
-      hint: { tile: 'plate', hotspot: 'print' },
+      hint: { tile: 'plate', hotspot: 'print', pulseAt: PULSE_MS },
       do: [{ sfx: 'chime' }],
       skip: [{ setState: { tile: 'plate', state: 'drawing' } }],
     },
     {
       id: 'tag',
       when: { state: { tile: 'tag', is: 'face' } },
-      hint: { tile: 'tag', hotspot: 'turn' },
+      hint: { tile: 'tag', hotspot: 'turn', pulseAt: PULSE_MS },
       do: [{ sfx: 'glint' }],
       skip: [{ setState: { tile: 'tag', state: 'face' } }],
     },
@@ -252,6 +288,9 @@ export const ONE_ANSWER_ACT = defineAct({
       hint: {
         tile: 'duplicate',
         lens: true,
+        pulseAt: PULSE_MS,
+        // both ends of the first joint still apart glow, with a thread between
+        seams: ROUTE_SEAMS,
         ghost: [
           { drag: [{ tile: 'stub', slot: 0 }, { tile: 'duplicate', slot: 1 }, { tile: 'plate', slot: 3 }, { tile: 'tag', slot: 2 }] },
           { lens: { tile: 'duplicate', u: OFFICE_LENS_AT[0], v: OFFICE_LENS_AT[1] } },

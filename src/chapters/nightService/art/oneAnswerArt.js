@@ -433,10 +433,16 @@ function rosaDrawing(c, w, h, { past = false, seed = 531 } = {}) {
     }
     c.restore();
   };
+  // crayon colouring: back-and-forth strokes wide enough to overlap into a
+  // streaky wash, softened a touch, so it never reads as a hard zig-zag
+  // (alpha R4 · P2: the zoomed painting's sky and grass looked aliased)
   const scribble = (color, x0, y0, x1, y1, step = 7, width = 6, alpha = 0.55) => {
     const pts = [];
     for (let x = x0; x <= x1; x += step / w) pts.push([x, (pts.length % 2 ? y0 : y1)]);
-    crayon(color, width, pts, alpha);
+    c.save();
+    c.filter = 'blur(0.9px)';
+    crayon(color, Math.max(width, step * 1.2), pts, alpha * 0.8);
+    c.restore();
   };
   // sky scribble and a big sun
   scribble('#8fb4d8', 0.02, 0.02, 0.98, 0.16, 11, 9, 0.35);
@@ -488,6 +494,40 @@ function rosaDrawing(c, w, h, { past = false, seed = 531 } = {}) {
   }
 }
 
+/**
+ * Draw `paint` (a w × h picture) into the box x, y, fw, fh, downscaling it by
+ * halves with smoothing on, like a mipmap chain. Falls back to vector drawing
+ * where there is no DOM canvas.
+ */
+function drawMiniature(c, paint, w, h, x, y, fw, fh) {
+  const make = (cw, ch) => {
+    if (typeof document === 'undefined') return null;
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.max(1, Math.round(cw));
+    canvas.height = Math.max(1, Math.round(ch));
+    return canvas;
+  };
+  let level = make(w, h);
+  if (!level) {
+    c.save(); c.translate(x, y); c.scale(fw / w, fh / h); paint(c); c.restore();
+    return;
+  }
+  paint(level.getContext('2d'));
+  const scale = c.getTransform?.().a ?? 1;
+  const targetW = Math.max(1, fw * scale);
+  while (level.width / 2 >= targetW) {
+    const next = make(level.width / 2, level.height / 2);
+    const nc = next.getContext('2d');
+    nc.imageSmoothingEnabled = true;
+    nc.imageSmoothingQuality = 'high';
+    nc.drawImage(level, 0, 0, next.width, next.height);
+    level = next;
+  }
+  c.imageSmoothingEnabled = true;
+  c.imageSmoothingQuality = 'high';
+  c.drawImage(level, x, y, fw, fh);
+}
+
 export function drawPlateWall(ctx) {
   const { w, h } = ctx;
   ctx.paint('oa-plate-wall', (c, env) => {
@@ -514,9 +554,9 @@ export function drawPlateWall(ctx) {
     c.fillRect(x - 14, y - 14, fw + 28, fh + 28);
     c.save();
     c.beginPath(); c.rect(x, y, fw, fh); c.clip();
-    c.translate(x, y);
-    c.scale(fw / w, fh / h);
-    rosaDrawing(c, w, h, { past: PAST(env) });
+    // the miniature is the drawing itself, scaled down by halves (a mipmap):
+    // its crayon strokes never moiré on the wall
+    drawMiniature(c, (dc) => rosaDrawing(dc, w, h, { past: PAST(env) }), w, h, x, y, fw, fh);
     c.restore();
     inkRect(c, x - 26, y - 26, fw + 52, fh + 52, { w: 2 });
     inkRect(c, x, y, fw, fh, { w: 1.2, alpha: 0.6 });

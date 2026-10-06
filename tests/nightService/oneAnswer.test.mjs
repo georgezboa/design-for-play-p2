@@ -96,7 +96,8 @@ test('it starts as the Archivist\'s one clean record, locked: only the ticket st
   assert.equal(model.state.lens.enabled, false);
   assert.ok(Object.keys(model.state.tiles).every((tile) => !model.canDrag(tile)), 'every window is locked');
   const hot = availableActions(model).filter((a) => a.kind === 'hotspot').map((a) => `${a.tile}.${a.id}`).sort();
-  assert.deepEqual(hot, ['plate.print', 'stub.hole', 'tag.turn']);
+  // one prompt at a time (alpha R4): the plate and the tag wait for the unfiling
+  assert.deepEqual(hot, ['stub.hole']);
   assert.deepEqual(model.links(), []);
 });
 
@@ -109,7 +110,12 @@ test('the punch-hole lens comes out of Mara\'s ticket stub; the seal is only rem
   // the seal cannot be clicked in the present
   const seal = model.hotspots('duplicate').find((h) => h.id === 'seal');
   model.moveLens(40, 40);
-  assert.equal(model.clickTile('duplicate', seal.rect[0] + 0.05, seal.rect[1] + 0.05), false);
+  // today it only answers: FILED, bring the punch hole over it
+  const said = record(model);
+  assert.ok(model.clickTile('duplicate', seal.rect[0] + 0.05, seal.rect[1] + 0.05));
+  settle(model);
+  assert.equal(model.state.tiles.duplicate.state, 'filed');
+  assert.match(said.find(([n]) => n === 'caption')[1].text, /1978/);
   unfile(model);
   assert.equal(model.state.tiles.duplicate.state, 'open');
   assert.ok(Object.keys(model.state.tiles).every((tile) => model.canDrag(tile)), 'unfiled: the windows move');
