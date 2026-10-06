@@ -39,7 +39,9 @@ export const ACT1 = defineAct({
   cards: {
     A1: {
       stamp: 'CLAIM 1978-0412',
-      title: 'MARA VELEZ',
+      // the stub is torn after the V: the full name, VELEZ, is read first on
+      // the clerk's note in Act 3 (card A3), and Echo City's VENN is its duplicate
+      title: 'MARA V——',
       lines: ['One case, unclaimed.', 'The surname was torn from the paper. The punch number is intact.'],
     },
   },

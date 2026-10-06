@@ -133,7 +133,7 @@ test('Act 1 (alpha #4): card A1 opens by itself when the chute fires, and holds 
   settle(model, { cards: false });
   assert.ok(model.hasFlag('ticketDropped'));
   assert.equal(model.state.card?.id, 'A1', 'the claim card is up');
-  assert.equal(log.find(([name]) => name === 'card')[1].card.title, 'MARA VELEZ');
+  assert.equal(log.find(([name]) => name === 'card')[1].card.title, 'MARA V——', 'the torn surname (alpha R4)');
   assert.equal(model.state.ended, null, 'nothing moves on under the card');
   model.closeCard();
   settle(model);
@@ -163,7 +163,7 @@ test('Act 1: reading the claim envelope early shows card A1', () => {
   assert.ok(model.activateHotspot('lockers', 'envelope'));
   const card = log.find(([name]) => name === 'card')[1];
   assert.equal(card.id, 'A1');
-  assert.equal(card.card.title, 'MARA VELEZ');
+  assert.equal(card.card.title, 'MARA V——');
   model.closeCard();
   assert.equal(model.state.card, null);
 });
@@ -215,4 +215,13 @@ test('Act 1: dev ?step= skip lands on each step with a consistent world', () => 
   const conductor = createPanelModel(ACT1, { step: 'conductor' });
   settle(conductor);
   assert.equal(conductor.state.ended?.next, 'act2');
+});
+
+test('the A1 stub is torn after the V; the full surname is first read on A3 (alpha R4)', async () => {
+  const { ACT3 } = await import('../../src/chapters/nightService/acts/act3.js');
+  const a1 = ACTS.act1.cards.A1;
+  assert.equal(a1.title, 'MARA V——');
+  assert.ok(!a1.title.includes('VELEZ'), 'the torn card never prints the name it says is torn');
+  assert.match(a1.lines.join(' '), /surname was torn/);
+  assert.equal(ACT3.cards.A3.title, 'MARA VELEZ');
 });
