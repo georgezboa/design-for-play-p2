@@ -142,7 +142,7 @@ test('the Black Knife fight reads the global volume buses', () => {
   const scene = read('src/chapters/blackKnifeFinal/scenes/BossScene.js');
   assert.match(scene, /const level = vol \* bus\('sfx'\)/);
   assert.match(scene, /volume: MUSIC_BASE_VOLUME \* bus\('music'\)/);
-  assert.match(read('src/chapters/blackKnifeFinal/main.js'), /installPauseMenu\(\{ checkpointId: 'chapter-6-start', controls: CHAPTER_CONTROLS\.blackKnife \}\)/);
+  assert.match(read('src/chapters/blackKnifeFinal/main.js'), /installPauseMenu\(\{\s*checkpointId: 'chapter-6-start',\s*controls: CHAPTER_CONTROLS\.blackKnife,/);
 });
 
 test('text size scales in-chapter dialogue and HUD text', () => {

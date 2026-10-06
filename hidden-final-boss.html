@@ -12,19 +12,23 @@
     <main class="game-shell">
       <section class="stage-wrap" aria-label="The Black Ticket">
         <div id="game"></div>
-        <div class="nf-bt-corner"><button id="pause" class="nf-bt-chip" type="button">P · PAUSE</button><button id="mute" class="nf-bt-chip" type="button">SOUND ON</button></div>
         <div id="menu" class="nf-overlay">
           <div class="nf-board">
             <p class="nf-board__kicker">THE LAST CARRIAGE · ALL FIVE MAGIC STONES</p>
             <h1 class="nf-board__title">THE BLACK TICKET</h1>
             <div class="nf-board__rule"></div>
             <p class="nf-board__intro">The Conductor's true form: the ticket that never gets punched, the line that never ends. Five phases, one for every stone. Raise your shield on the bell and it keeps its charge.</p>
+            <p class="nf-board__intro nf-board__intro--framing">Here Butch flies as his own ticket, the one the clerk punched: the only thing on the line allowed to leave it. Punch the Black Ticket through, and the line can end.</p>
             <div class="nf-board__settings">
+              <fieldset><legend>DIFFICULTY</legend><div class="nf-segmented" id="difficulty">
+                <button type="button" data-value="story">STORY<small>6 lives · slower</small></button><button type="button" class="active" data-value="normal">NORMAL<small>4 lives</small></button>
+              </div></fieldset>
               <fieldset><legend>CAMERA SHAKE</legend><div class="nf-segmented" id="shake"><button class="active" data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
               <fieldset><legend>FLASHING</legend><div class="nf-segmented" id="flash"><button data-value="on" type="button">ON</button><button class="active" data-value="off" type="button">OFF</button></div></fieldset>
             </div>
             <button id="start" class="nf-ticket-button" type="button">DEPART <span>→</span></button>
-            <p class="nf-board__controls"><b>MOVE</b> WASD / ARROWS <i></i> <b>PUNCH</b> Z / SPACE / CLICK <i></i> <b>SHIELD</b> X / C <i></i> <b>BOOST</b> SHIFT <i></i> <b>PAUSE</b> P · ESC</p>
+            <p class="nf-board__controls"><b>MOVE</b> WASD / ARROWS <i></i> <b>PUNCH</b> HOLD SPACE / Z / LEFT CLICK <i></i> <b>DASH</b> HOLD SHIFT / X <i></i> <b>SHIELD</b> E / C / RIGHT CLICK <i></i> <b>PAUSE</b> ESC / P</p>
+            <p class="nf-board__controls nf-board__controls--note">THE CONDUCTOR'S KEYS: SPACE PUNCHES, SHIFT / X DASHES. THE SHIELD IS NEW: E.</p>
             <p class="nf-board__controls" style="margin-top:6px;opacity:.7">ORIGINAL FIGHT BY MATHIAS</p>
           </div>
         </div>
@@ -34,29 +38,13 @@
             <h2 id="result-title" class="nf-board__title nf-board__title--serif"></h2>
             <div class="nf-board__rule"></div>
             <p id="result-copy" class="nf-board__intro"></p>
-            <div id="assist-offer" class="nf-board__settings hidden">
-              <fieldset><legend>ASSIST</legend><div class="nf-segmented"><button data-assist type="button">ASSIST<small>slower bullets · six lives</small></button></div></fieldset>
+            <div id="story-offer" class="nf-board__settings hidden">
+              <fieldset><legend>THE LINE CAN WAIT FOR YOU</legend><div class="nf-segmented"><button data-story type="button">STORY<small>six lives · slower tickets · the retry keeps it</small></button></div></fieldset>
             </div>
             <div class="nf-board__actions">
               <button id="retry-phase" class="nf-ticket-button hidden" type="button"><b>RETRY FROM PHASE</b> <span>↻</span></button>
               <button id="again" class="nf-ticket-button nf-ticket-button--quiet" type="button">FROM THE TOP <span>↺</span></button>
               <button id="ending" class="nf-ticket-button hidden" type="button">THE UNFILED ENDING <span>→</span></button>
-            </div>
-          </div>
-        </div>
-        <div id="pause-overlay" class="nf-overlay hidden">
-          <div class="nf-board">
-            <p class="nf-board__kicker">PAUSED</p>
-            <h2 class="nf-board__title">TAKE A BREATH</h2>
-            <div class="nf-board__rule"></div>
-            <div class="nf-board__settings">
-              <fieldset><legend>CAMERA SHAKE</legend><div class="nf-segmented" id="pause-shake"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
-              <fieldset><legend>FLASHING</legend><div class="nf-segmented" id="pause-flash"><button data-value="on" type="button">ON</button><button data-value="off" type="button">OFF</button></div></fieldset>
-            </div>
-            <div class="nf-board__actions">
-              <button id="resume" class="nf-ticket-button" type="button">RESUME <span>→</span></button>
-              <button id="quit" class="nf-ticket-button nf-ticket-button--quiet" type="button">RESTART THE FIGHT <span>↺</span></button>
-              <button id="title-exit" class="nf-ticket-button nf-ticket-button--quiet" type="button">RETURN TO TITLE <span>⌂</span></button>
             </div>
           </div>
         </div>

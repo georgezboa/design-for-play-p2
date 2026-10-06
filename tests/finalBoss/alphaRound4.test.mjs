@@ -159,6 +159,8 @@ describe('after an ending, the journey says it is complete', () => {
     assert.match(normal.stones.stamp, /^1 \/ 5/);
     assert.match(CHECKPOINT_HINT, /LOAD · CHECKPOINTS/);
     assert.deepEqual(normal.checkpoints.map(({ id }) => id), ['chapter-1-start', 'chapter-2-start', 'chapter-6-start']);
+    const { missingStoneNotice } = await import('../../src/shell/magicStones.js');
+    assert.match(missingStoneNotice(['chapter-1']).hint, /LOAD · CHECKPOINTS/, 'the title\'s missing-stone card can say how to go back');
     const unfiled = journeyCompleteCard({ ...save, magicStones: ['chapter-1', 'chapter-2', 'chapter-3', 'chapter-4', 'black-knife'] }, 'true');
     assert.match(unfiled.kicker, /CLOSED/);
     assert.equal(unfiled.stones, null);
@@ -187,5 +189,59 @@ describe('Movement III and the departure', () => {
     assert.match(battle, /\/\/ locomotive \(x 7\.6 … 13\)/);
     assert.match(battle, /RETURN · \$\{paintReturnDamage/);
     assert.doesNotMatch(battle, /lastPointer < 3\.5/);
+  });
+});
+
+describe('the Black Ticket: STORY, Chapter 6 keys, the shared pause menu', () => {
+  it('STORY is gentler on every axis and is offered after the first failure', async () => {
+    const { BT_DIFFICULTIES, STORY_OFFER_AFTER_FAILURES, btDifficulty } = await import('../../src/chapters/blackKnifeFinal/constants.js');
+    const { story, normal } = BT_DIFFICULTIES;
+    assert.ok(story.lives > normal.lives);
+    assert.ok(story.bulletScale < normal.bulletScale);
+    assert.ok(story.recoveryScale > normal.recoveryScale);
+    assert.ok(story.hitRadius < normal.hitRadius);
+    assert.ok(story.hitInvuln > normal.hitInvuln);
+    assert.ok(story.damageScale > normal.damageScale);
+    assert.equal(STORY_OFFER_AFTER_FAILURES, 1);
+    assert.equal(btDifficulty('nope').id, 'normal');
+    const page = await source('hidden-final-boss.html');
+    assert.match(page, /<button type="button" data-value="story">STORY/);
+    assert.match(page, /id="story-offer"/);
+  });
+
+  it('uses the Conductor\'s keys: SPACE punches, SHIFT / X dash, E / C shield', async () => {
+    const { BT_KEYS } = await import('../../src/chapters/blackKnifeFinal/constants.js');
+    assert.match(BT_KEYS.punch, /SPACE/);
+    assert.match(BT_KEYS.dash, /SHIFT \/ X/);
+    assert.doesNotMatch(BT_KEYS.shield, /X/);
+    const scene = await source('src/chapters/blackKnifeFinal/scenes/BossScene.js');
+    assert.match(scene, /boost: this\.keys\.SHIFT\.isDown \|\| this\.keys\.X\.isDown/);
+    assert.match(scene, /JustDown\(this\.keys\.E\)/);
+    assert.doesNotMatch(scene, /JustDown\(this\.keys\.X\)/);
+    const ch6 = await source('final-boss.html');
+    assert.match(ch6, /<b>DASH<\/b> SHIFT \/ X/);
+    const page = await source('hidden-final-boss.html');
+    assert.match(page, /<b>DASH<\/b> HOLD SHIFT \/ X/);
+    assert.match(page, /<b>SHIELD<\/b> E \/ C \/ RIGHT CLICK/);
+  });
+
+  it('has no page-own pause card or SOUND chip: P opens the shared menu, which pauses the fight', async () => {
+    const page = await source('hidden-final-boss.html');
+    assert.doesNotMatch(page, /id="pause-overlay"|id="mute"|id="pause"/);
+    const main = await source('src/chapters/blackKnifeFinal/main.js');
+    assert.match(main, /extraActions: \[\{ label: 'RESTART THE FIGHT', onSelect: restartFight \}\]/);
+    assert.match(main, /if \(e\.code !== 'KeyP'[\s\S]{0,120}pauseMenu\?\.open\?\.\(\);/);
+    assert.match(main, /if \(scene\?\.sys\?\.isActive\?\.\(\)\) scene\.scene\.pause\(\);/);
+    assert.match(main, /fps: \{ panicMax: 0 \}/);
+    const scene = await source('src/chapters/blackKnifeFinal/scenes/BossScene.js');
+    assert.match(scene, /const steps = frameSteps\(deltaMs \/ 1000\);/);
+    assert.doesNotMatch(scene, /Math\.min\(0\.033/);
+  });
+
+  it('frames the passenger in one line on the start card and names Butch on the HUD', async () => {
+    assert.match(await source('hidden-final-boss.html'), /Here Butch flies as his own ticket, the one the clerk punched/);
+    const hud = await source('src/chapters/blackKnifeFinal/entities/Hud.js');
+    assert.match(hud, /BUTCH · HIS PUNCHED TICKET · /);
+    assert.doesNotMatch(hud, /THE PASSENGER · A PUNCHED TICKET/);
   });
 });

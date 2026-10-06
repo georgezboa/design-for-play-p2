@@ -17,7 +17,7 @@ export default class Hud {
     this.bell = createBellMeter(this.root, { lines: [] });
     this.layers = document.createElement('div');
     this.layers.className = 'nf-layers';
-    this.layers.innerHTML = '<b>THE PASSENGER · A PUNCHED TICKET</b><div class="nf-layers__row" data-row="lives"></div><div class="nf-layers__row" data-row="shields" style="margin-top:6px"></div><small></small>';
+    this.layers.innerHTML = '<b></b><div class="nf-layers__row" data-row="lives"></div><div class="nf-layers__row" data-row="shields" style="margin-top:6px"></div><small></small>';
     this.root.append(this.layers);
     this.lastKey = '';
   }
@@ -26,7 +26,12 @@ export default class Hud {
     this.bar.set(boss.hp / BOSS.maxHp, { dt });
     const card = PHASE_CARDS[boss.phase] ?? PHASE_CARDS[0];
     this.bar.setLabel(`PHASE ${boss.phase + 1} / 5 · ${card.chapter}`);
-    this.bar.setState(this.scene.assist ? 'ASSIST' : '', false);
+    this.bar.setState(this.scene.difficulty === 'story' ? 'STORY' : '', false);
+    // As Chapter 6 names Butch's form and the difficulty (BUTCH · CLERK ·
+    // NORMAL): here Butch flies as his own punched ticket.
+    const title = `BUTCH · HIS PUNCHED TICKET · ${this.scene.tuning?.label ?? 'NORMAL'}`;
+    const head = this.layers.querySelector('b');
+    if (head.textContent !== title) head.textContent = title;
     const maxLives = this.scene.maxLives ?? PLAYER.lives;
     const key = `${player.lives}/${maxLives}/${player.shieldCharges}/${player.shielded}`;
     if (key !== this.lastKey) {
@@ -35,7 +40,7 @@ export default class Hud {
       this.layers.querySelector('[data-row="shields"]').innerHTML = Array.from({ length: PLAYER.shieldCharges }, (_, i) => `<i style="width:16px;height:16px;border-radius:50%;clip-path:none;background:${i < player.shieldCharges ? (player.shielded ? '#fff3dc' : '#e0a24a') : 'rgba(234,223,198,0.16)'}"></i>`).join('');
     }
     const boost = Math.round((player.boostFuel / PLAYER.boostMax) * 100);
-    const text = `SHIELDS ${player.shieldCharges}/${PLAYER.shieldCharges} · BOOST ${boost}%`;
+    const text = `SHIELD (E) ${player.shieldCharges}/${PLAYER.shieldCharges} · DASH (SHIFT) ${boost}%`;
     const small = this.layers.querySelector('small');
     if (small.textContent !== text) small.textContent = text;
     const clock = this.scene.bellClock ?? 0;

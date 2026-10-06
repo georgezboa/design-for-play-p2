@@ -1,11 +1,12 @@
 import Phaser from 'phaser';
 import { W, H, COLORS, PLAYER, DEPTHS } from '../constants.js';
 
-// The passenger: a punched ticket flying the last carriage. Abilities:
+// The passenger: Butch's punched ticket flying the last carriage. Abilities
+// (Chapter 6's keys, constants.js BT_KEYS):
 //  - Move (WASD / arrows)
-//  - Fire bullets (hold Z / J / click)
-//  - Shield: brief 1.5s invulnerability bubble (C / L), with cooldown
-//  - Boost: faster movement to dodge (hold SHIFT / K), limited fuel that regenerates
+//  - Punch: fire bullets (hold SPACE / Z / J / left click)
+//  - Shield: brief 1.5s invulnerability bubble (E / C / right click), with cooldown
+//  - Dash: faster movement to dodge (hold SHIFT / X / K), limited fuel that regenerates
 export default class Player {
   constructor(scene) {
     this.scene = scene;
@@ -54,7 +55,7 @@ export default class Player {
   hit() {
     if (!this.vulnerable) return false;
     this.lives -= 1;
-    this.invuln = PLAYER.hitInvuln;
+    this.invuln = this.scene.tuning?.hitInvuln ?? PLAYER.hitInvuln;
     this.scene.playSfx('player-hit', 0.6);
     this.scene.cameras.main.shake(180, 0.012);
     this.scene.emitBurst(this.x, this.y, 26, COLORS.cyan);

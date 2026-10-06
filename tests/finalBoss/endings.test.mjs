@@ -80,17 +80,20 @@ test('a shield raised on the bell is a parry', () => {
   assert.match(scene, /this\.player\.shieldCharges = Math\.min\(PLAYER\.shieldCharges, this\.player\.shieldCharges \+ 1\)/);
 });
 
-test('failures retry from the current phase, and assist is offered after two', () => {
-  assert.equal(ASSIST.offerAfterFailures, 2);
+// Round 4: ASSIST became STORY, offered after the first failure (as in
+// Chapter 6) and selectable on the start board.
+test('failures retry from the current phase, and STORY is offered after the first', () => {
+  assert.equal(ASSIST.offerAfterFailures, 1);
   assert.ok(ASSIST.lives > PLAYER.lives);
   assert.ok(ASSIST.bulletScale < 1);
   const scene = read('src/chapters/blackKnifeFinal/scenes/BossScene.js');
   assert.match(scene, /this\.checkpointPhase = this\.boss\.phase/);
   assert.match(scene, /this\.beginIntro\(\{ fromPhase: phase \}\)/);
   assert.match(scene, /this\.boss\.hp = phaseStartHp\(fromPhase\)/);
-  assert.match(scene, /this\.failures >= ASSIST\.offerAfterFailures/);
+  assert.match(scene, /this\.failures >= STORY_OFFER_AFTER_FAILURES/);
   assert.match(read('hidden-final-boss.html'), /id="retry-phase"/);
-  assert.match(read('hidden-final-boss.html'), /id="assist-offer"/);
+  assert.match(read('hidden-final-boss.html'), /id="story-offer"/);
+  assert.match(read('hidden-final-boss.html'), /<div class="nf-segmented" id="difficulty">/);
 });
 
 test('each of the five phases opens on one stone’s chapter', () => {

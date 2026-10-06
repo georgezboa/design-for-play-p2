@@ -7,10 +7,7 @@
 .nf-finale .nf-overlay { z-index: 30; }
 .nf-finale .nf-title-card, .nf-finale .nf-announce { position: absolute; }
 .nf-board .nf-board__title.nf-board__title--serif { font: 700 calc(46px * var(--nightfall-text-scale, 1)) / 1.1 var(--nf-serif); letter-spacing: 0; text-transform: none; }
-.nf-bt-corner { position: absolute; right: 20px; bottom: 18px; z-index: 13; display: flex; gap: 8px; }
-.nf-bt-chip {
-  padding: 8px 12px; cursor: pointer; font: 700 calc(11px * var(--nightfall-text-scale, 1)) var(--nf-mono); letter-spacing: 0.16em;
-  color: #cdb892; background: rgba(22, 15, 10, 0.86); border: 1px solid rgba(176, 138, 74, 0.8); border-radius: 5px;
-}
-.nf-bt-chip:hover, .nf-bt-chip:focus-visible { outline: none; color: var(--nf-ivory); border-color: var(--nf-amber); }
+/* The framing line and the key note on the start board (alpha round 4). */
+.nf-board .nf-board__intro--framing { margin-top: -10px; font-size: calc(16px * var(--nightfall-text-scale, 1)); font-style: italic; color: #c9b896; }
+.nf-board .nf-board__controls--note { margin-top: 6px; color: #c9ae7c; }
 .nf-finale .nf-bell { top: 80px; }
