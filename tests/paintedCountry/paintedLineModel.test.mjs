@@ -181,3 +181,17 @@ test('a train kept standing loses a coat of paint every few bells, never fails',
   assert.notEqual(platformLines(0).departure, platformLines(2).departure);
   assert.equal(platformLines(0).arrival, 'THE PLATFORM. THE COLOURS WERE ONLY BORROWED.');
 });
+
+test('one wash takes a whole column of paper off the line (varnish first)', () => {
+  const line = createPaintedLine();
+  const plain = BARRIERS.find((b) => !b.varnish);
+  assert.equal(line.wash(plain.col, TRAIN.topRow + 2), true);
+  for (let r = TRAIN.topRow; r < LINE.trackRow; r += 1) assert.equal(line.isBlock(plain.col, r), false, `row ${r}`);
+  assert.equal(line.isBlock(plain.col + 1, TRAIN.topRow), true, 'the next column is still there');
+  const varnished = BARRIERS.find((b) => b.varnish);
+  assert.equal(line.wash(varnished.col, TRAIN.topRow), true);
+  assert.equal(line.isBlock(varnished.col, LINE.trackRow - 1), true, 'the first wash only strips the record');
+  assert.equal(line.varnishAt(varnished.col, LINE.trackRow - 1), 0);
+  assert.equal(line.wash(varnished.col, LINE.trackRow - 1), true);
+  for (let r = TRAIN.topRow; r < LINE.trackRow; r += 1) assert.equal(line.isBlock(varnished.col, r), false);
+});

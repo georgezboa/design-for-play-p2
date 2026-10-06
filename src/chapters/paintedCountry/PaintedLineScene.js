@@ -19,7 +19,7 @@ import { PAPER } from './paperPalette.js';
 import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
 import { addFrames, addLayers, ensureCanvasTexture, ensurePair } from './art/artTextures.js';
 import { paintCountry } from './art/countryArt.js';
-import { paintTrain } from './art/trainArt.js';
+import { TRAIN_WASH_ALPHA, paintTrain, trainTint } from './art/trainArt.js';
 import { RESIDENT, paintResident } from './art/figuresArt.js';
 import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
 import { draftBlockEdges, shadePit } from './art/pencilEdges.js';
@@ -32,6 +32,7 @@ import { reducedMotionActive } from '../../shell/motion.js';
 import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 import { devParam } from '../../devMode.js';
+import { RESUME_REGISTRY_KEY, recordChapter4Resume } from './chapter4Resume.js';
 import { createFallGuard, placeBody } from './fallGuard.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part III, "paint the line ahead".
@@ -175,6 +176,12 @@ export class PaintedLineScene extends Phaser.Scene {
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music?.stop());
 
     this.applyQa();
+    // The line is this page's resume point from here on (it restarts whole:
+    // the chase is a few minutes long). Never on a dev route.
+    if (this.registry.get(RESUME_REGISTRY_KEY)?.room === 'line') this.registry.remove(RESUME_REGISTRY_KEY);
+    if (!this.qa) {
+      try { recordChapter4Resume(createSaveStore(), { room: 'line' }); } catch { /* storage unavailable */ }
+    }
     this.cameras.main.fadeIn(520, 247, 244, 236);
     noteAt(this, this.walker.x + 40, this.walker.y - 70, 'THE LINE AHEAD IS BROKEN.\nPAINT THE TRACK IN · WASH THE PAPER OFF.', { hold: 3200 });
   }
@@ -293,6 +300,14 @@ export class PaintedLineScene extends Phaser.Scene {
     if (this.cellBodies.has(k)) return;
     const object = this.add.rectangle(c * CELL + CELL / 2, r * CELL + CELL / 2, CELL, CELL, 0xffffff, 0);
     this.physics.add.existing(object, true);
+    // Butch's own paint is a one-way platform: he lands on it from above and
+    // passes it from below and the sides, so he can walk and jump under the
+    // steps he built (alpha round 4). The archive's grey stays solid.
+    if (this.line.isPainted(c, r) && !this.line.isBlock(c, r)) {
+      object.body.checkCollision.down = false;
+      object.body.checkCollision.left = false;
+      object.body.checkCollision.right = false;
+    }
     this.solids.add(object);
     this.cellBodies.set(k, object);
   }
@@ -459,9 +474,12 @@ export class PaintedLineScene extends Phaser.Scene {
       const register = (name, part) => {
         this.textures.addCanvas(`${name}:pencil`, part.pencil);
         if (part.wash) this.textures.addCanvas(`${name}:wash`, part.wash);
-        return { pencil: `${name}:pencil`, wash: `${name}:wash`, x: part.x ?? 0, y: part.y ?? 0 };
+        if (part.edge) this.textures.addCanvas(`${name}:edge`, part.edge);
+        return { pencil: `${name}:pencil`, wash: `${name}:wash`, edge: `${name}:edge`, x: part.x ?? 0, y: part.y ?? 0 };
       };
+      this.textures.addCanvas('ch4-line-train-paper', art.paper.canvas);
       lineTrainKeys = {
+        paper: { key: 'ch4-line-train-paper', x: art.paper.x, y: art.paper.y },
         chassis: register('ch4-line-train-chassis', { pencil: art.chassis.pencil, x: art.chassis.x, y: art.chassis.y }),
         parts: Object.fromEntries(LINE_TRAIN_ORDER.map((id) => [id, register(`ch4-line-train-${id}`, art.parts[id])])),
         wheel: register('ch4-line-train-wheel', art.wheel),
@@ -469,21 +487,27 @@ export class PaintedLineScene extends Phaser.Scene {
     }
     const keys = lineTrainKeys;
     this.trainArt = this.add.container(0, 0).setDepth(DEPTH.TRAIN);
+    this.trainArt.add(this.add.image(keys.paper.x, keys.paper.y, keys.paper.key).setOrigin(0));
     this.trainArt.add(this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0));
+    // Each borrowed colour is a gouache body and its pooled edges (trainArt.js).
     this.trainWash = {};
     LINE_TRAIN_ORDER.forEach((id) => {
       const k = keys.parts[id];
-      const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(PART_OF[id].color).setAlpha(0.92);
-      this.trainArt.add([wash, this.add.image(k.x, k.y, k.pencil).setOrigin(0)]);
-      this.trainWash[id] = wash;
+      const tint = trainTint(PART_OF[id].color);
+      const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.body);
+      const edge = this.add.image(k.x, k.y, k.edge).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.edge);
+      this.trainArt.add([wash, edge, this.add.image(k.x, k.y, k.pencil).setOrigin(0)]);
+      this.trainWash[id] = [wash, edge];
     });
+    const wheelTint = trainTint(PART_OF.green.color);
     this.trainWheels = LINE_TRAIN_SPEC.wheels.map((w) => {
-      const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(PART_OF.green.color).setAlpha(0.92);
+      const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(wheelTint).setAlpha(TRAIN_WASH_ALPHA.body);
+      const edge = this.add.image(w.x, w.y, keys.wheel.edge).setTint(wheelTint).setAlpha(TRAIN_WASH_ALPHA.edge);
       const pencil = this.add.image(w.x, w.y, keys.wheel.pencil);
-      this.trainArt.add([wash, pencil]);
-      return { wash, pencil };
+      this.trainArt.add([wash, edge, pencil]);
+      return { wash, edge, pencil };
     });
-    this.trainWash.green = this.trainWheels.map((w) => w.wash);
+    this.trainWash.green = this.trainWheels.flatMap((w) => [w.wash, w.edge]);
     this.returnedShown = new Set();
   }
 
@@ -503,10 +527,10 @@ export class PaintedLineScene extends Phaser.Scene {
         }
         return;
       }
-      images.forEach((image) => image.setAlpha(0.92 * coat));
+      images.forEach((image, i) => image.setAlpha((i % 2 ? TRAIN_WASH_ALPHA.edge : TRAIN_WASH_ALPHA.body) * coat));
     });
     const wheelSpin = -fx / 12;
-    this.trainWheels.forEach(({ wash, pencil }) => { wash.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
+    this.trainWheels.forEach(({ wash, edge, pencil }) => { wash.setRotation(wheelSpin); edge.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
     // Runs where a coat washed off: pale drips down the carriage and engine.
     const g = this.dripArt;
     g.clear();
@@ -595,7 +619,10 @@ export class PaintedLineScene extends Phaser.Scene {
     if (!this.line.inBounds(c, r)) return;
     if (wash) {
       if (this.line.wash(c, r)) {
-        if (!this.line.isPainted(c, r) && !this.line.isBlock(c, r)) this.removeCellBody(c, r);
+        // a barrier peels off a whole column at once (paintedLineModel.js)
+        for (let row = TRAIN.topRow; row <= LINE.trackRow; row += 1) {
+          if (!this.line.isPainted(c, row) && !this.line.isBlock(c, row)) this.removeCellBody(c, row);
+        }
         this.paintDirty = true;
       }
       return;

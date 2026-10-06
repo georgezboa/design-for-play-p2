@@ -25,6 +25,8 @@ import {
   HOLD_SECONDS,
   MONO,
   PaperTag,
+  SERIF,
+  px,
   RestartHold,
   UI,
   drawGlintMarker,
@@ -33,6 +35,8 @@ import {
   showTitleCard,
 } from './chapterUi.js';
 import { devParam } from '../../devMode.js';
+import { RESUME_REGISTRY_KEY, applyStudioResume, recordChapter4Resume } from './chapter4Resume.js';
+import { createSaveStore } from '../../shell/saveSystem.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part II, the still life.
 //
@@ -114,6 +118,11 @@ export class DrawingStudioScene extends Phaser.Scene {
   create(data = {}) {
     this.rnd = makeRandom(0xd4a7);
     this.studio = createDrawingStudio();
+    const resume = this.registry.get(RESUME_REGISTRY_KEY);
+    if (resume?.room === 'studio') {
+      this.registry.remove(RESUME_REGISTRY_KEY);
+      applyStudioResume(this.studio, resume);
+    }
     this.hold = { key: null, progress: 0 };
     this.hoverSourceId = null;
     this.hoverRegionId = null;
@@ -137,17 +146,31 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.bindInput();
     this.startMusic();
     this.applyQaState();
+    if (this.studio.isComplete()) this.frameReveal = 1;
     this.redrawAll();
+    // The studio is this page's resume point from here on.
+    this.recordResume();
 
     if (!data.skipIntro && (!this.qa || this.qa === 'drawing')) {
-      this.locked = true;
+      // Butch can walk under the banner (alpha round 4: dead starts).
+      this.bannerUp = true;
       showTitleCard(this, {
         kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
         main: 'II · THE STILL LIFE',
-        hold: 1600,
-        onDone: () => { this.locked = false; },
+        hold: 1400,
+        onDone: () => { this.bannerUp = false; },
       });
     }
+  }
+
+  // chapter4Resume.js; never on a dev route.
+  recordResume() {
+    if (this.qa || this.transitioning) return;
+    if (!this.saveStore) {
+      try { this.saveStore = createSaveStore(); } catch { this.saveStore = null; }
+    }
+    const snapshot = this.studio.snapshot();
+    recordChapter4Resume(this.saveStore, { room: 'studio', fills: { ...snapshot.fills }, brush: snapshot.brush });
   }
 
   graphics(depth) {
@@ -253,6 +276,9 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.pencilArt = this.add.image(x, y, stillLifeKeys.pencil).setOrigin(0).setDepth(DEPTH.BOARD + 1);
     this.selectionArt = this.graphics(DEPTH.BOARD + 2);
     this.frameArt = this.graphics(DEPTH.BOARD + 3);
+    this.completionLine = this.add.text(x + w / 2, y + h + 34, 'As Rosa remembered it.', {
+      fontFamily: SERIF, fontSize: px(17), color: '#5a3f22', fontStyle: 'italic',
+    }).setOrigin(0.5, 0).setDepth(DEPTH.BOARD + 3).setAlpha(0);
     // the door to the train: drawn, and its doorway behind it
     this.doorArt = this.graphics(DEPTH.BOARD);
     this.doorFace = addLayers(this, 'ch4-studio-door', () => paintDoor(EXIT.w, EXIT.h), {
@@ -375,16 +401,23 @@ export class DrawingStudioScene extends Phaser.Scene {
       this.selectionArt.lineStyle(2.4, UI.amberInk, 0.9).strokeCircle(CANVAS.x + c.x, CANVAS.y + c.y, 12);
     }
     if (snapshot.complete || this.frameReveal > 0.01) this.drawCompletionFrame(snapshot.complete ? Math.max(this.frameReveal, 0.2) : this.frameReveal);
+    else this.completionLine?.setAlpha(0);
   }
 
+  // Done: a warm gilt frame, not the red rule that read as an error (alpha
+  // round 4), and one line under the easel.
   drawCompletionFrame(amount) {
     const g = this.frameArt;
     const { x, y, w, h } = CANVAS;
     const pad = 16 + 6 * amount;
-    g.lineStyle(2.8, PAPER.bookCloth, 0.9 * amount);
-    draftRect(g, makeRandom(0x5150), x - pad, y - pad, w + pad * 2, h + pad * 2, { overshoot: 8, jitter: 1.1 });
-    g.lineStyle(1.4, PAPER.graphite, 0.72 * amount);
-    draftRect(g, makeRandom(0x5151), x - pad + 7, y - pad + 7, w + (pad - 7) * 2, h + (pad - 7) * 2, { overshoot: 5, jitter: 0.7 });
+    g.fillStyle(UI.amber, 0.07 * amount).fillRect(x - pad - 10, y - pad - 10, w + (pad + 10) * 2, h + (pad + 10) * 2);
+    g.lineStyle(5, UI.brass, 0.85 * amount);
+    draftRect(g, makeRandom(0x5150), x - pad, y - pad, w + pad * 2, h + pad * 2, { overshoot: 0, jitter: 0.6 });
+    g.lineStyle(1.6, UI.brassHi, 0.9 * amount);
+    draftRect(g, makeRandom(0x5152), x - pad + 3, y - pad + 3, w + (pad - 3) * 2, h + (pad - 3) * 2, { overshoot: 0, jitter: 0.4 });
+    g.lineStyle(1.2, PAPER.graphite, 0.6 * amount);
+    draftRect(g, makeRandom(0x5151), x - pad + 8, y - pad + 8, w + (pad - 8) * 2, h + (pad - 8) * 2, { overshoot: 4, jitter: 0.7 });
+    this.completionLine?.setAlpha(amount);
   }
 
   redrawDoor() {
@@ -508,13 +541,14 @@ export class DrawingStudioScene extends Phaser.Scene {
       } else if (event.type === 'still-life-complete') {
         this.frameReveal = 0;
         this.tweens.add({ targets: this, frameReveal: 1, duration: 720, ease: 'Back.easeOut' });
-        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, 'AS SHE REMEMBERED IT. THE DOOR IS OPEN.', { tone: 'good', hold: 2200 });
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 96, 'THE DOOR TO THE TRAIN IS OPEN', { tone: 'good', hold: 2200 });
       } else if (event.type === 'still-life-looks-wrong') {
         noteAt(this, cx, CANVAS.y + CANVAS.h + 56, "IT ISN'T AS ROSA REMEMBERED IT.\nWASH OFF WHAT LOOKS WRONG.", { tone: 'warn', hold: 2600 });
       } else if (event.type === 'still-life-opened-again') {
         this.frameReveal = 0;
       }
     });
+    this.recordResume();
     this.redrawAll();
   }
 
@@ -523,7 +557,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     const b = this.brush;
     const snapshot = this.studio.snapshot();
     const progress = this.hold.key ? this.hold.progress / HOLD_SECONDS : 0;
-    if (this.locked || this.transitioning) {
+    if (this.locked || this.transitioning || this.bannerUp) {
       this.tag.hide();
       return;
     }

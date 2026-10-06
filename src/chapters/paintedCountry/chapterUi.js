@@ -13,10 +13,10 @@
 
 import Phaser from 'phaser';
 import { reducedMotionActive } from '../../shell/motion.js';
-import { MIN_FONT_PX, MONO, RESTART_HOLD_SECONDS, SERIF, UI, VIEW_SIZE, clampToSafe } from './chapterConstants.js';
+import { MIN_FONT_PX, MONO, RESTART_HOLD_SECONDS, SERIF, UI, VIEW_SIZE, clampToSafe, stackRect } from './chapterConstants.js';
 
 export {
-  SERIF, MONO, HOLD_SECONDS, RESTART_HOLD_SECONDS, MIN_FONT_PX, UI, VIEW_SIZE, SAFE, clampToSafe,
+  SERIF, MONO, HOLD_SECONDS, RESTART_HOLD_SECONDS, MIN_FONT_PX, UI, VIEW_SIZE, SAFE, clampToSafe, rectsOverlap, stackRect,
 } from './chapterConstants.js';
 
 export const textScale = () => Phaser.Math.Clamp((globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100, 0.8, 1.6);
@@ -36,6 +36,25 @@ export function hideUnderLowGraphics(scene, objects) {
   globalThis.addEventListener?.('nightfall:settings', onSettings);
   scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => globalThis.removeEventListener?.('nightfall:settings', onSettings));
 }
+
+// What is on screen right now, for stacking (stackRect): every visible paper
+// tag and every live feedback slip of the scene, as screen rects.
+function stackLists(scene) {
+  if (!scene.__ch4Stack) {
+    scene.__ch4Stack = { tags: [], slips: [] };
+    // a restarted room builds new tags; forget the old ones
+    scene.events?.once?.(Phaser.Scenes.Events.SHUTDOWN, () => { scene.__ch4Stack = null; });
+  }
+  return scene.__ch4Stack;
+}
+const sceneTags = (scene) => stackLists(scene).tags;
+const sceneSlips = (scene) => stackLists(scene).slips;
+export function occupiedRects(scene, { except = null } = {}) {
+  const tags = sceneTags(scene).filter((tag) => tag !== except && tag.visible && tag.rect).map((tag) => tag.rect);
+  const slips = sceneSlips(scene).filter((slip) => slip.label.active && slip !== except).map((slip) => slipRect(slip.label));
+  return [...tags, ...slips];
+}
+const slipRect = (label) => ({ x: label.x - label.width / 2, y: label.y - label.height, w: label.width, h: label.height });
 
 const screenOf = (scene, worldX, worldY) => {
   const cam = scene.cameras.main;
@@ -58,6 +77,8 @@ export class PaperTag {
     this.container.add([this.shape, this.label, this.glint]);
     this.visible = false;
     this.text = '';
+    this.rect = null;
+    sceneTags(scene).push(this);
   }
 
   show(text, worldX, worldY, { progress = 0, screen = false, lift = 18 } = {}) {
@@ -70,6 +91,7 @@ export class PaperTag {
     const at = screen ? { x: worldX, y: worldY } : screenOf(this.scene, worldX, worldY);
     const pos = clampToSafe(at.x, at.y - lift, w, h);
     this.container.setPosition(pos.x, pos.y - h / 2).setVisible(true);
+    this.rect = { x: pos.x - w / 2, y: pos.y - h, w, h };
     this.visible = true;
     this.label.setPosition(6, 0);
     const g = this.shape;
@@ -109,6 +131,7 @@ export class PaperTag {
   hide() {
     if (!this.visible) return;
     this.visible = false;
+    this.rect = null;
     this.container.setVisible(false);
   }
 
@@ -148,6 +171,11 @@ export function drawGlintMarker(g, time, x, y, { alpha = 1, nub = true } = {}) {
 const TONE = { info: UI.ink, warn: '#8a5a12', no: UI.oxblood, good: '#3f6b52', mara: UI.ink };
 
 export function noteAt(scene, worldX, worldY, text, { tone = 'info', hold = 1500, screen = false, depth = 125 } = {}) {
+  // The same words already rising off the paper: let that slip say them.
+  const slips = sceneSlips(scene);
+  for (let i = slips.length - 1; i >= 0; i -= 1) if (!slips[i].label.active) slips.splice(i, 1);
+  const twin = slips.find((slip) => slip.text === text && slip.label.alpha > 0.5);
+  if (twin) return twin.label;
   const at = screen ? { x: worldX, y: worldY } : screenOf(scene, worldX, worldY);
   const label = scene.add.text(0, 0, text, {
     fontFamily: tone === 'mara' ? SERIF : MONO,
@@ -161,7 +189,10 @@ export function noteAt(scene, worldX, worldY, text, { tone = 'info', hold = 1500
     wordWrap: { width: 440 },
   }).setOrigin(0.5, 1).setScrollFactor(0).setDepth(depth);
   const pos = clampToSafe(at.x, at.y - 12, label.width, label.height);
-  label.setPosition(pos.x, pos.y);
+  // stacked off the tag and the other slips on screen (alpha round 4)
+  const placed = stackRect({ x: pos.x - label.width / 2, y: pos.y - label.height, w: label.width, h: label.height }, occupiedRects(scene));
+  label.setPosition(placed.x + label.width / 2, placed.y + label.height);
+  slips.push({ label, text });
   const rise = reducedMotionActive() ? 0 : 10;
   scene.tweens.add({ targets: label, y: label.y - rise, alpha: 0, delay: hold, duration: 600, onComplete: () => label.destroy() });
   return label;

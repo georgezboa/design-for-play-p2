@@ -147,6 +147,28 @@ export function createPaintedLine() {
       return false;
     }
     const k = key(c, r);
+    // Paper across the line comes off a whole column at a time: one stroke
+    // across a barrier clears it (alpha round 4: testers' strokes left single
+    // cells behind the engine and Butch, and the train kept waiting).
+    if (isBlock(c, r) && r >= TRAIN.topRow && r < LINE.trackRow) {
+      const column = [];
+      for (let row = TRAIN.topRow; row < LINE.trackRow; row += 1) if (isBlock(c, row)) column.push(row);
+      const varnished = column.filter((row) => varnishAt(c, row) > 0);
+      if (varnished.length) {
+        varnished.forEach((row) => {
+          const left = varnishAt(c, row) - 1;
+          if (left > 0) state.varnish.set(key(c, row), left);
+          else state.varnish.delete(key(c, row));
+          emit('varnish-thinned', { c, r: row, coatsLeft: left });
+        });
+        return true;
+      }
+      column.forEach((row) => {
+        state.blocks.delete(key(c, row));
+        emit('barrier-washed', { c, r: row });
+      });
+      return true;
+    }
     const coats = varnishAt(c, r);
     if (coats > 0) {
       if (coats > 1) state.varnish.set(k, coats - 1);

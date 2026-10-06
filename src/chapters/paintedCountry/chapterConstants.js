@@ -44,3 +44,34 @@ export const clampToSafe = (x, y, w, h) => ({
   x: clamp(x, SAFE.left + w / 2, SAFE.right - w / 2),
   y: clamp(y, SAFE.top + h, SAFE.bottom),
 });
+
+// ------------------------------------------------------------ text stacking
+// Alpha round 4: feedback slips landed on each other and on the paper tag
+// ("OFFICIAL RECORD · RIGH…" under "VARNISHED · WASH IT TWICE", "OCHRE" over
+// "TAKE OCHRE"). A new slip is moved off everything already on screen:
+// stacked above it, or below when there is no room above. Screen rects are
+// { x, y, w, h } with (x, y) the top-left corner.
+export const rectsOverlap = (a, b, gap = 0) => a.x < b.x + b.w + gap && b.x < a.x + a.w + gap
+  && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+
+export function stackRect(rect, others, { gap = 4, safe = SAFE, tries = 10 } = {}) {
+  const fits = (r) => r.y >= safe.top && r.y + r.h <= safe.bottom;
+  const clear = (r) => !others.some((o) => rectsOverlap(r, o, gap));
+  if (clear(rect)) return rect;
+  // upwards first: just above whatever it hits, until it is clear
+  let up = { ...rect };
+  for (let i = 0; i < tries; i += 1) {
+    const hit = others.find((o) => rectsOverlap(up, o, gap));
+    if (!hit) break;
+    up = { ...up, y: hit.y - gap - up.h };
+  }
+  if (clear(up) && fits(up)) return up;
+  let down = { ...rect };
+  for (let i = 0; i < tries; i += 1) {
+    const hit = others.find((o) => rectsOverlap(down, o, gap));
+    if (!hit) break;
+    down = { ...down, y: hit.y + hit.h + gap };
+  }
+  if (clear(down) && fits(down)) return down;
+  return rect;
+}
