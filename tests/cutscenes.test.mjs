@@ -236,7 +236,7 @@ test('every call site resolves to the cutscene it means', () => {
   }
 });
 
-test('an id without an authored cutscene keeps its film; authored ones replace theirs', () => {
+test('every id resolves to its authored cutscene; an unknown loader set falls through', () => {
   // every loader is one of the eight; the Museum's two are authored (tests/cutscenes-museum.test.mjs)
   assert.ok(Object.keys(CUTSCENE_LOADERS).every((id) => CUTSCENE_IDS.includes(id)));
   for (const id of ['ending', 'opening', 'chapter5-to-conductor', 'chapter5-to-black-knife']) assert.ok(CUTSCENE_LOADERS[id], id);
@@ -248,7 +248,8 @@ test('an id without an authored cutscene keeps its film; authored ones replace t
   assert.equal(registeredCutscene('chapter-1-to-2', null, { chapter1To2: () => ({}) }), 'chapter1To2');
   const flow = read('src/shell/gameFlow.js');
   assert.match(flow, /const cutsceneName = registeredCutscene\(id, src\);/);
-  assert.match(flow, /if \(cutsceneName\) \{[\s\S]*?startCutscene\(\)\.catch\([\s\S]*?startVideo\(\);[\s\S]*?\} else \{\s*startVideo\(\);/);
+  // the films are retired: a cutscene that fails to load is skipped, never replaced by a video
+  assert.match(flow, /if \(cutsceneName\) \{[\s\S]*?startCutscene\(\)\.catch\([\s\S]*?finish\(\);/);
 });
 
 test('loadCutscene returns a definition, and a failing loader rejects (gameFlow then plays the film)', async () => {

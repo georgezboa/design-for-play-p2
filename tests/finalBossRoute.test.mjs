@@ -39,10 +39,11 @@ test('Museum routes exactly five stones to Black Knife', () => {
   });
 });
 
-test('both frozen route cinematics are present in the integrated public build', async () => {
-  await Promise.all(Object.values(FINAL_BOSS_DESTINATIONS).map(({ cinematicPath }) => (
-    access(new URL(`../public${cinematicPath}`, import.meta.url))
-  )));
+test('both Museum routes resolve to in-engine cutscenes (the films are retired)', async () => {
+  const { registeredCutscene } = await import('../src/shell/cutscene/registry.js');
+  for (const { cinematicId, cinematicPath } of Object.values(FINAL_BOSS_DESTINATIONS)) {
+    assert.ok(registeredCutscene(cinematicId, cinematicPath), cinematicId);
+  }
 });
 
 test('every Conductor movement plays a cleared cue: no Verdi, no uncleared recording', async () => {

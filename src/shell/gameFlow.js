@@ -379,15 +379,16 @@ export function playCinematic({
     root.classList.add('is-cutscene');
     activePlayback.video = pauseShim;
     startCutscene().catch((error) => {
-      console.warn('[cinematic] cutscene unavailable, playing the film', cutsceneName, error);
+      // The films were retired (docs/CUTSCENES_SPEC.md): a cutscene that
+      // cannot load is skipped rather than replaced by a video.
+      console.warn('[cinematic] cutscene unavailable, continuing', cutsceneName, error);
       cutscene?.destroy();
       cutscene = null;
       root.querySelectorAll('.nf-cinematic-canvas, .nf-cinematic-caption, .nf-cinematic-arriving').forEach((node) => node.remove());
       const status = root.querySelector('.nf-cinematic-loading');
       if (status) status.textContent = 'LOADING FILM';
       if (settled) return;
-      if (typeof src === 'string' && src) startVideo();
-      else finish();
+      finish();
     });
   } else {
     startVideo();

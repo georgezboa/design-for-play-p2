@@ -113,11 +113,6 @@ export const CREDIT_GENERATIVE = Object.freeze([
     source: 'https://openai.com/index/image-generation-api/',
   },
   {
-    label: 'MINIMAX HAILUO H3',
-    detail: 'Opening and transition animation production sources; shots were directed, edited and composited by the team.',
-    source: 'https://www.minimax.io/',
-  },
-  {
     label: 'AI-ASSISTED DEVELOPMENT',
     detail: 'OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under team direction.',
   },

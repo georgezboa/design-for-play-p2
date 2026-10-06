@@ -7,9 +7,11 @@ import { dirname, resolve } from 'node:path';
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const source = (path) => readFileSync(resolve(root, path), 'utf8');
 
-test('every delivered film is preserved as a production runtime asset', () => {
-  for (const name of ['start', '1-2', '2-3', '3-4', '4-5', 'end']) {
-    assert.equal(existsSync(resolve(root, `public/cinematics/${name}.mp4`)), true, `${name}.mp4 missing`);
+test('the films are gone: every transition is an in-engine cutscene (docs/CUTSCENES_SPEC.md)', async () => {
+  const { CUTSCENE_IDS, CUTSCENE_LOADERS, FILM_NAMES } = await import('../src/shell/cutscene/registry.js');
+  for (const id of CUTSCENE_IDS) {
+    assert.equal(typeof CUTSCENE_LOADERS[id], 'function', `${id} has no cutscene`);
+    assert.equal(existsSync(resolve(root, `public/cinematics/${FILM_NAMES[id]}.mp4`)), false, `${id}: the old film still ships`);
   }
 });
 
@@ -171,26 +173,11 @@ test('production chapter pages get no TITLE button or T hotkey', () => {
   assert.doesNotMatch(control, /returnToTitle/);
 });
 
-test('every film has a same-size VP9 WebM beside its MP4, chosen by canPlayType', async () => {
-  const { existsSync, statSync } = await import('node:fs');
-  const { cinematicSources, orderCinematicSources } = await import('../src/shell/cinematicSources.js');
-  const { FINAL_BOSS_DESTINATIONS } = await import('../src/shell/finalBossRoute.js');
-  const listed = [...source('src/shell/gameFlow.js').matchAll(/'(\/cinematics\/[^']+\.mp4)'/g)].map((match) => match[1]);
-  assert.equal(listed.length, 6);
-  const films = [...listed, ...Object.values(FINAL_BOSS_DESTINATIONS).map(({ cinematicPath }) => cinematicPath)];
-  for (const film of films) {
-    const [mp4, webm] = cinematicSources(film);
-    assert.match(webm, /\.webm$/, film);
-    const mp4File = new URL(`../public${mp4}`, import.meta.url);
-    const webmFile = new URL(`../public${webm}`, import.meta.url);
-    assert.ok(existsSync(webmFile), `${webm} is missing`);
-    assert.ok(statSync(webmFile).size < statSync(mp4File).size, `${webm} is smaller than its MP4`);
-  }
-  const answers = (mp4, webm) => (type) => (type.startsWith('video/mp4') ? mp4 : webm);
+test('cinematic sources are ordered by canPlayType (kept for any future video)', async () => {
+  const { orderCinematicSources } = await import('../src/shell/cinematicSources.js');
+  const answers = (mp4, webm) => (type) => (type.includes('webm') ? webm : mp4);
   assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
   assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('probably', 'probably')), ['/cinematics/end.mp4', '/cinematics/end.webm']);
   assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('maybe', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
   assert.deepEqual(orderCinematicSources('/x.webm'), ['/x.webm']);
-  const flow = source('src/shell/gameFlow.js');
-  assert.match(flow, /if \(sourceIndex \+ 1 < sources\.length\)/, 'a failed decode tries the other file');
 });
