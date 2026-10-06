@@ -47,7 +47,7 @@ import {
   paintReturnDamage, punchCase, spreadWorldTags, trainHits, underLens,
 } from './finaleModel.js';
 import { ECHO_EXCHANGES } from './echoExchanges.js';
-import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference } from './finaleQuality.js';
+import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference, frameSteps } from './finaleQuality.js';
 import {
   LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
   paintClaimCase, paintConductorCarBackdrop, paintInkButch, paintInkConductor, paintInkTrain, paintInkTrainFront, paintLampNode,
@@ -3414,11 +3414,15 @@ class SpectacleBattle {
   animate(now) {
     requestAnimationFrame(this.animate);
     const wall = Math.max(0, (now - this.lastFrame) / 1000);
-    const dt = Math.min(0.033, wall);
     this.lastFrame = now;
     this.sampleQuality(wall);
     if (globalThis.NIGHTFALL_PAUSED) { this.render(0); return; }
-    this.update(dt);
+    // Game time follows the wall clock down to 10 fps (alpha round 4: the
+    // old 33 ms cap played a 15 fps laptop at half speed), in substeps of at
+    // most 1/30 s so nothing tunnels through a hit test.
+    const steps = frameSteps(wall);
+    steps.forEach((step) => this.update(step));
+    const dt = steps.reduce((sum, step) => sum + step, 0);
     // Behind the departure board the stage is dimmed and still: redraw it
     // at a quarter rate there, leaving the GPU to the movements' uploads.
     if (this.mode === 'menu') {
