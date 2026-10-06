@@ -732,6 +732,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
    above, so it must be scoped as tightly: alpha R4-6) */
 .nf-stones-sockets .nf-stones i.is-held { border-color: #7a4a18; background: radial-gradient(circle at 35% 35%, #ffd79a, #e0a24a 60%, #7a4a18); box-shadow: 0 0 8px rgba(224, 162, 74, .55); }
 .nf-stones-clues { display: grid; gap: .55em; margin: 0; padding: 0; list-style: none; }
+.nf-stones-hint { margin: 1em 0 0; font: calc(13px * var(--nightfall-text-scale, 1)) / 1.4 var(--nf-mono, monospace); letter-spacing: .08em; color: var(--nf-amber, #e0a24a); text-transform: uppercase; }
 .nf-stones-clues li {
   position: relative;
   padding: .5em .8em .5em 1.6em;

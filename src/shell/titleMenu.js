@@ -398,6 +398,12 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     card.querySelector('.nf-stones-sockets').innerHTML = notice.socketsHtml;
     const list = card.querySelector('.nf-stones-clues');
     notice.clues.forEach((clue) => { const item = document.createElement('li'); item.textContent = clue; list.append(item); });
+    if (notice.hint) {
+      const hint = document.createElement('p');
+      hint.className = 'nf-stones-hint';
+      hint.textContent = notice.hint;
+      card.append(hint);
+    }
     panel.append(card, button('BACK TO THE TITLE', closeDialog, 'nf-back'));
     openDialog();
     panel.querySelector('.nf-back')?.focus();
@@ -609,6 +615,15 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     fitFrame = requestAnimationFrame(() => requestAnimationFrame(fitBoard));
   };
 
+  // After an ending, the Ch6 page shows THE JOURNEY IS COMPLETE board
+  // (finalBoss, alpha round 4); the title says so instead of the chapter name.
+  const continueDetail = (save) => {
+    const ending = save?.resume?.checkpointId === 'chapter-6-start' ? save.resume.data?.ending : null;
+    if (ending === 'true') return 'THE JOURNEY IS COMPLETE · CLAIM CLOSED';
+    if (ending === 'normal') return 'THE JOURNEY IS COMPLETE · CLAIM OPEN';
+    return formatSave(save).title;
+  };
+
   const refresh = () => {
     actions.replaceChildren();
     const saves = store.readAll();
@@ -620,7 +635,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
         launchCheckpoint(activeSave.checkpointId, {
           route: resolveCheckpointRoute(activeSave.checkpointId, { slot: activeSave.slot ?? store.getActiveSlot() }),
         });
-      }, activeSave ? '' : 'is-disabled', activeSave ? formatSave(activeSave).title : 'NO JOURNEY FOUND'),
+      }, activeSave ? '' : 'is-disabled', activeSave ? continueDetail(activeSave) : 'NO JOURNEY FOUND'),
       button('LOAD / CHECKPOINTS', () => renderSlots('checkpoints'), '', 'SELECT ARCHIVE OR CHAPTER'),
       button('CREDITS', renderCredits, '', 'CREW · MUSIC · SOURCES · AI'),
       button('SETTINGS', renderSettings, '', 'AUDIO · DISPLAY · ACCESSIBILITY'),

@@ -32,7 +32,7 @@ export const CHECKPOINTS = Object.freeze([
   // saves from the old parkour chapter load the new page.
   { id: 'chapter-2-start', chapter: 2, title: 'BORROWED LIGHT', detail: 'The city runs on light borrowed from the train.', route: '/borrowed-light.html' },
   { id: 'chapter-2-midpoint', chapter: 2, title: 'BORROWED LIGHT · BLACKOUT', detail: 'The city takes its light back.', route: '/borrowed-light.html?section=B' },
-  { id: 'chapter-2-platform', chapter: 2, title: 'BORROWED LIGHT · EVACUATION PLATFORM', detail: 'Eight bells to departure. Keep moving.', route: '/borrowed-light.html?section=C' },
+  { id: 'chapter-2-platform', chapter: 2, title: 'BORROWED LIGHT · EVACUATION PLATFORM', detail: 'Twelve bells to departure. Keep moving.', route: '/borrowed-light.html?section=C' },
   { id: 'chapter-3-start', chapter: 3, title: 'ECHO CITY', detail: 'The duplicate ticket. M. Venn. Move as one.', route: '/car03-3d.html' },
   // Saved when Butch crosses the market scanner beside Olek; the page honours
   // `stage=dusk` only for a save that unlocked it.
@@ -344,7 +344,7 @@ export function returnToTitle(storage = globalThis.sessionStorage) {
 }
 
 export const TITLE_REQUEST_EVENT = 'nightfall:request-title';
-export const RETURN_TO_TITLE_PROMPT = 'Return to the title screen? Unsaved progress since the last checkpoint will be lost.';
+export const RETURN_TO_TITLE_PROMPT = 'Return to the title screen? Progress since your last save point will be lost.';
 
 // Ask before leaving a chapter. A page with the shared pause menu shows its
 // in-game confirmation (it cancels this event); anything else falls back to

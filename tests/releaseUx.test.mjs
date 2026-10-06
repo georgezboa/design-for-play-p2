@@ -165,7 +165,7 @@ test('title exits go through a cancellable request with a fallback confirmation'
     let asked = null;
     assert.equal(requestReturnToTitle({ confirm: (text) => { asked = text; return false; } }), false);
     assert.equal(asked, RETURN_TO_TITLE_PROMPT);
-    assert.match(asked, /Unsaved progress since the last checkpoint will be lost/);
+    assert.match(asked, /Progress since your last save point will be lost/);
   } finally {
     globalThis.dispatchEvent = previousDispatch;
   }

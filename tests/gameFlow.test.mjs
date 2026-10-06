@@ -103,7 +103,7 @@ test('the shared ESC pause menu exposes resume, settings and a confirmed title e
   assert.doesNotMatch(pause, /JOURNEY SAVED/);
   assert.match(pause, /LAST CHECKPOINT · CHAPTER/);
   assert.match(pause, /action\('RETURN TO TITLE', showConfirm/);
-  assert.match(pause, /Unsaved progress since the last checkpoint will be lost\./);
+  assert.match(pause, /Progress since your last save point will be lost\./);
   assert.match(pause, /event\.key !== 'Escape'/);
   assert.match(pause, /pausedPhaserScenes = game\.scene\.getScenes\(true\)/);
   assert.match(pause, /pausedPhaserScenes\.forEach/);

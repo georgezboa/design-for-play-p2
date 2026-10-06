@@ -199,6 +199,19 @@ export function createNightServiceAudio({ music = true } = {}) {
   const onSettings = (event) => syncVolume(event.detail);
   globalThis.addEventListener?.('nightfall:settings', onSettings);
 
+  // Alpha round 4: start at once where autoplay is allowed (the desktop app
+  // sets autoplayPolicy 'no-user-gesture-required'); otherwise the first
+  // gesture still calls unlock() as before.
+  function tryAutoplay() {
+    if (unlocked || typeof document === 'undefined') return;
+    const c = ensure();
+    if (!c) return;
+    const go = () => { if (!unlocked && c.state === 'running') unlock(); };
+    if (c.state === 'running') go();
+    else c.resume?.().then(go).catch(() => {});
+  }
+  globalThis.queueMicrotask?.(tryAutoplay);
+
   return {
     unlock,
     play,

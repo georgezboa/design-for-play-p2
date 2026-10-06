@@ -32,7 +32,7 @@ export const DEFAULT_PAUSE_CONTROLS = Object.freeze([
   ['PAUSE', 'ESC'],
 ]);
 
-export const RETURN_TO_TITLE_WARNING = 'Unsaved progress since the last checkpoint will be lost.';
+export const RETURN_TO_TITLE_WARNING = 'Progress since your last save point will be lost.';
 
 // Describe the active slot's checkpoint for the pause card. The pause menu
 // does not write saves: chapters record their own checkpoints as the player
