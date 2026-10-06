@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v44', () => {
+describe('Chapter 3 integrated final lock v46', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -116,10 +116,20 @@ describe('Chapter 3 integrated final lock v44', () => {
     // beacons draw over roofs and the edge compass stays while the target is
     // off screen; interior cuts swap at full black and lift after the new set
     // has drawn. Toma's composition unchanged. Files: 27 -> 27.
-    assert.equal(sourceFiles.length, 27);
+    // v46 (alpha round 4 fix round, engineer P2, 2026-10-06): the long walks
+    // and the far-city LOD (tests/car03/chapter3LongWalksLod). A walk
+    // ordered 9 m or more away strides (1.45x, the rig jogs); on the four
+    // long walks G · LEV LEADS THE WAY (FOLLOW THE FIRELIGHT at night) cuts
+    // through black with one line to the destination's approach. Static
+    // city models, the perimeter and the built street scenery are drawn only
+    // near the frame and cast only where their shadow can reach it (screen
+    // based, live camera and sun, hysteresis outside the frame). Files: +2
+    // (chapter3LongWalks, chapter3CityLod): 27 -> 29. Toma's composition
+    // unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 29);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'a0ce7362e78498857bfa518c78696157658fd7ec1c636ffcb9059f738ed0910a',
+      '474588a36a608b7ccb6f9051b56a002ab8a4d846c06febdefba2f771a894811c',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

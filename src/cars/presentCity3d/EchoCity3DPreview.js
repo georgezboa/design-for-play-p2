@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
 import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks.js';
+import { Chapter3CityLod } from './chapter3CityLod.js';
 import {
   LOW_PIXEL_RATIO,
   LOWEST_PIXEL_RATIO,
@@ -42,6 +43,10 @@ import {
 } from './city3dConfig.js';
 
 const MATERIAL_ROOT = '/assets/chapter03-3d/materials';
+// City models the runtime moves (the night service's three cars, Olek's cart).
+const MOVING_CITY_MODELS = new Set(['municipal-tram', 'municipal-tram-car-02', 'municipal-tram-car-03', 'porter-handcart']);
+// Built scenery larger than this (ground slabs, long kerbs) is never culled.
+const CITY_LOD_MAX_SCENERY_METRES = 60;
 const GRID_STEP = 1;
 const NAV_BOUNDS = Object.freeze({ minX: -58, maxX: 58, minZ: -28, maxZ: 58 });
 const PROP_OBSTACLES = CITY_MODELS
@@ -1030,8 +1035,6 @@ export const MAX_FRAME_SECONDS = 1;
 // ordered far away strides (chapter3LongWalks.js).
 export const WALK_SPEED = 5.4;
 export const RUN_MULTIPLIER = 1.8;
-// How far past the view a static model's shadow can still fall into it.
-const SHADOW_REACH = 24;
 export const MAX_STEP_SECONDS = 0.1;
 // How far west the follow camera may go for a subject past the west bound
 // (the laundry fire, alpha round 4).
@@ -1180,9 +1183,10 @@ export class EchoCity3DPreview {
     this.cameraShakeAmplitude = 0;
     this.cameraShakeOffset = new THREE.Vector3();
     // Render quality (chapter3Quality.js): a slow GPU drops to LOW once.
-    // Static city models far from the view stop casting shadows on every tier.
-    this.shadowCasters = [];
-    this.shadowLodElapsed = 0;
+    // Far-city LOD (chapter3CityLod.js): a static city model is drawn only
+    // while it is near the screen, and casts only while its shadow can reach
+    // it (alpha round 4 fix round, P2).
+    this.cityLod = new Chapter3CityLod();
     this.qualityTier = 'high';
     const requestedQuality = devParam('quality');
     this.qualityMonitor = createQualityMonitor({
@@ -1435,6 +1439,7 @@ export class EchoCity3DPreview {
         this.lastClick = { result: 'auto-no-path', x: target.x, z: target.z };
       }
     }
+    this.registerStaticSceneryForLod();
     if (this.qualityMonitor.tier === 'low') this.applyQualityTier('low');
     this.refreshStatus();
     this.loadingFill.style.width = '100%';
@@ -1464,43 +1469,49 @@ export class EchoCity3DPreview {
       this.scene.add(this.campfireLight);
     }
     if (spec.occludesPlayer) this.registerOccludingBuilding(root, spec.id);
-    if (!/tram/.test(spec.id)) this.registerShadowCaster(root);
+    // The night service and Olek's cart move at runtime: re-measured.
+    this.registerShadowCaster(root, { dynamic: MOVING_CITY_MODELS.has(spec.id) });
   }
 
-  // Static city models: a far one's shadow never reaches the view, so it
-  // leaves the shadow pass (updateShadowLod).
-  registerShadowCaster(root) {
-    root.updateMatrixWorld(true);
-    const bounds = new THREE.Box3().setFromObject(root);
-    if (bounds.isEmpty()) return;
-    const sphere = bounds.getBoundingSphere(new THREE.Sphere());
-    const meshes = [];
-    root.traverse((object) => { if (object.isMesh && object.castShadow) meshes.push(object); });
-    this.shadowCasters.push({ root, x: sphere.center.x, z: sphere.center.z, radius: sphere.radius, meshes, casting: true });
+  // Static city models join the far-city LOD (updateShadowLod).
+  registerShadowCaster(root, { dynamic = false } = {}) {
+    this.cityLod.register(root, { id: root.name, dynamic });
   }
 
-  // Half the ground diagonal the fixed isometric camera sees, in metres.
-  viewRadius() {
-    const zoom = Math.max(0.1, this.camera.zoom);
-    const halfWidth = (this.camera.right - this.camera.left) / 2 / zoom;
-    const halfHeight = (this.camera.top - this.camera.bottom) / 2 / zoom;
-    // The view is tilted ~54° down: screen height stretches ~1.25× on the ground.
-    return Math.hypot(halfWidth, halfHeight * 1.25);
-  }
-
-  updateShadowLod(dt) {
-    this.shadowLodElapsed += dt;
-    if (this.shadowLodElapsed < 0.5 || !this.shadowCasters.length) return;
-    this.shadowLodElapsed = 0;
-    const reach = this.viewRadius() + SHADOW_REACH;
-    const { x, z } = this.controls.target;
-    const shadowsOn = this.renderer.shadowMap.enabled;
-    for (const caster of this.shadowCasters) {
-      const near = shadowsOn && Math.hypot(caster.x - x, caster.z - z) - caster.radius <= reach;
-      if (near === caster.casting) continue;
-      caster.casting = near;
-      for (const mesh of caster.meshes) mesh.castShadow = near;
+  // The street scenery this class builds itself (lamps, mailboxes,
+  // roadblocks, the railway and the rock cutting: most of the shadow pass's
+  // draw calls) joins the LOD too. Ground and street surfaces (walk meshes,
+  // anything wider than CITY_LOD_MAX_SCENERY_METRES) stay as they are, and
+  // the runtime's own props and cast are added later and never touched.
+  registerStaticSceneryForLod() {
+    const managed = new Set(this.cityLod.entries.map((entry) => entry.root));
+    const walk = new Set(this.walkMeshes);
+    const skip = new Set([this.player, this.destinationMarker, this.navPlane]);
+    const bounds = new THREE.Box3();
+    const size = new THREE.Vector3();
+    for (const object of this.scene.children) {
+      if (managed.has(object) || skip.has(object) || walk.has(object) || object.isLight) continue;
+      let casts = false;
+      object.traverse((child) => { if (child.isMesh && child.castShadow && !walk.has(child)) casts = true; });
+      if (!casts) continue;
+      bounds.setFromObject(object);
+      if (bounds.isEmpty() || bounds.getSize(size).length() > CITY_LOD_MAX_SCENERY_METRES) continue;
+      this.cityLod.register(object, { id: object.name || 'scenery' });
     }
+  }
+
+  // Every simulation step (at most MAX_STEP_SECONDS of camera travel, well
+  // inside the LOD's off-screen margin): what is near the screen is drawn,
+  // what can shadow it casts, the rest is skipped. The developer camera
+  // sees the whole map and keeps everything.
+  updateShadowLod() {
+    if (this.cityLod.enabled === this.developerMode) this.cityLod.setEnabled(!this.developerMode);
+    this.cityLod.update({
+      camera: this.camera,
+      light: this.sunLight ??= this.scene.getObjectByName('city-sun-light'),
+      shadowsOn: this.renderer.shadowMap.enabled,
+      qualityTier: this.qualityTier,
+    });
   }
 
   // Street-lamp glow, 0 (bright afternoon) .. 1 (night): the amber globes,
@@ -1845,7 +1856,7 @@ export class EchoCity3DPreview {
       this.camera.position.add(this.cameraShakeOffset);
     }
     this.updateBuildingOcclusion(dt);
-    this.updateShadowLod(dt);
+    this.updateShadowLod();
     this.gameplayRuntime?.update(dt, { final });
 
     if (this.campfireLight) {
@@ -2050,7 +2061,7 @@ export class EchoCity3DPreview {
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
         quality: { tier: this.qualityTier, pixelRatio: this.renderer.getPixelRatio(), shadows: this.renderer.shadowMap.enabled, ...this.qualityMonitor.snapshot() },
-        shadowCasters: { total: this.shadowCasters.length, casting: this.shadowCasters.filter((caster) => caster.casting).length },
+        cityLod: this.cityLod.snapshot(),
       },
       interaction: this.developerMode
         ? 'developer inspection: left drag pans, right drag orbits, wheel freely zooms; reload without ?dev=1 for production camera'
