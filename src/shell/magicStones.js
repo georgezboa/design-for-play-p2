@@ -97,6 +97,8 @@ export function firstStoneNotice(id, storage = globalThis.localStorage) {
   };
 }
 
+export const MISSING_STONE_HINT = 'To go back for them: LOAD · CHECKPOINTS on the title replays any chapter, and the stones already found stay found.';
+
 // After the normal ending's credits: the count, and the clue of every stone
 // the journey missed. `null` when all five were held.
 export function missingStoneNotice(collectedIds = []) {
@@ -114,6 +116,8 @@ export function missingStoneNotice(collectedIds = []) {
     title: 'The last carriage stayed closed.',
     line: `${MAGIC_STONE_LINE} Where the missing ones were:`,
     clues: missing.map(({ chapter, world, clue }) => `CH ${chapter} · ${world} — ${clue.replace(/^[^:]+:\s*/, '')}`),
+    // How to go back for them (alpha round 4: the card never said).
+    hint: MISSING_STONE_HINT,
     socketsHtml: magicStoneRowHtml(snapshot),
     missing: missing.map(({ id }) => id),
   };

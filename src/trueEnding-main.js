@@ -12,6 +12,7 @@ import { installHoldToSkip } from './shell/finaleUi.js';
 import { music } from './shared/musicDirector.js';
 import { loadFinaleArtSources, paintEndingPanel } from './chapters/finalBoss/finaleArt.js';
 import { REVEAL_ENDS, scriptStateAt } from './trueEndingScript.js';
+import { recordEnding } from './chapters/finalBoss/journeyComplete.js';
 
 installPauseMenu({ checkpointId: 'chapter-6-start', controls: CHAPTER_CONTROLS.trueEnding });
 
@@ -97,7 +98,10 @@ function skipToEnd() {
 }
 
 if (!redirect) {
-  // The credits track, under the whole reveal.
+  // The journey has its ending: Continue says so from now on.
+  recordEnding('true');
+  // The credits track, under the whole reveal (tried at once: the reveal
+  // asks for no key, alpha round 4).
   const track = CREDIT_MUSIC[0];
   music.play('true-ending-credits', { src: track.localFile, volume: 0.42, fade: 3.4, outFade: 1.6, loop: true });
   requestAnimationFrame(() => head.classList.add('is-in'));

@@ -80,3 +80,21 @@ export function createFinaleQualityMonitor({ preference = 'auto', slowFrameMs = 
     },
   };
 }
+
+// Frame-rate independence (alpha round 4): game time follows the wall clock
+// down to 10 fps. A frame's wall time is capped at MAX_FRAME_SECONDS (a
+// longer stall, a tab switch, is not played as one leap; 0.125 s rather
+// than 0.1 so the frame-to-frame jitter of a ~10 fps machine does not cost
+// a fifth of its game time, as measured on software GL) and split into
+// substeps no longer than MAX_STEP_SECONDS, so walks, timers, falling cases
+// and collisions behave on a 12 fps laptop as they do at 60 (nothing jumps
+// through a hit test in one step).
+export const MAX_FRAME_SECONDS = 0.125;
+export const MAX_STEP_SECONDS = 1 / 30;
+
+export function frameSteps(wallSeconds, { cap = MAX_FRAME_SECONDS, step = MAX_STEP_SECONDS } = {}) {
+  const total = Math.min(cap, Math.max(0, Number(wallSeconds) || 0));
+  if (total <= 0) return [];
+  const count = Math.ceil(total / step - 1e-9);
+  return Array.from({ length: count }, () => total / count);
+}

@@ -63,12 +63,16 @@ test('Movements I and II both use the finale face', () => {
   assert.match(battle, /const conductorRainLit = paintRainConductor\(\{ scale: 4, lit: true \}\);/);
 });
 
-test('lamp heads are lanterns: amber glass in a brass cage, never an empty dark square', () => {
+test('lamp heads are lanterns: glass in its line colour in a brass cage, never an empty dark square', () => {
   const lamp = finaleArt.slice(finaleArt.indexOf('export function paintLampNode'));
   const body = lamp.slice(0, lamp.indexOf('\n}\n'));
   assert.doesNotMatch(body, /rgba\(40,44,46,1\)/, 'the old dark-square fill is gone');
-  assert.match(body, /LAMP_NODE_GLASS\[state === 'queued' \? 'queued' : 'idle'\]/);
+  assert.match(body, /const glass = LAMP_NODE_GLASS\[line\]/);
+  assert.match(body, /glass\[state === 'queued' \? 'queued' : 'idle'\]/);
+  assert.match(body, /color: LAMP_NODE_TAG\[line\]/, 'the paper tag is tinted by its line (alpha round 4)');
   assert.match(body, /\[10, 15, 20, 25, 29\.5\]\.forEach\(\(x\) => c\.fillRect\(x, 11, 1, 16\)\)/, 'cage bars');
   assert.match(body, /c\.moveTo\(7, 11\); c\.lineTo\(14, 5\); c\.lineTo\(26, 5\); c\.lineTo\(33, 11\)/, 'a roof');
-  assert.match(finaleArt, /idle: \['#8a5a26', '#4a2e16'\]/, 'unlit glass is still amber');
+  assert.match(finaleArt, /amber: Object\.freeze\(\{ idle: \['#8a5a26', '#4a2e16'\]/, 'unlit amber glass is still amber');
+  assert.match(finaleArt, /teal: Object\.freeze\(\{ idle: \['#2f6f68'/, 'teal glass is teal');
+  assert.match(finaleArt, /rose: Object\.freeze\(\{ idle: \['#9a5462'/, 'rose glass is rose');
 });

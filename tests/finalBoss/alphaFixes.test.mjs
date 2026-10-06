@@ -16,18 +16,21 @@ test('A4-5: every hit names its source, and a fatal fall no longer overwrites th
   assert.match(battle, /this\.showHitFeedback\(this\.lastHit, from\)/);
   assert.match(battle, /this\.showDeathCard\(this\.lastHit \?\? \{ label: HIT_SOURCES\.hit \}\)/);
   // The street-gap line only when the fall did not end the movement.
-  assert.match(battle, /if \(p\.respawns === before\) \{[\s\S]{0,400}?this\.toast\('THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE'\);\s*\}/);
+  assert.match(battle, /if \(p\.respawns === before\) \{[\s\S]{0,400}?this\.toast\(tutor\.gapIsRailing \? 'THE BRIDGE FOLDED · BACK ON THE NEAR ROOF' : 'THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE'\);\s*\}/);
   assert.match(battle, /his ticket is back where this movement began/);
   assert.match(style, /\.nf-hit-flash\[data-side='left'\]/);
 });
 
+// Round 4 moved the steps into finaleModel.js createBellTutorial (model-
+// tested in alphaRound4.test.mjs); the battle feeds it and shows its hint.
 test('Movement II teaches one machine, then the other, then both, with the combined hint before any failure', () => {
-  assert.match(battle, /this\.bell\.tutorial = 'bridge';\s*this\.bell\.strandedFor = 0;/);
-  assert.match(battle, /if \(this\.bell\.tutorial === 'bridge' && node\.line === 'amber' && queued\) this\.bell\.tutorial = 'bridge-wait';/);
-  assert.match(battle, /kind === 'bridge' && \['bridge', 'bridge-wait'\]\.includes\(this\.bell\.tutorial\)\) \{\s*this\.bell\.tutorial = 'lamp';/);
-  assert.match(battle, /if \(this\.bell\.tutorial !== 'done' && !bridgeOut\) \{[\s\S]{0,120}this\.bell\.tutorial = 'combo';/);
-  assert.match(battle, /else if \(tut === 'combo'\) this\.hint\(combo\);/);
-  assert.match(battle, /BOTH BEFORE ONE BELL · THE <kbd>ROSE<\/kbd> SIGNAL IN HIS NEXT LANE/);
+  assert.match(battle, /if \(!keepTutorial\) this\.bell\.tutor = createBellTutorial\(\);/);
+  assert.match(battle, /tutor\.queued\(\{ line: node\.line, lane: node\.lane, nextLane: arena\.plan\.lane \}\)/);
+  assert.match(battle, /if \(kind === 'bridge'\) tutor\.bridgeOut\(\);/);
+  assert.match(battle, /const help = tutor\.exposed\(\{ bridgeOut: arena\.anyBridgeOut\(\) \}\);/);
+  assert.match(battle, /this\.hint\(tutor\.hint\(\{/);
+  const model = read('src/chapters/finalBoss/finaleModel.js');
+  assert.match(model, /BOTH BEFORE ONE BELL · AN <kbd>AMBER<\/kbd> BRIDGE \+ THE <kbd>ROSE<\/kbd> SIGNAL IN HIS NEXT LANE/);
   // Wires from each amber and teal lamp to its machine.
   assert.match(battle, /new THREE\.TubeGeometry\(curve, 28, 0\.05, 6, false\)/);
   assert.match(battle, /THE AMBER LINE IS STILL OUT · PUNCH IT AGAIN ONCE ITS BRIDGE FOLDS/);
@@ -36,7 +39,7 @@ test('Movement II teaches one machine, then the other, then both, with the combi
 test('A4-6: a stranded player gets a return plank, and the post-death grace respects the gap', () => {
   assert.match(battle, /if \(arena\.stranded\(p\.z\) && !this\.transition\) \{[\s\S]{0,300}arena\.extendReturnBridge\(arena\.nearestBridge\(p\.x\)\)/);
   assert.match(battle, /const level = arena\.bridgeLevel\(id\);/);
-  assert.match(battle, /if \(arena && p\.respawnInv > 0 && arena\.fallsAt\(resolved\.x, resolved\.z\) && !arena\.fallsAt\(p\.x, p\.z\)\)/);
+  assert.match(battle, /if \(arena && \(p\.respawnInv > 0 \|\| this\.bell\.tutor\.gapIsRailing\) && arena\.fallsAt\(resolved\.x, resolved\.z\) && !arena\.fallsAt\(p\.x, p\.z\)\)/);
 });
 
 test('Movement IV plays from the keyboard: HOLD E absorbs the nearest colour, HOLD R returns it', () => {
@@ -54,7 +57,8 @@ test('Movement IV plays from the keyboard: HOLD E absorbs the nearest colour, HO
 test('A4-3: at 16:9 the bell dial leaves the Conductor and the hint leaves Butch and the layers', () => {
   assert.match(style, /\.battle-hud \.nf-bell \{\s*left: 20px; top: 16px; transform: none;/);
   assert.match(style, /\.battle-hud \.nf-hint \{\s*top: 82px; bottom: auto;/);
-  assert.match(style, /\.battle-hud\.has-hint \.nf-toast \{ top: 138px; \}/);
+  // Round 4: one banner slot; a toast takes the hint's place, never under it.
+  assert.match(style, /\.battle-hud\.has-toast \.nf-hint\.show \{ opacity: 0;/);
   assert.match(battle, /this\.hud\.classList\.add\('has-hint'\)/);
   assert.match(battle, /this\.conductorRoot\.scale\.setScalar\(isEchoCity \? 2\.85 : index === 3 \? 3\.15 : 3\.8\)/);
 });

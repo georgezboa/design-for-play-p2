@@ -1,8 +1,9 @@
 import Phaser from 'phaser';
 import {
-  W, H, COLORS, BOSS, PLAYER, DEPTHS, ASSIST, BELL_SECONDS, PARRY_WINDOW, PHASE_CARDS,
-  NEAR_RAIL, nearestBellOffset, phaseStartHp,
+  W, H, COLORS, BOSS, PLAYER, DEPTHS, BELL_SECONDS, PARRY_WINDOW, PHASE_CARDS, STORY_OFFER_AFTER_FAILURES,
+  NEAR_RAIL, btDifficulty, nearestBellOffset, phaseStartHp,
 } from '../constants.js';
+import { frameSteps } from '../../finalBoss/finaleQuality.js';
 import { createSfx } from '../sfx.js';
 import { readSettings, volumeForChannel } from '../../../shell/saveSystem.js';
 import { showTitleCard, stampAnnounce } from '../../../shell/finaleUi.js';
@@ -34,7 +35,8 @@ import { createFinaleQualityMonitor, finaleQualityPreference } from '../../final
 // ticket vortex → the last carriage (faster, piston-press waves).
 // A four-second bell runs under the fight: a shield raised on the bell is a
 // parry and keeps its charge. A failure retries from the current phase, and
-// ASSIST (slower bullets, six lives) is offered after two failures.
+// STORY (six lives, slower tickets) is offered after the first failure; it
+// can also be chosen on the start board (alpha round 4).
 const MUSIC_BASE_VOLUME = 0.5;
 // Global Master / Music / SFX buses from the title and pause settings.
 const bus = (channel) => volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? readSettings(), channel);
@@ -54,14 +56,18 @@ export default class BossScene extends Phaser.Scene {
 
     this.fxGfx = this.add.graphics().setDepth(DEPTHS.fx);
 
-    this.keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,Z,J,SPACE,X,C,L,SHIFT,K,P,ESC');
+    // Chapter 6's keys (constants.js BT_KEYS): SPACE / Z punches, SHIFT / X
+    // dashes, E / C (or a right click) raises the shield.
+    this.keys = this.input.keyboard.addKeys('W,A,S,D,UP,DOWN,LEFT,RIGHT,Z,J,SPACE,X,C,E,SHIFT,K,P,ESC');
+    this.input.mouse?.disableContextMenu();
+    this.input.on('pointerdown', (pointer) => { if (pointer.rightButtonDown()) this.shieldRequested = true; });
 
     // Hints are paper tags in the DOM (finale.css .nf-hint), over the canvas.
     this.hintEl = document.createElement('div');
     this.hintEl.className = 'nf-hint';
     (document.querySelector('.stage-wrap') ?? document.body).append(this.hintEl);
     this.failures = 0;
-    this.assist = false;
+    this.difficulty = btDifficulty(battle.settings?.difficulty).id;
     this.maxLives = PLAYER.lives;
     this.bellClock = 0;
     bellAudio.installAudio();
@@ -71,14 +77,12 @@ export default class BossScene extends Phaser.Scene {
     // press has to count.
     this.shieldRequested = false;
     this._shieldKeyHandler = e => {
-      if (['x', 'X', 'c', 'C', 'l', 'L'].includes(e.key)) this.shieldRequested = true;
+      if (['KeyE', 'KeyC'].includes(e.code)) this.shieldRequested = true;
     };
     window.addEventListener('keydown', this._shieldKeyHandler);
 
     battle.start = () => this.beginIntro();
     battle.scene = this;
-    battle.pause = () => this.pauseBattle();
-    battle.resume = () => this.resumeBattle();
     this.events.on('shutdown', () => {
       this.hintEl?.remove();
       window.removeEventListener('keydown', this._shieldKeyHandler);
@@ -86,20 +90,25 @@ export default class BossScene extends Phaser.Scene {
     });
   }
 
-  // ---------- pause ----------
-  pauseBattle() {
-    if (this.scene.isPaused() || (this.stateFlag !== 'play' && this.stateFlag !== 'intro')) return;
-    this.playSfx('pause', 1);
-    this.music?.pause();
-    this.scene.pause();
-    document.querySelector('#pause-overlay').classList.remove('hidden');
+  // ---------- difficulty ----------
+  get tuning() { return btDifficulty(this.difficulty); }
+  get assist() { return this.difficulty === 'story'; }
+
+  setDifficulty(id) {
+    this.difficulty = btDifficulty(id).id;
+    if (battle.settings) battle.settings.difficulty = this.difficulty;
+    document.querySelectorAll('#difficulty button').forEach((button) => button.classList.toggle('active', button.dataset.value === this.difficulty));
+    document.querySelector('#story-offer [data-story]')?.classList.toggle('active', this.difficulty === 'story');
   }
 
+  // Older QA hook: ASSIST is STORY.
+  setAssist(on) { this.setDifficulty(on ? 'story' : 'normal'); }
+
+  // ---------- pause ----------
+  // The shared pause menu (ESC / P) pauses this scene (main.js); this only
+  // makes sure a reset never leaves it paused.
   resumeBattle() {
-    if (!this.scene.isPaused()) return;
-    document.querySelector('#pause-overlay').classList.add('hidden');
-    this.scene.resume();
-    this.music?.resume();
+    if (this.scene.isPaused()) this.scene.resume();
   }
 
   // ---------- environment ----------
@@ -184,7 +193,7 @@ export default class BossScene extends Phaser.Scene {
     this.stateFlag = 'intro';
     this.startPhase = fromPhase;
     this.bellClock = 0;
-    this.maxLives = this.assist ? ASSIST.lives : PLAYER.lives;
+    this.maxLives = this.tuning.lives;
     this.playerBullets = [];
     this.enemyShots = [];
     this.beams = [];
@@ -232,7 +241,7 @@ export default class BossScene extends Phaser.Scene {
         this.boss.state = 'battle';
         this.stateFlag = 'play';
         this.decisionClock = 0.7;
-        if (!quick) this.showHint('<kbd>X</kbd> / <kbd>C</kbd> · SHIELD · RAISE IT ON THE BELL AND THE CHARGE COMES BACK');
+        if (!quick) this.showHint('<kbd>E</kbd> · SHIELD · RAISE IT ON THE BELL AND THE CHARGE COMES BACK', 5200);
       });
     });
   }
@@ -305,7 +314,7 @@ export default class BossScene extends Phaser.Scene {
     this.attackActive = false;
     this.boss.busy = false;
     const speedup = [1, 0.9, 0.78, 0.64, 0.5][this.boss.phase];
-    this.decisionClock = recoverySeconds * speedup * (this.assist ? ASSIST.recoveryScale : 1);
+    this.decisionClock = recoverySeconds * speedup * this.tuning.recoveryScale;
     this.boss.reposition(this.boss.phase >= 2 && Math.random() < 0.45);
   }
 
@@ -362,7 +371,7 @@ export default class BossScene extends Phaser.Scene {
       if (this.stateFlag !== 'play') return;
       this.playSfx('train', 1);
       if (this.settings.shake) this.cameras.main.shake(420, 0.011);
-      const speed = (560 + phase * 70) * (this.assist ? ASSIST.bulletScale : 1);
+      const speed = (560 + phase * 70) * this.tuning.bulletScale;
       const train = this.add.sprite(W + 180, rowY, 'conductor-locom').setOrigin(...bodyCentreOrigin('conductor-locom')).setDepth(DEPTHS.attacks).setScale(0.62);
       if (this.anims.exists('conductor-locom-anim')) train.play('conductor-locom-anim');
       this.enemyShots.push({ sprite: train, x: W + 180, y: rowY, vx: -speed, vy: 0, r: 62, kind: 'train', life: 6, pierce: true, trail: phase >= 1 ? 0.11 : 0 });
@@ -698,12 +707,12 @@ export default class BossScene extends Phaser.Scene {
     if (phase >= 3) {
       this.ambientClock -= dt;
       if (this.ambientClock <= 0) {
-        this.ambientClock = phase >= 4 ? 0.6 : 1.0;
+        this.ambientClock = (phase >= 4 ? 0.6 : 1.0) * this.tuning.ambientScale;
         this.spawnEnemyShot(Phaser.Math.Between(60, Math.floor(W * 0.6)), -30, Phaser.Math.Between(-30, 30), 190 + phase * 22, 'ticket');
       }
       this.sideClock -= dt;
       if (this.sideClock <= 0 && !this.suppressSide) {
-        this.sideClock = phase >= 4 ? 3.2 : 4.5;
+        this.sideClock = (phase >= 4 ? 3.2 : 4.5) * this.tuning.ambientScale;
         const x = Phaser.Math.Clamp(Math.floor(this.player.x), 70, Math.floor(W * 0.64));
         this.warnings.push({ kind: 'col', x, life: 0.62, max: 0.62 });
         this.time.delayedCall(620, () => {
@@ -723,8 +732,8 @@ export default class BossScene extends Phaser.Scene {
   }
 
   spawnEnemyShot(x, y, vx0, vy0, kind, opts = {}) {
-    // ASSIST slows every bullet (and its gravity, so arcs keep their shape).
-    const k = this.assist ? ASSIST.bulletScale : 1;
+    // STORY slows every bullet (and its gravity, so arcs keep their shape).
+    const k = this.tuning.bulletScale;
     const vx = vx0 * k;
     const vy = vy0 * k;
     if (opts.ay) opts = { ...opts, ay: opts.ay * k * k };
@@ -768,39 +777,44 @@ export default class BossScene extends Phaser.Scene {
 
   // ---------- update ----------
   update(_t, deltaMs) {
-    const dt = Math.min(0.033, deltaMs / 1000);
     if (this.stateFlag === 'menu') return;
     if (this.stateFlag === 'play') this.quality?.sample(deltaMs / 1000);
 
     // NOTE: pause is driven from a DOM keydown listener in main.js — some
     // browsers swallow Escape before Phaser's keyboard plugin sees it.
+    const pointer = this.input.activePointer;
     const input = {
       dx: Number(this.keys.RIGHT.isDown || this.keys.D.isDown) - Number(this.keys.LEFT.isDown || this.keys.A.isDown),
       dy: Number(this.keys.DOWN.isDown || this.keys.S.isDown) - Number(this.keys.UP.isDown || this.keys.W.isDown),
-      fire: this.keys.Z.isDown || this.keys.J.isDown || this.keys.SPACE.isDown || this.input.activePointer.isDown,
-      boost: this.keys.SHIFT.isDown || this.keys.K.isDown,
+      fire: this.keys.Z.isDown || this.keys.J.isDown || this.keys.SPACE.isDown || (pointer.isDown && pointer.leftButtonDown()),
+      // The dash is Chapter 6's: SHIFT or X (K stays as a left-hand spare).
+      boost: this.keys.SHIFT.isDown || this.keys.X.isDown || this.keys.K.isDown,
     };
-    const shieldTapped = Phaser.Input.Keyboard.JustDown(this.keys.X)
+    const shieldTapped = Phaser.Input.Keyboard.JustDown(this.keys.E)
       || Phaser.Input.Keyboard.JustDown(this.keys.C)
-      || Phaser.Input.Keyboard.JustDown(this.keys.L)
       || this.shieldRequested;
     this.shieldRequested = false;
     if (shieldTapped && this.stateFlag === 'play' && this.player.tryShield()) this.onShieldRaised();
-    if (this.stateFlag === 'play') this.tickBell(dt);
 
-    this.player.update(dt, this.stateFlag === 'play' ? input : { dx: 0, dy: 0, fire: false, boost: false });
-    this.boss.update(dt);
-    this.hud.update(dt, this.boss, this.player);
-
-    if (this.stateFlag === 'play') {
-      if (!this.attackActive) {
-        this.decisionClock -= dt;
-        if (this.decisionClock <= 0) this.startAttack(this.pickAttack());
+    // Game time follows the wall clock down to 10 fps (alpha round 4: the
+    // 33 ms cap ran a 15 fps laptop at half speed), in 1/30 s substeps so no
+    // ticket passes through the passenger between two steps.
+    const steps = frameSteps(deltaMs / 1000);
+    for (const dt of steps) {
+      if (this.stateFlag === 'menu') break;
+      if (this.stateFlag === 'play') this.tickBell(dt);
+      this.player.update(dt, this.stateFlag === 'play' ? input : { dx: 0, dy: 0, fire: false, boost: false });
+      this.boss.update(dt);
+      if (this.stateFlag === 'play') {
+        if (!this.attackActive) {
+          this.decisionClock -= dt;
+          if (this.decisionClock <= 0) this.startAttack(this.pickAttack());
+        }
+        this.sideAttackTick(dt);
       }
-      this.sideAttackTick(dt);
+      this.updateProjectiles(dt);
     }
-
-    this.updateProjectiles(dt);
+    this.hud?.update(steps.reduce((sum, dt) => sum + dt, 0), this.boss, this.player);
     this.drawFx();
   }
 
@@ -816,7 +830,7 @@ export default class BossScene extends Phaser.Scene {
         b.sprite.destroy();
         this.emitBurst(b.x, b.y, 4, COLORS.yellow);
         this.playSfx('boss-hit', 0.5);
-        this.onBossDamaged(this.boss.damage(PLAYER.bulletDamage));
+        this.onBossDamaged(this.boss.damage(PLAYER.bulletDamage * this.tuning.damageScale));
         return false;
       }
       if (b.x > W + 30) { b.sprite.destroy(); return false; }
@@ -877,7 +891,7 @@ export default class BossScene extends Phaser.Scene {
       shot.sprite.setPosition(shot.x, shot.y);
       if (shot.kind === 'cloud') shot.sprite.setAlpha(Math.min(0.85, shot.life * 0.9));
 
-      const touching = Phaser.Math.Distance.Between(shot.x, shot.y, this.player.x, this.player.y) < shot.r + PLAYER.hitRadius;
+      const touching = Phaser.Math.Distance.Between(shot.x, shot.y, this.player.x, this.player.y) < shot.r + this.tuning.hitRadius;
       if (this.stateFlag === 'play' && touching) {
         if (this.player.shielded) {
           if (!shot.pierce && shot.kind !== 'cloud') {
@@ -910,13 +924,13 @@ export default class BossScene extends Phaser.Scene {
       }
       if (this.stateFlag === 'play' && this.player.vulnerable) {
         let hit = false;
-        if (beam.vertical) hit = Math.abs(this.player.x - beam.x) < beam.width + PLAYER.hitRadius;
-        else if (beam.horizontal) hit = Math.abs(this.player.y - beam.y) < beam.width + PLAYER.hitRadius && this.player.x < this.boss.x;
+        if (beam.vertical) hit = Math.abs(this.player.x - beam.x) < beam.width + this.tuning.hitRadius;
+        else if (beam.horizontal) hit = Math.abs(this.player.y - beam.y) < beam.width + this.tuning.hitRadius && this.player.x < this.boss.x;
         else {
           const nx = -Math.sin(beam.angle);
           const ny = Math.cos(beam.angle);
           const d = Math.abs((this.player.x - W / 2) * nx + (this.player.y - H / 2) * ny - beam.offset);
-          hit = d < beam.width + PLAYER.hitRadius;
+          hit = d < beam.width + this.tuning.hitRadius;
         }
         if (hit && this.player.hit()) this.onPlayerHit();
       }
@@ -1027,17 +1041,13 @@ export default class BossScene extends Phaser.Scene {
       retry.classList.toggle('hidden', won || phase === 0);
       retry.querySelector('b').textContent = `RETRY FROM PHASE ${numerals[phase]}`;
     }
-    const assist = document.querySelector('#assist-offer');
-    const offer = !won && this.failures >= ASSIST.offerAfterFailures;
-    assist?.classList.toggle('hidden', !offer);
-    if (assist) assist.querySelector('[data-assist]').classList.toggle('active', this.assist);
+    // STORY is offered after the first failure, as Chapter 6 offers it.
+    const story = document.querySelector('#story-offer');
+    const offer = !won && this.difficulty !== 'story' && this.failures >= STORY_OFFER_AFTER_FAILURES;
+    story?.classList.toggle('hidden', !offer);
+    story?.querySelector('[data-story]')?.classList.toggle('active', this.difficulty === 'story');
     document.querySelector('#result').classList.remove('hidden');
     ((won ? document.querySelector('#ending') : phase > 0 ? retry : document.querySelector('#again')) ?? document.querySelector('#again'))?.focus({ preventScroll: true });
-  }
-
-  setAssist(on) {
-    this.assist = Boolean(on);
-    document.querySelector('#assist-offer [data-assist]')?.classList.toggle('active', this.assist);
   }
 
   // Retry from the phase the passenger reached.

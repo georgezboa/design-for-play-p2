@@ -78,16 +78,52 @@ export const PLAYER = {
   bulletSpeed: 780,
   bulletDamage: 2,
   hitInvuln: 1.6,       // seconds of invulnerability after losing a life
-  hitRadius: 10,
+  // The hurtbox is the ticket's punched hole, not its whole card (alpha
+  // round 4: a first try ended in 16 s); a graze on the paper is a miss.
+  hitRadius: 8,
 };
 
-// Assist (offered after two failures): slower bullets, more lives.
-export const ASSIST = {
-  lives: 6,
-  bulletScale: 0.72,
-  recoveryScale: 1.2,
-  offerAfterFailures: 2,
-};
+// Difficulty (alpha round 4: the Black Ticket had no STORY setting and was
+// the hardest fight in the game; a first try ended in 16 s). As in Chapter
+// 6, STORY can be chosen on the start board and is offered after the first
+// failure: more lives, slower tickets, longer pauses between attacks, a
+// smaller passenger to hit, a longer recovery after a hit, and every punch
+// cutting deeper (a shorter fight).
+export const BT_DIFFICULTIES = Object.freeze({
+  normal: Object.freeze({
+    id: 'normal', label: 'NORMAL', lives: PLAYER.lives, bulletScale: 1, recoveryScale: 1,
+    hitInvuln: PLAYER.hitInvuln, hitRadius: PLAYER.hitRadius, damageScale: 1, ambientScale: 1,
+  }),
+  story: Object.freeze({
+    id: 'story', label: 'STORY', lives: 6, bulletScale: 0.7, recoveryScale: 1.45,
+    hitInvuln: 2.4, hitRadius: 6, damageScale: 1.35, ambientScale: 1.7,
+  }),
+});
+export const STORY_OFFER_AFTER_FAILURES = 1;
+
+export function btDifficulty(id) {
+  return BT_DIFFICULTIES[id] ?? BT_DIFFICULTIES.normal;
+}
+
+// The old ASSIST is STORY now (kept for older references).
+export const ASSIST = Object.freeze({
+  lives: BT_DIFFICULTIES.story.lives,
+  bulletScale: BT_DIFFICULTIES.story.bulletScale,
+  recoveryScale: BT_DIFFICULTIES.story.recoveryScale,
+  offerAfterFailures: STORY_OFFER_AFTER_FAILURES,
+});
+
+// The keys, as Chapter 6 has them (alpha round 4: X was dash there and
+// shield here, Shift dash there and boost here): SPACE punches, SHIFT / X
+// dashes, and the shield — this fight's own verb — is E / C or a right
+// click. One table for the start board, the HUD and the pause menu.
+export const BT_KEYS = Object.freeze({
+  move: 'WASD / ARROWS',
+  punch: 'HOLD SPACE / Z / LEFT CLICK',
+  dash: 'HOLD SHIFT / X',
+  shield: 'E / C / RIGHT CLICK',
+  pause: 'ESC / P',
+});
 
 // The bell (Chapter 2's four-second bell). A shield raised within
 // PARRY_WINDOW seconds of a bell is a parry: the charge comes back.

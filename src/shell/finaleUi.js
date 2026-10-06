@@ -171,7 +171,10 @@ export function createTagLayer(parent) {
       node.style.display = '';
       node.classList.toggle('is-dim', dim);
       node.classList.toggle('is-queued', queued);
-      node.style.borderLeft = color ? `4px solid ${color}` : '';
+      // A line's colour tints the whole pill, not only its edge (alpha
+      // round 4: amber, teal and rose prompts read the same).
+      node.style.borderLeft = color ? `6px solid ${color}` : '';
+      node.style.background = color ? `color-mix(in srgb, ${color} 34%, #efe4cc)` : '';
       return node;
     },
     end() { for (let i = used; i < pool.length; i += 1) pool[i].style.display = 'none'; },

@@ -93,13 +93,13 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['REBUILD THE MAZE', 'HOLD R'],
     ['PAUSE', 'ESC'],
   ),
+  // Chapter 6's keys (blackKnifeFinal/constants.js BT_KEYS, alpha round 4).
   blackKnife: list(
     ['MOVE', 'WASD / ARROWS'],
-    ['PUNCH', 'Z / SPACE / LEFT CLICK'],
-    ['SHIELD ×3 (ON THE BELL: KEEPS ITS CHARGE)', 'X / C'],
-    ['BOOST', 'SHIFT'],
-    ['BATTLE PAUSE', 'P'],
-    ['MENU', 'ESC'],
+    ['PUNCH', 'HOLD SPACE / Z / LEFT CLICK'],
+    ['DASH', 'HOLD SHIFT / X'],
+    ['SHIELD ×3 (ON THE BELL: KEEPS ITS CHARGE)', 'E / C / RIGHT CLICK'],
+    ['PAUSE', 'ESC / P'],
   ),
   trueEnding: list(
     ['SKIP THE REVEAL', 'HOLD SPACE / ENTER / MOUSE'],

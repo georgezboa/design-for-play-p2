@@ -36,7 +36,9 @@
 }
 .battle-hud .nf-hint.show { transform: translate(-50%, 0); }
 .battle-hud .nf-toast, .battle-hud.has-bell .nf-toast { top: 82px; max-width: min(720px, calc(100vw - 480px)); }
-.battle-hud.has-hint .nf-toast { top: 138px; }
+/* One banner slot (alpha round 4): a toast replaces the hint while it
+   shows; the two never stack. */
+.battle-hud.has-toast .nf-hint.show { opacity: 0; transition-duration: 0.12s; }
 @media (max-width: 1100px) {
   .battle-hud .nf-hint, .battle-hud .nf-toast, .battle-hud.has-bell .nf-toast { max-width: calc(100vw - 280px); }
 }
@@ -140,3 +142,10 @@
   .nf-finale .battle-hud .nf-caption__choices { margin-top: 8px; }
   .nf-finale .battle-hud .nf-caption__choice { font-size: calc(15.5px * var(--nf-scale)); padding-top: 8px; padding-bottom: 8px; }
 }
+
+/* ---------- the departure (alpha round 4) ----------
+   Once the night service arrives the fight's side panels go; once Butch
+   boards, the whole fight HUD does (only the DEPARTING stamp stays). */
+.battle-hud .nf-layers, .battle-hud .nf-plaque, .battle-hud .nf-stone-row, .battle-hud .nf-ticket-bar, .battle-hud .nf-tag-layer { transition: opacity 0.6s ease; }
+.battle-hud.is-departing .nf-layers, .battle-hud.is-departing .nf-plaque, .battle-hud.is-departing .nf-stone-row { opacity: 0; }
+.battle-hud.is-cinematic .nf-ticket-bar, .battle-hud.is-cinematic .nf-tag-layer, .battle-hud.is-cinematic .nf-hint, .battle-hud.is-cinematic .nf-toast, .battle-hud.is-cinematic .nf-bell { opacity: 0; }
