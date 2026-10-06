@@ -217,14 +217,34 @@ describe('Chapter 3 checklist menus', () => {
     ['hana', CONTENT.hanaTopicMenu, 'hana-done', ['register', 'departure', 'face']],
   ];
 
-  it('offers Continue after one topic and removes asked topics', () => {
+  it('offers Continue after one topic, last; asked topics keep their number, used', () => {
     for (const [name, build, done, topics] of menus) {
       const fresh = build([]).choices.map((choice) => choice.id);
       assert.ok(!fresh.includes(done), `${name}: Continue waits for one topic`);
       assert.equal(fresh.length, topics.length, `${name}: every topic is offered`);
-      const afterOne = build([topics[0]]).choices.map((choice) => choice.id);
-      assert.ok(afterOne.includes(done), `${name}: one topic unlocks Continue`);
-      assert.ok(!afterOne.some((id) => id.endsWith(topics[0])), `${name}: an asked topic leaves the menu`);
+      const afterOne = build([topics[0]]).choices;
+      assert.equal(afterOne.at(-1).id, done, `${name}: one topic unlocks Continue, as the last option`);
+      // Alpha round 4: numbers never shift; the asked topic stays, used.
+      assert.deepEqual(afterOne.slice(0, -1).map((choice) => choice.id), fresh, `${name}: numbering is stable`);
+      assert.equal(afterOne[0].used, true, `${name}: the asked topic is marked used`);
+      assert.ok(afterOne.slice(1).every((choice) => !choice.used), `${name}: only asked topics are used`);
+      const all = build(topics).choices;
+      assert.equal(all.length, topics.length + 1);
+      assert.equal(all.at(-1).id, done);
+      assert.ok(all.slice(0, -1).every((choice) => choice.used));
+    }
+  });
+
+  it('a repeated number press never reaches Continue', () => {
+    for (const [name, build, , topics] of menus) {
+      let asked = [];
+      // Press "1" five times: the first asks topic 1, the rest land on it again.
+      for (let press = 0; press < 5; press += 1) {
+        const choice = build(asked).choices[0];
+        assert.ok(!/(conclude|done)$/.test(choice.id), `${name}: "1" is never Continue`);
+        if (!choice.used) asked = [...asked, topics[0]];
+      }
+      assert.deepEqual(asked, [topics[0]]);
     }
   });
 

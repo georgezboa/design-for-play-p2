@@ -130,16 +130,15 @@ describe('Chapter 3 alpha round 3 (L1)', () => {
     assert.match(runtime, /if \(this\.boardedCloseUp && state\.boardedTrain && state\.departureSequenceMs < 11200\)/);
   });
 
-  it('pacing: after the ledger question "Take the room" leads; the rest are optional', () => {
+  it('pacing (superseded in alpha round 4): "Take the room" is the last option, numbers stay put', () => {
     const first = hanaTopicMenu([]).choices.map((choice) => choice.id);
     assert.deepEqual(first, ['hana-register', 'hana-departure', 'hana-face']);
     const afterLedger = hanaTopicMenu(['register']).choices;
-    assert.equal(afterLedger[0].id, 'hana-done');
-    assert.deepEqual(afterLedger.slice(1).map((choice) => choice.id), ['hana-departure', 'hana-face']);
-    assert.ok(afterLedger.slice(1).every((choice) => /\(Optional\)$/.test(choice.label)));
+    assert.deepEqual(afterLedger.map((choice) => choice.id), ['hana-register', 'hana-departure', 'hana-face', 'hana-done']);
+    assert.equal(afterLedger[0].used, true);
     // Another question first still lets Butch take the room.
     assert.ok(hanaTopicMenu(['face']).choices.some((choice) => choice.id === 'hana-done'));
-    assert.equal(hanaTopicMenu(['register', 'departure', 'face']).choices[0].id, 'hana-done');
+    assert.equal(hanaTopicMenu(['register', 'departure', 'face']).choices.at(-1).id, 'hana-done');
   });
 
   it('LOW: Butch swaps the speckling rim for a clean outline; HIGH keeps the rim', () => {

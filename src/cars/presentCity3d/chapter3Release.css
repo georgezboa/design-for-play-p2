@@ -41,6 +41,12 @@
 .c3-caption.is-bark { pointer-events: none; width: min(760px, calc(100vw - 48px)); padding: 10px 22px 12px; background: rgba(20, 13, 9, 0.86); }
 .c3-caption.is-bark .nf-caption__text { font-size: calc(19px * var(--nf-scale)); }
 .c3-caption.is-locked .nf-caption__next { display: none; }
+/* An asked topic keeps its number, greyed and struck (alpha round 4). */
+.c3-caption .nf-caption__choice.is-used,
+.c3-caption .nf-caption__choice.is-used:hover {
+  cursor: default; color: rgba(234, 223, 198, 0.42); background: transparent;
+  border-color: rgba(176, 138, 74, 0.28); text-decoration: line-through; text-decoration-color: rgba(224, 162, 74, 0.55);
+}
 .nf-caption__speaker[hidden] { display: none !important; }
 
 /* ---------- paper tags in the world ---------- */

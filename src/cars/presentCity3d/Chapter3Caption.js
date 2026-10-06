@@ -59,6 +59,9 @@ export class Chapter3DialogueController {
       const digit = Number(event.key);
       if (choices.length && digit >= 1 && digit <= choices.length) {
         event.preventDefault();
+        // A held key never auto-repeats into the next menu; a used topic
+        // keeps its number and does nothing (alpha round 4).
+        if (event.repeat || choices[digit - 1].used) return;
         this.choose(choices[digit - 1].id);
       }
     };
@@ -159,7 +162,7 @@ export class Chapter3DialogueController {
 
   choose(choiceId) {
     const line = this.currentLine();
-    if (!line?.choices?.some((choice) => choice.id === choiceId)) return;
+    if (!line?.choices?.some((choice) => choice.id === choiceId && !choice.used)) return;
     this.voice.stop();
     const continuation = this.onChoice?.(choiceId) || [];
     line.choices = [];
@@ -211,9 +214,15 @@ export class Chapter3DialogueController {
         button.type = 'button';
         button.dataset.choice = choice.id;
         button.textContent = `${index + 1} · ${choice.label}`;
+        if (choice.used) {
+          // Asked already: it keeps its number, struck through, and is inert.
+          button.disabled = true;
+          button.classList.add('is-used');
+          button.setAttribute('aria-label', `${choice.label} (asked)`);
+        }
         button.addEventListener('pointerup', (event) => {
           event.stopPropagation();
-          this.choose(choice.id);
+          if (!choice.used) this.choose(choice.id);
         });
         this.choicesElement.append(button);
       });
@@ -231,6 +240,7 @@ export class Chapter3DialogueController {
       lineComplete: this.isLineComplete(),
       advanceLocked: this.advanceLocked,
       choices: line?.choices?.map((choice) => choice.id) || [],
+      usedChoices: line?.choices?.filter((choice) => choice.used).map((choice) => choice.id) || [],
       bark: !this.active && this.barkRemaining > 0 ? this.textElement.textContent : null,
     };
   }
