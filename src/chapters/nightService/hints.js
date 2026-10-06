@@ -10,7 +10,8 @@
 //                   again every 60 s while the player stays stuck
 //
 // The first time a verb appears in the chapter the ghost hand demonstrates it
-// after only 8 s of idling. The pause menu's SHOW ME (a `nightfall:hint`
+// after only 8 s of idling. A step may bring its first pulse forward
+// (`hint.pulseAt`: the chapter's very first beat), until the player acts. The pause menu's SHOW ME (a `nightfall:hint`
 // window event) plays tier 2 at once, and brings the Conductor's line back
 // once this step has reached tier 3 or on a second SHOW ME. PanelScene draws all of it; this file
 // only decides when, and which gesture, so node tests can check the timing.
@@ -235,6 +236,9 @@ export function createHintDirector({
   let nextGhost = tiers.ghost;
   let nextCaption = tiers.caption;
   let firstArmed = false;
+  // a step's own first pulse (`hint.pulseAt`, the chapter's first beat):
+  // it holds until the player's first input on that step
+  let firstPulse = null;
   // this step has reached tier 3 once / how many SHOW MEs it has had
   let captionReached = false;
   let requests = 0;
@@ -255,13 +259,14 @@ export function createHintDirector({
     /** A meaningful input: the idle clock starts again. */
     input() {
       idle = 0;
+      firstPulse = null;
       rearm();
     },
     /**
      * The current step changed (or not). A new step restarts the clock and
      * arms a first-use demonstration if its verb has not been shown yet.
      */
-    setStep(key, nextVerb) {
+    setStep(key, nextVerb, { pulseAt = null } = {}) {
       if (key === stepKey) return false;
       // the step the player just solved: its verb needs no demonstration now
       if (verb && stepKey) seen.add(verb);
@@ -269,6 +274,8 @@ export function createHintDirector({
       verb = nextVerb ?? null;
       idle = 0;
       rearm();
+      firstPulse = Number.isFinite(pulseAt) && pulseAt > 0 ? pulseAt : null;
+      if (firstPulse !== null) nextPulse = Math.min(nextPulse, firstPulse);
       captionReached = false;
       requests = 0;
       firstArmed = Boolean(verb) && !seen.has(verb);

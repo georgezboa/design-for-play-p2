@@ -179,6 +179,67 @@ export function framePoints(grip) {
   return [[x + w / 2, top], [left, y + h / 2], [right, y + h / 2], [x + w / 2, bottom], [x + w * 0.2, top], [x + w * 0.8, top]];
 }
 
+/**
+ * The paper tag a hotspot's `tag` hangs (PanelScene draws it): its size in
+ * tile px at scale 1 and its eyelet (the image origin). The tag itself is
+ * clickable as well as the thing it is tied to (alpha R4 · P1).
+ */
+export const TAG_ART = Object.freeze({ w: 90, h: 60, ox: 0.12, oy: 0.2, glint: { x: 38, y: -8, r: 16 } });
+
+/**
+ * A worded tag (`tag.text`, e.g. PUNCH THE STUB): the typed paper tag of the
+ * unfold and the frame (art/hintArt.js paintUnfoldTag), shown at `scale` in
+ * tile px, eyelet on the left. Its width follows the text.
+ */
+export const TEXT_TAG = Object.freeze({ h: 70, eyelet: [17, 35], scale: 0.42 });
+export function textTagWidth(text) {
+  return Math.round(64 + String(text ?? '').length * 15.6);
+}
+
+/**
+ * Tile-normalised bounding box of a hotspot's paper tag (or of its glint when
+ * the tag is glint-only), or null when it hangs none.
+ */
+export function tagRect(hotspot, tileW, tileH) {
+  const tag = hotspot?.tag;
+  if (!tag || !tileW || !tileH) return null;
+  const k = tag.scale ?? 1;
+  const cx = tag.x * tileW;
+  const cy = tag.y * tileH;
+  if (tag.text) {
+    const k2 = TEXT_TAG.scale * k;
+    const w = textTagWidth(tag.text) * k2;
+    const h = TEXT_TAG.h * k2;
+    const ex = TEXT_TAG.eyelet[0] * k2;
+    const ey = TEXT_TAG.eyelet[1] * k2;
+    const a = tag.angle ?? 0;
+    const cos = Math.cos(a);
+    const sin = Math.sin(a);
+    const pts = [[-ex, -ey], [w - ex, -ey], [-ex, h - ey], [w - ex, h - ey]].map(([x, y]) => [cx + x * cos - y * sin, cy + x * sin + y * cos]);
+    const xs = pts.map((p) => p[0]);
+    const ys = pts.map((p) => p[1]);
+    return [(Math.min(...xs) - 4) / tileW, (Math.min(...ys) - 4) / tileH, (Math.max(...xs) - Math.min(...xs) + 8) / tileW, (Math.max(...ys) - Math.min(...ys) + 8) / tileH];
+  }
+  if (tag.glintOnly) {
+    const r = TAG_ART.glint.r * 1.6;
+    return [(cx - r) / tileW, (cy - r) / tileH, (2 * r) / tileW, (2 * r) / tileH];
+  }
+  const w = TAG_ART.w * k;
+  const h = TAG_ART.h * k;
+  const x0 = -TAG_ART.ox * w;
+  const y0 = -TAG_ART.oy * h;
+  const a = tag.angle ?? 0;
+  const cos = Math.cos(a);
+  const sin = Math.sin(a);
+  const pts = [[x0, y0], [x0 + w, y0], [x0, y0 + h], [x0 + w, y0 + h]].map(([x, y]) => [cx + x * cos - y * sin, cy + x * sin + y * cos]);
+  const xs = pts.map((p) => p[0]);
+  const ys = pts.map((p) => p[1]);
+  const pad = 4;
+  const left = Math.min(...xs) - pad;
+  const top = Math.min(...ys) - pad;
+  return [left / tileW, top / tileH, (Math.max(...xs) + pad - left) / tileW, (Math.max(...ys) + pad - top) / tileH];
+}
+
 function createEmitter() {
   const listeners = new Map();
   return {
@@ -495,11 +556,19 @@ export function createPanelModel(act, options = {}) {
     const rect = slotRect(tileId);
     const point = screen ?? (rect ? tilePoint(rect, u, v) : null);
     const inLens = lensCovers(point);
-    const list = hotspots(tileId).filter((hotspot) => hotspot.enabled && inRect(hotspot.rect, u, v));
-    // the last listed is drawn on top: it wins
-    const top = (ok) => [...list].reverse().find(ok) ?? null;
-    if (inLens) return top((h) => h.era !== 'present') ?? top((h) => h.era === 'present');
-    return top((h) => h.era !== 'past');
+    const live = hotspots(tileId).filter((hotspot) => hotspot.enabled);
+    const pick = (list) => {
+      // the last listed is drawn on top: it wins
+      const top = (ok) => [...list].reverse().find(ok) ?? null;
+      if (inLens) return top((h) => h.era !== 'present') ?? top((h) => h.era === 'present');
+      return top((h) => h.era !== 'past');
+    };
+    // the thing itself first, then the paper tag hanging from it
+    return pick(live.filter((hotspot) => inRect(hotspot.rect, u, v)))
+      ?? pick(live.filter((hotspot) => {
+        const tag = tagRect(hotspot, layout.tileW, layout.tileH);
+        return tag && inRect(tag, u, v);
+      }));
   }
 
   /** The frame a press at a tile-local point takes hold of (liftable now), or null. */

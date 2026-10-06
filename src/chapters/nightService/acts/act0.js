@@ -93,7 +93,9 @@ export const ACT0 = defineAct({
     {
       id: 'bell',
       when: { state: { tile: 'office', is: 'bell' } },
-      hint: { tile: 'office', hotspot: 'bell' },
+      // the very first beat: the bell's tag pulses after 6 s, before the
+      // ghost hand's first demonstration at 8 s (alpha R4 · P1)
+      hint: { tile: 'office', hotspot: 'bell', pulseAt: 6000 },
       do: [{ wait: 300 }],
       skip: [{ zoomTo: { tile: 'office', to: 'bell', rect: BELL_ZOOM } }],
     },

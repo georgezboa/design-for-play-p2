@@ -16,7 +16,7 @@
 // pull to unfold the carriage wall (unfold.js holds the rules).
 
 import Phaser from 'phaser';
-import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
+import { TAG_ART, TEXT_TAG, edgePoint, framePoints, planGrowth, textTagWidth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
 import { FRAME_DT_CAP_MS, frameDt, stepModel } from './frameClock.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
@@ -532,6 +532,20 @@ export class PanelScene extends Phaser.Scene {
     });
   }
 
+  /** A worded paper tag's texture (painted at twice its size); returns its key. */
+  ensureTextTag(text) {
+    const key = `nsv-text-tag-${text}`;
+    if (!this.textures.exists(key)) {
+      const w = textTagWidth(text);
+      const tex = this.textures.createCanvas(key, w * 2, TEXT_TAG.h * 2);
+      const c = tex.getContext();
+      c.scale(2, 2);
+      paintUnfoldTag(c, this.env?.paper ?? null, text, { w, h: TEXT_TAG.h, eyelet: TEXT_TAG.eyelet });
+      tex.refresh();
+    }
+    return key;
+  }
+
   /** The painted carriage wall for a layout (cached across acts); returns its key. */
   ensureWallTexture(layout) {
     const key = wallKey(layout);
@@ -589,7 +603,9 @@ export class PanelScene extends Phaser.Scene {
     this.cardStamp = this.add.text(-250, -150, '', { fontFamily: MONO, fontSize: '24px', color: '#8a2a1e', fontStyle: 'bold' });
     this.cardTitle = this.add.text(-250, -104, '', { fontFamily: SERIF, fontSize: '44px', color: '#2a1d14', fontStyle: 'bold' });
     this.cardLines = this.add.text(-250, -36, '', { fontFamily: SERIF, fontSize: '30px', color: '#3a2a1c', wordWrap: { width: 540 }, lineSpacing: 10 });
-    this.cardBox.add([scrim, card, this.cardStamp, this.cardTitle, this.cardLines]);
+    // how to put it down (alpha R4 · P1: the exhibit's first card read as a wall)
+    this.cardHint = this.add.text(0, 246, 'CLICK OR PRESS ENTER TO CLOSE', { fontFamily: MONO, fontSize: '18px', color: '#e0a24a', fontStyle: 'bold', letterSpacing: 3 }).setOrigin(0.5).setAlpha(0);
+    this.cardBox.add([scrim, card, this.cardStamp, this.cardTitle, this.cardLines, this.cardHint]);
     this.topLayer.add(this.cardBox);
     // act title card
     this.titleBox = this.add.container(W / 2, H / 2).setAlpha(0);
@@ -664,9 +680,21 @@ export class PanelScene extends Phaser.Scene {
       if (!hotspot.tag) return;
       const layer = hotspot.era === 'past' ? past ?? present : root;
       const holder = this.add.container(hotspot.tag.x * view.w, hotspot.tag.y * view.h);
-      const tag = this.add.image(0, 0, 'nsv-tag').setOrigin(0.12, 0.2).setScale(0.5 * (hotspot.tag.scale ?? 1));
+      const k = hotspot.tag.scale ?? 1;
       const glintOnly = Boolean(hotspot.tag.glintOnly);
-      const glint = this.add.image(glintOnly ? 0 : 38 * (hotspot.tag.scale ?? 1), glintOnly ? 0 : -8, 'nsv-glint').setScale(0.55).setBlendMode('ADD');
+      let tag;
+      let glint;
+      if (hotspot.tag.text) {
+        // a worded tag (PUNCH THE STUB): the unfold's typed paper, glint at its far end
+        const key = this.ensureTextTag(hotspot.tag.text);
+        const tw = textTagWidth(hotspot.tag.text);
+        const ks = TEXT_TAG.scale * k;
+        tag = this.add.image(0, 0, key).setOrigin(TEXT_TAG.eyelet[0] / tw, TEXT_TAG.eyelet[1] / TEXT_TAG.h).setScale(ks / 2);
+        glint = this.add.image((tw - TEXT_TAG.eyelet[0] - 14) * ks, (-TEXT_TAG.h / 2 + 12) * ks, 'nsv-glint').setScale(0.55).setBlendMode('ADD');
+      } else {
+        tag = this.add.image(0, 0, 'nsv-tag').setOrigin(TAG_ART.ox, TAG_ART.oy).setScale(0.5 * k);
+        glint = this.add.image(glintOnly ? 0 : TAG_ART.glint.x * k, glintOnly ? 0 : TAG_ART.glint.y, 'nsv-glint').setScale(0.55).setBlendMode('ADD');
+      }
       if (glintOnly) tag.setVisible(false);
       holder.add([tag, glint]);
       holder.setRotation(hotspot.tag.angle ?? 0);
@@ -744,7 +772,12 @@ export class PanelScene extends Phaser.Scene {
 
   bindModel() {
     const m = this.model;
-    m.on('zoom', ({ tile, dir, rect }) => this.animateZoom(this.views[tile], dir, rect));
+    m.on('zoom', ({ tile, dir, rect, to }) => {
+      this.animateZoom(this.views[tile], dir, rect);
+      if (dir === 'in') this.lensAside(tile, to);
+      // a passing line (the Conductor's wake-up call) never rides along into a close-up
+      if (this.caption?.auto && this.clock - (this.caption.at ?? 0) > 600) this.hideCaption();
+    });
     m.on('state', ({ tile }) => {
       const view = this.views[tile];
       if (!view.zooming) this.rebuildState(view);
@@ -1505,7 +1538,7 @@ export class PanelScene extends Phaser.Scene {
   // captions and cards
 
   showLine(line) {
-    this.caption = { speaker: line.speaker ?? '', text: line.text ?? '', shown: 0, done: false, lastTick: 0 };
+    this.caption = { speaker: line.speaker ?? '', text: line.text ?? '', shown: 0, done: false, lastTick: 0, at: this.clock };
     this.captionSpeaker.setText(this.caption.speaker);
     this.layoutCaption(this.caption.text);
     this.captionText.setText('');
@@ -1583,6 +1616,9 @@ export class PanelScene extends Phaser.Scene {
     this.cardBox.setVisible(true).setAlpha(0).setAngle(-3);
     this.cardBox.y = this.layout.view.h / 2 - 10;
     this.tweens.add({ targets: this.cardBox, alpha: 1, angle: -1, y: this.layout.view.h / 2 - 30, duration: 320, ease: 'Back.easeOut' });
+    this.tweens.killTweensOf(this.cardHint);
+    this.cardHint.setAlpha(0);
+    this.tweens.add({ targets: this.cardHint, alpha: 0.9, delay: 900, duration: 500, ease: 'Sine.easeOut' });
     this.audio.play('paper');
     this.strikeCardLine(card);
   }
@@ -2060,7 +2096,7 @@ export class PanelScene extends Phaser.Scene {
     const m = this.model;
     const step = m.currentStep();
     const key = step?.hint ? `${this.act.id}:${step.id}` : null;
-    if (!this.hints.setStep(key, key ? stepVerb(m, step) : null) && key && !this.hints.verb) {
+    if (!this.hints.setStep(key, key ? stepVerb(m, step) : null, { pulseAt: step?.hint?.pulseAt }) && key && !this.hints.verb) {
       // a step whose gesture only resolves once its beat has finished (the
       // lens appears after the punch): learn its verb as soon as it does
       this.hints.refineVerb(stepVerb(m, step));
@@ -2157,6 +2193,58 @@ export class PanelScene extends Phaser.Scene {
     };
     const [dx, dy] = options.find(fits) ?? options[0];
     return { x: dx * r, y: dy * r };
+  }
+
+  /**
+   * Is a window zoomed past where the act opened it, into a close-up with no
+   * 1978 layer (the postcard, the orchard, the open case)? The lens has
+   * nothing to show there (alpha R4 · P2).
+   */
+  closeUpWithoutPast(tileId) {
+    const tile = this.model.state.tiles[tileId];
+    if (!tile) return false;
+    const home = this.act.tiles[tileId]?.zoomStack?.length ?? 0;
+    return tile.zoomStack.length > home && !this.model.scene(tileId)?.drawPast;
+  }
+
+  /** The window whose glass the lens centre is over, or null. */
+  tileUnderLens(lens = this.model.state.lens) {
+    const slot = this.slotAt(lens.x, lens.y);
+    return slot ? this.model.tileAt(slot.index) : null;
+  }
+
+  /**
+   * A window zooms into such a close-up under the lens: the lens slides off
+   * it onto the nearest neighbour, so the close-up reads clean (and the lens
+   * is still on the wall to pick up).
+   */
+  lensAside(tileId, stateId) {
+    const m = this.model;
+    const lens = m.state.lens;
+    if (!lens.enabled || m.isLocked() || m.sceneOf(tileId, stateId)?.drawPast) return false;
+    const home = this.act.tiles[tileId]?.zoomStack?.length ?? 0;
+    if ((m.state.tiles[tileId]?.zoomStack.length ?? 0) <= home) return false;
+    const slot = m.slotRect(tileId);
+    if (!slot) return false;
+    const inside = lens.x > slot.x - lens.r * 0.5 && lens.x < slot.x + slot.w + lens.r * 0.5
+      && lens.y > slot.y - lens.r * 0.5 && lens.y < slot.y + slot.h + lens.r * 0.5;
+    if (!inside) return false;
+    const b = m.lensBounds();
+    const gap = lens.r + 8;
+    const spots = [
+      { x: slot.x - gap, y: lens.y }, { x: slot.x + slot.w + gap, y: lens.y },
+      { x: lens.x, y: slot.y - gap }, { x: lens.x, y: slot.y + slot.h + gap },
+    ].map((p) => ({ x: clamp(p.x, b.x0, b.x1), y: clamp(p.y, b.y0, b.y1) }))
+      .filter((p) => p.x < slot.x - lens.r * 0.6 || p.x > slot.x + slot.w + lens.r * 0.6 || p.y < slot.y - lens.r * 0.6 || p.y > slot.y + slot.h + lens.r * 0.6);
+    if (!spots.length) return false;
+    const to = spots.reduce((best, p) => (Math.hypot(p.x - lens.x, p.y - lens.y) < Math.hypot(best.x - lens.x, best.y - lens.y) ? p : best));
+    const from = { x: lens.x, y: lens.y };
+    const ride = { t: 0 };
+    this.tweens.add({
+      targets: ride, t: 1, duration: reducedMotionActive() ? 160 : 420, ease: 'Sine.easeInOut',
+      onUpdate: () => { if (!this.press || this.press.kind !== 'lens') m.moveLens(lerp(from.x, to.x, ride.t), lerp(from.y, to.y, ride.t)); },
+    });
+    return true;
   }
 
   /** The first of these screen points the lens does not cover (else the first). */
@@ -2566,7 +2654,8 @@ export class PanelScene extends Phaser.Scene {
       const hit = this.model.hotspotAt(tile, u, v, { x: p.x, y: p.y });
       const frame = fromLens < lens.r - LENS_RIM || fromLens > lens.r + 14 ? this.model.frameGripAt(tile, u, v) : null;
       if (this.onGlyph(tile, p.x, p.y)) cursor = 'zoom-out';
-      else if (hit) { cursor = hit.kind === 'zoom' ? 'zoom-in' : 'pointer'; hovered = { tile, hotspot: hit }; }
+      // the hand over anything that answers a click, its tag included (alpha R4 · P1)
+      else if (hit) { cursor = 'pointer'; hovered = { tile, hotspot: hit }; }
       else if (frame) { cursor = LIFT_CURSOR; grip = { tile, frame }; }
       else if (this.model.canDrag(tile)) cursor = 'grab';
     }
@@ -3177,7 +3266,8 @@ export class PanelScene extends Phaser.Scene {
     const cueStep = this.model.currentStep();
     // `hint.zoomOut` (always) or `hint.zoomOutCue` (a condition): the ⤢ glyph breathes
     const cueHint = cueStep?.hint;
-    const zoomOutCue = cueHint?.zoomOut || (cueHint?.zoomOutCue && this.model.evaluate(cueHint.zoomOutCue)) ? cueHint.tile : null;
+    // (`zoomOutTile` names the window when it is not the hint's own tile)
+    const zoomOutCue = cueHint?.zoomOut || (cueHint?.zoomOutCue && this.model.evaluate(cueHint.zoomOutCue)) ? cueHint.zoomOutTile ?? cueHint.tile : null;
     // a walker waiting for a window to step back out also makes its glyph breathe
     const waitGlyphs = this.updateWaitCues(dt);
     Object.values(this.views).forEach((view) => {
@@ -3240,7 +3330,12 @@ export class PanelScene extends Phaser.Scene {
       // under a spoken line the lens steps back (it is drawn below the caption
       // bar, but its rim must not read as sitting on it: alpha R3 · R4)
       const under = this.lensUnderCaption(lens);
-      this.lensView.setAlpha(clamp(this.lensView.alpha + (under ? -dt / 260 : dt / 260), 0.18, 1));
+      // over a close-up with no 1978 layer the rim steps back too (it can
+      // still be picked up): alpha R4 · P2
+      const resting = this.tileUnderLens(lens);
+      const want = under ? 0.18 : resting && this.closeUpWithoutPast(resting) && this.press?.kind !== 'lens' ? 0.32 : 1;
+      const a = this.lensView.alpha;
+      this.lensView.setAlpha(a < want ? Math.min(want, a + dt / 260) : Math.max(want, a - dt / 260));
       // (a hint pulse tweens the rim's scale: leave it alone meanwhile)
       if (!this.tweens.isTweening(this.lensView)) this.lensView.setScale(1 + (this.lensFocus ? Math.sin(this.clock / 200) * 0.015 : 0));
       if (this.lensFocus && this.keysDown.size) {

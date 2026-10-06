@@ -132,7 +132,11 @@ export const ACT3 = defineAct({
           draw: drawOverlook,
           edges: { left: [{ type: 'path', at: PATH_AT }], bottom: [{ type: 'stair', at: STAIR_AT }] },
           hotspots: [{
+            // only while the city window still has to meet the house: once
+            // they have, the hill is where Mara is going, and a tag inviting
+            // the player back in would undo the zoom-out (alpha R4 · P2)
             id: 'house', kind: 'zoom', to: 'house', rect: OVERLOOK_HOUSE,
+            requires: { notFlag: 'windowsJoined' },
             tag: { x: OVERLOOK_HOUSE[0] + OVERLOOK_HOUSE[2] * 0.9, y: OVERLOOK_HOUSE[1] + OVERLOOK_HOUSE[3] * 0.3, angle: 0.4 },
           }],
         },
@@ -227,6 +231,10 @@ export const ACT3 = defineAct({
         actor: 'mara',
         tile: 'hawthorn',
         seams: [...LANE_SEAMS, STAIR_SEAM],
+        // the orchard's ⤢ glyph breathes while it still shows the house: the
+        // lane goes on over the hill, one step back out (alpha R4 · P2)
+        zoomOutCue: { state: { tile: 'orchard', is: 'house' } },
+        zoomOutTile: 'orchard',
         ghost: [
           { when: { all: [{ actorAt: { actor: 'mara', tile: 'hawthorn' } }, { not: lensOverHedge }] }, lens: { tile: 'hawthorn', u: HEDGE.lens[0], v: HEDGE.lens[1] } },
           { drag: [{ tile: 'city', slot: 0 }, { tile: 'hawthorn', slot: 1 }, { tile: 'orchard', slot: 2 }] },

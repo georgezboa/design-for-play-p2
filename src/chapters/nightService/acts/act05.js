@@ -126,6 +126,9 @@ export const ACT05 = defineAct({
         { fx: { name: 'lockGlint' } },
         { wait: 500 },
         { setFlag: 'butchAtStores' },
+        // he says so, and the key on the office's line glints (alpha R4 · P2)
+        { caption: { speaker: 'BUTCH', text: 'Locked. The key hangs on the line by my desk.', ms: 5200 } },
+        { fx: { name: 'pulse', hint: { tile: 'desk', hotspot: 'keys' } } },
       ],
       skip: [
         { setSlots: ['desk', 'door'] },
