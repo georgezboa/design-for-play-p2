@@ -62,3 +62,39 @@ jobs:
           path: ${{ matrix.files }}
           retention-days: 14
           compression-level: 0
+
+  # A public pre-release with the three packages, so playtesters can download
+  # without a GitHub account: Releases → "NIGHTFALL playtest <n>". Runs after
+  # all three packages built. The playtest build keeps the 1111 test router.
+  publish:
+    needs: package
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: packages
+          merge-multiple: true
+      - run: ls -la packages
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: playtest-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: NIGHTFALL playtest ${{ github.run_number }}
+          prerelease: true
+          make_latest: false
+          files: packages/*
+          body: |
+            NIGHTFALL — playtest build (${{ github.sha }})
+
+            **Mac:** download the `.dmg` (or `-mac.zip`), drag NIGHTFALL to Applications. First launch: right-click the app → **Open** → **Open** (the build is not notarized yet).
+            **Windows:** download `-win-setup.exe` (or the `-win-x64.zip`). If SmartScreen warns, click **More info → Run anyway**.
+            **Linux:** download the `.AppImage`, `chmod +x` it, run it.
+
+            About 3.5–4.5 hours; saves are automatic (CONTINUE). Settings has LOW GRAPHICS for slower computers. On the title screen, typing 1 1 1 1 opens the test router.
+
+            **Mac：** 下载 `.dmg`，把 NIGHTFALL 拖进「应用程序」。第一次打开：右键点 App →「打开」→「打开」（还没做苹果公证）。
+            **Windows：** 下载 `-win-setup.exe`。如果 SmartScreen 拦截，点「更多信息 → 仍要运行」。
+            存档自动保存（继续游戏）。电脑比较慢可以在设置里打开 LOW GRAPHICS。
