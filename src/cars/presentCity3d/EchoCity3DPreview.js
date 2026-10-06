@@ -1500,10 +1500,10 @@ export class EchoCity3DPreview {
     }
   }
 
-  // Every simulation step (at most MAX_STEP_SECONDS of camera travel, well
-  // inside the LOD's off-screen margin): what is near the screen is drawn,
-  // what can shadow it casts, the rest is skipped. The developer camera
-  // sees the whole map and keeps everything.
+  // Every drawn frame, with the camera and sun it is drawn with (so a cut
+  // that jumps the camera never draws a stale set): what is near the screen
+  // is drawn, what can shadow it casts, the rest is skipped. The developer
+  // camera sees the whole map and keeps everything.
   updateShadowLod() {
     if (this.cityLod.enabled === this.developerMode) this.cityLod.setEnabled(!this.developerMode);
     this.cityLod.update({
@@ -1856,7 +1856,6 @@ export class EchoCity3DPreview {
       this.camera.position.add(this.cameraShakeOffset);
     }
     this.updateBuildingOcclusion(dt);
-    this.updateShadowLod();
     this.gameplayRuntime?.update(dt, { final });
 
     if (this.campfireLight) {
@@ -1951,6 +1950,7 @@ export class EchoCity3DPreview {
   }
 
   render() {
+    this.updateShadowLod();
     this.renderer.render(this.scene, this.camera);
     this.statusElement.dataset.player = `${this.player.position.x.toFixed(2)},${this.player.position.z.toFixed(2)}`;
     this.statusElement.dataset.pathNodes = String(this.path.length);

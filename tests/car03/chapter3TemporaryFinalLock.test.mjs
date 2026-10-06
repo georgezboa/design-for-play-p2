@@ -123,13 +123,14 @@ describe('Chapter 3 integrated final lock v46', () => {
     // through black with one line to the destination's approach. Static
     // city models, the perimeter and the built street scenery are drawn only
     // near the frame and cast only where their shadow can reach it (screen
-    // based, live camera and sun, hysteresis outside the frame). Files: +2
+    // based, live camera and sun, once per drawn frame, hysteresis outside
+    // the frame). Files: +2
     // (chapter3LongWalks, chapter3CityLod): 27 -> 29. Toma's composition
     // unchanged. Assets unchanged.
     assert.equal(sourceFiles.length, 29);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '474588a36a608b7ccb6f9051b56a002ab8a4d846c06febdefba2f771a894811c',
+      '61d2b15b711e4472080c94bdcceeb0fb2dc5d0691c40388b03cd157dc2db0045',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
