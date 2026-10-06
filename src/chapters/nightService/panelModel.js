@@ -18,6 +18,11 @@ export const OPPOSITE = Object.freeze({ left: 'right', right: 'left', top: 'bott
 export const TIMES_OF_DAY = Object.freeze(['dusk', 'evening', 'night', 'deep-night']);
 export const DEFAULT_LENS_RADIUS = 120;
 export const DEFAULT_WALK_SPEED = 170; // tile pixels per second
+/**
+ * Butch walks a little faster than the paths are authored (alpha R4 · P1):
+ * acts give his actor `pace: BUTCH_PACE`, which scales every walk's speed.
+ */
+export const BUTCH_PACE = 1.3;
 
 const EPSILON = 1e-9;
 
@@ -669,7 +674,8 @@ export function createPanelModel(act, options = {}) {
   function startWalk({ actor: actorId = 'butch', id = null, path, speed = DEFAULT_WALK_SPEED, await: wait = true }) {
     const actor = s.actors[actorId];
     if (!actor) throw new Error(`[nightService] unknown actor "${actorId}"`);
-    actor.walk = { id, path: clone(path), index: 0, speed };
+    // an actor's `pace` scales every walk it takes (Butch: BUTCH_PACE)
+    actor.walk = { id, path: clone(path), index: 0, speed: speed * (act.actors?.[actorId]?.pace ?? 1) };
     actor.visible = true;
     actor.crossing = null;
     actor.blocked = false;

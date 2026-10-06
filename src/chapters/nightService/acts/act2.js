@@ -16,7 +16,7 @@
 //   7 (optional) deep zoom: open case → letter to Rosa (A2) → the Ember Stone
 //   8 zoom into the case once and back out: the act ends
 
-import { defineAct } from '../panelModel.js';
+import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
   AISLE_FLOOR, BENEATH_ZOOM, BUTCH_SCALE, BUTCH_X, CASE_ZOOM, DROP_AT, LETTER_ZOOM, ORCHARD_TAG,
   POSTCARD, REQUEST_STOP, TAG_ZOOM, TICKET_AT, drawAisle, drawAislePast, drawBeneath, drawBoard, drawBoardPast,
@@ -174,7 +174,7 @@ export const ACT2 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', tile: 'aisle', state: 'aisle', x: BUTCH_X, y: AISLE_FLOOR, pose: 'ticket', facing: 1 },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'aisle', state: 'aisle', x: BUTCH_X, y: AISLE_FLOOR, pose: 'ticket', facing: 1 },
   },
   steps: [
     {

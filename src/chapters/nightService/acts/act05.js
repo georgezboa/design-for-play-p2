@@ -16,7 +16,7 @@
 //
 // Every step is reversible (swaps, zooms); nothing can strand Butch.
 
-import { CARRIAGE_TILE, defineAct } from '../panelModel.js';
+import { BUTCH_PACE, CARRIAGE_TILE, defineAct } from '../panelModel.js';
 import { FLOOR, WIRE_OUT, drawDesk } from '../art/act1Art.js';
 import {
   DOOR_WIRE_OUT, DOORWAY_ZOOM, KEY_ZOOM, LOCK, LOCK_ZOOM, STORES_ASIDE_X, STORES_WAIT_X, WIRE_CLOSE,
@@ -99,7 +99,7 @@ export const ACT05 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', tile: 'desk', state: 'office', x: BUTCH_DESK.x, y: BUTCH_DESK.y, pose: 'sit', facing: -1 },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'desk', state: 'office', x: BUTCH_DESK.x, y: BUTCH_DESK.y, pose: 'sit', facing: -1 },
   },
   steps: [
     {

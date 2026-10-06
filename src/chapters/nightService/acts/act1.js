@@ -10,7 +10,7 @@
 //   door's chute, the ticket drops into the slot, the door unlocks.
 //   step 3: Butch goes through; the Conductor hands over the punch; bell #1.
 
-import { defineAct } from '../panelModel.js';
+import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
   CHUTE_AT, DOOR, DOOR_WAIT_X, FLOOR, SLOT_Y, drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers,
   drawWindow, taggedCubbyZoomRect, cubbyRect, TAGGED_CUBBY,
@@ -121,7 +121,7 @@ export const ACT1 = defineAct({
   },
   actors: {
     // awake, home at the desk (where Act 0.5 left him)
-    butch: { rig: 'butch', tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y, pose: 'idle', facing: -1 },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y, pose: 'idle', facing: -1 },
     conductor: { rig: 'conductor', tile: 'door', state: 'conductor', x: 0.6, y: 0.84, facing: -1, pose: 'idle' },
   },
   steps: [

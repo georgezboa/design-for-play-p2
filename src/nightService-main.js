@@ -13,7 +13,7 @@
 
 import Phaser from 'phaser';
 import './fonts/fonts.css';
-import { PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
+import { FRAME_DT_CAP_MS, PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
 import { ACTS, CHECKPOINT_ACTS, FIRST_ACT, resolveActParam, startCarry } from './chapters/nightService/acts/index.js';
 import { createNightServiceAudio } from './chapters/nightService/audio.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
@@ -65,8 +65,9 @@ const services = {
   devMode: DEV_MODE,
   // dev-only QA knob: headless software GL can render under 1 fps, so solve
   // scripts pass `?dtmax=1000` to step the simulation (and tweens, below) in
-  // real time. Production is fixed at 50 ms with Phaser's smoothed delta.
-  maxDt: Math.min(2000, Number(params.get('dtmax')) || 50),
+  // real time. Production follows the wall clock down to 10 fps (100 ms a
+  // frame, PanelScene FRAME_DT_CAP_MS), so a weak laptop is not slowed down.
+  maxDt: Math.min(2000, Number(params.get('dtmax')) || FRAME_DT_CAP_MS),
   onCheckpoint(id) {
     const slot = store.getActiveSlot();
     if (!store.readAll()[slot]) store.startNew(slot);

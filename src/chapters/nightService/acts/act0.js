@@ -12,7 +12,7 @@
 //   then the view dives back in through that window and the carriage wall
 //   slides open a second window beside the first (Act 0.5).
 
-import { CARRIAGE_TILE, defineAct } from '../panelModel.js';
+import { BUTCH_PACE, CARRIAGE_TILE, defineAct } from '../panelModel.js';
 import { FLOOR } from '../art/act1Art.js';
 import {
   BELL_HIT, BELL_ZOOM, GLASS_ZOOM, HOLE, HOLE_HIT, HOLE_ZOOM, LIT_WINDOW, SPIKE_HIT, SPIKE_ZOOM, STRIKE_HIT,
@@ -87,7 +87,7 @@ export const ACT0 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', tile: 'office', state: 'office', x: BUTCH_DESK.x, y: BUTCH_DESK.y, pose: 'sleep', facing: -1 },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'office', state: 'office', x: BUTCH_DESK.x, y: BUTCH_DESK.y, pose: 'sleep', facing: -1 },
   },
   steps: [
     {

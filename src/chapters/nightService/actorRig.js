@@ -79,7 +79,7 @@ function buildButch(scene) {
     root,
     height: 70,
     glow,
-    update(dt, { pose, moving, time, carrying }) {
+    update(dt, { pose, moving, time, carrying, speed = null }) {
       const t = time / 1000;
       const holding = carrying === 'case';
       // "the first weight": a stagger the moment the case lands in his arms
@@ -135,7 +135,8 @@ function buildButch(scene) {
         head.y = -54 + Math.sin(t * 2) * 0.3;
         shadow.setVisible(true);
       } else if (moving) {
-        phase += dt * 0.0105;
+        // the stride keeps up with the walk (no skating at a faster pace)
+        phase += dt * 0.0105 * Math.max(0.7, Math.min(1.5, (speed ?? 170) / 170));
         const s = Math.sin(phase);
         const c = Math.cos(phase);
         body.y = -Math.abs(c) * 1.8;

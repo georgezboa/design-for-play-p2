@@ -17,7 +17,7 @@
 //   4 Mara boards the other train as ours arrives; the case on the bench;
 //     the Conductor's last line; chapter-2-start and the 1-2 film
 
-import { defineAct } from '../panelModel.js';
+import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
   CITY_WINDOW, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATFORM_DY, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
   drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook, drawPlatform,
@@ -164,7 +164,7 @@ export const ACT3 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false },
     train: { rig: 'train', tile: 'carriage', x: 0.36, y: TRAIN_Y, facing: 1, scale: TRAIN_SCALE },
     mara: { rig: 'mara', tile: 'city', x: 0.62, y: PATH_AT, visible: false, facing: 1 },
     farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: FAR_Y, facing: 1, scale: 0.72, tint: 0x9a9aae },

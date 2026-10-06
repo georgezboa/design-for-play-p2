@@ -18,6 +18,7 @@
 import Phaser from 'phaser';
 import { edgePoint, framePoints, planGrowth, tilePoint } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
+import { FRAME_DT_CAP_MS, frameDt, stepModel } from './frameClock.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
 import { FRAME_TAG_SEEN, WAIT_CUE_MS, createHintDirector, frameTagFor, pickGesture, stepVerb, unmetSeam, waitingWalkers } from './hints.js';
 import { HINT_SPEAKER, hintLine } from './hintLines.js';
@@ -322,7 +323,7 @@ export class PanelScene extends Phaser.Scene {
 
     // dev QA only (`?dtmax=`): let tweens take real-time steps on very slow
     // headless renderers instead of Phaser's 33 ms lag-smoothing.
-    if ((this.services.maxDt ?? 50) > 50) { this.tweens.maxLag = 1e9; this.tweens.lagSkip = 1e9; }
+    if ((this.services.maxDt ?? FRAME_DT_CAP_MS) > FRAME_DT_CAP_MS) { this.tweens.maxLag = 1e9; this.tweens.lagSkip = 1e9; }
     ensureSharedTextures(this);
     this.ensureUiTextures();
     this.worldKeys = {};
@@ -3114,11 +3115,11 @@ export class PanelScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.introGuard.due()) this.settleIntro('frame');
-    const dt = Math.min(delta, this.services.maxDt ?? 50);
+    const dt = frameDt(delta, this.services.maxDt ?? FRAME_DT_CAP_MS);
     this.clock += dt;
     // the act's script waits until the player has unfolded the wall
     if (this.foldActive()) this.updateFold(delta);
-    else this.model.update(dt);
+    else stepModel(this.model, dt);
     const reduce = reducedMotionActive();
 
     // lamps between the windows flicker
@@ -3315,7 +3316,7 @@ export class PanelScene extends Phaser.Scene {
         const facing = this.waitLook?.[id] ? -actor.facing : actor.facing;
         rig.root.setScale(facing * scale, scale);
       }
-      rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying });
+      rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying, speed: actor.walk?.speed ?? null });
       if (moving && id === 'butch') {
         entry.stepClock += dt;
         if (entry.stepClock > 300) { entry.stepClock = 0; this.audio.play('step'); }
@@ -3387,4 +3388,4 @@ export class PanelScene extends Phaser.Scene {
   }
 }
 
-export { edgePoint };
+export { edgePoint, FRAME_DT_CAP_MS };

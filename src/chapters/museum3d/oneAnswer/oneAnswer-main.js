@@ -13,7 +13,7 @@
 
 import Phaser from 'phaser';
 import '../../../fonts/fonts.css';
-import { PANEL_SCENE, PanelScene } from '../../nightService/PanelScene.js';
+import { FRAME_DT_CAP_MS, PANEL_SCENE, PanelScene } from '../../nightService/PanelScene.js';
 import { ONE_ANSWER_ACT } from '../../nightService/acts/oneAnswer.js';
 import { createNightServiceAudio } from '../../nightService/audio.js';
 import { ONE_ANSWER_CHAPTER05_CONTRACT } from './chapter05OneAnswerContract.js';
@@ -66,7 +66,7 @@ const services = {
   audio,
   devMode: DEV_MODE,
   // dev-only: headless QA steps the simulation in real time (see nightService-main.js)
-  maxDt: Math.min(2000, Number(params.get('dtmax')) || 50),
+  maxDt: Math.min(2000, Number(params.get('dtmax')) || FRAME_DT_CAP_MS),
   onChapterEnd() {
     if (completionSent) return;
     completionSent = true;
