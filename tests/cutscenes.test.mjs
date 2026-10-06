@@ -237,11 +237,12 @@ test('every call site resolves to the cutscene it means', () => {
 });
 
 test('an id without an authored cutscene keeps its film; authored ones replace theirs', () => {
-  assert.deepEqual(Object.keys(CUTSCENE_LOADERS).sort(), ['ending', 'opening']);
+  for (const name of Object.keys(CUTSCENE_LOADERS)) assert.ok(CUTSCENE_IDS.includes(name), name);
   assert.equal(registeredCutscene('opening', '/cinematics/start.mp4'), 'opening');
   assert.equal(registeredCutscene('ending', '/cinematics/end.mp4'), 'ending');
+  // without a loader, the film plays
   for (const [id, src] of [['chapter-1-to-2', '/cinematics/1-2.mp4'], ['chapter-3-to-4', '/cinematics/3-4.mp4'], ['chapter5-to-conductor', '/cinematics/5-6-conductor.mp4']]) {
-    assert.equal(registeredCutscene(id, src), null, id);
+    assert.equal(registeredCutscene(id, src, { opening: () => ({}) }), null, id);
   }
   // a loader added later takes over without touching the call site
   assert.equal(registeredCutscene('chapter-1-to-2', null, { chapter1To2: () => ({}) }), 'chapter1To2');
@@ -336,4 +337,83 @@ test('the ending never draws the Mara ahead from the front', () => {
   assert.match(painters, /export function drawMaraSeatedBack/);
   assert.doesNotMatch(painters, /function drawMara(Face|Front)/);
   assert.doesNotMatch(ends, /drawMara(?!SeatedBack|Walking)/);
+});
+
+// ---------- chapter1To2 and chapter2To3 ----------
+
+const { chapter1To2 } = await import('../src/shell/cutscene/scenes/chapter1To2.js');
+const { chapter2To3 } = await import('../src/shell/cutscene/scenes/chapter2To3.js');
+
+test('chapter1To2 and chapter2To3 are registered and replace their films', () => {
+  assert.equal(registeredCutscene('chapter-1-to-2', '/cinematics/1-2.mp4'), 'chapter1To2');
+  assert.equal(registeredCutscene('chapter-2-to-3', '/cinematics/2-3.mp4'), 'chapter2To3');
+  for (const id of CUTSCENE_IDS) {
+    if (!CUTSCENE_LOADERS[id]) assert.equal(registeredCutscene(id, `/cinematics/${FILM_NAMES[id]}.mp4`), null, `${id} keeps its film`);
+  }
+});
+
+test('chapter1To2 and chapter2To3 follow the spec: shots, length, captions, Reduce Motion', () => {
+  for (const scene of [chapter1To2, chapter2To3]) {
+    assert.deepEqual(validateCutscene(scene), [], scene.id);
+    const tl = buildTimeline(scene);
+    assert.ok(tl.duration >= 25 && tl.duration <= 40, `${scene.id} ${tl.duration}`);
+    tl.captions.forEach((c, i) => {
+      assert.ok(c.end - c.start >= CAPTION_MIN_S, `${scene.id} caption ${i + 1}`);
+      if (tl.captions[i + 1]) assert.ok(tl.captions[i + 1].start >= c.end, `${scene.id} captions overlap`);
+    });
+    const types = buildTimeline(scene, { reducedMotion: true }).shots.map((s) => s.transition.type);
+    assert.ok(types.every((t) => ['fade', 'black', 'cut', 'end'].includes(t)), `${scene.id}: ${types}`);
+  }
+  assert.equal(chapter1To2.shots.length, 4);
+  assert.equal(chapter2To3.shots.length, 5);
+});
+
+test('chapter1To2 and chapter2To3 captions are the script, word for word', () => {
+  const spec = read('docs/CUTSCENES_SPEC.md');
+  const text = (scene) => buildTimeline(scene).captions.map((c) => c.text.replace(/\n/g, ' '));
+  assert.deepEqual(text(chapter1To2), [
+    'The orchard case stayed on the rack. Her other ticket did not.',
+    'The city ahead ran on light it had borrowed from the train.',
+    'One roof ahead. Always one roof ahead.',
+  ]);
+  assert.deepEqual(text(chapter2To3), [
+    'The letter was a day old. It read as if she had written it a minute ago.',
+    'Echo City keeps the afternoon its people remember.',
+    'Today it was keeping two tickets for seat forty-three.',
+  ]);
+  for (const line of [...text(chapter1To2), ...text(chapter2To3)]) {
+    assert.ok(spec.includes(line), line);
+    assert.doesNotMatch(line, /Neo-Kyoto|Infinity|promise|Black Knife/i);
+  }
+  // what the script puts on screen
+  const one = read('src/shell/cutscene/scenes/chapter1To2.js');
+  assert.match(one, /'CITY LINE', 'ONE WAY · 1978'/);
+  assert.match(one, /'BELLWETHER'/);
+  assert.match(one, /'CITY TERMINAL'/);
+  const two = read('src/shell/cutscene/scenes/chapter2To3.js');
+  assert.match(two, /'KEEP MOVING\.'/);
+  assert.match(two, /'— M\.'/);
+  assert.match(two, /hours: 14, minutes: 20/);
+  assert.equal((two.match(/seat: 'SEAT 43'/g) ?? []).length, 2);
+});
+
+test('chapter1To2 and chapter2To3 music is cleared and listed in its manifest', () => {
+  const plan = read('docs/MUSIC_REPLACEMENT_PLAN.md');
+  for (const [scene, manifest] of [[chapter1To2, 'public/assets/music/ch1/ASSET_MANIFEST.md'], [chapter2To3, 'public/assets/music/ch3/ASSET_MANIFEST.md']]) {
+    const file = scene.music.src.split('/').pop();
+    assert.match(read(manifest), new RegExp(file.replace(/\./g, '\\.')), scene.id);
+    assert.doesNotMatch(plan, new RegExp(file.replace(/\./g, '\\.')), `${file} is on the uncleared list`);
+  }
+});
+
+test('the Mara ahead is drawn from behind: dark hair, the rose scarf at her neck, no face', () => {
+  const painters = read('src/shell/cutscene/painters.js');
+  const mara = painters.slice(painters.indexOf('// the Mara ahead'), painters.indexOf('// the Conductor'));
+  assert.match(mara, /function maraHeadBack/);
+  assert.match(mara, /function maraScarf/);
+  assert.doesNotMatch(mara, /scarf\.ellipse\(0, -66/, 'the scarf is no longer drawn as a hood');
+  assert.doesNotMatch(mara, /\b(face|eyes?|nose|mouth)\s*[=(]/i);
+  for (const file of ['chapter1To2', 'chapter2To3']) {
+    assert.doesNotMatch(read(`src/shell/cutscene/scenes/${file}.js`), /drawMara(?!SeatedBack|Walking)/, file);
+  }
 });

@@ -37,6 +37,8 @@ export const FILM_NAMES = Object.freeze({
 /** Authored cutscenes, each its own chunk. */
 export const CUTSCENE_LOADERS = Object.freeze({
   opening: () => import('./scenes/opening.js'),
+  chapter1To2: () => import('./scenes/chapter1To2.js'),
+  chapter2To3: () => import('./scenes/chapter2To3.js'),
   ending: () => import('./scenes/ending.js'),
 });
 

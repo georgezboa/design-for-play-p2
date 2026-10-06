@@ -123,6 +123,12 @@ All take a context in stage units. Read-only imports of Chapter 1's kit
 | `drawConductor(c, x, y, s, { punch, lantern })` | the finale's Conductor (finalBoss/conductorFigure.js head and coat, Ch1 arms and lantern) |
 | `drawClaimTag(c, x, y, { w, flip, front, back })`, `drawTicket`, `drawAccessionCard`, `drawOrchardCase` | close-ups: the claim tag (flips over about its long axis), a punched ticket, the museum card, the case |
 
+`painters-c1.js` (chapter1To2, chapter2To3) adds: `drawPinchHand` (Butch's
+hand holding a paper by its edge, close), `glassBeads`, `paintBrickFacade` and
+`paintCityFar` (Chapter 2's rain city), `drawLitSign`, `drawStationClock`,
+`drawLampPost`, `drawWaterTower`, `paintCarriageSide` (the night carriage's
+side, close).
+
 Characters: Butch is one design everywhere (cap with oxblood band and brass
 badge, long coat, lamp) — use these painters, never a new Butch. The
 Conductor is the finale's. Mara only from behind or in silhouette.
