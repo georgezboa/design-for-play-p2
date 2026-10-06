@@ -13,6 +13,7 @@
   "scripts": {
     "assets:prepare": "node scripts/prepare-world-assets.mjs",
     "assets:check": "node scripts/prepare-world-assets.mjs --check",
+    "assets:compress-glb": "node scripts/compress-glb.mjs",
     "predev": "npm run assets:check",
     "dev": "vite --mode development",
     "preprod": "npm run assets:check",
@@ -48,8 +49,12 @@
     "three": "^0.179.1"
   },
   "devDependencies": {
+    "@gltf-transform/core": "^4.5.1",
+    "@gltf-transform/extensions": "^4.5.1",
+    "@gltf-transform/functions": "^4.5.1",
     "electron": "^37.2.6",
     "electron-builder": "^26.0.12",
+    "meshoptimizer": "^1.3.0",
     "png2icons": "^2.0.1",
     "sharp": "^0.35.3",
     "vite": "^6.4.3"
