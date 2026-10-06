@@ -55,6 +55,33 @@ export const CREDIT_MUSIC = Object.freeze([
     note: 'Performed on cello · converted to MP3 for the game',
   },
   {
+    title: "REFLETS DANS L'EAU (DEBUSSY)",
+    creator: 'GIORGI LATSO · RECORDED BY ASUAS',
+    use: 'CHAPTER 4 · THE GALLERY AND THE STUDIO',
+    license: 'CC BY-SA 4.0',
+    source: "https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg",
+    licenseUrl: 'https://creativecommons.org/licenses/by-sa/4.0/',
+    note: 'Solo piano · converted to MP3 for the game',
+  },
+  {
+    title: 'THE SNOW IS DANCING (DEBUSSY)',
+    creator: 'PRACCHIA-78 · VIRTUAL PIANO RENDITION',
+    use: 'CHAPTER 4 · THE PIGMENT TRAIN',
+    license: 'PUBLIC DOMAIN',
+    source: "https://commons.wikimedia.org/wiki/File:Claude_Debussy_-_Children%27s_Corner.ogg",
+    licenseUrl: "https://commons.wikimedia.org/wiki/File:Claude_Debussy_-_Children%27s_Corner.ogg",
+    note: "Excerpted from Children's Corner · credited voluntarily",
+  },
+  {
+    title: 'PICTURES AT AN EXHIBITION · NIGHT ON BALD MOUNTAIN (MUSSORGSKY)',
+    creator: 'MUSOPEN',
+    use: 'CHAPTER 5 · THE MUSEUM AND LABYRINTH · THE BLACK TICKET',
+    license: 'PUBLIC DOMAIN',
+    source: 'https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_night_on_bald_mountain.ogg',
+    licenseUrl: 'https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_pictures_at_an_exhibition_-_promenade_-_allegro_giusto,_nel_modo_russico_senza_allegrezza,_ma.ogg',
+    note: 'Promenade, The Old Castle, Catacombae, Baba-Yaga, Night on Bald Mountain · credited voluntarily',
+  },
+  {
     title: 'GNOSSIENNE NO. 1 (SATIE)',
     creator: 'JAAN PATTERSON',
     use: 'CHAPTER 3 · ARRIVAL',
@@ -117,8 +144,9 @@ export const CREDIT_GENERATIVE = Object.freeze([
     detail: 'OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under team direction.',
   },
   {
-    label: 'SYNTHETIC CHARACTER VOICES',
-    detail: 'Chapter 3 and Chapter 5 use generated English voice performances, and Chapter 6 reuses selected Chapter 3 lines for the argument about Mara. The audio manifests do not record the provider; attribution remains explicitly marked as incomplete.',
+    label: 'ELEVENLABS · ELEVENLABS.IO',
+    detail: 'The English character voices in Chapters 3 and 5 were generated with ElevenLabs text-to-speech; Chapter 6 reuses selected Chapter 3 lines for the argument about Mara.',
+    source: 'https://elevenlabs.io/',
   },
 ]);
 

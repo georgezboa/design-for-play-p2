@@ -1,6 +1,12 @@
 # Music replacement plan (release/1.0)
 
-Status: **open**. Written 2026-09-27 during the release asset pass.
+Status: **resolved 2026-10-06.** All seven cues now have a recorded source and licence:
+- **Matched to their public sources** (same length, loudness envelope correlation 0.92–0.99): *Promenade*, *Old Castle*, *Catacombae* (Musopen, public domain); *Reflets dans l'eau* (Giorgi Latso, CC BY-SA 4.0, attribution in the credits); *The Snow Is Dancing* (Pracchia-78, public domain).
+- **Replaced:** *Dies irae* by Musopen's *Baba-Yaga* (`5.7_mussorgsky_baba_yaga.mp3`), and *Face the Fear* by Musopen's *Night on Bald Mountain* (`black-knife/audio/night-on-bald-mountain.mp3`).
+
+Records: `public/assets/music/ch4|ch5/ASSET_MANIFEST.md`, `public/assets/black-knife/audio/ASSET_MANIFEST.md`, `public/CREDITS.md`. The plan below is kept for history.
+
+Written 2026-09-27 during the release asset pass.
 
 Seven shipped recordings have **no provenance**: no performer, label, source
 URL or licence, in the files or in any manifest. The compositions are all in

@@ -27,8 +27,8 @@ export const CHAPTER5_SCORE = Object.freeze({
     fade: 4.5,
   }),
   collapse: Object.freeze({
-    id: 'ch5-dies-irae',
-    src: '/assets/music/ch5/5.7_verdi_dies_irae.mp3',
+    id: 'ch5-baba-yaga',
+    src: '/assets/music/ch5/5.7_mussorgsky_baba_yaga.mp3',
     volume: 0.42,
     fade: 1.2,
   }),

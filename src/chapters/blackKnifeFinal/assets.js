@@ -5,8 +5,9 @@
 // for THE BLACK TICKET. Any entry with path:null gets a painted placeholder
 // (PreloadScene.makeFallbacks).
 //
-// The battle music (face-the-fear.mp3) has no recorded provenance and is
-// listed for replacement in docs/MUSIC_REPLACEMENT_PLAN.md.
+// The battle music is Mussorgsky's Night on Bald Mountain (Musopen, public
+// domain; the opening 0:04-3:53 at -14 LUFS), which replaced an uncleared
+// track in 2026-10 (public/assets/black-knife/audio/ASSET_MANIFEST.md).
 //
 // Round 3: the drops were packed edge to edge, so a dozen frames ran into
 // (or were sliced by) their frame. Every frame is now re-packed with
@@ -41,7 +42,7 @@ export const IMAGE_MANIFEST = {
 };
 
 export const AUDIO_MANIFEST = {
-  'music-battle': { path: '/assets/black-knife/audio/face-the-fear.mp3', loop: true, volume: 0.5 },
+  'music-battle': { path: '/assets/black-knife/audio/night-on-bald-mountain.mp3', loop: true, volume: 0.5 },
   'sfx-shoot': { path: null },
   'sfx-boss-hit': { path: null },
   'sfx-player-hit': { path: null },

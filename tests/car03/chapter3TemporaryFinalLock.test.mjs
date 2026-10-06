@@ -137,10 +137,12 @@ describe('Chapter 3 integrated final lock v44', () => {
     // and the stale music/ch3 "ASSET_MANIFEST 2.md" (759 -> 751 files);
     // scrubbed absolute paths from replacements/manifest.json; re-encoded
     // eight Chapter 3 MP3s to LAME V2 at identical loudness and length.
+    // v45 (2026-10-06, asset-only): voice/ch03/manifest.json records the
+    // voice provider (ElevenLabs); no runtime behaviour change.
     assert.equal(assetFiles.length, 751);
     assert.equal(
       aggregateSignature(assetFiles),
-      '0dc11e665a7b3cbeef55d562490ec38aa690499bf1f47e3f8370b4cf9b4bd1e8',
+      '8b6d3027c3f9df716e4300258348ea114a82a18c92935264ed4009a21b6b31a5',
       'Chapter 3 assets are locked. Reopen it explicitly and create a new lock version before changing assets.',
     );
   });

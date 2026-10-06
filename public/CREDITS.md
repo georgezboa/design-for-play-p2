@@ -67,13 +67,19 @@ Chapter 3 also uses these public-domain / CC0 recordings (credit given voluntari
 
 *Train Undertow*, *Train Resonance* and *Neon Safety Test* are original project-owned cues (Night Service plays *Train Undertow*; Borrowed Light plays the other two). Details: `/assets/music/ch1/ASSET_MANIFEST.md`.
 
-### Recordings with unresolved provenance (to be replaced before public release)
+### Chapter 4 — The Painted Country (required attribution)
 
-The following runtime recordings are external performances of public-domain works, but **no performer, source or licence is recorded** for any of them. They are not credited here because their rights holders are unknown; they are scheduled for replacement (the replacement plan is `docs/MUSIC_REPLACEMENT_PLAN.md` in the source repository):
+- *Reflets dans l'eau* (Claude Debussy), performed by **Giorgi Latso**, recorded by Asuas, **CC BY-SA 4.0** (https://creativecommons.org/licenses/by-sa/4.0/) — https://commons.wikimedia.org/wiki/File:Debussy_,_Reflets_dans_l%27eau.ogg. Converted to MP3 for the game; the converted file remains available under CC BY-SA 4.0. Runtime: `/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3`.
+- *The Snow Is Dancing* from *Children's Corner* (Debussy), a virtual-piano rendition by Commons user Pracchia-78, released into the public domain (credit given voluntarily) — https://commons.wikimedia.org/wiki/File:Claude_Debussy_-_Children%27s_Corner.ogg. The movement is excerpted from the full suite.
 
-- Chapter 4: Debussy, *The Snow Is Dancing* (`/assets/music/ch4/4.2_debussy_snow_is_dancing.mp3`) and *Reflets dans l'eau* (`/assets/music/ch4/4.3_debussy_reflets_dans_leau.mp3`).
-- Chapter 5: Mussorgsky, *Promenade*, *The Old Castle* and *Catacombae*; Verdi, *Requiem*, *Dies irae* (`/assets/music/ch5/5.1`, `5.3`, `5.4`, `5.7`; see `/assets/music/ch5/ASSET_MANIFEST.md`).
-- The hidden final fight, *The Black Ticket*: *Face the Fear* (`/assets/black-knife/audio/face-the-fear.mp3`); composer and performer unknown.
+### Chapter 5 — The Museum of One Answer, and The Black Ticket
+
+All of these are Musopen recordings, public domain on Wikimedia Commons; credit is given voluntarily.
+
+- Modest Mussorgsky, *Pictures at an Exhibition*: *Promenade* (lobby and corridor), *The Old Castle*, *Catacombae* (the Labyrinth) and *Baba-Yaga* (the collapse; its two *Allegro* sections joined). Per-file sources and SHA-256 records are in `/assets/music/ch5/ASSET_MANIFEST.md`.
+- Mussorgsky, *Night on Bald Mountain* (the hidden fight, *The Black Ticket*; the opening 3:50). Source: https://commons.wikimedia.org/wiki/File:Modest_Mussorgsky_-_night_on_bald_mountain.ogg. Record: `/assets/black-knife/audio/ASSET_MANIFEST.md`.
+
+Every recording in the game now has a recorded source and licence. On 2026-10-06 the earlier uncleared files were either matched to their public sources (Chapter 4, and Chapter 5's *Promenade*, *Old Castle* and *Catacombae*) or replaced: Verdi's *Dies irae*, a 1900–1950 78 rpm transfer, and *Face the Fear*, an electronic track of unknown origin.
 
 Sound effects, room tones and some ambience are synthesized in-engine by project-authored Web Audio code rather than taken from third-party recordings.
 
@@ -81,7 +87,7 @@ Sound effects, room tones and some ambience are synthesized in-engine by project
 
 - **Tencent Hunyuan 3D 3.0 / 3.1:** generated 3D source meshes for Echo City, the Museum reconstruction, environments, props and characters. Runtime assets were selected, edited, retopologized or optimized by the team. Chapter 3 per-asset details: `/assets/chapter03-3d/ASSET_MANIFEST.json` and `/assets/chapter03-3d/replacements/manifest.json`.
 - **OpenAI image generation:** title and visual-direction imagery, world panoramas, shared painterly textures, Chapter 3 surface sources and selected production reference art. Shared painterly details: `../src/assets/shared/painterly/ASSET_MANIFEST.md` in the source repository.
-- **Synthetic character voices:** generated English voice performances are present in Chapters 3 and 5, and Chapter 6 reuses selected Chapter 3 lines for the argument about Mara. Their current manifests enumerate every runtime line but do not record the provider. This missing provenance is disclosed rather than guessed: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
+- **ElevenLabs (synthetic character voices, elevenlabs.io):** the English voice performances in Chapters 3 and 5 were generated with ElevenLabs text-to-speech (https://elevenlabs.io); Chapter 6 reuses selected Chapter 3 lines for the argument about Mara. Per-line manifests: `/assets/chapter03-3d/voice/ch03/manifest.json` and `/museum3d/voice/ch05/manifest.json`.
 - **AI-assisted development:** OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under human direction.
 
 ## Licensed source material

@@ -1,5 +1,8 @@
 {
   "version": 1,
+  "provider": "ElevenLabs",
+  "providerUrl": "https://elevenlabs.io/",
+  "generation": "Text-to-speech, English; provider recorded 2026-10-06 from the team (George). Attribution: elevenlabs.io.",
   "lines": [
     {
       "key": "ANA\u0000The thick line is the street supply. A thin solid line feeds one display. A thin broken line means a removable event branch.",

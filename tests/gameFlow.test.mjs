@@ -106,7 +106,7 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /music\.play\(id, \{ \.\.\.options, \.\.\.overrides \}\)/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /c3-\$\{cue\}/);
   assert.match(source('src/chapters/museum3d/Museum3DApp.js'), /CHAPTER5_SCORE/);
-  assert.match(source('src/chapters/museum3d/chapter05Score.js'), /ch5-dies-irae/);
+  assert.match(source('src/chapters/museum3d/chapter05Score.js'), /ch5-baba-yaga/);
 });
 
 test('the shared ESC pause menu exposes resume, settings and a confirmed title exit', () => {
