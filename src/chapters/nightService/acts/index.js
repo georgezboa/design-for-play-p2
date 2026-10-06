@@ -55,3 +55,20 @@ export function startCarry(actId) {
   const act = actById(actId);
   return { bell: 0, items: [], flags: [], linkHistory: [], ...(act.start ?? {}) };
 }
+
+/**
+ * A save's resume point (`{ act, step, slots, lens }`, PanelScene
+ * updateResumePoint) checked against the act it should reopen: the step must
+ * be one of the act's, past its first. Returns the point, or null.
+ */
+export function resolveResume(act, data) {
+  if (!act || !data || data.act !== act.id || typeof data.step !== 'string') return null;
+  const index = act.steps.findIndex((step) => step.id === data.step);
+  if (index <= 0) return null;
+  return {
+    act: act.id,
+    step: data.step,
+    slots: Array.isArray(data.slots) ? [...data.slots] : null,
+    lens: data.lens && Number.isFinite(data.lens.x) && Number.isFinite(data.lens.y) ? { x: data.lens.x, y: data.lens.y } : null,
+  };
+}

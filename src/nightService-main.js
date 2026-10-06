@@ -9,12 +9,15 @@
 //                chapter-1-act-05 → Act 0.5, chapter-1-act-1 → Act 1,
 //                chapter-1-act-2 → Act 2, chapter-1-act-3 → Act 3; the legacy
 //                prologue-start resumes Act 0). URL parameters are ignored.
-//   development — `?act=0|0.5|1|2|3` and `?step=<step id>` override the save.
+//                Inside the act, the save's resume point (the last finished
+//                step, the windows and the lens) reopens it where it was left.
+//   development — `?act=0|0.5|1|2|3` and `?step=<step id>` override the save
+//                (and its resume point).
 
 import Phaser from 'phaser';
 import './fonts/fonts.css';
 import { FRAME_DT_CAP_MS, PANEL_SCENE, PanelScene } from './chapters/nightService/PanelScene.js';
-import { ACTS, CHECKPOINT_ACTS, FIRST_ACT, resolveActParam, startCarry } from './chapters/nightService/acts/index.js';
+import { ACTS, CHECKPOINT_ACTS, FIRST_ACT, resolveActParam, resolveResume, startCarry } from './chapters/nightService/acts/index.js';
 import { createNightServiceAudio } from './chapters/nightService/audio.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
@@ -36,11 +39,23 @@ function savedAct() {
   return CHECKPOINT_ACTS[save?.checkpointId] ?? FIRST_ACT;
 }
 
+/** The active save's resume point inside `actId`, if it names one of its steps. */
+function chapterResume(actId) {
+  const save = store.readAll()[store.getActiveSlot()];
+  if (!save || CHECKPOINT_ACTS[save.checkpointId] !== actId) return null;
+  return resolveResume(ACTS[actId], store.readResume(save.checkpointId));
+}
+
 const params = devParams();
-const startStep = params.get('step');
+const devStep = params.get('step');
 // `?step=` alone opens whichever act owns that step id
-const stepAct = startStep ? Object.values(ACTS).find((act) => act.steps.some((step) => step.id === startStep))?.id : null;
+const stepAct = devStep ? Object.values(ACTS).find((act) => act.steps.some((step) => step.id === devStep))?.id : null;
 const startAct = resolveActParam(params.get('act')) ?? stepAct ?? savedAct();
+// Mid-act resume (alpha R4 · P1): the save's resume point for the act it
+// stands on, unless a dev route picked the act or the step.
+const overridden = ['act', 'step', 'from'].some((key) => params.has(key));
+const resume = overridden ? null : chapterResume(startAct);
+const startStep = devStep ?? resume?.step ?? null;
 
 let scene = null;
 const pause = installPauseMenu({
@@ -72,6 +87,13 @@ const services = {
     const slot = store.getActiveSlot();
     if (!store.readAll()[slot]) store.startNew(slot);
     store.markCheckpoint(id, { slot });
+  },
+  // the scene reports each finished step; it is kept only while the save
+  // still stands on this act's checkpoint (saveSystem.js markResume)
+  onResumePoint(point) {
+    const save = store.readAll()[store.getActiveSlot()];
+    if (!save || CHECKPOINT_ACTS[save.checkpointId] !== point.act) return;
+    store.markResume(save.checkpointId, point);
   },
   onStone(id) {
     collectMagicStone(id);
@@ -121,7 +143,7 @@ const boot = async () => {
   // (so the carriage wall grows in place) — params are empty in production
   const fromAct = ACTS[params.get('from')] ? params.get('from') : null;
   const carry = fromAct ? { ...startCarry(startAct), slots: ACTS[fromAct].endSlots ?? ACTS[fromAct].slots } : undefined;
-  game.scene.add(PANEL_SCENE, PanelScene, true, { actId: startAct, step: startStep, services, fromAct, carry });
+  game.scene.add(PANEL_SCENE, PanelScene, true, { actId: startAct, step: startStep, resume, services, fromAct, carry });
   scene = game.scene.getScene(PANEL_SCENE);
   document.documentElement.dataset.nightServiceAct = startAct;
 };

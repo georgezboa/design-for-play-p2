@@ -235,7 +235,8 @@ export const ACT3 = defineAct({
         ],
       },
       do: [{ sfx: 'chime' }, { actorPose: { actor: 'mara', pose: 'idle' } }, { wait: 500 }],
-      skip: [{ placeActor: { actor: 'mara', tile: 'orchard', state: 'overlook', x: STAIR_AT, y: 0.97, visible: true, pose: 'idle' } }],
+      // she waits on the hill: the orchard window is zoomed out to it
+      skip: [{ zoomOut: 'orchard' }, { placeActor: { actor: 'mara', tile: 'orchard', state: 'overlook', x: STAIR_AT, y: 0.97, visible: true, pose: 'idle' } }],
     },
     {
       id: 'bridge',

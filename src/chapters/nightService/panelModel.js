@@ -1113,6 +1113,59 @@ export function createPanelModel(act, options = {}) {
     return true;
   }
 
+  /**
+   * Where the player stood inside the step a resume point names (alpha R4 ·
+   * P1): after `skipTo(step)`, put the windows back the way they were left
+   * (a permutation of the act's tiles) and the lens where it was. A layout
+   * that would already complete the step is not restored, so a resume never
+   * starts by playing a beat under the act title. Returns what was applied.
+   */
+  function applyResume({ slots = null, lens = null } = {}) {
+    const applied = { slots: false, lens: false };
+    const same = Array.isArray(slots) && slots.length === s.slots.length
+      && [...slots].map(String).sort().join('|') === [...s.slots].map(String).sort().join('|');
+    if (same && !s.dragging) {
+      const before = [...s.slots];
+      s.slots = slots.map((tile) => tile ?? null);
+      refreshLinks({ quiet: true });
+      const step = currentStep();
+      if (step && evaluate(step.when)) {
+        s.slots = before;
+        refreshLinks({ quiet: true });
+      } else applied.slots = before.join('|') !== s.slots.join('|');
+    }
+    if (lens && s.lens.enabled && Number.isFinite(lens.x) && Number.isFinite(lens.y)) {
+      const b = lensBounds();
+      const was = { x: s.lens.x, y: s.lens.y };
+      s.lens.x = Math.max(b.x0, Math.min(b.x1, lens.x));
+      s.lens.y = Math.max(b.y0, Math.min(b.y1, lens.y));
+      refreshLinks({ quiet: true });
+      const step = currentStep();
+      if (step && evaluate(step.when)) {
+        Object.assign(s.lens, was);
+        refreshLinks({ quiet: true });
+      } else applied.lens = true;
+    }
+    return applied;
+  }
+
+  /** What a resume point records now: the step the player is on, the windows, the lens. */
+  function resumePoint() {
+    const step = currentStep();
+    if (!step) return null;
+    return {
+      act: act.id,
+      step: step.id,
+      slots: [...s.slots],
+      ...(s.lens.enabled ? { lens: { x: Math.round(s.lens.x), y: Math.round(s.lens.y) } } : {}),
+    };
+  }
+
+  /** True while the script waits on the player at a step (nothing queued, nothing playing). */
+  function waitingOnPlayer() {
+    return Boolean(currentStep()) && !s.queue.length && !s.blocking && !s.card && !s.ended && !s.inputLocked && !s.dragging && !floatingFrame();
+  }
+
   refreshLinks({ quiet: true });
   if (options.step) skipTo(options.step);
   else pump();
@@ -1176,6 +1229,9 @@ export function createPanelModel(act, options = {}) {
     closeCard,
     update,
     skipTo,
+    applyResume,
+    resumePoint,
+    waitingOnPlayer,
   };
 }
 

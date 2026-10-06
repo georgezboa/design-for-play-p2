@@ -255,6 +255,9 @@ export class PanelScene extends Phaser.Scene {
     // one-answer exhibit, which is not a Chapter 1 act).
     this.actDef = data.act ?? this.actDef ?? null;
     this.startStep = data.step ?? null;
+    // a real mid-act resume (the save's resume point): `startStep` is its
+    // step, and this holds the windows and the lens as the player left them
+    this.resumeData = data.resume ?? null;
     this.carryIn = data.carry ?? null;
     this.services = data.services ?? this.services ?? {};
     this.fromAct = data.fromAct ?? null;
@@ -281,7 +284,11 @@ export class PanelScene extends Phaser.Scene {
       ? { bell: 0, items: [], flags: [], linkHistory: [], ...(this.actDef.start ?? {}) }
       : startCarry(this.actId);
     this.model = createPanelModel(this.act, { carry: this.carryIn ?? freshCarry, step: this.startStep });
+    if (this.resumeData && this.startStep) this.model.applyResume(this.resumeData);
     this.layout = this.model.layout;
+    // resume points (alpha R4 · P1): recorded once each step is done
+    this.resumeIndex = this.model.state.stepIndex;
+    this.resumeDirty = false;
     this.audio = this.services.audio ?? { play() {}, unlock() {}, setRailRate() {} };
     this.clock = 0;
     this.idleMs = 0;
@@ -1139,7 +1146,8 @@ export class PanelScene extends Phaser.Scene {
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
     this.titleMain.setText(act.heading ?? `${ROMAN[act.number] ?? act.number} · ${act.title}`);
-    const hold = this.startStep ? 200 : 1700;
+    // a dev `?step=` jump opens at once; a real resume shows the act title
+    const hold = this.startStep && !this.resumeData ? 200 : 1700;
     Object.values(this.views).forEach((view, i) => {
       view.cover.setAlpha(1);
       this.tweens.add({ targets: view.cover, alpha: 0, delay: hold + 300 + i * 170, duration: reduce ? 300 : 950, ease: 'Sine.easeOut' });
@@ -1264,6 +1272,7 @@ export class PanelScene extends Phaser.Scene {
 
   onDragEnd({ tile, swapped, from, to }) {
     this.showDropTarget(null);
+    if (swapped) this.resumeDirty = true;
     const view = this.views[tile];
     const reduce = reducedMotionActive();
     const target = this.layout.slots[to];
@@ -2478,6 +2487,7 @@ export class PanelScene extends Phaser.Scene {
       if (!slot) this.model.cancelDrag();
       return;
     }
+    if (press.kind === 'lens' && press.moved) this.resumeDirty = true;
     if (press.moved) return;
     if (press.kind === 'lens') {
       const slot = this.slotAt(p.x, p.y);
@@ -3216,7 +3226,25 @@ export class PanelScene extends Phaser.Scene {
     // progressive, wordless hints (hints.js): pulse → ghost hand → a line
     if (!this.model.isLocked() && !this.fading) this.idleMs += dt;
     this.updateHints(dt);
+    this.updateResumePoint();
     void reduce;
+  }
+
+  /**
+   * Mid-act resume points (alpha R4 · P1): once a step is done and the script
+   * waits on the player again, the page records the step (and the windows and
+   * the lens, again after each swap or lens move), so Continue reopens the act
+   * there instead of at its start (nightService-main.js).
+   */
+  updateResumePoint() {
+    const m = this.model;
+    if (!this.services.onResumePoint || this.foldActive() || this.growing || this.fading || this.press || this.drag) return;
+    const index = m.state.stepIndex;
+    if (index === 0 || (index === this.resumeIndex && !this.resumeDirty) || !m.waitingOnPlayer()) return;
+    this.resumeIndex = index;
+    this.resumeDirty = false;
+    const point = m.resumePoint();
+    if (point) this.services.onResumePoint(point);
   }
 
   /** Does the lens rim reach into the caption bar while a line is showing? */
