@@ -19,7 +19,7 @@ describe('frame-rate independence', () => {
     assert.equal(steps.length, 3);
   });
 
-  it('keeps 60 fps as one step and caps a stall at 0.1 s', () => {
+  it('keeps 60 fps as one step and caps a stall at 0.125 s', () => {
     assert.deepEqual(frameSteps(1 / 60), [1 / 60]);
     assert.ok(Math.abs(sum(frameSteps(2.5)) - MAX_FRAME_SECONDS) < 1e-9);
     assert.deepEqual(frameSteps(0), []);
