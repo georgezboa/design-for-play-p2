@@ -1918,8 +1918,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     const words = hint ? IDLE_HINTS[hint.step] : null;
     if (!words) return;
     if (tier === 'pulse') {
-      hint.nodes.slice(0, 2).forEach((id) => this.pulseNode(id, 2));
-      if (hint.at) this.pulseAt(hint.at.x, hint.at.y, 2);
+      hint.nodes.slice(0, 2).forEach((id) => this.pulseNode(id, 3));
+      if (hint.at) this.pulseAt(hint.at.x, hint.at.y, 3);
       sfx.flickerTick();
     } else if (tier === 'nudge') {
       this.hud.toast(words.nudge, '#f2c27a', 6000);
@@ -2122,7 +2122,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       view.cutMark = mstatus.cut ? 1 : Math.max(0, view.cutMark - decay * 1.5);
       view.target = Phaser.Math.Linear(view.target, target?.id === id ? 1 : 0, Math.min(1, decay * 12));
       if (view.pulse !== null) { view.pulse += decay * (view.pulseSpeed ?? 2.2); if (view.pulse > 1) view.pulse = null; }
-      const hinted = this.hud.dialogOpen && this.hud.dialog?.index === 2 && id === 'a-n1';
+      const hinted = (this.hud.dialogOpen && this.hud.dialog?.index === 2 && id === 'a-n1') || (view.hintUntil ?? 0) > this.clock;
       view.glint = Phaser.Math.Linear(view.glint, hinted ? 2.2 : 1, Math.min(1, decay * 5));
       if (!this.isVisibleX(view.x0, view.x1)) return;
       const powered = mstatus.powered ? powerLevel(mstatus, t) * (mstatus.poweredBy === id ? 1 : 0.55) : 0;
@@ -2228,12 +2228,15 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (!node) return;
     const head = nodeHead(node);
     this.pulseAt(head.x, head.y + 20, n);
+    // Its tag's glint stays bright for a few seconds after the rings.
+    const view = this.nodeViews.get(nodeId);
+    if (view) view.hintUntil = this.clock + 4;
   }
 
   drawPulses(dt) {
     const g = this.pulseG;
     g.clear();
-    const RING_MS = 1100;
+    const RING_MS = 1300;
     this.pulses = this.pulses.filter((p) => {
       p.t += dt;
       for (let i = 0; i < p.n; i += 1) {
