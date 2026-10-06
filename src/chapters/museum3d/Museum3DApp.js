@@ -60,6 +60,9 @@ import {
   syncLowMaterials,
 } from './systems/QualityTier.js';
 
+// Redraw interval behind an open archive card (see _shouldRenderFrame).
+export const CARD_FRAME_MS = 250;
+
 export const LOBBY_SPAWN = Object.freeze({ x: -6.5, z: 0, yaw: -Math.PI / 2 });
 export const CORRIDOR_SPAWN = Object.freeze({ x: 9.5, z: 0, yaw: -Math.PI / 2 });
 export const LOBBY_RETURN_SPAWN = Object.freeze({ x: 6.8, z: 0, yaw: Math.PI / 2 });
@@ -201,8 +204,12 @@ export class Museum3DApp {
         this.controller.unlock();
         this.controller.enabled = false;
         this.interaction.enabled = false;
+        this._setMuseumCanvasHidden(true);
       },
-      onClose: ({ directionId, completed }) => this._onDirectionClosed(directionId, completed),
+      onClose: ({ directionId, completed }) => {
+        this._setMuseumCanvasHidden(false);
+        this._onDirectionClosed(directionId, completed);
+      },
     });
     // Compatibility for the existing QA text hook.
     this.labyrinth = this.directionExhibit;
@@ -326,6 +333,25 @@ export class Museum3DApp {
       const next = this.quality.setPreference(qualityPreference(event.detail ?? {}));
       if (next) this.applyQuality(next);
     });
+  }
+
+  // While a framed exhibit or wing covers the view, the museum's own canvas
+  // leaves the page's composite altogether (alpha round 4: the one-answer
+  // exhibit ran at 2.8 fps framed, 10 fps on its own, on software GL).
+  _setMuseumCanvasHidden(hidden) {
+    const canvas = this.renderer?.domElement;
+    if (!canvas?.style) return;
+    canvas.style.visibility = hidden ? 'hidden' : '';
+    this._lastCardFrameAt = 0;
+  }
+
+  // An archive card leaves the museum visible behind its scrim, but nothing
+  // there needs 60 frames a second: redraw it a few times a second instead.
+  _shouldRenderFrame(now = performance.now()) {
+    if (!this.cards.isOpen) return true;
+    if (now - (this._lastCardFrameAt ?? 0) < CARD_FRAME_MS) return false;
+    this._lastCardFrameAt = now;
+    return true;
   }
 
   // One museum frame. A context without MSAA on the LOW tier ends on an FXAA
@@ -782,7 +808,9 @@ export class Museum3DApp {
       const measurable = !globalThis.NIGHTFALL_PAUSED && !this.directionExhibit.opened && !document.hidden;
       if (measurable && lastFrameAt !== null) this._stepQuality(frameStart - lastFrameAt);
       lastFrameAt = measurable ? frameStart : null;
-      const dt = Math.min(this.clock.getDelta(), 0.05);
+      // Wall-clock time down to 10 fps (alpha round 4; weak laptops run the
+      // museum at 15-25 fps and a 50 ms cap slowed walking and the collapse).
+      const dt = Math.min(this.clock.getDelta(), 0.1);
       if (globalThis.NIGHTFALL_PAUSED) {
         this.objective.update(null);
         this._renderFrame();
@@ -799,7 +827,10 @@ export class Museum3DApp {
         this.dialogue.update(dt);
         return;
       }
-      this.controller.update(dt);
+      // Movement in steps of at most 50 ms, so a slow frame cannot carry the
+      // body through a thin wall or a hazard's edge.
+      const steps = Math.max(1, Math.ceil(dt / 0.05));
+      for (let i = 0; i < steps; i += 1) this.controller.update(dt / steps);
       this._syncRuntimeCoordinates(snapshot);
       const active = this.getActiveScene();
       if (active) active.update(dt, snapshot);
@@ -817,7 +848,7 @@ export class Museum3DApp {
       this.dialogue.update(dt);
       this._syncObjective(snapshot);
       music.setDialogueActive(this.dialogue.isPlaying);
-      this._renderFrame();
+      if (this._shouldRenderFrame(frameStart)) this._renderFrame();
     });
   }
 

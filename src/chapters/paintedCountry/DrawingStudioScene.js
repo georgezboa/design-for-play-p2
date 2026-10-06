@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   STILL_LIFE_REGIONS,
   STUDIO_PIGMENTS,
@@ -27,6 +28,7 @@ import {
   RestartHold,
   UI,
   drawGlintMarker,
+  hideUnderLowGraphics,
   noteAt,
   showTitleCard,
 } from './chapterUi.js';
@@ -275,6 +277,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     const key = buildPaperGrain(this, 'paper-grain-drawing-studio-v2');
     this.grain = this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key)
       .setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GRAIN).setAlpha(0.7);
+    hideUnderLowGraphics(this, [this.grain]);
   }
 
   bindInput() {
@@ -629,7 +632,9 @@ export class DrawingStudioScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     if (this.restart.blocking) {

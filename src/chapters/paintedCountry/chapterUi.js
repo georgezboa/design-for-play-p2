@@ -22,6 +22,21 @@ export {
 export const textScale = () => Phaser.Math.Clamp((globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100, 0.8, 1.6);
 export const px = (size) => `${Math.round(Math.max(MIN_FONT_PX, size) * textScale())}px`;
 
+// LOW GRAPHICS (the pause menu's checkbox). The page also draws at a lower
+// internal resolution (shared/phaserRenderScale.js); here the rooms drop
+// their purely decorative full-screen layers (the paper grain, the dust).
+export const lowGraphicsOn = (settings = globalThis.NIGHTFALL_SETTINGS) => settings?.lowGraphics === true;
+
+/** Hide `objects` while LOW GRAPHICS is on, following the setting live. */
+export function hideUnderLowGraphics(scene, objects) {
+  const list = objects.filter(Boolean);
+  const sync = (settings) => list.forEach((object) => object.setVisible?.(!lowGraphicsOn(settings)));
+  sync();
+  const onSettings = (event) => sync(event.detail ?? globalThis.NIGHTFALL_SETTINGS);
+  globalThis.addEventListener?.('nightfall:settings', onSettings);
+  scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => globalThis.removeEventListener?.('nightfall:settings', onSettings));
+}
+
 const screenOf = (scene, worldX, worldY) => {
   const cam = scene.cameras.main;
   return { x: (worldX - cam.worldView.x) * cam.zoom, y: (worldY - cam.worldView.y) * cam.zoom };

@@ -21,6 +21,7 @@ import { installDevMenuReturnControl } from '../../../devMenuReturn.js';
 import { installPauseMenu } from '../../../shell/pauseMenu.js';
 import { CHAPTER_CONTROLS } from '../../../shell/chapterControls.js';
 import { installPhaserMotionGuard } from '../../../shell/motion.js';
+import { followLowGraphics } from '../../../shared/phaserRenderScale.js';
 import { applySettings, readSettings } from '../../../shell/saveSystem.js';
 import { leaveForTitle } from '../../../shell/titleReturn.js';
 import { DEV_MODE, devParams } from '../../../devMode.js';
@@ -66,7 +67,8 @@ const services = {
   audio,
   devMode: DEV_MODE,
   // dev-only: headless QA steps the simulation in real time (see nightService-main.js)
-  maxDt: Math.min(2000, Number(params.get('dtmax')) || 50),
+  // Wall-clock time down to 10 fps (alpha round 4: frame-rate independence).
+  maxDt: Math.min(2000, Number(params.get('dtmax')) || 100),
   onChapterEnd() {
     if (completionSent) return;
     completionSent = true;
@@ -96,6 +98,9 @@ game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 window.addEventListener('keydown', () => audio.unlock(), { once: true });
 // Not dev-only: shell/pauseMenu.js pauses the scenes through globalThis.game.
 window.game = game;
+// LOW GRAPHICS: the exhibit's 1920×1080 stage drawn at half resolution
+// (alpha round 4: it ran at 2.8 fps framed in the museum on software GL).
+followLowGraphics(game, { low: 0.5 });
 
 const boot = async () => {
   try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }

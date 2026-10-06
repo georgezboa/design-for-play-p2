@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   CHAPTER4_IGNITION_SIGN,
   EXPANSION_PHASE,
@@ -15,7 +16,7 @@ import { drawPigmentHalo, haloPointToward } from './pigmentHalo.js';
 import { PAPER } from './paperPalette.js';
 import { buildPaperGrain, draftLine, draftRect, makeRandom } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
-import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt, showTitleCard } from './chapterUi.js';
+import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, hideUnderLowGraphics, noteAt, showTitleCard } from './chapterUi.js';
 import { drawGreyCell } from './platePencil.js';
 import { collectMagicStone, magicStoneSnapshot, magicStoneCountLabel } from '../../shell/magicStones.js';
 import { devParam } from '../../devMode.js';
@@ -383,11 +384,11 @@ export class PigmentTrainScene extends Phaser.Scene {
 
   buildGrain() {
     const key = buildPaperGrain(this, 'paper-grain-pigment-train');
-    this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key)
+    hideUnderLowGraphics(this, [this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key)
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(80)
-      .setAlpha(0.68);
+      .setAlpha(0.68)]);
   }
 
   bindInput() {
@@ -741,7 +742,9 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     if (this.restart.blocking) {

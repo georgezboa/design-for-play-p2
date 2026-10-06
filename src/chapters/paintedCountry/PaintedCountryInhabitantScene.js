@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import { PAPER } from './paperPalette.js';
 import { buildPaperGrain, draftLine, draftRect, hatchRect, makeRandom, paintedFill } from './paperSurface.js';
 import {
@@ -1018,7 +1019,9 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
 
   update(time, delta = 16.67) {
     if (!this.state) return;
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     if (this.caption.alpha && this.time.now > (this.captionUntil ?? 0)) this.caption.setAlpha(0);
     const direction = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
     this.fable.update(dt);

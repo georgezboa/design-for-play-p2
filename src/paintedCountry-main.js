@@ -17,6 +17,7 @@ import { installPauseMenu } from './shell/pauseMenu.js';
 import { DEV_MODE, devRoutesEnabled } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { installPhaserMotionGuard } from './shell/motion.js';
+import { followLowGraphics } from './shared/phaserRenderScale.js';
 
 installPhaserMotionGuard(Phaser);
 
@@ -77,6 +78,8 @@ async function boot() {
 
   // Not dev-only: shell/pauseMenu.js pauses the scenes through globalThis.game.
   window.game = game;
+  // LOW GRAPHICS: draw at 60% (alpha round 4: ~5 fps on software GL).
+  followLowGraphics(game, { low: 0.6 });
 }
 
 if (DEV_MODE) window.render_game_to_text = () => {

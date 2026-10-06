@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   BARRIERS,
   BELL_MS,
@@ -24,7 +25,7 @@ import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
 import { draftBlockEdges, shadePit } from './art/pencilEdges.js';
 import { buildPaperGrain, draftLine, draftRect, hatchRect, makeRandom, paintedFill } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
-import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt } from './chapterUi.js';
+import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, hideUnderLowGraphics, noteAt } from './chapterUi.js';
 import { drawGreyCell } from './platePencil.js';
 import { bell as ringBell, installLineAudio, whistle } from './lineAudio.js';
 import { reducedMotionActive } from '../../shell/motion.js';
@@ -361,7 +362,7 @@ export class PaintedLineScene extends Phaser.Scene {
 
   buildGrain() {
     const key = buildPaperGrain(this, 'paper-grain-line');
-    this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GRAIN).setAlpha(0.6);
+    hideUnderLowGraphics(this, [this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GRAIN).setAlpha(0.6)]);
   }
 
   // Chapter 2's bell meter, at this chapter's scale: a brass bell in a ring
@@ -825,7 +826,9 @@ export class PaintedLineScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     const move = this.brush.readMove(this.keys);

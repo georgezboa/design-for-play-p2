@@ -6,6 +6,10 @@ export const MONO = '"Space Mono", ui-monospace, SFMono-Regular, Menlo, monospac
 
 // One hold time for every hold in the chapter (take, apply, board, exit).
 export const HOLD_SECONDS = 0.25;
+// The longest frame a room's clock takes at face value. Below 10 fps game
+// time runs slow rather than leaping (alpha round 4: frame-rate
+// independence down to ~10 fps). Arcade physics substeps on its own.
+export const FRAME_DT_CAP_MS = 100;
 // Restarting a room wipes what was painted, so it is a deliberate act.
 export const RESTART_HOLD_SECONDS = 1;
 

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   BAY_TITLES,
   CEILING_Y,
@@ -48,6 +49,7 @@ import {
   PaperTag,
   RestartHold,
   SERIF,
+  hideUnderLowGraphics,
   UI,
   drawGlintMarker,
   noteAt,
@@ -190,6 +192,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     this.buildGrain();
     this.buildAir();
+    hideUnderLowGraphics(this, [this.grain, ...this.motes.map((mote) => mote.obj)]);
     this.buildHud();
     this.buildViewer();
 
@@ -1372,7 +1375,9 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     this.stepFall(dt);
