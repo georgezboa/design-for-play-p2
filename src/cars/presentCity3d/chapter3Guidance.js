@@ -94,10 +94,16 @@ export function controlsHintHtml(segments) {
 export const COMPASS_FLASH_SECONDS = 4;
 export const COMPASS_ARRIVED_METRES = 5;
 
-// Whether the compass tag shows this frame.
-export function compassVisible({ hasTarget, locked = false, tabHeld = false, flashRemaining = 0, distance = Infinity, targetTagShown = false }) {
+// Whether the compass tag shows this frame. Alpha round 4 (P2, "the
+// ministry marker disappeared mid-walk"): while the destination is off
+// screen the edge tag stays (it went after the four-second flash, mid-walk);
+// once the destination is in view its beacon / tag takes over again.
+export function compassVisible({
+  hasTarget, locked = false, tabHeld = false, flashRemaining = 0, distance = Infinity, targetTagShown = false,
+  targetOnScreen = true,
+}) {
   if (!hasTarget || locked) return false;
-  if (!(tabHeld || flashRemaining > 0)) return false;
+  if (!(tabHeld || flashRemaining > 0 || !targetOnScreen)) return false;
   if (distance <= COMPASS_ARRIVED_METRES) return false;
   return !targetTagShown;
 }

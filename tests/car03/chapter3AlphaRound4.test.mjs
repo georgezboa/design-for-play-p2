@@ -13,7 +13,7 @@ import {
   createChapter3OpeningModel,
 } from '../../src/cars/presentCity3d/chapter3OpeningModel.js';
 import { createSaveStore } from '../../src/shell/saveSystem.js';
-import { controlsHintHtml, controlsHintState } from '../../src/cars/presentCity3d/chapter3Guidance.js';
+import { compassVisible, controlsHintHtml, controlsHintState } from '../../src/cars/presentCity3d/chapter3Guidance.js';
 import {
   CAMERA_WEST_REACH_X, MAX_FRAME_SECONDS, MAX_STEP_SECONDS, WALK_SPEED, frameSteps, walkAlongPath,
 } from '../../src/cars/presentCity3d/EchoCity3DPreview.js';
@@ -264,8 +264,14 @@ describe('Chapter 3 alpha round 4 · P2 polish', () => {
     assert.match(preview, /desiredX = THREE\.MathUtils\.clamp\(desiredX, westThresholdMinX, eastThresholdMaxX\);/);
   });
 
-  it('the walk beacons draw over the roofs in front of them', () => {
+  it('the walk beacons draw over the roofs; the edge compass stays while the target is off screen', () => {
     assert.match(builders, /opacity: 0\.5, depthWrite: false, depthTest: false,/);
+    const base = { hasTarget: true, distance: 40 };
+    assert.equal(compassVisible(base), false, 'in view, quiet after the flash');
+    assert.equal(compassVisible({ ...base, targetOnScreen: false }), true, 'off screen, it stays mid-walk');
+    assert.equal(compassVisible({ ...base, targetOnScreen: false, locked: true }), false);
+    assert.equal(compassVisible({ ...base, targetOnScreen: false, distance: 3 }), false);
+    assert.match(runtime, /targetOnScreen: Boolean\(screen\?\.onScreen\),/);
   });
 
   it('3.4a starts after the cut feed, so its task is the Copper Heron, still at dusk', () => {

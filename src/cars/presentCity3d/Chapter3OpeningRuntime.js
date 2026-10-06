@@ -175,7 +175,7 @@ const BOARDED_CLOSE_UP_ZOOM = 1.6;
 // woman in the rose scarf (about 30 % larger than the street camera), and
 // the scarf itself is oversized a little so it reads at that zoom.
 const STATION_CLOSE_UP_ZOOM = 2.1;
-const ROSE_SCARF_WORLD_SCALE = 1.25;
+const ROSE_SCARF_WORLD_SCALE = 1.45;
 // Measured from vertical raycasts through the installed Hunyuan furniture kit
 // at its runtime scale/offset. Boxes include a 0.42 m player-radius margin.
 const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
@@ -2738,11 +2738,36 @@ export class Chapter3OpeningRuntime {
   // or after a timeout so a stuck context never holds a fade.
   afterDrawnFrames(frames = BLACKOUT_DRAWN_FRAMES) {
     return new Promise((resolve) => {
-      if (typeof requestAnimationFrame !== 'function') { resolve(); return; }
-      let left = frames;
-      const tick = () => (--left <= 0 ? resolve() : requestAnimationFrame(tick));
+      const info = this.preview.renderer?.info?.render;
+      if (typeof requestAnimationFrame !== 'function' || !info) { resolve(); return; }
+      const target = info.frame + frames;
+      const tick = () => (info.frame >= target ? resolve() : requestAnimationFrame(tick));
       requestAnimationFrame(tick);
-      globalThis.setTimeout(resolve, BLACKOUT_FRAME_TIMEOUT_MS);
+      globalThis.setTimeout(resolve, BLACKOUT_FRAME_TIMEOUT_MS * 4);
+    });
+  }
+
+  // The blackout's CSS fade has finished (on a slow GPU its clock lags the
+  // wall clock, so a fixed wait swapped sets under a half-black screen).
+  untilBlack() {
+    const blackout = this.elements.blackout;
+    if (!blackout) return Promise.resolve();
+    return new Promise((resolve) => {
+      let done = false;
+      const finish = () => {
+        if (done) return;
+        done = true;
+        blackout.removeEventListener('transitionend', onEnd);
+        resolve();
+      };
+      const onEnd = (event) => { if (event.propertyName === 'opacity') finish(); };
+      blackout.addEventListener('transitionend', onEnd);
+      // Already black (no transition will run), or a lost event: the fade's
+      // own length, then a generous ceiling.
+      globalThis.setTimeout(() => {
+        if (Number(globalThis.getComputedStyle?.(blackout).opacity ?? 1) >= 0.99) finish();
+      }, BLACKOUT_FADE_MS);
+      globalThis.setTimeout(finish, BLACKOUT_FADE_MS * 5);
     });
   }
 
@@ -2750,7 +2775,7 @@ export class Chapter3OpeningRuntime {
   // e.g. a streamed set), draw it, fade back in, then `after`.
   cutThroughBlack(swap, { ready = null, after = null } = {}) {
     this.elements.blackout?.classList.add('visible');
-    return Promise.all([ready, wait(BLACKOUT_FADE_MS)])
+    return Promise.all([ready, wait(BLACKOUT_FADE_MS), this.untilBlack()])
       .then(() => swap())
       .then(() => this.afterDrawnFrames())
       .then(() => {
@@ -3903,6 +3928,7 @@ export class Chapter3OpeningRuntime {
       distance,
       // On screen, the target's own Tab tag already names it.
       targetTagShown: Boolean(target && screen?.onScreen && taggedIds.has(target.id)),
+      targetOnScreen: Boolean(screen?.onScreen),
     });
     if (!visible) {
       if (!this.compass.hidden) this.compass.hidden = true;
