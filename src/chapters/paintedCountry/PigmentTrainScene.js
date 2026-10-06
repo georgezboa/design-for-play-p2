@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   CHAPTER4_IGNITION_SIGN,
   EXPANSION_PHASE,
@@ -9,16 +10,18 @@ import {
 } from './chapter4ExpansionModel.js';
 import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
 import { addLayers, ensurePair } from './art/artTextures.js';
-import { paintTrain } from './art/trainArt.js';
+import { TRAIN_WASH_ALPHA, paintTrain, trainTint } from './art/trainArt.js';
 import { YARD_SOURCE, paintYardBackdrop, paintYardSource } from './art/yardArt.js';
 import { drawPigmentHalo, haloPointToward } from './pigmentHalo.js';
 import { PAPER } from './paperPalette.js';
 import { buildPaperGrain, draftLine, draftRect, makeRandom } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
-import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, noteAt, showTitleCard } from './chapterUi.js';
+import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, hideUnderLowGraphics, noteAt, showTitleCard } from './chapterUi.js';
 import { drawGreyCell } from './platePencil.js';
 import { collectMagicStone, magicStoneSnapshot, magicStoneCountLabel } from '../../shell/magicStones.js';
 import { devParam } from '../../devMode.js';
+import { RESUME_REGISTRY_KEY, applyYardResume, recordChapter4Resume, yardResumeData } from './chapter4Resume.js';
+import { createSaveStore } from '../../shell/saveSystem.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part III, the train yard.
 //
@@ -48,6 +51,10 @@ const SOURCE_REACH = 190;
 const PART_REACH = 420;
 
 const SOURCE_X = [270, 590, 910, 1230, 1550, 1870];
+// The top of the tallest thing in a place (the station's lantern, the
+// orchard's flag) and where a place's tag sits: above it, under its name.
+const SOURCE_TOP = 180;
+const SOURCE_TAG_Y = 178;
 const SOURCE_TITLES = ['BAKERY', 'STATION', 'ORCHARD', 'MILL', 'SQUARE', 'HOME'];
 
 // The plate above the HOME door: grey over, the stone under.
@@ -117,6 +124,9 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.registry.set('chapter4Pigments', []);
     this.fusedEntry = unlockedPigments.length === PIGMENTS.length;
     this.chapter = createChapter4Expansion({ unlockedPigments });
+    const resume = this.registry.get(RESUME_REGISTRY_KEY);
+    this.resumed = resume?.room === 'yard' && applyYardResume(this.chapter, resume) ? resume : null;
+    if (resume?.room === 'yard') this.registry.remove(RESUME_REGISTRY_KEY);
     this.rnd = makeRandom(0xc4104);
     this.hold = { key: null, progress: 0 };
     this.hover = null;
@@ -143,17 +153,37 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.bindInput();
     this.startMusic();
     this.applyQaState();
+    if (this.resumed) {
+      const x = Phaser.Math.Clamp(this.resumed.x ?? TRAIN_ENTRY_X, 60, WORLD.w - 80);
+      this.walker.setPosition(x, 410);
+      this.cameras.main.centerOn(x, 300);
+      const snap = this.chapter.snapshot();
+      this.tutorialSeen = { collect: snap.collectedCount > 0, part: snap.builtCount > 0, board: false };
+      // left between the plate coming clear and the stone being taken
+      if (snap.homePlate.revealed && !this.stoneCollected) this.time.delayedCall(800, () => this.collectStone());
+    }
     this.refreshPresentation();
+    this.recordResume();
 
     if (!data.skipIntro && !this.qa) {
-      this.locked = true;
+      // Butch can walk under the banner (alpha round 4: dead starts).
+      this.bannerUp = true;
       showTitleCard(this, {
         kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
         main: 'III · THE PAINTED TRAIN',
-        hold: 1600,
-        onDone: () => { this.locked = false; },
+        hold: 1400,
+        onDone: () => { this.bannerUp = false; },
       });
     }
+  }
+
+  // chapter4Resume.js; never on a dev route.
+  recordResume() {
+    if (this.qa || this.transitioning) return;
+    if (!this.saveStore) {
+      try { this.saveStore = createSaveStore(); } catch { this.saveStore = null; }
+    }
+    recordChapter4Resume(this.saveStore, yardResumeData(this.chapter, this.walker?.x));
   }
 
   buildWorld() {
@@ -209,7 +239,9 @@ export class PigmentTrainScene extends Phaser.Scene {
         index,
         x: SOURCE_X[index],
         y: 358,
-        rect: new Phaser.Geom.Rectangle(SOURCE_X[index] - 64, 276, 128, 194),
+        // The whole drawn place, lantern head and flag tip included (alpha
+        // round 4: only their lower halves answered the brush).
+        rect: new Phaser.Geom.Rectangle(SOURCE_X[index] - 84, SOURCE_TOP, 168, FLOOR_Y - SOURCE_TOP),
       };
       // The place in pencil, and the one thing in it that holds its colour.
       const keys = ensurePair(this, `ch4-yard-source-${index}`, () => {
@@ -289,20 +321,27 @@ export class PigmentTrainScene extends Phaser.Scene {
     const keys = this.ensureTrainTextures();
     this.trainArt = this.add.container(0, 0).setDepth(10);
     this.trainParts = {};
+    // the sheet the train is drawn on, then the chassis, then each part's
+    // gouache body, its pooled edges and its pencil
+    this.trainArt.add(this.add.image(keys.paper.x, keys.paper.y, keys.paper.key).setOrigin(0));
     const chassis = this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0);
     this.trainArt.add(chassis);
     TRAIN_DRAW_ORDER.forEach((id) => {
       const k = keys.parts[id];
-      const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(this.chapter.pigment(id).color).setAlpha(0);
+      const tint = trainTint(this.chapter.pigment(id).color);
+      const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(tint).setAlpha(0);
+      const edge = this.add.image(k.x, k.y, k.edge).setOrigin(0).setTint(tint).setAlpha(0);
       const pencil = this.add.image(k.x, k.y, k.pencil).setOrigin(0).setAlpha(0.5);
-      this.trainArt.add([wash, pencil]);
-      this.trainParts[id] = { wash, pencil, shown: false };
+      this.trainArt.add([wash, edge, pencil]);
+      this.trainParts[id] = { wash, edge, pencil, shown: false };
     });
+    const wheelTint = trainTint(this.chapter.pigment('green').color);
     this.wheelArt = YARD_TRAIN_SPEC.wheels.map((w) => {
-      const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(this.chapter.pigment('green').color).setAlpha(0);
+      const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(wheelTint).setAlpha(0);
+      const edge = this.add.image(w.x, w.y, keys.wheel.edge).setTint(wheelTint).setAlpha(0);
       const pencil = this.add.image(w.x, w.y, keys.wheel.pencil).setAlpha(0.5);
-      this.trainArt.add([wash, pencil]);
-      return { wash, pencil };
+      this.trainArt.add([wash, edge, pencil]);
+      return { wash, edge, pencil };
     });
     this.trainParts.green = { wash: null, pencil: null, shown: false };
     this.positionTrainArt();
@@ -315,7 +354,10 @@ export class PigmentTrainScene extends Phaser.Scene {
       color: '#5c574f',
       letterSpacing: 1.5,
     }).setOrigin(0.5).setDepth(14);
-    this.referenceRule = this.add.text(2328, 262, 'WHEELS  →  BODY  →  ROOF', {
+    // The order the yard really builds in (TRAIN_BUILD_RULES): the roof sits
+    // on the cab and the carriage (alpha round 4: the card said WHEELS →
+    // BODY → ROOF and the roof then refused with CAB FIRST).
+    this.referenceRule = this.add.text(2328, 262, 'WHEELS  →  ENGINE · CARRIAGE  →  CAB  →  ROOF', {
       fontFamily: MONO,
       fontSize: '11px',
       color: '#6f675c',
@@ -332,9 +374,12 @@ export class PigmentTrainScene extends Phaser.Scene {
     const register = (name, part) => {
       this.textures.addCanvas(`${name}:pencil`, part.pencil);
       if (part.wash) this.textures.addCanvas(`${name}:wash`, part.wash);
-      return { pencil: `${name}:pencil`, wash: `${name}:wash`, x: part.x, y: part.y };
+      if (part.edge) this.textures.addCanvas(`${name}:edge`, part.edge);
+      return { pencil: `${name}:pencil`, wash: `${name}:wash`, edge: `${name}:edge`, x: part.x, y: part.y };
     };
+    this.textures.addCanvas('ch4-yard-train-paper', art.paper.canvas);
     yardTrainKeys = {
+      paper: { key: 'ch4-yard-train-paper', x: art.paper.x, y: art.paper.y },
       chassis: register('ch4-yard-train-chassis', { pencil: art.chassis.pencil, x: art.chassis.x, y: art.chassis.y }),
       parts: Object.fromEntries(TRAIN_DRAW_ORDER.map((id) => [id, register(`ch4-yard-train-${id}`, art.parts[id])])),
       wheel: register('ch4-yard-train-wheel', art.wheel),
@@ -354,14 +399,19 @@ export class PigmentTrainScene extends Phaser.Scene {
     const box = this.referenceTrain;
     const k = 0.42;
     box.setScale(-k, k).setPosition(2508 + k * 2222, 172 - k * 316);
+    box.add(this.add.image(keys.paper.x, keys.paper.y, keys.paper.key).setOrigin(0));
     box.add(this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0));
     TRAIN_DRAW_ORDER.forEach((id) => {
       const p = keys.parts[id];
-      box.add(this.add.image(p.x, p.y, p.wash).setOrigin(0).setTint(this.chapter.pigment(id).color).setAlpha(0.9));
+      const tint = trainTint(this.chapter.pigment(id).color);
+      box.add(this.add.image(p.x, p.y, p.wash).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.body));
+      box.add(this.add.image(p.x, p.y, p.edge).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.edge));
       box.add(this.add.image(p.x, p.y, p.pencil).setOrigin(0));
     });
+    const wheelTint = trainTint(this.chapter.pigment('green').color);
     YARD_TRAIN_SPEC.wheels.forEach((w) => {
-      box.add(this.add.image(w.x, w.y, keys.wheel.wash).setTint(this.chapter.pigment('green').color).setAlpha(0.9));
+      box.add(this.add.image(w.x, w.y, keys.wheel.wash).setTint(wheelTint).setAlpha(TRAIN_WASH_ALPHA.body));
+      box.add(this.add.image(w.x, w.y, keys.wheel.edge).setTint(wheelTint).setAlpha(TRAIN_WASH_ALPHA.edge));
       box.add(this.add.image(w.x, w.y, keys.wheel.pencil));
     });
   }
@@ -383,11 +433,11 @@ export class PigmentTrainScene extends Phaser.Scene {
 
   buildGrain() {
     const key = buildPaperGrain(this, 'paper-grain-pigment-train');
-    this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key)
+    hideUnderLowGraphics(this, [this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key)
       .setOrigin(0)
       .setScrollFactor(0)
       .setDepth(80)
-      .setAlpha(0.68);
+      .setAlpha(0.68)]);
   }
 
   bindInput() {
@@ -497,6 +547,11 @@ export class PigmentTrainScene extends Phaser.Scene {
     return Math.abs(this.walker.x - (cab.x + cab.w / 2)) <= 220;
   }
 
+  // The parts this one stands on that are not painted yet.
+  missingFor(id) {
+    return (TRAIN_BUILD_RULES[id]?.requires ?? []).filter((need) => !this.chapter.pigment(need).built);
+  }
+
   setHold(key, dt) {
     if (this.hold.key !== key) this.hold = { key, progress: 0 };
     this.hold.progress += dt;
@@ -515,7 +570,9 @@ export class PigmentTrainScene extends Phaser.Scene {
     const built = this.chapter.state.trainBuilt;
     const part = this.partAt(x, y);
     if (part && built && part.id === 'orange') return { type: 'cab', part };
-    if (part && !this.chapter.pigment(part.id).built && Math.abs(this.walker.x - x) <= PART_REACH) return { type: 'part', part };
+    if (part && !this.chapter.pigment(part.id).built && Math.abs(this.walker.x - x) <= PART_REACH) {
+      return { type: this.missingFor(part.id).length ? 'part-later' : 'part', part };
+    }
     if (part && built && this.nearCab()) return { type: 'cab', part };
     if (this.onHomePlate(x, y) && !this.chapter.state.homePlate.revealed && Math.abs(this.walker.x - PIGMENT_STONE.x) <= SOURCE_REACH) {
       return { type: 'home-plate' };
@@ -539,6 +596,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     if (hit.type === 'source' && b.washDown) {
       if (this.setHold(`source:${hit.source.id}`, dt)) {
         this.chapter.collect(hit.source.id);
+        this.recordResume();
         noteAt(this, hit.source.x, 250, `${hit.source.name} · BORROWED`, { tone: 'info', hold: 1000 });
         this.tutorialSeen.collect = true;
         this.resetHold();
@@ -548,6 +606,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     if (hit.type === 'home-plate' && b.washDown) {
       if (this.setHold('home-plate', dt)) {
         this.chapter.washHomePlate();
+        this.recordResume();
         this.resetHold();
         this.handleEvents();
       }
@@ -575,6 +634,7 @@ export class PigmentTrainScene extends Phaser.Scene {
     const bounds = this.partWorldBounds(TRAIN_PARTS.find((p) => p.id === id));
     const at = { x: bounds.x + bounds.w / 2, y: FLOOR_Y + 44 };
     if (this.chapter.placePart(id)) {
+      this.recordResume();
       const part = this.chapter.pigment(id);
       noteAt(this, at.x, at.y, `${part.part} · ${part.name}`, { tone: 'good', hold: 900 });
       this.trainShakeUntil = this.time.now + 180;
@@ -634,18 +694,23 @@ export class PigmentTrainScene extends Phaser.Scene {
 
   updateTag() {
     const b = this.brush;
-    if (this.locked || this.transitioning) return this.tag.hide();
+    if (this.locked || this.transitioning || this.bannerUp) return this.tag.hide();
     const hit = this.hover;
     const progress = this.hold.key ? this.hold.progress / HOLD_SECONDS : 0;
     if (hit?.type === 'source') {
-      return this.tag.show(`${b.label('washHold')} · BORROW ${hit.source.name}`, hit.source.x, 272, { progress });
+      return this.tag.show(`${b.label('washHold')} · BORROW ${hit.source.name}`, hit.source.x, SOURCE_TAG_Y, { progress });
     }
     if (hit?.type === 'home-plate') {
       return this.tag.show(`${b.label('washHold')} · WASH THE GREY`, PIGMENT_STONE.x, HOME_PLATE.y - 8, { progress });
     }
-    if (hit?.type === 'part') {
+    if (hit?.type === 'part' || hit?.type === 'part-later') {
       const bounds = this.partWorldBounds(hit.part);
       const part = this.chapter.pigment(hit.part.id);
+      if (hit.type === 'part-later') {
+        // Not yet: say what it stands on instead of inviting a refusal.
+        const first = this.missingFor(hit.part.id).map((id) => this.chapter.pigment(id).part).join(' AND ');
+        return this.tag.show(`THE ${part.part} · AFTER THE ${first}`, bounds.x + bounds.w / 2, bounds.y - 6);
+      }
       return this.tag.show(`${b.label('paintHold')} · PAINT THE ${part.part}`, bounds.x + bounds.w / 2, bounds.y - 6, { progress });
     }
     if (this.chapter.state.trainBuilt && this.nearCab()) {
@@ -654,10 +719,11 @@ export class PigmentTrainScene extends Phaser.Scene {
     }
     const snap = this.chapter.snapshot();
     if (snap.collectedCount === 0 && this.walker.x < SOURCE_X[0] + 200) {
-      return this.tag.show(`AIM AT THE AWNING · ${b.label('washHold')} TO BORROW ITS COLOUR`, SOURCE_X[0], 272);
+      return this.tag.show(`AIM AT THE AWNING · ${b.label('washHold')} TO BORROW ITS COLOUR`, SOURCE_X[0], SOURCE_TAG_Y);
     }
     if (this.walker.x > 2140 && !snap.trainBuilt && !this.tutorialSeen.part) {
-      return this.tag.show(`${b.label('paintHold')} A PART · WHEELS FIRST`, 2560, 300);
+      // over the carriage roof's far end, clear of the reference card (R4)
+      return this.tag.show(`${b.label('paintHold')} A PART · WHEELS FIRST`, 2720, 330);
     }
     return this.tag.hide();
   }
@@ -666,10 +732,10 @@ export class PigmentTrainScene extends Phaser.Scene {
     const g = this.markerArt;
     g.clear();
     const t = this.time.now;
-    this.sources.forEach((s) => { if (!this.chapter.pigment(s.id).collected) drawGlintMarker(g, t, s.x + 44, 286); });
+    this.sources.forEach((s) => { if (!this.chapter.pigment(s.id).collected) drawGlintMarker(g, t, s.x + 70, SOURCE_TOP + 6); });
     if (!this.fusedEntry && !this.chapter.state.homePlate.revealed) drawGlintMarker(g, t, HOME_PLATE.x + HOME_PLATE.w + 4, HOME_PLATE.y - 6);
     TRAIN_PARTS.forEach((p) => {
-      if (this.chapter.pigment(p.id).built) return;
+      if (this.chapter.pigment(p.id).built || this.missingFor(p.id).length) return;
       const bounds = this.partWorldBounds(p);
       drawGlintMarker(g, t, bounds.x + bounds.w - 6, bounds.y + 4, { alpha: 0.8 });
     });
@@ -709,6 +775,9 @@ export class PigmentTrainScene extends Phaser.Scene {
     if (hit.type === 'source') {
       rect = hit.source.rect;
       color = hit.source.color;
+    } else if (hit.type === 'part-later') {
+      rect = this.partWorldBounds(hit.part);
+      color = PAPER.graphiteFaint;
     } else if (hit.type === 'part' || hit.type === 'cab') {
       rect = this.partWorldBounds(hit.part);
       if (this.failedPartId === hit.part.id && this.time.now < this.failedPartUntil) color = PAPER.fault;
@@ -741,7 +810,9 @@ export class PigmentTrainScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     if (this.restart.blocking) {
@@ -833,15 +904,19 @@ export class PigmentTrainScene extends Phaser.Scene {
       if (built === part.shown) return;
       part.shown = built;
       const images = id === 'green' ? this.wheelArt : [part];
-      images.forEach(({ wash, pencil }) => {
-        this.tweens.killTweensOf([wash, pencil]);
+      images.forEach(({ wash, edge, pencil }) => {
+        this.tweens.killTweensOf([wash, edge, pencil]);
         if (!built) {
           wash.setAlpha(0);
+          edge.setAlpha(0);
           pencil.setAlpha(0.5);
           return;
         }
-        // The colour blooms in and the construction drawing firms up.
-        this.tweens.add({ targets: wash, alpha: 0.92, duration: 700, ease: 'Sine.easeOut' });
+        // The gouache goes on wet and pale, spreads, then dries darker at its
+        // edges; the construction drawing firms up under it.
+        wash.setAlpha(0.15);
+        this.tweens.add({ targets: wash, alpha: TRAIN_WASH_ALPHA.body, duration: 900, ease: 'Sine.easeOut' });
+        this.tweens.add({ targets: edge, alpha: TRAIN_WASH_ALPHA.edge, duration: 1300, delay: 450, ease: 'Sine.easeInOut' });
         this.tweens.add({ targets: pencil, alpha: 1, duration: 360, ease: 'Sine.easeOut' });
       });
     });
@@ -851,7 +926,7 @@ export class PigmentTrainScene extends Phaser.Scene {
       this.backdrop.bloomAll({ to: 0.5, duration: 1800, delay: 500, stagger: 120 });
     }
     const wheelSpin = -this.trainOffset / 18;
-    this.wheelArt.forEach(({ wash, pencil }) => { wash.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
+    this.wheelArt.forEach(({ wash, edge, pencil }) => { wash.setRotation(wheelSpin); edge.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
   }
 
   partWorldBounds(part) {

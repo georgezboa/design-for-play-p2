@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   BAY_TITLES,
   CEILING_Y,
@@ -48,16 +49,20 @@ import {
   PaperTag,
   RestartHold,
   SERIF,
+  hideUnderLowGraphics,
   UI,
   drawGlintMarker,
   noteAt,
   px,
+  rectsOverlap,
   showTitleCard,
 } from './chapterUi.js';
 import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell, ensureMarkTextures, paintedPlateKey } from './platePencil.js';
 import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
 import { createFallGuard, placeBody } from './fallGuard.js';
+import { RESUME_REGISTRY_KEY, applyGalleryResume, galleryResumeData, recordChapter4Resume } from './chapter4Resume.js';
+import { createSaveStore } from '../../shell/saveSystem.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part I, "Under the gouache".
 //
@@ -133,6 +138,12 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.motes = [];
     this.boilTargets = [];
     this.car = createPaintedCar();
+    // A resume point from the save (chapter4Resume.js): the plates washed,
+    // the paper painted and the grey washed, where Butch last stood.
+    const resume = this.registry.get(RESUME_REGISTRY_KEY);
+    this.resumed = resume?.room === 'gallery' && applyGalleryResume(this.car, resume) ? resume : null;
+    if (resume?.room === 'gallery') this.registry.remove(RESUME_REGISTRY_KEY);
+    this.lastResumeBay = null;
     this.cellBodies = new Map();
     this.paintDirty = true;
     this.platesDirty = true;
@@ -190,6 +201,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     this.buildGrain();
     this.buildAir();
+    hideUnderLowGraphics(this, [this.grain, ...this.motes.map((mote) => mote.obj)]);
     this.buildHud();
     this.buildViewer();
 
@@ -201,9 +213,11 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
     this.tag = new PaperTag(this, { depth: DEPTH.HUD + 4 });
     this.card = new ArchiveCard(this, { depth: DEPTH.HUD + 40 });
-    this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
+    this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true, restarted: true }) });
 
     this.car.state.blocks.forEach((key) => this.addCellBody(key % GRID.w, Math.floor(key / GRID.w)));
+    this.car.state.painted.forEach((key) => this.addCellBody(key % GRID.w, Math.floor(key / GRID.w)));
+    if (this.resumed) this.placeResumed(this.resumed);
     this.input.mouse?.disableContextMenu();
 
     this.time.addEvent({
@@ -213,7 +227,44 @@ export class PaintedCountryScene extends Phaser.Scene {
     });
 
     this.applyQaRoute();
-    if (!data.skipIntro && (!this.qa || this.qa === 'intro')) this.playIntro();
+    if (this.resumed) this.playResumeTitle();
+    else if (!data.skipIntro && (!this.qa || this.qa === 'intro')) this.playIntro();
+    // A restarted room is the room's new resume point.
+    if (data.restarted) this.recordResume();
+  }
+
+  // Resume points (chapter4Resume.js). Never on a dev route.
+  recordResume() {
+    if (this.qa || this.advancingToStudio) return;
+    if (!this.saveStore) {
+      try { this.saveStore = createSaveStore(); } catch { this.saveStore = null; }
+    }
+    const grounded = this.walker?.body?.blocked.down;
+    recordChapter4Resume(this.saveStore, galleryResumeData(this.car, grounded ? { x: this.walker.x, y: this.walker.y } : this.resumeAt ?? null));
+  }
+
+  placeResumed(resume) {
+    const at = resume.at ?? { x: 200, y: FLOOR_Y - 30 };
+    this.resumeAt = at;
+    this.walker.setPosition(at.x, at.y);
+    this.walker.body.reset(at.x, at.y);
+    this.cameras.main.centerOn(at.x, VIEW.h / 2);
+    this.tutorialSeen = { move: true, bridge: true, wash: true, varnish: true, pigment: this.car.state.pigment > 0 || at.x < PIGMENT_ZONE.fromCol * CELL };
+    this.lastResumeBay = this.bayId();
+    this.paintDirty = true;
+    this.varnishDirty = true;
+    this.platesDirty = true;
+  }
+
+  // Back where the player left off: the act title only, and he can walk.
+  playResumeTitle() {
+    this.bannerUp = true;
+    showTitleCard(this, {
+      kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
+      main: 'I · UNDER THE GOUACHE',
+      hold: 1200,
+      onDone: () => { this.bannerUp = false; },
+    });
   }
 
   graphics(depth) {
@@ -222,18 +273,23 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   // The chapter opens the way Chapter 1 opens an act: a title on the walnut
   // band, then one short archive card.
+  // Alpha round 4: the opening was a long dead start (a 3.5 s banner, then
+  // a card that held him still). Butch walks under the banner, and walking
+  // on puts the claim card away as well as E does.
   playIntro() {
-    this.locked = true;
+    this.bannerUp = true;
     showTitleCard(this, {
       kicker: 'CHAPTER 4 · THE PAINTED COUNTRY',
       main: 'I · UNDER THE GOUACHE',
+      hold: 1400,
       onDone: () => {
+        this.bannerUp = false;
         this.card.show({
           stamp: 'CLAIM 1978-0412 · SECOND CLAIM',
           title: 'Bellwether Orchard',
           lines: ['Address not on file.', 'Contents: drawings (a child\'s), painted over for the record.'],
-          closeHint: `${this.brush.label('read')} · CLOSE`,
-        }, () => { this.locked = false; });
+          closeHint: `${this.brush.label('read')} · CLOSE   ·   OR WALK ON`,
+        });
       },
     });
   }
@@ -607,6 +663,9 @@ export class PaintedCountryScene extends Phaser.Scene {
     solid(WORLD.w, -400, 24, WORLD.h + 500);
     // The ceiling: nothing climbs over the long wall.
     solid(0, CEILING_Y - 40, WORLD.w, 40);
+    // The closed door is a door: its frame stops Butch until the right sign
+    // opens it (alpha round 4: he walked into the door's own face).
+    this.doorBody = solid(DOOR.x, CEILING_Y, 16, FLOOR_Y - CEILING_Y);
   }
 
   addCellBody(cx, cy) {
@@ -614,6 +673,14 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (this.cellBodies.has(key)) return;
     const object = this.add.rectangle(cx * CELL + CELL / 2, cy * CELL + CELL / 2, CELL, CELL, 0xffffff, 0);
     this.physics.add.existing(object, true);
+    // Butch's own paint is a one-way platform: he lands on it from above and
+    // passes it from below and the sides, so he can walk and jump under the
+    // steps he built (alpha round 4). The archive's grey stays solid.
+    if (this.car.isPainted(cx, cy) && !this.car.isBlock(cx, cy)) {
+      object.body.checkCollision.down = false;
+      object.body.checkCollision.left = false;
+      object.body.checkCollision.right = false;
+    }
     this.solids.add(object);
     this.cellBodies.set(key, object);
   }
@@ -934,8 +1001,22 @@ export class PaintedCountryScene extends Phaser.Scene {
     const inZone = colOf(this.walker.x) >= PIGMENT_ZONE.fromCol - 2;
     this.pigmentLabel.setVisible(inZone && !this.viewer.open);
     if (!inZone || this.viewer.open) return;
-    const x = this.walker.x + 16;
-    const y = this.walker.y - 52;
+    // Beside Butch's head, on whichever side keeps it off the door's signs,
+    // the plates and the tag (alpha round 4: "×101" sat on the HAWTHORN).
+    const cam = this.cameras.main;
+    const tag = this.tag.visible && this.tag.rect
+      ? { x: this.tag.rect.x + cam.worldView.x, y: this.tag.rect.y + cam.worldView.y, w: this.tag.rect.w, h: this.tag.rect.h }
+      : null;
+    const blockers = [...DOOR.panels, ...PAINTINGS, ...(tag ? [tag] : [])];
+    const candidates = [
+      { x: this.walker.x + 16, y: this.walker.y - 52 },
+      { x: this.walker.x - 76, y: this.walker.y - 52 },
+      { x: this.walker.x - 30, y: this.walker.y - 78 },
+      { x: this.walker.x - 30, y: this.walker.y + 44 },
+    ];
+    const potRect = (c) => ({ x: c.x - 4, y: c.y - 11, w: 64, h: 22 });
+    const spot = candidates.find((c) => !blockers.some((b) => rectsOverlap(potRect(c), b, 4))) ?? candidates[0];
+    const { x, y } = spot;
     const amount = this.car.state.pigment;
     g.fillStyle(UI.paper, 0.95).fillRoundedRect(x - 4, y - 11, 64, 22, 4);
     g.lineStyle(1, 0x6b5640, 0.5).strokeRoundedRect(x - 4, y - 11, 64, 22, 4);
@@ -1139,6 +1220,10 @@ export class PaintedCountryScene extends Phaser.Scene {
   playCompletion() {
     if (this.advancingToStudio) return;
     this.advancingToStudio = true;
+    if (this.doorBody) {
+      this.solids.remove(this.doorBody, true, true);
+      this.doorBody = null;
+    }
     this.tag.hide();
     this.tweens.add({ targets: [...this.doorFace, ...Object.values(this.panelArt), ...Object.values(this.panelLabels)], alpha: 0, duration: 700, delay: 500 });
     // The car is finished by being seen: its colour blooms in, every window.
@@ -1261,7 +1346,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   // The one tag on screen: whatever the brush or Butch is nearest to.
   updateTag() {
-    if (this.viewer.open || this.advancingToStudio || this.locked) {
+    if (this.viewer.open || this.advancingToStudio || this.locked || this.bannerUp || this.card.open) {
       this.tag.hide();
       return;
     }
@@ -1323,10 +1408,12 @@ export class PaintedCountryScene extends Phaser.Scene {
     const b = this.brush;
     const at = (e) => ({ x: e.cx * CELL + CELL / 2, y: e.cy * CELL });
     if (event.type === 'plate-developed') {
+      this.recordResume();
       const v = this.viewer;
       if (v.picture?.id === event.id) {
         this.drawViewerPlate();
-        noteAt(this, VIEW.w / 2, VIEWER.y - 4, 'THE PLATE COMES CLEAR · IT GOES IN YOUR NOTES', { screen: true, tone: 'good', depth: DEPTH.HUD + 30, hold: 1800 });
+        // Low on the card, under the caption: never on the plate's title (R4).
+        noteAt(this, VIEW.w / 2, VIEW.h - 66, 'THE PLATE COMES CLEAR · IT GOES IN YOUR NOTES', { screen: true, tone: 'good', depth: DEPTH.HUD + 30, hold: 1800 });
       }
       this.platesDirty = true;
     } else if (event.type === 'plate-mark-found') {
@@ -1357,7 +1444,8 @@ export class PaintedCountryScene extends Phaser.Scene {
       if (event.reason === 'varnished') {
         const first = !this.tutorialSeen.varnish;
         this.tutorialSeen.varnish = true;
-        this.note(p.x, p.y, first ? `OFFICIAL RECORD · ${b.label('wash')} IT TWICE, THEN PAINT` : 'VARNISHED · WASH IT TWICE', 'warn', 'varnish', first ? 2600 : 1400);
+        // One varnish slip at a time: the next waits until this one has gone.
+        this.note(p.x, p.y, first ? `OFFICIAL RECORD · WASH IT TWICE (${b.label('wash')}), THEN PAINT` : 'VARNISHED · WASH IT TWICE', 'warn', 'varnish', 2600);
       } else if (event.reason === 'no-pigment') {
         this.note(this.walker.x, this.walker.y - 64, `DRY BRUSH · ${b.label('wash')} · WASH THE GREY FOR COLOUR`, 'no', 'dry', 1800);
       } else if (event.reason === 'sealed') {
@@ -1372,7 +1460,9 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   update(time, delta) {
-    const dt = Math.min(delta, 50) / 1000;
+    // Wall-clock time down to 10 fps (alpha round 4: weak laptops run at
+    // 15-25 fps, and a 50 ms cap slowed every walk, hold and bell there).
+    const dt = Math.min(delta, FRAME_DT_CAP_MS) / 1000;
     this.brush.update(dt);
     this.restart.update(dt, this.brush.pad);
     this.stepFall(dt);
@@ -1384,10 +1474,16 @@ export class PaintedCountryScene extends Phaser.Scene {
     const move = this.brush.readMove(this.keys);
 
     if (this.card.open) {
-      this.walker.body.setVelocityX(0);
-      if (move.interactPressed || move.enterPressed || this.brush.paintPressed) this.card.dismiss();
-      this.drawFigure();
-      return;
+      // The claim card does not hold Butch still (alpha round 4: a dead
+      // start). E closes it; so does walking on a little way, or time.
+      const from = this.cardOpenedAtX ?? (this.cardOpenedAtX = this.walker.x);
+      const walkedOn = Math.abs(this.walker.x - from) > 150;
+      const timedOut = this.time.now - this.card.openedAt > 7000;
+      if (move.interactPressed || move.enterPressed || this.brush.paintPressed || walkedOn || timedOut) this.card.dismiss();
+      // the press that closed the card is not also a read or a stroke
+      move.interactPressed = false;
+      move.enterPressed = false;
+      if (!this.card.open) this.cardOpenedAtX = null;
     }
 
     if (move.interactPressed && !this.locked && !this.advancingToStudio) this.toggleViewer();
@@ -1419,6 +1515,15 @@ export class PaintedCountryScene extends Phaser.Scene {
       this.platesDirty = false;
     }
     this.drawFigure();
+    // A resume point on first reaching Bay B and Bay C, on the floor.
+    const bay = this.bayId();
+    if (bay !== this.lastResumeBay && this.walker.body.blocked.down && this.walker.y > FLOOR_Y - 40) {
+      const order = { A: 0, B: 1, C: 2 };
+      if (this.lastResumeBay == null || order[bay] > order[this.lastResumeBay]) {
+        if (this.lastResumeBay != null) this.recordResume();
+        this.lastResumeBay = bay;
+      }
+    }
     if (!this.advancingToStudio) this.drawCursor();
     else this.brushCursor.clear();
     this.brush.drawCursor({ hidden: this.advancingToStudio || this.locked });

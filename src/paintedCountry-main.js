@@ -16,7 +16,11 @@ import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { DEV_MODE, devRoutesEnabled } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
+import { createSaveStore } from './shell/saveSystem.js';
+import { RESUME_REGISTRY_KEY, chapter4ResumeOnLoad } from './chapters/paintedCountry/chapter4Resume.js';
 import { installPhaserMotionGuard } from './shell/motion.js';
+import { followLowGraphics } from './shared/phaserRenderScale.js';
+import { installWallClock } from './shared/phaserWallClock.js';
 
 installPhaserMotionGuard(Phaser);
 
@@ -28,13 +32,19 @@ const allScenes = [PaintedCountryScene, DrawingStudioScene, PigmentTrainScene, P
 const STUDIO_ROUTES = ['drawing', 'drawing-start', 'drawing-ready', 'drawing-wrong', 'drawing-done'];
 const YARD_ROUTES = ['pigments', 'build-train', 'train-ready', 'fused-train', 'home-plate'];
 const LINE_ROUTES = ['line', 'line-clear', 'line-end'];
-const firstScene = STUDIO_ROUTES.includes(qa)
+const routedScene = STUDIO_ROUTES.includes(qa)
   ? DrawingStudioScene
   : YARD_ROUTES.includes(qa)
     ? PigmentTrainScene
     : LINE_ROUTES.includes(qa)
       ? PaintedLineScene
       : PaintedCountryScene;
+// Continue: the room the save's resume point names (chapter4Resume.js).
+// Any dev route wins over it.
+let resume = null;
+try { resume = chapter4ResumeOnLoad({ store: createSaveStore(), devRoute: qa }); } catch { resume = null; }
+const resumeScene = { gallery: PaintedCountryScene, studio: DrawingStudioScene, yard: PigmentTrainScene, line: PaintedLineScene }[resume?.room];
+const firstScene = resumeScene ?? routedScene;
 const sceneOrder = [firstScene, ...allScenes.filter((scene) => scene !== firstScene)];
 
 async function fontsReady() {
@@ -62,12 +72,15 @@ async function boot() {
       antialias: true,
       roundPixels: false,
     },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    // #game centres the canvas (flex); Phaser's own centring added its
+    // margin on top of that (alpha round 4: bars of 120/40 px at 1600×900).
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.NO_CENTER },
     physics: { default: 'arcade', arcade: { gravity: { y: 1700 }, debug: false } },
     // The brush has a keyboard and a gamepad hand as well as the mouse.
     input: { gamepad: true },
     scene: sceneOrder,
   });
+  if (resume) game.registry.set(RESUME_REGISTRY_KEY, resume);
 
   // The brush is aimed with the pointer, so the canvas has to be able to take
   // focus and swallow the context menu.
@@ -77,6 +90,10 @@ async function boot() {
 
   // Not dev-only: shell/pauseMenu.js pauses the scenes through globalThis.game.
   window.game = game;
+  // LOW GRAPHICS: draw at 60% (alpha round 4: ~5 fps on software GL).
+  followLowGraphics(game, { low: 0.6 });
+  // Game time follows the wall clock on a slow machine (phaserWallClock.js).
+  installWallClock(game);
 }
 
 if (DEV_MODE) window.render_game_to_text = () => {

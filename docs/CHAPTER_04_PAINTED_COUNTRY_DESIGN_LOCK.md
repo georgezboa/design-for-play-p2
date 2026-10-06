@@ -347,3 +347,23 @@ Two things are deliberately not built yet: verdigris has a pigment and a colour
 but no authored motion beat of its own (the mural's hill is currently its only
 source), and the completion transformation is a rehearsal — a colour bloom —
 rather than the full three-second saturation of the country through the windows.
+
+### Alpha round 4 (2026-10-05)
+
+- **Resume points** (`chapter4Resume.js`): the chapter keeps one checkpoint,
+  `chapter-4-start`, and records where inside it the player is with the
+  save's resume point — the gallery after each plate and on reaching Bay B
+  and Bay C (paint, washed grey, varnish, pigment, plates, Butch's spot), the
+  studio's colours, the yard's borrowed colours, painted parts and HOME
+  plate, and the line from its start. Continue opens that room; a dev route
+  (`?qa=`) always wins.
+- **LOW GRAPHICS / software GL**: the page draws at 60% internal resolution
+  (`src/shared/phaserRenderScale.js`) and drops the paper grain and dust.
+  Game time follows the wall clock down to 10 fps (`FRAME_DT_CAP_MS`,
+  `src/shared/phaserWallClock.js`).
+- **Yard order**: WHEELS → ENGINE · CARRIAGE → CAB → ROOF
+  (`TRAIN_BUILD_RULES`); a part that cannot be painted yet says what it
+  stands on. Butch's own paint is a one-way platform; the archive's grey
+  stays solid. On the line one wash takes a whole column of paper off.
+- **The painted train** is pencil and gouache after the night service
+  (`art/trainArt.js`): body, pooled edges and pencil per part.

@@ -48,6 +48,12 @@ const FONT = 'Courier New, monospace';
 // HUD type follows the UI kit (alpha R3 · R7): nothing under 13 px, all of
 // it times the global TEXT SIZE setting (shell/saveSystem.js textScale).
 export const HUD_MIN_PX = 13;
+// LOW GRAPHICS (pause menu): the fog of war at half resolution.
+// A software rasteriser gets it on its own (shared/phaserRenderScale.js).
+const fogScaleFor = (settings = globalThis.NIGHTFALL_SETTINGS) => (
+  settings?.lowGraphics === true
+  || (globalThis.NIGHTFALL_SOFTWARE_GL === true && String(settings?.graphicsQuality ?? 'auto').toLowerCase() !== 'high')
+    ? 0.5 : 1);
 const hudScale = () => Phaser.Math.Clamp((globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100, 0.8, 1.6);
 export const hudPx = (size, scale = hudScale()) => Math.round(Math.max(HUD_MIN_PX, size) * scale);
 // The camera may run this far past the maze's outer wall, so the corner
@@ -492,14 +498,29 @@ export class LabyrinthScene extends Phaser.Scene {
     this.physics.add.overlap(this.playerSprite, this.wingGatesGroup, (player, img) => this.onWingGateOverlap(img));
     this.physics.add.overlap(this.playerSprite, this.gateSprite, () => this.onExitOverlap());
 
-    // Screen-space fog of war.
-    if (this.fogRT) this.fogRT.destroy();
-    this.fogRT = this.add.renderTexture(0, 0, VIEW.w, VIEW.h).setOrigin(0, 0).setScrollFactor(0).setDepth(50);
-    this.flashlightMask = ensureRadialMask(this, TUNING.flashlightRadius);
-    this.darkVisionMask = ensureRadialMask(this, TUNING.darkVisionRadius);
-    this.carriedTorchMask = ensureRadialMask(this, TUNING.carriedTorchRadius);
-    this.torchMask = ensureRadialMask(this, TUNING.torchRadius);
+    this.buildFog();
+    // LOW GRAPHICS can be switched in the pause menu mid-run.
+    this.onSettings = () => { if (this.fogRT && fogScaleFor() !== this.fogScale) this.buildFog(); };
+    globalThis.addEventListener?.('nightfall:settings', this.onSettings);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => globalThis.removeEventListener?.('nightfall:settings', this.onSettings));
     this.syncFloorEntities();
+  }
+
+  // Screen-space fog of war. Under LOW GRAPHICS it is kept at half size and
+  // stretched over the view: the fog is soft-edged anyway, and its clear,
+  // fill and erase passes were the costliest thing on a software renderer
+  // (alpha round 4: ~3 fps).
+  buildFog() {
+    const fs = fogScaleFor();
+    this.fogScale = fs;
+    if (this.fogRT) this.fogRT.destroy();
+    this.fogRT = this.add.renderTexture(0, 0, Math.ceil(VIEW.w * fs), Math.ceil(VIEW.h * fs))
+      .setOrigin(0, 0).setScrollFactor(0).setDepth(50).setScale(1 / fs);
+    const mask = (radius) => ensureRadialMask(this, Math.round(radius * fs));
+    this.flashlightMask = mask(TUNING.flashlightRadius);
+    this.darkVisionMask = mask(TUNING.darkVisionRadius);
+    this.carriedTorchMask = mask(TUNING.carriedTorchRadius);
+    this.torchMask = mask(TUNING.torchRadius);
   }
 
   syncFloorTorches() {
@@ -1207,7 +1228,10 @@ export class LabyrinthScene extends Phaser.Scene {
   update(time, delta) {
     // Clamp so a lag spike (or a backgrounded tab resuming) can't hand a
     // single physics step a huge delta.
-    const dt = Math.min(delta, 50);
+    // Wall-clock time down to 10 fps (alpha round 4): a 50 ms cap made the
+    // chase, the torch fuel and the restart hold run slow on weak laptops.
+    const dt = Math.min(delta, 100);
+    if (this.fogRT && fogScaleFor() !== this.fogScale) this.buildFog();
     this.updateRestart(dt);
     if (this.state === 'playing') this.updatePlaying(time, dt);
     else this.coneG?.clear();
@@ -1702,7 +1726,9 @@ export class LabyrinthScene extends Phaser.Scene {
       const sx = wx - cam.scrollX;
       const sy = wy - cam.scrollY;
       if (sx < -radius || sy < -radius || sx > VIEW.w + radius || sy > VIEW.h + radius) return;
-      this.fogRT.erase(maskKey, sx - radius, sy - radius);
+      const fs = this.fogScale ?? 1;
+      const r = Math.round(radius * fs);
+      this.fogRT.erase(maskKey, sx * fs - r, sy * fs - r);
     };
 
     for (const t of this.torchSprites ?? []) {
