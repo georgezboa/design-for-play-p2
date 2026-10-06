@@ -7,12 +7,17 @@ import {
   CHAPTER3_RESUME_STAGES,
   CHAPTER3_START_POINTS,
   TICKET_IDS,
+  cachedSnapshotModel,
   chapter3ResumePoint,
   chapter3ResumeStart,
   createChapter3OpeningModel,
 } from '../../src/cars/presentCity3d/chapter3OpeningModel.js';
 import { createSaveStore } from '../../src/shell/saveSystem.js';
 import { controlsHintHtml, controlsHintState } from '../../src/cars/presentCity3d/chapter3Guidance.js';
+import {
+  MAX_FRAME_SECONDS, MAX_STEP_SECONDS, WALK_SPEED, frameSteps, walkAlongPath,
+} from '../../src/cars/presentCity3d/EchoCity3DPreview.js';
+import { LOWEST_PIXEL_RATIO, LOW_PIXEL_RATIO } from '../../src/cars/presentCity3d/chapter3Quality.js';
 import {
   CAMPFIRE_SELINE_STONE_DIALOGUE,
   MORNING_STONE_PICKUP,
@@ -26,6 +31,7 @@ const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), '
 const board = read('src/cars/presentCity3d/Chapter3TicketBoard.js');
 const runtime = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
 const main = read('src/car03-3d-main.js');
+const preview = read('src/cars/presentCity3d/EchoCity3DPreview.js');
 
 function memoryStorage() {
   const map = new Map();
@@ -117,6 +123,76 @@ describe('Chapter 3 alpha round 4 · mid-chapter resume points (P1)', () => {
     // Resumes inside the two interiors stage them.
     assert.match(runtime, /if \(state\.transportHallEntered && !state\.ticketBoardComplete\) \{\n\s+this\.stageMinistryHall/);
     assert.match(runtime, /if \(state\.hotelEntered && !state\.slept\) \{\n\s+this\.stageHotelInterior\(\);/);
+  });
+});
+
+describe('Chapter 3 alpha round 4 · frame-rate independence (P1)', () => {
+  it('a drawn frame gets its wall time, in steps of at most 0.1 s, down to 1 fps', () => {
+    for (const fps of [60, 30, 20, 15, 10, 4, 2, 1]) {
+      const { frame, steps, step } = frameSteps(1 / fps);
+      assert.ok(Math.abs(frame - 1 / fps) < 1e-9, `${fps} fps keeps wall time`);
+      assert.ok(step <= MAX_STEP_SECONDS + 1e-9, `${fps} fps steps stay small`);
+      assert.ok(Math.abs(steps * step - frame) < 1e-9);
+    }
+    assert.equal(frameSteps(30).frame, MAX_FRAME_SECONDS, 'a background tab never dumps more than a second');
+  });
+
+  it('the departure takes its 23.6 s at 1 fps and at 10 fps', () => {
+    for (const fps of [1, 10, 60]) {
+      const model = createChapter3OpeningModel({ startAt: 'station' });
+      model.passScanner('station');
+      model.boardTrain();
+      let wall = 0;
+      while (!model.snapshot().chapterComplete && wall < 120) {
+        const { steps, step } = frameSteps(1 / fps);
+        for (let index = 0; index < steps; index += 1) model.advanceDeparture(step * 1000);
+        wall += 1 / fps;
+      }
+      assert.ok(Math.abs(wall - 23.6) < 1 / fps + 1e-6, `${fps} fps: ${wall.toFixed(2)} s`);
+    }
+  });
+
+  it('a walk with corners covers speed × time whatever the frame rate', () => {
+    const corners = () => Array.from({ length: 40 }, (_, index) => ({ x: (index + 1) * 0.37, z: index % 2 ? 0.37 : 0 }));
+    const length = (path) => path.reduce((sum, point, index) => {
+      const previous = index ? path[index - 1] : { x: 0, z: 0 };
+      return sum + Math.hypot(point.x - previous.x, point.z - previous.z);
+    }, 0);
+    const total = length(corners());
+    for (const fps of [60, 10, 1]) {
+      const path = corners();
+      const position = { x: 0, z: 0 };
+      let wall = 0;
+      while (path.length && wall < 60) {
+        const { steps, step } = frameSteps(1 / fps);
+        for (let index = 0; index < steps; index += 1) walkAlongPath(position, path, WALK_SPEED * step);
+        wall += 1 / fps;
+      }
+      assert.ok(Math.abs(wall - total / WALK_SPEED) <= 1 / fps + 1e-6, `${fps} fps arrives on time (${wall.toFixed(2)} s)`);
+    }
+  });
+
+  it('runs the screen work once per drawn frame; LOW draws smaller, pinned LOW without MSAA', () => {
+    assert.match(runtime, /if \(!final\) return;/);
+    assert.match(runtime, /this\.model = cachedSnapshotModel\(model\);/);
+    assert.match(preview, /createRenderer\(container, \{ antialias: this\.qualityMonitor\.tier !== 'low' \}\)/);
+    assert.ok(LOW_PIXEL_RATIO <= 0.7);
+    assert.ok(LOWEST_PIXEL_RATIO <= 0.5);
+  });
+
+  it('the snapshot view clones once until the story changes', () => {
+    const model = createChapter3OpeningModel({ startAt: 'oil-seam' });
+    let clones = 0;
+    const counted = Object.freeze({ ...model, snapshot: () => { clones += 1; return model.snapshot(); } });
+    const view = cachedSnapshotModel(counted);
+    const first = view.snapshot();
+    assert.equal(view.snapshot(), first);
+    assert.equal(clones, 1);
+    assert.equal(view.observeSeam('fuel'), true);
+    const after = view.snapshot();
+    assert.notEqual(after, first);
+    assert.deepEqual(after.seamObservations, ['fuel']);
+    assert.equal(clones, 2);
   });
 });
 

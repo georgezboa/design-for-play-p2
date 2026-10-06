@@ -124,8 +124,8 @@ preview.attachGameplayRuntime(gameplayRuntime);
 // While the pause menu is open the city holds still and ignores keys; camera
 // shake respects REDUCE MOTION (in-game setting or OS preference).
 const runCityFrame = preview.update.bind(preview);
-preview.update = (dt) => {
-  if (!globalThis.NIGHTFALL_PAUSED) runCityFrame(dt);
+preview.update = (dt, options) => {
+  if (!globalThis.NIGHTFALL_PAUSED) runCityFrame(dt, options);
 };
 const handleCityKey = gameplayRuntime.handleKeyDown.bind(gameplayRuntime);
 gameplayRuntime.handleKeyDown = (event) => (globalThis.NIGHTFALL_PAUSED ? true : handleCityKey(event));
@@ -165,6 +165,15 @@ preview.initialize()
     return preview.loadModels();
   })
   .then(() => gameplayRuntime.initialize())
+  // Alpha round 4: lift the loading card only once the city has drawn the
+  // chapter's first real frames (a slow GPU otherwise showed the stale
+  // platform frame, then the cut, for seconds after "loaded").
+  .then(() => new Promise((resolve) => {
+    let frames = 0;
+    const tick = () => (++frames >= 3 ? resolve() : requestAnimationFrame(tick));
+    requestAnimationFrame(tick);
+    window.setTimeout(resolve, 8000);
+  }))
   .then(() => {
     preview.loadingPanel.classList.add('done');
   })

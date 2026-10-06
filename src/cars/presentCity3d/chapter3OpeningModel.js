@@ -243,6 +243,31 @@ export function chapter3ResumePoint(state) {
   return found ? { checkpointId: found.checkpointId, stage: found.stage } : null;
 }
 
+// Alpha round 4 (P1, performance): the runtime reads the snapshot dozens of
+// times a frame (every interactable's eligible(), the task card, the tags)
+// and each read was a full JSON clone. This view hands every reader the same
+// snapshot until any other model method runs (any call may change the
+// story), then clones afresh. Readers treat it as read-only, as they did.
+export function cachedSnapshotModel(model) {
+  let cached = null;
+  const view = {};
+  for (const key of Object.keys(model)) {
+    const method = model[key];
+    if (typeof method !== 'function') continue;
+    view[key] = key === 'snapshot'
+      ? () => (cached ??= model.snapshot())
+      : (...args) => {
+        cached = null;
+        try {
+          return method.apply(model, args);
+        } finally {
+          cached = null;
+        }
+      };
+  }
+  return Object.freeze(view);
+}
+
 /** The start a saved resume point opens (validated), or null. */
 export function chapter3ResumeStart(checkpointId, data) {
   const entry = CHAPTER3_RESUME_STAGES.find(({ stage }) => stage === data?.stage);

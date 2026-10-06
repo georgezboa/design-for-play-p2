@@ -19,9 +19,10 @@ const page = read('car03-3d.html');
 
 describe('Chapter 3 alpha fixes (F2)', () => {
   it('A2-1: game time follows the wall clock on a slow GPU; captions read on it too', () => {
-    assert.ok(MAX_FRAME_SECONDS >= 0.25, 'a 4 fps frame is not slow motion');
+    // Alpha round 4: down to 1 fps (was 0.25 s, a 4 fps floor).
+    assert.ok(MAX_FRAME_SECONDS >= 1, 'a 1 fps frame is not slow motion');
     assert.ok(MAX_STEP_SECONDS <= 0.1, 'movement still advances in small steps');
-    assert.match(preview, /for \(let step = 0; step < steps; step \+= 1\) this\.update\(frame \/ steps\);/);
+    assert.match(preview, /for \(let step = 0; step < steps; step \+= 1\) this\.update\(frame \/ steps, \{ final: step === steps - 1 \}\);/);
     assert.doesNotMatch(preview, /Math\.min\(0\.05, Math\.max\(0\.001, \(now - this\.lastFrame\)/);
     assert.match(caption, /dt = this\.wallDelta\(dt\);/);
     assert.match(caption, /performance\.now\(\)/);

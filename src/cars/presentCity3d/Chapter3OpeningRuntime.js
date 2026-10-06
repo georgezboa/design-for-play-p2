@@ -55,7 +55,7 @@ import {
 import { ENDING_SLICE_POSITIONS } from './chapter3EndingContent.js';
 import { Chapter3DialogueController } from './Chapter3Caption.js';
 import { Chapter3TicketBoard } from './Chapter3TicketBoard.js';
-import { chapter3ResumePoint } from './chapter3OpeningModel.js';
+import { cachedSnapshotModel, chapter3ResumePoint } from './chapter3OpeningModel.js';
 import { Chapter3ScannerField } from './Chapter3ScannerField.js';
 import { Chapter3BellClamp } from './Chapter3BellClamp.js';
 import { createChapter3MinistryHall, MINISTRY_POSITIONS } from './Chapter3MinistryHall.js';
@@ -93,6 +93,7 @@ import {
   makeMorningCampfireEchoStone,
   makeObjectHighlight,
   makePreservingObjectHighlight,
+  makeRoseScarf,
   positionFrom,
   setActorForegroundVisibility,
   setRimLightStrength,
@@ -145,8 +146,9 @@ const SEARCH_HINT_AFTER_SECONDS = 45;
 const SEARCH_HINT_NEAR_TARGET_SECONDS = 30;
 const DIRECT_WALK_SPEED = 3.1;
 // The default street camera sits closer than the old 2.85 overview so the
-// cast reads at least ~48 px tall at 1080p; dialogue eases in a little more.
-const DIALOGUE_ZOOM_BOOST = 0.45;
+// cast reads at least ~48 px tall at 1080p; dialogue eases in more (alpha
+// round 4: 0.45 -> 0.8, the speakers were still small in conversation).
+const DIALOGUE_ZOOM_BOOST = 0.8;
 // Round 3 art pass (P2, Butch lost on the cobbles): the street camera sits
 // a little tighter on every tier (3.6 -> 4.0, about 11 % larger).
 const STREET_ZOOM_BOOST = 0.4;
@@ -158,6 +160,11 @@ const BUTCH_SILHOUETTE = Object.freeze({ color: 0xf0b25e, opacity: 0.92, widthCs
 // R5 (alpha round 3): how much closer the camera sits on the carriage door
 // for the empty-seat line.
 const BOARDED_CLOSE_UP_ZOOM = 1.6;
+// Alpha round 4 (P1, 3.6): the station beat pushes in on Butch and the
+// woman in the rose scarf (about 30 % larger than the street camera), and
+// the scarf itself is oversized a little so it reads at that zoom.
+const STATION_CLOSE_UP_ZOOM = 2.1;
+const ROSE_SCARF_WORLD_SCALE = 1.25;
 // Measured from vertical raycasts through the installed Hunyuan furniture kit
 // at its runtime scale/offset. Boxes include a 0.42 m player-radius margin.
 const MINISTRY_FURNITURE_OBSTACLES = Object.freeze([
@@ -270,7 +277,7 @@ class TagLayer {
 export class Chapter3OpeningRuntime {
   constructor({ preview, model, elements }) {
     this.preview = preview;
-    this.model = model;
+    this.model = cachedSnapshotModel(model);
     this.elements = elements;
     this.dialogue = new Chapter3DialogueController({ root: elements.caption });
     this.timeVisual = new Chapter3TimeVisualController(preview);
@@ -530,8 +537,41 @@ export class Chapter3OpeningRuntime {
         if (cut) cut.outline = this.cutInterface.highlight;
       }
       this.applyEchoMaterial();
+      this.attachRoseScarf();
     }
     this.updateOutlines();
+  }
+
+  // The rose scarf on the Mara ahead's rig: tied to the neck bone so it moves
+  // with her walk, sized in world metres whatever the rig's own scale.
+  attachRoseScarf() {
+    const installed = this.characters.get('echo-mara');
+    const rig = installed?.loaded ? installed.visual : null;
+    if (!rig || this.roseScarf) return false;
+    let neck = null;
+    rig.traverse((object) => { if (!neck && object.isBone && /neck/i.test(object.name)) neck = object; });
+    const scarf = makeRoseScarf();
+    scarf.scale.setScalar(ROSE_SCARF_WORLD_SCALE);
+    if (neck) {
+      rig.updateMatrixWorld(true);
+      const boneScale = neck.getWorldScale(new THREE.Vector3());
+      const hostScale = this.echoMara.getWorldScale(new THREE.Vector3());
+      // The collar sits a little up the neck; the scale cancels the bone's.
+      scarf.scale.set(
+        (ROSE_SCARF_WORLD_SCALE * hostScale.x) / boneScale.x,
+        (ROSE_SCARF_WORLD_SCALE * hostScale.y) / boneScale.y,
+        (ROSE_SCARF_WORLD_SCALE * hostScale.z) / boneScale.z,
+      );
+      scarf.position.y = (0.035 * hostScale.y) / boneScale.y;
+      neck.add(scarf);
+    } else {
+      scarf.position.y = 0.93;
+      this.echoMara.add(scarf);
+    }
+    this.roseScarf = scarf;
+    this.roseScarfOnBone = Boolean(neck);
+    if (this.echoMaraFallbackScarf) this.echoMaraFallbackScarf.visible = false;
+    return true;
   }
 
   // Deferred streaming order: the market and street cast first, then the
@@ -977,16 +1017,14 @@ export class Chapter3OpeningRuntime {
     this.petar.visible = false;
     this.echoMara = makeActor(scene, { name: 'echo-mara-one-step-ahead', color: 0x1b2a2e, position: SCANNER_FIELDS.station.from, scale: 0.94 });
     this.echoMara.visible = false;
-    // Her scarf is the one colour she carries (every witness names it).
-    const scarf = new THREE.Mesh(
-      new THREE.TorusGeometry(0.2, 0.07, 8, 18),
-      new THREE.MeshStandardMaterial({ color: 0xc98088, roughness: 0.7, emissive: 0x4a1a22, emissiveIntensity: 0.6 }),
-    );
-    scarf.rotation.x = Math.PI / 2;
-    scarf.position.y = 1.5;
-    scarf.userData.echoMaterial = true;
-    scarf.userData.characterAsset = 'echo-mara';
-    this.echoMara.add(scarf);
+    // Her scarf is the one colour she carries (every witness names it). This
+    // one rides the placeholder until her rig streams in; attachRoseScarf()
+    // then ties the real one to the rig's neck (alpha round 4: the old ring
+    // floated above the rig's head, so she read as a plain grey figure).
+    this.echoMaraFallbackScarf = makeRoseScarf();
+    this.echoMaraFallbackScarf.position.y = 1.42;
+    this.echoMaraFallbackScarf.scale.setScalar(1.6);
+    this.echoMara.add(this.echoMaraFallbackScarf);
     this.campfireRada = makeActor(scene, { name: 'campfire-rada-postal-sorter', color: 0x7f493b, position: [-50.35, 0.5, 33.0], scale: 0.96 });
     this.campfireMiro = makeActor(scene, { name: 'campfire-miro-tram-mechanic', color: 0x3f5660, position: [-54.75, 0.5, 32.8], scale: 1.02 });
     this.campfireSeline = makeActor(scene, { name: 'campfire-seline-laundry-worker', color: 0x6f5874, position: [-54.15, 0.5, 35.8], scale: 0.93 });
@@ -2560,7 +2598,9 @@ export class Chapter3OpeningRuntime {
     this.echoMara.rotation.y = Math.atan2(u.x, u.z);
     this.echoMara.visible = true;
     this.applyEchoMaterial();
+    // The pair, close: the push-in starts with Lev's warning (alpha round 4).
     this.showLines([...STATION_APPROACH_DIALOGUE, ...STATION_MARA_SIGHTED], {
+      focus: this.stationPairFocus(),
       onComplete: () => this.model.sightMara(),
     });
   }
@@ -3230,7 +3270,7 @@ export class Chapter3OpeningRuntime {
   }
 
   // ------------------------------------------------------------------ frame
-  update(dt) {
+  update(dt, { final = true } = {}) {
     if (!this.initialized) return;
     if (this.scannerFreezeRemaining > 0) this.scannerFreezeRemaining = Math.max(0, this.scannerFreezeRemaining - dt);
     if (this.blockedFlashRemaining > 0) {
@@ -3255,6 +3295,7 @@ export class Chapter3OpeningRuntime {
     music.setDialogueActive(this.dialogue.active);
     this.updateMusic();
     this.updateCameraZoom(dt);
+    this.updateStationCamera();
     this.updateScannerFields(dt);
     this.updateStationTrigger();
     this.updateFinalDeparture(dt);
@@ -3368,11 +3409,18 @@ export class Chapter3OpeningRuntime {
       this.timeVisual.update(dt);
       this.preview.setLampGlow?.(chapter3LampGlowForClock(clock));
     }
-    this.updateCharacterAnimations(dt);
+    this.updateResumePoint();
+    // Alpha round 4 (P1): on a slow frame the preview runs several short
+    // steps; the cast's animation and walks take the whole frame's time at
+    // once and the screen work (tags, pips, markers) runs on the last step.
+    this.frameDtAccum = (this.frameDtAccum ?? 0) + dt;
+    if (!final) return;
+    const frameDt = this.frameDtAccum;
+    this.frameDtAccum = 0;
+    this.updateCharacterAnimations(frameDt);
     this.updateButchMarker();
     this.updateButchSilhouette();
     this.updateGuidanceBeacons();
-    this.updateResumePoint();
     this.updateObjective();
     this.updateTags();
     this.updatePips();
@@ -3482,6 +3530,42 @@ export class Chapter3OpeningRuntime {
     }
   }
 
+  // Alpha round 4 (P1, 3.6): from the platform until Butch boards, the
+  // camera holds the pair (Butch and the woman in the rose scarf), close.
+  stationCloseUpActive(state = this.model.snapshot()) {
+    return state.stationReached && !state.boardedTrain && this.echoMara.visible
+      && !this.insideHotel && !this.insideMinistry;
+  }
+
+  stationPairFocus() {
+    return this.preview.player.position.clone().lerp(this.echoMara.position, 0.5).setY(0.8);
+  }
+
+  // The follow camera stops a dead zone short of an override subject; aim
+  // past it by that much so `point` itself lands in the middle of the frame.
+  centredOverride(point) {
+    const focus = this.preview.controls.target;
+    const [deadX, deadZ] = CAMERA_FOLLOW.deadzone;
+    const aim = point.clone();
+    if (Math.abs(aim.x - focus.x) > 0.05) aim.x += Math.sign(aim.x - focus.x) * Math.min(deadX, Math.abs(aim.x - focus.x));
+    if (Math.abs(aim.z - focus.z) > 0.05) aim.z += Math.sign(aim.z - focus.z) * Math.min(deadZ, Math.abs(aim.z - focus.z));
+    return aim;
+  }
+
+  updateStationCamera() {
+    if (!this.stationCloseUpActive()) {
+      if (this.stationCameraHeld) {
+        this.stationCameraHeld = false;
+        if (!this.dialogue.active) this.preview.setCameraOverrideTarget(null);
+      }
+      return;
+    }
+    // A line frames its own speaker (frameSpeaker, with the pair as focus).
+    if (this.dialogue.active) return;
+    this.stationCameraHeld = true;
+    this.preview.setCameraOverrideTarget(this.centredOverride(this.stationPairFocus()));
+  }
+
   // Street zoom: closer than the old overview, a little closer in dialogue.
   updateCameraZoom(dt) {
     if (this.insideHotel || this.insideMinistry || this.preview.developerMode) return;
@@ -3490,6 +3574,8 @@ export class Chapter3OpeningRuntime {
     // LOW quality frames a little closer: less city in view, larger cast.
     if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
+    // Alpha round 4: the station beat, close on Butch and her.
+    if (this.stationCloseUpActive(state)) target = this.baseZoom + STATION_CLOSE_UP_ZOOM;
     // R5: the open carriage door, close, for the empty-seat line.
     if (this.boardedCloseUp && state.boardedTrain && state.departureSequenceMs < 11200) target = this.baseZoom + BOARDED_CLOSE_UP_ZOOM;
     if (this.fireCameraActive) target = this.baseZoom + 1.5;

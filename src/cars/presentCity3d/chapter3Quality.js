@@ -4,7 +4,7 @@
 // over the whole district, transmissive water). On a slow GPU the frame time
 // climbs past what reads as a game, so the preview measures it after loading
 // and drops to the LOW tier once, for the rest of the visit:
-//   * pixel ratio ≤ 0.8 (the DOM captions and tags stay sharp);
+//   * pixel ratio ≤ LOW_PIXEL_RATIO (the DOM captions and tags stay sharp);
 //   * no shadow maps;
 //   * the cool fill light off (the sky light lifts to cover it);
 //   * cheaper materials: no bump / roughness / metalness maps, no water
@@ -21,8 +21,11 @@
 
 export const QUALITY_STORAGE_KEY = 'nightfall.echoCity.quality';
 export const QUALITY_TIERS = Object.freeze(['high', 'low', 'lowest']);
-export const LOW_PIXEL_RATIO = 0.8;
-export const LOWEST_PIXEL_RATIO = 0.55;
+// Alpha round 4 (P1, 1 fps on LOW): LOW draws at 0.7 (was 0.8) and LOWEST
+// at half resolution (was 0.55); a city pinned to LOW also drops MSAA
+// (EchoCity3DPreview). The DOM captions and tags stay at full resolution.
+export const LOW_PIXEL_RATIO = 0.7;
+export const LOWEST_PIXEL_RATIO = 0.5;
 
 // Frames slower than this (median, after warm-up) choose LOW.
 export const SLOW_FRAME_MS = 45;
