@@ -94,7 +94,12 @@ rack: {
                                     // (glintOnly: true = glint, no paper; a glint-only
                                     // or past-era hotspot also gets a pulsing amber
                                     // ring — seen through the lens for 1978 — unless ring: false;
-                                    // ring: true rings any hotspot)
+                                    // ring: true rings any hotspot; text: 'PUNCH THE STUB'
+                                    // types the words on the unfold's paper tag). The tag
+                                    // itself is clickable too (panelModel tagRect), after
+                                    // the thing it hangs from
+        quiet: true,                // an answer to a wrong guess (a caption, a pulse):
+                                    // never ringed, never what a hint points at
         ringRect: [x, y, w, h],     // ring the thing itself when the click target is larger
       }],
     },
@@ -128,7 +133,10 @@ the pause menu's SHOW ME (`nightfall:hint`, or `H`) plays the ghost hand at once
 `{ drag: { tile, leftOf|rightOf|above|below|slot } }` (or a list) · `{ click: { tile, hotspot(s) } }` ·
 `{ zoomOut: tile }` · `{ frame: { from, to } }` · `{ lens: { tile, u, v } | { tile, hotspot }, click }`.
 Without `ghost`, a hotspot hint clicks it and `zoomOut: true` taps the glyph. `zoomOutCue: cond`
-keeps the tile's ⤢ glyph breathing while the condition holds. The ghost hand
+keeps the tile's ⤢ glyph breathing while the condition holds (`zoomOutTile` names another
+window's glyph). `pulseAt: ms` brings that step's first pulse forward until the player acts
+(Act 0's first beat: 6 s; the Museum exhibit: 10–15 s). For a lens gesture the ghost hand
+takes the lens by its rim, sets it over the target, then reaches in and clicks the target. The ghost hand
 takes hold of windows and frames where the lens is not (a press there would move
 the lens), and every gesture is proved reachable in `hints.test.mjs`. The pulse keys are:
 `{ tile, hotspot }` · `{ tile, hotspots: [ids] }` (first enabled one) ·
@@ -164,8 +172,25 @@ scene rings her in amber, she glances back now and then, and when the way on
 is one step back out of the next window its ⤢ glyph breathes (hints.js
 `waitingWalkers`; trains are cued by the lens and the seams instead).
 
-An open archive card pauses the script (reading is never rushed). `lockInput`
-also drops whatever the player is holding.
+An open archive card pauses the script (reading is never rushed); after a
+moment it says CLICK OR PRESS ENTER TO CLOSE. `lockInput` also drops whatever
+the player is holding. A passing caption (`caption`) leaves when a window
+zooms, and when a window zooms into a close-up with no `drawPast` under the
+lens, the lens slides off it onto a neighbour (its rim also dims over one).
+
+### Frame rate and resume points
+
+Game time follows the wall clock down to ~10 fps: `frameClock.js` caps a
+frame at 100 ms and steps the model in ≤ 50 ms slices (Phaser's tweens and
+timers already run on real time there). Butch walks at `BUTCH_PACE` (his
+actor's `pace`). Each time a step is done and the script waits on the player
+again, the scene reports a resume point `{ act, step, slots, lens }`
+(`services.onResumePoint`); `nightService-main.js` keeps it in the save
+(`markResume`) and Continue reopens the act on that step: the `?step=` skips
+rebuild the board, then `model.applyResume` puts the windows and the lens back
+(unless that layout would finish the step under the act title). So every
+step's `skip` must leave the world that step needs (tested in
+`tests/nightService/resume.test.mjs`).
 
 ### The painter `ctx`
 
