@@ -39,6 +39,8 @@ export const CUTSCENE_LOADERS = Object.freeze({
   opening: () => import('./scenes/opening.js'),
   chapter1To2: () => import('./scenes/chapter1To2.js'),
   chapter2To3: () => import('./scenes/chapter2To3.js'),
+  chapter3To4: () => import('./scenes/chapter3To4.js'),
+  chapter4To5: () => import('./scenes/chapter4To5.js'),
   ending: () => import('./scenes/ending.js'),
 });
 
