@@ -310,7 +310,7 @@
   letter-spacing: .05em;
 }
 /* on the board the lines grow with the window, never past its width */
-.nf-main-actions .nf-action-label { font-size: max(1.12em, min(2.2vh, var(--nf-board) * .046)); }
+.nf-main-actions .nf-action-label { font-size: calc(max(1.12em, min(2.2vh, var(--nf-board) * .046)) * var(--nf-fit, 1)); }
 .nf-action-detail {
   grid-column: 2;
   color: rgba(234, 223, 198, .55);
@@ -408,9 +408,10 @@
   font: 400 max(10px, .56em)/1.9 var(--nf-mono);
   letter-spacing: .06em;
 }
-/* each hint wraps as a whole, never between a key and its word */
+/* each hint wraps as a whole, never between a key and its word; they are
+   spaced, not dotted, so a wrapped line never starts on a lone "·" (alpha R4) */
+.nf-hint { column-gap: 1.25em; row-gap: .15em; }
 .nf-hint span { white-space: nowrap; }
-.nf-hint span + span::before { content: "·"; padding: 0 .55em; color: var(--nf-brass); }
 .nf-hint kbd,
 .nf-credits-legend kbd {
   display: inline-block;
@@ -858,7 +859,17 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 }
 .nf-credits-panel::before { top: 0; background: linear-gradient(#120c08 10%, transparent); }
 .nf-credits-panel::after { bottom: 0; background: linear-gradient(transparent, #120c08 78%); }
-.nf-credits-viewport { position: absolute; inset: 0; overflow: hidden; overflow-anchor: none; }
+/* the roll ends above the control bar and fades out before it, so no card
+   ever slides underneath the bar (alpha R4 · P2) */
+.nf-credits-viewport {
+  --nf-credits-bar: 5.4rem;
+  position: absolute;
+  inset: 0 0 var(--nf-credits-bar) 0;
+  overflow: hidden;
+  overflow-anchor: none;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 9vh, #000 calc(100% - 16vh), transparent 100%);
+  mask-image: linear-gradient(to bottom, transparent 0, #000 9vh, #000 calc(100% - 16vh), transparent 100%);
+}
 .nf-credits-roll { width: min(800px, calc(100vw - 48px)); margin-inline: auto; will-change: transform; }
 
 .nf-credits-heading {
@@ -1021,7 +1032,8 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 }
 .nf-credits-controls:hover, .nf-credits-controls:focus-within { opacity: 1; }
 .nf-dialog .nf-roll-control { min-width: 0; min-height: 32px; margin: 0; padding: .45rem .8rem; font-size: .6rem; }
-.nf-credits-legend { margin: 0 0 0 .5rem; color: rgba(234, 223, 198, .55); font: 400 .56rem/1 var(--nf-mono); letter-spacing: .08em; white-space: nowrap; }
+.nf-credits-legend { margin: 0 0 0 .5rem; color: rgba(234, 223, 198, .72); font: 400 .62rem/1 var(--nf-mono); letter-spacing: .08em; white-space: nowrap; }
+.nf-credits-rate { min-width: 6.5em; margin-left: .35rem; color: var(--nf-amber); font: 700 .62rem/1 var(--nf-mono); letter-spacing: .12em; text-align: center; white-space: nowrap; }
 .nf-credits-viewport.is-static { overflow-y: auto; }
 .nf-credits-viewport.is-static .nf-credits-roll { transform: none !important; }
 
@@ -1061,8 +1073,8 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 /* ---------- smaller and shorter screens ---------- */
 
 /* the lines grow with the plaque and always fit its width on one line */
-#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.3vh, var(--nf-board) * .041), 30px) * var(--nightfall-text-scale)); }
-#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 15px) * var(--nightfall-text-scale)); letter-spacing: .1em; }
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.3vh, var(--nf-board) * .041), 30px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); }
+#nightfall-title[data-layout="wide"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 15px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); letter-spacing: .1em; }
 /* Large text on a short screen: the timetable scrolls inside the plaque, its
    header and footer stay put. The side padding keeps the ticket's notch and
    its tilt inside the scroll box. */
@@ -1076,7 +1088,7 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
   scrollbar-color: var(--nf-brass) transparent;
 }
 /* the key hints keep to one line across the plaque */
-#nightfall-title[data-layout="wide"] .nf-hint { font-size: calc(clamp(8.5px, var(--nf-board) * .026, 13px) * var(--nightfall-text-scale)); }
+#nightfall-title[data-layout="wide"] .nf-hint { font-size: calc(clamp(8.5px, var(--nf-board) * .026, 13px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); }
 @media (max-height: 760px) {
   #nightfall-title[data-layout="wide"] .nf-main-actions .nf-action { padding-block: clamp(5px, 1.2vh, 12px); min-height: 40px; }
   #nightfall-title[data-layout="wide"] .nf-board-columns { margin-top: clamp(6px, 1.2vh, 14px); }
@@ -1090,6 +1102,18 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
   #nightfall-title[data-layout="wide"] .nf-menu-footer { gap: 0; padding-top: .5em; }
 }
 
+/* Large text (alpha R4 · P2): titleMenu.js fitBoard steps the plaque down
+   until every line shows (QUIT GAME included) and no label wraps — tighter
+   rows, then smaller type, then no header, then no details. */
+#nightfall-title[data-fit] .nf-main-actions .nf-action { padding-block: clamp(4px, .85vh, 12px); min-height: 40px; }
+#nightfall-title[data-fit] .nf-board-columns { margin-top: clamp(4px, .9vh, 12px); }
+#nightfall-title:is([data-fit="compact"], [data-fit="smallest"]) :is(.nf-menu-header, .nf-board-columns) { display: none; }
+#nightfall-title[data-fit="small"] { --nf-fit: .9; }
+#nightfall-title:is([data-fit="smaller"], [data-fit="compact"], [data-fit="smallest"]) { --nf-fit: .8; }
+#nightfall-title:is([data-fit="smallest"], [data-fit="tiny"]) .nf-main-actions .nf-action-detail { display: none; }
+#nightfall-title[data-fit="tiny"] { --nf-fit: .7; }
+#nightfall-title[data-fit="tiny"] :is(.nf-menu-header, .nf-board-columns) { display: none; }
+
 /* narrow or portrait: the window and Butch above, the plaque on the facing
    seat's back below them (titlePlate.js narrowLayout) */
 #nightfall-title[data-layout="narrow"] .nf-menu { padding: calc(var(--nf-bezel) + 8px) calc(var(--nf-bezel) + 10px); }
@@ -1097,8 +1121,8 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 #nightfall-title[data-layout="narrow"] .nf-menu-header { margin-bottom: .2em; }
 #nightfall-title[data-layout="narrow"] .nf-main-actions { gap: 0; padding: .2em 0; }
 #nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action { min-height: 40px; padding-block: clamp(5px, 1vh, 12px); }
-#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.4vh, var(--nf-board) * .042), 22px) * var(--nightfall-text-scale)); }
-#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 13px) * var(--nightfall-text-scale)); letter-spacing: .1em; }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-label { font-size: calc(clamp(13px, min(2.4vh, var(--nf-board) * .042), 22px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); }
+#nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 13px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); letter-spacing: .1em; }
 #nightfall-title[data-layout="narrow"][data-plaque="compact"] :is(.nf-menu-header, .nf-main-actions .nf-action-detail) { display: none; }
 #nightfall-title[data-layout="narrow"] .nf-menu-footer { padding-top: .45em; }
 

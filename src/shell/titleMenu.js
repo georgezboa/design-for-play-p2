@@ -26,6 +26,7 @@ import { missingStoneNotice } from './magicStones.js';
 import { dressCarriageWall } from './titleCarriage.js';
 import { mountTitleScene } from './titlePlate.js';
 import { clearCreditsQuery } from './endCredits.js';
+import { BOARD_FIT_LEVELS, boardFits, creditDepartureTime, formatCreditRate } from './titleMenuBoard.js';
 
 // The title always shows the player's own three slots, never a test route's
 // scratch slots (saveSystem.js ROUTER_SAVE_KEY).
@@ -196,7 +197,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
       const row = document.createElement('article');
       row.className = `nf-credit-ticket nf-credit-style--${member.style}${member.featured ? ' is-featured' : ''}`;
       row.innerHTML = `
-        <span class="nf-credit-time">${String(23 + Math.floor(index / 2)).padStart(2, '0')}:${String((index * 11) % 60).padStart(2, '0')}</span>
+        <span class="nf-credit-time">${creditDepartureTime(index)}</span>
         <strong>${member.name}</strong>
         <small>${member.stamp}</small>
         <b>${member.role}</b>
@@ -293,8 +294,13 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     controls.append(pause, restart, exitCredits);
     const legend = document.createElement('p');
     legend.className = 'nf-credits-legend';
-    legend.innerHTML = '<kbd>SPACE</kbd> PAUSE <i></i> <kbd>↑ ↓</kbd> SPEED <i></i> <kbd>R</kbd> RESTART <i></i> <kbd>ESC</kbd> EXIT';
-    controls.append(legend);
+    // ↑ slows the roll, ↓ speeds it: both said, and the speed shown (alpha R4 · P2)
+    legend.innerHTML = '<kbd>SPACE</kbd> PAUSE <i></i> <kbd>↑</kbd> SLOWER <i></i> <kbd>↓</kbd> FASTER <i></i> <kbd>R</kbd> RESTART <i></i> <kbd>ESC</kbd> EXIT';
+    const rate = document.createElement('span');
+    rate.className = 'nf-credits-rate';
+    rate.setAttribute('aria-live', 'polite');
+    rate.textContent = formatCreditRate(1);
+    controls.append(rate, legend);
     panel.append(viewport, controls);
     openDialog();
     syncCreditVolume();
@@ -584,6 +590,25 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     panel.querySelector('.nf-back')?.focus();
   };
 
+  // The board always shows all of its lines (alpha R4 · P2: at 130 % text
+  // QUIT GAME scrolled out of the plaque and labels wrapped): step it down,
+  // one level at a time, until nothing overflows (titleMenu.css data-fit).
+  const fitBoard = () => {
+    if (!root.isConnected || root.dataset.state === 'exited') return;
+    const levels = BOARD_FIT_LEVELS;
+    for (let i = 0; i < levels.length; i += 1) {
+      if (levels[i]) root.dataset.fit = levels[i]; else delete root.dataset.fit;
+      if (boardFits(actions)) break;
+    }
+    root.dataset.fitLevel = root.dataset.fit ?? 'none';
+  };
+  let fitFrame = 0;
+  const scheduleFit = () => {
+    cancelAnimationFrame(fitFrame);
+    // after titlePlate.js has laid the plaque out for this size
+    fitFrame = requestAnimationFrame(() => requestAnimationFrame(fitBoard));
+  };
+
   const refresh = () => {
     actions.replaceChildren();
     const saves = store.readAll();
@@ -623,6 +648,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     if (creditRollAnimation.updatePlaybackRate) creditRollAnimation.updatePlaybackRate(creditPlaybackRate);
     else creditRollAnimation.playbackRate = creditPlaybackRate;
     root.dataset.creditRate = `${creditPlaybackRate.toFixed(2)}x`;
+    const shown = panel.querySelector('.nf-credits-rate');
+    if (shown) shown.textContent = formatCreditRate(creditPlaybackRate);
   };
   const menuAction = (action) => {
     if (!root.isConnected || root.dataset.state === 'exited') {
@@ -697,8 +724,11 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     if (event.key.toLowerCase() === 'f' && !event.repeat && !event.metaKey && !event.ctrlKey && !event.altKey) await toggleFullscreen();
   };
   window.addEventListener('keydown', handleGlobalKey);
-  window.addEventListener('nightfall:settings', (event) => syncCreditVolume(event.detail));
+  window.addEventListener('nightfall:settings', (event) => { syncCreditVolume(event.detail); scheduleFit(); });
+  window.addEventListener('resize', scheduleFit);
   refresh();
+  scheduleFit();
+  document.fonts?.ready?.then(scheduleFit).catch(() => {});
   padPoll.start();
   if (openCredits) renderCredits();
   if (DEV_MODE) window.render_game_to_text = () => JSON.stringify({

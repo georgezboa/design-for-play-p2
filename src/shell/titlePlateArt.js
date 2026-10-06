@@ -670,10 +670,7 @@ function butchPaths() {
   const arm = new Path2D();
   arm.moveTo(-6, -57); arm.quadraticCurveTo(4, -60, 6.5, -50); arm.lineTo(9.5, -37); arm.lineTo(20, -33.5);
   arm.lineTo(21, -27.6); arm.lineTo(6, -27.5); arm.quadraticCurveTo(1, -28, 0, -34); arm.lineTo(-3.5, -48); arm.closePath();
-  const legs = new Path2D();
-  // the near knee past the case, the shin down to the boot
-  legs.moveTo(26, -11.5); legs.quadraticCurveTo(37, -12, 38.5, -4); legs.lineTo(40.5, 30); legs.lineTo(32.5, 30); legs.lineTo(30, 0); legs.closePath();
-  return { coat, head, cap, peak, collar, arm, legs };
+  return { coat, head, cap, peak, collar, arm };
 }
 
 /** Light a clipped part from the lamp at (lx, ly) in units. */
@@ -700,20 +697,54 @@ function paintButch(c, L) {
   c.save();
   c.translate(x, y);
   c.scale(s, s);
-  // the far leg, in shadow, then the near one
-  c.fillStyle = '#0c1118';
-  c.beginPath(); c.moveTo(22, -10); c.quadraticCurveTo(32, -11, 33, -3); c.lineTo(35, floor - 5); c.lineTo(28, floor - 5); c.lineTo(25, 0); c.closePath(); c.fill();
-  c.beginPath(); c.moveTo(26, floor - 6); c.quadraticCurveTo(38, floor - 7.5, 41, floor - 1); c.lineTo(41, floor); c.lineTo(26, floor); c.closePath(); c.fill();
-  const shin = new Path2D();
-  shin.moveTo(26, -11.5); shin.quadraticCurveTo(37, -12, 38.5, -4); shin.lineTo(40.5, floor - 5); shin.lineTo(32.5, floor - 5); shin.lineTo(30, 0); shin.closePath();
-  c.fillStyle = '#141b25';
+  // Seated, two legs (alpha R4 · P2: one stiff post read as a single leg):
+  // the far one tucked back under the seat edge, its shin angled in, the near
+  // one planted a little forward. Each knee shows past the case, each shin is
+  // a tapered trouser leg, each boot has a heel and a toe.
+  const leg = (knee, ankle, top, width) => {
+    const p = new Path2D();
+    const [kx, ky] = knee;
+    const [ax, ay] = ankle;
+    p.moveTo(top[0], top[1]);
+    p.quadraticCurveTo(kx + width * 0.4, ky - width * 0.55, kx + width * 0.5, ky + width * 0.25);
+    p.quadraticCurveTo(ax + width * 0.55, (ky + ay) / 2, ax + width * 0.42, ay);
+    p.lineTo(ax - width * 0.42, ay);
+    p.quadraticCurveTo(ax - width * 0.5, (ky + ay) / 2, kx - width * 0.5, ky + width * 0.6);
+    p.lineTo(top[0] - 2, top[1] + width);
+    p.closePath();
+    return p;
+  };
+  const boot = (ax, toe, color, rim, seed) => {
+    c.fillStyle = color;
+    c.beginPath();
+    c.moveTo(ax - 4.6, floor - 6.5);
+    c.lineTo(ax + 3.8, floor - 6.8);
+    c.quadraticCurveTo(toe - 1, floor - 6, toe, floor - 1.6);
+    c.lineTo(toe, floor);
+    c.lineTo(ax - 5.4, floor);
+    c.closePath();
+    c.fill();
+    // the lamp catches the boot's upper and its toe
+    ink(c, [[ax - 4.6, floor - 6.5], [ax + 3.8, floor - 6.8], [toe - 1, floor - 5.6], [toe, floor - 1.6]], { w: u(1.3), alpha: rim, bleed: false, jitter: 0.08, color: '#ffcf92', seed });
+  };
+  // the far leg: knee hidden by the case, shin slanting back to a tucked boot
+  const farLeg = leg([31, -5], [26.5, floor - 6], [18, -11], 8.2);
+  c.fillStyle = '#101823';
+  c.fill(farLeg);
+  lampLit(c, farLeg, lx, ly, 46, 0.18);
+  boot(26.5, 35, '#08090c', 0.22, 6503);
+  ink(c, [[31.5, -2], [29.6, floor * 0.55], [27.6, floor - 6]], { w: u(1.1), alpha: 0.28, bleed: false, jitter: 0.12, color: '#e0b27e', seed: 6500 });
+  // the near leg: the knee past the case's end, the shin forward to the boot
+  const shin = leg([38.5, -6], [43.5, floor - 6], [24, -12.5], 9.2);
+  c.fillStyle = '#16202b';
   c.fill(shin);
   lampLit(c, shin, lx, ly, 60, 0.4);
-  c.fillStyle = '#0a0705';
-  c.beginPath(); c.moveTo(31.5, floor - 6.5); c.quadraticCurveTo(44, floor - 8, 47.5, floor - 1.5); c.lineTo(47.5, floor); c.lineTo(31.5, floor); c.closePath(); c.fill();
+  // a crease behind the knee, so the bend reads
+  ink(c, [[35.4, -1.5], [37.6, 1.2], [38.6, 4.5]], { w: u(1), alpha: 0.5, bleed: false, jitter: 0.1, color: '#05070a', seed: 6502 });
+  boot(43.5, 53.5, '#0a0705', 0.5, 6504);
   c.fillStyle = 'rgba(255, 210, 160, 0.25)';
-  c.fillRect(36, floor - 7, 8, 0.9);
-  ink(c, [[38.5, -4], [40.5, floor - 5], [47.5, floor - 1.5]], { w: u(1.6), alpha: 0.4, bleed: false, jitter: 0.12, color: '#ffcf92', seed: 6501 });
+  c.fillRect(40, floor - 7.2, 9, 0.9);
+  ink(c, [[42.7, -4.6], [46.6, floor * 0.5], [47.6, floor - 6], [53.5, floor - 1.6]], { w: u(1.6), alpha: 0.42, bleed: false, jitter: 0.12, color: '#ffcf92', seed: 6501 });
   // the coat: dark, its lamp side warm
   c.fillStyle = vgrad(c, -60, 2, [[0, '#13222a'], [1, '#0c161b']]);
   c.fill(P.coat);
