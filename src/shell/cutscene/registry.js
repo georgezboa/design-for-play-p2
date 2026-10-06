@@ -38,6 +38,8 @@ export const FILM_NAMES = Object.freeze({
 export const CUTSCENE_LOADERS = Object.freeze({
   opening: () => import('./scenes/opening.js'),
   ending: () => import('./scenes/ending.js'),
+  'chapter5-to-conductor': () => import('./scenes/chapter5-to-conductor.js'),
+  'chapter5-to-black-knife': () => import('./scenes/chapter5-to-black-knife.js'),
 });
 
 const fold = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
