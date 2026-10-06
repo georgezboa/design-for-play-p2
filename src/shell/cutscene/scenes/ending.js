@@ -12,11 +12,8 @@
 import paperUrl from '../../../assets/shared/painterly/paper-texture-ivory-v01.png?url';
 import trainUrl from '../../../chapters/nightService/art/train-night.png?url';
 import {
-  PAL, ROSE, amberGlint, brassFill, carriageCeiling, damaskWall, drawButch, drawButchBack, drawCeilingLamp, drawMaraSeatedBack,
-  drawOilLamp, drawRain, finishLayer, floorboards, glow, hgrad, ink, inkRect, paintCountry, paintNightSky, paintWorld,
-  ramp, rivet, rng, roundRectPath, seatBack, smooth, speckle, usePaintAssets, vgrad, wainscot, wood,
+  PAL, amberGlint, brassFill, carriageCeiling, damaskWall, drawButch, drawButchBack, drawCeilingLamp, drawMaraSeatedBack, drawOilLamp, drawRain, drawViaductShot, drawWindowView, finishLayer, floorboards, glow, ink, inkRect, paintCountry, paintNightSky, paintWorld, ramp, rivet, rng, roundRectPath, seatBack, smooth, usePaintAssets, vgrad, wainscot, wood,
 } from '../painters.js';
-import { drawViaductShot } from './opening.js';
 
 const TAU = Math.PI * 2;
 
@@ -387,13 +384,6 @@ const BUTCH4 = Object.freeze({ x: 610, y: 770, s: 5.2 });
 const MARA4 = Object.freeze({ x: 1000, y: 770, s: 5.2 });
 const LAMP4 = Object.freeze({ x: 806, y: 548, s: 5 });
 
-function paintWindowOutside(c, w, h) {
-  paintNightSky(c, w, h, { horizon: 380, moon: [1180, 150], seed: 9601, warm: 0.1 });
-  paintCountry(c, w, h, { horizon: 380, seed: 9602 });
-  c.fillStyle = vgrad(c, 440, h, [[0, '#0b1013'], [1, '#05080a']]);
-  c.fillRect(-20, 440, w + 40, h);
-}
-
 function paintWindowRoom(c, w, h) {
   // the wall round the window and the window itself cut clear
   damaskWall(c, -20, -20, w + 40, h + 40, { seed: 9610, tone: ['#0d191d', '#132428'] });
@@ -456,21 +446,14 @@ function passingLamp(t, at) {
 }
 
 function shotBeside(c, t, w, h, env) {
-  env.drawLayer(c, 'outside', paintWindowOutside, { depth: 0.6, x: GLASS.x - 60, y: 0, w: GLASS.w + 120, h: 600 });
-  // the trackside going by
-  const run = env.reducedMotion ? 0 : env.wall * 520;
-  c.save();
-  roundRectPath(c, GLASS.x, GLASS.y, GLASS.w, GLASS.h, GLASS.r); c.clip();
-  // fence posts low along the cutting, under the horizon (nothing crosses their heads)
-  for (let x = GLASS.x - (run % 180); x < GLASS.x + GLASS.w + 40; x += 180) { c.fillStyle = '#05080a'; c.fillRect(x, GLASS.y + 360, 7, GLASS.h); }
   const lamps = env.reducedMotion ? [] : [passingLamp(t, 0.3), passingLamp(t, 0.62)].filter(Boolean);
-  lamps.forEach((lamp) => {
-    glow(c, lamp.x, GLASS.y + 250, 240, 'rgba(255, 176, 96, 0.9)', 0.3);
-    c.fillStyle = '#ffe6b0'; c.beginPath(); c.arc(lamp.x, GLASS.y + 250, 6, 0, TAU); c.fill();
-    glow(c, lamp.x, GLASS.y + 250, 40, 'rgba(255, 220, 160, 1)', 0.8);
+  drawWindowView(c, env, GLASS, {
+    extra: (cc) => lamps.forEach((lamp) => {
+      glow(cc, lamp.x, GLASS.y + 250, 240, 'rgba(255, 176, 96, 0.9)', 0.3);
+      cc.fillStyle = '#ffe6b0'; cc.beginPath(); cc.arc(lamp.x, GLASS.y + 250, 6, 0, TAU); cc.fill();
+      glow(cc, lamp.x, GLASS.y + 250, 40, 'rgba(255, 220, 160, 1)', 0.8);
+    }),
   });
-  drawRain(c, env, { alpha: 0.6, rect: GLASS });
-  c.restore();
   env.drawLayer(c, 'room', paintWindowRoom);
   env.drawLayer(c, 'beads', paintGlassBeads);
   // his lamp on the sill between them
@@ -572,6 +555,5 @@ export const ending = {
   ],
 };
 
-void ROSE; void hgrad; void speckle; void inkRect;
 
 export default ending;

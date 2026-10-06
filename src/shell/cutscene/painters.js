@@ -405,6 +405,90 @@ export function drawTrainLight(c, x, deck, length, carW, alpha = 1) {
   c.restore();
 }
 
+// The whole viaduct shot (opening shot 1, mirrored by the ending's last):
+// the sky and the far country, the night service at `trainX` (its rear),
+// its window light and headlamp, the viaduct, the rain.
+
+const CAR_W = 390;
+const CARS = 4;
+
+/** The sky and the orchard country behind the viaduct. */
+export function paintViaductScene(c, w, h) {
+  paintNightSky(c, w, h, { horizon: 430, moon: [300, 150], seed: 8001 });
+  paintCountry(c, w, h, { horizon: 430, seed: 8101 });
+}
+
+/** The catenary and the viaduct, in front of the train. */
+export function paintViaductFront(c, w, h) {
+  paintCatenary(c, w, { deck: VIADUCT.deck, every: 240, x0: 60 });
+  paintViaduct(c, w, h, { deck: VIADUCT.deck, x0: -60 });
+  finishLayer(c, w, h, { grain: 0.14, vig: 0.55 });
+}
+
+/** The viaduct with the train at `trainX` (its rear), as the opening and the ending both show it. */
+/** Draw the viaduct shot; `dark` 0..1 lowers the night over it, `trainGlow` dims the train. */
+export function drawViaductShot(c, w, h, env, { trainX, dark = 0, trainGlow = 1 }) {
+  env.drawLayer(c, '@sky', paintViaductScene, { depth: 0.35, x: -40, w: w + 80 });
+  const train = env.layer('@train', (tc) => {
+    tc.translate(20, 150);
+    paintNightTrain(tc, { cars: CARS, carW: CAR_W });
+  }, { w: CARS * CAR_W + 40, h: 170 });
+  const deck = VIADUCT.deck - 22;
+
+  c.drawImage(train.canvas, trainX - 20, deck + 18 - 150, train.w, train.h);
+  const length = CARS * CAR_W * 0.988;
+  drawTrainLight(c, trainX, deck, length, CAR_W, trainGlow);
+  env.drawLayer(c, '@viaduct', paintViaductFront);
+  // the train's headlamp throwing its beam ahead along the rails
+  const front = trainX + length;
+  glow(c, front + 4, deck - 26, 70, 'rgba(255, 230, 170, 0.95)', 0.5 * trainGlow);
+  c.save();
+  c.globalCompositeOperation = 'lighter';
+  const beam = c.createLinearGradient(front, 0, front + 420, 0);
+  beam.addColorStop(0, `rgba(255, 220, 160, ${0.22 * trainGlow})`);
+  beam.addColorStop(1, 'rgba(255, 220, 160, 0)');
+  c.fillStyle = beam;
+  c.beginPath(); c.moveTo(front, deck - 34); c.lineTo(front + 420, deck - 70); c.lineTo(front + 420, deck + 4); c.lineTo(front, deck - 18); c.closePath(); c.fill();
+  c.restore();
+  drawRain(c, env, { alpha: 0.42, seed: 8201 });
+  if (dark > 0) {
+    c.fillStyle = `rgba(2, 3, 6, ${dark})`;
+    c.fillRect(-10, -10, w + 20, h + 20);
+  }
+}
+
+
+/**
+ * The world outside a window, live: a cached painting behind the glass
+ * (`world` 'night' = the orchard country under the rain sky, or any
+ * paintWorld() kind), fence posts running by, rain on the far side.
+ * `extra(c)` draws more inside the glass (a passing lamp). `glass` is
+ * { x, y, w, h, r } in stage units.
+ */
+export function drawWindowView(c, env, glass, { world = 'night', horizon = 380, moon = [1180, 150], seed = 9601, posts = true, speed = 520, extra = null } = {}) {
+  env.drawLayer(c, `@window-${world}`, (lc, w, h) => {
+    if (world === 'night') {
+      paintNightSky(lc, w, h, { horizon, moon, seed, warm: 0.1 });
+      paintCountry(lc, w, h, { horizon, seed: seed + 1 });
+      lc.fillStyle = vgrad(lc, horizon + 60, h, [[0, '#0b1013'], [1, '#05080a']]);
+      lc.fillRect(-20, horizon + 60, w + 40, h);
+    } else {
+      paintWorld(lc, world, w, h, { seed });
+    }
+  }, { depth: 0.6, x: glass.x - 60, y: 0, w: glass.w + 120, h: glass.y + glass.h + 70 });
+  const run = env.reducedMotion ? 0 : env.wall * speed;
+  c.save();
+  roundRectPath(c, glass.x, glass.y, glass.w, glass.h, glass.r ?? 20);
+  c.clip();
+  if (posts) {
+    // fence posts low along the cutting, under the horizon
+    for (let x = glass.x - (run % 180); x < glass.x + glass.w + 40; x += 180) { c.fillStyle = '#05080a'; c.fillRect(x, horizon + 40, 7, glass.h); }
+  }
+  extra?.(c);
+  drawRain(c, env, { alpha: 0.6, rect: glass });
+  c.restore();
+}
+
 // ---------------------------------------------------------------------------
 // interiors
 
@@ -812,8 +896,9 @@ export function drawButchAtDesk(c, x, y, s, { pose = 'tag', nod = 0, lamp = { x:
   c.translate(x, y);
   c.scale(s, s);
   seatedLegs(c, s, lx, ly, light, floor);
-  // asleep: the whole body leans forward over the desk about his seat
-  const lean = pose === 'asleep' ? 0.08 + n * 0.32 : 0.04;
+  // asleep: he leans a little forward over the desk about his seat
+  const lean = pose === 'asleep' ? 0.05 + n * 0.17 : 0.04;
+  const rot = (px, py) => [(px + 4) * Math.cos(lean) - py * Math.sin(lean) - 4, (px + 4) * Math.sin(lean) + py * Math.cos(lean)];
   c.save();
   c.translate(-4, 0);
   c.rotate(lean);
@@ -830,27 +915,33 @@ export function drawButchAtDesk(c, x, y, s, { pose = 'tag', nod = 0, lamp = { x:
     sleeve(c, s, lx, ly, light, arm);
     ink(c, [[6.5, -50], [10, -36], [18, -40], [26, -46]], { w: 1.8 / s, alpha: 0.7 * light, bleed: true, jitter: 0.12, color: '#ffc988', seed: 6519 });
     tagAt = { x: 31, y: -47 };
-  } else {
-    // forearms folded flat on the desk top, hands meeting in front
-    const arm = new Path2D();
-    arm.moveTo(-6, -57); arm.quadraticCurveTo(4, -60, 6.5, -50); arm.lineTo(9.5, -36); arm.lineTo(30, -35.5);
-    arm.lineTo(31, -29.6); arm.lineTo(6, -29.5); arm.quadraticCurveTo(1, -30, 0, -36); arm.lineTo(-3.5, -48); arm.closePath();
-    sleeve(c, s, lx, ly, light, arm);
-    ink(c, [[6.5, -50], [9.5, -36], [30, -35.5]], { w: 1.8 / s, alpha: 0.6 * light, bleed: true, jitter: 0.12, color: '#ffc988', seed: 6519 });
-    hand(c, 32, -32.5, 0.1, lx, ly, light, s);
   }
-  // the head: upright, or nodding down onto the folded arms
+  c.restore();
+  if (pose === 'asleep') {
+    // the arms, folded flat on the desk top whatever the lean: shoulder,
+    // elbow on the desk, forearm along it to the hands
+    const [sx, sy] = rot(0, -55);
+    const arm = new Path2D();
+    arm.moveTo(sx - 6, sy - 2); arm.quadraticCurveTo(sx + 6, sy - 4, sx + 8, sy + 6);
+    arm.lineTo(12, -36.5); arm.lineTo(33, -36); arm.lineTo(34, -29.8); arm.lineTo(8, -29.6);
+    arm.quadraticCurveTo(3, -30, sx - 2, sy + 10); arm.closePath();
+    sleeve(c, s, lx, ly, light, arm);
+    ink(c, [[sx + 8, sy + 6], [12, -36.5], [33, -36]], { w: 1.8 / s, alpha: 0.6 * light, bleed: true, jitter: 0.12, color: '#ffc988', seed: 6519 });
+    hand(c, 35, -32.5, 0.1, lx, ly, light, s);
+  }
+  // the head: upright, or nodding down until his cap rests on his arms
   c.save();
+  c.translate(-4, 0); c.rotate(lean); c.translate(4, 0);
+  c.translate(0, breath * 0.6);
   if (pose === 'asleep') {
     c.translate(2, -64);
-    c.rotate(n * 1.05);
-    c.translate(n * 9, n * 6);
+    c.rotate(n * 1.12);
+    c.translate(n * 6, n * 25);
     c.translate(-2, 64);
   } else {
     c.translate(2, -64); c.rotate(0.12); c.translate(-2, 64);
   }
   seatedHead(c, s, lx, ly, light);
-  c.restore();
   c.restore();
   c.restore();
   if (tagAt) {

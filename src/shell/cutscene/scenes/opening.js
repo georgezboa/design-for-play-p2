@@ -10,61 +10,13 @@
 import paperUrl from '../../../assets/shared/painterly/paper-texture-ivory-v01.png?url';
 import trainUrl from '../../../chapters/nightService/art/train-night.png?url';
 import {
-  PAL, VIADUCT, amberGlint, brassFill, carriageCeiling, damaskWall, drawButchAtDesk, drawCeilingLamp, drawClaimTag,
-  drawOilLamp, drawOrchardCase, drawRain, drawTrainLight, finishLayer, floorboards, glow, ink, inkEllipse, inkRect,
-  paintCatenary, paintCountry, paintNightSky, paintNightTrain, paintViaduct, paperTag, parcel, ramp, rng, roundRectPath,
-  usePaintAssets, vgrad, wainscot, wood,
+  PAL, drawViaductShot, amberGlint, brassFill, carriageCeiling, damaskWall, drawButchAtDesk, drawCeilingLamp, drawClaimTag, drawOilLamp, drawOrchardCase, finishLayer, floorboards, glow, ink, inkEllipse, inkRect, paperTag, parcel, ramp, rng, roundRectPath, usePaintAssets, vgrad, wainscot, wood,
 } from '../painters.js';
 
 const TAU = Math.PI * 2;
 
 // ---------------------------------------------------------------------------
 // shot 1: the viaduct
-
-const CAR_W = 390;
-const CARS = 4;
-
-export function paintViaductScene(c, w, h) {
-  paintNightSky(c, w, h, { horizon: 430, moon: [300, 150], seed: 8001 });
-  paintCountry(c, w, h, { horizon: 430, seed: 8101 });
-}
-
-export function paintViaductFront(c, w, h) {
-  paintCatenary(c, w, { deck: VIADUCT.deck, every: 240, x0: 60 });
-  paintViaduct(c, w, h, { deck: VIADUCT.deck, x0: -60 });
-  finishLayer(c, w, h, { grain: 0.14, vig: 0.55 });
-}
-
-/** The viaduct with the train at `trainX` (its rear), as the opening and the ending both show it. */
-export function drawViaductShot(c, w, h, env, { trainX, dark = 0, trainGlow = 1 }) {
-  env.drawLayer(c, '@sky', paintViaductScene, { depth: 0.35, x: -40, w: w + 80 });
-  const train = env.layer('@train', (tc) => {
-    tc.translate(20, 150);
-    paintNightTrain(tc, { cars: CARS, carW: CAR_W });
-  }, { w: CARS * CAR_W + 40, h: 170 });
-  const deck = VIADUCT.deck - 22;
-
-  c.drawImage(train.canvas, trainX - 20, deck + 18 - 150, train.w, train.h);
-  const length = CARS * CAR_W * 0.988;
-  drawTrainLight(c, trainX, deck, length, CAR_W, trainGlow);
-  env.drawLayer(c, '@viaduct', paintViaductFront);
-  // the train's headlamp throwing its beam ahead along the rails
-  const front = trainX + length;
-  glow(c, front + 4, deck - 26, 70, 'rgba(255, 230, 170, 0.95)', 0.5 * trainGlow);
-  c.save();
-  c.globalCompositeOperation = 'lighter';
-  const beam = c.createLinearGradient(front, 0, front + 420, 0);
-  beam.addColorStop(0, `rgba(255, 220, 160, ${0.22 * trainGlow})`);
-  beam.addColorStop(1, 'rgba(255, 220, 160, 0)');
-  c.fillStyle = beam;
-  c.beginPath(); c.moveTo(front, deck - 34); c.lineTo(front + 420, deck - 70); c.lineTo(front + 420, deck + 4); c.lineTo(front, deck - 18); c.closePath(); c.fill();
-  c.restore();
-  drawRain(c, env, { alpha: 0.42, seed: 8201 });
-  if (dark > 0) {
-    c.fillStyle = `rgba(2, 3, 6, ${dark})`;
-    c.fillRect(-10, -10, w + 20, h + 20);
-  }
-}
 
 function shotViaduct(c, t, w, h, env) {
   drawViaductShot(c, w, h, env, { trainX: -1180 + 1300 * t });
