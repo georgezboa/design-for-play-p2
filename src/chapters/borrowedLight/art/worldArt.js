@@ -398,14 +398,21 @@ export function buildWeather(scene) {
 
 // ---------------------------------------------------------------------------
 // Blackout overlay: a screen-space render texture filled dark each frame with
-// light brushes erased out of it.
-export function buildDarkness(scene) {
-  const rt = scene.add.renderTexture(0, 0, VIEW_W, VIEW_H).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.dark).setVisible(false);
+// light brushes erased out of it. `res` < 1 (LOW GRAPHICS) paints it at that
+// fraction of the view and stretches it over the screen: the light is soft
+// anyway, and a full-size render texture is the blackout's main cost.
+export function buildDarknessTexture(scene, res = 1) {
+  return scene.add.renderTexture(0, 0, Math.round(VIEW_W * res), Math.round(VIEW_H * res))
+    .setOrigin(0).setScrollFactor(0).setScale(1 / res).setDepth(DEPTH.dark).setVisible(false);
+}
+
+export function buildDarkness(scene, { res = 1 } = {}) {
+  const rt = buildDarknessTexture(scene, res);
   const brush = scene.make.image({ x: 0, y: 0, key: 'bl-light', add: false }).setOrigin(0.5);
   const rim = scene.add.graphics().setDepth(DEPTH.rim);
   const rimDyn = scene.add.graphics().setDepth(DEPTH.rim + 0.5);
   const flash = scene.add.image(0, 0, 'bl-px').setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setTint(0xb8c8d0).setAlpha(0).setDepth(DEPTH.dark + 1).setBlendMode(Phaser.BlendModes.ADD);
-  return { rt, brush, rim, rimDyn, flash, alpha: 0 };
+  return { rt, res, brush, rim, rimDyn, flash, alpha: 0 };
 }
 
 // Static faint rims on visible platform edges for the blackout (drawn above

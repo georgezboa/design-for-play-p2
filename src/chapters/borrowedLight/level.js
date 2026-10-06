@@ -139,7 +139,7 @@ export const MACHINES = Object.freeze([
   { id: 'b-sign', kind: 'sign', x: B(9700), y: 380, w: 200, h: 70, duration: 4000, travel: 200, section: 'B', text: 'OPEN LATE', glow: 360 },
   { id: 'b-lift1', kind: 'lift', x: B(10680), w: 220, y0: 640, y1: 300, duration: 5000, travel: 1300, section: 'B' },
   { id: 'b-lift2', kind: 'lift', x: B(11340), w: 200, y0: 300, y1: -60, duration: 5000, travel: 1300, section: 'B' },
-  { id: 'b-bridge', kind: 'bridge', x: B(11900), y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true, heldBy: 'b-n4' },
+  { id: 'b-bridge', kind: 'bridge', x: B(11900), y: 300, length: 440, dir: 1, duration: 'hold', travel: 600, section: 'B', heldAtStart: true, heldBy: 'b-n4', holdName: 'THE BRIDGE', holdTag: 'THE TEAL TAG WHERE THE BRIDGE STARTS' },
   { id: 'b-hotel-lift', kind: 'lift', x: B(12780), w: 220, y0: 300, y1: -150, duration: 6000, travel: 1500, section: 'B' },
   // B5–B7 · lanterns the city still holds lit, and machines with dead nodes.
   { id: 'b-lantern1', kind: 'lantern', x: B(14300), y: 300, h: 200, duration: 'hold', travel: 300, section: 'B', heldAtStart: true, heldBy: 'b-nL1', borrowable: true },
@@ -282,6 +282,9 @@ export const LAMPS = Object.freeze([
 // fall left at the bottom of its run).
 // The drop ledge stays dropped: once down it only ever helps.
 export const RESET_ON_RESPAWN = Object.freeze({ 'lamp-c3': ['c-weights2'], 'lamp-c2': ['c-weights'], 'lamp-c1': ['c-weights'], 'lamp-c0': ['c-weights'] });
+// … and which machines the city holds open again (the hotel room starts over
+// with its bridge held, ready to be cut).
+export const REHOLD_ON_RESPAWN = Object.freeze({ 'lamp-b2': Object.freeze(['b-bridge']) });
 
 // ---------------------------------------------------------------------------
 // Story props.
@@ -313,7 +316,10 @@ export const MARA_SIGHTINGS = Object.freeze([
   Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2060, 760], [2390, 760]], leap: [2770, 420], waitMs: 1800, speed: 0.3 }),
   Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6100, section: 'A', path: [[6980, 260], [7440, 260]], leap: [7780, 0], waitMs: 1600, speed: 0.32 }),
   // The chase: she waits on the far roof until Butch is on the last cradle.
-  Object.freeze({ id: 'chase', triggerX: 11700, section: 'A', path: [[13780, 220], [14330, 220]], leap: [14720, 640], waitForX: 13180, waitMs: 350, speed: 0.36 }),
+  // Alpha r4: she waits deeper on that roof and runs off it before Butch can
+  // land beside her (she leaves as he comes within MARA_FLEE_PX); he calls
+  // after her.
+  Object.freeze({ id: 'chase', triggerX: 11700, section: 'A', path: [[13940, 220], [14330, 220]], leap: [14720, 640], waitForX: 13180, waitMs: 200, speed: 0.42, call: Object.freeze({ speaker: 'BUTCH', text: 'Wait—!' }) }),
   // After the ticket stub: lightning shows her below, crossing to the water
   // tower — the way on.
   Object.freeze({ id: 'after-window', trigger: 'card', section: 'B', path: [[B(14120), 300], [B(14520), 300]], leap: [B(14860), 230], waitMs: 900, speed: 0.34, flash: true }),
@@ -321,14 +327,16 @@ export const MARA_SIGHTINGS = Object.freeze([
 
 // Neon: low saturation, amber / teal / rose only. `layer` 'mid' signs sit on
 // the parallax skyline; 'near' signs hang on playfield buildings. Every sign
-// dies when the blackout starts.
+// dies when the blackout starts. Alpha r4: no lamp, node pole or canopy
+// column stands in front of a board (ROOMS, PHARMACY and PLATFORM 2 had a
+// pole through their letters; tests/borrowedLight/alphaRound4.test.mjs).
 export const SIGNS = Object.freeze([
   { x: 330, y: 548, text: 'CITY TERMINAL', color: 'amber', layer: 'near', w: 300 },
   { x: 3260, y: 196, text: 'TICKETS', color: 'teal', layer: 'near', w: 170 },
   { x: 4000, y: 556, text: 'LAUNDRY', color: 'rose', layer: 'near', w: 170 },
-  { x: 5240, y: 236, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
-  { x: 7020, y: 56, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
-  { x: 8120, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
+  { x: 5240, y: 196, text: 'ROOMS', color: 'rose', layer: 'near', w: 140 },
+  { x: 7020, y: 6, text: 'PHARMACY', color: 'teal', layer: 'near', w: 200 },
+  { x: 8150, y: -44, text: 'LAST TRAM', color: 'amber', layer: 'near', w: 200 },
   { x: 9900, y: -60, text: 'WATCHES', color: 'teal', layer: 'near', w: 180 },
   { x: 10480, y: 300, text: 'TAILOR', color: 'rose', layer: 'near', w: 150 },
   { x: 13960, y: 0, text: 'DANCING', color: 'amber', layer: 'near', w: 190 },
@@ -337,7 +345,7 @@ export const SIGNS = Object.freeze([
   // the mid skyline (scroll 0.5). It dies with the rest of the city.
   { x: 4520, y: 250, text: 'HOTEL MERIDIAN', color: 'amber', layer: 'far', w: 400, scroll: 0.5 },
   { x: C(17900), y: 340, text: 'EVACUATION', color: 'amber', layer: 'near', w: 280 },
-  { x: D(20110), y: -110, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
+  { x: D(20110), y: -170, text: 'PLATFORM 2', color: 'teal', layer: 'near', w: 240 },
 ].map((sign) => Object.freeze(sign)));
 
 // Platform lamps along the evacuation platform, lit as the chain fires.
@@ -390,6 +398,13 @@ export const ROUTE = Object.freeze([
   { from: 'c-signal', to: 'c-landing', via: 'c-drop' },
   { from: 'c-landing', to: 'c-platform', via: 'c-weights2' },
 ].map((edge) => Object.freeze(edge)));
+
+// A8 · "PUNCH THE LAST POLE FROM HERE": the spot on cradle 1 the tag points
+// at. Butch standing there (feet on the lowered cradle) has the last pole in
+// reach (tests/borrowedLight/level.test.mjs checks every "from here" spot).
+export const FROM_HERE = Object.freeze([
+  Object.freeze({ id: 'a8-last-pole', node: 'a-n14', on: 'a-cradle1', x: 12445 }),
+]);
 
 // Punch auto-targets the nearest node within this range of Butch's chest
 // (targeting.js picks it, sticky between near poles).
@@ -530,6 +545,16 @@ export function machineBounds(machine, level = 1) {
   }
 }
 
+// The score per section, played through the shared music director
+// (src/shared/musicDirector.js) on arrival: borrowedLight-main.js asks for
+// it before the scene has even built, so it starts as soon as the browser
+// allows. The blackout (B) is rain only: the city took its light back.
+export const SECTION_MUSIC = Object.freeze({
+  A: Object.freeze({ id: 'chapter-two-borrowed-light', src: 'assets/music/ch2/2.1_borrowed_light.mp3', volume: 0.26, fade: 4, loop: true }),
+  B: null,
+  C: Object.freeze({ id: 'chapter-two-platform', src: 'assets/music/ch1/1.2_train_resonance.mp3', volume: 0.3, fade: 4, loop: true }),
+});
+
 // Which save checkpoint a section maps to, and back.
 export const SECTION_CHECKPOINTS = Object.freeze({ A: 'chapter-2-start', B: 'chapter-2-midpoint', C: 'chapter-2-platform' });
 
@@ -553,6 +578,47 @@ export function resolveStartLamp({ search = '', devMode = false, section = 'A' }
   const id = new URLSearchParams(search).get('lamp');
   const lamp = id ? lampById(id) : null;
   return lamp && lamp.section === section ? lamp.id : null;
+}
+
+// Alpha round 4 · mid-chapter resume. The scene records the last lamp lit
+// in the current section (saveSystem markResume(checkpoint, { lamp })); a
+// load of this page on that checkpoint starts at that lamp. Anything else
+// (an unknown lamp, another section's) is ignored.
+export function resolveResumeLamp({ resume = null, section = 'A' } = {}) {
+  const lamp = typeof resume?.lamp === 'string' ? lampById(resume.lamp) : null;
+  return lamp && lamp.section === section ? lamp.id : null;
+}
+
+// What starting at a lamp implies about the world behind it, so a resume (or
+// a dev ?lamp= route) does not replay a story beat beside Butch:
+// - Mara's sightings he is already past are skipped (she must never stand
+//   beside him: alpha r4 found her on the DANCING roof after a resume);
+// - a held bridge he has already crossed was cut (the city let it go);
+// - the platform lamps of the departure machines behind him are lit;
+// - the hotel window is dark once he is past it;
+// - first-use teaching he has met (walk, jump, the two bells) is done.
+export function lampStartState(lampId) {
+  const lamp = lampById(lampId);
+  if (!lamp) return null;
+  const at = lamp.spawnX;
+  const index = LAMPS.indexOf(lamp);
+  return {
+    lamp: lamp.id,
+    skipSightings: MARA_SIGHTINGS
+      .filter((s) => s.section === lamp.section && (s.waitForX != null ? at > s.waitForX : at > s.path[0][0] - 600))
+      .map((s) => s.id),
+    released: MACHINES
+      .filter((m) => m.heldAtStart && m.kind === 'bridge' && m.section === lamp.section && at > m.x + m.length)
+      .map((m) => m.id),
+    platformLamps: lamp.section === 'C' ? DEPARTURE_CHAIN.filter((id) => machineById(id).x < at) : [],
+    windowGone: lamp.section === 'B' && at > HOTEL_WINDOW.x,
+    taught: {
+      walked: index > 0,
+      jumped: index > 0,
+      acClimbed: lamp.section !== 'A' || at > 5880,
+      phasePunched: lamp.section !== 'A' || at > 9460,
+    },
+  };
 }
 
 export const circuitKey = (district, line) => `${district}:${line}`;

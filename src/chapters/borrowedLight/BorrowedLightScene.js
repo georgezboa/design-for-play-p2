@@ -35,9 +35,11 @@ import {
   BOARD_X,
   CHASE,
   RESET_ON_RESPAWN,
+  REHOLD_ON_RESPAWN,
   DEPARTURE_BELLS,
   DEPARTURE_CHAIN,
   DEPARTURE_TRIGGER_X,
+  FROM_HERE,
   REMEMBER_PLACE,
   GRID_STONE,
   HOTEL_WINDOW,
@@ -52,6 +54,7 @@ import {
   PUNCH_RANGE,
   SECTIONS,
   SECTION_CHECKPOINTS,
+  SECTION_MUSIC,
   SECTION_ORDER,
   SIGNS,
   TRAIN,
@@ -61,6 +64,7 @@ import {
   circuitKey,
   districtOf,
   lampById,
+  lampStartState,
   machineBounds,
   machineById,
   nodeById,
@@ -71,13 +75,15 @@ import {
   standsOn,
   timetableDefinition,
 } from './level.js';
-import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, TEACH, stoneToast } from './story.js';
+import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, IDLE_HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, TEACH, stoneToast } from './story.js';
+import { createIdleHints, progressKey, roomStep } from './idleHints.js';
 import { afterglowLight, carriedLight, deckReveal, deckSolid, lampRim, machineLight } from './memoryLight.js';
 import { DEPTH, FONTS, INK_HEX, LINE_COLORS } from './art/palette.js';
 import { BUTCH_SPEC, MARA_SPEC, MECHANIC_SPEC, drawFigure } from './art/figures.js';
 import {
   buildBackground,
   buildDarkness,
+  buildDarknessTexture,
   buildLamp,
   buildPlatformArt,
   buildPuddles,
@@ -91,15 +97,35 @@ import {
 } from './art/worldArt.js';
 import { createMachineView, drawCable, drawGhost, drawMachine, drawNode, drawNodePole, powerLevel } from './art/machineArt.js';
 import { BorrowedLightHud } from './hud.js';
+import { MAX_FRAME_MS, QA_MAX_FRAME_MS } from './frameClock.js';
 import { Fx } from './art/fx.js';
 import * as sfx from './audio.js';
 
 export const BORROWED_LIGHT_VIEW = Object.freeze({ w: 1920, h: 1080 });
 
+// The section's score through the shared music director (same id twice is a
+// no-op, so the entry's early call and the scene's agree).
+export function playSectionMusic(section, overrides = {}) {
+  const track = SECTION_MUSIC[section];
+  if (!track) return false;
+  const { id, ...options } = track;
+  music.play(id, { ...options, ...overrides });
+  return true;
+}
+
 const BODY_W = 40;
 const BODY_H = 96;
 const CHEST = 64;
 const SECTION_LABEL = { A: 'A · RAIN ROOFTOPS', B: 'B · BLACKOUT', C: 'C · EVACUATION PLATFORM' };
+// LOW GRAPHICS (Settings): the canvas renders at this fraction of 1920×1080
+// and the blackout's light mask at DARK_RES_LOW; rain, mist and cloud
+// layers thin out (alpha round 4: weak laptops ran at 15–25 fps).
+export const VIEW_SCALE_LOW = 0.6;
+export const DARK_RES_LOW = 0.5;
+
+// Mara leaves as soon as Butch comes this close (she stays a roof ahead).
+export const MARA_FLEE_PX = 420;
+
 // Hold F (or the click, or RB) this long on a punched node to take it back.
 export const TAKE_BACK_MS = 500;
 // A lift waits a bell for a rider this far away (≈ 1.5 s of running).
@@ -116,9 +142,14 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.timescale = Math.max(0.1, Math.min(2, Number(data.timescale) || 1));
     this.skipIntro = Boolean(data.skipIntro);
     this.qaTimescale = Boolean(data.qaTimescale);
-    this.maxFrameMs = this.qaTimescale ? 1000 : 100;
-    // Dev QA only: start at a lamp inside the section (?lamp=).
+    // Game time follows the wall clock down to ~8 fps (frameClock.js).
+    this.maxFrameMs = this.qaTimescale ? QA_MAX_FRAME_MS : MAX_FRAME_MS;
+    // Dev QA only: start at a lamp inside the section (?lamp=); a save's
+    // resume point (a lamp lit inside this section) starts there too.
     this.startLamp = typeof data.lamp === 'string' ? data.lamp : null;
+    this.resumed = Boolean(data.resumed);
+    this.lowGraphics = data.lowGraphics ?? globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true;
+    this.viewScale = this.lowGraphics ? VIEW_SCALE_LOW : 1;
   }
 
   create() {
@@ -137,7 +168,10 @@ export class BorrowedLightScene extends Phaser.Scene {
       mechanicTalked: false, letterRead: false, cardRead: false, listenHinted: false, firstPunch: false, jumped: false, listened: false, darkDeckHinted: false, darkDeckToasted: false,
       // v2 teaching: shown once, where each mechanic is first met.
       phasePunched: false, quickened: false, borrowed: false, deadSeen: false, cageRidden: false,
+      // Alpha r4: walking and the AC unit's jump are taught until done.
+      walked: false, acClimbed: false,
     };
+    this.walkedPx = 0;
     this.lightTrails = [];
     this.onCar = null;
     this.prevTargetId = null;
@@ -159,10 +193,23 @@ export class BorrowedLightScene extends Phaser.Scene {
     // A lift whose rider is still walking to it waits a bell (R3-3).
     this.tt.setShouldWait((machineId) => this.liftShouldWait(machineId));
     this.takeBack = null;
+    // Cut machines running out: machineId -> ms they had when cut (the
+    // countdown on the bridge).
+    this.cutTotals = new Map();
+    // Amber rings that point at a node or a prop (a busy line's holder, idle
+    // hints): { x, y, t, n }.
+    this.pulses = [];
 
     const cam = this.cameras.main;
-    cam.setBounds(-300, WORLD.top, WORLD.width + 300, WORLD.bottom - WORLD.top);
+    // The camera looks at a 1920×1080 world window at any internal canvas
+    // size (LOW GRAPHICS renders at VIEW_SCALE_LOW): zoom about its top-left
+    // corner, scrolled and clamped here (centerCamera, `view`), so the
+    // screen-space HUD keeps its 1920×1080 layout at every scale.
+    this.camBounds = { x: -300, y: WORLD.top, right: WORLD.width, bottom: WORLD.bottom };
+    this.camMid = { x: 960, y: 540 };
+    cam.setOrigin(0, 0);
     cam.setBackgroundColor('#05080d');
+    this.applyViewScale(this.viewScale);
     this.physics.world.setBounds(-800, WORLD.top - 600, WORLD.width + 1600, WORLD.bottom - WORLD.top + 1200);
     this.applyTimescale();
     // QA on a slow software renderer: tweens must not drop long frames either.
@@ -184,7 +231,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.buildNodes();
     this.buildPlayer();
     this.weather = buildWeather(this);
-    this.dark = buildDarkness(this);
+    this.dark = buildDarkness(this, { res: this.lowGraphics ? DARK_RES_LOW : 1 });
     drawBlackoutRims(this.dark.rim, PLATFORMS);
     this.dark.rim.setVisible(false);
     this.hud = new BorrowedLightHud(this);
@@ -203,6 +250,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hintText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '14px', color: '#e6aab0', align: 'center' })
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 3).setLetterSpacing(2).setAlpha(0);
     this.ghostG = this.add.graphics().setDepth(DEPTH.ghost);
+    this.pulseG = this.add.graphics().setDepth(DEPTH.ghost + 0.5);
+    this.cutG = this.add.graphics().setDepth(DEPTH.ghost + 0.5);
+    this.cutText = this.add.text(0, 0, '', tagStyle).setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
     this.ghostLabels = Array.from({ length: 6 }, () => this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '15px', color: '#eadfc6', backgroundColor: 'rgba(8,12,14,0.8)', padding: { x: 8, y: 4 } })
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 1).setLetterSpacing(3).setVisible(false));
     this.fx = new Fx(this);
@@ -219,11 +269,20 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.talkText.setFontSize(`${Math.round(16 * k)}px`);
       this.teachText.setFontSize(`${Math.round(16 * k)}px`);
       this.hintText.setFontSize(`${Math.round(14 * k)}px`);
+      const low = globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true;
+      if (low !== this.lowGraphics) this.applyQuality(low);
     };
     this.onSettings();
+    this.applyTextResolution();
     window.addEventListener('nightfall:settings', this.onSettings);
+    // Alpha r4: tiered idle hints per room, and the pause menu's SHOW ME.
+    this.idle = createIdleHints();
+    this.idleHint = null;
+    this.onShowMe = () => this.showMe();
+    window.addEventListener('nightfall:hint', this.onShowMe);
     this.events.once('shutdown', () => {
       window.removeEventListener('nightfall:settings', this.onSettings);
+      window.removeEventListener('nightfall:hint', this.onShowMe);
       music.stop({ fade: 1.6 });
     });
 
@@ -590,12 +649,26 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.placePlayer(lamp.spawnX, lamp.y);
     this.snapCamera();
     createSaveStore().markCheckpoint(SECTION_CHECKPOINTS[section]);
+    // A resume (or a dev lamp route) starts with the world behind that lamp
+    // as the player left it (level.js lampStartState).
+    const behind = lampStartState(lamp.id);
+    if (behind) {
+      behind.skipSightings.forEach((id) => this.sightingsDone.add(id));
+      behind.released.forEach((id) => this.tt.release(id));
+      Object.entries(behind.taught).forEach(([flag, done]) => { if (done) this.flags[flag] = true; });
+      if (behind.windowGone && this.windowMara) this.windowMara.state = 'gone';
+      this.time.delayedCall(0, () => behind.platformLamps.forEach((id) => this.lightPlatformLamp(id)));
+    }
+    this.startFeetX = lamp.spawnX;
+    // A section title on a resume is short and gets out of the way as soon
+    // as Butch moves (alpha r4: it came back over the chase).
+    const titleHold = lamp.id === SECTIONS[section].spawn ? 2600 : 1400;
 
     if (section === 'A') {
       sfx.setRain(0.55);
-      music.play('chapter-two-borrowed-light', { src: 'assets/music/ch1/1.3_neon_safety_test.mp3', volume: 0.26, fade: 4, loop: true });
+      playSectionMusic('A');
       if (this.skipIntro || lamp.id !== SECTIONS.A.spawn) {
-        this.hud.titleCard(CHAPTER_TITLE, `CHAPTER 2 · ${SECTION_LABEL.A}`);
+        this.hud.titleCard(CHAPTER_TITLE, `CHAPTER 2 · ${SECTION_LABEL.A}`, { hold: titleHold });
         this.trainStart.container.x = -3600;
       } else this.playIntro();
     } else {
@@ -608,9 +681,9 @@ export class BorrowedLightScene extends Phaser.Scene {
         sfx.setRain(1);
       } else {
         sfx.setRain(0.6);
-        music.play('chapter-two-platform', { src: 'assets/music/ch1/1.2_train_resonance.mp3', volume: 0.3, fade: 4, loop: true });
+        playSectionMusic('C');
       }
-      this.hud.titleCard(CHAPTER_TITLE, `CHAPTER 2 · ${SECTION_LABEL[section]}`);
+      this.hud.titleCard(CHAPTER_TITLE, `CHAPTER 2 · ${SECTION_LABEL[section]}`, { hold: titleHold });
       if (section === 'C') this.time.delayedCall(1200, () => this.startAhead());
     }
   }
@@ -742,7 +815,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.setBlackout(false);
       this.tt.setMemoryLight(false);
       sfx.setRain(0.6);
-      music.play('chapter-two-platform', { src: 'assets/music/ch1/1.2_train_resonance.mp3', volume: 0.3, fade: 5, loop: true });
+      playSectionMusic('C', { fade: 5 });
       this.hud.titleCard('EVACUATION PLATFORM', 'THE TRAIN BRINGS ITS OWN LIGHT', { hold: 2000 });
       this.time.delayedCall(1200, () => this.startAhead());
     }
@@ -795,9 +868,8 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   snapCamera() {
-    const cam = this.cameras.main;
     this.camLook = 220;
-    cam.centerOn(this.feetX + this.camLook, this.feetY - 150);
+    this.centerCamera(this.feetX + this.camLook, this.feetY - 150);
     this.camY = this.feetY - 150;
   }
 
@@ -824,6 +896,12 @@ export class BorrowedLightScene extends Phaser.Scene {
         const homeEvents = this.tt.dropLight();
         homeEvents.forEach((event) => this.onModelEvent(event, { fall: true }));
         (RESET_ON_RESPAWN[lamp.id] ?? []).forEach((id) => this.tt.resetMachine(id));
+        // The hotel room starts over: the city holds its bridge again.
+        (REHOLD_ON_RESPAWN[lamp.id] ?? []).forEach((id) => {
+          if (this.tt.machineStatus(id)?.held) return;
+          this.tt.hold(id, this.holderNode(id));
+          this.cutTotals.delete(id);
+        });
         const cleared = this.tt.clearQueue();
         cleared.forEach((id) => { const v = this.nodeViews.get(id); if (v) v.sealing = 1; });
         this.respawnNote = cleared.length ? HINTS.punchesReset : homeEvents.some((e) => e.type === 'light-return') ? HINTS.lightHomeFall : null;
@@ -1044,15 +1122,32 @@ export class BorrowedLightScene extends Phaser.Scene {
         // Show which machine holds the line: its cable flashes.
         NODES.filter((n) => n.machine === res.holder).forEach((n) => { const v = this.nodeViews.get(n.id); if (v) v.busyFlash = 1.4; });
         const holder = this.tt.machineStatus(res.holder);
-        this.floatHint(node.id, holder?.held ? HINTS.busy : HINTS.busyTimed, color.css, 3200);
-        this.frameMachine(res.holder, 1300);
+        // The marked node's own tag already says it (one wording, alpha r4);
+        // a click on another node floats it.
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, holder?.held ? this.heldHint(res.holder) : HINTS.busyTimed, color.css, 3200);
+        if (holder?.held) {
+          // Show the tag that holds the line: it pulses, and the camera
+          // looks back at it.
+          const holderNode = nodeById(this.holderNode(res.holder));
+          if (holderNode) {
+            this.pulseNode(holderNode.id, 2);
+            const head = nodeHead(holderNode);
+            this.frame = { x: (head.x + this.feetX) / 2, y: head.y + 40, until: this.clock + 1.4 };
+          }
+        } else this.frameMachine(res.holder, 1300);
         break;
       }
       case 'cut':
         sfx.cutLine();
         view.cutMark = 1;
-        // The "line holding" hint is answered: replace it, don't leave it up.
-        this.floatHint(node.id, HINTS.cut, color.css, 1600);
+        // The cut says how long the bridge has; a countdown runs on it.
+        this.cutTotals.set(node.machine, res.remaining);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 2200);
+        break;
+      case 'cutting':
+        sfx.flickerTick();
+        view.busyShake = Math.max(view.busyShake, 0.35);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 1600);
         break;
       case 'dead':
       case 'given':
@@ -1118,12 +1213,12 @@ export class BorrowedLightScene extends Phaser.Scene {
   floatHintAt(x, y, text, color, ms = 2000) {
     this.hintText.setText(text).setColor(color);
     // Kept inside the view (g04: the dark-deck hint ran off the right edge).
-    const view = this.cameras.main.worldView;
+    const view = this.view;
     const half = this.hintText.width / 2 + 24;
     if (view.width > half * 2) x = Phaser.Math.Clamp(x, view.x + half, view.right - half);
+    // Held, then it rises a little as it fades (updateFloatHint).
+    this.floating = { x, y, ms, t: 0 };
     this.hintText.setPosition(x, y).setAlpha(1);
-    this.tweens.killTweensOf(this.hintText);
-    this.tweens.add({ targets: this.hintText, alpha: 0, y: y - 26, delay: ms, duration: 500 });
   }
 
   interactTarget() {
@@ -1261,7 +1356,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         });
         // Frame a machine that just moved if it is off-screen but part of
         // the puzzle Butch is standing in.
-        const view = this.cameras.main.worldView;
+        const view = this.view;
         for (const nodeId of event.fired) {
           const node = NODES.find((n) => n.id === nodeId);
           const machine = machineById(node.machine);
@@ -1513,6 +1608,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     body.setVelocity(out.vx, vy);
     this.player.pose = out.pose;
+    // Teaching: walking counts once Butch has covered a few steps himself.
+    if (!this.flags.walked && !this.locked && grounded && (input.left || input.right)) {
+      this.walkedPx += Math.abs(out.vx) * dt / 1000;
+      if (this.walkedPx > 240) this.flags.walked = true;
+    }
+    if (!this.flags.acClimbed && grounded && this.feetX > 5540 && this.feetX < 5880 && this.feetY < 400) this.flags.acClimbed = true;
     // QA: a whole hop can fit inside one slow rendered frame, so the text
     // state keeps the last jump's peak (feet y) as well as the live pose.
     if (out.jumped) this.lastJump = { count: (this.lastJump?.count ?? 0) + 1, fromY: Math.round(this.feetY), peakY: Math.round(this.feetY) };
@@ -1552,6 +1653,8 @@ export class BorrowedLightScene extends Phaser.Scene {
         this.activeLamp = lamp.id;
         setLampLit(lamp, true, this);
         sfx.lampLit();
+        // Alpha r4: a reload (Continue) starts again at this lamp.
+        createSaveStore().markResume(SECTION_CHECKPOINTS[this.section], { lamp: lamp.id });
       }
     });
 
@@ -1747,6 +1850,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.listening) this.flags.listened = true;
     if (this.hud.dialogOpen) this.hud.updateDialog(dt);
 
+    // A section title steps aside once Butch is on his way.
+    if (!this.locked && this.hud.titleBig.alpha > 0 && this.startFeetX != null && Math.abs(this.feetX - this.startFeetX) > 160) {
+      this.hud.clearTitle();
+      this.startFeetX = null;
+    }
     this.updateCamera(dt);
     this.updateCulling();
     this.updateTarget();
@@ -1762,6 +1870,67 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.updateDarkness(t, dt);
     this.updateHud(t, dt);
     this.updatePrompts();
+    this.updateFloatHint(dt);
+    this.updateIdleHints(dt);
+  }
+
+  // =========================================================================
+  // Idle hints (alpha r4): 25 s a pulse on what matters, 60 s a toast naming
+  // the next action, 120 s Butch's fuller line; the clock restarts on any
+  // progress in the room (idleHints.js).
+
+  idleActive() {
+    return !this.locked && !this.respawning && !this.boarded && !this.remembering && this.player.visible && !this.hud.dialogOpen && !this.hud.cardOpen;
+  }
+
+  idleContext() {
+    const tt = this.tt;
+    return {
+      section: this.section,
+      x: this.feetX,
+      y: this.feetY,
+      flags: this.flags,
+      carried: Boolean(tt.carried()),
+      machine: (id) => tt.machineStatus(id),
+      node: (id) => tt.nodeStatus(id),
+      queued: (id) => tt.isQueued(id),
+      given: (id) => Boolean(tt.nodeStatus(id)?.given),
+    };
+  }
+
+  updateIdleHints(dt) {
+    if (!this.idle) return;
+    if (!this.idleActive()) { this.idle.update(dt, { active: false }); return; }
+    const ctx = this.idleContext();
+    const hint = roomStep(ctx);
+    this.idleHint = hint;
+    this.idle.setKey(progressKey(ctx, hint));
+    for (const tier of this.idle.update(dt)) this.playIdleHint(tier, hint);
+  }
+
+  playIdleHint(tier, hint = this.idleHint) {
+    const words = hint ? IDLE_HINTS[hint.step] : null;
+    if (!words) return;
+    if (tier === 'pulse') {
+      hint.nodes.slice(0, 2).forEach((id) => this.pulseNode(id, 2));
+      if (hint.at) this.pulseAt(hint.at.x, hint.at.y, 2);
+      sfx.flickerTick();
+    } else if (tier === 'nudge') {
+      this.hud.toast(words.nudge, '#f2c27a', 6000);
+    } else if (tier === 'full') {
+      this.hud.say({ speaker: 'BUTCH', text: words.full }, 7000);
+    }
+    this.lastIdleHint = { tier, step: hint.step, at: Math.round(this.clock * 10) / 10 };
+  }
+
+  // SHOW ME (pause menu): the nudge at once; Butch's line on a second ask.
+  showMe() {
+    if (!this.idle || !this.idleActive()) return;
+    const ctx = this.idleContext();
+    const hint = roomStep(ctx);
+    this.idleHint = hint;
+    this.idle.setKey(progressKey(ctx, hint));
+    for (const tier of this.idle.request()) this.playIdleHint(tier, hint);
   }
 
   pollGamepad() {
@@ -1788,7 +1957,6 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   updateCamera(dt) {
-    const cam = this.cameras.main;
     const k = 1 - Math.exp(-dt / 260);
     const facing = this.player.ctrl.facing;
     this.camLook = Phaser.Math.Linear(this.camLook ?? 220, facing * 230, 1 - Math.exp(-dt / 700));
@@ -1820,14 +1988,66 @@ export class BorrowedLightScene extends Phaser.Scene {
       tx = Phaser.Math.Linear(tx, this.frame.x, 0.6);
       ty = Phaser.Math.Linear(ty, this.frame.y, 0.5);
     } else this.frame = null;
-    const cx = cam.midPoint.x;
-    const cy = cam.midPoint.y;
+    const cx = this.camMid.x;
+    const cy = this.camMid.y;
     const ky = Math.abs(ty - cy) > 300 ? 1 - Math.exp(-dt / 90) : k * 0.9;
-    cam.centerOn(Phaser.Math.Linear(cx, tx, k), Phaser.Math.Linear(cy, ty, ky));
+    this.centerCamera(Phaser.Math.Linear(cx, tx, k), Phaser.Math.Linear(cy, ty, ky));
+  }
+
+  // Centre the 1920×1080 world window on (x, y), inside the camera bounds.
+  centerCamera(x, y) {
+    const b = this.camBounds;
+    const cx = Phaser.Math.Clamp(x, b.x + 960, Math.max(b.x + 960, b.right - 960));
+    const cy = Phaser.Math.Clamp(y, b.y + 540, Math.max(b.y + 540, b.bottom - 540));
+    this.camMid = { x: cx, y: cy };
+    this.cameras.main.setScroll(cx - 960, cy - 540);
+  }
+
+  // The world rectangle on screen (Phaser's worldView assumes a centred
+  // zoom; this camera zooms about its corner).
+  get view() {
+    const { x, y } = this.camMid;
+    return { x: x - 960, y: y - 540, width: 1920, height: 1080, right: x + 960, bottom: y + 540, centerX: x, centerY: y };
+  }
+
+  // LOW GRAPHICS on or off, at once: the render scale, the blackout's mask
+  // resolution, the thinned weather; text keeps its full-size raster.
+  applyQuality(low) {
+    this.lowGraphics = Boolean(low);
+    this.applyViewScale(this.lowGraphics ? VIEW_SCALE_LOW : 1);
+    const res = this.lowGraphics ? DARK_RES_LOW : 1;
+    if (this.dark && this.dark.res !== res) {
+      const old = this.dark.rt;
+      this.dark.rt = buildDarknessTexture(this, res);
+      this.dark.res = res;
+      old.destroy();
+    }
+    this.applyTextResolution();
+  }
+
+  // Texts are rasterised at full 1920×1080 size even when the canvas is
+  // smaller, so tags and the HUD stay as sharp as the canvas allows.
+  applyTextResolution() {
+    const r = this.viewScale < 1 ? Math.min(2, 1 / this.viewScale) : 1;
+    this.children.list.forEach((obj) => { if (obj.type === 'Text' && obj.style?.resolution !== r) obj.setResolution(r); });
+    this.hud?.caption?.list?.forEach((obj) => { if (obj.type === 'Text') obj.setResolution(r); });
+    this.hud?.card?.list?.forEach((obj) => { if (obj.type === 'Text') obj.setResolution(r); });
+  }
+
+  // Internal render scale: 1, or VIEW_SCALE_LOW under LOW GRAPHICS. The
+  // canvas shrinks; the camera zooms so the same 1920×1080 window fills it.
+  applyViewScale(scale) {
+    const s = scale > 0 && scale <= 1 ? scale : 1;
+    this.viewScale = s;
+    const w = Math.round(BORROWED_LIGHT_VIEW.w * s);
+    const h = Math.round(BORROWED_LIGHT_VIEW.h * s);
+    if (this.scale.width !== w || this.scale.height !== h) this.scale.resize(w, h);
+    this.cameras.main.setSize(w, h).setZoom(s);
+    this.centerCamera(this.camMid.x, this.camMid.y);
   }
 
   updateCulling() {
-    const view = this.cameras.main.worldView;
+    const view = this.view;
     const x0 = view.x - 400;
     const x1 = view.right + 400;
     this.cull.forEach((entry) => {
@@ -1841,7 +2061,7 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   isVisibleX(x0, x1) {
-    const view = this.cameras.main.worldView;
+    const view = this.view;
     return x1 >= view.x - 300 && x0 <= view.right + 300;
   }
 
@@ -1880,6 +2100,8 @@ export class BorrowedLightScene extends Phaser.Scene {
       const status = this.tt.machineStatus(entry.machine.id);
       drawMachine(entry.view, status, t);
     });
+    this.drawCutCountdowns();
+    this.drawPulses(dt);
     // Nodes + cables.
     const decay = dt / 1000;
     this.nodeViews.forEach((view, id) => {
@@ -1907,7 +2129,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.ghostLabels.forEach((label) => label.setVisible(false));
     if (this.listening) {
       // Labels stay in the playfield: under the bell HUD, above the toasts.
-      const view = this.cameras.main.worldView;
+      const view = this.view;
       this.tt.preview().filter((change) => machineById(change.machineId).section === this.section).slice(0, 6).forEach((change, i) => {
         const machine = machineById(change.machineId);
         const line = this.tt.lineOf(change.machineId);
@@ -1968,6 +2190,54 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
   }
 
+  // A cut bridge shows how long it has left: seconds on a paper tag over
+  // its middle and a bar along its deck that runs out with it.
+  drawCutCountdowns() {
+    const g = this.cutG;
+    g.clear();
+    let shown = false;
+    for (const [id, total] of this.cutTotals) {
+      const st = this.tt.machineStatus(id);
+      if (!st?.powered || !st.cut) { this.cutTotals.delete(id); continue; }
+      const machine = machineById(id);
+      const b = machineBounds(machine, st.level);
+      const k = Math.max(0, Math.min(1, st.remaining / Math.max(1, total)));
+      const color = LINE_COLORS[this.tt.lineOf(id)] ?? LINE_COLORS.teal;
+      g.fillStyle(0x0b0907, 0.85).fillRect(b.x, b.y - 12, b.w, 7);
+      g.fillStyle(st.flicker ? 0xe6aab0 : color.glow, 0.95).fillRect(b.x, b.y - 11, b.w * k, 5);
+      this.cutText.setText(`${(st.remaining / 1000).toFixed(1)} s`).setPosition(b.x + b.w / 2, b.y - 20).setVisible(true);
+      shown = true;
+    }
+    if (!shown) this.cutText.setVisible(false);
+  }
+
+  // Point at something: `n` amber rings expand from it, one after another.
+  pulseAt(x, y, n = 2) {
+    this.pulses.push({ x, y, t: 0, n });
+  }
+
+  pulseNode(nodeId, n = 2) {
+    const node = nodeById(nodeId);
+    if (!node) return;
+    const head = nodeHead(node);
+    this.pulseAt(head.x, head.y + 20, n);
+  }
+
+  drawPulses(dt) {
+    const g = this.pulseG;
+    g.clear();
+    const RING_MS = 1100;
+    this.pulses = this.pulses.filter((p) => {
+      p.t += dt;
+      for (let i = 0; i < p.n; i += 1) {
+        const k = (p.t - i * 420) / RING_MS;
+        if (k <= 0 || k >= 1) continue;
+        g.lineStyle(4 - 2 * k, 0xf2c27a, 0.9 * (1 - k)).strokeCircle(p.x, p.y, 30 + 70 * k);
+      }
+      return p.t < RING_MS + (p.n - 1) * 420;
+    });
+  }
+
   drawPlayer(t, dt) {
     const p = this.player;
     const g = p.g;
@@ -1985,7 +2255,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     // Rain lands on his cap and shoulders.
     this.rainOnPlayer = (this.rainOnPlayer ?? 0) - dt;
     if (this.rainOnPlayer <= 0) {
-      this.rainOnPlayer = reducedMotionActive() ? 260 : 90;
+      this.rainOnPlayer = reducedMotionActive() || this.lowGraphics ? 260 : 90;
       this.spawnSplash(this.feetX + (Math.random() - 0.5) * 30, this.feetY - 100 + Math.random() * 14, 0.55);
     }
     // Footsteps.
@@ -2057,6 +2327,14 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (m.phaseT > 1600) { m.phase = 'run'; m.phaseT = 0; }
       return;
     }
+    // Alpha r4: she is always a roof ahead, never beside him. Once Butch
+    // comes within MARA_FLEE_PX she leaves at once, at a sprint, and does
+    // not stop to look back.
+    if (!m.fleeing && ['hold', 'run', 'wait'].includes(m.phase)
+      && Math.abs(m.x - this.feetX) < MARA_FLEE_PX && Math.abs(m.y - this.feetY) < 300) {
+      m.fleeing = true;
+      if (m.phase !== 'run') { m.phase = 'run'; m.phaseT = 0; }
+    }
     if (m.phase === 'hold') {
       // One roof ahead, looking back: she goes when Butch is nearly across.
       drawFigure(g, MARA_SPEC, { x: m.x, y: m.y, facing: -1, pose: 'look', t, silhouette: true, rim: 0.7 });
@@ -2064,11 +2342,16 @@ export class BorrowedLightScene extends Phaser.Scene {
       return;
     }
     if (m.phase === 'run') {
+      if (!m.called && s.call) {
+        // Butch sees her go (alpha r4: nobody reacted).
+        m.called = true;
+        this.hud.say(s.call, 1500);
+      }
       const [tx, ty] = s.path[1];
-      m.x = Math.min(tx, m.x + (s.speed ?? 0.47) * dt);
+      m.x = Math.min(tx, m.x + (s.speed ?? 0.47) * (m.fleeing ? 2.2 : 1) * dt);
       m.y = ty;
-      m.run = ((m.run ?? 0) + dt / 560) % 1;
-      if (m.x >= tx) { m.phase = 'wait'; m.phaseT = 0; }
+      m.run = ((m.run ?? 0) + dt / (m.fleeing ? 380 : 560)) % 1;
+      if (m.x >= tx) { m.phase = m.fleeing ? 'leap' : 'wait'; m.phaseT = 0; if (m.fleeing) m.from = [m.x, m.y]; }
       drawFigure(g, MARA_SPEC, { x: m.x, y: m.y, facing: 1, pose: 'run', phase: m.run, t, silhouette: true, rim: 0.7 });
     } else if (m.phase === 'wait') {
       drawFigure(g, MARA_SPEC, { x: m.x, y: m.y, facing: -1, pose: 'look', t, silhouette: true, rim: 0.7 });
@@ -2095,8 +2378,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     w.far.tilePositionX = cam.scrollX * 0.25 + t * 40;
     w.mid.tilePositionY -= dt * 1.5 * heavy;
     w.mid.tilePositionX = cam.scrollX * 0.6 + t * 70;
-    w.near.setVisible(!reduced);
-    if (!reduced) {
+    const low = this.lowGraphics;
+    w.far.setVisible(!low);
+    this.bg.clouds.setVisible(!low);
+    if (w.lowApplied !== low) { w.lowApplied = low; w.mistBack.setVisible(!low); }
+    w.near.setVisible(!reduced && !low);
+    if (!reduced && !low) {
       w.near.tilePositionY -= dt * 2.6 * heavy;
       w.near.tilePositionX = cam.scrollX * 1.1 + t * 120;
       w.near.setAlpha(this.blackout ? 0.6 : 0.45);
@@ -2106,9 +2393,9 @@ export class BorrowedLightScene extends Phaser.Scene {
     w.mistFront.tilePositionX = -t * 22;
     this.bg.clouds.tilePositionX = cam.scrollX * 0.05 + t * 6;
     // Splashes on the roofs in view.
-    const rate = (reduced ? 18 : 55) * heavy;
+    const rate = (reduced || low ? 18 : 55) * heavy;
     const n = Math.floor(rate * dt / 1000 + Math.random());
-    const view = cam.worldView;
+    const view = this.view;
     for (let i = 0; i < n; i += 1) {
       const x = view.x + Math.random() * view.width;
       const roof = PLATFORMS.find((p) => x >= p.x && x <= p.x + p.w && p.y > view.y && p.y < view.bottom && !p.hidden);
@@ -2151,19 +2438,19 @@ export class BorrowedLightScene extends Phaser.Scene {
     d.flash.setAlpha(this.flashT * 0.18);
     if (d.alpha < 0.01) { d.rt.setVisible(false); return; }
     d.rt.setVisible(true);
-    const cam = this.cameras.main;
-    const view = cam.worldView;
+    const view = this.view;
     const rt = d.rt;
     rt.clear();
     const lightningLift = this.flashT * 0.6;
     rt.fill(0x03070c, Math.max(0, d.alpha - lightningLift));
     const brush = d.brush;
+    const res = d.res ?? 1;
     const light = (wx, wy, radius, strength = 1) => {
       const sx = wx - view.x;
       const sy = wy - view.y;
       if (sx < -radius || sx > view.width + radius || sy < -radius || sy > view.height + radius) return;
-      brush.setScale((radius * 2) / 256).setAlpha(Math.min(1, strength));
-      rt.erase(brush, sx, sy);
+      brush.setScale((radius * 2 * res) / 256).setAlpha(Math.min(1, strength));
+      rt.erase(brush, sx * res, sy * res);
     };
     // Butch's lamp.
     const p = this.player;
@@ -2286,8 +2573,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       phase: snap.bellPhase(),
       msToBell: snap.msToBell(),
       lines,
-      countdown: snap.countdown() && !snap.countdown().done ? snap.countdown() : null,
+      countdown: snap.countdown() && !snap.countdown().done && !this.boarded ? snap.countdown() : null,
       departure: this.departure.started,
+      hidden: this.boarded,
       t,
       dt,
       nextParity: snap.nextBellParity(),
@@ -2316,16 +2604,29 @@ export class BorrowedLightScene extends Phaser.Scene {
     // The chase (A8): no other teach tags (HOLD Q popped up on cradle 1);
     // only the one that says where the last pole is punched from.
     if (this.feetX >= CHASE.fromX && this.feetX < CHASE.toX) {
-      const cradle = machineById('a-cradle1');
-      const last = this.tt.nodeStatus('a-n14');
+      const spot = FROM_HERE[0];
+      const cradle = machineById(spot.on);
+      const last = this.tt.nodeStatus(spot.node);
       const firstDown = this.tt.machineStatus('a-cradle1').powered || this.tt.isQueued('a-n12');
       if (firstDown && !last.queued && !last.powering && !this.tt.machineStatus('a-cradle3').powered) {
-        return { x: cradle.x + cradle.w / 2 + 40, y: cradle.y - cradle.hoist - 112, text: HINTS.fromCradle };
+        // The tag points at a spot in reach of the last pole (alpha r4: it
+        // used to sit over the cradle's middle, just out of reach).
+        const level = this.tt.machineStatus(spot.on).level;
+        const onCradle = grounded && standsOn(cradle, level, this.feetX, this.feetY);
+        const inReach = Boolean(pickTarget({ chest: chestAt(this.feetX, this.feetY), nodes: [nodeById(spot.node)] }));
+        const text = onCradle && !inReach ? HINTS.fromCradleBack : HINTS.fromCradle;
+        return { x: spot.x, y: cradle.y - cradle.hoist - 112, text, mark: { x: spot.x, y: machineBounds(cradle, level).y } };
       }
       return null;
     }
+    // Alpha r4: walking, then jumping, taught on the terminal roof before
+    // any jump is needed (the first is the AC unit on the ROOMS roof).
+    if (!this.locked && this.feetX < MECHANIC.x + 300 && Math.abs(this.feetY - MECHANIC.y) < 12) {
+      if (!this.flags.walked) return { follow: true, text: HINTS.walk };
+      if (!this.flags.jumped && grounded) return { follow: true, text: HINTS.jumpFirst };
+    }
     const onRoomsRoof = this.feetX > 5160 && this.feetX < 5545 && Math.abs(this.feetY - 460) < 12;
-    if (!this.flags.jumped && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
+    if (!this.flags.acClimbed && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
     // A6: the bell counts I, II — taught until the first phased punch.
     // Over the gap the II bridge will cross, clear of the node's prompt.
     if (!this.flags.phasePunched && this.feetX > TEACH.bells.fromX && this.feetX < TEACH.bells.toX && Math.abs(this.feetY - 160) < 12) return { x: TEACH.bells.x, y: TEACH.bells.y, text: TEACH.bells.text };
@@ -2355,6 +2656,16 @@ export class BorrowedLightScene extends Phaser.Scene {
         : teach;
       this.teachText.setPosition(at.x, at.y);
       this.teachAt = at.at ?? null;
+    }
+    // A teach tag that names a spot marks it on the deck: a small chevron.
+    const mg = this.markG ?? (this.markG = this.add.graphics().setDepth(DEPTH.ghost + 0.5));
+    mg.clear();
+    if (teach?.mark) {
+      const { x, y } = teach.mark;
+      const bob = Math.sin(this.clock * 5) * 3;
+      mg.fillStyle(0x0b0907, 0.8).fillTriangle(x - 15, y - 30 + bob, x + 15, y - 30 + bob, x, y - 9 + bob);
+      mg.fillStyle(0xf2c27a, 1).fillTriangle(x - 10, y - 27 + bob, x + 10, y - 27 + bob, x, y - 13 + bob);
+      mg.lineStyle(3, 0xf2c27a, 0.8).lineBetween(x - 34, y + 1, x + 34, y + 1);
     }
     this.talkText.setVisible(false);
     if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
@@ -2386,6 +2697,33 @@ export class BorrowedLightScene extends Phaser.Scene {
     pt.setVisible(false);
   }
 
+  // The float hint over a node: held for its time, then it rises as it
+  // fades. Alpha r4: it never sits on the marked node's tag (RINGS ON BELL II
+  // · ONE MORE BELL covered PUNCHED · …): it moves above it.
+  updateFloatHint(dt) {
+    const f = this.floating;
+    const h = this.hintText;
+    if (!f) { h.setAlpha(0); return; }
+    f.t += dt;
+    const fade = Math.max(0, f.t - f.ms) / 500;
+    if (fade >= 1) { this.floating = null; h.setAlpha(0); return; }
+    let y = f.y - 26 * fade;
+    const box = (text) => ({ x0: text.x - text.width / 2, x1: text.x + text.width / 2, y0: text.y - text.height, y1: text.y });
+    for (const tag of [this.promptText, this.teachText]) {
+      if (!tag.visible) continue;
+      const a = box(tag);
+      const b = { x0: f.x - h.width / 2, x1: f.x + h.width / 2, y0: y - h.height, y1: y };
+      if (a.x1 > b.x0 && a.x0 < b.x1 && a.y1 > b.y0 - 6 && a.y0 < b.y1 + 6) y = a.y0 - 8;
+    }
+    h.setPosition(f.x, y).setAlpha(1 - fade);
+  }
+
+  // A line the city holds: which machine, and the tag that cuts it.
+  heldHint(machineId) {
+    const machine = machineById(machineId);
+    return HINTS.busyHeld(machine?.holdName, machine?.holdTag);
+  }
+
   // The targeted node's tag says exactly what F (or E) will do to it.
   promptFor(node) {
     const riding = this.section === 'B' ? this.ridingMachine() : null;
@@ -2403,8 +2741,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       // Punched: says when it rings, and how to take it back on purpose.
       case 'already': label = pre.waiting ? HINTS.liftWaits : `${HINTS.punched(node.phase, pre.inBells)}\n${HINTS.holdTakeBack}`; break;
       case 'renew': label = HINTS.renew; break;
-      case 'cut': label = HINTS.cutPrompt; break;
-      case 'busy': label = this.tt.machineStatus(pre.holder)?.held ? 'LINE HOLDING · CUT ITS LIT TAG' : HINTS.busyTimed; break;
+      case 'cut': label = HINTS.cutPrompt(color.name); break;
+      case 'cutting': label = HINTS.cutDone(pre.bells); break;
+      case 'busy': label = this.tt.machineStatus(pre.holder)?.held ? this.heldHint(pre.holder) : HINTS.busyTimed; break;
       default: break;
     }
     if (machine.kind === 'counterweight' && pre.result === 'queue') label = machine.ballast ? HINTS.dropBrake : HINTS.brake;
@@ -2474,6 +2813,11 @@ export class BorrowedLightScene extends Phaser.Scene {
       windowMara: this.windowMara ? { state: this.windowMara.state, a: Number(this.windowMara.a.toFixed(2)) } : null,
       aheadTrain: this.ahead ? this.ahead.phase : null,
       flags: this.flags,
+      idle: this.idle ? { ms: Math.round(this.idle.idle), tier: this.idle.tier, step: this.idleHint?.step ?? null, last: this.lastIdleHint ?? null } : null,
+      cutCountdown: this.cutText.visible ? this.cutText.text : null,
+      viewScale: this.viewScale,
+      lowGraphics: this.lowGraphics,
+      resumed: this.resumed,
       fps: Math.round(this.game.loop.actualFps || 0),
       timescale: this.timescale,
     };

@@ -134,9 +134,23 @@ export class BorrowedLightHud {
   }
 
   // ---- bell meter --------------------------------------------------------
-  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt, nextParity = null, phases = {}, quick = false, carried = false }) {
+  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt, nextParity = null, phases = {}, quick = false, carried = false, hidden = false }) {
     const g = this.meter;
     g.clear();
+    // Boarding (alpha r4): the bell and the departure count step aside.
+    this.meterAlpha = Phaser.Math.Linear(this.meterAlpha ?? 1, hidden ? 0 : 1, Math.min(1, dt / 220));
+    const ma = this.meterAlpha;
+    [g, this.bell].forEach((o) => o.setAlpha(ma));
+    if (ma < 0.01) {
+      [this.parityLabel, this.paritySub, this.carryLabel, this.nextLabel, this.meterLabel].forEach((o) => o.setAlpha(0));
+      return;
+    }
+    // Alpha r4: with the departure ring round the meter, the NEXT chip, the
+    // carried lantern and the line tags move out from under its pips.
+    const ring = countdown ? 30 : 0;
+    const chipX = CX + R + 30 + ring;
+    const carryX = CX - R - 70 - ring;
+    const tagsY = CY + R + 22 + (countdown ? 20 : 0);
     this.bellSwing *= Math.pow(0.02, dt / 1000);
     this.bellFlash = Math.max(0, this.bellFlash - dt / 700);
     this.ringFlash = Math.max(0, this.ringFlash - dt / 900);
@@ -178,7 +192,7 @@ export class BorrowedLightHud {
     LINES_ORDER.forEach((line, i) => {
       const color = LINE_COLORS[line];
       const x = CX - 54 + i * 54;
-      const y = CY + R + 22;
+      const y = tagsY;
       const state = lines[line];
       const swing = Math.sin(t * 1.5 + i) * 0.05;
       g.fillStyle(0xe6dcc2, state === 'idle' ? 0.35 : 0.95).fillRect(x - 12, y - 4 + swing * 20, 24, 30);
@@ -204,16 +218,16 @@ export class BorrowedLightHud {
     // The next bell's number, only where lines ring on I / II.
     const phased = Object.values(phases).some(Boolean);
     const pa = phased ? 1 : 0;
-    this.parityLabel.setText(nextParity === 'even' ? 'II' : 'I').setAlpha(pa);
-    this.paritySub.setAlpha(pa * 0.85);
+    this.parityLabel.setText(nextParity === 'even' ? 'II' : 'I').setAlpha(pa * ma).setX(chipX + 28);
+    this.paritySub.setAlpha(pa * 0.85 * ma).setX(chipX + 28);
     if (phased) {
-      g.fillStyle(0x0b0907, 0.78).fillRoundedRect(CX + R + 30, CY - 30, 56, 66, 8);
-      g.lineStyle(1.5, 0xb08a4a, 0.85).strokeRoundedRect(CX + R + 30, CY - 30, 56, 66, 8);
+      g.fillStyle(0x0b0907, 0.78).fillRoundedRect(chipX, CY - 30, 56, 66, 8);
+      g.lineStyle(1.5, 0xb08a4a, 0.85).strokeRoundedRect(chipX, CY - 30, 56, 66, 8);
     }
     // The light Butch carries: a small lantern glyph.
-    this.carryLabel.setAlpha(carried ? 0.9 : 0);
+    this.carryLabel.setAlpha(carried ? 0.9 * ma : 0).setX(carryX);
     if (carried) {
-      const lx = CX - R - 70;
+      const lx = carryX;
       const ly = CY - 8;
       const flick = 0.85 + 0.15 * Math.sin(t * 9);
       g.fillStyle(0x0b0907, 0.78).fillRoundedRect(lx - 28, CY - 30, 56, 66, 8);
@@ -225,7 +239,7 @@ export class BorrowedLightHud {
       g.lineStyle(1.4, 0x0b0907, 1).strokeRect(lx - 7, ly - 12, 14, 18);
     }
     this.meterLabel.setText(departure ? '' : '');
-    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(CY + R + 72);
+    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(tagsY + 52).setAlpha(0.9 * ma);
   }
 
   ring({ departure = false } = {}) {
@@ -243,7 +257,7 @@ export class BorrowedLightHud {
     const next = Phaser.Math.Linear(a, target, Math.min(1, dt / 120));
     this.listenDim.setAlpha(0.42 * next);
     // Sit under the departure count when there is one, never on it.
-    this.listenLabel.setAlpha(next).setY(this.nextLabel.text ? CY + R + 98 : CY + R + 80);
+    this.listenLabel.setAlpha(next).setY(this.nextLabel.text ? this.nextLabel.y + 26 : CY + R + 80);
   }
 
   // ---- title cards and toasts ---------------------------------------------
