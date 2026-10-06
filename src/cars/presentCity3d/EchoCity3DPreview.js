@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
+import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks.js';
 import {
   LOW_PIXEL_RATIO,
   LOWEST_PIXEL_RATIO,
@@ -1025,7 +1026,8 @@ function makeDestinationMarker(scene) {
 // 1 fps the departure ran at a quarter speed and took minutes); a longer
 // stall (a background tab) still never dumps more than this at once.
 export const MAX_FRAME_SECONDS = 1;
-// Click-to-walk speed (m/s); a double-click or a held Shift runs.
+// Click-to-walk speed (m/s); a double-click or a held Shift runs, and a walk
+// ordered far away strides (chapter3LongWalks.js).
 export const WALK_SPEED = 5.4;
 export const RUN_MULTIPLIER = 1.8;
 // How far past the view a static model's shadow can still fall into it.
@@ -1243,6 +1245,9 @@ export class EchoCity3DPreview {
     // has already set the same path).
     this.running = false;
     this.shiftHeld = false;
+    // A walk ordered STRIDE_MIN_METRES or more away is taken at a jog.
+    this.striding = false;
+    this.gait = 'walk';
     this.renderer.domElement.addEventListener('dblclick', () => {
       if (this.path.length) this.running = true;
     });
@@ -1635,6 +1640,7 @@ export class EchoCity3DPreview {
       return;
     }
     this.path = nextPath;
+    this.striding = stridesFor(pathMetres(this.player.position, nextPath));
     // A fresh single click walks; the dblclick that follows a second click
     // turns it into a run.
     if (event.detail < 2) this.running = false;
@@ -1685,6 +1691,7 @@ export class EchoCity3DPreview {
     const nextPath = findPath(this.player.position, target, this.boundaryObstacles);
     if (!nextPath.length) return false;
     this.path = nextPath;
+    this.striding = stridesFor(pathMetres(this.player.position, nextPath));
     this.pathArrival = onArrival;
     const resolvedTarget = nextPath[nextPath.length - 1];
     this.destinationMarker.position.set(resolvedTarget.x, 0.52, resolvedTarget.z);
@@ -1696,6 +1703,7 @@ export class EchoCity3DPreview {
     this.path = [];
     this.pathArrival = null;
     this.running = false;
+    this.striding = false;
     this.destinationMarker.visible = false;
   }
 
@@ -1805,12 +1813,21 @@ export class EchoCity3DPreview {
     this.cameraShakeOffset.set(0, 0, 0);
     this.controls.update();
     if (this.path.length) {
-      const travel = (this.running || this.shiftHeld ? WALK_SPEED * RUN_MULTIPLIER : WALK_SPEED) * dt;
-      const heading = walkAlongPath(this.player.position, this.path, travel);
+      const speed = pacedSpeed({
+        walkSpeed: WALK_SPEED,
+        runMultiplier: RUN_MULTIPLIER,
+        running: this.running || this.shiftHeld,
+        striding: this.striding,
+        remaining: pathMetres(this.player.position, this.path),
+      });
+      this.gait = gaitFor(speed);
+      const heading = walkAlongPath(this.player.position, this.path, speed * dt);
       if (heading !== null) this.player.rotation.y = heading;
       if (!this.path.length) {
         this.destinationMarker.visible = false;
         this.running = false;
+        this.striding = false;
+        this.gait = 'walk';
         const arrival = this.pathArrival;
         this.pathArrival = null;
         arrival?.();
@@ -2006,6 +2023,7 @@ export class EchoCity3DPreview {
         y: Number(this.player.position.y.toFixed(2)),
         z: Number(this.player.position.z.toFixed(2)),
         pathNodesRemaining: this.path.length,
+        pace: { striding: this.striding, running: this.running || this.shiftHeld, gait: this.gait },
       },
       camera: {
         type: 'orthographic',
