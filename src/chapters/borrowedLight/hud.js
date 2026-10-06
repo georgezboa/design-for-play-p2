@@ -284,6 +284,7 @@ export class BorrowedLightHud {
     // Above the caption bar while a line is on it (alpha r4: an idle hint's
     // toast ran under Butch's line).
     const ty = this.caption.visible ? 820 : 980;
+    this.toastBand.setY(0);
     this.toastText.setText(message).setColor(color).setY(ty);
     const w = this.toastText.width + 120;
     const h = this.toastText.height + 26;
@@ -317,11 +318,19 @@ export class BorrowedLightHud {
     else this.scene.tweens.add({ targets: parts, alpha: 0, duration: 200 });
   }
 
+  // A toast already up when a caption opens moves above the caption bar.
+  liftToast() {
+    if (this.toastText.alpha <= 0 || this.toastText.y !== 980) return;
+    this.toastText.setY(820);
+    this.toastBand.setY(-160);
+  }
+
   // A one-line caption that takes no input and clears itself (the boarding
   // line). Never while a conversation is open.
   say(line, ms = 2600) {
     if (this.dialog) return false;
     this.clearTitle({ instant: true });
+    this.liftToast();
     this.caption.setVisible(true).setAlpha(1);
     this.captionSpeaker.setText(line.speaker);
     this.captionBody.setText(line.text);
@@ -340,6 +349,7 @@ export class BorrowedLightHud {
 
   openDialog(lines, onDone) {
     this.clearTitle({ instant: true });
+    this.liftToast();
     this.scene.tweens.killTweensOf(this.caption);
     this.caption.setAlpha(1);
     this.dialog = { lines, index: 0, shown: 0, onDone };
