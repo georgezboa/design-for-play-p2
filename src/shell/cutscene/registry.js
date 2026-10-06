@@ -42,6 +42,8 @@ export const CUTSCENE_LOADERS = Object.freeze({
   chapter3To4: () => import('./scenes/chapter3To4.js'),
   chapter4To5: () => import('./scenes/chapter4To5.js'),
   ending: () => import('./scenes/ending.js'),
+  'chapter5-to-conductor': () => import('./scenes/chapter5-to-conductor.js'),
+  'chapter5-to-black-knife': () => import('./scenes/chapter5-to-black-knife.js'),
 });
 
 const fold = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');

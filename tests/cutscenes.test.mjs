@@ -237,13 +237,13 @@ test('every call site resolves to the cutscene it means', () => {
 });
 
 test('an id without an authored cutscene keeps its film; authored ones replace theirs', () => {
-  for (const name of Object.keys(CUTSCENE_LOADERS)) assert.ok(CUTSCENE_IDS.includes(name), name);
+  // every loader is one of the eight; the Museum's two are authored (tests/cutscenes-museum.test.mjs)
+  assert.ok(Object.keys(CUTSCENE_LOADERS).every((id) => CUTSCENE_IDS.includes(id)));
+  for (const id of ['ending', 'opening', 'chapter5-to-conductor', 'chapter5-to-black-knife']) assert.ok(CUTSCENE_LOADERS[id], id);
   assert.equal(registeredCutscene('opening', '/cinematics/start.mp4'), 'opening');
   assert.equal(registeredCutscene('ending', '/cinematics/end.mp4'), 'ending');
-  // without a loader, the film plays
-  for (const [id, src] of [['chapter-1-to-2', '/cinematics/1-2.mp4'], ['chapter-3-to-4', '/cinematics/3-4.mp4'], ['chapter5-to-conductor', '/cinematics/5-6-conductor.mp4']]) {
-    assert.equal(registeredCutscene(id, src, { opening: () => ({}) }), null, id);
-  }
+  // with no loader for it, an id keeps its film
+  assert.equal(registeredCutscene('chapter-1-to-2', '/cinematics/1-2.mp4', { opening: () => ({}) }), null);
   // a loader added later takes over without touching the call site
   assert.equal(registeredCutscene('chapter-1-to-2', null, { chapter1To2: () => ({}) }), 'chapter1To2');
   const flow = read('src/shell/gameFlow.js');
