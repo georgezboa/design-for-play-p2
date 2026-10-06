@@ -237,10 +237,11 @@ test('every call site resolves to the cutscene it means', () => {
 });
 
 test('an id without an authored cutscene keeps its film; authored ones replace theirs', () => {
-  assert.deepEqual(Object.keys(CUTSCENE_LOADERS).sort(), ['ending', 'opening']);
+  for (const name of ['opening', 'ending', 'chapter3To4', 'chapter4To5']) assert.equal(typeof CUTSCENE_LOADERS[name], 'function', name);
+  for (const name of Object.keys(CUTSCENE_LOADERS)) assert.ok(CUTSCENE_IDS.includes(name), name);
   assert.equal(registeredCutscene('opening', '/cinematics/start.mp4'), 'opening');
   assert.equal(registeredCutscene('ending', '/cinematics/end.mp4'), 'ending');
-  for (const [id, src] of [['chapter-1-to-2', '/cinematics/1-2.mp4'], ['chapter-3-to-4', '/cinematics/3-4.mp4'], ['chapter5-to-conductor', '/cinematics/5-6-conductor.mp4']]) {
+  for (const [id, src] of [['chapter-1-to-2', '/cinematics/1-2.mp4'], ['chapter5-to-conductor', '/cinematics/5-6-conductor.mp4']]) {
     assert.equal(registeredCutscene(id, src), null, id);
   }
   // a loader added later takes over without touching the call site
@@ -336,4 +337,117 @@ test('the ending never draws the Mara ahead from the front', () => {
   assert.match(painters, /export function drawMaraSeatedBack/);
   assert.doesNotMatch(painters, /function drawMara(Face|Front)/);
   assert.doesNotMatch(ends, /drawMara(?!SeatedBack|Walking)/);
+});
+
+// ---------- C2: chapter3To4 (Ch3 → Ch4) and chapter4To5 (Ch4 → Ch5) ----------
+
+const { chapter3To4 } = await import('../src/shell/cutscene/scenes/chapter3To4.js');
+const { chapter4To5 } = await import('../src/shell/cutscene/scenes/chapter4To5.js');
+
+test('chapter3To4 and chapter4To5 are registered and follow the spec: shots, 25–40 s, captions ≥ 2.5 s, never two at once', async () => {
+  assert.equal(registeredCutscene('chapter-3-to-4', '/cinematics/3-4.mp4'), 'chapter3To4');
+  assert.equal(registeredCutscene('chapter-4-to-5', '/cinematics/4-5.mp4'), 'chapter4To5');
+  assert.equal(await loadCutscene('chapter3To4'), chapter3To4);
+  assert.equal(await loadCutscene('chapter4To5'), chapter4To5);
+  for (const scene of [chapter3To4, chapter4To5]) {
+    assert.deepEqual(validateCutscene(scene), [], scene.id);
+    for (const reducedMotion of [false, true]) {
+      const tl = buildTimeline(scene, { reducedMotion });
+      assert.ok(tl.duration >= 25 && tl.duration <= 40, `${scene.id} ${tl.duration}`);
+      assert.ok(tl.shots.length >= 4 && tl.shots.length <= 7);
+      tl.captions.forEach((c, i) => {
+        assert.ok(c.end - c.start >= CAPTION_MIN_S, `${scene.id} caption ${i + 1}`);
+        if (tl.captions[i + 1]) assert.ok(tl.captions[i + 1].start >= c.end, `${scene.id} captions ${i + 1}/${i + 2} overlap`);
+      });
+      if (reducedMotion) assert.ok(tl.shots.every((s) => ['fade', 'black', 'cut', 'end'].includes(s.transition.type)), scene.id);
+    }
+    // every shot has a still framing or a camera that holds under Reduce Motion
+    scene.shots.forEach((shot) => assert.deepEqual(cameraAt(shot.camera, 0, { reducedMotion: true }), cameraAt(shot.camera, 1, { reducedMotion: true })));
+  }
+});
+
+test('chapter3To4 and chapter4To5 captions are the script, word for word', () => {
+  const spec = read('docs/CUTSCENES_SPEC.md');
+  const text = (scene) => buildTimeline(scene).captions.map((c) => c.text.replace(/\n/g, ' '));
+  assert.deepEqual(text(chapter3To4), [
+    'Rosa Velez drew the orchard every summer.',
+    'The archive kept her drawings, and painted the colour out. Colour is hard to file.',
+    'Under the grey, a hawthorn was still red.',
+  ]);
+  assert.deepEqual(text(chapter4To5), [
+    'The archive had filed his journey already.',
+    'One object was still pending.',
+    'The museum will need one clean answer.',
+  ]);
+  for (const line of [...text(chapter3To4), ...text(chapter4To5)]) {
+    assert.ok(spec.includes(line), line);
+    assert.doesNotMatch(line, /Neo-Kyoto|Infinity|promise|Black Knife|Echo City/i);
+  }
+  // only the Archivist speaks, and the accession record is the bible's
+  const speakers = buildTimeline(chapter4To5).captions.map((c) => c.speaker);
+  assert.deepEqual(speakers, [null, null, 'THE ARCHIVIST']);
+  assert.ok(buildTimeline(chapter3To4).captions.every((c) => c.speaker === null));
+  const scene45 = read('src/shell/cutscene/scenes/chapter4To5.js');
+  assert.match(scene45, /drawAccessionCard\(/);
+  assert.match(read('src/shell/cutscene/painters.js'), /lines = \['ACC\. 1978-0412', 'VELEZ, M\.', 'PENDING'\]/);
+  assert.match(read('docs/STORY_BIBLE.md'), /ACC\. 1978-0412 · VELEZ, M\. · PENDING/);
+});
+
+test('chapter3To4 and chapter4To5 play cleared music through the director', () => {
+  const plan = read('docs/MUSIC_REPLACEMENT_PLAN.md');
+  for (const scene of [chapter3To4, chapter4To5]) {
+    const src = scene.music.src;
+    assert.match(src, /^\/assets\/music\/ch3\//, `${scene.id}: ${src}`);
+    const file = src.split('/').pop();
+    assert.match(read('public/assets/music/ch3/ASSET_MANIFEST.md'), new RegExp(file.replace(/\./g, '\\.')));
+    assert.doesNotMatch(plan, new RegExp(file.replace(/\./g, '\\.')), `${file} is on the uncleared list`);
+    assert.ok(scene.music.fade > 0 && scene.music.outFade > 0);
+  }
+  // Chapter 4 and 5's own recordings are uncleared: never in these cutscenes
+  for (const path of ['src/shell/cutscene/scenes/chapter3To4.js', 'src/shell/cutscene/scenes/chapter4To5.js']) {
+    assert.doesNotMatch(read(path), /music\/ch4\/|music\/ch5\/|face-the-fear/);
+  }
+});
+
+test('chapter3To4 and chapter4To5 draw with the shared Butch and Chapter 4\'s own hand, never a new figure', () => {
+  const s34 = read('src/shell/cutscene/scenes/chapter3To4.js');
+  const s45 = read('src/shell/cutscene/scenes/chapter4To5.js');
+  const c2 = read('src/shell/cutscene/painters-c2.js');
+  assert.match(s34, /drawButchBack\(/);
+  assert.match(s45, /drawButch\(/);
+  for (const source of [s34, s45, c2]) {
+    assert.doesNotMatch(source, /function drawButch|function drawMara|drawMara/);
+    // Chapter 4's art is imported read-only, not copied
+    assert.doesNotMatch(source, /export function (paintCountry|paintTrain|appleTree|hawthorn)\b/);
+  }
+  assert.match(c2, /from '\.\.\/\.\.\/chapters\/paintedCountry\/art\/countryArt\.js'/);
+  assert.match(c2, /from '\.\.\/\.\.\/chapters\/paintedCountry\/art\/trainArt\.js'/);
+  // seat 43 empty beside him; the hawthorn left red; FILED; the painted train dries to ink
+  assert.match(s34, /\['43', SEAT43\.x\]/);
+  assert.match(s34, /'FILED'/);
+  assert.match(s34, /redHaw\(/);
+  assert.match(s45, /paintTrainBody\(lc, 'paint'\)[\s\S]*paintTrainBody\(lc, 'ink'\)/);
+});
+
+test('painters-c2: Chapter 4 art is built once, on CPU canvases when the cutscene paints on the CPU', async () => {
+  const { once } = await import('../src/shell/cutscene/painters-c2.js');
+  const previous = globalThis.HTMLCanvasElement;
+  class FakeCanvas { getContext(type, options) { return { type, options }; } }
+  const original = FakeCanvas.prototype.getContext;
+  globalThis.HTMLCanvasElement = FakeCanvas;
+  try {
+    let builds = 0;
+    const gpuLayer = { getContextAttributes: () => ({ willReadFrequently: false }) };
+    const first = once('test-gpu', () => { builds += 1; return new FakeCanvas().getContext('2d'); }, gpuLayer);
+    assert.equal(first.options, undefined, 'a GPU-backed cutscene leaves the chapter painters alone');
+    assert.equal(once('test-gpu', () => { builds += 1; }), first);
+    assert.equal(builds, 1, 'built once');
+    const cpuLayer = { getContextAttributes: () => ({ willReadFrequently: true }) };
+    const built = once('test-cpu', () => new FakeCanvas().getContext('2d', { alpha: false }), cpuLayer);
+    assert.deepEqual(built.options, { willReadFrequently: true, alpha: false });
+    assert.equal(FakeCanvas.prototype.getContext, original, 'getContext is restored after the build');
+    assert.equal(new FakeCanvas().getContext('webgl').options, undefined);
+  } finally {
+    globalThis.HTMLCanvasElement = previous;
+  }
 });
