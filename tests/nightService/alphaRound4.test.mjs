@@ -105,6 +105,9 @@ test('P2 · Act III: the hill is cued, and the zoomed-out house no longer pulls 
 test('P1 · cards say how to put them down; quiet answers never wear a ring', () => {
   assert.match(scene, /'CLICK OR PRESS ENTER TO CLOSE'/);
   assert.match(scene, /if \(hotspot\.quiet\) return;/);
+  // and their type stays on the paper at any Text Size (160 %: the last line ran off)
+  assert.match(scene, /this\.fitCardText\(\);/);
+  assert.match(scene, /this\.cardLines\.height > room; size -= 1\) this\.cardLines\.setFontSize\(size\)/);
 });
 
 test('P1 · exhibit: one worded prompt at a time, along the intended chain', () => {

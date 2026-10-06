@@ -1609,10 +1609,9 @@ export class PanelScene extends Phaser.Scene {
   showCard(card) {
     if (!card) return;
     this.cardStamp.setText(card.stamp ?? '');
-    this.cardTitle.setText(card.title ?? '').setFontSize(44);
-    // long titles shrink to fit the card
-    if (this.cardTitle.width > 560) this.cardTitle.setFontSize(Math.floor(44 * (560 / this.cardTitle.width)));
+    this.cardTitle.setText(card.title ?? '');
     this.cardLines.setText((card.lines ?? []).join('\n'));
+    this.fitCardText();
     this.cardBox.setVisible(true).setAlpha(0).setAngle(-3);
     this.cardBox.y = this.layout.view.h / 2 - 10;
     this.tweens.add({ targets: this.cardBox, alpha: 1, angle: -1, y: this.layout.view.h / 2 - 30, duration: 320, ease: 'Back.easeOut' });
@@ -1621,6 +1620,22 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: this.cardHint, alpha: 0.9, delay: 900, duration: 500, ease: 'Sine.easeOut' });
     this.audio.play('paper');
     this.strikeCardLine(card);
+  }
+
+  /**
+   * Keep the open card's type on its paper at any Text Size (alpha R4: at
+   * 160 % the last line ran off the card and under its close hint): the
+   * stamp stops short of the punched hole, the lines above the bottom edge.
+   */
+  fitCardText() {
+    const s = clamp(this.textScale, 0.8, 1.6);
+    this.cardStamp.setFontSize(Math.round(24 * s));
+    for (let size = Math.round(24 * s); size > 16 && this.cardStamp.width > 490; size -= 1) this.cardStamp.setFontSize(size);
+    this.cardTitle.setFontSize(Math.round(44 * Math.min(s, 1.2)));
+    if (this.cardTitle.width > 560) this.cardTitle.setFontSize(Math.floor(parseFloat(String(this.cardTitle.style.fontSize)) * (560 / this.cardTitle.width)));
+    // the paper's ruled area ends 20 px above the card's bottom edge (210)
+    const room = 186 - this.cardLines.y;
+    for (let size = Math.round(30 * s); size > 18 && this.cardLines.height > room; size -= 1) this.cardLines.setFontSize(size);
   }
 
   /** The Archivist's red pencil: strike one line of the open card. */
