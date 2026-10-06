@@ -71,3 +71,22 @@ test('installing on a game shrinks the canvas and can switch back live', () => {
   assert.deepEqual([canvas.width, canvas.height], [960, 600]);
   assert.equal(installPhaserRenderScale({ canvas, renderer: {} }, 0.5), null, 'a canvas renderer is left alone');
 });
+
+test('the Phaser clock is not held at 60 fps after boot, focus or blur', async () => {
+  const { installWallClock } = await import('../src/shared/phaserWallClock.js');
+  let resets = 0;
+  const loop = {
+    panicMax: 120, _coolDown: 120, inFocus: true,
+    resetDelta() { resets += 1; this._coolDown = this.panicMax; },
+    focus() { this.inFocus = true; this.resetDelta(); },
+    blur() { this.inFocus = false; },
+  };
+  assert.equal(installWallClock({ loop }), true);
+  assert.equal(loop._coolDown, 0);
+  loop.blur();
+  assert.equal(loop.inFocus, true, 'an unfocused window keeps real time');
+  loop.focus();
+  assert.equal(loop._coolDown, 0);
+  assert.equal(resets, 1, 'focus still re-seeds the clock');
+  assert.equal(installWallClock({}), false);
+});

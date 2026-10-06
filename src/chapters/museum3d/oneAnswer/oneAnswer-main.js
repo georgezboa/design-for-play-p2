@@ -22,6 +22,7 @@ import { installPauseMenu } from '../../../shell/pauseMenu.js';
 import { CHAPTER_CONTROLS } from '../../../shell/chapterControls.js';
 import { installPhaserMotionGuard } from '../../../shell/motion.js';
 import { followLowGraphics } from '../../../shared/phaserRenderScale.js';
+import { installWallClock } from '../../../shared/phaserWallClock.js';
 import { applySettings, readSettings } from '../../../shell/saveSystem.js';
 import { leaveForTitle } from '../../../shell/titleReturn.js';
 import { DEV_MODE, devParams } from '../../../devMode.js';
@@ -101,6 +102,7 @@ window.game = game;
 // LOW GRAPHICS: the exhibit's 1920×1080 stage drawn at half resolution
 // (alpha round 4: it ran at 2.8 fps framed in the museum on software GL).
 followLowGraphics(game, { low: 0.5 });
+installWallClock(game);
 
 const boot = async () => {
   try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }

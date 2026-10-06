@@ -7,6 +7,7 @@ import { installPauseMenu } from '../../../shell/pauseMenu.js';
 import { CHAPTER_CONTROLS } from '../../../shell/chapterControls.js';
 import { installPhaserMotionGuard } from '../../../shell/motion.js';
 import { followLowGraphics } from '../../../shared/phaserRenderScale.js';
+import { installWallClock } from '../../../shared/phaserWallClock.js';
 import { music } from '../../../shared/musicDirector.js';
 import { CHAPTER5_SCORE } from '../../museum3d/chapter05Score.js';
 import { DEV_MODE, devRoutesEnabled } from '../../../devMode.js';
@@ -52,6 +53,8 @@ window.game = game;
 // LOW GRAPHICS: draw the 1280×800 stage at half resolution (alpha round 4:
 // ~3 fps on software GL at any window size).
 followLowGraphics(game, { low: 0.5 });
+// The chase and the statues run on the wall clock, even at 10 fps.
+installWallClock(game);
 
 const params = new URLSearchParams(window.location.search);
 const embedded = params.get('embedded') === '1';
