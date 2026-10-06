@@ -55,6 +55,7 @@ import {
 import { ENDING_SLICE_POSITIONS } from './chapter3EndingContent.js';
 import { Chapter3DialogueController } from './Chapter3Caption.js';
 import { Chapter3TicketBoard } from './Chapter3TicketBoard.js';
+import { chapter3ResumePoint } from './chapter3OpeningModel.js';
 import { Chapter3ScannerField } from './Chapter3ScannerField.js';
 import { Chapter3BellClamp } from './Chapter3BellClamp.js';
 import { createChapter3MinistryHall, MINISTRY_POSITIONS } from './Chapter3MinistryHall.js';
@@ -1279,6 +1280,9 @@ export class Chapter3OpeningRuntime {
     if (!initial.arrivalRead && !this.characterQa) {
       this.showTitleCard();
       this.openArrival();
+    } else if (/-resumed$/.test(initial.lastEvent)) {
+      // Continue from a mid-chapter resume point: the chapter's title card.
+      this.showTitleCard();
     }
     // Everything else streams in while the player is on the platform.
     this.streamDeferredAssets();
@@ -1295,8 +1299,15 @@ export class Chapter3OpeningRuntime {
       const object = this.preview.scene.getObjectByName(id);
       if (object) object.visible = false;
     }
-    if (state.nikaComplete && !state.ticketBoardComplete) {
-      this.stageMinistryHall({ at: 'board' });
+    // Alpha round 4: a resume (or QA start) inside the public hall, before
+    // Nika or at the public table.
+    if (state.transportHallEntered && !state.ticketBoardComplete) {
+      this.stageMinistryHall({ at: state.nikaComplete ? 'board' : null });
+      return;
+    }
+    // Inside the Copper Heron, before the night: the lobby (Hana) or the room.
+    if (state.hotelEntered && !state.slept) {
+      this.stageHotelInterior();
       return;
     }
     // QA starts at the oil line and on the walk to the ministry.
@@ -1308,9 +1319,20 @@ export class Chapter3OpeningRuntime {
       place(this.preview.player, OPENING_POSITIONS.seamApproach);
       place(this.lev, [4.6, 0.5, 10.6]);
     }
+    // The tickets are filed: out on the ministry steps, as the hall left him.
+    if (state.ticketBoardComplete && !state.edaComplete) {
+      place(this.preview.player, OPENING_POSITIONS.transportApproach);
+      place(this.lev, OPENING_POSITIONS.levTransportExterior);
+    }
     if (state.edaComplete && !state.marketCrossed) {
       place(this.preview.player, [-15.6, 0.5, 1.8]);
       place(this.lev, [-14.6, 0.5, 2.9]);
+    }
+    // Olek and his cart have already gone on past the market crossing.
+    if (state.marketCrossed) {
+      this.olekExitElapsed = 9;
+      this.olek.visible = false;
+      if (this.cartObject) this.cartObject.visible = false;
     }
     if (state.marketCrossed && !state.cutInterfaceComplete) {
       place(this.preview.player, OPENING_POSITIONS.cutInterfaceApproach);
@@ -3302,6 +3324,7 @@ export class Chapter3OpeningRuntime {
     this.updateButchMarker();
     this.updateButchSilhouette();
     this.updateGuidanceBeacons();
+    this.updateResumePoint();
     this.updateObjective();
     this.updateTags();
     this.updatePips();
@@ -3803,6 +3826,19 @@ export class Chapter3OpeningRuntime {
     this.elements.objectiveCard?.classList.remove('is-new');
     void this.elements.objectiveCard?.offsetWidth;
     this.elements.objectiveCard?.classList.add('is-new');
+  }
+
+  // Alpha round 4 (P1): every change of beat records where Continue should
+  // resume (chapter3ResumePoint). The page (car03-3d-main.js) writes it to
+  // the save; it ignores dev / router routes.
+  updateResumePoint() {
+    if (this.characterQa) return null;
+    const point = chapter3ResumePoint(this.model.snapshot());
+    const key = point ? `${point.checkpointId}:${point.stage}` : null;
+    if (key === this.lastResumeKey) return point;
+    this.lastResumeKey = key;
+    if (point) globalThis.dispatchEvent?.(new CustomEvent('nightfall:chapter3-resume', { detail: point }));
+    return point;
   }
 
   updateDiagnosticState() {

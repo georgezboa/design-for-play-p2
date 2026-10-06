@@ -131,13 +131,19 @@ describe('Chapter 3 · ECHO CITY release chapter', () => {
     const expected = {
       'oil-seam': 'inspect-oil-line',
       'ministry-walk': 'find-ministry',
+      // Alpha round 4 resume points (also QA starts).
+      'ministry-hall': 'question-nika',
       'ticket-board': 'ticket-board',
+      market: 'find-eda',
       'market-scanner': 'cross-market-scanner',
       'cut-interface': 'find-cut-feed',
       hotel: 'check-in-hotel',
+      'hotel-lobby': 'question-hana',
+      'hotel-room': 'sleep',
       'night-fire': 'read-first-fire-line',
       wire: 'reconnect-night-feed',
       morning: 'sunrise',
+      'platform-walk': 'walk-to-station',
       station: 'cross-station-scanner',
     };
     assert.deepEqual([...CHAPTER3_START_POINTS].sort(), Object.keys(expected).sort());

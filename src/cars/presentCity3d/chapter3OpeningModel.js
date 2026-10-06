@@ -140,15 +140,23 @@ const START_SCRIPT = Object.freeze({
     START_SCRIPT['oil-seam'](m);
     m.observeSeam('geometry'); m.concludeSeam();
   },
-  'ticket-board': (m) => {
+  // Alpha round 4: inside the public hall, before Nika (a resume point).
+  'ministry-hall': (m) => {
     START_SCRIPT['ministry-walk'](m);
     m.reachTransportEntrance(); m.enterTransportHall(); m.takeTransportNumber();
+  },
+  'ticket-board': (m) => {
+    START_SCRIPT['ministry-hall'](m);
     m.noteNikaTopic('reservation'); m.completeNika();
   },
-  'market-scanner': (m) => {
+  // Alpha round 4: the tickets are filed; the walk to Eda's stall.
+  market: (m) => {
     START_SCRIPT['ticket-board'](m);
     for (const id of TICKET_IDS) m.seeTicketThroughLens(id);
     m.stackTickets(); m.punchTickets(); m.completeTicketBoard();
+  },
+  'market-scanner': (m) => {
+    START_SCRIPT.market(m);
     m.noteEdaTopic('collector'); m.completeEda();
   },
   'cut-interface': (m) => {
@@ -159,10 +167,19 @@ const START_SCRIPT = Object.freeze({
     START_SCRIPT['cut-interface'](m);
     m.observeCutInterface('placement'); m.concludeCutInterface();
   },
-  'night-fire': (m) => {
+  // Alpha round 4: the Copper Heron lobby (Hana), and the room upstairs.
+  'hotel-lobby': (m) => {
     START_SCRIPT.hotel(m);
-    m.enterHotel(); m.noteHanaTopic('face'); m.completeHotelCheckIn();
-    m.enterHotelCorridor(); m.enterHotelRoom(); m.sleepUntilNight();
+    m.enterHotel();
+  },
+  'hotel-room': (m) => {
+    START_SCRIPT['hotel-lobby'](m);
+    m.noteHanaTopic('face'); m.completeHotelCheckIn();
+    m.enterHotelCorridor(); m.enterHotelRoom();
+  },
+  'night-fire': (m) => {
+    START_SCRIPT['hotel-room'](m);
+    m.sleepUntilNight();
     m.leaveNightRoom(); m.reachNightLobby(); m.beginNightRoute();
   },
   wire: (m) => {
@@ -173,13 +190,64 @@ const START_SCRIPT = Object.freeze({
     START_SCRIPT.wire(m);
     m.reconnectNightFeed(); m.lightSecondLine(); m.completeNightMessage(); m.beginMorning();
   },
-  station: (m) => {
+  // Alpha round 4: after the bench, the morning walk to the platform.
+  'platform-walk': (m) => {
     START_SCRIPT.morning(m);
-    m.completeSunriseView(); m.reachStation();
+    m.completeSunriseView();
+  },
+  station: (m) => {
+    START_SCRIPT['platform-walk'](m);
+    m.reachStation();
   },
 });
 
 export const CHAPTER3_START_POINTS = Object.freeze(Object.keys(START_SCRIPT));
+
+// ------------------------------------------------------------ resume points
+// Alpha round 4 (P1): the save remembers which beat of its checkpoint Butch
+// is in, so Continue resumes at the start of that beat instead of the
+// platform. Each stage is a START_SCRIPT start (the same replay the dev
+// playtest routes use, so a resume can never reach a state the chapter
+// cannot). Stages before the market crossing belong to `chapter-3-start`,
+// the rest to `chapter-3-dusk` (the crossing saves that checkpoint). The
+// arrival and Lev's introduction are the chapter start itself: no stage.
+// In beat order: [stage, checkpoint, "this beat has begun"].
+export const CHAPTER3_RESUME_STAGES = Object.freeze([
+  ['oil-seam', 'chapter-3-start', (s) => s.explorationBriefingComplete],
+  ['ministry-walk', 'chapter-3-start', (s) => s.seamInspected],
+  ['ministry-hall', 'chapter-3-start', (s) => s.transportHallEntered],
+  ['ticket-board', 'chapter-3-start', (s) => s.nikaComplete],
+  ['market', 'chapter-3-start', (s) => s.ticketBoardComplete],
+  ['market-scanner', 'chapter-3-start', (s) => s.edaComplete],
+  ['cut-interface', 'chapter-3-dusk', (s) => s.marketCrossed],
+  ['hotel', 'chapter-3-dusk', (s) => s.cutInterfaceComplete],
+  ['hotel-lobby', 'chapter-3-dusk', (s) => s.hotelEntered],
+  ['hotel-room', 'chapter-3-dusk', (s) => s.hotelCheckInComplete],
+  // The night begins when Butch wakes: a resume skips the dark room and
+  // opens on the square, where the fire is.
+  ['night-fire', 'chapter-3-dusk', (s) => s.slept],
+  ['wire', 'chapter-3-dusk', (s) => s.nightFireObserved],
+  ['morning', 'chapter-3-dusk', (s) => s.nightMessageComplete],
+  ['platform-walk', 'chapter-3-dusk', (s) => s.sunriseViewed],
+  ['station', 'chapter-3-dusk', (s) => s.stationReached],
+].map(([stage, checkpointId, begun]) => Object.freeze({ stage, checkpointId, begun })));
+
+/** The resume point for a model snapshot: { checkpointId, stage } or null. */
+export function chapter3ResumePoint(state) {
+  if (!state || state.chapterComplete) return null;
+  let found = null;
+  for (const entry of CHAPTER3_RESUME_STAGES) {
+    if (!entry.begun(state)) break;
+    found = entry;
+  }
+  return found ? { checkpointId: found.checkpointId, stage: found.stage } : null;
+}
+
+/** The start a saved resume point opens (validated), or null. */
+export function chapter3ResumeStart(checkpointId, data) {
+  const entry = CHAPTER3_RESUME_STAGES.find(({ stage }) => stage === data?.stage);
+  return entry && entry.checkpointId === checkpointId ? entry.stage : null;
+}
 
 export function createChapter3OpeningModel(options = {}) {
   let state = initialState();
@@ -624,6 +692,8 @@ export function createChapter3OpeningModel(options = {}) {
   };
 
   START_SCRIPT[options.startAt]?.(api);
-  if (options.startAt && START_SCRIPT[options.startAt]) state.lastEvent = `${options.startAt}-qa-started`;
+  if (options.startAt && START_SCRIPT[options.startAt]) {
+    state.lastEvent = options.resumed ? `${options.startAt}-resumed` : `${options.startAt}-qa-started`;
+  }
   return Object.freeze(api);
 }
