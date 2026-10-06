@@ -78,7 +78,9 @@ export const PLAYER = {
   bulletSpeed: 780,
   bulletDamage: 2,
   hitInvuln: 1.6,       // seconds of invulnerability after losing a life
-  hitRadius: 10,
+  // The hurtbox is the ticket's punched hole, not its whole card (alpha
+  // round 4: a first try ended in 16 s); a graze on the paper is a miss.
+  hitRadius: 8,
 };
 
 // Difficulty (alpha round 4: the Black Ticket had no STORY setting and was
@@ -94,7 +96,7 @@ export const BT_DIFFICULTIES = Object.freeze({
   }),
   story: Object.freeze({
     id: 'story', label: 'STORY', lives: 6, bulletScale: 0.7, recoveryScale: 1.45,
-    hitInvuln: 2.4, hitRadius: 7, damageScale: 1.35, ambientScale: 1.7,
+    hitInvuln: 2.4, hitRadius: 6, damageScale: 1.35, ambientScale: 1.7,
   }),
 });
 export const STORY_OFFER_AFTER_FAILURES = 1;

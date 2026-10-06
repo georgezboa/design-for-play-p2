@@ -8,6 +8,10 @@
 .nf-finale .nf-title-card, .nf-finale .nf-announce { position: absolute; }
 .nf-board .nf-board__title.nf-board__title--serif { font: 700 calc(46px * var(--nightfall-text-scale, 1)) / 1.1 var(--nf-serif); letter-spacing: 0; text-transform: none; }
 /* The framing line and the key note on the start board (alpha round 4). */
-.nf-board .nf-board__intro--framing { margin-top: -10px; font-size: calc(16px * var(--nightfall-text-scale, 1)); font-style: italic; color: #c9b896; }
-.nf-board .nf-board__controls--note { margin-top: 6px; color: #c9ae7c; }
+.nf-board .nf-board__intro--framing { margin-top: -12px; margin-bottom: 16px; font-size: calc(16px * var(--nightfall-text-scale, 1)); font-style: italic; color: #c9b896; }
+.nf-board .nf-board__controls--note { margin-top: 4px; font-size: calc(10.5px * var(--nightfall-text-scale, 1)); color: #a8987c; }
+/* The board fits a 720 px window (the settings sit in one row). */
+#menu .nf-board { padding-top: 28px; padding-bottom: 24px; }
+#menu .nf-board__title { margin-top: 8px; }
+#menu .nf-board__intro { margin-bottom: 14px; }
 .nf-finale .nf-bell { top: 80px; }
