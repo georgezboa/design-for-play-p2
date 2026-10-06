@@ -1024,67 +1024,199 @@ export function drawButchBack(c, x, y, s, { lampSide = 1, light = 1, turn = 0 } 
 // the Mara ahead: always the rose scarf, always turned away. Her face is never drawn.
 
 export const ROSE = '#c46a7a';
+const ROSE_SHADE = '#a2526a';
+const ROSE_DEEP = '#6e2c3a';
+const MARA_HAIR = '#1a1214';
+const MARA_COAT = ['#34313f', '#1b1a22'];
 
-/** Walking away from us (the title's door view), feet at (x, ground), `h` tall. */
-export function drawMaraWalking(c, x, ground, h, { phase = 0, light = 1 } = {}) {
+/**
+ * Her head from behind, in her units (the crown at about y -74, the nape at
+ * -58): dark hair drawn back into a low bun, the lamp's rim on `lampSide`.
+ * No face, no ear: only hair. `turn` (-1..1) turns the head toward a side,
+ * which from behind moves the bun the other way.
+ */
+function maraHeadBack(c, s, { cx = 0, cy = -66, rx = 6.4, ry = 7.6, turn = 0, lampSide = -1, light = 1, detail = true } = {}) {
+  const u = (px) => px / s;
+  // the nape, a sliver of skin between the bun and the scarf, in shadow
+  c.fillStyle = '#4a3229';
+  c.beginPath(); c.moveTo(cx - 2.8, cy + ry - 2.5); c.lineTo(cx + 2.8, cy + ry - 2.5); c.lineTo(cx + 3.4, cy + ry + 4); c.lineTo(cx - 3.4, cy + ry + 4); c.closePath(); c.fill();
+  const head = new Path2D();
+  head.ellipse(cx, cy, rx, ry, 0, 0, TAU);
+  c.fillStyle = MARA_HAIR;
+  c.fill(head);
+  // the hair's lamp-lit edge and a soft sheen across the crown
+  lampLit(c, head, cx + lampSide * rx * 1.5, cy - ry * 0.3, rx * 1.6, 0.22 * light, '255, 178, 120');
+  const bx = cx - turn * rx * 0.24;
+  const by = cy + ry * 0.7;
+  if (detail) {
+    // strands combed back toward the bun
+    [-0.62, -0.3, 0, 0.3, 0.62].forEach((f, i) => ink(c, [[cx + f * rx * 0.9, cy - ry * 0.9], [cx + f * rx * 0.75, cy - ry * 0.1], [bx + f * rx * 0.35, by - 2.2]], {
+      w: u(0.9), alpha: 0.42, bleed: false, jitter: 0.04, color: i % 2 ? '#3a2a28' : '#2c2022', seed: 6740 + i,
+    }));
+  }
+  // the bun: low on the back of the head
+  // the bun: low on the back of the head, a shade lighter than the hair so it reads
+  const brx = rx * 0.7;
+  const bry = ry * 0.4;
+  const bun = new Path2D();
+  bun.ellipse(bx, by, brx, bry, 0, 0, TAU);
+  c.fillStyle = '#21171a';
+  c.fill(bun);
+  lampLit(c, bun, bx + lampSide * rx, by - 1, rx * 1.4, 0.26 * light, '255, 178, 120');
+  const arc = (ox, oy, ax, ay, a0, a1, n = 8) => Array.from({ length: n + 1 }, (_, i) => {
+    const a = a0 + ((a1 - a0) * i) / n;
+    return [ox + Math.cos(a) * ax, oy + Math.sin(a) * ay];
+  });
+  if (detail) {
+    ink(c, arc(bx, by + bry * 0.1, brx * 0.7, bry * 0.55, Math.PI + 0.3, TAU - 0.3, 6), { w: u(0.9), alpha: 0.55, bleed: false, jitter: 0.02, color: '#4a3632', seed: 6750 });
+    ink(c, arc(bx, by - bry * 0.1, brx, bry, Math.PI + 0.25, TAU - 0.25, 8), { w: u(1), alpha: 0.5 * light, bleed: false, jitter: 0.02, color: '#c89070', seed: 6751 });
+  }
+  // the lamp's rim along the near side of the head, and the ink round the far side
+  const near = lampSide < 0 ? [Math.PI * 0.62, Math.PI * 1.32] : [-Math.PI * 0.32, Math.PI * 0.38];
+  ink(c, arc(cx, cy, rx, ry, near[0], near[1], 10), { w: u(1.4), alpha: 0.6 * light, bleed: true, jitter: 0.03, color: '#ffc9a0', seed: 6752 });
+  const far = lampSide < 0 ? [-Math.PI * 0.42, Math.PI * 0.3] : [Math.PI * 0.7, Math.PI * 1.42];
+  ink(c, arc(cx, cy, rx, ry, far[0], far[1], 10), { w: u(1.1), alpha: 0.55, bleed: false, jitter: 0.03, color: '#06080c', seed: 6753 });
+}
+
+/**
+ * The rose scarf round her neck and on her shoulders, its tail down her back
+ * on `tailSide`. `flutter` -1..1 lifts the tail (walking, wind).
+ */
+function maraScarf(c, s, { neckY = -57, shoulder = 13, tailSide = -1, tailLen = 26, flutter = 0, lampSide = -1, light = 1, detail = true } = {}) {
+  const u = (px) => px / s;
+  const ts = tailSide;
+  // the drape over the shoulders and the wrap round the neck, one cloth
+  const drape = new Path2D();
+  drape.moveTo(-7.4, neckY - 1.6);
+  drape.quadraticCurveTo(0, neckY + 0.6, 7.4, neckY - 1.6);
+  drape.quadraticCurveTo(shoulder * 0.8, neckY + 2.4, shoulder, neckY + 6.4);
+  drape.quadraticCurveTo(shoulder * 0.5, neckY + 9.6, 0, neckY + 10.4);
+  drape.quadraticCurveTo(-shoulder * 0.5, neckY + 9.6, -shoulder, neckY + 6.4);
+  drape.quadraticCurveTo(-shoulder * 0.8, neckY + 2.4, -7.4, neckY - 1.6);
+  drape.closePath();
+  // the tail, from the knot at the back of the neck down the shoulder blade
+  const tx = ts * 3.6;
+  const ty = neckY + 4;
+  const end = [tx + ts * (3.4 + flutter * 6), ty + tailLen - Math.abs(flutter) * 7];
+  const tail = new Path2D();
+  tail.moveTo(tx - 2.6, ty);
+  tail.quadraticCurveTo(tx + ts * 1.2 - 3 + flutter * 2, ty + tailLen * 0.5, end[0] - 2.8, end[1]);
+  tail.lineTo(end[0] + 2.8, end[1] + 0.8);
+  tail.quadraticCurveTo(tx + ts * 1.8 + 3 + flutter * 3, ty + tailLen * 0.5, tx + 2.8, ty);
+  tail.closePath();
+  c.fillStyle = ROSE_SHADE;
+  c.fill(tail);
+  lampLit(c, tail, lampSide * 14, ty + 8, 22, 0.4 * light, '255, 196, 150');
+  c.fillStyle = ROSE;
+  c.fill(drape);
+  lampLit(c, drape, lampSide * 16, neckY + 2, 26, 0.55 * light, '255, 196, 150');
+  // the wrap round the neck: a thicker roll of cloth over the drape, shaded underneath
+  const roll = new Path2D();
+  roll.moveTo(-6.8, neckY - 2.2);
+  roll.quadraticCurveTo(0, neckY - 0.4, 6.8, neckY - 2.2);
+  roll.quadraticCurveTo(8.6, neckY + 0.6, 8, neckY + 3.2);
+  roll.quadraticCurveTo(0, neckY + 5.6, -8, neckY + 3.2);
+  roll.quadraticCurveTo(-8.6, neckY + 0.6, -6.8, neckY - 2.2);
+  roll.closePath();
+  c.fillStyle = '#cf7686';
+  c.fill(roll);
+  lampLit(c, roll, lampSide * 12, neckY, 18, 0.45 * light, '255, 200, 160');
+  ink(c, [[-8, neckY + 3.2], [-4, neckY + 4.9], [0, neckY + 5.4], [4, neckY + 4.9], [8, neckY + 3.2]], { w: u(1.2), alpha: 0.6, bleed: false, jitter: 0.03, color: ROSE_DEEP, seed: 6764 });
+  // where the tail comes out from under the wrap
+  c.fillStyle = 'rgba(80, 24, 40, 0.35)';
+  c.beginPath(); c.ellipse(tx, ty + 0.8, 2.6, 1.1, 0, 0, TAU); c.fill();
+  if (detail) {
+    // the wrap's folds, and a fringe at the tail's end
+    ink(c, [[-shoulder * 0.8, neckY + 5.8], [-shoulder * 0.3, neckY + 7.8], [shoulder * 0.3, neckY + 7.8], [shoulder * 0.8, neckY + 5.8]], { w: u(0.9), alpha: 0.4, bleed: false, jitter: 0.05, color: ROSE_DEEP, seed: 6761 });
+    ink(c, [[tx, ty + 2], [tx + ts * 1.4 + flutter * 2, ty + tailLen * 0.55], [end[0], end[1] - 1]], { w: u(0.9), alpha: 0.45, bleed: false, jitter: 0.05, color: ROSE_DEEP, seed: 6762 });
+    for (let i = -2; i <= 2; i += 1) {
+      const fx = end[0] + i * 1.2;
+      ink(c, [[fx, end[1] + 0.4], [fx + flutter * 0.8, end[1] + 2.6]], { w: u(0.8), alpha: 0.7, bleed: false, jitter: 0.02, color: ROSE_SHADE, seed: 6770 + i });
+    }
+  }
+  ink(c, lampSide < 0
+    ? [[-7.4, neckY - 1.6], [-shoulder * 0.8, neckY + 2.4], [-shoulder, neckY + 6.4]]
+    : [[7.4, neckY - 1.6], [shoulder * 0.8, neckY + 2.4], [shoulder, neckY + 6.4]], { w: u(1.4), alpha: 0.6 * light, bleed: true, jitter: 0.06, color: '#ffd2b0', seed: 6763 });
+}
+
+/**
+ * Walking away from us (the title's door view), feet at (x, ground), `h`
+ * tall: dark hair in a low bun, the rose scarf at her neck, a slate coat.
+ * `turn` -1..1 turns her head a little to one side, still from behind.
+ */
+export function drawMaraWalking(c, x, ground, h, { phase = 0, light = 1, lampSide = 1, turn = 0, flutter = null } = {}) {
   const s = h / 66;
   const step = Math.sin(phase) * 2.2;
+  const detail = h * 1 > 90;
   c.save();
   c.translate(x, ground);
   c.scale(s, s);
-  c.fillStyle = '#17110f';
-  c.beginPath(); c.moveTo(-3.5, -22); c.lineTo(-5.5 - step * 0.4, 0); c.lineTo(-2.5 - step * 0.4, 0); c.lineTo(-0.5, -20); c.closePath(); c.fill();
+  c.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  c.beginPath(); c.ellipse(0, 0, 9, 1.6, 0, 0, TAU); c.fill();
+  // legs and boots under the coat
+  c.fillStyle = '#121014';
+  c.beginPath(); c.moveTo(-3.5, -22); c.lineTo(-5.2 - step * 0.4, -0.4); c.lineTo(-2.2 - step * 0.4, -0.4); c.lineTo(-0.5, -20); c.closePath(); c.fill();
   c.beginPath(); c.moveTo(0.6, -21); c.lineTo(4.6 + step * 0.4, -2 + Math.abs(step) * 0.3); c.lineTo(7 + step * 0.4, -2.6); c.lineTo(3.2, -22); c.closePath(); c.fill();
-  c.fillStyle = '#1f1716';
-  c.beginPath(); c.moveTo(-7, -46); c.quadraticCurveTo(0, -50, 7, -46); c.lineTo(9.5, -19); c.quadraticCurveTo(0, -16, -9.5, -19); c.closePath(); c.fill();
-  c.fillStyle = ROSE;
-  c.beginPath(); c.ellipse(0, -55, 5.4, 6.4, 0, 0, TAU); c.fill();
-  c.beginPath(); c.moveTo(-6, -52); c.quadraticCurveTo(-9, -44, -5.5, -36); c.lineTo(-1.5, -37); c.quadraticCurveTo(-3, -45, -1, -50); c.closePath(); c.fill();
-  c.fillStyle = `rgba(255, 220, 190, ${0.35 * light})`;
-  c.beginPath(); c.ellipse(1.8, -58, 2, 2.8, 0.4, 0, TAU); c.fill();
-  c.fillStyle = '#b05a6a';
-  c.beginPath(); c.moveTo(-6.5, -50); c.quadraticCurveTo(0, -47, 6.5, -50); c.lineTo(6, -47.5); c.quadraticCurveTo(0, -45, -6, -47.5); c.closePath(); c.fill();
-  c.strokeStyle = `rgba(255, 210, 150, ${0.55 * light})`;
-  c.lineWidth = 1;
-  c.beginPath(); c.moveTo(7, -46); c.lineTo(9.5, -19); c.stroke();
+  // the coat, belted, to below the knee
+  const coat = new Path2D();
+  coat.moveTo(-6.4, -47); coat.quadraticCurveTo(0, -49.5, 6.4, -47);
+  coat.quadraticCurveTo(7.6, -40, 7.2, -32); coat.lineTo(9.6, -16.5);
+  coat.quadraticCurveTo(0, -14.2, -9.6, -16.5); coat.lineTo(-7.2, -32);
+  coat.quadraticCurveTo(-7.6, -40, -6.4, -47); coat.closePath();
+  c.fillStyle = vgrad(c, -48, -14, [[0, MARA_COAT[0]], [1, MARA_COAT[1]]]);
+  c.fill(coat);
+  lampLit(c, coat, lampSide * 12, -34, 20, 0.32 * light);
+  c.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  c.fillRect(-7.2, -33, 14.4, 1.6);
+  c.fillRect(-0.4, -46, 0.8, 30);
+  ink(c, [[-6.4, -47], [-7.4, -38], [-7.2, -32], [-9.6, -16.5], [9.6, -16.5], [7.2, -32], [7.4, -38], [6.4, -47]], { w: 1.2 / s, alpha: 0.5, bleed: false, jitter: 0.1, color: '#06080c', seed: 6780 });
+  ink(c, lampSide > 0 ? [[6.4, -47], [7.4, -38], [7.2, -32], [9.6, -16.5]] : [[-6.4, -47], [-7.4, -38], [-7.2, -32], [-9.6, -16.5]], { w: 1.3 / s, alpha: 0.55 * light, bleed: false, jitter: 0.06, color: '#ffd2a0', seed: 6781 });
+  const flap = flutter ?? Math.sin(phase * 0.5) * 0.4;
+  maraHeadBack(c, s, { cx: 0, cy: -55.5, rx: 4.6, ry: 5.4, turn, lampSide, light, detail });
+  maraScarf(c, s, { neckY: -49.2, shoulder: 7.6, tailSide: -lampSide, tailLen: 15, flutter: flap, lampSide, light, detail });
   c.restore();
 }
 
 /**
- * Seated, seen from behind, her scarfed head turned toward the window on
- * her `windowSide` (1 right): we see the back of the scarf, never a face.
+ * Seated, seen from behind, her head turned a little toward the window on
+ * her `windowSide` (1 right): dark hair in a low bun, the rose scarf round
+ * her neck and shoulders, a slate coat. Never a face, not even in profile.
  * (x, y) the middle of her seat, s stage units per unit (Butch's scale).
  */
 export function drawMaraSeatedBack(c, x, y, s, { windowSide = 1, light = 1, lampSide = -1 } = {}) {
+  const detail = s > 2.5;
   c.save();
   c.translate(x, y);
   c.scale(s, s);
   const coat = new Path2D();
   coat.moveTo(-19, 0); coat.quadraticCurveTo(-22, -28, -17, -44); coat.quadraticCurveTo(-11, -53, -4, -54);
   coat.lineTo(4, -54); coat.quadraticCurveTo(11, -53, 17, -44); coat.quadraticCurveTo(22, -28, 19, 0); coat.closePath();
-  c.fillStyle = vgrad(c, -54, 0, [[0, '#2a1d1c'], [1, '#160f0f']]);
+  c.fillStyle = vgrad(c, -54, 0, [[0, MARA_COAT[0]], [1, MARA_COAT[1]]]);
   c.fill(coat);
+  c.save(); c.clip(coat);
+  // the centre back seam, the half-belt and its two buttons, a fold of shadow
+  c.fillStyle = 'rgba(0, 0, 0, 0.32)';
+  c.fillRect(-0.5, -52, 1, 54);
+  c.fillStyle = '#26232e';
+  c.fillRect(-9, -21, 18, 3.4);
+  c.fillStyle = 'rgba(0, 0, 0, 0.35)';
+  c.fillRect(-9, -17.6, 18, 0.8);
+  c.fillStyle = '#4a4656';
+  [-6.6, 6.6].forEach((bx) => { c.beginPath(); c.arc(bx, -19.3, 0.9, 0, TAU); c.fill(); });
+  c.fillStyle = 'rgba(0, 0, 0, 0.22)';
+  c.fillRect(-lampSide * 9 - 4, -50, 8, 52);
+  c.restore();
   lampLit(c, coat, 34 * lampSide, -36, 46, 0.36 * light);
   ink(c, [[-19, 0], [-22, -28], [-17, -44], [-11, -53], [-4, -54], [4, -54], [11, -53], [17, -44], [22, -28], [19, 0]], { w: 1.6 / s * 1.6, alpha: 0.5, bleed: false, jitter: 0.2, color: '#06080c', seed: 6710 });
-  // the scarf: over her head and down her back, its tail on one shoulder
-  c.save();
-  c.translate(windowSide * 2.5, 0);
-  const scarf = new Path2D();
-  scarf.ellipse(0, -66, 8.4, 10, windowSide * 0.12, 0, TAU);
-  c.fillStyle = ROSE;
-  c.fill(scarf);
-  const tail = new Path2D();
-  tail.moveTo(-windowSide * 5, -60); tail.quadraticCurveTo(-windowSide * 10, -48, -windowSide * 7, -30);
-  tail.lineTo(-windowSide * 1.5, -32); tail.quadraticCurveTo(-windowSide * 3, -46, -windowSide * 0.5, -57); tail.closePath();
-  c.fill(tail);
-  c.fillStyle = '#a8566a';
-  c.beginPath(); c.moveTo(-8, -58); c.quadraticCurveTo(0, -54.5, 8, -58); c.lineTo(7.6, -55); c.quadraticCurveTo(0, -52, -7.6, -55); c.closePath(); c.fill();
-  // folds in the cloth
-  ink(c, [[-3, -74], [-1, -66], [-3.5, -58]], { w: 1 / s * 1.6, alpha: 0.35, bleed: false, jitter: 0.1, color: '#6e2c3a', seed: 6711 });
-  ink(c, [[3.5, -73], [4.8, -65], [3, -58]], { w: 1 / s * 1.6, alpha: 0.3, bleed: false, jitter: 0.1, color: '#6e2c3a', seed: 6712 });
-  lampLit(c, scarf, 30 * lampSide, -66, 34, 0.55 * light, '255, 196, 150');
-  ink(c, lampSide < 0 ? [[-6, -74], [-8.4, -66], [-6.4, -58]] : [[6, -74], [8.4, -66], [6.4, -58]], { w: 1.8 / s * 1.6, alpha: 0.6 * light, bleed: true, jitter: 0.1, color: '#ffd2b0', seed: 6713 });
-  c.restore();
+  ink(c, lampSide < 0 ? [[-11, -53], [-17, -44], [-22, -28], [-20, -6]] : [[11, -53], [17, -44], [22, -28], [20, -6]], { w: 1.8 / s * 1.6, alpha: 0.6 * light, bleed: true, jitter: 0.12, color: '#ffc988', seed: 6714 });
+  // the coat's collar, standing a little under the scarf
+  const collar = new Path2D();
+  collar.moveTo(-10, -53.4); collar.quadraticCurveTo(0, -56.5, 10, -53.4); collar.lineTo(9, -50.4); collar.quadraticCurveTo(0, -52.6, -9, -50.4); collar.closePath();
+  c.fillStyle = '#2a2833'; c.fill(collar);
+  lampLit(c, collar, 30 * lampSide, -52, 24, 0.3 * light);
+  // her head, turned toward the window, and the scarf over it all
+  maraHeadBack(c, s, { cx: windowSide * 1.2, cy: -65.5, rx: 6.2, ry: 7.4, turn: windowSide, lampSide, light, detail });
+  maraScarf(c, s, { neckY: -56.4, shoulder: 12.5, tailSide: -windowSide, tailLen: 24, lampSide, light, detail });
   c.restore();
 }
 

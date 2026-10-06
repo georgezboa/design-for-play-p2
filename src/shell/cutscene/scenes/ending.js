@@ -430,6 +430,12 @@ function paintGlassBeads(c, w, h) {
   });
   c.fillStyle = 'rgba(255, 214, 150, 0.4)';
   c.beginPath(); c.ellipse(LAMP4.x, 470, 30, 44, 0, 0, TAU); c.fill();
+  // hers, where her turned head meets the glass: only lamplight, a smudge of rose under it
+  c.filter = 'blur(22px)';
+  c.fillStyle = 'rgba(255, 200, 150, 0.3)';
+  c.beginPath(); c.ellipse(MARA4.x + 130, 350, 50, 64, 0, 0, TAU); c.fill();
+  c.fillStyle = 'rgba(196, 106, 122, 0.24)';
+  c.beginPath(); c.ellipse(MARA4.x + 126, 430, 70, 22, 0, 0, TAU); c.fill();
   c.filter = 'none';
   c.restore();
 }
