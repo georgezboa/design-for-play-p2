@@ -42,8 +42,8 @@ import {
 import { DEV_MODE, devParam } from '../../devMode.js';
 import * as bellAudio from '../borrowedLight/audio.js';
 import {
-  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, PANEL_SEAMS, STRANDED_GRACE_S,
-  createBellArena, createDeathLedger, createEchoDebate, difficultyPreset, ghostTrainRevealed, laneOf, orbitLens,
+  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, MACHINE_NAMES, PANEL_SEAMS, STRANDED_GRACE_S,
+  createBellArena, createBellTutorial, createDeathLedger, createEchoDebate, difficultyPreset, ghostTrainRevealed, laneOf, orbitLens,
   paintReturnDamage, punchCase, spreadWorldTags, trainHits, underLens,
 } from './finaleModel.js';
 import { ECHO_EXCHANGES } from './echoExchanges.js';
@@ -103,7 +103,6 @@ const CLAIMS = [
   '1978-0405 · T. OKAFOR', '1978-0409 · VIOLIN CASE', '1978-0411 · I. BRANDT', '1978-0412 · VELEZ, M.',
   '1978-0415 · WINTER COAT', '1978-0418 · P. SANDOR', '1978-0421 · SEED TIN', '1978-0426 · L. QUAY',
 ];
-const MACHINE_LABELS = Object.freeze(Object.fromEntries(BELL_ARENA.nodes.map((node) => [node.machine, node.label])));
 const CONDUCTOR_TEST_MOVEMENTS = Object.freeze({ 'conductor-1': 0, 'conductor-2': 1, 'conductor-3': 2, 'conductor-4': 3 });
 
 function requestedConductorTestMovement() {
@@ -559,7 +558,7 @@ class SpectacleBattle {
     this.paintTutorial = { stage: 'pending' };
     this.paintHold = { active: false, button: -1, elapsed: 0, point: null, target: null, completed: false };
     this.lost = { cases: [], trains: [], lens: { x: 0, z: 3 }, lensTarget: { x: 0, z: 3 }, lensMode: 'orbit', lastPointer: -Infinity, tutorial: 'pending', claimIndex: 0, returned: 0 };
-    this.bell = { arena: null, listening: false, beamFlash: 0, beamLanes: [], telegraphLanes: [], tutorial: 'pending', falls: 0 };
+    this.bell = { arena: null, tutor: createBellTutorial(), held: false, listening: false, beamFlash: 0, beamLanes: [], telegraphLanes: [], falls: 0 };
     this.butchActionState = 'idle';
     this.butchLandTimer = 0;
     this.raycaster = new THREE.Raycaster();
@@ -851,9 +850,12 @@ class SpectacleBattle {
       const x = LANE_X[board.lane];
       const group = new THREE.Group();
       group.position.set(x, 0, board.z);
-      const face = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 2.25), new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide, toneMapped: false }));
+      // Transparent from the start: the board fades while Butch stands
+      // behind it (alpha round 4: he vanished behind KEEP MOVING, right at
+      // the east / west signals).
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 2.25), new THREE.MeshBasicMaterial({ color: 0x333333, side: THREE.DoubleSide, toneMapped: false, transparent: true }));
       face.position.y = 2.2;
-      const frame = flatBox(5.7, 2.5, 0.18, new THREE.MeshStandardMaterial({ color: 0x1a1d1f, roughness: 0.7, metalness: 0.3 }));
+      const frame = flatBox(5.7, 2.5, 0.18, new THREE.MeshStandardMaterial({ color: 0x1a1d1f, roughness: 0.7, metalness: 0.3, transparent: true }));
       frame.position.set(0, 2.2, -0.12);
       const postMaterial = new THREE.MeshStandardMaterial({ color: 0x15181a, roughness: 0.8 });
       const postA = flatBox(0.16, 1.2, 0.16, postMaterial); postA.position.set(-2.2, 0.6, -0.1);
@@ -864,7 +866,7 @@ class SpectacleBattle {
       const ghost = new THREE.Mesh(new THREE.PlaneGeometry(5.4, 2.25), new THREE.MeshBasicMaterial({ color: TEAL, transparent: true, opacity: 0, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
       ghost.position.set(x, 2.2, board.z + 0.02);
       root.add(group, ghost);
-      this.boardMeshes[id] = { group, panel, face, ghost };
+      this.boardMeshes[id] = { group, panel, face, frame, ghost, fade: 1 };
     });
     // Lamp nodes: lamp boxes on poles with paper tags (painted cards).
     this.nodeMeshes = {};
@@ -1273,13 +1275,17 @@ class SpectacleBattle {
 
   // ------------------------------------------------------------ utilities
 
+  // One banner slot under the ticket bar (alpha round 4: a toast and the
+  // hint stacked as two banners): a toast takes the hint's place while it
+  // shows, and the hint comes back when it goes.
   toast(text, hold = 2.2) {
     this.toastEl.textContent = text;
     this.toastEl.classList.remove('show');
     void this.toastEl.offsetWidth;
     this.toastEl.classList.add('show');
+    this.hud.classList.add('has-toast');
     clearTimeout(this.toastTimer);
-    this.toastTimer = setTimeout(() => this.toastEl.classList.remove('show'), hold * 1000);
+    this.toastTimer = setTimeout(() => { this.toastEl.classList.remove('show'); this.hud.classList.remove('has-toast'); }, hold * 1000);
     this.lastToast = text;
   }
 
@@ -1923,17 +1929,20 @@ class SpectacleBattle {
 
   // ======================================================== Movement II
 
-  // Movement II teaches its rule in beats before it combines them (alpha
-  // "rule overload"): an amber lamp and the bridge it lays ('bridge'), a
-  // rose signal and the man it lights ('lamp'), then both before one bell
-  // ('combo'), with the combined hint on screen before any failure.
-  startBellArena() {
+  // Movement II teaches its rule one step per bell (finaleModel.js
+  // createBellTutorial, alpha round 4): the amber lamp and its bridge, the
+  // rose signal in his next lane, then the first punch with the bell
+  // waiting, then both before one bell; the beams come last. Until then the
+  // gap is a railing and the bell runs slower.
+  startBellArena({ keepTutorial = false } = {}) {
     this.bell.arena = createBellArena({ difficulty, seed: 17 + this.player.respawns, beams: false });
-    this.bell.tutorial = 'bridge';
+    if (!keepTutorial) this.bell.tutor = createBellTutorial();
+    if (this.bell.tutor.beams) this.bell.arena.setBeams(true);
     this.bell.strandedFor = 0;
     this.bell.beamFlash = 0;
     this.bell.telegraphLanes = [];
     this.bell.listening = false;
+    this.bell.held = false;
     this.boss.targetX = LANE_X[this.bell.arena.conductorLane];
     bellAudio.setRain?.(0.5);
     this.syncNodeArt(true);
@@ -1943,13 +1952,17 @@ class SpectacleBattle {
     const arena = this.bell.arena;
     if (!arena) return;
     const p = this.player;
+    const tutor = this.bell.tutor;
     if (arena.onFrontPlatform(p.z)) {
       const result = arena.punchConductor(p.x, p.z);
       if (result.result === 'hit') {
         bellAudio.punchClack();
         this.hitBoss(result.damage, 'pain');
-        this.toast('THE BORROWED LIGHT GOES BACK TO HIM');
-        if (this.bell.tutorial === 'punch') { this.bell.tutorial = 'done'; this.hint(''); arena.setBeams(true); this.toast('HE FIRES ON THE OFF-BEAT · A LIT BILLBOARD SHELTERS ITS LANE', 3.6); }
+        const before = tutor.stage;
+        const after = tutor.hit();
+        if (after === 'done' && before !== 'done') { arena.setBeams(true); this.toast('HE FIRES BACK NOW · ON THE OFF-BEAT · A LIT BILLBOARD SHELTERS ITS LANE', 3.6); }
+        else if (after === 'combo' && before !== 'combo') this.toast('THE BORROWED LIGHT GOES BACK TO HIM · NOW THE BELL WILL NOT WAIT', 3);
+        else this.toast('THE BORROWED LIGHT GOES BACK TO HIM');
       } else if (result.result === 'wrong-lane') { bellAudio.refused(); this.toast(`STAND IN THE LIT LANE · ${result.lane.toUpperCase()}`); }
       else if (result.result === 'not-lit') { bellAudio.refused(); this.toast('HE IS NOT LIT · LIGHT HIS LANE ON THE BELL'); }
       else this.jump();
@@ -1958,8 +1971,11 @@ class SpectacleBattle {
     const node = arena.nearestNode(p.x, p.z);
     if (!node) { this.jump(); return; }
     const result = arena.punch(node.id);
-    if (result.result === 'queued') { bellAudio.punchClack(); this.toast(`${node.label} · QUEUED FOR THE BELL`); }
-    else if (result.result === 'replaced') { bellAudio.punchClack(); bellAudio.fizzle(); this.toast('ONE LINE, ONE BORROWED MOMENT · THE FIRST PUNCH SEALS'); }
+    // While learning, the hint already says what a punch did: no second
+    // banner on top of it.
+    const learning = !tutor.done;
+    if (result.result === 'queued' || result.result === 'caught' || result.result === 'renew') { bellAudio.punchClack(); if (!learning) this.toast(`${node.label} · QUEUED FOR THE BELL`); }
+    else if (result.result === 'replaced') { bellAudio.punchClack(); bellAudio.fizzle(); if (!learning) this.toast(`ONE LINE, ONE BORROWED MOMENT · ${node.label} TAKES ITS PLACE`); }
     else if (result.result === 'already') { bellAudio.refused(); this.toast(`${node.label} · ALREADY PUNCHED · IT GOES ON THE BELL`); }
     else if (result.result === 'busy') {
       bellAudio.refused();
@@ -1968,10 +1984,10 @@ class SpectacleBattle {
         : `THE ${result.line.toUpperCase()} LINE IS STILL BURNING · WAIT FOR IT TO GO OUT`);
     }
     else if (result.result === 'cut') { bellAudio.cutLine(); this.toast(`${node.label} · CUT`); }
+    if (['queued', 'replaced', 'caught', 'renew'].includes(result.result)) tutor.queued({ line: node.line, lane: node.lane, nextLane: arena.plan.lane });
+    // A lamp caught just after a bell fires at once: its events are the bell's.
+    if (Array.isArray(result.events)) this.handleBellEvents(result.events);
     this.syncNodeArt();
-    const queued = ['queued', 'replaced'].includes(result.result);
-    if (this.bell.tutorial === 'bridge' && node.line === 'amber' && queued) this.bell.tutorial = 'bridge-wait';
-    if (this.bell.tutorial === 'lamp' && node.line === 'rose' && queued) this.bell.tutorial = 'lamp-wait';
   }
 
   syncNodeArt(force = false) {
@@ -1988,37 +2004,37 @@ class SpectacleBattle {
     });
   }
 
-  updateBellArena(dt) {
+  // What the bell, the machines and the Conductor did this step.
+  handleBellEvents(events) {
     const arena = this.bell.arena;
-    if (!arena) return;
-    const events = arena.update(dt * 1000);
+    const tutor = this.bell.tutor;
+    let rang = false;
+    let exposedNow = false;
     for (const event of events) {
-      if (event.type === 'bell') { bellAudio.bell(); this.bellMeter.ring(); this.trauma = Math.max(this.trauma, 0.08); }
+      if (event.type === 'bell') { rang = true; bellAudio.bell(); this.bellMeter.ring(); this.trauma = Math.max(this.trauma, 0.08); }
       else if (event.type === 'power') {
         const kind = event.machineId.startsWith('bridge') ? 'bridge' : event.machineId.startsWith('board') ? 'billboard' : 'sign';
         bellAudio.machineOn(kind);
-        if (kind === 'bridge' && ['bridge', 'bridge-wait'].includes(this.bell.tutorial)) {
-          this.bell.tutorial = 'lamp';
-          this.toast('THE BRIDGE CROSSES ON THE BELL · IT STAYS OUT FOR ABOUT A BELL, THEN FOLDS', 3.2);
-        }
+        if (kind === 'bridge') tutor.bridgeOut();
       } else if (event.type === 'off') bellAudio.machineOff(event.machineId.startsWith('bridge') ? 'bridge' : 'billboard');
       else if (event.type === 'flicker') bellAudio.flickerTick();
       else if (event.type === 'conductor-step') { this.boss.targetX = LANE_X[event.to]; }
       else if (event.type === 'exposed') {
+        exposedNow = true;
         this.boss.exposed = D().lampMs / 1000;
         this.boss.reaction = 'pain'; this.boss.gestureTime = 0.8;
-        const bridgeOut = arena.anyBridgeOut();
-        if (this.bell.tutorial !== 'done' && !bridgeOut) {
-          // The lamp beat taught: he is lit, but the gap is open.
-          this.bell.tutorial = 'combo';
-          this.toast('HE IS LIT · BUT NO BRIDGE IS OUT · NEXT TIME, BOTH BEFORE THE SAME BELL', 3.4);
-        } else {
-          if (this.bell.tutorial !== 'done') this.bell.tutorial = 'punch';
-          this.toast(`HE IS LIT · ${event.lane.toUpperCase()} LANE · CROSS AND PUNCH`, 2.4);
+        const help = tutor.exposed({ bridgeOut: arena.anyBridgeOut() });
+        if (help.plank) {
+          // The first time he is lit, the line lays a plank so the punch can
+          // be learned on its own (the bell waits meanwhile).
+          arena.extendReturnBridge(arena.nearestBridge(this.player.x));
+          bellAudio.machineOn('bridge');
         }
+        if (help.missingBridge) this.toast('HE IS LIT · BUT NO BRIDGE IS OUT · BOTH BEFORE THE SAME BELL', 3.4);
+        else if (tutor.done) this.toast(`HE IS LIT · ${event.lane.toUpperCase()} LANE · CROSS AND PUNCH`, 2.4);
       } else if (event.type === 'exposure-end') {
         this.boss.exposed = 0;
-        if (this.bell.tutorial === 'punch') this.bell.tutorial = 'combo';
+        tutor.exposureEnd();
       }
       else if (event.type === 'beam-telegraph') { this.bell.telegraphLanes = event.lanes; if (event.fullSweep) this.toast('FULL SWEEP ON THE OFF-BEAT · FIND SHELTER', 2.2); }
       else if (event.type === 'beam-fire') {
@@ -2031,7 +2047,18 @@ class SpectacleBattle {
         else if (verdict === 'sheltered') this.toast('THE BILLBOARD HOLDS');
       }
     }
+    if (rang) tutor.bell({ exposed: exposedNow });
     if (events.length) this.syncNodeArt();
+  }
+
+  updateBellArena(dt) {
+    const arena = this.bell.arena;
+    if (!arena) return;
+    const tutor = this.bell.tutor;
+    const p = this.player;
+    const waiting = arena.exposure && !arena.exposure.punched;
+    this.bell.held = tutor.holding({ lit: Boolean(waiting), dt });
+    this.handleBellEvents(arena.update(dt * 1000 * tutor.timeScale(), { hold: this.bell.held }));
 
     // Machines follow their levels.
     const planks = new Set(arena.returnPlanks());
@@ -2056,6 +2083,14 @@ class SpectacleBattle {
       const lit = status.level > 0.6 && !(status.flicker && Math.sin(this.elapsed * 40) > 0);
       const map = lit ? this.billboardArt?.lit : this.billboardArt?.dark;
       if (map && mesh.face.material.map !== map) { mesh.face.material.map = map; mesh.face.material.needsUpdate = true; }
+      // Butch behind the board (from the camera): it turns to glass.
+      const board = BELL_ARENA.boards[id];
+      const behind = p.z < board.z + 0.2 && p.z > board.z - 5.5 && Math.abs(p.x - LANE_X[board.lane]) < 3.4 && mesh.panel.position.y > -1.2;
+      mesh.fade += ((behind ? 0.28 : 1) - mesh.fade) * Math.min(1, dt * 9);
+      [mesh.face, mesh.frame].forEach((part) => {
+        part.material.opacity = mesh.fade;
+        part.material.depthWrite = mesh.fade > 0.97;
+      });
     });
     Object.entries(BELL_ARENA.lamps).forEach(([id, lane]) => {
       const status = arena.timetable.machineStatus(id);
@@ -2089,18 +2124,19 @@ class SpectacleBattle {
     if (preview) preview.beamLanes.forEach((lane) => { this.laneBeams[lane].material.opacity = Math.max(this.laneBeams[lane].material.opacity, 0.12); });
 
     // Falling into the street gap: one layer, then back on the near roof.
-    const p = this.player;
+    // While learning the gap is a railing (updatePlayer), and a bridge that
+    // folds underfoot only puts Butch back on the near roof.
     if (p.y < 0.2 && arena.fallsAt(p.x, p.z) && p.respawnInv <= 0) {
       this.bell.falls += 1;
       const before = p.respawns;
-      this.takeHit({ force: true, source: 'fall' });
+      if (!tutor.gapIsRailing) this.takeHit({ force: true, source: 'fall' });
       if (p.respawns === before) {
         p.x = THREE.MathUtils.clamp(p.x, -9, 9); p.z = 1.2; p.vy = 0; p.y = 0;
         p.inv = Math.max(p.inv, 1.2);
         this.playerRoot.position.set(p.x, 0, p.z);
         // Only when the fall did not end the movement: the death card owns
         // that moment (the old line overwrote it, alpha A4-5).
-        this.toast('THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE');
+        this.toast(tutor.gapIsRailing ? 'THE BRIDGE FOLDED · BACK ON THE NEAR ROOF' : 'THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE');
       }
       bellAudio.fallWhoosh?.();
     }
@@ -2117,16 +2153,12 @@ class SpectacleBattle {
       }
     } else this.bell.strandedFor = 0;
 
-    // Onboarding hints, in the fiction, one rule at a time.
-    const tut = this.bell.tutorial;
-    const lane = arena.plan.lane.toUpperCase();
-    const combo = `BOTH BEFORE ONE BELL · THE <kbd>ROSE</kbd> SIGNAL IN HIS NEXT LANE (${lane}) + AN <kbd>AMBER</kbd> BRIDGE`;
-    if (tut === 'bridge') this.hint('PUNCH AN <kbd>AMBER</kbd> LAMP · ITS CABLE RUNS TO A BRIDGE, WHICH CROSSES THE GAP ON THE BELL');
-    else if (tut === 'bridge-wait') this.hint('QUEUED · THE BRIDGE CROSSES ON THE NEXT BELL · HOLD <kbd>Q</kbd> TO LISTEN');
-    else if (tut === 'lamp') this.hint(`NOW A <kbd>ROSE</kbd> SIGNAL · HE STEPS ${lane} ON THE NEXT BELL · PUNCH THE SIGNAL IN THAT LANE TO LIGHT HIM`);
-    else if (tut === 'lamp-wait') this.hint('QUEUED · HE LIGHTS UP ON THE BELL IF HE STEPS INTO THAT LANE');
-    else if (tut === 'combo') this.hint(combo);
-    else if (tut === 'punch') this.hint(lit ? '<kbd>SPACE</kbd> · CROSS THE BRIDGE, STEP INTO HIS LANE AND PUNCH HIM WHILE HE IS LIT' : combo);
+    // One hint, one action (createBellTutorial.hint).
+    const exposure = arena.exposure;
+    const litLane = exposure && !exposure.punched ? exposure.lane : null;
+    this.hint(tutor.hint({
+      lane: arena.plan.lane, litLane, bridgeOut: arena.anyBridgeOut(), onFront: arena.onFrontPlatform(p.z), inLitLane: Boolean(litLane) && laneOf(p.x) === litLane,
+    }));
   }
 
   // ======================================================== Movement III
@@ -3011,10 +3043,8 @@ class SpectacleBattle {
     if (this.phase === 0) { this.clearLostProperty(); this.lost.tutorial = 'done'; this.boss.attackClock = p.respawnInv + 0.4; }
     if (this.phase === 1) {
       // A new arena, but what was learned stays learned.
-      const tutorial = this.bell.tutorial;
-      this.startBellArena();
-      this.bell.tutorial = tutorial === 'done' ? 'done' : ['combo', 'punch'].includes(tutorial) ? 'combo' : tutorial.startsWith('lamp') ? 'lamp' : 'bridge';
-      if (tutorial === 'done') this.bell.arena.setBeams(true);
+      this.bell.tutor.afterDeath();
+      this.startBellArena({ keepTutorial: true });
     }
     if (this.phase === 2) { this.echo.stage = 'combat'; this.echo.clock = 5; this.showFrontEdge(false); if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint(''); }
     this.hitStop = 0.1;
@@ -3051,7 +3081,7 @@ class SpectacleBattle {
         setDifficulty('story');
         this.player.maxHp = D().layers;
         this.player.hp = this.player.maxHp;
-        if (this.phase === 1) { this.startBellArena(); this.bell.tutorial = 'done'; this.bell.arena.setBeams(true); }
+        if (this.phase === 1) { this.bell.tutor.skip(); this.startBellArena({ keepTutorial: true }); }
         this.toast('STORY · THE LINE SLOWS DOWN');
       }
     };
@@ -3107,9 +3137,10 @@ class SpectacleBattle {
     const intendedZ = THREE.MathUtils.clamp(p.z + (dz / length) * speed * dt, ARENA.minZ, ARENA.maxZ);
     const resolved = this.resolvePaintWallMovement(p.x, p.z, intendedX, intendedZ);
     // While the post-death grace holds (a fall cannot tear a layer then),
-    // the street gap is a wall: nobody walks across thin air (alpha A4-6).
+    // and while Movement II is still being taught (alpha round 4), the street
+    // gap is a railing: nobody walks across thin air (alpha A4-6).
     const arena = this.phase === 1 ? this.bell.arena : null;
-    if (arena && p.respawnInv > 0 && arena.fallsAt(resolved.x, resolved.z) && !arena.fallsAt(p.x, p.z)) {
+    if (arena && (p.respawnInv > 0 || this.bell.tutor.gapIsRailing) && arena.fallsAt(resolved.x, resolved.z) && !arena.fallsAt(p.x, p.z)) {
       if (!arena.fallsAt(resolved.x, p.z)) resolved.z = p.z;
       else { resolved.x = p.x; resolved.z = p.z; }
     }
@@ -3343,8 +3374,10 @@ class SpectacleBattle {
       });
       const preview = this.bell.listening ? arena.preview() : null;
       const next = arena.plan;
-      const text = preview
-        ? `LISTENING · ${preview.machines.filter((c) => c.to === 'on').map((c) => MACHINE_LABELS[c.machineId]).join(' · ') || 'NOTHING QUEUED'}`
+      const text = this.bell.held
+        ? 'THE BELL WAITS · CROSS AND PUNCH HIM'
+        : preview
+        ? `LISTENING · ${preview.machines.filter((c) => c.to === 'on').map((c) => MACHINE_NAMES[c.machineId]).join(' · ') || 'NOTHING QUEUED'}`
         : `NEXT BELL · HE STEPS ${next.lane.toUpperCase()}${next.beamLanes.length ? ` · BEAMS ${next.beamLanes.map((lane) => lane.toUpperCase()).join('+')}` : ''}`;
       this.bellMeter.update({ phase: arena.bellPhase(), msToBell: arena.msToBell(), lineStates, text, listening: this.bell.listening });
     }
@@ -3614,7 +3647,7 @@ if (DEV_MODE) {
       boss: { hp: game.boss.hp, maxHp: game.boss.maxHp, phaseStartHp: game.boss.phaseStartHp, x: +game.boss.x.toFixed(2), exposed: game.boss.exposed > 0, lastDamageCause: game.boss.lastDamageCause ?? null, lastDamage: game.boss.lastDamage ?? null, form: game.conductorRoot.userData.form, phaseRound: game.boss.phaseRound },
       deaths: [0, 1, 2, 3].map((m) => game.deaths.deaths(m)), storyOffer: Boolean(game.storyOffer),
       lost: { lens: { x: +game.lost.lens.x.toFixed(2), z: +game.lost.lens.z.toFixed(2), mode: game.lost.lensMode }, tutorial: game.lost.tutorial, returned: game.lost.returned, cases: game.lost.cases.map((c) => ({ claim: c.claim, x: +c.x.toFixed(2), z: +c.z.toFixed(2), landed: c.landed, revealed: c.revealed, tutorial: c.tutorial })), trains: game.lost.trains.map((t) => ({ seam: t.seam, ghost: t.ghost, running: t.running, revealed: Boolean(t.revealed), progress: +t.progress.toFixed(2) })) },
-      bell: arena ? { ...arena.snapshot(), tutorial: game.bell.tutorial, listening: game.bell.listening, falls: game.bell.falls, returnPlanks: arena.returnPlanks(), stranded: arena.stranded(game.player.z) } : null,
+      bell: arena ? { ...arena.snapshot(), tutorial: game.bell.tutor.stage, held: game.bell.held, listening: game.bell.listening, falls: game.bell.falls, returnPlanks: arena.returnPlanks(), stranded: arena.stranded(game.player.z) } : null,
       echo: { stage: game.echo.stage, clock: +game.echo.clock.toFixed(2), window: +game.echo.window.toFixed(2), open: game.debate.isOpen, exchange: game.debate.current?.id ?? null, opened: game.debate.opened, history: game.debate.history(), lastOutcome: game.echo.lastOutcome },
       paint: { tutorial: game.paintTutorial?.stage, lastReturn: game.lastPaintReturn ?? null, hold: { active: game.paintHold.active, button: game.paintHold.button, completed: game.paintHold.completed } },
       transition: game.transition ? { kind: game.transition.kind, next: PHASES[game.transition.nextPhase].world, progress: +(game.transition.time / game.transition.duration).toFixed(2) } : null,
@@ -3662,7 +3695,7 @@ if (DEV_MODE) {
   window.triggerFinalBossVerified = () => { if (game.mode !== 'play') return; game.phase = 1; game.setWorld(1); game.puppet?.setForm(1, true); game.startWorldTransition(2); game.render(); };
   window.finishFinalBossTutorial = () => {
     if (game.phase === 0) { game.clearLostProperty(); game.lost.tutorial = 'done'; game.hint(''); game.boss.attackClock = 0.2; }
-    if (game.phase === 1 && game.bell.arena) { game.bell.tutorial = 'done'; game.hint(''); game.bell.arena.setBeams(true); }
+    if (game.phase === 1 && game.bell.arena) { game.bell.tutor.skip(); game.hint(''); game.bell.arena.setBeams(true); }
     if (game.phase === 3) { game.clearHazards(); game.paintTutorial.stage = 'complete'; game.boss.exposed = 0; game.boss.attackClock = 0.3; }
     game.render();
   };

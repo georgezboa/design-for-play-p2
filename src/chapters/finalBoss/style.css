@@ -36,7 +36,9 @@
 }
 .battle-hud .nf-hint.show { transform: translate(-50%, 0); }
 .battle-hud .nf-toast, .battle-hud.has-bell .nf-toast { top: 82px; max-width: min(720px, calc(100vw - 480px)); }
-.battle-hud.has-hint .nf-toast { top: 138px; }
+/* One banner slot (alpha round 4): a toast replaces the hint while it
+   shows; the two never stack. */
+.battle-hud.has-toast .nf-hint.show { opacity: 0; transition-duration: 0.12s; }
 @media (max-width: 1100px) {
   .battle-hud .nf-hint, .battle-hud .nf-toast, .battle-hud.has-bell .nf-toast { max-width: calc(100vw - 280px); }
 }

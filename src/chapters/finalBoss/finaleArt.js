@@ -732,14 +732,20 @@ export function paintBillboardFace(lit) {
 
 // A street lamp on a pole with its paper tag, in one of the three line
 // colours. Round 3: the head is a real lantern, as Chapter 2's lamps are
-// (borrowedLight buildLamp): a brass roof and finial, amber glass in a brass
-// cage, a base cone onto the pole. Unlit it is still amber glass with a dark
-// mantle (never an empty square); queued, the mantle warms; powering, it
-// burns in its line's colour. The coloured band on the pole names the line.
+// (borrowedLight buildLamp): a brass roof and finial, glass in a brass cage,
+// a base cone onto the pole. Round 4 (alpha: all seven lanterns read amber,
+// the line showed only as a 6 px band): the GLASS and the paper TAG take the
+// line's colour. Unlit the glass is a dark tint of it with a dark mantle
+// (never an empty square); queued, it warms to the line's colour; powering,
+// it burns white-hot into it. The band on the pole stays.
 export const LAMP_NODE_GLASS = Object.freeze({
-  idle: ['#8a5a26', '#4a2e16'],
-  queued: ['#e0a24a', '#9a5e24'],
+  amber: Object.freeze({ idle: ['#8a5a26', '#4a2e16'], queued: ['#e0a24a', '#9a5e24'] }),
+  teal: Object.freeze({ idle: ['#2f6f68', '#163935'], queued: ['#8fd8cc', '#3d8a80'] }),
+  rose: Object.freeze({ idle: ['#80434d', '#3f1d24'], queued: ['#eaa3ac', '#9c4f5b'] }),
 });
+// The tag's paper, tinted by its line, and the queued mantle's glow.
+export const LAMP_NODE_TAG = Object.freeze({ amber: '#f2dcae', teal: '#d2ebe5', rose: '#f3d4d8' });
+const LAMP_NODE_MANTLE = Object.freeze({ amber: '255, 226, 160', teal: '200, 245, 236', rose: '255, 214, 220' });
 
 export function paintLampNode({ line = 'rose', state = 'idle' } = {}) {
   const colors = { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' };
@@ -761,12 +767,15 @@ export function paintLampNode({ line = 'rose', state = 'idle' } = {}) {
   c.fillRect(17, 35, 6, 2.6);
   if (on) inkGlow(c, 20, 19, 70, color, 0.6);
   // glass: amber, lit from inside by the mantle
-  const [top, bottom] = on ? ['#fff1c8', color] : LAMP_NODE_GLASS[state === 'queued' ? 'queued' : 'idle'];
+  const glass = LAMP_NODE_GLASS[line] ?? LAMP_NODE_GLASS.amber;
+  const mantle = LAMP_NODE_MANTLE[line] ?? LAMP_NODE_MANTLE.amber;
+  const [top, bottom] = on ? ['#fff1c8', color] : glass[state === 'queued' ? 'queued' : 'idle'];
   c.fillStyle = vgrad(c, 11, 27, [[0, top], [1, bottom]]);
   c.fillRect(10.5, 11, 19, 16);
-  c.fillStyle = on ? 'rgba(255, 250, 230, 0.95)' : state === 'queued' ? 'rgba(255, 226, 160, 0.85)' : 'rgba(40, 24, 12, 0.85)';
+  c.fillStyle = on ? 'rgba(255, 250, 230, 0.95)' : state === 'queued' ? `rgba(${mantle}, 0.85)` : 'rgba(40, 24, 12, 0.85)';
   c.beginPath(); c.ellipse(20, 19.5, 2.6, 3.6, 0, 0, Math.PI * 2); c.fill();
-  if (state === 'queued') inkGlow(c, 20, 19, 26, 'rgba(255, 200, 120, 0.9)', 0.35);
+  if (state === 'queued') inkGlow(c, 20, 19, 26, `rgba(${mantle}, 0.9)`, 0.4);
+  else if (!on) inkGlow(c, 20, 19, 18, color, 0.16);
   c.fillStyle = 'rgba(255, 240, 210, 0.22)';
   c.fillRect(11.5, 12, 2, 14);
   // the brass cage over the glass
@@ -793,9 +802,15 @@ export function paintLampNode({ line = 'rose', state = 'idle' } = {}) {
     inkGlow(c, 20, 19, 30, 'rgba(255, 244, 214, 0.95)', 0.45);
     c.restore();
   }
-  paperTag(c, 22, 46, { angle: 0.25, scale: 1.25, glint: state === 'idle', punched: state !== 'idle', string: [20, 33], seed: 3 });
+  paperTag(c, 22, 46, { angle: 0.25, scale: 1.25, glint: state === 'idle', punched: state !== 'idle', string: [20, 33], color: LAMP_NODE_TAG[line] ?? PAL.paper, seed: 3 });
+  // the line's colour as a wide stripe across the tag
+  c.save();
+  c.translate(22, 46);
+  c.rotate(0.25);
+  c.scale(1.25, 1.25);
   c.fillStyle = color;
-  c.fillRect(28, 40, 8, 2);
+  c.fillRect(9, -2.2, 16, 4.4);
+  c.restore();
   return canvas;
 }
 

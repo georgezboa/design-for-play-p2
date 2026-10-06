@@ -158,16 +158,25 @@ export const BELL_ARENA = Object.freeze({
   boards: Object.freeze({ 'board-west': Object.freeze({ lane: 'west', z: 2.4 }), 'board-east': Object.freeze({ lane: 'east', z: 2.4 }) }),
   lamps: Object.freeze({ 'lamp-west': 'west', 'lamp-centre': 'centre', 'lamp-east': 'east' }),
   // Punchable lamp boxes on poles, each with a paper tag (arena metres).
+  // `label` names the lamp by its line's colour (alpha round 4: "AMBER
+  // lamp" and "ROSE signal" in the hints matched nothing on screen);
+  // `machine` + MACHINE_NAMES name what it drives.
   nodes: Object.freeze([
-    Object.freeze({ id: 'lamp-west', line: 'rose', machine: 'lamp-west', x: -7, z: 0.4, label: 'SIGNAL · WEST' }),
-    Object.freeze({ id: 'lamp-centre', line: 'rose', machine: 'lamp-centre', x: 0, z: 0.4, label: 'SIGNAL · CENTRE' }),
-    Object.freeze({ id: 'lamp-east', line: 'rose', machine: 'lamp-east', x: 7, z: 0.4, label: 'SIGNAL · EAST' }),
-    Object.freeze({ id: 'bridge-west', line: 'amber', machine: 'bridge-west', x: -3.6, z: 3.1, label: 'BRIDGE · WEST' }),
-    Object.freeze({ id: 'bridge-east', line: 'amber', machine: 'bridge-east', x: 3.6, z: 3.1, label: 'BRIDGE · EAST' }),
-    Object.freeze({ id: 'board-west', line: 'teal', machine: 'board-west', x: -11.2, z: 5.2, label: 'BILLBOARD · WEST' }),
-    Object.freeze({ id: 'board-east', line: 'teal', machine: 'board-east', x: 11.2, z: 5.2, label: 'BILLBOARD · EAST' }),
+    Object.freeze({ id: 'lamp-west', line: 'rose', machine: 'lamp-west', lane: 'west', x: -7, z: 0.4, label: 'ROSE SIGNAL · WEST' }),
+    Object.freeze({ id: 'lamp-centre', line: 'rose', machine: 'lamp-centre', lane: 'centre', x: 0, z: 0.4, label: 'ROSE SIGNAL · CENTRE' }),
+    Object.freeze({ id: 'lamp-east', line: 'rose', machine: 'lamp-east', lane: 'east', x: 7, z: 0.4, label: 'ROSE SIGNAL · EAST' }),
+    Object.freeze({ id: 'bridge-west', line: 'amber', machine: 'bridge-west', lane: 'west', x: -3.6, z: 3.1, label: 'AMBER LAMP · BRIDGE WEST' }),
+    Object.freeze({ id: 'bridge-east', line: 'amber', machine: 'bridge-east', lane: 'east', x: 3.6, z: 3.1, label: 'AMBER LAMP · BRIDGE EAST' }),
+    Object.freeze({ id: 'board-west', line: 'teal', machine: 'board-west', lane: 'west', x: -11.2, z: 5.2, label: 'TEAL LAMP · BILLBOARD WEST' }),
+    Object.freeze({ id: 'board-east', line: 'teal', machine: 'board-east', lane: 'east', x: 11.2, z: 5.2, label: 'TEAL LAMP · BILLBOARD EAST' }),
   ]),
   nodeReach: 2.3,
+});
+
+// What each machine is, for the LISTEN read-out ("LISTENING · BRIDGE WEST").
+export const MACHINE_NAMES = Object.freeze({
+  'bridge-west': 'BRIDGE WEST', 'bridge-east': 'BRIDGE EAST', 'board-west': 'BILLBOARD WEST', 'board-east': 'BILLBOARD EAST',
+  'lamp-west': 'SIGNAL WEST', 'lamp-centre': 'SIGNAL CENTRE', 'lamp-east': 'SIGNAL EAST',
 });
 
 export function laneOf(x) {
@@ -254,8 +263,16 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     if (beam) events.push({ type: 'beam-telegraph', lanes: [...beam.lanes], fullSweep: beam.fullSweep });
   };
 
-  const update = (dtMs) => {
+  // `hold`: the bell waits (Movement II's first punch is taught with the
+  // clock standing still): nothing on the timetable moves, but a return
+  // plank still lays itself out, and stays.
+  const update = (dtMs, { hold = false } = {}) => {
     const out = [];
+    if (hold) {
+      const step = Math.max(0, Number(dtMs) || 0);
+      for (const plank of returns.values()) plank.age += step;
+      return out;
+    }
     let left = Math.max(0, Number(dtMs) || 0);
     // Step up to each bell so the off-beat and the bell never blur together.
     while (left > 0) {
@@ -383,6 +400,127 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     msToBell: () => timetable.msToBell(),
     bellPhase: () => timetable.bellPhase(),
     snapshot: () => ({ ...timetable.snapshot(), conductorLane, plan: { ...plan }, exposure: exposure ? { ...exposure } : null, beam: beam ? { ...beam } : null, round }),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Movement II · how the bell is taught (alpha round 4: bridge, signal, his
+// next lane, "both before one bell" and "cross the gap and punch" came five
+// in a row, under two stacked banners, and players fell into the gap).
+//
+// One step per bell, each with one hint naming one action:
+//   bridge      punch the AMBER lamp            → its bridge crosses on the bell
+//   lamp        punch the ROSE signal in his    → he steps into its light on
+//               next lane (named)                 the bell (a signal in the
+//                                                 wrong lane says so at once;
+//                                                 a bell that passes without
+//                                                 lighting him names the new
+//                                                 lane)
+//   punch       he is lit: the bell WAITS        → cross (a plank is laid if
+//               (the arena clock holds) until     no bridge is out) and punch
+//               the punch
+//   combo       the real rule, beams still off: both before one bell
+//   done        the beams fire on the off-beat
+// Until `done` the street gap is a railing (no falls while learning) and the
+// bell runs slower (BELL_TUTORIAL_TIME_SCALE).
+
+export const BELL_TUTORIAL_TIME_SCALE = Object.freeze({
+  bridge: 0.7, 'bridge-wait': 0.7, lamp: 0.7, 'lamp-wait': 0.7, punch: 0.7, combo: 0.85, done: 1,
+});
+// The longest the bell waits for the first punch (it never soft-locks).
+export const BELL_TUTORIAL_HOLD_S = 25;
+
+const LEARNING = new Set(['bridge', 'bridge-wait', 'lamp', 'lamp-wait']);
+const upper = (lane) => String(lane ?? '').toUpperCase();
+
+export function createBellTutorial({ stage = 'bridge' } = {}) {
+  let current = BELL_TUTORIAL_TIME_SCALE[stage] ? stage : 'bridge';
+  let wrongLane = null;
+  let held = 0;
+  return {
+    get stage() { return current; },
+    get wrongLane() { return wrongLane; },
+    get done() { return current === 'done'; },
+    // No falls while learning: the gap edge holds Butch unless a bridge is under him.
+    get gapIsRailing() { return current !== 'done'; },
+    get beams() { return current === 'done'; },
+    // A lamp was queued (or replaced). `lane` is a rose signal's lane,
+    // `nextLane` the lane he steps into on the coming bell.
+    queued({ line, lane = null, nextLane = null } = {}) {
+      if (current === 'bridge' && line === 'amber') current = 'bridge-wait';
+      else if ((current === 'lamp' || current === 'lamp-wait') && line === 'rose') {
+        if (lane === nextLane) { current = 'lamp-wait'; wrongLane = null; } else { current = 'lamp'; wrongLane = lane; }
+      }
+      return current;
+    },
+    // A bridge reached the far roof.
+    bridgeOut() {
+      if (current === 'bridge' || current === 'bridge-wait') current = 'lamp';
+      return current;
+    },
+    // A bell rang; `exposed` when it lit him.
+    bell({ exposed = false } = {}) {
+      wrongLane = null;
+      if (current === 'lamp-wait' && !exposed) current = 'lamp';
+      return current;
+    },
+    // He is lit. Returns what the line does for the learner.
+    exposed({ bridgeOut = false } = {}) {
+      if (LEARNING.has(current) || current === 'punch') {
+        current = 'punch';
+        held = 0;
+        return { hold: true, plank: !bridgeOut, missingBridge: false };
+      }
+      if (current === 'combo') return { hold: false, plank: false, missingBridge: !bridgeOut };
+      return { hold: false, plank: false, missingBridge: false };
+    },
+    // Should the arena's clock stand still this frame (the bell waits for
+    // the first punch)? `dt` seconds of wall time; gives up after HOLD_S.
+    holding({ lit = false, dt = 0 } = {}) {
+      if (current !== 'punch' || !lit) return false;
+      held += Math.max(0, dt);
+      return held < BELL_TUTORIAL_HOLD_S;
+    },
+    exposureEnd() {
+      if (current === 'punch') current = 'lamp';
+      return current;
+    },
+    hit() {
+      if (current === 'combo') current = 'done';
+      else if (current !== 'done') current = 'combo';
+      return current;
+    },
+    // After a lost movement: what was learned stays learned.
+    afterDeath() {
+      if (current !== 'done' && current !== 'combo') current = (current === 'bridge' || current === 'bridge-wait') ? 'bridge' : 'lamp';
+      wrongLane = null;
+      return current;
+    },
+    skip() { current = 'done'; wrongLane = null; return current; },
+    timeScale() { return BELL_TUTORIAL_TIME_SCALE[current] ?? 1; },
+    // The one hint line for this moment ('' for none). `lane`: his next
+    // lane; `litLane`: the lane he is lit in (null when dark).
+    hint({ lane = 'centre', litLane = null, bridgeOut = false, onFront = false, inLitLane = false } = {}) {
+      const next = upper(lane);
+      if (current === 'bridge') return 'PUNCH THE <kbd>AMBER</kbd> LAMP · ITS BRIDGE CROSSES THE GAP ON THE BELL';
+      if (current === 'bridge-wait') return 'QUEUED · WATCH THE BRIDGE CROSS ON THE NEXT BELL';
+      if (current === 'lamp') {
+        return wrongLane
+          ? `THAT IS THE ${upper(wrongLane)} SIGNAL · HE STEPS ${next} · PUNCH THE <kbd>ROSE</kbd> SIGNAL IN THE ${next} LANE`
+          : `NOW THE <kbd>ROSE</kbd> SIGNAL IN THE ${next} LANE · HE STEPS INTO ITS LIGHT ON THE NEXT BELL`;
+      }
+      if (current === 'lamp-wait') return `QUEUED · ON THE BELL HE STEPS ${next}, INTO THE SIGNAL'S LIGHT`;
+      if (current === 'punch') {
+        if (!litLane) return `NOW THE <kbd>ROSE</kbd> SIGNAL IN THE ${next} LANE · HE STEPS INTO ITS LIGHT ON THE NEXT BELL`;
+        if (!onFront) return 'HE IS LIT · THE BELL WAITS FOR YOU · CROSS THE BRIDGE TO HIM';
+        return inLitLane ? '<kbd>SPACE</kbd> · PUNCH HIM · THE BORROWED LIGHT GOES BACK' : `STEP INTO THE ${upper(litLane)} LANE · THEN <kbd>SPACE</kbd>`;
+      }
+      if (current === 'combo') {
+        if (litLane && bridgeOut) return onFront && inLitLane ? '<kbd>SPACE</kbd> · PUNCH HIM' : `HE IS LIT · ${upper(litLane)} LANE · CROSS AND PUNCH`;
+        return `BOTH BEFORE ONE BELL · AN <kbd>AMBER</kbd> BRIDGE + THE <kbd>ROSE</kbd> SIGNAL IN HIS NEXT LANE (${next})`;
+      }
+      return '';
+    },
   };
 }
 
