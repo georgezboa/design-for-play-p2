@@ -15,11 +15,12 @@ import {
 import { createSaveStore } from '../../src/shell/saveSystem.js';
 import { controlsHintHtml, controlsHintState } from '../../src/cars/presentCity3d/chapter3Guidance.js';
 import {
-  MAX_FRAME_SECONDS, MAX_STEP_SECONDS, WALK_SPEED, frameSteps, walkAlongPath,
+  CAMERA_WEST_REACH_X, MAX_FRAME_SECONDS, MAX_STEP_SECONDS, WALK_SPEED, frameSteps, walkAlongPath,
 } from '../../src/cars/presentCity3d/EchoCity3DPreview.js';
 import { LOWEST_PIXEL_RATIO, LOW_PIXEL_RATIO } from '../../src/cars/presentCity3d/chapter3Quality.js';
 import {
   CAMPFIRE_SELINE_STONE_DIALOGUE,
+  CHAPTER3_OBJECTIVES,
   MORNING_STONE_PICKUP,
   echoStoneToastText,
 } from '../../src/cars/presentCity3d/chapter3OpeningContent.js';
@@ -32,6 +33,8 @@ const board = read('src/cars/presentCity3d/Chapter3TicketBoard.js');
 const runtime = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
 const main = read('src/car03-3d-main.js');
 const preview = read('src/cars/presentCity3d/EchoCity3DPreview.js');
+const builders = read('src/cars/presentCity3d/chapter3SceneBuilders.js');
+const css = read('src/cars/presentCity3d/chapter3Release.css');
 
 function memoryStorage() {
   const map = new Map();
@@ -220,6 +223,58 @@ describe('Chapter 3 alpha round 4 · the controls tag (P1)', () => {
     assert.match(runtime, /startInteraction\(interaction\) \{\n\s+this\.noteControlUsed\('look'\);/);
     assert.match(runtime, /this\.tabHeld = true;\n\s+this\.noteControlUsed\('tab'\);/);
     assert.match(runtime, /this\.updateControlsHint\(locked\);/);
+  });
+});
+
+describe('Chapter 3 alpha round 4 · 3.6 the woman in the rose scarf (P1)', () => {
+  it('ties an unlit rose scarf to her rig and holds the pair close until Butch boards', () => {
+    assert.match(builders, /export function makeRoseScarf\(/);
+    assert.match(builders, /new THREE\.MeshBasicMaterial\(\{ color, fog: false \}\)/);
+    assert.match(runtime, /object\.isBone && \/neck\/i\.test\(object\.name\)/);
+    assert.match(runtime, /this\.attachRoseScarf\(\);/);
+    assert.doesNotMatch(runtime, /scarf\.position\.y = 1\.5;/, 'the old ring floated above her head');
+    assert.match(runtime, /return state\.stationReached && !state\.boardedTrain && this\.echoMara\.visible/);
+    assert.match(runtime, /if \(this\.stationCloseUpActive\(state\)\) target = this\.baseZoom \+ STATION_CLOSE_UP_ZOOM;/);
+    assert.match(runtime, /focus: this\.stationPairFocus\(\),/);
+    assert.match(runtime, /const DIALOGUE_ZOOM_BOOST = 0\.8;/);
+  });
+});
+
+describe('Chapter 3 alpha round 4 · P2 polish', () => {
+  it('the bench lines wait for the painting (and the lifted black) at dawn', () => {
+    assert.match(runtime, /this\.showSunrise\(\{ underBlackout: true \}\);/);
+    assert.doesNotMatch(runtime, /this\.elements\.blackout\?\.classList\.remove\('visible'\);\n\s+this\.showSunrise\(\);/);
+    assert.match(runtime, /globalThis\.setTimeout\(startBench, BLACKOUT_FADE_MS\);/);
+    assert.match(runtime, /\}, SUNRISE_TABLEAU_FADE_MS\);/);
+    assert.match(runtime, /\|\| this\.sunrisePending === true/);
+  });
+
+  it('interior cuts wait for full black, draw the new set, then fade in', () => {
+    assert.match(runtime, /const BLACKOUT_FADE_MS = 720;/);
+    assert.match(css, /\.c3-blackout \{[^}]*transition: opacity 0\.7s linear;/);
+    for (const name of ['stageMinistryHall', 'exitMinistryHall', 'stageHotelInterior', 'switchHotelArea', 'restoreHotelExterior']) {
+      const body = runtime.slice(runtime.indexOf(`  ${name}(`), runtime.indexOf(`  ${name}(`) + 2600);
+      assert.match(body, /this\.cutThroughBlack\(/, `${name} cuts through black`);
+    }
+    assert.doesNotMatch(runtime, /new Promise\(\(resolve\) => setTimeout\(resolve, HOTEL_STAGE_TRANSITION_MS\)\)/);
+  });
+
+  it('the camera reaches the laundry fire by the west wall', () => {
+    assert.ok(CAMERA_WEST_REACH_X <= -54, 'the fire is at x ≈ -54');
+    assert.match(preview, /desiredX = THREE\.MathUtils\.clamp\(desiredX, westThresholdMinX, eastThresholdMaxX\);/);
+  });
+
+  it('the walk beacons draw over the roofs in front of them', () => {
+    assert.match(builders, /opacity: 0\.5, depthWrite: false, depthTest: false,/);
+  });
+
+  it('3.4a starts after the cut feed, so its task is the Copper Heron, still at dusk', () => {
+    assert.match(main, /'chapter3-magic-stone': 'hotel',/);
+    const model = createChapter3OpeningModel({ startAt: 'hotel' });
+    assert.equal(model.snapshot().clock.period, 'DUSK', 'the laundry fire burns at dusk');
+    assert.equal(model.snapshot().cutInterfaceComplete, true);
+    assert.equal(model.snapshot().hotelEntered, false);
+    assert.equal(CHAPTER3_OBJECTIVES.copperHeron, 'CHECK IN AT THE COPPER HERON');
   });
 });
 

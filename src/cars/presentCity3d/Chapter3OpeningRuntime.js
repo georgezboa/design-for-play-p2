@@ -140,6 +140,17 @@ const C3_MUSIC = {
 const INTERACTION_RADIUS = 4.2;
 const SLEEP_BLACKOUT_MS = 5000;
 const HOTEL_STAGE_TRANSITION_MS = 320;
+// Alpha round 4 (P2, the hotel "faded in as a murky ghost"): interior cuts
+// swapped sets 320 ms into the blackout's 0.7 s CSS fade, i.e. half black,
+// and lifted it while the new set was still compiling. A cut now waits for
+// full black (BLACKOUT_FADE_MS), swaps, lets the city draw the new set
+// (BLACKOUT_DRAWN_FRAMES) and only then fades back in.
+const BLACKOUT_FADE_MS = 720;
+const BLACKOUT_DRAWN_FRAMES = 2;
+const BLACKOUT_FRAME_TIMEOUT_MS = 2500;
+// The bench painting's CSS fade-in (.c3-sunrise, 1.15 s).
+const SUNRISE_TABLEAU_FADE_MS = 1200;
+const wait = (ms) => new Promise((resolve) => { globalThis.setTimeout(resolve, ms); });
 // Lev points the way after this long searching (alpha round 1: 90 s felt
 // like being lost; the length target is 30–35 minutes).
 const SEARCH_HINT_AFTER_SECONDS = 45;
@@ -1567,6 +1578,7 @@ export class Chapter3OpeningRuntime {
       || this.levHotelExitElapsed !== null
       || this.butchBedTransition !== null
       || this.sunriseTableauHoldElapsed !== null
+      || this.sunrisePending === true
       || this.nightIgnitionElapsed !== null
       || this.scannerFreezeRemaining > 0
       || (this.model.snapshot().boardedTrain && !this.model.snapshot().chapterComplete);
@@ -2541,26 +2553,43 @@ export class Chapter3OpeningRuntime {
           this.lev.visible = true;
           this.timeVisual.requestClock(this.model.snapshot().clock, { immediate: true });
           this.preview.resetCamera();
-          this.elements.blackout?.classList.remove('visible');
-          this.showSunrise();
+          // The bench painting comes up under the black; the square is never
+          // seen between the night and the bench (alpha round 4).
+          this.showSunrise({ underBlackout: true });
         }, SLEEP_BLACKOUT_MS - HOTEL_STAGE_TRANSITION_MS);
       },
     });
   }
 
   // Dawn is one painted beat: Butch and Lev on the bench above the city.
-  showSunrise() {
+  // Alpha round 4 (P2): "Do you come up here often?" played while the
+  // painting was still fading in over the square. The bench lines now wait
+  // until the painting is fully up (and, after the night, until the black
+  // has lifted off it).
+  showSunrise({ underBlackout = false } = {}) {
+    this.sunrisePending = true;
     this.elements.sunriseTableau?.classList.add('visible');
     this.elements.sunriseTableau?.setAttribute('aria-hidden', 'false');
     document.body.classList.add('sunrise-tableau-active');
     const continueButton = this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue');
     if (continueButton) { continueButton.disabled = true; continueButton.hidden = true; }
-    this.dialogue.show(SUNRISE_BENCH_DIALOGUE, {
-      onComplete: () => {
-        this.sunriseTableauHoldElapsed = 0;
-        this.updateObjective();
-      },
-    });
+    const startBench = () => {
+      this.sunrisePending = false;
+      this.dialogue.show(SUNRISE_BENCH_DIALOGUE, {
+        onComplete: () => {
+          this.sunriseTableauHoldElapsed = 0;
+          this.updateObjective();
+        },
+      });
+    };
+    globalThis.setTimeout(() => {
+      if (!underBlackout) {
+        startBench();
+        return;
+      }
+      this.elements.blackout?.classList.remove('visible');
+      globalThis.setTimeout(startBench, BLACKOUT_FADE_MS);
+    }, SUNRISE_TABLEAU_FADE_MS);
   }
 
   leaveSunriseTableau() {
@@ -2704,17 +2733,39 @@ export class Chapter3OpeningRuntime {
     this.updateObjective();
   }
 
+  // Resolves once the city has drawn `frames` more frames (the frame pacer
+  // runs a frame's callbacks only when the GPU has finished the last one),
+  // or after a timeout so a stuck context never holds a fade.
+  afterDrawnFrames(frames = BLACKOUT_DRAWN_FRAMES) {
+    return new Promise((resolve) => {
+      if (typeof requestAnimationFrame !== 'function') { resolve(); return; }
+      let left = frames;
+      const tick = () => (--left <= 0 ? resolve() : requestAnimationFrame(tick));
+      requestAnimationFrame(tick);
+      globalThis.setTimeout(resolve, BLACKOUT_FRAME_TIMEOUT_MS);
+    });
+  }
+
+  // One clean cut through black: fade out fully, run `swap` (after `ready`,
+  // e.g. a streamed set), draw it, fade back in, then `after`.
+  cutThroughBlack(swap, { ready = null, after = null } = {}) {
+    this.elements.blackout?.classList.add('visible');
+    return Promise.all([ready, wait(BLACKOUT_FADE_MS)])
+      .then(() => swap())
+      .then(() => this.afterDrawnFrames())
+      .then(() => {
+        this.elements.blackout?.classList.remove('visible');
+        after?.();
+      });
+  }
+
   stageMinistryHall({ at = null } = {}) {
     if (this.insideMinistry || this.ministryTransitioning) return;
     this.ministryTransitioning = true;
     this.preview.stopWalking();
-    this.elements.blackout?.classList.add('visible');
-    // The hall streams in during play; hold the fade until its set is fitted.
-    const ready = Promise.all([
-      this.loadAssetGroup('ministry'),
-      new Promise((resolve) => setTimeout(resolve, HOTEL_STAGE_TRANSITION_MS)),
-    ]);
-    ready.then(() => {
+    // The hall streams in during play; the cut holds black until its set is
+    // fitted and drawn.
+    this.cutThroughBlack(() => {
       const keepVisible = new Set([
         this.ministryHall.group,
         this.preview.player,
@@ -2748,11 +2799,12 @@ export class Chapter3OpeningRuntime {
       this.preview.controls.update();
       this.insideMinistry = true;
       this.startMorningLevFollow();
-      this.ministryTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
+    }, {
+      ready: this.loadAssetGroup('ministry'),
+      after: () => { this.ministryTransitioning = false; },
     });
   }
 
@@ -2760,8 +2812,7 @@ export class Chapter3OpeningRuntime {
     if (!this.insideMinistry || this.ministryTransitioning) return;
     this.ministryTransitioning = true;
     this.preview.stopWalking();
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
+    this.cutThroughBlack(() => {
       this.ministryHall.group.visible = false;
       for (const entry of this.ministryExteriorVisibility) entry.object.visible = entry.visible;
       this.preview.player.visible = true;
@@ -2772,12 +2823,10 @@ export class Chapter3OpeningRuntime {
       this.preview.setCameraOverrideTarget(null);
       this.preview.resetCamera();
       this.insideMinistry = false;
-      this.ministryTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
-    }, 320);
+    }, { after: () => { this.ministryTransitioning = false; } });
   }
 
   stageHotelInterior() {
@@ -2789,12 +2838,10 @@ export class Chapter3OpeningRuntime {
       canvasTransform: this.preview.renderer.domElement.style.transform,
       canvasTransformOrigin: this.preview.renderer.domElement.style.transformOrigin,
     };
-    this.elements.blackout?.classList.add('visible');
-    // The hotel sets stream during play; the fade holds until they are fitted.
-    Promise.all([
-      this.loadAssetGroup('hotel'),
-      new Promise((resolve) => setTimeout(resolve, HOTEL_STAGE_TRANSITION_MS)),
-    ]).then(() => {
+    // The hotel sets stream during play; the cut holds black until they are
+    // fitted and drawn (alpha round 4: no more half-faded "ghost" interior).
+    let greet = false;
+    this.cutThroughBlack(() => {
       const keepVisible = new Set([
         this.hotelHall.group,
         this.preview.player,
@@ -2818,17 +2865,21 @@ export class Chapter3OpeningRuntime {
             ? 'corridor'
             : 'lobby';
       this.setHotelArea(targetArea);
-      this.hotelTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
       this.hoveredId = null;
       this.updateObjective();
       this.updateOutlines();
       this.updateDiagnosticState();
-      // Hana greets him at the desk, so the task card can name her.
-      if (targetArea === 'lobby' && !state.hotelCheckInComplete && !this.hotelGreeted) {
-        this.hotelGreeted = true;
-        this.showLines(HOTEL_ARRIVAL_DIALOGUE);
-      }
+      greet = targetArea === 'lobby' && !state.hotelCheckInComplete && !this.hotelGreeted;
+    }, {
+      ready: this.loadAssetGroup('hotel'),
+      after: () => {
+        this.hotelTransitioning = false;
+        // Hana greets him at the desk, so the task card can name her.
+        if (greet) {
+          this.hotelGreeted = true;
+          this.showLines(HOTEL_ARRIVAL_DIALOGUE);
+        }
+      },
     });
   }
 
@@ -2929,12 +2980,9 @@ export class Chapter3OpeningRuntime {
       return true;
     }
     this.hotelTransitioning = true;
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
-      this.setHotelArea(area, { arrival });
-      this.hotelTransitioning = false;
-      this.elements.blackout?.classList.remove('visible');
-    }, 280);
+    this.cutThroughBlack(() => this.setHotelArea(area, { arrival }), {
+      after: () => { this.hotelTransitioning = false; },
+    });
     return true;
   }
 
@@ -2970,8 +3018,7 @@ export class Chapter3OpeningRuntime {
   restoreHotelExterior({ night = false, morning = false } = {}) {
     if (!this.insideHotel || this.hotelTransitioning) return;
     this.hotelTransitioning = true;
-    this.elements.blackout?.classList.add('visible');
-    setTimeout(() => {
+    this.cutThroughBlack(() => {
       this.hotelHall.group.visible = false;
       for (const entry of this.hotelExteriorVisibility) entry.object.visible = entry.visible;
       if (night) {
@@ -2985,7 +3032,6 @@ export class Chapter3OpeningRuntime {
       }
       this.insideHotel = false;
       this.hotelArea = null;
-      this.hotelTransitioning = false;
       this.preview.player.visible = true;
       this.preview.player.position.set(49.8, 0.5, -12.2);
       this.preview.stopWalking();
@@ -3004,11 +3050,10 @@ export class Chapter3OpeningRuntime {
       }
       this.preview.resetCamera();
       this.preview.controls.update();
-      this.elements.blackout?.classList.remove('visible');
       this.hoveredId = null;
       this.updateObjective();
       this.updateOutlines();
-    }, 320);
+    }, { after: () => { this.hotelTransitioning = false; } });
   }
   setNightDreamRendering(active) {
     const canvas = this.preview.renderer?.domElement;

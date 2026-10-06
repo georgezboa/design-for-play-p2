@@ -560,13 +560,16 @@ export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', c
   group.name = name;
   const shaft = new THREE.Mesh(
     new THREE.CylinderGeometry(0.42, 0.62, height, 18, 1, true),
+    // Alpha round 4 (P2, "the ministry marker disappeared mid-walk"): the
+    // column draws over the roofs between it and the camera, so the walk
+    // never loses it behind a building.
     new THREE.MeshBasicMaterial({
-      color, map: texture, transparent: true, opacity: 0.5, depthWrite: false,
+      color, map: texture, transparent: true, opacity: 0.5, depthWrite: false, depthTest: false,
       side: THREE.DoubleSide, fog: false, toneMapped: false,
     }),
   );
   shaft.position.y = height / 2;
-  shaft.renderOrder = 5;
+  shaft.renderOrder = 6;
   const ring = new THREE.Mesh(
     new THREE.RingGeometry(0.7, 0.88, 40),
     new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, depthWrite: false, side: THREE.DoubleSide, fog: false, toneMapped: false }),
@@ -574,6 +577,7 @@ export function makeGuidanceBeacon(scene, { name = 'chapter3-guidance-beacon', c
   ring.rotation.x = -Math.PI / 2;
   ring.position.y = 0.04;
   ring.renderOrder = 5;
+  shaft.frustumCulled = false;
   group.add(shaft, ring);
   group.visible = false;
   scene.add(group);

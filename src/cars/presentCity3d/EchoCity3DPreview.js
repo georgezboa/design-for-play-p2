@@ -1031,6 +1031,9 @@ export const RUN_MULTIPLIER = 1.8;
 // How far past the view a static model's shadow can still fall into it.
 const SHADOW_REACH = 24;
 export const MAX_STEP_SECONDS = 0.1;
+// How far west the follow camera may go for a subject past the west bound
+// (the laundry fire, alpha round 4).
+export const CAMERA_WEST_REACH_X = -56;
 
 // How one drawn frame of `wallSeconds` is simulated: the game time it gets
 // (the wall time, up to MAX_FRAME_SECONDS) in equal steps of at most
@@ -1858,7 +1861,13 @@ export class EchoCity3DPreview {
     const eastThresholdMaxX = subject.x > CAMERA_FOLLOW.bounds.maxX
       ? Math.min(subject.x, 55)
       : CAMERA_FOLLOW.bounds.maxX;
-    desiredX = THREE.MathUtils.clamp(desiredX, CAMERA_FOLLOW.bounds.minX, eastThresholdMaxX);
+    // Alpha round 4 (P2): the same on the west side for the laundry fire by
+    // the west wall (x ≈ -54), whose group sat in the frame's top-left
+    // corner under the task card while the camera stopped at x = -43.
+    const westThresholdMinX = subject.x < CAMERA_FOLLOW.bounds.minX
+      ? Math.max(subject.x, CAMERA_WEST_REACH_X)
+      : CAMERA_FOLLOW.bounds.minX;
+    desiredX = THREE.MathUtils.clamp(desiredX, westThresholdMinX, eastThresholdMaxX);
     desiredZ = THREE.MathUtils.clamp(desiredZ, CAMERA_FOLLOW.bounds.minZ, CAMERA_FOLLOW.bounds.maxZ);
     const desiredY = this.cameraOverrideTarget
       ? THREE.MathUtils.clamp(this.cameraOverrideTarget.y, CAMERA_HOME.target[1], 18)
