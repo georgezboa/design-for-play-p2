@@ -11,6 +11,8 @@
 }
 
 .nf-cinematic.is-finished { opacity: 0; }
+/* left by a `preserveBlackout` cutscene: black under the next card (uiKit .nf-card-backdrop is 9500) */
+.nf-cinematic-afterblack { position: fixed; inset: 0; z-index: 9000; background: #000; pointer-events: none; }
 .nf-cinematic.is-blackout { background: #000; }
 .nf-cinematic video { width: 100%; height: 100%; object-fit: contain; background: #000; }
 .nf-cinematic-loading {

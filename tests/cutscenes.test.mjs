@@ -167,10 +167,19 @@ test('the preload hold: the last frame stays up until the next chapter is ready'
 test('gameFlow holds the cutscene\'s last frame (not black) while the next chapter loads', () => {
   const flow = read('src/shell/gameFlow.js');
   assert.match(flow, /export const ARRIVING_LINE = 'THE NIGHT SERVICE IS ARRIVING'/);
-  assert.match(flow, /if \(mode === 'cutscene'\) \{[\s\S]*?cutscene\?\.hold\(true\)/);
+  assert.match(flow, /else if \(holdForPreload\) \{[\s\S]*?if \(cutscene\) cutscene\.hold\(true\);/);
   assert.match(flow, /mountCutscene\(def, \{ root, ready: !waitForPreload/);
   assert.match(read('src/shell/cutscene/player.js'), /hold\(on\) \{[\s\S]*?is-holding/);
   assert.match(read('src/shell/gameFlow.css'), /\.nf-cinematic\.is-holding \.nf-cinematic-arriving \{ opacity/);
+});
+
+test('after the ending the page stays black under the STATUS: OPEN card', () => {
+  const flow = read('src/shell/gameFlow.js');
+  assert.match(flow, /if \(preserveBlackout\) \{\s*const black = document\.createElement\('div'\);\s*black\.className = 'nf-cinematic-afterblack';[\s\S]*?\}\s*root\.remove\(\);/);
+  const css = read('src/shell/gameFlow.css');
+  const z = Number(css.match(/\.nf-cinematic-afterblack \{[^}]*z-index: (\d+)/)[1]);
+  const card = Number(read('src/shell/uiKit.css').match(/\.nf-card-backdrop \{[^}]*z-index: (\d+)/)[1]);
+  assert.ok(z < card, 'the card shows over the black');
 });
 
 // ---------- Reduce Motion ----------
@@ -248,11 +257,14 @@ test('every id resolves to its authored cutscene; an unknown loader set falls th
   assert.equal(registeredCutscene('chapter-1-to-2', null, { chapter1To2: () => ({}) }), 'chapter1To2');
   const flow = read('src/shell/gameFlow.js');
   assert.match(flow, /const cutsceneName = registeredCutscene\(id, src\);/);
-  // the films are retired: a cutscene that fails to load is skipped, never replaced by a video
-  assert.match(flow, /if \(cutsceneName\) \{[\s\S]*?startCutscene\(\)\.catch\([\s\S]*?finish\(\);/);
+  // the films are retired: a cutscene that fails to load (or an id with
+  // none) is skipped, never replaced by a video; the video path is gone
+  assert.match(flow, /if \(cutsceneName\) startCutscene\(\)\.catch\(skipUnavailable\);\s*else skipUnavailable\(/);
+  assert.match(flow, /const skipUnavailable = [\s\S]*?if \(!settled\) finish\(\);/);
+  assert.doesNotMatch(flow, /createElement\('video'\)|startVideo|orderCinematicSources|LOADING FILM|PLAY FILM/);
 });
 
-test('loadCutscene returns a definition, and a failing loader rejects (gameFlow then plays the film)', async () => {
+test('loadCutscene returns a definition, and a failing loader rejects (gameFlow then skips it)', async () => {
   assert.equal(await loadCutscene('opening', { opening: async () => ({ default: opening }) }), opening);
   assert.equal(await loadCutscene('chapter1To2', {}), null);
   await assert.rejects(loadCutscene('ending', { ending: async () => { throw new Error('chunk failed'); } }));

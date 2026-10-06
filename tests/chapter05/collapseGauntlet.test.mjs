@@ -86,11 +86,11 @@ test('key slotting has a visible hand animation and an oppressive layered score'
   assert.match(audioSource, /tension = \[207\.65, 220\]/);
 });
 
-test('the black threshold plays the resolved route film and starts its Boss preload with playback', () => {
+test('the black threshold plays the resolved route cutscene and starts its Boss preload with playback', () => {
   assert.match(appSource, /navigateAfterCinematic\(finalBoss\.cinematicId, finalBoss\.cinematicPath, finalBoss\.route/);
   assert.match(appSource, /preloadChapterId: finalBoss\.preloadChapterId/);
   assert.match(appSource, /requirePreloadReady: true/);
-  assert.match(gameFlowSource, /video\.addEventListener\('playing', beginPreload, \{ once: true \}\)/);
+  assert.match(gameFlowSource, /await cutscene\.start\(\);\s*\/\/ the next chapter loads while the cutscene plays\s*beginPreload\(\);/);
   assert.match(gameFlowSource, /if \(waitForPreload\)[\s\S]*await preloadPromise/);
 });
 

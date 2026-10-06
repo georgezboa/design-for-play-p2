@@ -2,10 +2,10 @@
 
 The eight transitions are in-engine cutscenes drawn in Chapter 1's ink
 language (docs/CUTSCENES_SPEC.md is the script; docs/STORY_BIBLE.md wins
-where they disagree). `opening` and `ending` are authored; the other six
-still play their films until you add them here.
+where they disagree). All eight are authored; the films they replaced
+(`public/cinematics/`) and the video player are gone.
 
-## Add a cutscene in four steps
+## How a cutscene was added (for a new one or a rework)
 
 1. Write `scenes/<name>.js` exporting `default` (and a named export) — the
    definition below. Copy `scenes/opening.js` for the shape.
@@ -13,10 +13,10 @@ still play their films until you add them here.
    `chapter1To2: () => import('./scenes/chapter1To2.js'),`. The names are
    `CUTSCENE_IDS` (opening, chapter1To2, chapter2To3, chapter3To4,
    chapter4To5, chapter5-to-conductor, chapter5-to-black-knife, ending).
-   Call sites do not change: their ids and film paths already resolve.
+   Call sites pass `CINEMATICS.*` / `finalBossRoute.js` names; old ids and
+   film paths (`/cinematics/1-2.mp4`) still resolve to the same cutscene.
 3. Add your definition to the "follow the spec" and "captions are the
-   script" tests in `tests/cutscenes.test.mjs` (and drop it from the
-   "keeps its film" list).
+   script" tests in `tests/cutscenes.test.mjs`.
 4. Look at it: restart the dev server (it does not see edits), then in the
    browser console `(await import('/src/shell/gameFlow.js')).playCinematic({ id: 'chapter-1-to-2' })`.
    In dev builds `NIGHTFALL_CUTSCENE.freeze(seconds)` shows one frame and
@@ -143,5 +143,8 @@ renderer) inside the `.nf-cinematic` overlay, runs a wall-clock session
 pauses on `nightfall:pause` and a hidden tab, and hands back to gameFlow's
 HOLD TO SKIP and preload gate: when the next chapter is not ready the last
 frame stays up with "THE NIGHT SERVICE IS ARRIVING · n%". A short tap of
-Escape opens the pause menu; holding it skips. If a cutscene fails to load,
-its film plays.
+Escape opens the pause menu (the title page installs one for the opening);
+holding it skips. If a cutscene fails to load it is skipped, through the same
+preload gate. While a cutscene is mounted the page underneath does not draw
+(`framePacing.js` `setPageCovered`): the cutscene ticks on the native frame
+and has the machine to itself.

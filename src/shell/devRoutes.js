@@ -4,7 +4,7 @@
 // build keeps and a release build (`npm run build:release`) removes.
 //
 // `checkpoint` is the save id the node belongs to; `route` is opened
-// directly, skipping any transition film. A node always plays on the
+// directly, skipping any transition cutscene. A node always plays on the
 // router's scratch save (saveSystem.js seedRouterSave), never a real slot.
 // `stones: 'all'` seeds that scratch save with all five magic stones (the
 // five-stone route's own nodes). `devOnly` marks a page that is not a production build input at all, and

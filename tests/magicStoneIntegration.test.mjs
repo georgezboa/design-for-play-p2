@@ -41,8 +41,8 @@ test('five stones, including the Museum Black Knife stone, select Mathias boss w
   assert.match(finalBossRoute, /stones\.allCollected/);
   assert.match(finalBossRoute, /route: '\/hidden-final-boss\.html\?from=chapter5'/);
   assert.match(finalBossRoute, /route: '\/final-boss\.html\?from=chapter5'/);
-  assert.match(finalBossRoute, /cinematicPath: '\/cinematics\/5-6-black-knife\.mp4'/);
-  assert.match(finalBossRoute, /cinematicPath: '\/cinematics\/5-6-conductor\.mp4'/);
+  assert.match(finalBossRoute, /cinematicPath: 'chapter5-to-black-knife'/);
+  assert.match(finalBossRoute, /cinematicPath: 'chapter5-to-conductor'/);
   assert.match(hiddenBoss, /const redirectToConductor = !stones\.allCollected && !DEV_MODE && !qaMode && !easterEggMode/);
   assert.match(hiddenBoss, /window\.location\.replace\('\/final-boss\.html\?from=chapter5'\)/);
   assert.match(hiddenBoss, /window\.location\.assign\(`\/true-ending\.html/);
@@ -56,7 +56,7 @@ test('Chapter 3 and every other chapter transition wait for the complete preload
   assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady/);
   assert.match(flow, /if \(waitForPreload\)/);
   assert.match(flow, /await preloadPromise/);
-  assert.match(flow, /PREPARING EVERY OBJECT · PLEASE WAIT/);
+  assert.match(flow, /\$\{ARRIVING_LINE\} · \$\{percent\}%/);
 });
 
 test('hidden-final-boss.html checks the stones before it loads the fight', () => {

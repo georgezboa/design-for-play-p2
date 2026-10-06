@@ -1,12 +1,12 @@
 // Which in-engine cutscene plays for a playCinematic() call (pure: no DOM).
 //
-// Call sites still pass the ids and film paths they always have
-// (gameFlow.js CINEMATICS.*, finalBossRoute.js cinematicId / cinematicPath),
-// spelled several ways over the project's life: 'opening', 'chapter-1-to-2',
-// 'chapter1To2', '/cinematics/1-2.mp4'. resolveCutsceneId() folds them all
-// onto the eight names in docs/CUTSCENES_SPEC.md, and registeredCutscene()
-// says whether that cutscene is authored yet. While one is not, gameFlow.js
-// keeps playing its film.
+// Call sites pass ids spelled several ways over the project's life
+// (gameFlow.js CINEMATICS.*, finalBossRoute.js cinematicId / cinematicPath):
+// 'opening', 'chapter-1-to-2', 'chapter1To2', and the retired films' paths
+// such as '/cinematics/1-2.mp4' (old saves, notes, scripts).
+// resolveCutsceneId() folds them all onto the eight names in
+// docs/CUTSCENES_SPEC.md, and registeredCutscene() names the cutscene to
+// play; with none, gameFlow.js skips the transition (there is no film).
 //
 // Adding a cutscene: write src/shell/cutscene/scenes/<name>.js (README.md)
 // and add one line to CUTSCENE_LOADERS.
@@ -22,7 +22,7 @@ export const CUTSCENE_IDS = Object.freeze([
   'ending',
 ]);
 
-/** The film each cutscene replaces (public/cinematics/<name>.mp4|webm). */
+/** The retired film each cutscene replaced (its old path still resolves). */
 export const FILM_NAMES = Object.freeze({
   opening: 'start',
   chapter1To2: '1-2',
@@ -77,7 +77,7 @@ export function resolveCutsceneId(id, src) {
   return null;
 }
 
-/** The authored cutscene for this call, or null: then the film plays. */
+/** The authored cutscene for this call, or null: then the transition is skipped. */
 export function registeredCutscene(id, src, loaders = CUTSCENE_LOADERS) {
   const name = resolveCutsceneId(id, src);
   return name && typeof loaders[name] === 'function' ? name : null;

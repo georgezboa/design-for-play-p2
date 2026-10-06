@@ -235,7 +235,11 @@ test('each chapter passes its own controls list to the pause menu', () => {
   assert.match(read('src/borrowedLight-main.js'), /CHAPTER_CONTROLS\.borrowedLight/);
   assert.match(CHAPTER_CONTROLS.echoCity[0][1], /CLICK/);
   assert.match(CHAPTER_CONTROLS.paintedCountry.map(([, keys]) => keys).join(' '), /RIGHT MOUSE/);
-  // index.html runs no chapter, so it has no pause menu or controls list.
+  // index.html runs no chapter, so the title has no pause menu; only once
+  // NEW GAME has removed it does the opening cutscene get one (tap Esc).
   assert.doesNotMatch(read('src/main.js'), /installPauseMenu|CHAPTER_CONTROLS/);
-  assert.doesNotMatch(read('src/shell/titleMenu.js'), /installPauseMenu/);
+  const title = read('src/shell/titleMenu.js');
+  assert.equal(title.match(/installPauseMenu/g)?.length, 2);
+  assert.match(title, /const startJourney = [\s\S]*?root\.remove\(\);[\s\S]*?import\('\.\/pauseMenu\.js'\)[\s\S]*?installPauseMenu\(\{ controls: CHAPTER_CONTROLS\.cutscene \}\)[\s\S]*?playCinematic\(\{/);
+  assert.doesNotMatch(title, /^import .*pauseMenu/m);
 });

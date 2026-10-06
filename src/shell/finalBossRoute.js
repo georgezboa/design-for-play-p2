@@ -7,7 +7,8 @@ export const FINAL_BOSS_DESTINATIONS = Object.freeze({
     preloadChapterId: 'chapter6',
     route: '/final-boss.html?from=chapter5',
     cinematicId: 'chapter5-to-conductor',
-    cinematicPath: '/cinematics/5-6-conductor.mp4',
+    // the cutscene's name (the 5-6 film this used to point at is retired)
+    cinematicPath: 'chapter5-to-conductor',
   }),
   // The five-stone route: THE BLACK TICKET (player-visible name). The ids
   // and file names keep the old `black-knife` spelling.
@@ -17,7 +18,7 @@ export const FINAL_BOSS_DESTINATIONS = Object.freeze({
     preloadChapterId: 'hiddenBoss',
     route: '/hidden-final-boss.html?from=chapter5',
     cinematicId: 'chapter5-to-black-knife',
-    cinematicPath: '/cinematics/5-6-black-knife.mp4',
+    cinematicPath: 'chapter5-to-black-knife',
   }),
 });
 

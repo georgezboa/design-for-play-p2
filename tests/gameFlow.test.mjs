@@ -15,6 +15,21 @@ test('the films are gone: every transition is an in-engine cutscene (docs/CUTSCE
   }
 });
 
+test('no runtime code names a retired film: CINEMATICS and the Museum routes name cutscenes', async () => {
+  const flow = source('src/shell/gameFlow.js');
+  const route = source('src/shell/finalBossRoute.js');
+  for (const [file, text] of [['gameFlow.js', flow], ['finalBossRoute.js', route]]) {
+    assert.doesNotMatch(text, /cinematics\/|\.mp4|\.webm|createElement\('video'\)/, file);
+  }
+  const { CUTSCENE_IDS, resolveCutsceneId } = await import('../src/shell/cutscene/registry.js');
+  const block = flow.match(/export const CINEMATICS = Object\.freeze\(\{([\s\S]*?)\}\);/)[1];
+  const values = [...block.matchAll(/(\w+): '([^']+)'/g)];
+  assert.equal(values.length, 6);
+  for (const [, key, value] of values) assert.ok(CUTSCENE_IDS.includes(resolveCutsceneId(value, null)), key);
+  for (const path of [...route.matchAll(/cinematicPath: '([^']+)'/g)].map((m) => m[1])) assert.ok(CUTSCENE_IDS.includes(path), path);
+  assert.equal(existsSync(resolve(root, 'src/shell/cinematicSources.js')), false, 'the film source picker is gone');
+});
+
 test('the completed chapter route owns all four film handoffs', () => {
   assert.match(source('src/nightService-main.js'), /CINEMATICS\.chapter1To2/);
   assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /CINEMATICS\.chapter2To3/);
@@ -36,7 +51,7 @@ test('every transition preloads its next chapter while the film is playing', () 
   const chapter2 = source('src/chapters/borrowedLight/BorrowedLightScene.js');
   const chapter3 = source('src/car03-3d-main.js');
   const chapter4 = source('src/chapters/paintedCountry/PaintedLineScene.js');
-  assert.match(flow, /video\.addEventListener\('playing', beginPreload/);
+  assert.match(flow, /await cutscene\.start\(\);\s*\/\/ the next chapter loads while the cutscene plays\s*beginPreload\(\);/);
   assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady/);
   assert.match(flow, /if \(waitForPreload\)[\s\S]*?await preloadPromise/);
   for (const [file, chapter] of [[title, 1], [chapter1, 2], [chapter2, 3], [chapter3, 4], [chapter4, 5]]) {
@@ -141,7 +156,7 @@ test('the dev-only 1111 title code opens every chapter’s named test nodes', ()
   // release build (PLAYTEST_MODE false) has neither, and the session flag it
   // sets unlocks dev routes only while PLAYTEST_MODE is on.
   assert.match(titleMenu, /const hiddenChapters = DEV_MODE \? DEV_ROUTES : PLAYTEST_MODE \? routerEntries\(\) : \[\]/);
-  assert.match(titleMenu, /if \(\(DEV_MODE \|\| PLAYTEST_MODE\) && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
+  assert.match(titleMenu, /if \(\(DEV_MODE \|\| PLAYTEST_MODE\) && root\.isConnected && !dialog\.open && !event\.repeat && event\.key === '1'\)/);
   assert.match(devMode, /export function devRoutesEnabled\(\) \{\n  return DEV_MODE \|\| \(PLAYTEST_MODE && hiddenRouterActive\(\)\);\n\}/);
   assert.match(viteConfig, /__PLAYTEST_MODE__: JSON\.stringify\(process\.env\.NIGHTFALL_RELEASE !== '1'\)/);
 });
@@ -171,13 +186,4 @@ test('production chapter pages get no TITLE button or T hotkey', () => {
   assert.match(control, /if \(checkpoint\) createSaveStore\(\)\.markCheckpoint\(checkpoint\);\n    return;\n  \}/);
   assert.doesNotMatch(control, /'TITLE'/);
   assert.doesNotMatch(control, /returnToTitle/);
-});
-
-test('cinematic sources are ordered by canPlayType (kept for any future video)', async () => {
-  const { orderCinematicSources } = await import('../src/shell/cinematicSources.js');
-  const answers = (mp4, webm) => (type) => (type.includes('webm') ? webm : mp4);
-  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
-  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('probably', 'probably')), ['/cinematics/end.mp4', '/cinematics/end.webm']);
-  assert.deepEqual(orderCinematicSources('/cinematics/end.mp4', answers('maybe', 'probably')), ['/cinematics/end.webm', '/cinematics/end.mp4']);
-  assert.deepEqual(orderCinematicSources('/x.webm'), ['/x.webm']);
 });

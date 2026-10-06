@@ -16,6 +16,7 @@ import {
   CREDIT_TEAM,
 } from './creditsData.js';
 import { CINEMATICS, playCinematic } from './gameFlow.js';
+import { CHAPTER_CONTROLS } from './chapterControls.js';
 import { DEV_MODE, PLAYTEST_MODE, activateHiddenRouter, clearHiddenRouter } from '../devMode.js';
 import { quitGame, toggleFullscreen } from './desktopBridge.js';
 import { SETTINGS_CONTROLS } from './settingsControls.js';
@@ -357,7 +358,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     cancel.focus();
   };
 
-  // New journey in a slot: the opening film, then Chapter 1.
+  // New journey in a slot: the opening cutscene, then Chapter 1.
   const startJourney = (index) => {
     store.startNew(index);
     status.textContent = `SLOT ${index + 1} · NIGHT SERVICE AWAKENING`;
@@ -366,6 +367,12 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     scene.hold('loading', true);
     scene.destroy();
     root.remove();
+    // The title page has no pause menu of its own: install one for the
+    // opening, so a tap of Escape pauses it as on every chapter page. (Loaded
+    // here, not with the title: it brings the 3D chapters' frame pacer.)
+    import('./pauseMenu.js')
+      .then(({ installPauseMenu }) => installPauseMenu({ controls: CHAPTER_CONTROLS.cutscene }))
+      .catch(() => {});
     playCinematic({
       id: 'opening',
       src: CINEMATICS.opening,
@@ -534,7 +541,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
   const renderHiddenChapterSelect = () => {
     dialog.dataset.variant = 'router';
     panel.classList.remove('nf-credits-panel');
-    panel.innerHTML = '<div class="nf-dialog-heading"><p class="nf-eyebrow">ARCHIVE ROUTING · 1111</p><h2>SELECT TEST NODE</h2><p class="nf-empty">Every entry skips transition films and opens its playable node directly. Test nodes play on a scratch save: your slots are not touched.</p></div>';
+    panel.innerHTML = '<div class="nf-dialog-heading"><p class="nf-eyebrow">ARCHIVE ROUTING · 1111</p><h2>SELECT TEST NODE</h2><p class="nf-empty">Every entry skips the transition cutscenes and opens its playable node directly. Test nodes play on a scratch save: your slots are not touched.</p></div>';
     let group = null;
     hiddenChapters.forEach((chapter) => {
       if (chapter.group !== group) {
@@ -724,7 +731,8 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     }
   });
   const handleGlobalKey = async (event) => {
-    if ((DEV_MODE || PLAYTEST_MODE) && !dialog.open && !event.repeat && event.key === '1') {
+    // (not once the title has gone: the opening plays on this page)
+    if ((DEV_MODE || PLAYTEST_MODE) && root.isConnected && !dialog.open && !event.repeat && event.key === '1') {
       hiddenChapterSequence = `${hiddenChapterSequence}1`.slice(-4);
       window.clearTimeout(hiddenChapterTimer);
       hiddenChapterTimer = window.setTimeout(() => { hiddenChapterSequence = ''; }, 1800);

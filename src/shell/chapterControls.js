@@ -106,4 +106,10 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['CONTINUE (AFTER THE REVEAL)', 'ENTER / SPACE / CLICK'],
     ['PAUSE', 'ESC'],
   ),
+  // A cutscene on a page without a chapter of its own (the opening plays on
+  // the title page): gameFlow.js HOLD TO SKIP and the Escape tap.
+  cutscene: list(
+    ['SKIP', 'HOLD SPACE / ENTER / ESC / MOUSE'],
+    ['PAUSE', 'TAP ESC'],
+  ),
 });
