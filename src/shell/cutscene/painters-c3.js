@@ -6,7 +6,7 @@
 // language, as painters.js.
 
 import {
-  PAL, brassFill, glow, ink, inkRect, rng, roundRectPath, vgrad, wood,
+  PAL, brassFill, drawButchHeadBack, glow, ink, inkRect, rng, roundRectPath, vgrad, wood,
 } from './painters.js';
 import { CONDUCTOR_PARTS } from '../../chapters/nightService/art/figures.js';
 import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART } from '../../chapters/finalBoss/conductorFigure.js';
@@ -340,29 +340,7 @@ export function drawButchStandingBack(c, x, y, s, { lampSide = 1, light = 1, arm
   // head, collar, cap (drawButchBack's)
   c.save();
   c.rotate(sway);
-  // the nape and the ears (his skin, the title's), the short dark-brown hair over them
-  c.fillStyle = '#4e392b';
-  c.fillRect(-3.6, -72, 7.2, 5);
-  [-1, 1].forEach((side) => { c.beginPath(); c.ellipse(side * 6.6, -76.5, 1.7, 2.8, side * 0.2, 0, TAU); c.fill(); });
-  const hair = new Path2D();
-  hair.moveTo(-6.4, -82); hair.quadraticCurveTo(-7.2, -74, -4.6, -70.6); hair.quadraticCurveTo(0, -69.4, 4.6, -70.6); hair.quadraticCurveTo(7.2, -74, 6.4, -82); hair.closePath();
-  c.fillStyle = '#2a1b12'; c.fill(hair);
-  lit(c, hair, 14 * lampSide, -76, 14, 0.5 * light);
-  [-3.2, 0, 3.2].forEach((hx, i) => ink(c, [[hx - 0.6, -81], [hx, -76], [hx + 0.4, -71.4]], { w: 0.7 / s * 1.6, alpha: 0.45, bleed: false, jitter: 0.05, color: '#120b07', seed: 6720 + i }));
-  ink(c, lampSide > 0 ? [[6, -81], [6.6, -76], [4.6, -71]] : [[-6, -81], [-6.6, -76], [-4.6, -71]], { w: 1 / s * 1.6, alpha: 0.6 * light, bleed: false, jitter: 0.05, color: '#ffc988', seed: 6723 });
-  // the collar, turned up round his neck
-  const collar = new Path2D();
-  collar.moveTo(-13, -56); collar.quadraticCurveTo(-12.4, -64, -9.4, -69.6); collar.quadraticCurveTo(0, -66.6, 9.4, -69.6); collar.quadraticCurveTo(12.4, -64, 13, -56); collar.closePath();
-  c.fillStyle = '#101c22'; c.fill(collar);
-  lit(c, collar, 30 * lampSide, -50, 40, 0.4 * light);
-  ink(c, [[-9.4, -69.6], [0, -66.6], [9.4, -69.6]], { w: 1 / s * 1.6, alpha: 0.5, bleed: false, jitter: 0.05, color: '#06080c', seed: 6724 });
-  const cap = new Path2D();
-  cap.moveTo(-9.5, -80); cap.quadraticCurveTo(-11, -93, 0, -95); cap.quadraticCurveTo(11, -93, 9.5, -80); cap.closePath();
-  c.fillStyle = '#121a27'; c.fill(cap);
-  c.save(); c.clip(cap); c.fillStyle = PAL.oxblood; c.fillRect(-12, -84.2, 24, 2.8); c.restore();
-  lit(c, cap, 30 * lampSide, -86, 40, 0.4 * light);
-  ink(c, [[-9.5, -80], [-10.6, -88], [-7, -93.6], [0, -95], [7, -93.6], [10.6, -88], [9.5, -80]], { w: 1.4 / s * 1.6, alpha: 0.6, bleed: false, jitter: 0.02, color: '#06080c', seed: 6712 });
-  ink(c, lampSide > 0 ? [[3, -94.6], [8, -92], [10.6, -86]] : [[-3, -94.6], [-8, -92], [-10.6, -86]], { w: 1.2 / s * 1.6, alpha: 0.5 * light, bleed: false, jitter: 0.1, color: '#ffd59a', seed: 6713 });
+  drawButchHeadBack(c, s, { lampSide, light });
   c.restore();
   // the lamp arm: from the shoulder, hanging (0) or raised (negative, out to his lamp side)
   // upper arm and forearm: the elbow bends as the lamp comes up

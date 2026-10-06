@@ -119,6 +119,7 @@ All take a context in stage units. Read-only imports of Chapter 1's kit
 | `drawButch(c, x, y, s, { pose, phase, lamp })` | Butch, the Chapter 1 rig at any scale: `stand`, `walk` (phase = distance / 9.5), `sit`; lamp `'hand'` or `'belt'` |
 | `drawButchAtDesk(c, x, y, s, { pose: 'tag' \| 'asleep', nod, lamp, light })` | the title's seated Butch in profile at a desk, holding a tag up (returns where it is) or asleep on his arms |
 | `drawButchBack(c, x, y, s, { lampSide })` | Butch seated, seen from behind (cap band, turned-up collar) |
+| `drawButchHeadBack(c, s, { lampSide, light, turn })` | the one back of his head both back views use (painters-c3 `drawButchStandingBack` too): round skull, short dark hair, ears, the nape over the turned-up collar, the cap from behind |
 | `drawMaraWalking`, `drawMaraSeatedBack` | the Mara ahead: rose scarf, always turned away. **Never draw her face**, not even in a reflection |
 | `drawConductor(c, x, y, s, { punch, lantern })` | the finale's Conductor (finalBoss/conductorFigure.js head and coat, Ch1 arms and lantern) |
 | `drawClaimTag(c, x, y, { w, flip, front, back })`, `drawTicket`, `drawAccessionCard`, `drawOrchardCase` | close-ups: the claim tag (flips over about its long axis), a punched ticket, the museum card, the case |

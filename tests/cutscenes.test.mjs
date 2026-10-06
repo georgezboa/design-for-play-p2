@@ -544,3 +544,18 @@ test('painters-c2: Chapter 4 art is built once, on CPU canvases when the cutscen
     globalThis.HTMLCanvasElement = previous;
   }
 });
+
+test('Butch from behind is one head everywhere: round skull, hair, ears, nape over the collar', () => {
+  const painters = read('src/shell/cutscene/painters.js');
+  const c3 = read('src/shell/cutscene/painters-c3.js');
+  const back = painters.slice(painters.indexOf('export function drawButchBack'), painters.indexOf('export function drawButchHeadBack'));
+  assert.match(back, /drawButchHeadBack\(c, s, \{ lampSide, light, turn \}\)/);
+  assert.match(c3, /drawButchHeadBack\(c, s, \{ lampSide, light \}\)/);
+  // no second, private back-of-head left in either painter
+  assert.doesNotMatch(back + c3, /fillStyle = '#0b0a0d'|cap\.moveTo\(-9\.5, -80\)/);
+  const head = painters.slice(painters.indexOf('export function drawButchHeadBack'), painters.indexOf('// the Mara ahead'));
+  for (const piece of ['const neck', 'const ears', 'const skull', 'const hair', 'const collar', 'const cap']) assert.ok(head.includes(piece), piece);
+  // the collar stops under his ears: the nape shows above it
+  const ys = [...head.matchAll(/collar\.(?:moveTo|quadraticCurveTo)\(([^)]*)\)/g)].flatMap((m) => m[1].split(',').map(Number).filter((_, i) => i % 2 === 1));
+  assert.ok(Math.min(...ys) > -70, `collar reaches ${Math.min(...ys)}`);
+});

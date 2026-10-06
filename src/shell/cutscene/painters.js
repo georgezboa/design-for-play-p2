@@ -981,42 +981,93 @@ export function drawButchBack(c, x, y, s, { lampSide = 1, light = 1, turn = 0 } 
   lampLit(c, coat, 30 * lampSide, -40, 46, 0.32 * light);
   ink(c, [[-22, 0], [-25, -30], [-20, -48], [-14, -58], [-5, -60], [5, -60], [14, -58], [20, -48], [25, -30], [22, 0]], { w: 1.6 / s * 1.6, alpha: 0.55, bleed: false, jitter: 0.2, color: '#06080c', seed: 6610 });
   ink(c, lampSide > 0 ? [[14, -58], [20, -48], [25, -30], [23, -6]] : [[-14, -58], [-20, -48], [-25, -30], [-23, -6]], { w: 2.2 / s * 1.6, alpha: 0.7 * light, bleed: true, jitter: 0.15, color: '#ffc988', seed: 6611 });
-  // the back of his head and the cap, turned a little toward the window
-  c.save();
-  c.translate(turn * 3, 0);
-  c.fillStyle = '#0b0a0d';
-  c.beginPath(); c.ellipse(0, -76, 6.6, 7.4, 0, 0, TAU); c.fill();
-  // the short hair at the nape, under the cap
-  c.fillStyle = '#17100b';
-  c.beginPath(); c.ellipse(0, -77, 6.6, 5.6, 0, Math.PI, 0); c.fill();
-  // the hair seen from behind: a few dark strokes, the lamp's rim on the near side
-  [-3.5, 0, 3.5].forEach((hx, i) => ink(c, [[hx - 1, -81], [hx, -76], [hx + 0.6, -71]], { w: 0.8 / s * 1.6, alpha: 0.5, bleed: false, jitter: 0.05, color: '#2a2024', seed: 6620 + i }));
-  ink(c, lampSide > 0 ? [[5.6, -80], [6.6, -75], [5.4, -70]] : [[-5.6, -80], [-6.6, -75], [-5.4, -70]], { w: 1.2 / s * 1.6, alpha: 0.55 * light, bleed: false, jitter: 0.05, color: '#ffc988', seed: 6623 });
-  // collar
-  const collar = new Path2D();
-  collar.moveTo(-12, -56); collar.lineTo(-11, -72); collar.quadraticCurveTo(0, -68.5, 11, -72); collar.lineTo(12, -56); collar.closePath();
-  c.fillStyle = '#101c22'; c.fill(collar);
-  lampLit(c, collar, 30 * lampSide, -50, 40, 0.4 * light);
-  // the cap: crown, the oxblood band all the way round, the peak's edge just showing
-  const cap = new Path2D();
-  cap.moveTo(-9.5, -80); cap.quadraticCurveTo(-11, -93, 0, -95); cap.quadraticCurveTo(11, -93, 9.5, -80); cap.closePath();
-  c.fillStyle = '#121a27'; c.fill(cap);
-  c.save(); c.clip(cap); c.fillStyle = PAL.oxblood; c.fillRect(-12, -84.2, 24, 2.8); c.restore();
-  lampLit(c, cap, 30 * lampSide, -86, 40, 0.4 * light);
-  const crown = [];
-  for (let i = 0; i <= 12; i += 1) {
-    const k = i / 12;
-    const q = (a, b, cc) => (1 - k) ** 2 * a + 2 * (1 - k) * k * b + k * k * cc;
-    crown.push([q(-9.5, -11, 0), q(-80, -93, -95)]);
-  }
-  for (let i = 1; i <= 12; i += 1) {
-    const k = i / 12;
-    const q = (a, b, cc) => (1 - k) ** 2 * a + 2 * (1 - k) * k * b + k * k * cc;
-    crown.push([q(0, 11, 9.5), q(-95, -93, -80)]);
-  }
-  ink(c, crown, { w: 1.4 / s * 1.6, alpha: 0.6, bleed: false, jitter: 0.02, color: '#06080c', seed: 6612 });
-  ink(c, lampSide > 0 ? [[3, -94.6], [8, -92], [10.6, -86]] : [[-3, -94.6], [-8, -92], [-10.6, -86]], { w: 1.2 / s * 1.6, alpha: 0.5 * light, bleed: false, jitter: 0.1, color: '#ffd59a', seed: 6613 });
+  // the back of his head, the collar and the cap, turned a little toward the window
+  drawButchHeadBack(c, s, { lampSide, light, turn });
   c.restore();
+}
+
+/**
+ * The back of Butch's head, in the back views' rig units (c already scaled
+ * by `s`; shoulders at -60, cap top at -95): the nape above the turned-up
+ * collar, a round skull under short dark-brown hair (Chapter 1's hair), the
+ * ears (the title's skin, lamp-lit on `lampSide`), and the cap from behind:
+ * the crown, the oxblood band all the way round, the peak's tips at the
+ * sides. `turn` 0..1 turns him a little toward his lamp side.
+ */
+export function drawButchHeadBack(c, s, { lampSide = 1, light = 1, turn = 0 } = {}) {
+  const u = (w) => (w / s) * 1.6;
+  const lx = 30 * lampSide;
+  const SKIN = '#7a5a44';
+  const SKIN_SHADE = '#54402f';
+  const HAIR = '#160e09';
+  c.save();
+  c.translate(turn * 2.4 * lampSide, 0);
+  // the neck, from the collar up into the hair
+  const neck = new Path2D();
+  neck.moveTo(-4.2, -60); neck.lineTo(-4.4, -70); neck.quadraticCurveTo(0, -72, 4.4, -70); neck.lineTo(4.2, -60); neck.closePath();
+  c.fillStyle = SKIN_SHADE; c.fill(neck);
+  lampLit(c, neck, lx * 0.4, -68, 12, 0.42 * light);
+  // the ears, out past the skull (the far one a little hidden as he turns)
+  const ears = new Path2D();
+  [-1, 1].forEach((side) => {
+    const away = side !== lampSide ? turn : 0;
+    const ex = side * (7 - away * 0.9);
+    ears.moveTo(ex + 1.9, -76.2);
+    ears.ellipse(ex, -76.2, 1.9 * (1 - away * 0.35), 3, side * 0.18, 0, TAU);
+  });
+  c.fillStyle = SKIN; c.fill(ears);
+  lampLit(c, ears, lx * 0.3, -76, 10, 0.75 * light);
+  // the skull: round, skin at the sides behind the ears
+  const skull = new Path2D();
+  skull.ellipse(0, -77.2, 6.8, 7.6, 0, 0, TAU);
+  c.fillStyle = SKIN; c.fill(skull);
+  // the hair, cut short: it covers the crown and ends in a soft line at the nape
+  const hair = new Path2D();
+  hair.moveTo(-6.7, -81); hair.quadraticCurveTo(-7, -76, -5.6, -73.2); hair.quadraticCurveTo(-4.4, -70.6, -2.6, -70.4);
+  hair.quadraticCurveTo(0, -69.4, 2.6, -70.4); hair.quadraticCurveTo(4.4, -70.6, 5.6, -73.2); hair.quadraticCurveTo(7, -76, 6.7, -81); hair.closePath();
+  c.fillStyle = HAIR; c.fill(hair);
+  // the side away from the lamp in shade
+  c.save(); c.clip(hair);
+  c.fillStyle = 'rgba(0, 0, 0, 0.3)'; c.fillRect(lampSide > 0 ? -8 : 1, -82, 7, 14);
+  c.restore();
+  lampLit(c, hair, lx * 0.24, -78, 9, 0.28 * light);
+  [-3.4, -1.1, 1.1, 3.4].forEach((hx, i) => ink(c, [[hx * 0.9, -80.5], [hx, -76], [hx * 0.85, -71.6]], { w: u(0.6), alpha: 0.45, bleed: false, jitter: 0.04, color: '#3a2618', seed: 6640 + i }));
+  // the outline: skull, the line of the jaw into the neck, the ears' rims
+  [-1, 1].forEach((side) => {
+    ink(c, [[side * 6.7, -80], [side * 6.9, -75], [side * 5.4, -71.6], [side * 4.4, -69.6], [side * 4.3, -64]], { w: u(1.1), alpha: 0.55, bleed: false, jitter: 0.04, color: '#06080c', seed: 6644 + side });
+    const ex = side * 7;
+    ink(c, [[ex - side * 0.4, -79], [ex + side * 1.7, -78], [ex + side * 1.8, -75], [ex + side * 0.6, -73.4]], { w: u(0.9), alpha: 0.5, bleed: false, jitter: 0.03, color: '#1a0f09', seed: 6647 + side });
+  });
+  // the lamp's rim light down his ear and jaw on the near side
+  ink(c, [[lampSide * 8.4, -78.4], [lampSide * 8.7, -75.6], [lampSide * 7.6, -73.4], [lampSide * 5.6, -71.6], [lampSide * 4.6, -68]], { w: u(1.1), alpha: 0.6 * light, bleed: false, jitter: 0.04, color: '#ffc988', seed: 6650 });
+  c.restore();
+  // the collar, turned up round his neck (under his ears: the nape shows)
+  const collar = new Path2D();
+  collar.moveTo(-13, -56); collar.quadraticCurveTo(-12.6, -62.6, -9.6, -67.2); collar.quadraticCurveTo(0, -64.4, 9.6, -67.2); collar.quadraticCurveTo(12.6, -62.6, 13, -56); collar.closePath();
+  c.fillStyle = '#101c22'; c.fill(collar);
+  lampLit(c, collar, lx, -50, 40, 0.4 * light);
+  ink(c, [[-9.6, -67.2], [0, -64.4], [9.6, -67.2]], { w: u(1), alpha: 0.55, bleed: false, jitter: 0.05, color: '#06080c', seed: 6624 });
+  ink(c, lampSide > 0 ? [[9.6, -67.2], [12.6, -62.6], [13, -56]] : [[-9.6, -67.2], [-12.6, -62.6], [-13, -56]], { w: u(1), alpha: 0.5 * light, bleed: false, jitter: 0.05, color: '#ffc988', seed: 6625 });
+  // the cap from behind; the peak's two tips just show past the crown
+  c.save();
+  c.translate(turn * 2.4 * lampSide, 0);
+  c.fillStyle = '#080c14';
+  [-1, 1].forEach((side) => {
+    c.beginPath(); c.moveTo(side * 8.6, -81.6); c.lineTo(side * 11.6, -80.6); c.lineTo(side * 10.8, -79.4); c.lineTo(side * 8.4, -79.8); c.closePath(); c.fill();
+  });
+  const cap = new Path2D();
+  cap.moveTo(-9.6, -80.4); cap.quadraticCurveTo(-11, -93, 0, -95); cap.quadraticCurveTo(11, -93, 9.6, -80.4); cap.quadraticCurveTo(0, -78.4, -9.6, -80.4); cap.closePath();
+  c.fillStyle = '#121a27'; c.fill(cap);
+  c.save(); c.clip(cap);
+  // the band follows the round of his head
+  c.strokeStyle = PAL.oxblood; c.lineWidth = 2.8;
+  c.beginPath(); c.moveTo(-12, -83.8); c.quadraticCurveTo(0, -81.8, 12, -83.8); c.stroke();
+  c.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  c.beginPath(); c.moveTo(-12, -81.4); c.quadraticCurveTo(0, -79.4, 12, -81.4); c.lineTo(12, -78); c.lineTo(-12, -78); c.closePath(); c.fill();
+  c.restore();
+  lampLit(c, cap, lx, -86, 40, 0.4 * light);
+  ink(c, [[-9.6, -80.4], [-10.6, -88], [-7, -93.6], [0, -95], [7, -93.6], [10.6, -88], [9.6, -80.4], [0, -78.6], [-9.6, -80.4]], { w: u(1.3), alpha: 0.6, bleed: false, jitter: 0.02, color: '#06080c', seed: 6612 });
+  ink(c, lampSide > 0 ? [[3, -94.6], [8, -92], [10.6, -86]] : [[-3, -94.6], [-8, -92], [-10.6, -86]], { w: u(1.2), alpha: 0.5 * light, bleed: false, jitter: 0.1, color: '#ffd59a', seed: 6613 });
   c.restore();
 }
 
