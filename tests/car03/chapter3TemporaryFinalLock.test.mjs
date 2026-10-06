@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v43', () => {
+describe('Chapter 3 integrated final lock v44', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -98,10 +98,28 @@ describe('Chapter 3 integrated final lock v43', () => {
     // carriage door and says so; "Take the room" leads Hana's menu after the
     // ledger question; on LOW / LOWEST Butch's rim becomes a clean inverted-
     // hull outline. Toma's composition unchanged. Files: 27 -> 27.
+    // v44 (alpha round 4 fix round, engineer M3, 2026-10-05): reopened for
+    // the round-4 playthrough issues (tests/car03/chapter3AlphaRound4).
+    // Mid-chapter resume points at every beat (chapter3ResumePoint /
+    // chapter3ResumeStart; new starts ministry-hall, market, hotel-lobby,
+    // hotel-room, platform-walk; 3.4a starts after the cut feed); the ticket
+    // board names lens → stack → punch and shows PUNCH BOTH only when it
+    // works; checklist menus keep their numbers (asked topics struck,
+    // Continue last; "Take the room" last again); the Mara ahead wears a rose
+    // scarf on her rig's neck bone and the station beat pushes in on the
+    // pair; a CLICK TO WALK · E TO LOOK · HOLD TAB controls tag; game time
+    // follows the wall clock down to 1 fps (screen work once per drawn frame,
+    // one shared snapshot per story change), LOW 0.7 / LOWEST 0.5 pixel
+    // ratio and no MSAA when pinned LOW; Chapter 2's stone notice for the
+    // Echo Stone (no Butch count line, the coat stays unclaimed); the dawn
+    // bench waits for its painting; the camera reaches the laundry fire;
+    // beacons draw over roofs and the edge compass stays while the target is
+    // off screen; interior cuts swap at full black and lift after the new set
+    // has drawn. Toma's composition unchanged. Files: 27 -> 27.
     assert.equal(sourceFiles.length, 27);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'da80aaad0054e2587b7ef1959018436261186178ba2515c0558c030c3720b950',
+      'a0ce7362e78498857bfa518c78696157658fd7ec1c636ffcb9059f738ed0910a',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
