@@ -15,7 +15,7 @@ import {
   STAGE, buildTimeline, cameraAt, createSession, panelLayout, parallaxOffset, stageView,
 } from './timeline.js';
 import { createCutsceneSfx } from './sfx.js';
-import { isSoftwareRenderer } from '../framePacing.js';
+import { isSoftwareRenderer, nativeRequestAnimationFrame, setPageCovered } from '../framePacing.js';
 import { useSoftwareCanvas } from './painters.js';
 
 /** The largest backing store for the window canvas (device px). */
@@ -163,6 +163,9 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   root.prepend(canvas);
   root.append(caption, arriving);
   root.classList.add('is-cutscene');
+  // The overlay is opaque from here on: the page underneath stops drawing,
+  // so the warm-up and every frame get the whole machine.
+  setPageCovered(true);
 
   contextOptions = softwareRendering() ? { willReadFrequently: true } : {};
   useSoftwareCanvas(Boolean(contextOptions.willReadFrequently));
@@ -434,6 +437,9 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   const startMusic = () => {
     if (musicStarted || !def.music?.src) return;
     musicStarted = true;
+    // A chapter's last line may still hold the score ducked under dialogue
+    // (Echo City's station scanner did): the cutscene has no voice.
+    music.setDialogueActive(false);
     music.play(def.music.id ?? `cutscene-${def.id}`, { loop: true, fade: 2, ...def.music });
   };
 
@@ -453,7 +459,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     fire(session.tick(now));
     render();
     if (before === 'playing' && session.status !== 'playing') reachEnd();
-    if (!paused) raf = requestAnimationFrame(tick);
+    if (!paused) raf = nativeRequestAnimationFrame(tick);
   };
 
   const reachEnd = () => {
@@ -464,7 +470,9 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     onEnd({ skipped: session.skipped });
   };
 
-  const schedule = () => { if (!raf && !destroyed && !session.paused) raf = requestAnimationFrame(tick); };
+  // The cutscene ticks on the browser's own frame: the page underneath is
+  // held while the cutscene covers it (framePacing.js setPageCovered).
+  const schedule = () => { if (!raf && !destroyed && !session.paused) raf = nativeRequestAnimationFrame(tick); };
 
   const onPause = (event) => {
     if (event.detail?.paused) controller.pause('menu');
@@ -621,6 +629,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       window.removeEventListener('nightfall:pause', onPause);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('resize', onResize);
+      setPageCovered(false);
       if (!ended) { music.stop({ fade: 1.2 }); sfx.close(); }
       layers.clear();
       if (debug) {

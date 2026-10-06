@@ -8,7 +8,7 @@ const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf
 // A fake browser frame source: tick() delivers one native frame.
 function harness(state = {}) {
   const native = [];
-  const s = { inFlight: 0, gpu: true, paused: false, leaving: false, ended: 0, ...state };
+  const s = { inFlight: 0, gpu: true, paused: false, leaving: false, covered: false, ended: 0, ...state };
   const pacer = createFramePacer({
     request: (callback) => native.push(callback),
     inFlight: () => s.inFlight,
@@ -16,6 +16,7 @@ function harness(state = {}) {
     endFrame: () => { s.ended += 1; },
     paused: () => s.paused,
     leaving: () => s.leaving,
+    covered: () => s.covered,
   });
   const tick = (now = 16) => { const due = native.splice(0); due.forEach((callback) => callback(now)); };
   return { pacer, s, tick, native };
@@ -70,6 +71,40 @@ test('a 3D page does not draw behind the pause menu, and resumes after it', () =
   phaser.pacer.requestAnimationFrame(() => { phaserRuns += 1; });
   phaser.tick();
   assert.equal(phaserRuns, 1);
+});
+
+test('no page draws while a cutscene covers it, 2D or 3D; it picks up afterwards', () => {
+  for (const gpu of [true, false]) {
+    const { pacer, s, tick } = harness({ covered: true, gpu });
+    let runs = 0;
+    const loop = () => { runs += 1; pacer.requestAnimationFrame(loop); };
+    pacer.requestAnimationFrame(loop);
+    tick(); tick(); tick();
+    assert.equal(runs, 0, `gpu ${gpu}`);
+    s.covered = false;
+    tick();
+    assert.equal(runs, 1, `gpu ${gpu}`);
+  }
+});
+
+test('the cutscene ticks on the native frame and covers the page while it is mounted', () => {
+  const player = read('src/shell/cutscene/player.js');
+  assert.doesNotMatch(player, /[^.\w]requestAnimationFrame\(tick\)/);
+  assert.match(player, /nativeRequestAnimationFrame\(tick\)/);
+  assert.match(player, /setPageCovered\(true\)/);
+  assert.match(player, /setPageCovered\(false\)/);
+});
+
+test('setPageCovered flips the flag once and says so', async () => {
+  const { setPageCovered } = await import('../src/shell/framePacing.js');
+  const events = [];
+  const win = { dispatchEvent: (event) => events.push(event.detail.covered) };
+  setPageCovered(true, win);
+  setPageCovered(true, win);
+  assert.equal(win.NIGHTFALL_COVERED, true);
+  setPageCovered(false, win);
+  assert.equal(win.NIGHTFALL_COVERED, false);
+  assert.deepEqual(events, [true, false]);
 });
 
 test('once the page is leaving for the title no frame runs again', () => {

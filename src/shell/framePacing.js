@@ -16,9 +16,15 @@
 //   - while the pause menu is open, a 3D page does not draw at all (its
 //     canvas keeps showing the last frame) until Resume, so the GPU catches
 //     up behind the menu;
-//   - once the page is leaving for the title, no callback runs again.
+//   - once the page is leaving for the title, no callback runs again;
+//   - while an in-engine cutscene covers the page (window.NIGHTFALL_COVERED,
+//     set by cutscene/player.js), the page does not draw at all, 2D or 3D:
+//     the cutscene ticks on the native frame (nativeRequestAnimationFrame)
+//     and gets the whole machine instead of sharing it with a scene nobody
+//     can see (alpha R4: on a software renderer the Chapter 3 page held the
+//     3→4 cutscene to a frame every few seconds).
 // Pages without a WebGL2 context (the Phaser chapters use WebGL1) are only
-// affected by the last rule.
+// affected by the last two rules.
 
 export const MAX_FRAMES_IN_FLIGHT = 2;
 export const MAX_SOFTWARE_FRAMES_IN_FLIGHT = 1;
@@ -35,7 +41,7 @@ export const MAX_HELD_TICKS = 120;
  */
 export function createFramePacer({
   request, cancel = () => {}, inFlight = () => 0, maxInFlight = () => MAX_FRAMES_IN_FLIGHT, hasGpuWork = () => false, endFrame = () => {},
-  paused = () => false, leaving = () => false, onError = (error) => { throw error; },
+  paused = () => false, leaving = () => false, covered = () => false, onError = (error) => { throw error; },
 }) {
   let queue = new Map();
   // Well clear of the browser's own ids, so a frame requested before the
@@ -56,7 +62,7 @@ export function createFramePacer({
     scheduled = false;
     if (leaving()) { queue.clear(); return; }
     if (!queue.size) return;
-    const isPaused = paused() && hasGpuWork();
+    const isPaused = (paused() && hasGpuWork()) || covered();
     if (!isPaused) pausedFrames = 0;
     const holdForPause = isPaused && pausedFrames >= PAUSED_FRAMES;
     const holdForGpu = !holdForPause && inFlight() >= maxInFlight() && held < MAX_HELD_TICKS;
@@ -114,6 +120,18 @@ export function nativeRequestAnimationFrame(callback, win = globalThis.window) {
   return setTimeout(() => callback(Date.now()), 16);
 }
 
+/**
+ * An overlay that hides the whole page (an in-engine cutscene) says so: the
+ * page's own frames wait until it is gone (see the pacer rules above).
+ */
+export function setPageCovered(on, win = globalThis.window) {
+  if (!win) return;
+  const next = Boolean(on);
+  if (Boolean(win.NIGHTFALL_COVERED) === next) return;
+  win.NIGHTFALL_COVERED = next;
+  win.dispatchEvent?.(new CustomEvent('nightfall:covered', { detail: { covered: next } }));
+}
+
 export function installFramePacing(win = globalThis.window) {
   if (!win?.requestAnimationFrame || win.__nightfallFramePacing) return win?.__nightfallFramePacing ?? null;
   const GL2 = win.WebGL2RenderingContext;
@@ -160,11 +178,13 @@ export function installFramePacing(win = globalThis.window) {
     endFrame,
     paused: () => Boolean(win.NIGHTFALL_PAUSED),
     leaving: () => Boolean(win.NIGHTFALL_LEAVING),
+    covered: () => Boolean(win.NIGHTFALL_COVERED),
     onError: (error) => (win.reportError ? win.reportError(error) : win.setTimeout(() => { throw error; })),
   });
   win.requestAnimationFrame = pacer.requestAnimationFrame;
   win.cancelAnimationFrame = pacer.cancelAnimationFrame;
   win.addEventListener?.('nightfall:pause', (event) => { if (!event.detail?.paused) pacer.wake(); });
+  win.addEventListener?.('nightfall:covered', (event) => { if (!event.detail?.covered) pacer.wake(); });
   win.__nightfallFramePacing = pacer;
   return pacer;
 }
