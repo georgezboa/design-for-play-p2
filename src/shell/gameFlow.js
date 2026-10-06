@@ -4,9 +4,14 @@ import { preloadProgress } from './preloadQueue.js';
 import { SKIP_HOLD_MS, createHoldGesture, isSkipKey } from './holdToSkip.js';
 import { DEFAULT_SETTINGS, volumeForChannel } from './saveSystem.js';
 import { orderCinematicSources } from './cinematicSources.js';
+import { loadCutscene, registeredCutscene } from './cutscene/registry.js';
 
 export { CINEMATIC_TYPES, cinematicSources, orderCinematicSources } from './cinematicSources.js';
+export { CUTSCENE_IDS, registeredCutscene, resolveCutsceneId } from './cutscene/registry.js';
 
+// The eight transitions. Each id / film path resolves to an in-engine
+// cutscene (src/shell/cutscene, docs/CUTSCENES_SPEC.md) once that cutscene
+// is authored; until then the film at this path plays, as before.
 export const CINEMATICS = Object.freeze({
   opening: '/cinematics/start.mp4',
   chapter1To2: '/cinematics/1-2.mp4',
@@ -15,6 +20,12 @@ export const CINEMATICS = Object.freeze({
   chapter4To5: '/cinematics/4-5.mp4',
   ending: '/cinematics/end.mp4',
 });
+
+/** The line under the held last frame while the next chapter finishes loading. */
+export const ARRIVING_LINE = 'THE NIGHT SERVICE IS ARRIVING';
+/** A tap of Escape shorter than this opens the pause menu; holding it skips. */
+export const ESCAPE_TAP_MS = 280;
+const PAUSE_MENU_ID = 'nightfall-pause-menu';
 
 let activePlayback = null;
 let cinematicVideo = null;
@@ -45,36 +56,35 @@ export function playCinematic({
   // loading screen. `requirePreloadReady` remains for explicit non-chapter
   // callers, but every chapter preload is now a hard completion gate.
   const waitForPreload = Boolean(preloadChapterId) || requirePreloadReady;
+  // An authored cutscene replaces the film; an id without one keeps its film.
+  const cutsceneName = registeredCutscene(id, src);
+  let mode = cutsceneName ? 'cutscene' : 'video';
 
   const root = document.createElement('section');
   root.className = 'nf-cinematic';
   root.dataset.cinematic = id;
+  if (cutsceneName) root.dataset.cutscene = cutsceneName;
   root.setAttribute('aria-label', label);
   root.innerHTML = `
-    <div class="nf-cinematic-loading" role="status">LOADING FILM</div>
+    <div class="nf-cinematic-loading" role="status">${mode === 'video' ? 'LOADING FILM' : ''}</div>
     <div class="nf-cinematic-progress" aria-hidden="true"><span></span></div>
     <div class="nf-cinematic-skip" aria-hidden="true">
       <svg viewBox="0 0 36 36"><circle class="nf-skip-track" cx="18" cy="18" r="15"/><circle class="nf-skip-fill" cx="18" cy="18" r="15" pathLength="100"/></svg>
       <span>HOLD TO SKIP</span>
     </div>
   `;
-  const video = sharedCinematicVideo(label);
-  video.pause();
-  video.currentTime = 0;
-  const sources = orderCinematicSources(src, (type) => video.canPlayType?.(type) ?? '');
-  let sourceIndex = 0;
-  video.src = sources[sourceIndex];
-  root.dataset.source = sources[sourceIndex];
-  video.dataset.nightfallAudioChannel = 'music';
-  video.volume = volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? DEFAULT_SETTINGS, 'music');
-  root.prepend(video);
   document.body.append(root);
+  let video = null;
+  let cutscene = null;
   let preloadPromise = null;
   let preloadSettled = false;
   const beginPreload = () => {
     if (!preloadPromise && preloadChapterId) {
       preloadPromise = preloadChapter(preloadChapterId);
-      preloadPromise.then(() => { preloadSettled = true; });
+      preloadPromise.then(() => {
+        preloadSettled = true;
+        cutscene?.markReady();
+      });
     }
     return preloadPromise;
   };
@@ -83,10 +93,12 @@ export function playCinematic({
   // Any input reveals a small prompt; holding Space / Enter / Escape or a
   // mouse button for about a second skips the film. Skipping runs the same
   // completion path as the film ending, so preload hard-gates still apply.
+  // A short tap of Escape opens the pause menu where the page has one.
   const skipPrompt = root.querySelector('.nf-cinematic-skip');
   const hold = createHoldGesture();
   let holdFrame = 0;
   let promptTimer = 0;
+  let escapeDownAt = null;
   const showPrompt = () => {
     skipPrompt.classList.add('is-visible');
     window.clearTimeout(promptTimer);
@@ -133,19 +145,33 @@ export function playCinematic({
       showPrompt();
     }
   };
+  const openPauseMenu = () => {
+    const menu = document.getElementById(PAUSE_MENU_ID);
+    if (typeof menu?.open !== 'function') return false;
+    menu.open();
+    return true;
+  };
   const onKeyDown = (event) => {
-    if (settled) return;
+    if (settled || globalThis.NIGHTFALL_PAUSED) return;
     showPrompt();
     if (!isSkipKey(event)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    if (!event.repeat) pressSkip(`key:${event.code || event.key}`);
+    if (event.repeat) return;
+    if (event.key === 'Escape' || event.code === 'Escape') escapeDownAt = performance.now();
+    pressSkip(`key:${event.code || event.key}`);
   };
   const onKeyUp = (event) => {
     if (!isSkipKey(event)) return;
     event.preventDefault();
     event.stopImmediatePropagation();
     releaseSkip(`key:${event.code || event.key}`);
+    const escape = event.key === 'Escape' || event.code === 'Escape';
+    if (escape && escapeDownAt !== null) {
+      const tap = performance.now() - escapeDownAt < ESCAPE_TAP_MS;
+      escapeDownAt = null;
+      if (tap && !settled && !hold.completed && !globalThis.NIGHTFALL_PAUSED) openPauseMenu();
+    }
   };
   const onPointerDown = (event) => {
     if (settled || event.target.closest?.('.nf-cinematic-resume')) return;
@@ -156,6 +182,7 @@ export function playCinematic({
   const onBlur = () => {
     hold.releaseAll();
     releaseSkip('blur');
+    escapeDownAt = null;
   };
   const detachSkip = () => {
     window.removeEventListener('keydown', onKeyDown, true);
@@ -183,9 +210,15 @@ export function playCinematic({
   // ---------- preparing the next chapter ----------
   const progressBar = root.querySelector('.nf-cinematic-progress span');
   const renderPreparing = (state = getChapterPreloadState(preloadChapterId)) => {
-    const status = root.querySelector('.nf-cinematic-loading');
     const percent = Math.round(preloadProgress(state) * 100);
-    if (status) status.textContent = `PREPARING EVERY OBJECT · PLEASE WAIT · ${percent}%`;
+    if (mode === 'cutscene') {
+      // the cutscene's last frame stays up, with one small line under it
+      const line = root.querySelector('.nf-cinematic-arriving');
+      if (line) line.textContent = `${ARRIVING_LINE} · ${percent}%`;
+    } else {
+      const status = root.querySelector('.nf-cinematic-loading');
+      if (status) status.textContent = `PREPARING EVERY OBJECT · PLEASE WAIT · ${percent}%`;
+    }
     if (progressBar) progressBar.style.width = `${percent}%`;
   };
   const onPreloadProgress = (event) => {
@@ -199,7 +232,9 @@ export function playCinematic({
     if (settled) return;
     settled = true;
     detachSkip();
-    video.pause();
+    video?.pause();
+    // a skipped cutscene jumps to its last frame (and lets its sound go)
+    cutscene?.skip();
     root.querySelector('.nf-cinematic-resume')?.remove();
     beginPreload();
     // A hard-gated route that is still loading keeps the overlay black and
@@ -208,9 +243,17 @@ export function playCinematic({
     // The ending credits replace this overlay in the same document. Keeping
     // the overlay black until that screen mounts prevents the finished boss
     // frame from flashing through between the film and the credits.
-    if (preserveBlackout || holdForPreload) {
+    if (preserveBlackout) {
       root.classList.add('is-blackout');
-      video.style.opacity = '0';
+      if (video) video.style.opacity = '0';
+    } else if (holdForPreload) {
+      if (mode === 'cutscene') {
+        // hold the cutscene's last frame rather than going to black
+        cutscene?.hold(true);
+      } else {
+        root.classList.add('is-blackout');
+        if (video) video.style.opacity = '0';
+      }
     } else {
       root.classList.add('is-finished');
     }
@@ -234,9 +277,12 @@ export function playCinematic({
         }
       }
       root.remove();
-      video.removeEventListener('error', onVideoError);
-      video.removeAttribute('src');
-      video.load();
+      if (video) {
+        video.removeEventListener('error', onVideoError);
+        video.removeAttribute('src');
+        video.load();
+      }
+      cutscene?.destroy();
       activePlayback = null;
       await onComplete?.();
       resolvePlayback();
@@ -247,10 +293,11 @@ export function playCinematic({
     root.dataset.skipped = 'true';
     finish();
   };
-  video.addEventListener('playing', beginPreload, { once: true });
-  video.addEventListener('canplay', () => root.classList.add('is-ready'), { once: true });
-  video.addEventListener('ended', finish, { once: true });
-  const onVideoError = () => {
+
+  // ---------- the film (until this transition's cutscene is authored) ----------
+  let sources = [];
+  let sourceIndex = 0;
+  function onVideoError() {
     if (settled) return;
     // The other encoding of the same film, before giving up on it.
     if (sourceIndex + 1 < sources.length) {
@@ -264,27 +311,87 @@ export function playCinematic({
     video.removeEventListener('error', onVideoError);
     root.querySelector('.nf-cinematic-loading').textContent = 'FILM UNAVAILABLE · CONTINUING';
     window.setTimeout(finish, 900);
-  };
-  video.addEventListener('error', onVideoError);
-  video.play().catch(() => {
-    root.classList.add('needs-gesture');
-    const resume = document.createElement('button');
-    resume.type = 'button';
-    resume.className = 'nf-cinematic-resume';
-    resume.textContent = 'PLAY FILM';
-    resume.addEventListener('click', () => {
-      video.play().then(() => {
-        resume.remove();
-        root.classList.remove('needs-gesture');
-      }).catch(() => {
-        resume.textContent = 'CLICK TO PLAY FILM';
+  }
+  const startVideo = () => {
+    mode = 'video';
+    root.classList.remove('is-cutscene');
+    video = sharedCinematicVideo(label);
+    video.pause();
+    video.currentTime = 0;
+    video.style.opacity = '';
+    sources = orderCinematicSources(src, (type) => video.canPlayType?.(type) ?? '');
+    sourceIndex = 0;
+    video.src = sources[sourceIndex];
+    root.dataset.source = sources[sourceIndex];
+    video.dataset.nightfallAudioChannel = 'music';
+    video.volume = volumeForChannel(globalThis.NIGHTFALL_SETTINGS ?? DEFAULT_SETTINGS, 'music');
+    root.prepend(video);
+    if (activePlayback) activePlayback.video = video;
+    video.addEventListener('playing', beginPreload, { once: true });
+    video.addEventListener('canplay', () => root.classList.add('is-ready'), { once: true });
+    video.addEventListener('ended', finish, { once: true });
+    video.addEventListener('error', onVideoError);
+    video.play().catch(() => {
+      if (settled) return;
+      root.classList.add('needs-gesture');
+      const resume = document.createElement('button');
+      resume.type = 'button';
+      resume.className = 'nf-cinematic-resume';
+      resume.textContent = 'PLAY FILM';
+      resume.addEventListener('click', () => {
+        video.play().then(() => {
+          resume.remove();
+          root.classList.remove('needs-gesture');
+        }).catch(() => {
+          resume.textContent = 'CLICK TO PLAY FILM';
+        });
       });
+      root.append(resume);
+      resume.focus();
     });
-    root.append(resume);
-    resume.focus();
-  });
+  };
 
-  activePlayback = { id, root, video, promise, finish, skip, beginPreload, requirePreloadReady: waitForPreload };
+  // ---------- the in-engine cutscene ----------
+  const startCutscene = async () => {
+    const def = await loadCutscene(cutsceneName);
+    if (!def) throw new Error(`cutscene ${cutsceneName} has no definition`);
+    if (settled) return;
+    const { mountCutscene } = await import('./cutscene/player.js');
+    if (settled) return;
+    cutscene = mountCutscene(def, { root, ready: !waitForPreload, onEnd: () => finish() });
+    if (activePlayback) {
+      activePlayback.cutscene = cutscene;
+      activePlayback.video = pauseShim;
+    }
+    await cutscene.start();
+    // the next chapter loads while the cutscene plays
+    beginPreload();
+  };
+  // pauseMenu.js pauses whatever getActiveCinematic().video is
+  const pauseShim = {
+    pause: () => cutscene?.pause('menu'),
+    play: () => { cutscene?.resume('menu'); return Promise.resolve(); },
+  };
+
+  activePlayback = { id, root, video: null, cutscene: null, mode, promise, finish, skip, beginPreload, requirePreloadReady: waitForPreload };
+  Object.defineProperty(activePlayback, 'mode', { get: () => mode, enumerable: true });
+  if (cutsceneName) {
+    root.classList.add('is-cutscene');
+    activePlayback.video = pauseShim;
+    startCutscene().catch((error) => {
+      console.warn('[cinematic] cutscene unavailable, playing the film', cutsceneName, error);
+      cutscene?.destroy();
+      cutscene = null;
+      root.querySelectorAll('.nf-cinematic-canvas, .nf-cinematic-caption, .nf-cinematic-arriving').forEach((node) => node.remove());
+      const status = root.querySelector('.nf-cinematic-loading');
+      if (status) status.textContent = 'LOADING FILM';
+      if (settled) return;
+      if (typeof src === 'string' && src) startVideo();
+      else finish();
+    });
+  } else {
+    startVideo();
+  }
   return promise;
 }
 
