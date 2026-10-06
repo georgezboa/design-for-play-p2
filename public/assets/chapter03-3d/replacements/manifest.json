@@ -10,9 +10,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-archive-furniture/5f10f2aa-a4bf-47f0-89e6-9bd68b86ae51_0.glb",
       "sourceSha256": "d97572578945be62f05327c97d9d99416bd9231918266c3ecdf1f6902eb375f7",
       "output": "public/assets/chapter03-3d/replacements/env-archive-furniture.glb",
-      "outputSha256": "babad9c4dfa67ed9ebb17d3519e5be3f772259f4b2434a25813257c67e90086f",
+      "outputSha256": "963990d744d5b678384082e993e36b1c13c43dd56c4efc9e9ee252bc641d5e01",
       "sourceBytes": 45676956,
-      "outputBytes": 4520900,
+      "outputBytes": 507524,
       "trianglesBefore": 499908,
       "triangleBudget": 40000,
       "trianglesAfter": 40000,
@@ -23,8 +23,8 @@
       ],
       "targetFitBoxMetres": [
         15.5,
-        16.0,
-        4.0
+        16,
+        4
       ],
       "uniformScale": 15.7108231,
       "runtimeDimensionsMetres": [
@@ -55,7 +55,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "babad9c4dfa67ed9ebb17d3519e5be3f772259f4b2434a25813257c67e90086f",
+      "preCompressionBytes": 4520900,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-archive-shell",
@@ -64,9 +67,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-archive-shell/7cdded0e-90fb-452a-896a-8b057519a797_0.glb",
       "sourceSha256": "1bda7cda2d979be275efb41c706bcb7b970360568c0bd06115d43cebb154bd3f",
       "output": "public/assets/chapter03-3d/replacements/env-archive-shell.glb",
-      "outputSha256": "21ba9ab2169981373f4a87bc5c6109eb4928165d59d158ae81f6ebc921be2308",
+      "outputSha256": "6ff3d2d5923767f49984531cca0a9a2559f857b04cc220e9e1e777408f260444",
       "sourceBytes": 55817124,
-      "outputBytes": 5581136,
+      "outputBytes": 797092,
       "trianglesBefore": 497610,
       "triangleBudget": 52000,
       "trianglesAfter": 52000,
@@ -77,7 +80,7 @@
       ],
       "targetFitBoxMetres": [
         17.5,
-        18.0,
+        18,
         5.2
       ],
       "uniformScale": 9.00594938,
@@ -109,7 +112,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "21ba9ab2169981373f4a87bc5c6109eb4928165d59d158ae81f6ebc921be2308",
+      "preCompressionBytes": 5581136,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-butch-room-furniture",
@@ -118,9 +124,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-butch-room-furniture/3b785ffe-eda3-4447-87f6-bd06016d5d0f_0.glb",
       "sourceSha256": "8ab163ca9c59504805c7c46675fdf8f838f7da36f99c3cf47853b0cc975dfab7",
       "output": "public/assets/chapter03-3d/replacements/env-butch-room-furniture.glb",
-      "outputSha256": "4415e3448acc66b69034eb442968b43c90b2ee88227a8efc8a85c1f885e3d81f",
+      "outputSha256": "2a502b8d063351e216694c0f44290a1d6a84e0bede57264e38cefb7a512fee9f",
       "sourceBytes": 45798328,
-      "outputBytes": 4005156,
+      "outputBytes": 411972,
       "trianglesBefore": 496322,
       "triangleBudget": 30000,
       "trianglesAfter": 30000,
@@ -163,7 +169,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "4415e3448acc66b69034eb442968b43c90b2ee88227a8efc8a85c1f885e3d81f",
+      "preCompressionBytes": 4005156,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-butch-room-shell",
@@ -172,9 +181,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-butch-room-shell/4ac7ad0e-942e-4c5e-b20f-22d8b4b1f19c_0.glb",
       "sourceSha256": "5a71f8017c19e9f41c9ca9236e07812538d4d7b7145579604a034181b6243ac4",
       "output": "public/assets/chapter03-3d/replacements/env-butch-room-shell.glb",
-      "outputSha256": "b993b8aabb8c84bea192849c587b5cbb8df4aba1cc3c1e63426eb4812ca9bd0b",
+      "outputSha256": "ab9b722bd2be3823f0c8688f6443a4d2a94e44614cd7be8f51c07ca5cf85dc8e",
       "sourceBytes": 44480536,
-      "outputBytes": 3884452,
+      "outputBytes": 441792,
       "trianglesBefore": 500000,
       "triangleBudget": 38000,
       "trianglesAfter": 38000,
@@ -217,7 +226,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "b993b8aabb8c84bea192849c587b5cbb8df4aba1cc3c1e63426eb4812ca9bd0b",
+      "preCompressionBytes": 3884452,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-campfire-props",
@@ -226,9 +238,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-campfire-props/ddb62744-c123-4391-b944-8149d5263549_0.glb",
       "sourceSha256": "f40be1022fcaca858800b8b9a3c3fae67d7c504a7cf1fc7d9305f83a94bc9e19",
       "output": "public/assets/chapter03-3d/replacements/env-campfire-props.glb",
-      "outputSha256": "fb1c64937bb240cf1d31059238a2c8b2904392557941a8380858ed108285853e",
+      "outputSha256": "94f95a302cd24c179956f0eb04bf11df0cf45f20c1f04095eae19bbe3ecf8b5d",
       "sourceBytes": 52746568,
-      "outputBytes": 4528216,
+      "outputBytes": 659132,
       "trianglesBefore": 489956,
       "triangleBudget": 22000,
       "trianglesAfter": 22000,
@@ -238,9 +250,9 @@
         0.4547
       ],
       "targetFitBoxMetres": [
-        5.0,
-        5.0,
-        2.0
+        5,
+        5,
+        2
       ],
       "uniformScale": 4.39823331,
       "runtimeDimensionsMetres": [
@@ -271,7 +283,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "fb1c64937bb240cf1d31059238a2c8b2904392557941a8380858ed108285853e",
+      "preCompressionBytes": 4528216,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-doorless-carriage",
@@ -280,9 +295,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-doorless-carriage/608e7888-95f5-4194-80a5-81f6f2961a86_0.glb",
       "sourceSha256": "e9b09323181544de16cef4f787d9f560c4575352ab951f61c2ab09e18abc6535",
       "output": "public/assets/chapter03-3d/replacements/env-doorless-carriage.glb",
-      "outputSha256": "a21eef15eb310064b32438603765a8fdd0202ef8a351b0c51a64bf77fbeae2c2",
+      "outputSha256": "e8a6b7213534b40287ab2970fc4fdf7738d5527483fce80a412a0732f410dfbb",
       "sourceBytes": 54976208,
-      "outputBytes": 5625472,
+      "outputBytes": 988044,
       "trianglesBefore": 496184,
       "triangleBudget": 50000,
       "trianglesAfter": 50000,
@@ -293,7 +308,7 @@
       ],
       "targetFitBoxMetres": [
         3.2,
-        10.0,
+        10,
         3.8
       ],
       "uniformScale": 6.9611462,
@@ -325,7 +340,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "a21eef15eb310064b32438603765a8fdd0202ef8a351b0c51a64bf77fbeae2c2",
+      "preCompressionBytes": 5625472,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-eda-oil-stall",
@@ -334,9 +352,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-eda-oil-stall/ef1e4847-aa70-4be0-8686-3547bcf3002c_0.glb",
       "sourceSha256": "2305712dcea5a57bc1ee0ce1621b974aa95815bc85fdd70570b4432eac1a3463",
       "output": "public/assets/chapter03-3d/replacements/env-eda-oil-stall.glb",
-      "outputSha256": "5baab2a93bd6547e99b7f92ea2322a4bb99bbb0630319846dcc3197e9fb6988a",
+      "outputSha256": "ae5c5671d80e2cc938e02d86d1995ea9661b239340224dcdfe1b0fa0ba9f4558",
       "sourceBytes": 50563952,
-      "outputBytes": 4318336,
+      "outputBytes": 635676,
       "trianglesBefore": 499956,
       "triangleBudget": 28000,
       "trianglesAfter": 28000,
@@ -347,7 +365,7 @@
       ],
       "targetFitBoxMetres": [
         4.2,
-        3.0,
+        3,
         3.4
       ],
       "uniformScale": 4.44379326,
@@ -379,7 +397,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "5baab2a93bd6547e99b7f92ea2322a4bb99bbb0630319846dcc3197e9fb6988a",
+      "preCompressionBytes": 4318336,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-flower-stall",
@@ -388,9 +409,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-flower-stall/7adedc68-5fb9-4069-990a-d1d969d6963d_0.glb",
       "sourceSha256": "62f04a7712ee9cce7ec5382be087def4ed1cab959e4e21289bba3af25ec6505e",
       "output": "public/assets/chapter03-3d/replacements/env-flower-stall.glb",
-      "outputSha256": "d04a1895819ed75924c3fe339aed22cd7eb5c94b205a514af7fcdb826adb967c",
+      "outputSha256": "687adb8c9f434f4d337e7d397807c2a01f2bc390d025fa20b82dda337b3b62a2",
       "sourceBytes": 51426592,
-      "outputBytes": 4395152,
+      "outputBytes": 645504,
       "trianglesBefore": 498386,
       "triangleBudget": 26000,
       "trianglesAfter": 26000,
@@ -401,7 +422,7 @@
       ],
       "targetFitBoxMetres": [
         4.2,
-        3.0,
+        3,
         3.4
       ],
       "uniformScale": 3.59628085,
@@ -433,7 +454,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "d04a1895819ed75924c3fe339aed22cd7eb5c94b205a514af7fcdb826adb967c",
+      "preCompressionBytes": 4395152,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-hotel-corridor-shell",
@@ -442,9 +466,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-corridor-shell/c5eebcef-7583-4db1-8dae-ed1c547eb481_0.glb",
       "sourceSha256": "8bdcaf5cfd579365e1df09b02131dc86604a681067f4e5604b80b1b131b1420e",
       "output": "public/assets/chapter03-3d/replacements/env-hotel-corridor-shell.glb",
-      "outputSha256": "72008c174cf6a2f8fcf1f582c28aa0fbce4cae00d8e59215f4429f81778f3283",
+      "outputSha256": "e1525f84787e217719755d397cd4d8f825cf91447682138c506c6387b0fe1860",
       "sourceBytes": 50204676,
-      "outputBytes": 4929840,
+      "outputBytes": 796244,
       "trianglesBefore": 498944,
       "triangleBudget": 42000,
       "trianglesAfter": 42000,
@@ -487,7 +511,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "72008c174cf6a2f8fcf1f582c28aa0fbce4cae00d8e59215f4429f81778f3283",
+      "preCompressionBytes": 4929840,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-hotel-lobby-furniture",
@@ -496,9 +523,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-lobby-furniture/04e6dfee-4dc7-4898-bc63-a4176472f52d_0.glb",
       "sourceSha256": "28b4c5f94dc79038f05a85ea26f428a5d7318a24c2bf4cb6b8ac8892a8bbc011",
       "output": "public/assets/chapter03-3d/replacements/env-hotel-lobby-furniture.glb",
-      "outputSha256": "a56c2114792d3386a0e6ef7d8fc8871f25a54ed28305638437b8103c2a76f19c",
+      "outputSha256": "9f9efc481d4fca27170a247b995720e8427eccbd38221aa432aec531732e1ce4",
       "sourceBytes": 48222580,
-      "outputBytes": 4397976,
+      "outputBytes": 670428,
       "trianglesBefore": 498158,
       "triangleBudget": 32000,
       "trianglesAfter": 32000,
@@ -541,7 +568,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "a56c2114792d3386a0e6ef7d8fc8871f25a54ed28305638437b8103c2a76f19c",
+      "preCompressionBytes": 4397976,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-hotel-lobby-shell",
@@ -550,9 +580,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-hotel-lobby-shell/7554391b-a806-4fd5-81c4-f098a13eb2f8_0.glb",
       "sourceSha256": "6f5c6b2a355a6ea7a5aa12a2f1840fd537ede9c28a6a9baa0d264112fd7130d4",
       "output": "public/assets/chapter03-3d/replacements/env-hotel-lobby-shell.glb",
-      "outputSha256": "784bde61a14e04791ea90d2163896e37de6ece5eda3b102cb10156b7c8219fa8",
+      "outputSha256": "4ce0b2458cce4d8aea95373400e0ebc293f0ea55f99b0cade4923a4770a7a74a",
       "sourceBytes": 54782280,
-      "outputBytes": 5000044,
+      "outputBytes": 804644,
       "trianglesBefore": 499712,
       "triangleBudget": 42000,
       "trianglesAfter": 41999,
@@ -562,8 +592,8 @@
         0.7082
       ],
       "targetFitBoxMetres": [
-        11.0,
-        10.0,
+        11,
+        10,
         3.2
       ],
       "uniformScale": 4.51856011,
@@ -595,7 +625,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "784bde61a14e04791ea90d2163896e37de6ece5eda3b102cb10156b7c8219fa8",
+      "preCompressionBytes": 5000044,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-ministry-furniture",
@@ -604,9 +637,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-ministry-furniture/3bd5f6a9-52ac-43ea-8e31-ef60e4a439a0_0.glb",
       "sourceSha256": "f4c98c50f6574dc7d15901bb57dd900cdefacbc19650218b4d6947faf61533a1",
       "output": "public/assets/chapter03-3d/replacements/env-ministry-furniture.glb",
-      "outputSha256": "aecac0d555238a92f864c0ca30d992ad5022eb47d9ae01487122a6404a5b82ed",
+      "outputSha256": "bd4c63b7f6b6efc09ba4ef9871ccb03969662db53a4a5540585dc2de264dfc42",
       "sourceBytes": 53548580,
-      "outputBytes": 5201168,
+      "outputBytes": 1488484,
       "trianglesBefore": 499800,
       "triangleBudget": 38000,
       "trianglesAfter": 37999,
@@ -616,8 +649,8 @@
         0.2858
       ],
       "targetFitBoxMetres": [
-        16.0,
-        16.0,
+        16,
+        16,
         4.2
       ],
       "uniformScale": 14.69795263,
@@ -649,7 +682,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "aecac0d555238a92f864c0ca30d992ad5022eb47d9ae01487122a6404a5b82ed",
+      "preCompressionBytes": 5201168,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-ministry-shell",
@@ -658,9 +694,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-ministry-shell/09ca0577-740e-4d4f-9df4-d94f23799007_0.glb",
       "sourceSha256": "61b6d5c70a9be908ac686d591ddb6dbd7c1f289a177bad1d578992f620dc02d4",
       "output": "public/assets/chapter03-3d/replacements/env-ministry-shell.glb",
-      "outputSha256": "c4fb6019bcdaa3afa72739b6117d6ed0abd6ea00850c2ef8426ce4a09ecb5468",
+      "outputSha256": "36ecc50a98412e7a3f5e9e3d4b57f6f5c233a4b8f60e83be53ff176df267e189",
       "sourceBytes": 51538264,
-      "outputBytes": 5076688,
+      "outputBytes": 818464,
       "trianglesBefore": 496892,
       "triangleBudget": 52000,
       "trianglesAfter": 52000,
@@ -670,8 +706,8 @@
         0.6499
       ],
       "targetFitBoxMetres": [
-        18.0,
-        18.0,
+        18,
+        18,
         5.4
       ],
       "uniformScale": 8.3089696,
@@ -703,7 +739,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "c4fb6019bcdaa3afa72739b6117d6ed0abd6ea00850c2ef8426ce4a09ecb5468",
+      "preCompressionBytes": 5076688,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-service-alley-kit",
@@ -712,9 +751,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-service-alley-kit/1088b85b-fd32-4401-98d9-9cbd01fdda50_0.glb",
       "sourceSha256": "38ef7561893ea4c565aad16193c140ab62051ce045a55304c75362769b4d1114",
       "output": "public/assets/chapter03-3d/replacements/env-service-alley-kit.glb",
-      "outputSha256": "6009d5f9408c8a9a410c172abee0ed8cb6609914e6314863e518c85622e55db5",
+      "outputSha256": "b1e2a0e2e5546198270bb8da1e1f7427d1a7f1d100cb1911e4e50bba7218d116",
       "sourceBytes": 56570136,
-      "outputBytes": 4986524,
+      "outputBytes": 1132744,
       "trianglesBefore": 499204,
       "triangleBudget": 32000,
       "trianglesAfter": 32000,
@@ -724,7 +763,7 @@
         0.7006
       ],
       "targetFitBoxMetres": [
-        8.0,
+        8,
         4.5,
         3.4
       ],
@@ -757,7 +796,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "6009d5f9408c8a9a410c172abee0ed8cb6609914e6314863e518c85622e55db5",
+      "preCompressionBytes": 4986524,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "env-single-train-door",
@@ -766,9 +808,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/env-single-train-door/5c1bd254-4a8e-4404-94ba-43a6a168a706_0.glb",
       "sourceSha256": "0148f8be4581a8f87085d4aaf0712b4fde67655d1665a6f717276a5cd555c47b",
       "output": "public/assets/chapter03-3d/replacements/env-single-train-door.glb",
-      "outputSha256": "19e247032051551769f115052f3209f9f9bb0e73f5b294c36889c0a570a8c79b",
+      "outputSha256": "2590854d478c7b5292cd56a99f47b3848660951b662e7cd6f9e6aa297432eb67",
       "sourceBytes": 54465460,
-      "outputBytes": 1674508,
+      "outputBytes": 551100,
       "trianglesBefore": 500000,
       "triangleBudget": 14000,
       "trianglesAfter": 14000,
@@ -779,7 +821,7 @@
       ],
       "targetFitBoxMetres": [
         2.4,
-        1.0,
+        1,
         2.6
       ],
       "uniformScale": 2.46914034,
@@ -811,7 +853,10 @@
           ]
         }
       ],
-      "separation": "independent-source"
+      "separation": "independent-source",
+      "preCompressionSha256": "19e247032051551769f115052f3209f9f9bb0e73f5b294c36889c0a570a8c79b",
+      "preCompressionBytes": 1674508,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-cut-connector-set",
@@ -820,9 +865,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-cut-connector-set/b8428257-8bc6-4ecd-bab8-34f7dc0a9d87_0.glb",
       "sourceSha256": "6d58c1cfb2d55cb0e4313e65f1aaabf0229382c26882e7e9a38e27bb4ab272ae",
       "output": "public/assets/chapter03-3d/replacements/prop-cut-connector-set.glb",
-      "outputSha256": "2e18bf5c226d3fdcd4563967a137eef82346fcd7301a48e0c2fb870e60be82d4",
+      "outputSha256": "65d0082960d9f28987e8d49bb19e0039f2183a8a5802c92065bcf1559ef303fc",
       "sourceBytes": 48381496,
-      "outputBytes": 3636288,
+      "outputBytes": 767876,
       "trianglesBefore": 500000,
       "triangleBudget": 12000,
       "trianglesAfter": 12000,
@@ -865,7 +910,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "2e18bf5c226d3fdcd4563967a137eef82346fcd7301a48e0c2fb870e60be82d4",
+      "preCompressionBytes": 3636288,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-hotel-register-key",
@@ -874,9 +922,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-hotel-register-key/58684f38-7922-4a9e-9232-d9b0d890130c_0.glb",
       "sourceSha256": "c2a60733923c586d75c1a823616baa700dae92b8b88f7f7c2f0bcebfb414d050",
       "output": "public/assets/chapter03-3d/replacements/prop-hotel-register-key.glb",
-      "outputSha256": "0482929d60fa97f0d8595740ca3adabcba2861fcca331e3c487adb9a07de85b5",
+      "outputSha256": "0835d740251cf4f4283dde0291c389edad803447a6080cd8c80532eb11101d17",
       "sourceBytes": 54294232,
-      "outputBytes": 3944564,
+      "outputBytes": 1135684,
       "trianglesBefore": 499668,
       "triangleBudget": 8000,
       "trianglesAfter": 8000,
@@ -919,7 +967,10 @@
           ]
         }
       ],
-      "separation": "independent-source"
+      "separation": "independent-source",
+      "preCompressionSha256": "0482929d60fa97f0d8595740ca3adabcba2861fcca331e3c487adb9a07de85b5",
+      "preCompressionBytes": 3944564,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-oil-container-set",
@@ -928,9 +979,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-oil-container-set/cebdeccf-08f1-4377-9d77-dca3566dcd51_0.glb",
       "sourceSha256": "27d0108c6a3e7f3fa39ee769c4af047d82388ba07467e7ee2527b7755edec703",
       "output": "public/assets/chapter03-3d/replacements/prop-oil-container-set.glb",
-      "outputSha256": "f51a4834d7589e5dd59752736790771d02fdb5074955bf25b2f14d4cefdfbd76",
+      "outputSha256": "7fcbe8da087253db3203ba3d58ff21f4612931b8f30f82ff2aeb2785b9e6c1dd",
       "sourceBytes": 54966920,
-      "outputBytes": 4273488,
+      "outputBytes": 496324,
       "trianglesBefore": 500000,
       "triangleBudget": 14000,
       "trianglesAfter": 14000,
@@ -973,7 +1024,10 @@
           ]
         }
       ],
-      "separation": "fused-static-set"
+      "separation": "fused-static-set",
+      "preCompressionSha256": "f51a4834d7589e5dd59752736790771d02fdb5074955bf25b2f14d4cefdfbd76",
+      "preCompressionBytes": 4273488,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-petar-toolbox",
@@ -982,9 +1036,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-petar-toolbox/fcb47047-e1e7-487a-b2d1-8a1e7bcf7d4b_0.glb",
       "sourceSha256": "d1209f8abcb96a8e747c27335f6ebb6dab58bbdfe9507448ca973f4bec2fbfdf",
       "output": "public/assets/chapter03-3d/replacements/prop-petar-toolbox.glb",
-      "outputSha256": "d5c74ac4938f2e3420bf0ac7d529bf8c27c8f6cefe3f82bc77f95a88d918f186",
+      "outputSha256": "7d9ff3a671f87f25fdf9de9579c6922758cc61d26557d4e900deb37f22ebf910",
       "sourceBytes": 48952392,
-      "outputBytes": 3694536,
+      "outputBytes": 418664,
       "trianglesBefore": 499896,
       "triangleBudget": 10000,
       "trianglesAfter": 10000,
@@ -1027,7 +1081,10 @@
           ]
         }
       ],
-      "separation": "independent-source"
+      "separation": "independent-source",
+      "preCompressionSha256": "d5c74ac4938f2e3420bf0ac7d529bf8c27c8f6cefe3f82bc77f95a88d918f186",
+      "preCompressionBytes": 3694536,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-solvent-bottle",
@@ -1036,9 +1093,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-solvent-bottle/a3c4f555-1a89-4099-aebb-c5169750f814_0.glb",
       "sourceSha256": "ef3611a1ba6eaaa38a4ad01d43d588e083ecb5c9378aef2aedac03cf97901c81",
       "output": "public/assets/chapter03-3d/replacements/prop-solvent-bottle.glb",
-      "outputSha256": "ebf6dff73924dec2cd1cd1dac53e52c1388ff68555b3ab5cdfa9f223ac58fc77",
+      "outputSha256": "795d4a86ae67ed8e15cdc9ca8c2bd3b01a047c9cb651d908d19c242d8b4762d1",
       "sourceBytes": 50466640,
-      "outputBytes": 3672588,
+      "outputBytes": 710236,
       "trianglesBefore": 499906,
       "triangleBudget": 8000,
       "trianglesAfter": 8000,
@@ -1081,7 +1138,10 @@
           ]
         }
       ],
-      "separation": "independent-source"
+      "separation": "independent-source",
+      "preCompressionSha256": "ebf6dff73924dec2cd1cd1dac53e52c1388ff68555b3ab5cdfa9f223ac58fc77",
+      "preCompressionBytes": 3672588,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     },
     {
       "id": "prop-terminal-printer",
@@ -1090,9 +1150,9 @@
       "source": "(external workspace, not in repo) outputs/hunyuan3d/ch03-full-replacement-v01/prop-terminal-printer/9e46b11c-29a7-4378-947e-f7413f2c288d_0.glb",
       "sourceSha256": "a562a6fa1d7b36f3751d4cebf2410f8aa45adf708c891a44546642886d288e68",
       "output": "public/assets/chapter03-3d/replacements/prop-terminal-printer.glb",
-      "outputSha256": "2d5f78f59d9a071ffda887202362d1d96cf4daeefeccb0e02aca325d2b94fc91",
+      "outputSha256": "0ef9e38533e4b0215a1a47c63ed110a1b19407475f1287e06b9349021cf50ce1",
       "sourceBytes": 53042008,
-      "outputBytes": 3864732,
+      "outputBytes": 458708,
       "trianglesBefore": 499580,
       "triangleBudget": 12000,
       "trianglesAfter": 11999,
@@ -1135,7 +1195,10 @@
           ]
         }
       ],
-      "separation": "independent-source"
+      "separation": "independent-source",
+      "preCompressionSha256": "2d5f78f59d9a071ffda887202362d1d96cf4daeefeccb0e02aca325d2b94fc91",
+      "preCompressionBytes": 3864732,
+      "compression": "scripts/compress-glb.mjs (meshopt + webp)"
     }
   ]
 }

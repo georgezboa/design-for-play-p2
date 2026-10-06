@@ -108,5 +108,1813 @@
       "license": "CC0"
     }
   },
-  "interaction": "A continuous 116x86 visible district underlies a rectilinear three-cross-street/three-spine road hierarchy: every exposed paved gap is raycast-walkable unless occupied by a real prop, tram car or measured oriented building footprint. Parcels E and G are both verified open navigation spaces; the northwest hidden band now stops before the visible tunnel gap. The rail bed itself is crossable; only the three tram bodies block movement. Fully occluded north/backstage strips are visibly darkened and remain non-walkable. The orthographic camera follows the player through a tight dead zone and is clamped to a close 2.4-3.2 zoom range."
+  "interaction": "A continuous 116x86 visible district underlies a rectilinear three-cross-street/three-spine road hierarchy: every exposed paved gap is raycast-walkable unless occupied by a real prop, tram car or measured oriented building footprint. Parcels E and G are both verified open navigation spaces; the northwest hidden band now stops before the visible tunnel gap. The rail bed itself is crossable; only the three tram bodies block movement. Fully occluded north/backstage strips are visibly darkened and remain non-walkable. The orthographic camera follows the player through a tight dead zone and is clamped to a close 2.4-3.2 zoom range.",
+  "runtimeCompression": {
+    "script": "scripts/compress-glb.mjs",
+    "profile": {
+      "tool": "@gltf-transform 4 + meshoptimizer + sharp (scripts/compress-glb.mjs)",
+      "geometry": "EXT_meshopt_compression (level high: KHR_mesh_quantization, position 14 bit, normal 8 bit, texcoord 12 bit)",
+      "textures": "EXT_texture_webp, lossy, smart chroma subsampling, effort 6, alpha lossless; near-lossless or lossless when lossy cannot reach minPsnr",
+      "webpQuality": {
+        "baseColor": 88,
+        "normal": 90,
+        "data": 90,
+        "other": 88
+      },
+      "qualityLadder": [
+        92,
+        95,
+        98
+      ],
+      "minPsnr": 40,
+      "maxTextureSize": {
+        "hero": 2048,
+        "prop": 1024
+      }
+    },
+    "originals": "git history: release/1.0 before the \"Shrink the 3D assets\" commit",
+    "totals": {
+      "files": 55,
+      "bytesBefore": 155703664,
+      "bytesAfter": 39582012,
+      "saved": 116121652
+    },
+    "files": [
+      {
+        "file": "animations/quaternius_ual1_standard.glb",
+        "bytesBefore": 6671104,
+        "bytesAfter": 2226160,
+        "sha256Before": "1b7bf67866360665426bb99e4c71bd619f19b408453c24e30f0c3071601eee5c",
+        "sha256After": "f5ded091d4f96e588ea087b30d9c5f9adc344195fbcae8c1b3d6b3e2b9952d6f",
+        "triangles": 13744,
+        "skinJoints": 53,
+        "animations": 46,
+        "textures": []
+      },
+      {
+        "file": "characters/butch_shared_rig.glb",
+        "bytesBefore": 6263836,
+        "bytesAfter": 947564,
+        "sha256Before": "b528f9131d3dd9161b8e9c1c1a40a2af7def955ede7b702f1606074d995c4d72",
+        "sha256After": "260a3a590aa749d19fbf905db80ce0d9cf49ae2f4f64e8e85c6586ec0f4962f8",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 820454",
+            "to": "webp 1024x1024 q90 62220",
+            "psnr": 43
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1796454",
+            "to": "webp 1024x1024 q88 103390",
+            "psnr": 43.2
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1333911",
+            "to": "webp 1024x1024 q90 110570",
+            "psnr": 42.1
+          }
+        ]
+      },
+      {
+        "file": "characters/female_civic_shared_rig.glb",
+        "bytesBefore": 5194780,
+        "bytesAfter": 861244,
+        "sha256Before": "805b6397c24fc6f47b535f4b521d6cbd72ed416839d930315e33664c25f5b56a",
+        "sha256After": "553850e1a35242135e702af5056bb6d25395680b97f437243e980be6ceb90720",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 772226",
+            "to": "webp 1024x1024 q90 52848",
+            "psnr": 43.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1271810",
+            "to": "webp 1024x1024 q88 89330",
+            "psnr": 43.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 993745",
+            "to": "webp 1024x1024 q90 93910",
+            "psnr": 43.3
+          }
+        ]
+      },
+      {
+        "file": "characters/female_civilian_shared_rig.glb",
+        "bytesBefore": 4890460,
+        "bytesAfter": 872076,
+        "sha256Before": "77e970398c1914e5955ac87954ba847e783c33dbfda5caa934a2c93582f63059",
+        "sha256After": "33b007e52d7d56efabc0329ce85774bd1562fa68a024bed135cea41250a2e2e7",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 466024",
+            "to": "webp 1024x1024 q90 26760",
+            "psnr": 46.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1289588",
+            "to": "webp 1024x1024 q88 107532",
+            "psnr": 43.2
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 843589",
+            "to": "webp 1024x1024 q90 72058",
+            "psnr": 44.4
+          }
+        ]
+      },
+      {
+        "file": "characters/female_market_shared_rig.glb",
+        "bytesBefore": 4698760,
+        "bytesAfter": 814260,
+        "sha256Before": "595e08d353dfd379e63c1b098b92a1073ff8f0790a8645d65c5032189d303ba6",
+        "sha256After": "b3310a7fd0b215245eacbea2631a972cc3328cd1e769337dc10ef82559c16e0b",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 492617",
+            "to": "webp 1024x1024 q90 30396",
+            "psnr": 45.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1180438",
+            "to": "webp 1024x1024 q88 80080",
+            "psnr": 44.2
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 839672",
+            "to": "webp 1024x1024 q90 69576",
+            "psnr": 45
+          }
+        ]
+      },
+      {
+        "file": "characters/lev_shared_rig.glb",
+        "bytesBefore": 2681476,
+        "bytesAfter": 920364,
+        "sha256Before": "c505399904e7920b5d463d846d0b4272ac2571df07763ca2ff2bb6850e7022e3",
+        "sha256After": "160481b6e62e76d9acd34905dad892e31589848d3e8f8480d58c4acf62756bc8",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 56992",
+            "to": "webp 1024x1024 q90 26532",
+            "psnr": 49.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 151249",
+            "to": "webp 1024x1024 q88 91388",
+            "psnr": 43.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 175830",
+            "to": "webp 1024x1024 q90 135484",
+            "psnr": 43.9
+          }
+        ]
+      },
+      {
+        "file": "characters/male_labor_shared_rig.glb",
+        "bytesBefore": 5421608,
+        "bytesAfter": 910904,
+        "sha256Before": "5ec7bcfb1c975c74e02ae22bb1e111882368d0e74cce2ec85d1d854f4dc724fd",
+        "sha256After": "6de89ee4034ecb3e036580d6acae79d245b3951c0fcfdcee6c50063ccf55e7e5",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 779727",
+            "to": "webp 1024x1024 q90 48806",
+            "psnr": 44.2
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1363923",
+            "to": "webp 1024x1024 q88 111844",
+            "psnr": 42.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1023828",
+            "to": "webp 1024x1024 q90 101664",
+            "psnr": 43.6
+          }
+        ]
+      },
+      {
+        "file": "characters/male_municipal_shared_rig.glb",
+        "bytesBefore": 5159520,
+        "bytesAfter": 906760,
+        "sha256Before": "c62b9e7bbdfb5df22fd09f2e1edf29eb6bde7ce9f134daf97ed484d24022b0b9",
+        "sha256After": "6e1b613770d214b2b4195ae3fb18599e441fc516c2c13b2eaa4c6a761367560c",
+        "triangles": 30000,
+        "skinJoints": 53,
+        "animations": 6,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 592583",
+            "to": "webp 1024x1024 q90 41398",
+            "psnr": 44.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1302219",
+            "to": "webp 1024x1024 q88 105050",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 996234",
+            "to": "webp 1024x1024 q90 109962",
+            "psnr": 42.7
+          }
+        ]
+      },
+      {
+        "file": "characters/pavel_drunk_static.glb",
+        "bytesBefore": 2176032,
+        "bytesAfter": 685912,
+        "sha256Before": "52257eb3b3a151ef73f6606e368964e13cfa98c2e9dc683b80188a0455ace3d6",
+        "sha256After": "b4ef246de66d9a763240cb86d9a618295ef4deeb683f546832283661f818b415",
+        "triangles": 52000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "kept": "image/webp"
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "kept": "image/webp"
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "kept": "image/webp"
+          }
+        ]
+      },
+      {
+        "file": "characters/recovery_gangster_static.glb",
+        "bytesBefore": 2111732,
+        "bytesAfter": 687356,
+        "sha256Before": "f4ea2775a9bb88f6ec861fbfc347a6fa148c31f42a3d63a291eae562c1cb10d2",
+        "sha256After": "6d09151d81eca8cfeb9a9d6981a65e7f172d00dca8bd41ea234383733565bf25",
+        "triangles": 52000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "kept": "image/webp"
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "kept": "image/webp"
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughnes",
+            "kept": "image/webp"
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_abandoned_compact_car.glb",
+        "bytesBefore": 2982008,
+        "bytesAfter": 1342284,
+        "sha256Before": "dba7cc1313a406e73cfda499940f803aec3771e64f75469ea142a93098a1f111",
+        "sha256After": "f224109b10828ac34bc61db2fbad341fa859b5ec17dafe39718e2ada4bd8ecee",
+        "triangles": 18000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1536x1536 247199",
+            "to": "webp 1536x1536 q90 180150",
+            "psnr": 46.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1536x1536 456374",
+            "to": "webp 1536x1536 q88 307226",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1536x1536 440641",
+            "to": "webp 1536x1536 q90 342934",
+            "psnr": 42.7
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_clerk_stamp_machine.glb",
+        "bytesBefore": 838808,
+        "bytesAfter": 405400,
+        "sha256Before": "190b51b1c8458c8543a17fc8862ba7c46cbe52ae8d26088866bda18119db4940",
+        "sha256After": "6dc5425334447bb7156a92bb94aacbf1b086bb1cadda6f44f586372bf0cc8ce7",
+        "triangles": 9999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 65830",
+            "to": "webp 1024x1024 q90 37000",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157266",
+            "to": "webp 1024x1024 q88 94066",
+            "psnr": 43.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 198988",
+            "to": "webp 1024x1024 q90 152930",
+            "psnr": 43.3
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_cliff_overlook_platform.glb",
+        "bytesBefore": 856212,
+        "bytesAfter": 391552,
+        "sha256Before": "e716a43a103d6a13650be1bdef5f25964fd1a52532fee3083b20af51c6a91fe4",
+        "sha256After": "c8dc7667c1de7e124f2b2807140b6ffc7b60a43601d99402fb05d6f75327474b",
+        "triangles": 10765,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 80025",
+            "to": "webp 1024x1024 q90 46570",
+            "psnr": 48.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 187699",
+            "to": "webp 1024x1024 q88 127706",
+            "psnr": 42.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 101809",
+            "to": "webp 1024x1024 q90 71300",
+            "psnr": 45.3
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_crosswalk_signal.glb",
+        "bytesBefore": 884616,
+        "bytesAfter": 398392,
+        "sha256Before": "8534fde8237f427b806085cf0c465fc2adcb8bda58cc3d29d8a2893f10234f3f",
+        "sha256After": "067fd55f59374cde854b1ed872d03ed5ef63e4e7f183a038460e13b32bc6f0a1",
+        "triangles": 11999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 105927",
+            "to": "webp 1024x1024 q90 74860",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157109",
+            "to": "webp 1024x1024 q88 96794",
+            "psnr": 43.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 121588",
+            "to": "webp 1024x1024 q90 84204",
+            "psnr": 45.5
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_crushed_trash_can.glb",
+        "bytesBefore": 1109656,
+        "bytesAfter": 545340,
+        "sha256Before": "e9a0be1811c3e00c55a8273d731055d07218455e70dd66b6c1715c8f6580e7ad",
+        "sha256After": "48d2b49d760750ad4332beb71c47b11e93f1c8fe7ad101e3447ec0b7a60e7b2c",
+        "triangles": 6000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 47665",
+            "to": "webp 1024x1024 q90 22810",
+            "psnr": 50.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 217017",
+            "to": "webp 1024x1024 q88 145826",
+            "psnr": 42.2
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 231060",
+            "to": "webp 1024x1024 q90 182880",
+            "psnr": 42
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_fountain_bench.glb",
+        "bytesBefore": 1032064,
+        "bytesAfter": 449188,
+        "sha256Before": "1e90cfe5f225837b68c7ac9aabaf2e39763c1307b9fcd6801d7904a21c385fc5",
+        "sha256After": "701df6bf54b3698e66b58dff7c7fcd7ec62373dbb97561e9a23032068137e352",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 76049",
+            "to": "webp 1024x1024 q90 45016",
+            "psnr": 48.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 171575",
+            "to": "webp 1024x1024 q88 106208",
+            "psnr": 43.4
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 160667",
+            "to": "webp 1024x1024 q90 119834",
+            "psnr": 44.4
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_landmark_civic_night_arcade.glb",
+        "bytesBefore": 2688012,
+        "bytesAfter": 1227976,
+        "sha256Before": "0a187cc498cdbbe4cd663f728fb088f64a374aa07bd09454c4582131b21df41c",
+        "sha256After": "0100a11438ee88cb2eb3011da790033c2a69286f3248434d5ac001fe679834ef",
+        "triangles": 32000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1536x1536 229159",
+            "to": "webp 1536x1536 q90 148804",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1536x1536 520800",
+            "to": "webp 1536x1536 q88 355028",
+            "psnr": 42
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1536x1536 355812",
+            "to": "webp 1536x1536 q90 256136",
+            "psnr": 44.2
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_landmark_copper_heron_hotel.glb",
+        "bytesBefore": 2835744,
+        "bytesAfter": 1275648,
+        "sha256Before": "5842babfaed76f65c61643f8465a61758f5da2f643fb9707ecfbb323aa39a8ce",
+        "sha256After": "cc683ff5514a5ed54a67dc41fee20265c609e3fd21ad21ff08e4f60d8ed0b497",
+        "triangles": 36000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1536x1536 204940",
+            "to": "webp 1536x1536 q90 126550",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1536x1536 463851",
+            "to": "webp 1536x1536 q88 324340",
+            "psnr": 42.4
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1536x1536 403493",
+            "to": "webp 1536x1536 q90 305912",
+            "psnr": 43.5
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_night_ticket_reader.glb",
+        "bytesBefore": 1021508,
+        "bytesAfter": 458012,
+        "sha256Before": "39e77f08919bbdd73112300b6f98df109cb3b4187884f2188bf29eb855baf8e4",
+        "sha256After": "cde7010e40de85d5cd7c5652d7bfe3bce0cecb516cdc69eaff33c93dd580f567",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 81454",
+            "to": "webp 1024x1024 q90 51576",
+            "psnr": 48
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 175476",
+            "to": "webp 1024x1024 q88 111578",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 171623",
+            "to": "webp 1024x1024 q90 125466",
+            "psnr": 43.8
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_open_air_station.glb",
+        "bytesBefore": 1676748,
+        "bytesAfter": 655452,
+        "sha256Before": "6e1e563e24a4d8401778e6148f5e8828e014aea7881b56ff12047530e857cae2",
+        "sha256After": "72dc15e95a261fca186aec34e9f257c050565840e01208d142d45377e57132c2",
+        "triangles": 28000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 114386",
+            "to": "webp 1024x1024 q90 79730",
+            "psnr": 46.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 237052",
+            "to": "webp 1024x1024 q88 166962",
+            "psnr": 41.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 92189",
+            "to": "webp 1024x1024 q90 60798",
+            "psnr": 46.9
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_pa_speaker.glb",
+        "bytesBefore": 591816,
+        "bytesAfter": 244152,
+        "sha256Before": "c46753e3b3e8251f51569927e0a5e7d7f5bd5f5b1ba6d4d666b328b00c0c76d9",
+        "sha256After": "3535b705719571a0f354c9cbe04e6eb144784d99409a634b41cd42c37b8eb71b",
+        "triangles": 7999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 58016",
+            "to": "webp 1024x1024 q90 30928",
+            "psnr": 49.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157667",
+            "to": "webp 1024x1024 q88 88440",
+            "psnr": 43.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 48337",
+            "to": "webp 1024x1024 q90 26244",
+            "psnr": 49.1
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_perimeter_corner_arcade.glb",
+        "bytesBefore": 1729168,
+        "bytesAfter": 781424,
+        "sha256Before": "041f886fdd2baefadc0a9268e24a9bafdea79e9d9a28c4d16670d731756e8ee2",
+        "sha256After": "3c47989c18ecb9c62189496cd25e2079887774638c972ae5ebe9aaefaae91529",
+        "triangles": 22000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 92130",
+            "to": "webp 1024x1024 q90 56302",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 314215",
+            "to": "webp 1024x1024 q88 249104",
+            "psnr": 40.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 163205",
+            "to": "webp 1024x1024 q90 121498",
+            "psnr": 44.2
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_perimeter_tenement.glb",
+        "bytesBefore": 1436268,
+        "bytesAfter": 635828,
+        "sha256Before": "44d5321932222ced5e06458e1cb2de2b7478a5d6357c2bb2555e4c8d0634c1f1",
+        "sha256After": "24a36796918d632ed9c7359a9c20feb21be8d3d291c689e88fb584203942502a",
+        "triangles": 18000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 97096",
+            "to": "webp 1024x1024 q90 61946",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 277987",
+            "to": "webp 1024x1024 q88 207930",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 121570",
+            "to": "webp 1024x1024 q90 80916",
+            "psnr": 45.4
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_perimeter_workers_hall.glb",
+        "bytesBefore": 1535620,
+        "bytesAfter": 641744,
+        "sha256Before": "c62d89bcd6b3c077de9127cfe2e76832ab096ea51109d73daf52bf98e35b3f02",
+        "sha256After": "7f2a4991decef8eb8672b3056f71059fc00f5d7ac406ab74cad721b490d71896",
+        "triangles": 20000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 104743",
+            "to": "webp 1024x1024 q90 63508",
+            "psnr": 46.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 282868",
+            "to": "webp 1024x1024 q88 209774",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 77775",
+            "to": "webp 1024x1024 q90 46398",
+            "psnr": 47.1
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_porter_handcart.glb",
+        "bytesBefore": 961940,
+        "bytesAfter": 394368,
+        "sha256Before": "de8f28777739bc6199cf55fbf4235b001de67dc48ee972c47bc52db86d125dcb",
+        "sha256After": "aebdac77daa07f04e318c36fe386f398f75bff1d4907912ae3344db9d1b1ada8",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 79227",
+            "to": "webp 1024x1024 q90 46866",
+            "psnr": 47.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 150594",
+            "to": "webp 1024x1024 q88 96238",
+            "psnr": 43.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 113628",
+            "to": "webp 1024x1024 q90 72046",
+            "psnr": 45.7
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_produce_scale.glb",
+        "bytesBefore": 925928,
+        "bytesAfter": 390128,
+        "sha256Before": "6fcb724ebde7b16e03993c832495789bf6f44df19b29895c48ad3ffbd07543e5",
+        "sha256After": "eaa3905119c5f44395be35f405ae4743ef7c99d689bdd588e09c7539b664ce19",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 71278",
+            "to": "webp 1024x1024 q90 44490",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 166139",
+            "to": "webp 1024x1024 q88 101504",
+            "psnr": 43.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 120066",
+            "to": "webp 1024x1024 q90 79386",
+            "psnr": 45.6
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_queue_dispenser.glb",
+        "bytesBefore": 826792,
+        "bytesAfter": 386628,
+        "sha256Before": "95c1b3c25af4c199cace1227fc46d5ab04d745d43b67dd5f141d1720df5bebda",
+        "sha256After": "31e6e187eae132e03653c176bf64de9c400def71bb25dacfa1b0fe448531c43f",
+        "triangles": 10000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 91165",
+            "to": "webp 1024x1024 q90 60838",
+            "psnr": 47.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 186975",
+            "to": "webp 1024x1024 q88 122110",
+            "psnr": 43
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 111694",
+            "to": "webp 1024x1024 q90 77436",
+            "psnr": 45.8
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_queue_stanchion.glb",
+        "bytesBefore": 661032,
+        "bytesAfter": 298028,
+        "sha256Before": "1265a895a513a24601cffb4c1f2b72a21f9a4f572c0b67cac3818647b54608d9",
+        "sha256After": "11a318f6107a3e434edfbfedb41811d6879d7a996a7265d534b36e650a4ca44c",
+        "triangles": 7000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 66402",
+            "to": "webp 1024x1024 q90 37186",
+            "psnr": 48.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 132687",
+            "to": "webp 1024x1024 q88 77400",
+            "psnr": 44.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 127085",
+            "to": "webp 1024x1024 q90 81948",
+            "psnr": 45.2
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_receipt_spike.glb",
+        "bytesBefore": 848008,
+        "bytesAfter": 457164,
+        "sha256Before": "befd062cd90b89bd9b0bfd90227c5e5b6f2811dad732541297d42b642e009e94",
+        "sha256After": "fb9cf4a69fe27b8072b769f0ebb2f0cfb81ab2f25aee9607cc969773674fdfd6",
+        "triangles": 7000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 83066",
+            "to": "webp 1024x1024 q90 53630",
+            "psnr": 47.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 216914",
+            "to": "webp 1024x1024 q88 148880",
+            "psnr": 42.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 191412",
+            "to": "webp 1024x1024 q90 145940",
+            "psnr": 42.8
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_shop_bakery_tenement.glb",
+        "bytesBefore": 1424168,
+        "bytesAfter": 638104,
+        "sha256Before": "4db7657a718af9840d4ecfe3c0210ead611752a240e34e1e46338b7e381b66bf",
+        "sha256After": "ce0fdd4a7202b3a616440ca111acd7b217b9cb51b1c6e05496b7eb83d1d905b1",
+        "triangles": 17999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 85783",
+            "to": "webp 1024x1024 q90 52764",
+            "psnr": 47.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 248714",
+            "to": "webp 1024x1024 q88 175564",
+            "psnr": 41.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 182062",
+            "to": "webp 1024x1024 q90 137866",
+            "psnr": 43.6
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_shop_pharmacy_corner.glb",
+        "bytesBefore": 1703788,
+        "bytesAfter": 846832,
+        "sha256Before": "5ee0d0ca9ee6c5fd308901604e3dd9e5b289eb1ca46fa24c8972b7b41e1e058f",
+        "sha256After": "ee05509b8f42f71adfb23e48827d9bd279ed9bef2905dc01774fda0ebe59f9d9",
+        "triangles": 20060,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 128321",
+            "to": "webp 1024x1024 q90 90082",
+            "psnr": 45.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 294158",
+            "to": "webp 1024x1024 q88 223072",
+            "psnr": 41.1
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 267089",
+            "to": "webp 1024x1024 q90 227294",
+            "psnr": 42.1
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_shop_printworks_rowhouse.glb",
+        "bytesBefore": 1466676,
+        "bytesAfter": 620764,
+        "sha256Before": "6845bb7c6a0884d78fcc42c82c23cc0e7d0d024a53fc891e3443702d5adb4856",
+        "sha256After": "ca34d338a463f40de7ba1eeede9d837c0575e9447f163ee83470937884b783d8",
+        "triangles": 20000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 100756",
+            "to": "webp 1024x1024 q90 63828",
+            "psnr": 46.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 267946",
+            "to": "webp 1024x1024 q88 195536",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 96821",
+            "to": "webp 1024x1024 q90 60408",
+            "psnr": 46.1
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_street_campfire.glb",
+        "bytesBefore": 1159568,
+        "bytesAfter": 462148,
+        "sha256Before": "cefa4ea710f15d8343eaad4dff0762023f86e65af0c635b92f281ad0c0643744",
+        "sha256After": "779591244d8f0b6ba17783e8b676e178eea68ccc2d2b8e29c195f0f479522b0d",
+        "triangles": 7998,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 58118",
+            "to": "webp 1024x1024 q90 30988",
+            "psnr": 49.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 216116",
+            "to": "webp 1024x1024 q88 148982",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 67627",
+            "to": "webp 1024x1024 q90 41978",
+            "psnr": 47.6
+          }
+        ]
+      },
+      {
+        "file": "models/ch03_tram_tunnel_portal.glb",
+        "bytesBefore": 1237196,
+        "bytesAfter": 466520,
+        "sha256Before": "42caeba3e6e5e270fbdf4423fe7897e72c0a6aa4864ca2f21599eaa312b5a099",
+        "sha256After": "90ed1715beb16f7bc2de4b4b1b916445265daf5621b66c290afad9d4b8189238",
+        "triangles": 22000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 75434",
+            "to": "webp 1024x1024 q90 48730",
+            "psnr": 48.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 201667",
+            "to": "webp 1024x1024 q88 130648",
+            "psnr": 42.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 57409",
+            "to": "webp 1024x1024 q90 31284",
+            "psnr": 48.5
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-archive-furniture.glb",
+        "bytesBefore": 2418056,
+        "bytesAfter": 507524,
+        "sha256Before": "00e966b7a1e3184f1ffa2e805bfc45ba3b5389e2725c4d3500df9f99ccca31a2",
+        "sha256After": "963990d744d5b678384082e993e36b1c13c43dd56c4efc9e9ee252bc641d5e01",
+        "triangles": 40000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 221711",
+            "to": "webp 512x512 q90 12266",
+            "psnr": 42
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 387367",
+            "to": "webp 512x512 q88 46718",
+            "psnr": 40.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 235425",
+            "to": "webp 512x512 q90 18536",
+            "psnr": 44.8
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-archive-shell.glb",
+        "bytesBefore": 3142012,
+        "bytesAfter": 797092,
+        "sha256Before": "0e59f719c49d44cfdf75cd924ad2fa80d0fd18ca891536ed79c6d65d0597de4c",
+        "sha256After": "6ff3d2d5923767f49984531cca0a9a2559f857b04cc220e9e1e777408f260444",
+        "triangles": 52000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 243426",
+            "to": "webp 512x512 q90 12518",
+            "psnr": 43.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 443930",
+            "to": "webp 512x512 q88 63414",
+            "psnr": 40.1
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 321208",
+            "to": "webp 512x512 near-lossless 133322",
+            "psnr": 51.8
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-butch-room-furniture.glb",
+        "bytesBefore": 1993856,
+        "bytesAfter": 411972,
+        "sha256Before": "5f1e843c75d45699de8ac354e2164420930e42ba6506de0766ab1ddd51c4828c",
+        "sha256After": "2a502b8d063351e216694c0f44290a1d6a84e0bede57264e38cefb7a512fee9f",
+        "triangles": 30000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 174960",
+            "to": "webp 512x512 q90 9466",
+            "psnr": 44
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 372551",
+            "to": "webp 512x512 q88 41874",
+            "psnr": 41.2
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 257080",
+            "to": "webp 512x512 q90 29864",
+            "psnr": 42.1
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-butch-room-shell.glb",
+        "bytesBefore": 2197016,
+        "bytesAfter": 441792,
+        "sha256Before": "c0d9b370f65b18607d0d339e2308546b366b54ba8791601ffec04adfb117005e",
+        "sha256After": "ab9b722bd2be3823f0c8688f6443a4d2a94e44614cd7be8f51c07ca5cf85dc8e",
+        "triangles": 38000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 148860",
+            "to": "webp 512x512 q90 8050",
+            "psnr": 44.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 385498",
+            "to": "webp 512x512 q88 42024",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 167608",
+            "to": "webp 512x512 q90 11568",
+            "psnr": 45.7
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-campfire-props.glb",
+        "bytesBefore": 2000460,
+        "bytesAfter": 659132,
+        "sha256Before": "2d4cf2196bba8e5895500288f8c476febfd0721ad16bb3c4f8e87220c245197d",
+        "sha256After": "94f95a302cd24c179956f0eb04bf11df0cf45f20c1f04095eae19bbe3ecf8b5d",
+        "triangles": 22000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 242874",
+            "to": "webp 512x512 q90 14118",
+            "psnr": 42.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 486788",
+            "to": "webp 512x512 near-lossless 227824",
+            "psnr": 48.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 343914",
+            "to": "webp 512x512 near-lossless 149870",
+            "psnr": 51.8
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-doorless-carriage.glb",
+        "bytesBefore": 3183180,
+        "bytesAfter": 988044,
+        "sha256Before": "375dd03a8843e7b3075c0665deadd6eda82dabf48dab5d3ce995a9af5eab6fe0",
+        "sha256After": "e8a6b7213534b40287ab2970fc4fdf7738d5527483fce80a412a0732f410dfbb",
+        "triangles": 50000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 205658",
+            "to": "webp 512x512 q90 16580",
+            "psnr": 40.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 469929",
+            "to": "webp 512x512 near-lossless 219092",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 376114",
+            "to": "webp 512x512 near-lossless 158560",
+            "psnr": 50.4
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-eda-oil-stall.glb",
+        "bytesBefore": 4318336,
+        "bytesAfter": 635676,
+        "sha256Before": "5baab2a93bd6547e99b7f92ea2322a4bb99bbb0630319846dcc3197e9fb6988a",
+        "sha256After": "ae5c5671d80e2cc938e02d86d1995ea9661b239340224dcdfe1b0fa0ba9f4558",
+        "triangles": 28000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 644882",
+            "to": "webp 1024x1024 q90 47922",
+            "psnr": 42.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1464044",
+            "to": "webp 1024x1024 q88 146856",
+            "psnr": 41.1
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1026101",
+            "to": "webp 1024x1024 q90 103418",
+            "psnr": 43.2
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-flower-stall.glb",
+        "bytesBefore": 4395152,
+        "bytesAfter": 645504,
+        "sha256Before": "d04a1895819ed75924c3fe339aed22cd7eb5c94b205a514af7fcdb826adb967c",
+        "sha256After": "687adb8c9f434f4d337e7d397807c2a01f2bc390d025fa20b82dda337b3b62a2",
+        "triangles": 26000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 660264",
+            "to": "webp 1024x1024 q90 45348",
+            "psnr": 44
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1503406",
+            "to": "webp 1024x1024 q88 144144",
+            "psnr": 41.4
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1115316",
+            "to": "webp 1024x1024 q90 133550",
+            "psnr": 42
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-hotel-corridor-shell.glb",
+        "bytesBefore": 4929840,
+        "bytesAfter": 796244,
+        "sha256Before": "72008c174cf6a2f8fcf1f582c28aa0fbce4cae00d8e59215f4429f81778f3283",
+        "sha256After": "e1525f84787e217719755d397cd4d8f825cf91447682138c506c6387b0fe1860",
+        "triangles": 42000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 904562",
+            "to": "webp 1024x1024 q95 139756",
+            "psnr": 40.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1429177",
+            "to": "webp 1024x1024 q88 137742",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 931032",
+            "to": "webp 1024x1024 q90 71262",
+            "psnr": 43.9
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-hotel-lobby-furniture.glb",
+        "bytesBefore": 4397976,
+        "bytesAfter": 670428,
+        "sha256Before": "a56c2114792d3386a0e6ef7d8fc8871f25a54ed28305638437b8103c2a76f19c",
+        "sha256After": "9f9efc481d4fca27170a247b995720e8427eccbd38221aa432aec531732e1ce4",
+        "triangles": 32000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 621813",
+            "to": "webp 1024x1024 q90 44422",
+            "psnr": 43.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1482710",
+            "to": "webp 1024x1024 q88 150740",
+            "psnr": 41.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 918193",
+            "to": "webp 1024x1024 q90 81850",
+            "psnr": 44.9
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-hotel-lobby-shell.glb",
+        "bytesBefore": 5000044,
+        "bytesAfter": 804644,
+        "sha256Before": "784bde61a14e04791ea90d2163896e37de6ece5eda3b102cb10156b7c8219fa8",
+        "sha256After": "4ce0b2458cce4d8aea95373400e0ebc293f0ea55f99b0cade4923a4770a7a74a",
+        "triangles": 41999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 767611",
+            "to": "webp 1024x1024 q90 51834",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1479252",
+            "to": "webp 1024x1024 q88 145518",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1029519",
+            "to": "webp 1024x1024 q90 125160",
+            "psnr": 41.9
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-ministry-furniture.glb",
+        "bytesBefore": 5201168,
+        "bytesAfter": 1488484,
+        "sha256Before": "aecac0d555238a92f864c0ca30d992ad5022eb47d9ae01487122a6404a5b82ed",
+        "sha256After": "bd4c63b7f6b6efc09ba4ef9871ccb03969662db53a4a5540585dc2de264dfc42",
+        "triangles": 37999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 852182",
+            "to": "webp 1024x1024 near-lossless 349122",
+            "psnr": 54.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1502038",
+            "to": "webp 1024x1024 q88 162090",
+            "psnr": 40.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1297718",
+            "to": "webp 1024x1024 near-lossless 554796",
+            "psnr": 52.3
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-ministry-shell.glb",
+        "bytesBefore": 5076688,
+        "bytesAfter": 818464,
+        "sha256Before": "c4fb6019bcdaa3afa72739b6117d6ed0abd6ea00850c2ef8426ce4a09ecb5468",
+        "sha256After": "36ecc50a98412e7a3f5e9e3d4b57f6f5c233a4b8f60e83be53ff176df267e189",
+        "triangles": 52000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 814937",
+            "to": "webp 1024x1024 q90 69250",
+            "psnr": 40.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1477268",
+            "to": "webp 1024x1024 q88 148274",
+            "psnr": 42.1
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 719544",
+            "to": "webp 1024x1024 q90 42958",
+            "psnr": 46.5
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-service-alley-kit.glb",
+        "bytesBefore": 4986524,
+        "bytesAfter": 1132744,
+        "sha256Before": "6009d5f9408c8a9a410c172abee0ed8cb6609914e6314863e518c85622e55db5",
+        "sha256After": "b1e2a0e2e5546198270bb8da1e1f7427d1a7f1d100cb1911e4e50bba7218d116",
+        "triangles": 32000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 938870",
+            "to": "webp 1024x1024 near-lossless 383540",
+            "psnr": 53.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1557704",
+            "to": "webp 1024x1024 q88 170694",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1114667",
+            "to": "webp 1024x1024 q98 187048",
+            "psnr": 40
+          }
+        ]
+      },
+      {
+        "file": "replacements/env-single-train-door.glb",
+        "bytesBefore": 1674508,
+        "bytesAfter": 551100,
+        "sha256Before": "19e247032051551769f115052f3209f9f9bb0e73f5b294c36889c0a570a8c79b",
+        "sha256After": "2590854d478c7b5292cd56a99f47b3848660951b662e7cd6f9e6aa297432eb67",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 512x512 242611",
+            "to": "webp 512x512 q90 19680",
+            "psnr": 41.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 512x512 439532",
+            "to": "webp 512x512 near-lossless 199708",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 512x512 379263",
+            "to": "webp 512x512 near-lossless 156154",
+            "psnr": 50.5
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-cut-connector-set.glb",
+        "bytesBefore": 3636288,
+        "bytesAfter": 767876,
+        "sha256Before": "2e18bf5c226d3fdcd4563967a137eef82346fcd7301a48e0c2fb870e60be82d4",
+        "sha256After": "65d0082960d9f28987e8d49bb19e0039f2183a8a5802c92065bcf1559ef303fc",
+        "triangles": 12000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 665895",
+            "to": "webp 1024x1024 q90 35208",
+            "psnr": 44.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1292607",
+            "to": "webp 1024x1024 q88 91538",
+            "psnr": 43
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1178754",
+            "to": "webp 1024x1024 near-lossless 493270",
+            "psnr": 52.8
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-hotel-register-key.glb",
+        "bytesBefore": 3944564,
+        "bytesAfter": 1135684,
+        "sha256Before": "0482929d60fa97f0d8595740ca3adabcba2861fcca331e3c487adb9a07de85b5",
+        "sha256After": "0835d740251cf4f4283dde0291c389edad803447a6080cd8c80532eb11101d17",
+        "triangles": 8000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 848027",
+            "to": "webp 1024x1024 near-lossless 343964",
+            "psnr": 54.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1459166",
+            "to": "webp 1024x1024 q88 149394",
+            "psnr": 40.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1264034",
+            "to": "webp 1024x1024 near-lossless 531672",
+            "psnr": 52.6
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-oil-container-set.glb",
+        "bytesBefore": 4273488,
+        "bytesAfter": 496324,
+        "sha256Before": "f51a4834d7589e5dd59752736790771d02fdb5074955bf25b2f14d4cefdfbd76",
+        "sha256After": "7fcbe8da087253db3203ba3d58ff21f4612931b8f30f82ff2aeb2785b9e6c1dd",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 933641",
+            "to": "webp 1024x1024 q90 65732",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1531498",
+            "to": "webp 1024x1024 q88 143216",
+            "psnr": 41.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1234345",
+            "to": "webp 1024x1024 q90 119172",
+            "psnr": 40.2
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-petar-toolbox.glb",
+        "bytesBefore": 3694536,
+        "bytesAfter": 418664,
+        "sha256Before": "d5c74ac4938f2e3420bf0ac7d529bf8c27c8f6cefe3f82bc77f95a88d918f186",
+        "sha256After": "7d9ff3a671f87f25fdf9de9579c6922758cc61d26557d4e900deb37f22ebf910",
+        "triangles": 10000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 679962",
+            "to": "webp 1024x1024 q90 47302",
+            "psnr": 42.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1425484",
+            "to": "webp 1024x1024 q88 129534",
+            "psnr": 41.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1136194",
+            "to": "webp 1024x1024 q90 103764",
+            "psnr": 41.1
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-solvent-bottle.glb",
+        "bytesBefore": 3672588,
+        "bytesAfter": 710236,
+        "sha256Before": "ebf6dff73924dec2cd1cd1dac53e52c1388ff68555b3ab5cdfa9f223ac58fc77",
+        "sha256After": "795d4a86ae67ed8e15cdc9ca8c2bd3b01a047c9cb651d908d19c242d8b4762d1",
+        "triangles": 8000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 897804",
+            "to": "webp 1024x1024 near-lossless 397892",
+            "psnr": 53.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1317176",
+            "to": "webp 1024x1024 q88 109240",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 1151842",
+            "to": "webp 1024x1024 q90 115850",
+            "psnr": 40.8
+          }
+        ]
+      },
+      {
+        "file": "replacements/prop-terminal-printer.glb",
+        "bytesBefore": 3864732,
+        "bytesAfter": 458708,
+        "sha256Before": "2d5f78f59d9a071ffda887202362d1d96cf4daeefeccb0e02aca325d2b94fc91",
+        "sha256After": "0ef9e38533e4b0215a1a47c63ed110a1b19407475f1287e06b9349021cf50ce1",
+        "triangles": 11999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "png 1024x1024 859144",
+            "to": "webp 1024x1024 q90 79412",
+            "psnr": 40.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "png 1024x1024 1465330",
+            "to": "webp 1024x1024 q88 143408",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "png 1024x1024 975859",
+            "to": "webp 1024x1024 q90 68280",
+            "psnr": 42.6
+          }
+        ]
+      }
+    ]
+  }
 }

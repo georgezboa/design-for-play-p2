@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v44', () => {
+describe('Chapter 3 integrated final lock v46', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -116,10 +116,14 @@ describe('Chapter 3 integrated final lock v44', () => {
     // beacons draw over roofs and the edge compass stays while the target is
     // off screen; interior cuts swap at full black and lift after the new set
     // has drawn. Toma's composition unchanged. Files: 27 -> 27.
+    // v46 (alpha round 4 fix round, engineer P1, 2026-10-06): the character
+    // and interior-set GLTFLoaders get the bundled Meshopt decoder
+    // (setMeshoptDecoder) for the compressed GLBs; no behaviour change.
+    // Files: 27 -> 27.
     assert.equal(sourceFiles.length, 27);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'a0ce7362e78498857bfa518c78696157658fd7ec1c636ffcb9059f738ed0910a',
+      '1742d36b189dba115068dd71850aa9f55f2429cbea21446be6926222094cb7d8',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
@@ -139,10 +143,16 @@ describe('Chapter 3 integrated final lock v44', () => {
     // eight Chapter 3 MP3s to LAME V2 at identical loudness and length.
     // v45 (2026-10-06, asset-only): voice/ch03/manifest.json records the
     // voice provider (ElevenLabs); no runtime behaviour change.
+    // v46 (alpha round 4 fix round, engineer P1, 2026-10-06, asset-only):
+    // every Chapter 3 GLB without Meshopt (rigs, animation library, models,
+    // interior sets) recompressed in place by scripts/compress-glb.mjs —
+    // Meshopt geometry + WebP maps, same triangles, skins, clips and names;
+    // ASSET_MANIFEST.json and replacements/manifest.json record before/after
+    // bytes and hashes (751 -> 751 files).
     assert.equal(assetFiles.length, 751);
     assert.equal(
       aggregateSignature(assetFiles),
-      '8b6d3027c3f9df716e4300258348ea114a82a18c92935264ed4009a21b6b31a5',
+      'fc2880bb5c00127e3f69358994d9d5fbe727c9d78ba518110893d935771323a0',
       'Chapter 3 assets are locked. Reopen it explicitly and create a new lock version before changing assets.',
     );
   });

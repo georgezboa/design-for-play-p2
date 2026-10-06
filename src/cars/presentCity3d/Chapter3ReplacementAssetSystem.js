@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 const ROOT = '/assets/chapter03-3d/replacements';
 // Full hotel shells are several MB each.  They are loaded alongside the
@@ -37,7 +38,8 @@ function prepareModel(model, id) {
 
 export class Chapter3ReplacementAssetSystem {
   constructor() {
-    this.loader = new GLTFLoader();
+    // Interior sets ship Meshopt-compressed with WebP maps (scripts/compress-glb.mjs).
+    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.cache = new Map();
     this.instances = new Map();
   }

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 const CHARACTER_ROOT = '/assets/chapter03-3d/characters';
@@ -214,7 +215,8 @@ class AnimatedCharacterInstance {
 
 export class Chapter3AnimatedCharacterSystem {
   constructor({ groundHeightAt = null } = {}) {
-    this.loader = new GLTFLoader();
+    // The rigs and the animation library ship Meshopt-compressed (scripts/compress-glb.mjs).
+    this.loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     this.sources = new Map();
     this.animationLibrary = null;
     this.groundHeightAt = groundHeightAt;

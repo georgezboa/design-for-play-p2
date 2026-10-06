@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { stat } from 'node:fs/promises';
+import { readFile, stat } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 import { CITY_MODELS, PERIMETER_MODEL_SOURCES } from '../../src/cars/presentCity3d/city3dConfig.js';
@@ -18,6 +18,23 @@ const EXPECTED_PROP_IDS = [
   'pa-speaker',
   'night-ticket-reader',
 ];
+
+// The GLBs ship Meshopt + WebP compressed (scripts/compress-glb.mjs), so
+// byte size alone no longer says whether the PBR detail survived. Check that
+// its main material still carries its colour, normal and metal/rough maps.
+async function assertEmbeddedPbr(file, minImageBytes) {
+  const bytes = await readFile(`${PROJECT_ROOT}public/assets/chapter03-3d/models/${file}`);
+  const json = JSON.parse(bytes.toString('utf8', 20, 20 + bytes.readUInt32LE(12)));
+  assert.ok(json.extensionsUsed?.includes('EXT_meshopt_compression'), `${file} should ship Meshopt-compressed`);
+  // (Some buildings add intentional factor-only trim materials.)
+  assert.ok(json.materials.some((material) => (
+    material.pbrMetallicRoughness?.baseColorTexture
+    && material.pbrMetallicRoughness?.metallicRoughnessTexture
+    && material.normalTexture
+  )), `${file} should retain its embedded PBR detail (colour, normal, metal/rough maps)`);
+  const imageBytes = json.images.reduce((total, image) => total + json.bufferViews[image.bufferView].byteLength, 0);
+  assert.ok(imageBytes > minImageBytes, `${file} should retain its embedded PBR detail (${imageBytes} image bytes)`);
+}
 
 describe('Chapter 3 real-time narrative prop contract', () => {
   it('registers ten semantic props alongside the landmarks and transit architecture', () => {
@@ -50,7 +67,7 @@ describe('Chapter 3 real-time narrative prop contract', () => {
     ]);
     for (const file of uniqueFiles) {
       const info = await stat(`${PROJECT_ROOT}public/assets/chapter03-3d/models/${file}`);
-      assert.ok(info.size > 500_000, `${file} should retain its embedded PBR detail`);
+      await assertEmbeddedPbr(file, 150_000);
       assert.ok(info.size < 3_100_000, `${file} exceeds its street-dressing ceiling`);
     }
   });
@@ -61,7 +78,7 @@ describe('Chapter 3 real-time narrative prop contract', () => {
     for (const spec of architecture) {
       const path = `${PROJECT_ROOT}public/assets/chapter03-3d/models/${spec.file}`;
       const info = await stat(path);
-      assert.ok(info.size > 250_000, `${spec.file} should retain embedded PBR detail`);
+      await assertEmbeddedPbr(spec.file, 150_000);
       assert.ok(info.size < 2_500_000, `${spec.file} exceeds the 2.5 MB architecture ceiling`);
     }
   });
@@ -70,7 +87,7 @@ describe('Chapter 3 real-time narrative prop contract', () => {
     for (const spec of PERIMETER_MODEL_SOURCES) {
       const path = `${PROJECT_ROOT}public/assets/chapter03-3d/models/${spec.file}`;
       const info = await stat(path);
-      assert.ok(info.size > 1_000_000, `${spec.file} should retain embedded PBR detail`);
+      await assertEmbeddedPbr(spec.file, 250_000);
       const isLandmark = spec.id.startsWith('landmark-');
       const ceiling = isLandmark ? 3_000_000 : 1_900_000;
       assert.ok(info.size < ceiling, `${spec.file} exceeds its district-building ceiling`);
@@ -83,6 +100,7 @@ describe('Chapter 3 real-time narrative prop contract', () => {
       const path = `${PROJECT_ROOT}public/assets/chapter03-3d/models/${spec.file}`;
       const info = await stat(path);
       assert.ok(info.size > 100_000, `${spec.file} should be a real embedded model`);
+      await assertEmbeddedPbr(spec.file, 100_000);
       assert.ok(info.size < 1_100_000, `${spec.file} exceeds the 1.1 MB prop ceiling`);
     }
   });

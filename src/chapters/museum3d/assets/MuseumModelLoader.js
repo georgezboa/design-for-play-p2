@@ -1,8 +1,10 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 
 const MODEL_ROOT = '/museum3d/models';
-const loader = new GLTFLoader();
+// The exhibits ship Meshopt-compressed with WebP maps (scripts/compress-glb.mjs).
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
 const sourceCache = new Map();
 
 const MODEL_URLS = Object.freeze({

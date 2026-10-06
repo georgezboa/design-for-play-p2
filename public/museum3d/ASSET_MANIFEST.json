@@ -1,0 +1,979 @@
+{
+  "tree": "public/museum3d/",
+  "runtimeCompression": {
+    "script": "scripts/compress-glb.mjs",
+    "profile": {
+      "tool": "@gltf-transform 4 + meshoptimizer + sharp (scripts/compress-glb.mjs)",
+      "geometry": "EXT_meshopt_compression (level high: KHR_mesh_quantization, position 14 bit, normal 8 bit, texcoord 12 bit)",
+      "textures": "EXT_texture_webp, lossy, smart chroma subsampling, effort 6, alpha lossless; near-lossless or lossless when lossy cannot reach minPsnr",
+      "webpQuality": {
+        "baseColor": 88,
+        "normal": 90,
+        "data": 90,
+        "other": 88
+      },
+      "qualityLadder": [
+        92,
+        95,
+        98
+      ],
+      "minPsnr": 40,
+      "maxTextureSize": {
+        "hero": 2048,
+        "prop": 1024
+      }
+    },
+    "originals": "git history: release/1.0 before the \"Shrink the 3D assets\" commit",
+    "totals": {
+      "files": 29,
+      "bytesBefore": 35269480,
+      "bytesAfter": 14582168,
+      "saved": 20687312
+    },
+    "files": [
+      {
+        "file": "echo-city/authority/models/ch03_clerk_stamp_machine.glb",
+        "bytesBefore": 838808,
+        "bytesAfter": 405400,
+        "sha256Before": "190b51b1c8458c8543a17fc8862ba7c46cbe52ae8d26088866bda18119db4940",
+        "sha256After": "6dc5425334447bb7156a92bb94aacbf1b086bb1cadda6f44f586372bf0cc8ce7",
+        "triangles": 9999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 65830",
+            "to": "webp 1024x1024 q90 37000",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157266",
+            "to": "webp 1024x1024 q88 94066",
+            "psnr": 43.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 198988",
+            "to": "webp 1024x1024 q90 152930",
+            "psnr": 43.3
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_crosswalk_signal.glb",
+        "bytesBefore": 884616,
+        "bytesAfter": 398392,
+        "sha256Before": "8534fde8237f427b806085cf0c465fc2adcb8bda58cc3d29d8a2893f10234f3f",
+        "sha256After": "067fd55f59374cde854b1ed872d03ed5ef63e4e7f183a038460e13b32bc6f0a1",
+        "triangles": 11999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 105927",
+            "to": "webp 1024x1024 q90 74860",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157109",
+            "to": "webp 1024x1024 q88 96794",
+            "psnr": 43.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 121588",
+            "to": "webp 1024x1024 q90 84204",
+            "psnr": 45.5
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_fountain_bench.glb",
+        "bytesBefore": 1032064,
+        "bytesAfter": 449188,
+        "sha256Before": "1e90cfe5f225837b68c7ac9aabaf2e39763c1307b9fcd6801d7904a21c385fc5",
+        "sha256After": "701df6bf54b3698e66b58dff7c7fcd7ec62373dbb97561e9a23032068137e352",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 76049",
+            "to": "webp 1024x1024 q90 45016",
+            "psnr": 48.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 171575",
+            "to": "webp 1024x1024 q88 106208",
+            "psnr": 43.4
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 160667",
+            "to": "webp 1024x1024 q90 119834",
+            "psnr": 44.4
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_landmark_civic_night_arcade.glb",
+        "bytesBefore": 2688012,
+        "bytesAfter": 1227976,
+        "sha256Before": "0a187cc498cdbbe4cd663f728fb088f64a374aa07bd09454c4582131b21df41c",
+        "sha256After": "0100a11438ee88cb2eb3011da790033c2a69286f3248434d5ac001fe679834ef",
+        "triangles": 32000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1536x1536 229159",
+            "to": "webp 1536x1536 q90 148804",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1536x1536 520800",
+            "to": "webp 1536x1536 q88 355028",
+            "psnr": 42
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1536x1536 355812",
+            "to": "webp 1536x1536 q90 256136",
+            "psnr": 44.2
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_landmark_copper_heron_hotel.glb",
+        "bytesBefore": 2835744,
+        "bytesAfter": 1275648,
+        "sha256Before": "5842babfaed76f65c61643f8465a61758f5da2f643fb9707ecfbb323aa39a8ce",
+        "sha256After": "cc683ff5514a5ed54a67dc41fee20265c609e3fd21ad21ff08e4f60d8ed0b497",
+        "triangles": 36000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1536x1536 204940",
+            "to": "webp 1536x1536 q90 126550",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1536x1536 463851",
+            "to": "webp 1536x1536 q88 324340",
+            "psnr": 42.4
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1536x1536 403493",
+            "to": "webp 1536x1536 q90 305912",
+            "psnr": 43.5
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_night_ticket_reader.glb",
+        "bytesBefore": 1021508,
+        "bytesAfter": 458012,
+        "sha256Before": "39e77f08919bbdd73112300b6f98df109cb3b4187884f2188bf29eb855baf8e4",
+        "sha256After": "cde7010e40de85d5cd7c5652d7bfe3bce0cecb516cdc69eaff33c93dd580f567",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 81454",
+            "to": "webp 1024x1024 q90 51576",
+            "psnr": 48
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 175476",
+            "to": "webp 1024x1024 q88 111578",
+            "psnr": 42.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 171623",
+            "to": "webp 1024x1024 q90 125466",
+            "psnr": 43.8
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_open_air_station.glb",
+        "bytesBefore": 1676748,
+        "bytesAfter": 655452,
+        "sha256Before": "6e1e563e24a4d8401778e6148f5e8828e014aea7881b56ff12047530e857cae2",
+        "sha256After": "72dc15e95a261fca186aec34e9f257c050565840e01208d142d45377e57132c2",
+        "triangles": 28000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 114386",
+            "to": "webp 1024x1024 q90 79730",
+            "psnr": 46.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 237052",
+            "to": "webp 1024x1024 q88 166962",
+            "psnr": 41.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 92189",
+            "to": "webp 1024x1024 q90 60798",
+            "psnr": 46.9
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_pa_speaker.glb",
+        "bytesBefore": 591816,
+        "bytesAfter": 244152,
+        "sha256Before": "c46753e3b3e8251f51569927e0a5e7d7f5bd5f5b1ba6d4d666b328b00c0c76d9",
+        "sha256After": "3535b705719571a0f354c9cbe04e6eb144784d99409a634b41cd42c37b8eb71b",
+        "triangles": 7999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 58016",
+            "to": "webp 1024x1024 q90 30928",
+            "psnr": 49.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 157667",
+            "to": "webp 1024x1024 q88 88440",
+            "psnr": 43.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 48337",
+            "to": "webp 1024x1024 q90 26244",
+            "psnr": 49.1
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_perimeter_corner_arcade.glb",
+        "bytesBefore": 1729168,
+        "bytesAfter": 781424,
+        "sha256Before": "041f886fdd2baefadc0a9268e24a9bafdea79e9d9a28c4d16670d731756e8ee2",
+        "sha256After": "3c47989c18ecb9c62189496cd25e2079887774638c972ae5ebe9aaefaae91529",
+        "triangles": 22000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 92130",
+            "to": "webp 1024x1024 q90 56302",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 314215",
+            "to": "webp 1024x1024 q88 249104",
+            "psnr": 40.9
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 163205",
+            "to": "webp 1024x1024 q90 121498",
+            "psnr": 44.2
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_perimeter_tenement.glb",
+        "bytesBefore": 1436268,
+        "bytesAfter": 635828,
+        "sha256Before": "44d5321932222ced5e06458e1cb2de2b7478a5d6357c2bb2555e4c8d0634c1f1",
+        "sha256After": "24a36796918d632ed9c7359a9c20feb21be8d3d291c689e88fb584203942502a",
+        "triangles": 18000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 97096",
+            "to": "webp 1024x1024 q90 61946",
+            "psnr": 46.9
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 277987",
+            "to": "webp 1024x1024 q88 207930",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 121570",
+            "to": "webp 1024x1024 q90 80916",
+            "psnr": 45.4
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_perimeter_workers_hall.glb",
+        "bytesBefore": 1535620,
+        "bytesAfter": 641744,
+        "sha256Before": "c62d89bcd6b3c077de9127cfe2e76832ab096ea51109d73daf52bf98e35b3f02",
+        "sha256After": "7f2a4991decef8eb8672b3056f71059fc00f5d7ac406ab74cad721b490d71896",
+        "triangles": 20000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 104743",
+            "to": "webp 1024x1024 q90 63508",
+            "psnr": 46.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 282868",
+            "to": "webp 1024x1024 q88 209774",
+            "psnr": 41.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 77775",
+            "to": "webp 1024x1024 q90 46398",
+            "psnr": 47.1
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_porter_handcart.glb",
+        "bytesBefore": 961940,
+        "bytesAfter": 394368,
+        "sha256Before": "de8f28777739bc6199cf55fbf4235b001de67dc48ee972c47bc52db86d125dcb",
+        "sha256After": "aebdac77daa07f04e318c36fe386f398f75bff1d4907912ae3344db9d1b1ada8",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 79227",
+            "to": "webp 1024x1024 q90 46866",
+            "psnr": 47.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 150594",
+            "to": "webp 1024x1024 q88 96238",
+            "psnr": 43.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 113628",
+            "to": "webp 1024x1024 q90 72046",
+            "psnr": 45.7
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_produce_scale.glb",
+        "bytesBefore": 925928,
+        "bytesAfter": 390128,
+        "sha256Before": "6fcb724ebde7b16e03993c832495789bf6f44df19b29895c48ad3ffbd07543e5",
+        "sha256After": "eaa3905119c5f44395be35f405ae4743ef7c99d689bdd588e09c7539b664ce19",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 71278",
+            "to": "webp 1024x1024 q90 44490",
+            "psnr": 48.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 166139",
+            "to": "webp 1024x1024 q88 101504",
+            "psnr": 43.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 120066",
+            "to": "webp 1024x1024 q90 79386",
+            "psnr": 45.6
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_queue_dispenser.glb",
+        "bytesBefore": 826792,
+        "bytesAfter": 386628,
+        "sha256Before": "95c1b3c25af4c199cace1227fc46d5ab04d745d43b67dd5f141d1720df5bebda",
+        "sha256After": "31e6e187eae132e03653c176bf64de9c400def71bb25dacfa1b0fe448531c43f",
+        "triangles": 10000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 91165",
+            "to": "webp 1024x1024 q90 60838",
+            "psnr": 47.1
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 186975",
+            "to": "webp 1024x1024 q88 122110",
+            "psnr": 43
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 111694",
+            "to": "webp 1024x1024 q90 77436",
+            "psnr": 45.8
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_queue_stanchion.glb",
+        "bytesBefore": 661032,
+        "bytesAfter": 298028,
+        "sha256Before": "1265a895a513a24601cffb4c1f2b72a21f9a4f572c0b67cac3818647b54608d9",
+        "sha256After": "11a318f6107a3e434edfbfedb41811d6879d7a996a7265d534b36e650a4ca44c",
+        "triangles": 7000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 66402",
+            "to": "webp 1024x1024 q90 37186",
+            "psnr": 48.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 132687",
+            "to": "webp 1024x1024 q88 77400",
+            "psnr": 44.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 127085",
+            "to": "webp 1024x1024 q90 81948",
+            "psnr": 45.2
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_receipt_spike.glb",
+        "bytesBefore": 848008,
+        "bytesAfter": 457164,
+        "sha256Before": "befd062cd90b89bd9b0bfd90227c5e5b6f2811dad732541297d42b642e009e94",
+        "sha256After": "fb9cf4a69fe27b8072b769f0ebb2f0cfb81ab2f25aee9607cc969773674fdfd6",
+        "triangles": 7000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 83066",
+            "to": "webp 1024x1024 q90 53630",
+            "psnr": 47.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 216914",
+            "to": "webp 1024x1024 q88 148880",
+            "psnr": 42.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 191412",
+            "to": "webp 1024x1024 q90 145940",
+            "psnr": 42.8
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_shop_bakery_tenement.glb",
+        "bytesBefore": 1424168,
+        "bytesAfter": 638104,
+        "sha256Before": "4db7657a718af9840d4ecfe3c0210ead611752a240e34e1e46338b7e381b66bf",
+        "sha256After": "ce0fdd4a7202b3a616440ca111acd7b217b9cb51b1c6e05496b7eb83d1d905b1",
+        "triangles": 17999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 85783",
+            "to": "webp 1024x1024 q90 52764",
+            "psnr": 47.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 248714",
+            "to": "webp 1024x1024 q88 175564",
+            "psnr": 41.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 182062",
+            "to": "webp 1024x1024 q90 137866",
+            "psnr": 43.6
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_shop_pharmacy_corner.glb",
+        "bytesBefore": 1703788,
+        "bytesAfter": 846832,
+        "sha256Before": "5ee0d0ca9ee6c5fd308901604e3dd9e5b289eb1ca46fa24c8972b7b41e1e058f",
+        "sha256After": "ee05509b8f42f71adfb23e48827d9bd279ed9bef2905dc01774fda0ebe59f9d9",
+        "triangles": 20060,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 128321",
+            "to": "webp 1024x1024 q90 90082",
+            "psnr": 45.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 294158",
+            "to": "webp 1024x1024 q88 223072",
+            "psnr": 41.1
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 267089",
+            "to": "webp 1024x1024 q90 227294",
+            "psnr": 42.1
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_shop_printworks_rowhouse.glb",
+        "bytesBefore": 1466676,
+        "bytesAfter": 620764,
+        "sha256Before": "6845bb7c6a0884d78fcc42c82c23cc0e7d0d024a53fc891e3443702d5adb4856",
+        "sha256After": "ca34d338a463f40de7ba1eeede9d837c0575e9447f163ee83470937884b783d8",
+        "triangles": 20000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 100756",
+            "to": "webp 1024x1024 q90 63828",
+            "psnr": 46.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 267946",
+            "to": "webp 1024x1024 q88 195536",
+            "psnr": 41.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 96821",
+            "to": "webp 1024x1024 q90 60408",
+            "psnr": 46.1
+          }
+        ]
+      },
+      {
+        "file": "echo-city/authority/models/ch03_tram_tunnel_portal.glb",
+        "bytesBefore": 1237196,
+        "bytesAfter": 466520,
+        "sha256Before": "42caeba3e6e5e270fbdf4423fe7897e72c0a6aa4864ca2f21599eaa312b5a099",
+        "sha256After": "90ed1715beb16f7bc2de4b4b1b916445265daf5621b66c290afad9d4b8189238",
+        "triangles": 22000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 75434",
+            "to": "webp 1024x1024 q90 48730",
+            "psnr": 48.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 201667",
+            "to": "webp 1024x1024 q88 130648",
+            "psnr": 42.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 57409",
+            "to": "webp 1024x1024 q90 31284",
+            "psnr": 48.5
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_archive_night_return.glb",
+        "bytesBefore": 913324,
+        "bytesAfter": 296492,
+        "sha256Before": "77f67160cd6ed72cc7a0e452bb0bfab8c7072973c70d9b479e0e689122ec8754",
+        "sha256After": "37d1f866a169311d162aa2406ca6e68de5643696e88d75743d69a46911523225",
+        "triangles": 18000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 159539",
+            "to": "webp 1024x1024 q88 98024",
+            "psnr": 43.5
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_fountain_pump_cabinet.glb",
+        "bytesBefore": 951600,
+        "bytesAfter": 282072,
+        "sha256Before": "cf55338871352cf3d8146ae7930e37dadef03d9fc654a27688baf5ea682dbb80",
+        "sha256After": "efed9da04e6b5b3fa8c8d1c306b8bbd30b9186b49da7a8331f2d396d0cf59ccd",
+        "triangles": 16000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 24137",
+            "to": "webp 1024x1024 q90 6934",
+            "psnr": 54.6
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 77905",
+            "to": "webp 1024x1024 q88 40228",
+            "psnr": 46.6
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 84859",
+            "to": "webp 1024x1024 q90 51004",
+            "psnr": 47
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_market_shutter_handwheel_pawl_v2.glb",
+        "bytesBefore": 1384008,
+        "bytesAfter": 552960,
+        "sha256Before": "624566e4d38037e4bc2ed31d870dbaa6326205170c8ed7aac1d38387e8a12041",
+        "sha256After": "4d7acc19adf0c8b26453a4e7822169496ed5d77b7a27cf1e250bea048441ac41",
+        "triangles": 26000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 66994",
+            "to": "webp 1024x1024 q90 47750",
+            "psnr": 48.5
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 138841",
+            "to": "webp 1024x1024 q88 90348",
+            "psnr": 43.8
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 156924",
+            "to": "webp 1024x1024 q90 129810",
+            "psnr": 43.8
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_market_shutter_pedestal_gearbox_v2.glb",
+        "bytesBefore": 1145188,
+        "bytesAfter": 418200,
+        "sha256Before": "d3a3593a022f505381d652177b491d4007c055f8ea322e9092273d85a5b444f4",
+        "sha256After": "3c9bddfccfaccb9d92fd39820f1a7e6efa05957eeb8d7663653f36af10ca28aa",
+        "triangles": 21999,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 64387",
+            "to": "webp 1024x1024 q90 41912",
+            "psnr": 48.4
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 121399",
+            "to": "webp 1024x1024 q88 76514",
+            "psnr": 44.3
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 82484",
+            "to": "webp 1024x1024 q90 58962",
+            "psnr": 46.3
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_night_attendant_service_kit.glb",
+        "bytesBefore": 797128,
+        "bytesAfter": 222252,
+        "sha256Before": "65f749aa1e0e917c6993db0f9e460fef397a63eda055e68de2644400709e9bda",
+        "sha256After": "a922fbab6778647a4a1c7a693b1c47bea6e71ebf06662239d50fc1f59721d4de",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 27062",
+            "to": "webp 1024x1024 q90 7744",
+            "psnr": 54.3
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 80912",
+            "to": "webp 1024x1024 q88 37414",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 45708",
+            "to": "webp 1024x1024 q90 21876",
+            "psnr": 49.8
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_public_works_ledger.glb",
+        "bytesBefore": 604720,
+        "bytesAfter": 186108,
+        "sha256Before": "9e874120c6d61fe0b4e077ecdaa2d7bb76a03b106a0d0b18c435d155730268d1",
+        "sha256After": "51bc73a4b704c703dcaec68dce3352824054a523ab13e2c2e02c3a85cd2378ce",
+        "triangles": 9000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 28067",
+            "to": "webp 1024x1024 q90 9146",
+            "psnr": 53.7
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 83245",
+            "to": "webp 1024x1024 q88 36614",
+            "psnr": 46.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 61045",
+            "to": "webp 1024x1024 q90 32074",
+            "psnr": 47.9
+          }
+        ]
+      },
+      {
+        "file": "echo-city/models/ch05_station_night_power_box.glb",
+        "bytesBefore": 767356,
+        "bytesAfter": 225388,
+        "sha256Before": "2867bd19ed57b58f52974729ebfdf39601ad60b7415dcde826972321f3fd7f9c",
+        "sha256After": "29c7d0c9cd49b52330d6d8286ccb2039d78d1f70e35688cdb25f8c1220fb838d",
+        "triangles": 14000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 20801",
+            "to": "webp 1024x1024 q90 3686",
+            "psnr": 55.8
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 55761",
+            "to": "webp 1024x1024 q88 32414",
+            "psnr": 47
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 64304",
+            "to": "webp 1024x1024 q90 38930",
+            "psnr": 47.8
+          }
+        ]
+      },
+      {
+        "file": "models/ch05_automatic_archive_cart.glb",
+        "bytesBefore": 1695528,
+        "bytesAfter": 507984,
+        "sha256Before": "2e1be21764892f2137b2ea7e8c6175540044d8a1cd4734f45d428cd341b74907",
+        "sha256After": "4dc1e932d40604e044d163dc827921c481bba4529abb177d2aba6c29f821b555",
+        "triangles": 28000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 44524",
+            "to": "webp 1024x1024 q90 17774",
+            "psnr": 51.2
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 145446",
+            "to": "webp 1024x1024 q88 80938",
+            "psnr": 44.5
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 121342",
+            "to": "webp 1024x1024 q90 82304",
+            "psnr": 45.1
+          }
+        ]
+      },
+      {
+        "file": "models/ch05_corded_desk_telephone.glb",
+        "bytesBefore": 684728,
+        "bytesAfter": 218960,
+        "sha256Before": "4c70bf2909d0e7273a8e311d111642c80e92db88e055cffd5af0c25b7ee7fac4",
+        "sha256After": "ef704e28bb6d9e053ecca49a27bd349101a222d621c75b353f7de7ebad9fa426",
+        "triangles": 12000,
+        "skinJoints": 0,
+        "animations": 0,
+        "textures": [
+          {
+            "name": "texture_pbr_20250901_normal",
+            "role": "normal",
+            "from": "jpeg 1024x1024 27443",
+            "to": "webp 1024x1024 q90 8760",
+            "psnr": 54
+          },
+          {
+            "name": "texture_pbr_20250901",
+            "role": "baseColor",
+            "from": "jpeg 1024x1024 82360",
+            "to": "webp 1024x1024 q88 43128",
+            "psnr": 46.7
+          },
+          {
+            "name": "texture_pbr_20250901_metallic-texture_pbr_20250901_roughness",
+            "role": "data",
+            "from": "jpeg 1024x1024 45557",
+            "to": "webp 1024x1024 q90 24534",
+            "psnr": 49.3
+          }
+        ]
+      }
+    ]
+  }
+}

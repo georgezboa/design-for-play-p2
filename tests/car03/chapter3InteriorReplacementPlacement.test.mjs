@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const RUNTIME_PATH = join(__dirname, '../../src/cars/presentCity3d/Chapter3OpeningRuntime.js');
@@ -89,7 +90,8 @@ function transformMissing(source, id) {
 async function loadModelBounds(id) {
   const buffer = readFileSync(join(REPLACEMENT_ROOT, `${id}.glb`));
   const ab = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-  const loader = new GLTFLoader();
+  // The shipped sets are Meshopt-compressed (scripts/compress-glb.mjs).
+  const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
   const originalWarn = console.warn;
   const originalError = console.error;
   console.warn = () => {};
