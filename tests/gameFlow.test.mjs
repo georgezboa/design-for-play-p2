@@ -85,7 +85,8 @@ test('Chapter 5 black threshold lands directly in the final boss', () => {
   assert.match(source('src/main.js'), /params\.get\('credits'\) === '1'[\s\S]*?createTitleMenu\(\{ openCredits: true, ending: params\.get\('ending'\) \}\)/);
   assert.match(source('src/main.js'), /params\.get\('play'\) === '1'[\s\S]*?resumeActiveCheckpoint\(\)/);
   assert.match(source('src/chapters/nightService/audio.js'), /1\.1_train_undertow\.mp3/);
-  assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /music\.play\('chapter-two-borrowed-light'/);
+  assert.match(source('src/chapters/borrowedLight/level.js'), /id: 'chapter-two-borrowed-light', src: 'assets\/music\/ch2\/2\.1_borrowed_light\.mp3'/);
+  assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /music\.play\(id, \{ \.\.\.options, \.\.\.overrides \}\)/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /c3-\$\{cue\}/);
   assert.match(source('src/chapters/museum3d/Museum3DApp.js'), /CHAPTER5_SCORE/);
   assert.match(source('src/chapters/museum3d/chapter05Score.js'), /ch5-dies-irae/);
