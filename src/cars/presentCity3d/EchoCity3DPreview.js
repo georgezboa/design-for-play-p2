@@ -5,6 +5,9 @@ import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
 import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks.js';
 import { Chapter3CityLod } from './chapter3CityLod.js';
+import { CHAPTER3_GRADES, applyChapter3Grade, chapter3GradeSnapshot, installChapter3ColorGrade } from './chapter3ColorGrade.js';
+import { setChapter3CastLight, setChapter3CastRimEnabled } from './chapter3CastLook.js';
+import { CHAPTER3_AFTERNOON_SUN_POSITION, CHAPTER3_LIGHT_PALETTES } from './Chapter3TimeVisualController.js';
 import {
   LOW_PIXEL_RATIO,
   LOWEST_PIXEL_RATIO,
@@ -45,6 +48,10 @@ import {
 const MATERIAL_ROOT = '/assets/chapter03-3d/materials';
 // City models the runtime moves (the night service's three cars, Olek's cart).
 const MOVING_CITY_MODELS = new Set(['municipal-tram', 'municipal-tram-car-02', 'municipal-tram-car-03', 'porter-handcart']);
+// LOW: the sky light lifts to cover the fill light it switches off.
+const LOW_TIER_SKY_LIFT = 1.2;
+// The cast's rim and fill inside the ministry and the hotel (warm practicals).
+const INTERIOR_CAST_LIGHT = Object.freeze({ rimColor: 0xffd7a6, rimStrength: 0.45, rimPower: 3.2, fill: 0.06 });
 // Built scenery larger than this (ground slabs, long kerbs) is never culled.
 const CITY_LOD_MAX_SCENERY_METRES = 60;
 const GRID_STEP = 1;
@@ -238,6 +245,15 @@ export function findPath(start, goal, runtimeObstacles = []) {
   return path.slice(1).map(([gx, gz]) => new THREE.Vector3(gridToWorld(gx), 0.5, gridToWorld(gz)));
 }
 
+// Round 6 (G8): the stone tints lean to sun-baked sienna and terracotta
+// under the white Leone sun (they were a grey taupe and a mauve brown that
+// read as the sallow murk). Multiplied into the warm limestone albedo.
+const PAVING_TINTS = Object.freeze({
+  district: 0x8a776a,
+  road: 0x725a4a,
+  street: 0x6f5446,
+});
+
 async function makeMaterialSet(renderer) {
   const maxAnisotropy = Math.min(12, renderer.capabilities.getMaxAnisotropy());
   const loader = new THREE.TextureLoader();
@@ -287,7 +303,7 @@ async function makeMaterialSet(renderer) {
     roadPaving(width, depth) {
       const repeat = [Math.max(1, width / 4.6), Math.max(1, depth / 4.6)];
       return new THREE.MeshStandardMaterial({
-        color: 0x6c5a4b,
+        color: PAVING_TINTS.road,
         map: cloneTexture(limestone, repeat, true),
         bumpMap: cloneTexture(height, repeat),
         bumpScale: 0.2,
@@ -299,7 +315,7 @@ async function makeMaterialSet(renderer) {
     districtPaving(width, depth) {
       const repeat = [Math.max(1, width / 5), Math.max(1, depth / 5)];
       return new THREE.MeshStandardMaterial({
-        color: 0x81786d,
+        color: PAVING_TINTS.district,
         map: cloneTexture(limestone, repeat, true),
         bumpMap: cloneTexture(height, repeat),
         bumpScale: 0.11,
@@ -311,7 +327,7 @@ async function makeMaterialSet(renderer) {
       });
     },
     street: new THREE.MeshStandardMaterial({
-      color: 0x694b48,
+      color: PAVING_TINTS.street,
       map: cloneTexture(limestone, [48, 45], true),
       bumpMap: cloneTexture(height, [48, 45]),
       bumpScale: 0.07,
@@ -1076,15 +1092,19 @@ export function walkAlongPath(position, path, travel) {
   return heading;
 }
 
+// Round 6 (G8): ACES plus the chapter's colour grade (chapter3ColorGrade.js)
+// in the materials' own tone-mapping step: no extra pass, the same on every
+// tier. Hard-edged PCF shadows (the Leone noon), cheaper than PCF soft.
 function createRenderer(container, { antialias = true } = {}) {
+  const graded = installChapter3ColorGrade();
   const renderer = new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.75));
   renderer.setSize(container.clientWidth, container.clientHeight);
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.18;
+  renderer.toneMapping = graded ? THREE.CustomToneMapping : THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = CHAPTER3_LIGHT_PALETTES.AFTERNOON.exposure;
   renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   container.appendChild(renderer.domElement);
   return renderer;
 }
@@ -1115,13 +1135,14 @@ function createCamera(container, preset) {
 }
 
 function addLights(scene) {
-  const hemi = new THREE.HemisphereLight(0xaac8c4, 0x4a2a20, 1.8);
+  const day = CHAPTER3_LIGHT_PALETTES.AFTERNOON;
+  const hemi = new THREE.HemisphereLight(day.hemiSky, day.hemiGround, day.hemiIntensity);
   hemi.name = 'city-hemisphere-light';
   scene.add(hemi);
 
-  const sun = new THREE.DirectionalLight(0xffd39a, 4.3);
+  const sun = new THREE.DirectionalLight(day.sun, day.sunIntensity);
   sun.name = 'city-sun-light';
-  sun.position.set(-34, 52, 26);
+  sun.position.fromArray(CHAPTER3_AFTERNOON_SUN_POSITION);
   sun.target.position.set(4, 0, 0);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
@@ -1135,7 +1156,7 @@ function addLights(scene) {
   sun.shadow.normalBias = 0.035;
   scene.add(sun, sun.target);
 
-  const fill = new THREE.DirectionalLight(0x5b9ca4, 1.1);
+  const fill = new THREE.DirectionalLight(day.fill, day.fillIntensity);
   fill.name = 'city-fill-light';
   fill.position.set(20, 28, -30);
   scene.add(fill);
@@ -1202,7 +1223,12 @@ export class EchoCity3DPreview {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(CITY_PALETTE.sky);
-    this.scene.fog = new THREE.FogExp2(CITY_PALETTE.fog, 0.0085);
+    // Round 6: a linear haze that starts near the street camera's depth (a
+    // little dust at the top of the frame), not an exponential veil.
+    this.scene.fog = new THREE.Fog(CITY_PALETTE.fog, CHAPTER3_LIGHT_PALETTES.AFTERNOON.fogNear, CHAPTER3_LIGHT_PALETTES.AFTERNOON.fogFar);
+    // The grade the time of day asks for (Chapter3TimeVisualController);
+    // interiors draw with CHAPTER3_GRADES.INTERIOR instead (render()).
+    this.colorGrade = CHAPTER3_GRADES.AFTERNOON;
     // Alpha round 4 (P1): a city pinned to LOW (LOW GRAPHICS · SLOWER
     // COMPUTERS, or the stored preference) is drawn without MSAA: on a
     // software or integrated GPU multisampling multiplies the fill cost, and
@@ -1547,7 +1573,10 @@ export class EchoCity3DPreview {
     const fill = this.scene.getObjectByName('city-fill-light');
     if (fill) fill.visible = false;
     const hemi = this.scene.getObjectByName('city-hemisphere-light');
-    if (hemi) hemi.intensity *= 1.2;
+    if (hemi) hemi.intensity *= LOW_TIER_SKY_LIFT;
+    // The per-pixel cast rim shimmers at LOW's pixel ratio (Butch gets his
+    // clean outline instead, Chapter3OpeningRuntime.updateButchSilhouette).
+    setChapter3CastRimEnabled(false);
     this.scene.traverse((object) => {
       if (object.isLight && object.castShadow) object.castShadow = false;
       if (!object.material) return;
@@ -1722,30 +1751,57 @@ export class EchoCity3DPreview {
     this.cameraOverrideTarget = target;
   }
 
+  // The afternoon arrival look (Chapter3TimeVisualController's AFTERNOON
+  // palette), before the chapter clock takes over.
   setLightingMode(mode) {
     if (mode !== 'clear-afternoon') return false;
-    this.scene.background.setHex(0x758b93);
-    this.scene.fog.color.setHex(0x6f8188);
-    this.scene.fog.density = 0.0056;
-    this.renderer.toneMappingExposure = 1.12;
+    const day = CHAPTER3_LIGHT_PALETTES.AFTERNOON;
+    this.scene.background.setHex(day.background);
+    this.scene.fog.color.setHex(day.fog, THREE.LinearSRGBColorSpace);
+    this.scene.fog.near = day.fogNear;
+    this.scene.fog.far = day.fogFar;
+    this.renderer.toneMappingExposure = day.exposure;
     const hemi = this.scene.getObjectByName('city-hemisphere-light');
     const sun = this.scene.getObjectByName('city-sun-light');
     const fill = this.scene.getObjectByName('city-fill-light');
     if (hemi) {
-      hemi.color.setHex(0x9fbfc5);
-      hemi.groundColor.setHex(0x342b2a);
-      hemi.intensity = 1.22;
+      hemi.color.setHex(day.hemiSky);
+      hemi.groundColor.setHex(day.hemiGround);
+      hemi.intensity = day.hemiIntensity;
     }
     if (sun) {
-      sun.color.setHex(0xffc477);
-      sun.intensity = 5.3;
+      sun.color.setHex(day.sun);
+      sun.intensity = day.sunIntensity;
     }
     if (fill) {
-      fill.color.setHex(0x4e8793);
-      fill.intensity = 0.82;
+      fill.color.setHex(day.fill);
+      fill.intensity = day.fillIntensity;
     }
+    this.setColorGrade(day.grade);
+    setChapter3CastLight(day.cast);
     document.body.classList.add('clear-afternoon');
     return true;
+  }
+
+  setColorGrade(grade) {
+    if (grade) this.colorGrade = grade;
+    return this.colorGrade;
+  }
+
+  // Once per drawn frame: the time-of-day grade outdoors, a neutral one in
+  // the ministry and the hotel (their practical lights carry the look). No
+  // grain on LOW / LOWEST, whose canvas is upscaled.
+  updateColorGrade() {
+    const runtime = this.gameplayRuntime;
+    const inside = Boolean(runtime?.insideMinistry || runtime?.insideHotel);
+    applyChapter3Grade(inside ? CHAPTER3_GRADES.INTERIOR : this.colorGrade, {
+      time: this.elapsed,
+      grain: this.qualityTier === 'high',
+    });
+    if (inside !== this.gradedInside) {
+      this.gradedInside = inside;
+      if (inside) setChapter3CastLight(INTERIOR_CAST_LIGHT);
+    }
   }
 
   triggerCameraShake(duration = 0.24, amplitude = 0.18) {
@@ -1951,6 +2007,7 @@ export class EchoCity3DPreview {
 
   render() {
     this.updateShadowLod();
+    this.updateColorGrade();
     this.renderer.render(this.scene, this.camera);
     this.statusElement.dataset.player = `${this.player.position.x.toFixed(2)},${this.player.position.z.toFixed(2)}`;
     this.statusElement.dataset.pathNodes = String(this.path.length);
@@ -2061,6 +2118,7 @@ export class EchoCity3DPreview {
         drawCalls: this.renderer.info.render.calls,
         triangles: this.renderer.info.render.triangles,
         quality: { tier: this.qualityTier, pixelRatio: this.renderer.getPixelRatio(), shadows: this.renderer.shadowMap.enabled, ...this.qualityMonitor.snapshot() },
+        grade: { toneMapping: this.renderer.toneMapping === THREE.CustomToneMapping ? 'aces+chapter3-grade' : 'aces', ...chapter3GradeSnapshot() },
         cityLod: this.cityLod.snapshot(),
       },
       interaction: this.developerMode

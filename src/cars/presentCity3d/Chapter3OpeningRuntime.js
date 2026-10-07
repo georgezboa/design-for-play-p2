@@ -78,7 +78,6 @@ import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js
 import {
   FIRE_SITE,
   addSilhouetteOutline,
-  applyRimLight,
   clampInteriorPoint,
   findInteriorPath,
   interiorSegmentIsClear,
@@ -97,7 +96,6 @@ import {
   makeRoseScarf,
   positionFrom,
   setActorForegroundVisibility,
-  setRimLightStrength,
   smooth,
 } from './chapter3SceneBuilders.js';
 import { music } from '../../shared/musicDirector.js';
@@ -1501,19 +1499,10 @@ export class Chapter3OpeningRuntime {
     halo.add(rim);
     this.preview.scene.add(halo);
     this.butchMarker = halo;
+    // Round 6: his navy greatcoat block, rim and fill come from the cast
+    // look (chapter3CastLook.js, applied when the rig installs); the old warm
+    // emissive lift and amber rim muddied the navy and are gone.
     const rig = this.characters.get('butch')?.visual;
-    rig?.traverse((child) => {
-      if (!child.isMesh) return;
-      for (const material of Array.isArray(child.material) ? child.material : [child.material]) {
-        if (!material || !('emissive' in material)) continue;
-        material.emissive.setHex(0x3a2210);
-        material.emissiveIntensity = 0.55;
-      }
-    });
-    // Round 3 art pass: a warm rim keeps his outline against the cobbles.
-    // A tight edge only: from this high camera most of a thin figure is at a
-    // grazing angle, and a soft rim washed his whole coat pale by day.
-    applyRimLight(rig, { color: 0xffbf73, strength: 0.85, power: 4 });
     this.butchRig = rig;
     this.updateButchSilhouette();
   }
@@ -1526,7 +1515,7 @@ export class Chapter3OpeningRuntime {
     const rig = this.butchRig;
     if (!rig || this.preview.qualityTier === 'high') return false;
     if (!this.butchSilhouette) {
-      setRimLightStrength(rig, 0);
+      // (The cast rim is already off on these tiers: applyQualityTier.)
       this.butchSilhouette = addSilhouetteOutline(rig, { color: BUTCH_SILHOUETTE.color, widthPx: 1, opacity: BUTCH_SILHOUETTE.opacity, name: 'chapter3-butch-silhouette' });
     }
     const renderer = this.preview.renderer;

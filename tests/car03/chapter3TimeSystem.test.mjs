@@ -102,12 +102,13 @@ describe('Chapter 3 authored clock', () => {
     const hotel = at(1, 18 * 60, CHAPTER3_PERIODS.DUSK);
     const night = at(1, 21 * 60 + 30, CHAPTER3_PERIODS.NIGHT);
     const dawn = at(2, 6 * 60 + 20, CHAPTER3_PERIODS.DAWN);
-    assert.deepEqual(afternoon.sunPosition, [-34, 52, 26]);
+    // Round 6 (Leone look): a high afternoon sun, a low eastern morning.
+    assert.deepEqual(afternoon.sunPosition, [-22, 74, 16]);
     assert.ok(lateAfternoon.sunPosition[1] < afternoon.sunPosition[1]);
     assert.ok(lateAfternoon.sunPosition[1] > dusk.sunPosition[1]);
     assert.ok(hotel.sunPosition[1] < dusk.sunPosition[1]);
     assert.notDeepEqual(night.sunPosition, hotel.sunPosition);
-    assert.deepEqual(dawn.sunPosition, [34, 17, -22]);
+    assert.deepEqual(dawn.sunPosition, [36, 15, -20]);
     assert.ok(afternoon.sunIntensity > hotel.sunIntensity);
     assert.ok(hotel.sunIntensity > night.sunIntensity);
   });

@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v46', () => {
+describe('Chapter 3 integrated final lock v47-ch3b', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -131,10 +131,24 @@ describe('Chapter 3 integrated final lock v46', () => {
     // the frame). Files: +2
     // (chapter3LongWalks, chapter3CityLod): 27 -> 29. Toma's composition
     // unchanged. Assets unchanged.
-    assert.equal(sourceFiles.length, 29);
+    // v47-ch3b (round 6 look pass, agent ch3b, 2026-10-07; the lead
+    // reconciles this lock with the other round-6 Chapter 3 branch at
+    // merge): owner note G8 "too sallow; it needs the West of Leone's
+    // Dollars films" and playtest item 10 (tests/car03/chapter3LeoneLook).
+    // A white high afternoon sun with hard PCF shadows, a bleached sky and
+    // a linear far haze instead of the exponential veil; a backlit
+    // blood-orange dusk; blue day-for-night; a cool clear morning; a colour
+    // grade inside the materials' tone mapping (CustomToneMapping = ACES +
+    // S-curve, saturation, split tone, white balance, grain on HIGH; no
+    // extra pass) replacing the canvas CSS filter; sienna / terracotta
+    // paving tints and a neutral vignette; the story cast gets signature
+    // colour blocks with rim and fill (Butch navy, Lev bottle green, ...),
+    // extras muted. Files: +2 (chapter3ColorGrade, chapter3CastLook):
+    // 29 -> 31. Toma's composition unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 31);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'dad3e3249e93935ae7b52cdb3fa6ad9c22797457d3b5c17468be7d121941f468',
+      '90ae8aad02c33370cd4dcb0d868ec0bf9d2f1a2f7adcb875976c879c17b62273',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

@@ -8,7 +8,7 @@ export const CITY_PALETTE = Object.freeze({
   bronze: 0x65452f,
   iron: 0x1b2221,
   patina: 0x2c6d67,
-  water: 0x285f65,
+  water: 0x2b535b,
   amber: 0xf0b45f,
   teal: 0x5bd2c6,
   wine: 0x71352f,
