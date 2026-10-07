@@ -131,6 +131,88 @@ export function tilePoint(slot, u, v) {
   return { x: slot.x + u * slot.w, y: slot.y + v * slot.h };
 }
 
+/**
+ * How far past its picture a window's brass bezel can be taken hold of
+ * (screen px): the painted ring (it scales with a window shown larger) plus
+ * a few px (round 6 · item 3).
+ */
+export function bezelPad(layout, bezel = 13) {
+  const k = layout.scale ?? 1;
+  return Math.max(6, (bezel + 6) * k);
+}
+
+/**
+ * The slot whose bezel (the band just outside its picture) is under a
+ * screen point, or null. A press there moves the window, never lifts a
+ * frame: the picture's own painted frame is the lift's grip. Where two
+ * bands meet mid-gutter the nearer window wins.
+ */
+export function bezelSlotAt(layout, x, y, { bezel = 13, pad = bezelPad(layout, bezel) } = {}) {
+  let best = null;
+  let bestD = Infinity;
+  layout.slots.forEach((slot) => {
+    const inner = x >= slot.x && y >= slot.y && x <= slot.x + slot.w && y <= slot.y + slot.h;
+    if (inner) { best = null; bestD = -1; return; }
+    if (bestD < 0) return;
+    const dx = Math.max(slot.x - x, 0, x - (slot.x + slot.w));
+    const dy = Math.max(slot.y - y, 0, y - (slot.y + slot.h));
+    const d = Math.max(dx, dy);
+    if (d <= pad && d < bestD) { best = slot; bestD = d; }
+  });
+  return bestD < 0 ? null : best;
+}
+
+/** What a click on a hotspot does by default, as the word its hover label shows. */
+export const VERB_DEFAULTS = Object.freeze({ use: 'USE', pickup: 'TAKE', read: 'READ' });
+
+/**
+ * Look closer or act (round 6 · item 1): a zoom (and a read) is "look
+ * closer" (the magnifier cursor); anything else acts on the world (the
+ * hand, with a short verb: RING, PUNCH, TAKE). `hotspot.verb` overrides.
+ * @returns {null | { look: boolean, verb: string|null }}
+ */
+export function hotspotAffordance(hotspot) {
+  if (!hotspot) return null;
+  // `look: true` on a hotspot that acts by holding something up to read (the FILED slip)
+  if (hotspot.look !== undefined) return { look: Boolean(hotspot.look), verb: hotspot.verb ?? (hotspot.look ? null : VERB_DEFAULTS[hotspot.kind] ?? VERB_DEFAULTS.use) };
+  if (hotspot.readable) return { look: true, verb: hotspot.verb ?? 'READ' };
+  if (hotspot.kind === 'zoom') return { look: true, verb: hotspot.verb ?? null };
+  if (hotspot.kind === 'read') return { look: true, verb: hotspot.verb ?? VERB_DEFAULTS.read };
+  return { look: false, verb: hotspot.verb ?? VERB_DEFAULTS[hotspot.kind] ?? VERB_DEFAULTS.use };
+}
+
+/** Cover-fit an iw×ih image into a w×h tile: scale and top-left (centred, cropping the overflow). */
+export function coverFit(iw, ih, w, h) {
+  if (!(iw > 0) || !(ih > 0)) return { scale: 1, x: 0, y: 0, w, h };
+  const scale = Math.max(w / iw, h / ih);
+  const dw = iw * scale;
+  const dh = ih * scale;
+  return { scale, x: (w - dw) / 2, y: (h - dh) / 2, w: dw, h: dh };
+}
+
+/** Texture key a painted plate URL loads under (stable across acts). */
+export function plateKey(url) {
+  let hash = 0;
+  const text = String(url ?? '');
+  for (let i = 0; i < text.length; i += 1) hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+  return `nsv-plate-${(hash >>> 0).toString(36)}`;
+}
+
+/**
+ * Every painted plate an act declares (`state.plate` / `state.platePast`, and
+ * the frame's `plate`), as `[{ key, url }]` for the preload. A plate is an
+ * illustrated PNG drawn full-tile (cover-fit) under the state's `draw()`.
+ */
+export function actPlates(act) {
+  const out = new Map();
+  const add = (url) => { if (typeof url === 'string' && url) out.set(plateKey(url), url); };
+  Object.values(act?.tiles ?? {}).forEach((tile) => {
+    Object.values(tile.states ?? {}).forEach((sceneDef) => { add(sceneDef.plate); add(sceneDef.platePast); });
+    add(tile.frame?.plate);
+  });
+  return [...out].map(([key, url]) => ({ key, url }));
+}
+
 // ---------------------------------------------------------------------------
 // Small helpers
 
@@ -325,6 +407,8 @@ export function createPanelModel(act, options = {}) {
       flags: [...asList(start.flags)],
       items: [...asList(start.items)],
       used: [],
+      // readables opened (reading view ids, `read:tile.id[:1978]`)
+      read: [],
       bell: start.bell ?? 0,
       linkHistory: clone(start.linkHistory ?? []),
       actors,
@@ -571,6 +655,109 @@ export function createPanelModel(act, options = {}) {
       }));
   }
 
+  /**
+   * Why a hotspot does not answer now (null while it does): 'hidden',
+   * 'used' (a one-shot already used), 'later' (it waits for something still
+   * to come: a click there says NOT YET), or 'gone' (its moment has passed:
+   * the bell once it has rung).
+   */
+  function hotspotBlock(tileId, hotspot) {
+    if (!hotspot || hotspot.hidden) return 'hidden';
+    if (hotspot.kind === 'zoom' && !sceneOf(tileId, hotspot.to)) return 'hidden';
+    if ((hotspot.once || hotspot.kind === 'pickup') && s.used.includes(`${tileId}.${hotspot.id}`)) return 'used';
+    if (!evaluate(hotspot.requires)) return awaiting(hotspot.requires) ? 'later' : 'gone';
+    return null;
+  }
+
+  /** Does a failing condition still wait for something to happen (a positive clause that is false)? */
+  function awaiting(cond) {
+    if (cond === undefined || cond === null || cond === true) return false;
+    if (cond === false) return true;
+    if (Array.isArray(cond)) return cond.some((c) => !evaluate(c) && awaiting(c));
+    const [kind, arg] = effectKind(cond);
+    if (kind === 'all') return asList(arg).some((c) => !evaluate(c) && awaiting(c));
+    if (kind === 'any') return !evaluate(cond) && asList(arg).some(awaiting);
+    if (kind === 'not' || kind === 'notFlag' || kind === 'notItem') return false;
+    return !evaluate(cond);
+  }
+
+  /**
+   * A hotspot at a tile-local point that does not answer YET (round 6 ·
+   * item 1: a click that does nothing says why). Quiet answers and things
+   * that are done are left out. Returns `{ hotspot, reason: 'later' }` or null.
+   */
+  function waitingSpotAt(tileId, u, v, screen = null) {
+    const rect = slotRect(tileId);
+    const point = screen ?? (rect ? tilePoint(rect, u, v) : null);
+    const inLens = lensCovers(point);
+    const hit = hotspots(tileId).filter((h) => !h.enabled && !h.quiet && (inLens ? true : h.era !== 'past') && inRect(h.rect, u, v))
+      .reverse().find((h) => hotspotBlock(tileId, h) === 'later');
+    return hit ? { hotspot: hit, reason: 'later' } : null;
+  }
+
+  // ---------- readables (round 6 · item 14) ----------
+  //
+  // A scene may list `readables`: pieces of paper whose words matter (a
+  // ticket stub, a reservation slip, a museum label). A click on one opens a
+  // large reading view of its text (PanelScene) while the paper stays in the
+  // window; through the lens it shows the 1978 words (`past`) if it has them.
+  // They are not hotspots: they never prompt, never block a step, and a
+  // hotspot under the same point always wins.
+
+  function readableEnabled(readable) {
+    return !readable.hidden && evaluate(readable.requires);
+  }
+
+  /** Every readable of a tile's current scene, with its live status. */
+  function readables(tileId) {
+    return asList(scene(tileId)?.readables).map((r) => ({ ...r, readable: true, era: r.era ?? 'both', enabled: readableEnabled(r) }));
+  }
+
+  /** The readable at a tile-local point, and which words it shows there (`past`: through the lens). */
+  function readableAt(tileId, u, v, screen = null) {
+    const rect = slotRect(tileId);
+    const point = screen ?? (rect ? tilePoint(rect, u, v) : null);
+    const inLens = lensCovers(point);
+    // inside the lens the 1978 paper is what shows: a present-only readable
+    // is not there, a 1978-only one is only there
+    const hit = readables(tileId).filter((r) => r.enabled && inRect(r.rect, u, v)
+      && (inLens ? r.era !== 'present' : r.era !== 'past')).reverse()[0];
+    if (!hit) return null;
+    return { ...hit, past: Boolean(inLens && hit.past && hit.era !== 'present') };
+  }
+
+  /** A readable by id (the live one when two share an id, e.g. before and after a punch). */
+  function readableById(tileId, readableId) {
+    const list = readables(tileId).filter((r) => r.id === readableId);
+    return list.find((r) => r.enabled) ?? list[0] ?? null;
+  }
+
+  /** The card a readable opens as (its words for this era). */
+  function readingCard(tileId, readable, past) {
+    const spec = past && readable.past ? readable.past : readable.reading ?? {};
+    return { ...spec, reading: true, era: past && readable.past ? 'past' : 'present', source: { tile: tileId, rect: [...(readable.ringRect ?? readable.rect)] } };
+  }
+
+  /** Open a readable's reading view (it pauses the script like an archive card). */
+  function openReading(tileId, readableId, { past = false } = {}) {
+    if (lockedOut() || s.card) return false;
+    const readable = readableById(tileId, readableId);
+    if (!readable?.enabled) return false;
+    touch();
+    showReading(tileId, readable, past);
+    pump();
+    return true;
+  }
+
+  function showReading(tileId, readable, past) {
+    const card = readingCard(tileId, readable, past);
+    const id = `read:${tileId}.${readable.id}${card.era === 'past' ? ':1978' : ''}`;
+    s.card = { id, await: false, reading: true };
+    s.read = s.read ?? [];
+    if (!s.read.includes(id)) s.read.push(id);
+    events.emit('card', { id, card });
+  }
+
   /** The frame a press at a tile-local point takes hold of (liftable now), or null. */
   function frameGripAt(tileId, u, v) {
     const frameId = frameOn(tileId);
@@ -658,7 +845,16 @@ export function createPanelModel(act, options = {}) {
         break;
       }
       case 'zoomTo': zoomIn(arg.tile, arg.to, arg.rect ?? [0.25, 0.25, 0.5, 0.5], { forced: true }); break;
-      case 'zoomOut': zoomOut(arg.tile ?? arg, { forced: true }); break;
+      // `{ zoomOut: { tile, to } }` steps back out into a different wide state
+      // (the door that was locked when the player zoomed in is ajar now)
+      case 'zoomOut': zoomOut(arg.tile ?? arg, { forced: true, to: arg.to ?? null }); break;
+      case 'read': {
+        // open a readable's reading view from the script (`'tile.id'` or `{ tile, id, past }`)
+        const [tileId, readableId] = typeof arg === 'string' ? arg.split('.') : [arg.tile, arg.id];
+        const readable = readableById(tileId, readableId);
+        if (readable?.enabled) showReading(tileId, readable, Boolean(arg?.past));
+        break;
+      }
       case 'zoomOutAll': {
         // step all the way back out, one level at a time (however deep the player went)
         const id = arg.tile ?? arg;
@@ -954,14 +1150,14 @@ export function createPanelModel(act, options = {}) {
     return Boolean(tile?.zoomStack.length) && sceneDef?.zoomOut !== false && evaluate(sceneDef?.zoomOutWhen) && !lockedOut();
   }
 
-  function zoomOut(tileId, { forced = false } = {}) {
+  function zoomOut(tileId, { forced = false, to = null } = {}) {
     const tile = s.tiles[tileId];
     if (!tile?.zoomStack.length || (!forced && !canZoomOut(tileId))) return false;
     touch();
     const entry = tile.zoomStack.pop();
     const from = tile.state;
-    tile.state = entry.state;
-    events.emit('zoom', { tile: tileId, dir: 'out', from, to: entry.state, rect: entry.rect });
+    tile.state = to && sceneOf(tileId, to) ? to : entry.state;
+    events.emit('zoom', { tile: tileId, dir: 'out', from, to: tile.state, rect: entry.rect });
     pump();
     return true;
   }
@@ -1156,6 +1352,8 @@ export function createPanelModel(act, options = {}) {
       dragging: s.dragging,
       dialogue: s.blocking?.kind === 'dialogue' ? { index: s.blocking.index, total: s.blocking.lines.length, speaker: s.blocking.lines[s.blocking.index]?.speaker ?? null } : null,
       card: s.card?.id ?? null,
+      reading: s.card?.reading ? s.card.id : null,
+      read: [...(s.read ?? [])],
       blocking: s.blocking?.kind ?? null,
       inputLocked: s.inputLocked,
       ended: s.ended,
@@ -1171,7 +1369,7 @@ export function createPanelModel(act, options = {}) {
       const step = act.steps[i];
       const effects = step.skip ?? (step.do ?? []).filter((effect) => {
         const [kind] = effectKind(effect);
-        return !['wait', 'dialogue', 'fx', 'sfx', 'walkButch', 'walk', 'playTrain', 'showCard', 'caption', 'nextAct', 'endChapter', 'checkpoint'].includes(kind);
+        return !['wait', 'dialogue', 'fx', 'sfx', 'walkButch', 'walk', 'playTrain', 'showCard', 'read', 'caption', 'nextAct', 'endChapter', 'checkpoint'].includes(kind);
       });
       clone(effects).forEach(applyEffect);
       s.stepIndex = i + 1;
@@ -1257,6 +1455,12 @@ export function createPanelModel(act, options = {}) {
     evaluate,
     hotspots,
     hotspotAt,
+    hotspotBlock,
+    waitingSpotAt,
+    readables,
+    readableAt,
+    readableById,
+    openReading,
     hasFlag,
     hasItem,
     lensCovers,
@@ -1329,6 +1533,11 @@ export function validateAct(act) {
         if (!hotspot.id) problems.push(`hotspot without id in ${id}:${stateId}`);
         if (!Array.isArray(hotspot.rect) || hotspot.rect.length !== 4) problems.push(`hotspot ${id}.${hotspot.id} needs rect [x,y,w,h]`);
         if (hotspot.kind === 'zoom' && !tile.states[hotspot.to]) problems.push(`zoom hotspot ${id}.${hotspot.id} targets unknown state "${hotspot.to}"`);
+      });
+      (sceneDef.readables ?? []).forEach((readable) => {
+        if (!readable.id) problems.push(`readable without id in ${id}:${stateId}`);
+        if (!Array.isArray(readable.rect) || readable.rect.length !== 4) problems.push(`readable ${id}.${readable.id} needs rect [x,y,w,h]`);
+        if (!readable.reading) problems.push(`readable ${id}.${readable.id} needs reading {…}`);
       });
       Object.entries(sceneDef.edges ?? {}).forEach(([side, edges]) => {
         if (!SIDES.includes(side)) problems.push(`edge side "${side}" in ${id}:${stateId}`);

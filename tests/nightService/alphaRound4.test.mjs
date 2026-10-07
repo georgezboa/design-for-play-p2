@@ -50,7 +50,8 @@ test('P1 · Act 0: the first beat pulses its tag early (6 s), once; the hand ove
   hints.input();
   assert.deepEqual(hints.update(HINT_TIERS.pulse - 100), []);
   assert.ok(hints.update(200).includes('pulse'));
-  assert.match(scene, /else if \(hit\) \{ cursor = 'pointer'; hovered = \{ tile, hotspot: hit \}; \}/);
+  // the hand (or, round 6, the magnifier for "look closer") over anything that answers
+  assert.match(scene, /cursor = a\.look \? LOOK_CURSOR : 'pointer';\s*hovered = \{ tile, hotspot: hit \?\? readable \};/);
 });
 
 test('P1 · worded tags: their size follows the text and their paper is clickable', () => {
@@ -103,7 +104,8 @@ test('P2 · Act III: the hill is cued, and the zoomed-out house no longer pulls 
 });
 
 test('P1 · cards say how to put them down; quiet answers never wear a ring', () => {
-  assert.match(scene, /'CLICK OR PRESS ENTER TO CLOSE'/);
+  // (round 6: E is Enter, unified controls)
+  assert.match(scene, /'CLICK · E · ENTER TO CLOSE'/);
   assert.match(scene, /if \(hotspot\.quiet\) return;/);
   // and their type stays on the paper at any Text Size (160 %: the last line ran off)
   assert.match(scene, /this\.fitCardText\(\);/);

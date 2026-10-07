@@ -12,7 +12,9 @@ Chapter 1 is a Gorogoa-style panel puzzle on its own page (`night-service.html`
 | `art/ink.js`, `art/wallArt.js` | Canvas kit: jittered ink, wood, brass, paper tags, sepia, the carriage wall. |
 | `acts/*.js` | Act 0 (1×1, zoom), Act 0.5 (1×2, swap; zoom + swap), Act 1 (2×2), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
 | `hints.js`, `hintLines.js`, `art/hintArt.js` | The wordless hint tiers (when, and which gesture), the Conductor's tier-3 lines, the ghost hand, the unfold's brass pull and tag. |
-| `unfold.js` | The player unfolds the wall between acts that `growFrom` each other: fold geometry (which side, the seam, the pull), the layout at any progress, and the drag / spring / snap / keyboard state machine. Pure, tested in `tests/nightService/unfold.test.mjs`. |
+| `unfold.js` | The player unfolds the wall between acts that `growFrom` each other: fold geometry (which side, the seam, the pull), the layout at any progress, and the drag / spring / snap / keyboard state machine, with the wrong-way give and rebound and the teaching unfold's one demonstration nudge. Pure, tested in `tests/nightService/unfold.test.mjs` and `round6.test.mjs`. |
+| `readingView.js`, `art/readingArt.js` | The reading view: a readable's words held up large, in the shape of the paper (ticket, slip, tag, brass label, torn page), following TEXT SIZE. |
+| `chips.js` | The engine's short words on screen (a hotspot's verb, why a click did nothing, how to step back, NEED A HINT? [H]): walnut pills with key caps, like the key strip. |
 | `art/actNArt.js`, `art/actNFx.js` | Each act's drawings and custom presentation effects. |
 | `audio.js` | Synth SFX on the SFX bus, rail ambience, quiet music loop. |
 
@@ -82,8 +84,17 @@ rack: {
         bottom: [{ type: 'drop', at: 0.25, when: { state: { tile: 'rack', is: 'tilting' } } }],
         right: [{ type: 'rail', at: 0.85, era: 'past', lensAt: [0.5, 0.85] }],
       },
+      plate: '/assets/…/rack-v01.png', // optional painted plate (see below); platePast for the 1978 layer
+      readables: [{                 // optional papers whose words matter (see below)
+        id: 'slip', rect: [x, y, w, h], era: 'present' | 'past' | 'both', requires: cond,
+        reading: { shape, kicker, header, lines, stamp, seal, hole },  // today's words
+        past: { … },                // the 1978 words, shown when read through the lens
+      }],
       hotspots: [{
         id: 'tag', kind: 'zoom' | 'use' | 'read' | 'pickup',
+        verb: 'RING',               // the word by the hand on hover/focus (default USE / TAKE / READ;
+                                    // a zoom is "look closer": the magnifier, no word)
+        notYet: 'NOT YET',          // what a click says while `requires` still waits for something
         rect: [x, y, w, h], era: 'present' | 'past' | 'both',
         to: 'closeup',              // zoom target state (keep w == h for an even zoom)
         card: 'A2', item: 'lens',   // read / pickup
@@ -107,6 +118,62 @@ rack: {
 },
 ```
 
+**Painted plates.** A state (and a frame) may name `plate: '<url>'` (and
+`platePast` for its 1978 layer): an illustrated PNG, loaded with the act
+(`actPlates` → the scene's preload) and drawn full-tile, cover-fit (centred,
+cropped to the tile), under the state's own `draw()`. The painter `ctx`
+then has `ctx.plate === true`, so a `draw()` can skip its canvas painting
+and add only overlays (glows, dust, rain, live sprites). Linked panels
+should share their edge rows so the picture continues across the gutter.
+Act logic never changes: swap a PNG in, keep the edges and hotspots.
+
+**Readables.** Papers whose words carry the story (the exhibit's ticket
+stub, reservation slip, torn ledger page, Plate IV's label, the case tag)
+are `readables`, not hotspots: a click on one (the magnifier and READ on
+hover; Tab/Enter reach them too) holds it up in the reading view — a large
+copy in the shape of the thing (`shape: 'ticket' | 'slip' | 'tag' | 'plate'
+| 'torn' | 'paper'`) with its `lines` (`{ text, font: 'serif'|'mono', size:
+'xl'|'l'|'m'|'s', color: 'ink'|'red'|'teal'|'faded', italic }`), an optional
+`header` (`{ left, right, band }`), `stamp` (DUPLICATE) and `seal`
+('whole' | 'broken'), all in type that follows TEXT SIZE. Through the lens
+it shows `past` (with a 1978 badge). The paper stays in its window,
+outlined while read; click, E, Enter or Esc puts it back. It holds the
+script like an archive card (`s.card.reading`) but never prompts, never
+blocks a step, and a hotspot under the same point wins. The effect
+`{ read: 'tile.id' }` (or `{ tile, id, past }`) opens one from a script.
+
+**Look closer or act (round 6).** Over a zoom (and a read) the cursor is a
+brass magnifier; over anything that acts it is the hand, with the
+hotspot's `verb` on a small chip by the pointer (over the keyboard focus:
+`[ENTER] RING`). The player's first close-up of the chapter, once it can be
+stepped out of, says how by its ⤢ glyph (ESC · RIGHT-CLICK · OR THIS),
+once. A click that does nothing says why: NOT YET over a hotspot whose
+`requires` still waits; otherwise the window's live tags hop and, the first
+three times an act, a word (NOTHING HERE · TRY THE TAGS / · STEP BACK / ·
+DRAG THE WINDOW). A click during a scripted beat shows an ellipsis. Three
+such ineffective tries within 20 s (dead clicks, a drag on a window that
+cannot move, a window put back where it was, a wrong-way pull) offer
+NEED A HINT? [H] on the sill, once in the page's life, never after H or
+SHOW ME (`hints.js createFlailMeter`).
+
+**Moving and lifting (round 6).** The brass bezel round a window (just
+outside its picture, `bezelSlotAt`) moves the window: the open hand on
+hover (the window rises a hair), and on press it rises off the wall over
+its shadow before it follows the hand; a window that cannot move strains a
+few px after the hand, says why (`act.fixedText`), and springs back. A
+frame's grip (its painted brass, inside the picture) lifts the frame: the
+lift cursor, and only the frame rises off the picture from its own
+silhouette. The picture inside a frame still moves the window.
+
+**Dialogue (round 6).** While a line is spoken, the windows dim, the tags
+and rings step back, and the caption reads ▸ CONTINUE · CLICK · E: a click
+anywhere (or E / Enter) moves the line on, with a ripple where the hand was.
+
+**Keys.** E is Enter everywhere (interact, confirm, advance). Esc is Back:
+it steps out of a close-up the player opened (never a view the act started
+zoomed in), else the pause menu opens. An act can keep Esc for itself with
+`escapeZoomsOut: false` (the Museum exhibit: Esc leaves the case).
+
 **The lens and clicks.** A still click inside the lens acts on the 1978 layer
 first (`era: 'past'` / `'both'`); when no 1978 hotspot is under it, the click
 falls through to the present hotspot or ⤢ glyph underneath, so the lens never
@@ -115,7 +182,10 @@ a frame's grip, inside the lens glass, still lifts the frame. The lens centre
 is clamped to the board of windows (`model.lensBounds()`), and its rim fades
 while a spoken line's caption bar sits under it.
 
-**Links.** Adjacent slots link when facing edges share `type` and their `at`
+**Links.** Drawn as a thin warm seam of light across the gap at the link
+height (a rail is two, a chute two walls) with light pooling on both bezel
+lips, and a short light-run when one connects: the pictures are what
+connect. Adjacent slots link when facing edges share `type` and their `at`
 values differ by ≤ 0.03. Edges come from the tile's *current* state (so zoom
 level matters) plus any frame it hosts. `era: 'past'` edges count only while
 the lens covers their anchor: the edge endpoint, or `lensAt` if given (use one
@@ -156,7 +226,7 @@ the line index the Archivist's red pencil crosses out) · `dialogue [{speaker,te
 `caption {text,ms}` · `wait ms` · `fx {name,…,ms?}` · `sfx name` · `ringBell` ·
 `walkButch {id,path,speed,await}` / `walk {actor,…}` / `playTrain {id,path}` ·
 `placeActor {actor,tile,state,x,y,visible,pose,facing,carrying}` · `actorPose` ·
-`zoomTo {tile,to,rect}` · `zoomOut tile` · `zoomOutAll {tile,gap}` (back out of every level, one at a time) ·
+`zoomTo {tile,to,rect}` · `zoomOut tile` or `{tile,to}` (step back into a different wide state: the door the key just opened) · `zoomOutAll {tile,gap}` (back out of every level, one at a time) · `read 'tile.id'` (a readable's reading view) ·
 `enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
 `returnFrame id` · `unlockDrag` / `lockTile` · `lockInput` / `unlockInput` ·
 `grantStone id` · `checkpoint id` · `nextAct id` · `endChapter` · `setSlots [..]` (dev `skip` only).
@@ -226,6 +296,13 @@ cycles every reachable tag on the wall, Enter uses it, Space picks up / puts
 down, Backspace steps back (the selected window, else the one that can),
 F lifts a frame (likewise), L takes the lens, H is SHOW ME. A key with nothing
 to do wobbles the window and blinks the key that would help.
+
+**The unfold, the wrong way.** Pulled the wrong way the pull gives a few
+px (ever stiffer, `wrongWayGive`) and the kept windows lean a hair; let go,
+it rings back into place (`reboundOffset`) with a soft wooden tock, and the
+chevrons light up the right way. The opposite arrow key does the same
+(`kick`). The chapter's first (teaching) unfold, left alone ~3 s, draws
+itself a short way open the right way once and springs back (`demoNudge`).
 
 **Tier-3 speaker.** The Conductor speaks the hint lines; an act can name its
 own `hintSpeaker` (the Museum exhibit: Butch).
