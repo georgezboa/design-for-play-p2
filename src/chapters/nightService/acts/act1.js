@@ -102,6 +102,7 @@ export const ACT1 = defineAct({
             kind: 'use',
             rect: [DOOR.x, 0.4, 0.07, 0.24],
             requires: { all: [{ flag: 'butchAtDoor' }, { notFlag: 'ticketDropped' }] },
+            verb: 'TRY',
             do: [{ sfx: 'rattle' }, { fx: { name: 'slotFlash' } }],
           }],
         },
@@ -172,7 +173,10 @@ export const ACT1 = defineAct({
         { setFlag: 'ticketDropped' },
         { sfx: 'clack' },
         { setState: { tile: 'door', state: 'unlocked' } },
-        { wait: 800 },
+        // round 6 · item 4: success leaves checkable evidence — the lamp goes
+        // amber, the door comes off its latch — held before the claim card
+        { wait: 300 },
+        { fx: { name: 'doorUnlocked', ms: 1400 } },
         // the claim this chapter is about: never optional (unless already read)
         { showCard: { card: 'A1', unless: { hotspot: 'lockers.envelope' } } },
       ],

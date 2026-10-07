@@ -61,7 +61,7 @@ export const ACT0 = defineAct({
           // the plunger is the only thing to do in here until the bell has rung
           zoomOutWhen: { flag: 'rung' },
           hotspots: [{
-            id: 'strike', kind: 'use', rect: STRIKE_HIT, once: true,
+            id: 'strike', kind: 'use', rect: STRIKE_HIT, once: true, verb: 'RING',
             requires: { notFlag: 'rung' },
             tag: { x: 0.56, y: 0.12, angle: 0.35, scale: 1.5 },
             do: [{ fx: { name: 'bellRing' } }, { sfx: 'deskBell' }, { setFlag: 'rung' }],
