@@ -36,7 +36,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
   echoCity: list(
     // Echo City: click-to-walk streets; scanner fields switch to direct
     // movement. F is free (fullscreen is the desktop bridge's F11).
-    ['WALK', 'CLICK THE GROUND · A FAR CLICK STRIDES'],
+    ['WALK', 'CLICK THE GROUND · WASD / ARROWS · A FAR CLICK STRIDES'],
     ['RUN', 'DOUBLE-CLICK THE GROUND · HOLD SHIFT'],
     // Alpha round 4 fix round (P2): the long walks.
     ['LONG WALKS', 'G · LEV LEADS THE WAY (WHEN OFFERED)'],
@@ -47,9 +47,10 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['WALK IN STEP (SCANNERS)', 'HOLD E BESIDE A LIT WALKER · OR WASD TOWARD THE ARCH'],
     ['LET GO OF A WALKER', 'WALK BACK'],
     ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
-    // Alpha round 4: in the order the punch needs.
-    ['TICKET BOARD', 'LENS OVER BOTH TICKETS · STACK THEM · CLICK TO PUNCH'],
-    ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · SPACE PUNCH'],
+    // Round 6 (items 8, 18): the operations only, never the solution
+    // order; E / Enter acts (Ch3 has no jump, so Space is not shown).
+    ['TICKET BOARD', 'DRAG PAPERS AND THE 1978 LENS · CLICK A STACK TO PUNCH · H HINT'],
+    ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · E / ENTER ACT'],
     ['RESET CAMERA', 'R'],
     ['PAUSE', 'ESC'],
   ),

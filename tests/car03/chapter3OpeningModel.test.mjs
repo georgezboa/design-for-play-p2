@@ -53,6 +53,9 @@ function playWholeChapter(model) {
   call('completeNika');
   for (const id of TICKET_IDS) call('seeTicketThroughLens', id);
   call('stackTickets');
+  call('beginTicketFiling');
+  assert.equal(model.concludeTickets('one').accepted, true);
+  for (const id of [...TICKET_IDS, 'terminal-note']) assert.equal(model.pinTicketProof(id).pinned, true);
   call('punchTickets');
   call('completeTicketBoard');
   call('noteEdaTopic', 'face');
@@ -156,16 +159,27 @@ describe('Chapter 3 · ECHO CITY release chapter', () => {
     assert.equal(createChapter3OpeningModel({ startAt: 'not-a-beat' }).snapshot().phase, 'train-door');
   });
 
-  it('files the two tickets 43 only through the lens, a stack and one punch', () => {
+  // Round 6 (item 8): the punch files the stack only once the player has
+  // said it is one passenger and pinned the proof (both 1978 records and
+  // the duplicate rule). tests/car03/chapter3Round6.test.mjs has more.
+  it('files the two tickets 43 only as one passenger, proved, with one punch', () => {
     const model = createChapter3OpeningModel({ startAt: 'ticket-board' });
     assert.equal(model.canPunchTickets(), false);
+    assert.equal(model.beginTicketFiling(), false, 'only a stack goes under the punch');
     assert.equal(model.stackTickets(), true);
-    assert.equal(model.punchTickets(), false, 'the claim numbers have not been seen yet');
+    assert.equal(model.beginTicketFiling(), true);
+    assert.deepEqual(model.concludeTickets('two'), { accepted: false, reason: 'unchecked' });
+    assert.deepEqual(model.concludeTickets('one'), { accepted: true, reason: null });
+    assert.equal(model.pinTicketProof('ticket-velez').reason, 'unchecked', 'an unread ticket is no proof');
     assert.equal(model.seeTicketThroughLens('ticket-velez'), true);
     assert.equal(model.seeTicketThroughLens('ticket-velez'), false);
     assert.equal(model.seeTicketThroughLens('terminal-note'), false);
-    assert.equal(model.punchTickets(), false, 'both tickets must be seen');
+    assert.equal(model.pinTicketProof('ticket-velez').pinned, true);
+    assert.equal(model.punchTickets(), false, 'one record proves nothing about the other');
     assert.equal(model.seeTicketThroughLens('ticket-venn'), true);
+    assert.equal(model.pinTicketProof('ticket-venn').pinned, true);
+    assert.equal(model.punchTickets(), false, 'the name VENN is not explained yet');
+    assert.equal(model.pinTicketProof('terminal-note').pinned, true);
     assert.equal(model.stackTickets(false), true);
     assert.equal(model.punchTickets(), false, 'they must lie one on the other');
     assert.equal(model.stackTickets(true), true);
@@ -361,7 +375,8 @@ describe('Chapter 3 checklist menus', () => {
       'publicHall', 'nika',
       () => tell(menu(CONTENT.NIKA_OPENING, CONTENT.NIKA_CONCLUSION)),
       'publicTable',
-      () => tell(CONTENT.TICKET_BOARD_CARDS),
+      // The board opens on its one question (round 6, item 8).
+      () => tell(CONTENT.TICKET_BOARD_CARDS, CONTENT.TICKET_BOARD_TEXT.question),
       'fileTickets',
       () => tell(CONTENT.TICKET_BOARD_CONCLUSION),
       'eda',
@@ -445,8 +460,13 @@ describe('Chapter 3 story coherence (docs/STORY_BIBLE.md)', () => {
     assert.match(cardText, /M\. VENN/);
     const nika = CONTENT.NIKA_CONCLUSION.map((line) => line.text).join(' ');
     assert.match(nika, /cut long surnames on duplicates/);
-    assert.match(nika, /VE, NN/);
     assert.match(nika, /VELEZ/);
+    // Round 6 (item 8): the rule is told and printed on Nika's note, but
+    // nobody applies it to VELEZ for the player any more.
+    const note = CONTENT.TICKET_BOARD_CARDS.find((card) => card.id === 'terminal-note').lines.join(' ');
+    assert.match(note, /two letters, then NN/);
+    assert.doesNotMatch(`${nika} ${note}`, /VE[,·\s]+NN/);
+    assert.ok(!CONTENT.NIKA_CONCLUSION.some((line) => /^Venn\.?$/.test(line.text)), 'Butch no longer says the answer');
   });
 
   it('makes the fire letters another mark that says keep moving', () => {

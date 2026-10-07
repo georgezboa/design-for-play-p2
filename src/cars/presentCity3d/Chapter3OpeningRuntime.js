@@ -72,9 +72,13 @@ import {
 } from './chapter3HotelNavigation.js';
 import { Chapter3ReplacementAssetSystem } from './Chapter3ReplacementAssetSystem.js';
 import { CITY_MODELS, RAIL_LAYOUT, CAMERA_FOLLOW, CAMERA_HOME, WORLD_NODES } from './city3dConfig.js';
-import { findPath, isWalkable } from './EchoCity3DPreview.js';
+import { RUN_MULTIPLIER, WALK_SPEED, findPath, isWalkable } from './EchoCity3DPreview.js';
 import { LEAD_KEY, LEAD_LINE_MS, LEAD_ROUTES, leadOffer, leadOfferHtml } from './chapter3LongWalks.js';
 import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js';
+import {
+  LEV_ENTRANCE, MARA_GLIMPSE, PLAYER_TURN_RATE, approachSpeed, besideTarget, dampYaw, gaitForSpeed, pointAlongPolyline,
+  polylineLength, turnToward, wrapAngle, yawToward,
+} from './chapter3Entrance.js';
 import {
   FIRE_SITE,
   addSilhouetteOutline,
@@ -308,11 +312,23 @@ export class Chapter3OpeningRuntime {
     this.pointerHeld = false;
     this.keysHeld = new Set();
     this.directMoving = false;
+    // Round 6 (item 18): WASD / arrows walk Butch everywhere, not only in
+    // the scanner fields (click-to-walk stays).
+    this.keyWalking = false;
     this.interactions = [];
     this.departureElapsed = null;
     this.departureBases = [];
     this.guideElapsed = null;
     this.guideStart = null;
+    // Round 6 (G5, chapter3Entrance.js): Lev's walk over to Butch, his walk
+    // to the oil line and the Mara ahead's glimpse are real walks (speed,
+    // turn, stop), and people turn to face whoever they talk to.
+    this.levEntrance = null;
+    this.levGuide = null;
+    this.levGait = 'walk';
+    this.levStrideMoving = false;
+    this.maraGlimpse = null;
+    this.faceTurns = new Map();
     this.levWalkElapsed = null;
     this.levWalkDuration = 0;
     this.levWalkStart = null;
@@ -1114,7 +1130,7 @@ export class Chapter3OpeningRuntime {
     this.controlsTag = document.createElement('div');
     this.controlsTag.className = 'nf-tag c3-controls';
     this.controlsTag.setAttribute('role', 'note');
-    this.controlsTag.setAttribute('aria-label', 'Controls: click to walk, E to look, hold Tab to look around');
+    this.controlsTag.setAttribute('aria-label', 'Controls: click or W A S D to walk, E to look, hold Tab to look around');
     this.controlsTag.hidden = true;
     document.body.append(this.controlsTag);
     // Alpha round 4 fix round (P2, the long walks): G · LEV LEADS THE WAY
@@ -1973,6 +1989,40 @@ export class Chapter3OpeningRuntime {
     return intent;
   }
 
+  // Round 6 (item 18, unified controls): outside the scanner fields WASD /
+  // arrows walk Butch at his click-walk pace (Shift runs), camera-relative,
+  // sliding along whatever blocks him. A key walk cancels a click walk.
+  updateKeyWalk(dt) {
+    this.keyWalking = false;
+    if (!this.keysHeld.size || this.activeField() || this.interactionLocked()) return;
+    const intent = this.movementIntent();
+    if (intent.lengthSq() < 0.01) return;
+    const player = this.preview.player;
+    if (this.preview.path.length) this.preview.stopWalking();
+    const running = Boolean(this.preview.shiftHeld);
+    const speed = WALK_SPEED * (running ? RUN_MULTIPLIER : 1);
+    const step = intent.clone().multiplyScalar(speed * dt);
+    const { bounds, obstacles } = this.interiorNavigation();
+    const clear = (x, z) => {
+      if (!bounds) return isWalkable(x, z, this.preview.boundaryObstacles);
+      return interiorSegmentIsClear(player.position, new THREE.Vector3(x, player.position.y, z), bounds, obstacles);
+    };
+    const next = player.position.clone().add(step);
+    if (clear(next.x, next.z)) {
+      player.position.x = next.x;
+      player.position.z = next.z;
+    } else if (clear(next.x, player.position.z)) {
+      player.position.x = next.x;
+    } else if (clear(player.position.x, next.z)) {
+      player.position.z = next.z;
+    } else {
+      return;
+    }
+    player.rotation.y = dampYaw(player.rotation.y, Math.atan2(intent.x, intent.z), PLAYER_TURN_RATE, dt);
+    this.preview.gait = running ? 'jog' : 'walk';
+    this.keyWalking = true;
+  }
+
   // ------------------------------------------------------------------ walk beside
   walkerApproach(id) {
     const logic = this.scannerFields[id].logic;
@@ -2178,6 +2228,10 @@ export class Chapter3OpeningRuntime {
       .map((name) => this.preview.scene.getObjectByName(name)).filter(Boolean);
     this.departureBases = roots.map((object) => ({ object, position: object.position.clone() }));
     this.departureElapsed = 0;
+    // Round 6 (G5): she is shown only as her rig (never the capsule), and
+    // only when it is in place; the route starts under the station roof.
+    const mara = this.characters.get('echo-mara');
+    this.maraGlimpse = mara?.loaded ? { elapsed: 0, distance: 0, length: polylineLength(MARA_GLIMPSE.route) } : null;
     this.updateObjective();
   }
 
@@ -2189,15 +2243,127 @@ export class Chapter3OpeningRuntime {
     this.levWalkOnComplete = onComplete;
   }
 
+  // Round 6 (G5): Lev walks over at a walking pace (a jog if Butch has
+  // wandered off) to stand beside Butch as the camera sees them, following
+  // Butch if he walks; the introduction starts when they meet. Butch stays
+  // free to walk meanwhile (the departure never held him either).
   beginLevArrivalApproach() {
-    const towardButch = this.preview.player.position.clone().sub(this.lev.position).setY(0);
-    if (towardButch.lengthSq() < 0.01) towardButch.set(0, 0, 1);
-    towardButch.normalize();
-    this.moveLevTo(this.preview.player.position.clone().addScaledVector(towardButch, -1.5), 1.9, () => this.openLevIntroduction());
+    this.levEntrance = { speed: 0, path: [], target: null, repathIn: 0 };
     this.updateObjective();
   }
 
+  cameraRightOnGround() {
+    const right = new THREE.Vector3().setFromMatrixColumn(this.preview.camera.matrixWorld, 0);
+    right.y = 0;
+    if (right.lengthSq() < 1e-6) right.set(1, 0, 0);
+    return right.normalize();
+  }
+
+  // One shared walker step for Lev's scripted walks: follow `path` (ground
+  // points) at an accelerating, settling speed, turning at a turn rate.
+  // Returns the metres left.
+  stepLevAlong(walker, dt, cruise) {
+    const lev = this.lev.position;
+    const path = walker.path;
+    let remaining = 0;
+    let previous = lev;
+    for (const point of path) {
+      remaining += Math.hypot(point.x - previous.x, point.z - previous.z);
+      previous = point;
+    }
+    walker.speed = approachSpeed(walker.speed, remaining, { cruise, accel: LEV_ENTRANCE.accel, decel: LEV_ENTRANCE.decel, dt });
+    let travel = walker.speed * dt;
+    while (travel > 0 && path.length) {
+      const next = path[0];
+      const dx = next.x - lev.x;
+      const dz = next.z - lev.z;
+      const distance = Math.hypot(dx, dz);
+      if (distance > 1e-4) {
+        this.lev.rotation.y = turnToward(this.lev.rotation.y, Math.atan2(dx, dz), LEV_ENTRANCE.turnRate, dt);
+      }
+      if (distance <= travel) {
+        lev.x = next.x;
+        lev.z = next.z;
+        travel -= distance;
+        path.shift();
+      } else {
+        lev.x += (dx / distance) * travel;
+        lev.z += (dz / distance) * travel;
+        travel = 0;
+      }
+    }
+    lev.y = 0.5;
+    this.levGait = gaitForSpeed(walker.speed);
+    this.levStrideMoving = walker.speed > 0.05;
+    return Math.max(0, remaining - walker.speed * dt);
+  }
+
+  // Lev's route to `goal`: straight when nothing is in the way (the nav
+  // grid's corners made him zig-zag behind the post box), else the grid path.
+  levRoute(goal) {
+    const from = this.lev.position;
+    const length = Math.hypot(goal.x - from.x, goal.z - from.z);
+    const samples = Math.max(1, Math.ceil(length / 0.35));
+    let clear = true;
+    for (let index = 1; index <= samples && clear; index += 1) {
+      const t = index / samples;
+      clear = isWalkable(from.x + (goal.x - from.x) * t, from.z + (goal.z - from.z) * t, this.preview.boundaryObstacles);
+    }
+    const route = clear ? [goal] : findPath(from, goal, this.preview.boundaryObstacles);
+    return (route.length ? route : [goal]).map((point) => ({ x: point.x, z: point.z }));
+  }
+
+  updateLevEntrance(dt) {
+    const walker = this.levEntrance;
+    if (!walker || this.dialogue.active || this.evidenceViewer.active) return;
+    const butch = this.preview.player.position;
+    const butchWalking = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
+    walker.repathIn -= dt;
+    const target = besideTarget(butch, this.lev.position, this.cameraRightOnGround(), {
+      walkable: (x, z) => isWalkable(x, z, this.preview.boundaryObstacles),
+    });
+    const moved = !walker.target || Math.hypot(target.x - walker.target.x, target.z - walker.target.z) > 0.6;
+    if (moved || walker.repathIn <= 0) {
+      walker.target = target;
+      walker.repathIn = 0.5;
+      walker.path = this.levRoute(new THREE.Vector3(target.x, 0.5, target.z));
+    }
+    const far = Math.hypot(butch.x - this.lev.position.x, butch.z - this.lev.position.z);
+    const cruise = far > LEV_ENTRANCE.jogBeyond ? LEV_ENTRANCE.jogSpeed : LEV_ENTRANCE.walkSpeed;
+    const remaining = this.stepLevAlong(walker, dt, cruise);
+    const settled = remaining < 0.04 && walker.speed < 0.2;
+    // A Butch who keeps walking is called to a halt once Lev is close.
+    if ((settled && !butchWalking) || (butchWalking && far <= LEV_ENTRANCE.callOut)) {
+      this.levEntrance = null;
+      this.levStrideMoving = false;
+      if (butchWalking) this.preview.stopWalking();
+      this.openLevIntroduction();
+    }
+  }
+
+  // Both turn to face each other (eased: chapter3Entrance.dampYaw).
+  faceEachOther(a, b) {
+    this.faceTurns.set(a, yawToward(a.position, b.position));
+    this.faceTurns.set(b, yawToward(b.position, a.position));
+  }
+
+  updateFaceTurns(dt) {
+    for (const [host, yaw] of this.faceTurns) {
+      // A walk of Butch's own takes his facing back.
+      if (host === this.preview.player && this.preview.path.length) {
+        this.faceTurns.delete(host);
+        continue;
+      }
+      host.rotation.y = dampYaw(host.rotation.y, yaw, 9, dt);
+      if (Math.abs(wrapAngle(yaw - host.rotation.y)) < 0.01) {
+        host.rotation.y = yaw;
+        this.faceTurns.delete(host);
+      }
+    }
+  }
+
   openLevIntroduction() {
+    this.faceEachOther(this.preview.player, this.lev);
     this.showLines(LEV_INTRO_DIALOGUE, {
       onComplete: () => {
         this.model.completeLevIntroduction();
@@ -2214,6 +2380,8 @@ export class Chapter3OpeningRuntime {
     this.hoveredId = null;
     this.guideElapsed = 0;
     this.guideStart = this.lev.position.clone();
+    // Round 6 (G5): a brisk walk on the real path, not a 4 s sprint.
+    this.levGuide = { speed: 0, path: this.levRoute(positionFrom(OPENING_POSITIONS.levInterview)) };
     this.updateObjective();
     this.updateOutlines();
   }
@@ -2225,8 +2393,8 @@ export class Chapter3OpeningRuntime {
       this.levWalkElapsed = this.levWalkDuration;
       skipped = true;
     }
-    if (this.guideElapsed !== null) {
-      this.guideElapsed = 4.0;
+    if (this.levGuide) {
+      this.levGuide.skip = true;
       skipped = true;
     }
     return skipped;
@@ -3327,10 +3495,34 @@ export class Chapter3OpeningRuntime {
     if (this.dialogue.bark(OLEK_WALK_BARKS[this.walkBarkIndex], 3.4)) this.walkBarkIndex += 1;
   }
 
+  // The arrival glimpse (round 6, G5): her rig walks the MARA_GLIMPSE route
+  // from under the station roof and out of the top of the frame.
+  updateMaraGlimpse(dt) {
+    const glimpse = this.maraGlimpse;
+    if (!glimpse) return;
+    glimpse.elapsed += dt;
+    if (glimpse.elapsed < MARA_GLIMPSE.delay) return;
+    if (!this.echoMara.visible) {
+      const start = pointAlongPolyline(MARA_GLIMPSE.route, 0);
+      this.echoMara.position.set(start.x, 0.5, start.z);
+      this.echoMara.rotation.y = start.heading;
+      this.echoMara.visible = true;
+    }
+    glimpse.distance += MARA_GLIMPSE.speed * dt;
+    const point = pointAlongPolyline(MARA_GLIMPSE.route, glimpse.distance);
+    this.echoMara.position.x = point.x;
+    this.echoMara.position.z = point.z;
+    this.echoMara.rotation.y = turnToward(this.echoMara.rotation.y, point.heading, MARA_GLIMPSE.turnRate, dt);
+    if (point.done) {
+      this.echoMara.visible = false;
+      this.maraGlimpse = null;
+    }
+  }
+
   // The echo Mara walks only while Butch keeps pace; she never turns round.
   updateEchoMara(dt, states) {
     // Only the station finale drives her here (the arrival glimpse is scripted).
-    if (this.departureElapsed !== null && this.echoMara.visible) {
+    if (this.maraGlimpse && this.echoMara.visible) {
       states.set('echo-mara', 'walk');
       return;
     }
@@ -3387,7 +3579,7 @@ export class Chapter3OpeningRuntime {
     this.ticketBoard.update(dt);
     this.bellClamp.update(dt);
     // Idle = free to act, standing still, no input (R2-3).
-    const moving = this.preview.path?.length > 0 || this.keysHeld.size > 0 || this.pointerHeld;
+    const moving = this.preview.path?.length > 0 || this.keysHeld.size > 0 || this.pointerHeld || this.keyWalking;
     if (this.interactionLocked() || moving) this.idleElapsed = 0;
     else this.idleElapsed += dt;
     music.setDialogueActive(this.dialogue.active);
@@ -3395,6 +3587,7 @@ export class Chapter3OpeningRuntime {
     this.updateCameraZoom(dt);
     this.updateStationCamera();
     this.updateScannerFields(dt);
+    this.updateKeyWalk(dt);
     this.updateStationTrigger();
     this.updateFinalDeparture(dt);
     this.updateButchBedTransition(dt);
@@ -3430,23 +3623,36 @@ export class Chapter3OpeningRuntime {
       const progress = smooth(this.departureElapsed / 6.2);
       const offset = this.trainDirection.clone().multiplyScalar(38 * progress);
       for (const entry of this.departureBases) entry.object.position.copy(entry.position).add(offset);
-      // As the train pulls out, the woman in the rose scarf is already one
-      // step ahead, crossing into the city, back to Butch.
-      const glimpse = THREE.MathUtils.clamp((this.departureElapsed - 0.6) / 5.2, 0, 1);
-      this.echoMara.visible = glimpse > 0 && glimpse < 1;
-      if (this.echoMara.visible) {
-        this.echoMara.position.lerpVectors(positionFrom([-6.9, 0.5, 25.6]), positionFrom([-1.6, 0.5, 19.8]), glimpse);
-        this.echoMara.rotation.y = Math.atan2(5.3, -5.8);
-        this.characters.play('echo-mara', 'walk');
-      }
       if (this.departureElapsed >= 6.2) {
         for (const entry of this.departureBases) entry.object.visible = false;
-        this.echoMara.visible = false;
         this.departureElapsed = null;
         this.model.completeTrainDeparture();
         this.beginLevArrivalApproach();
       }
     }
+    // As the train pulls out, the woman in the rose scarf is already one
+    // step ahead, crossing into the city, back to Butch. Round 6 (G5): she
+    // walks out from under the station roof and leaves the top of the frame
+    // (no blink in or out), at her own pace.
+    this.updateMaraGlimpse(dt);
+    this.updateLevEntrance(dt);
+    if (this.levGuide) {
+      if (this.levGuide.skip) {
+        // skipScriptedWalk(): finish at once.
+        const goal = positionFrom(OPENING_POSITIONS.levInterview);
+        this.lev.position.set(goal.x, 0.5, goal.z);
+        this.levGuide.path = [];
+        this.levGuide.speed = 0;
+      }
+      // Lev keeps walking while a line plays (he talks as he walks).
+      const remaining = this.stepLevAlong(this.levGuide, dt, LEV_ENTRANCE.guideSpeed);
+      if (!this.levGuide.path.length && remaining < 0.02 && this.levGuide.speed < 0.05) {
+        this.levGuide = null;
+        this.guideElapsed = null;
+        this.levStrideMoving = false;
+      }
+    }
+    this.updateFaceTurns(dt);
 
     if (this.levWalkElapsed !== null && !this.dialogue.active) {
       this.levWalkElapsed += dt;
@@ -3464,14 +3670,6 @@ export class Chapter3OpeningRuntime {
       }
     }
 
-    if (this.guideElapsed !== null && !this.dialogue.active) {
-      this.guideElapsed += dt;
-      const progress = smooth(this.guideElapsed / 4.0);
-      this.lev.position.lerpVectors(this.guideStart, positionFrom(OPENING_POSITIONS.levInterview), progress);
-      const direction = positionFrom(OPENING_POSITIONS.levInterview).sub(this.guideStart);
-      this.lev.rotation.y = Math.atan2(direction.x, direction.z);
-      if (this.guideElapsed >= 4.0) this.guideElapsed = null;
-    }
 
     if (this.hotelDoorElapsed !== null) {
       this.hotelDoorElapsed += dt;
@@ -3697,13 +3895,17 @@ export class Chapter3OpeningRuntime {
       this.updateCharacterQa(dt);
       return;
     }
-    const butchMoving = this.preview.path.length > 0 || this.directMoving;
-    const levMoving = !this.dialogue.active && (this.guideElapsed !== null || this.levWalkElapsed !== null
-      || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame);
+    const butchMoving = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
+    const levMoving = (this.levGuide !== null && this.levStrideMoving)
+      || (this.levEntrance !== null && this.levStrideMoving && !this.dialogue.active)
+      || (!this.dialogue.active && (this.levWalkElapsed !== null || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame));
     // A long walk strides, a run runs: the rig jogs (chapter3LongWalks.js).
     const butchGait = this.directMoving ? 'walk' : this.preview.gait;
     this.characters.play('butch', this.butchActionOverride || (butchMoving ? butchGait : 'idle'));
-    this.characters.play('lev', levMoving ? 'walk' : 'idle', this.dialogue.active ? { immediate: true } : undefined);
+    // Round 6 (G5): Lev eases out of his stride (it was a hard cut to idle
+    // the frame a line opened, mid-step).
+    const levStride = (this.levGuide || this.levEntrance) ? this.levGait : 'walk';
+    this.characters.play('lev', levMoving ? levStride : 'idle', levMoving ? undefined : { fade: 0.32 });
     this.updateAmbientCharacterLoops(dt, ambientLifeStates);
   }
 
@@ -3756,7 +3958,8 @@ export class Chapter3OpeningRuntime {
 
   updateSearchGuidance(dt) {
     const phase = this.currentSearchPhase();
-    const scriptedLev = this.levWalkElapsed !== null || this.guideElapsed !== null || this.departureElapsed !== null;
+    const scriptedLev = this.levWalkElapsed !== null || this.guideElapsed !== null || this.departureElapsed !== null
+      || this.levEntrance !== null || this.levGuide !== null;
     if (phase && !scriptedLev && this.lev.visible && !this.morningLevFollowing) {
       this.startMorningLevFollow();
       this.autoLevFollow = true;
@@ -4284,6 +4487,9 @@ export class Chapter3OpeningRuntime {
       sequences: {
         trainDepartureActive: this.departureElapsed !== null,
         levWalkActive: this.levWalkElapsed !== null,
+        levEntranceActive: this.levEntrance !== null,
+        levGuideActive: this.levGuide !== null,
+        maraGlimpseActive: this.maraGlimpse !== null,
         nightIgnitionActive: this.nightIgnitionElapsed !== null,
         nightIgnitionProgress: Number(this.nightIgnitionProgress.toFixed(3)),
         sunriseTableauVisible: this.elements.sunriseTableau?.classList.contains('visible') ?? false,

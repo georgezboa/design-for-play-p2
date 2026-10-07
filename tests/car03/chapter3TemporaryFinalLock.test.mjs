@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v46', () => {
+describe('Chapter 3 integrated final lock v47-ch3a', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -131,10 +131,24 @@ describe('Chapter 3 integrated final lock v46', () => {
     // the frame). Files: +2
     // (chapter3LongWalks, chapter3CityLod): 27 -> 29. Toma's composition
     // unchanged. Assets unchanged.
-    assert.equal(sourceFiles.length, 29);
+    // v47-ch3a (round 6, agent ch3a, 2026-10-07): owner note G5 and
+    // playtest items 8, 9, 18 (tests/car03/chapter3Round6). The opening's
+    // walkers are real walks (chapter3Entrance: Lev waits in view, walks over
+    // at a walking pace to stand beside Butch, both turn to face; the walk to
+    // the oil line is brisk; the Mara ahead's glimpse starts under the station
+    // roof and leaves the frame, rig only); rigs are posed before their first
+    // frame and teleports are not speed; Butch turns into a new heading. The
+    // ticket board asks only how the two tickets are related: the player
+    // stacks, punches, files the stack as one passenger or two and pins the
+    // proof (both 1978 records and the duplicate rule); the solution lives in
+    // tiered hints (H); 1978 findings stay as CHECKED marks and a side-by-side
+    // tray. WASD / arrows walk everywhere; E / Enter act on the board.
+    // Files: +1 (chapter3Entrance): 29 -> 30. Toma's composition unchanged.
+    // Assets unchanged. (The lead reconciles this lock at merge.)
+    assert.equal(sourceFiles.length, 30);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'dad3e3249e93935ae7b52cdb3fa6ad9c22797457d3b5c17468be7d121941f468',
+      '0e6ee397fb10984a5882202de8be42098256e28592bfa4edc47a5cb386c1f982',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

@@ -4,6 +4,7 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
 import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks.js';
+import { PLAYER_TURN_RATE, dampYaw } from './chapter3Entrance.js';
 import { Chapter3CityLod } from './chapter3CityLod.js';
 import {
   LOW_PIXEL_RATIO,
@@ -1833,7 +1834,8 @@ export class EchoCity3DPreview {
       });
       this.gait = gaitFor(speed);
       const heading = walkAlongPath(this.player.position, this.path, speed * dt);
-      if (heading !== null) this.player.rotation.y = heading;
+      // Round 6 (G5): Butch turns into a new heading (it snapped each click).
+      if (heading !== null) this.player.rotation.y = dampYaw(this.player.rotation.y, heading, PLAYER_TURN_RATE, dt);
       if (!this.path.length) {
         this.destinationMarker.visible = false;
         this.running = false;
