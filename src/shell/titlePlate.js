@@ -27,6 +27,8 @@
 // loading. Reduce Motion (the game setting or the system's) paints one still
 // frame; LOW GRAPHICS paints less rain and no reflection.
 
+import { waitForFonts } from '../shared/fonts.js';
+
 /** The largest backing store painted for the room (device pixels). */
 export const MAX_PIXELS = 2560 * 1440;
 /** Extra outside painting around the glass, for the carriage's sway. */
@@ -450,12 +452,9 @@ export function mountTitleScene(root) {
   // The painter is its own chunk: the title's markup and menu are up first.
   import('./titlePlateArt.js').then((module) => {
     art = module;
-    // the plaque and the claim tag letter in Space Mono: wait for it briefly
-    const fonts = document.fonts?.load ? Promise.race([
-      Promise.all([document.fonts.load('700 12px "Space Mono"'), document.fonts.load('400 12px "Anton"')]),
-      new Promise((resolve) => setTimeout(resolve, 900)),
-    ]).catch(() => {}) : Promise.resolve();
-    return fonts.then(() => requestAnimationFrame(paint));
+    // the claim tag is lettered in Jost (src/shared/fonts.js): wait for the
+    // house faces briefly, so the canvas never keeps a fallback face
+    return waitForFonts({ timeoutMs: 900 }).then(() => requestAnimationFrame(paint));
   }).catch((error) => {
     root.dataset.scene = 'failed';
     console.warn('[title] scene unavailable', error);

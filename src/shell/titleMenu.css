@@ -12,6 +12,14 @@
  * act on this". Dialogs are brass-framed walnut panels and paper archive
  * cards; the 1111 router is the conductor's ledger.
  *
+ * Round 6 (owner notes G4 "too plastic, heavier" and G7 "towards Kentucky
+ * Route Zero, the type too"): the painted carriage stays; everything laid
+ * over it goes matte and quiet. The wordmark is white Jost light in wide
+ * capitals, the plaque a dark enamel face behind a thin dull-bronze edge (no
+ * brass bevel, rivets or gloss), the selected line lit white with an amber
+ * edge instead of a glossy ticket, the dialogs near-black with hairlines,
+ * and the labels Jost capitals (EB Garamond for the lines that speak).
+ *
  * The painter places things with custom properties on #nightfall-title
  * (--nf-glass-*, --nf-mark-*, --nf-plaque-*, data-layout="wide|narrow").
  * Palette and fonts come from uiKit.css (--nf-walnut, --nf-brass, --nf-ivory,
@@ -76,65 +84,47 @@
   top: var(--nf-mark-y, 19vh);
   width: var(--nf-mark-w, 32vw);
   margin: 0;
-  font-size: calc(var(--nf-mark-w, 32vw) * .2);
+  font-size: calc(var(--nf-mark-w, 32vw) * .104);
   text-align: left;
   pointer-events: none;
 }
 .nf-wordmark h1 {
   margin: 0;
-  font: 400 1em / .9 var(--nf-display);
-  letter-spacing: .05em;
+  font: 300 1em / 1 var(--nf-display);
+  letter-spacing: .36em;
   white-space: nowrap;
-  color: transparent;
-  background: linear-gradient(180deg, #faf2dc 0%, var(--nf-ivory) 40%, #e3c890 74%, var(--nf-brass-hi) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  filter:
-    drop-shadow(0 0 .6px rgba(176, 138, 74, .95))
-    drop-shadow(.025em .04em 0 rgba(26, 14, 6, .9))
-    drop-shadow(0 0 .3em rgba(224, 162, 74, .2));
+  color: var(--nf-white);
+  text-shadow: 0 .03em .5em rgba(4, 6, 10, .75), 0 0 1px rgba(4, 6, 10, .6);
 }
 .nf-wordmark-rule {
   position: relative;
   display: block;
-  width: 100%;
-  height: max(2px, .03em);
-  margin: .11em 0 .1em;
-  background: linear-gradient(90deg, var(--nf-brass-hi), var(--nf-brass) 60%, transparent);
-  box-shadow: 0 1px 0 rgba(26, 14, 6, .7);
+  width: 86%;
+  height: 1px;
+  margin: .32em 0 .3em;
+  background: linear-gradient(90deg, rgba(241, 237, 228, .62), rgba(241, 237, 228, .22) 70%, transparent);
 }
 .nf-wordmark-rule::before,
-.nf-wordmark-rule::after {
-  content: "";
+.nf-wordmark-rule::after { content: none; }
+/* one small diamond where the rule starts */
+.nf-wordmark-rule b {
   position: absolute;
+  left: 0;
   top: 50%;
-  width: max(4px, .06em);
+  width: max(5px, .09em);
   aspect-ratio: 1;
   translate: 0 -50%;
   rotate: 45deg;
-  background: var(--nf-brass-hi);
-}
-.nf-wordmark-rule::before { left: 0; }
-.nf-wordmark-rule::after { left: 46%; }
-.nf-wordmark-rule b {
-  position: absolute;
-  left: 23%;
-  top: 50%;
-  width: max(8px, .13em);
-  aspect-ratio: 1;
-  translate: -50% -50%;
-  rotate: 45deg;
-  border: max(1.5px, .022em) solid var(--nf-brass-hi);
-  background: #141a24;
-  box-shadow: 0 0 0 max(2px, .03em) rgba(14, 18, 26, .9), 0 0 10px rgba(224, 162, 74, .35);
+  background: var(--nf-white);
 }
 .nf-wordmark p {
   margin: 0;
-  color: var(--nf-brass-hi);
-  font: 700 max(9px, .152em) / 1.2 var(--nf-mono);
-  letter-spacing: .41em;
+  padding-left: .1em;
+  color: rgba(241, 237, 228, .78);
+  font: 400 max(10px, .27em) / 1.2 var(--nf-ui);
+  letter-spacing: .58em;
   white-space: nowrap;
-  text-shadow: 0 1px 0 rgba(26, 14, 6, .9), 0 0 12px rgba(0, 0, 0, .8);
+  text-shadow: 0 0 12px rgba(4, 6, 10, .85);
 }
 
 /* ---------- the departures plaque, screwed to the walnut wall ---------- */
@@ -157,35 +147,27 @@
   min-width: 0;
   min-height: 0;
   padding: calc(var(--nf-bezel) + clamp(10px, 1.3vmin, 26px)) calc(var(--nf-bezel) + clamp(8px, 1vmin, 22px));
-  border-radius: calc(var(--nf-radius) + var(--nf-bezel) * .6);
+  border-radius: 3px;
   isolation: isolate;
   text-align: left;
-  background:
-    var(--nf-rivet) calc(var(--nf-bezel) * .5 - 1px) calc(var(--nf-bezel) * .5 - 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
-    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 + 1px) calc(var(--nf-bezel) * .5 - 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
-    var(--nf-rivet) calc(var(--nf-bezel) * .5 - 1px) calc(100% - var(--nf-bezel) * .5 + 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
-    var(--nf-rivet) calc(100% - var(--nf-bezel) * .5 + 1px) calc(100% - var(--nf-bezel) * .5 + 1px) / calc(var(--nf-bezel) * .62) calc(var(--nf-bezel) * .62) no-repeat,
-    var(--nf-brass-grad);
+  /* a thin, dull bronze edge round the dark face (no bevel, rivets or gloss) */
+  background: #2a2419;
   box-shadow:
-    0 0 0 1px rgba(20, 12, 6, .85),
-    0 2px 0 1px rgba(20, 12, 6, .5),
-    0 18px 34px rgba(0, 0, 0, .62),
-    0 4px 10px rgba(0, 0, 0, .5),
-    inset 0 2px 0 rgba(255, 238, 190, .55),
-    inset 0 -2px 0 rgba(40, 25, 10, .6);
+    inset 0 0 0 1px rgba(201, 170, 112, .42),
+    0 0 0 1px rgba(0, 0, 0, .85),
+    0 24px 50px rgba(0, 0, 0, .6);
 }
-/* the enamel face: near-black teal, lit from the carriage lamp above */
+/* the enamel face: matte black, a breath of the carriage lamp above */
 .nf-menu::before {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: var(--nf-bezel);
-  border-radius: var(--nf-radius);
+  inset: calc(var(--nf-bezel) * .55);
+  border-radius: 2px;
   background:
-    radial-gradient(ellipse 80% 34% at 50% 0%, rgba(255, 190, 110, .16), transparent 72%),
-    radial-gradient(ellipse 120% 90% at 50% 40%, transparent 50%, rgba(0, 0, 0, .45) 100%),
-    linear-gradient(180deg, #13201f, #0d1716 60%, #0a1211);
-  box-shadow: 0 0 0 2px rgba(40, 25, 10, .8), inset 0 0 calc(var(--nf-bezel) * 2.2) rgba(0, 0, 0, .75);
+    radial-gradient(ellipse 90% 30% at 50% 0%, rgba(255, 210, 150, .05), transparent 72%),
+    #0b0b0a;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .9);
 }
 /* the passing trackside lamp's band of light crossing it (titlePlateArt.js) */
 .nf-menu::after {
@@ -195,7 +177,7 @@
   inset: 0;
   border-radius: inherit;
   pointer-events: none;
-  background: linear-gradient(104deg, transparent calc(var(--nf-sweep-x, -50%) - 34%), rgba(255, 196, 120, .55) var(--nf-sweep-x, -50%), transparent calc(var(--nf-sweep-x, -50%) + 34%));
+  background: linear-gradient(104deg, transparent calc(var(--nf-sweep-x, -50%) - 34%), rgba(255, 210, 150, .16) var(--nf-sweep-x, -50%), transparent calc(var(--nf-sweep-x, -50%) + 34%));
   opacity: var(--nf-sweep, 0);
   mix-blend-mode: screen;
 }
@@ -210,35 +192,31 @@
 .nf-dialog-ornament span {
   height: 1px;
   flex: 1;
-  background: linear-gradient(90deg, transparent, rgba(217, 181, 110, .7));
+  background: linear-gradient(90deg, transparent, rgba(241, 237, 228, .22));
 }
 .nf-menu-rule:last-child,
 .nf-dialog-ornament span:last-child { transform: scaleX(-1); }
 
-/* the board's brass header plate */
+/* the board's header: a line of small capitals between two hairlines */
 .nf-kicker {
   margin: 0;
-  padding: .5em 1.1em .45em;
+  padding: .4em .2em .35em .3em;
   white-space: nowrap;
-  border-radius: 3px;
-  color: var(--nf-paper-ink);
-  background: var(--nf-brass-grad);
-  box-shadow: 0 0 0 1px rgba(40, 25, 10, .75), inset 0 1px 0 rgba(255, 238, 190, .6), 0 2px 5px rgba(0, 0, 0, .5);
-  font: 700 max(10px, .62em)/1 var(--nf-mono);
-  letter-spacing: .2em;
-  text-shadow: 0 1px 0 rgba(255, 238, 190, .45);
+  color: var(--nf-muted);
+  font: 500 max(10px, .6em)/1 var(--nf-ui);
+  letter-spacing: .3em;
 }
 
 .nf-board-columns {
   display: grid;
-  grid-template-columns: 2.5em minmax(0, 1fr) auto;
+  grid-template-columns: 2.1em minmax(0, 1fr) auto;
   column-gap: .5em;
   margin: clamp(10px, 2vh, 34px) 0 0;
   padding: 0 .6em .45em 1.15em;
-  border-bottom: 3px double rgba(176, 138, 74, .55);
-  color: rgba(217, 181, 110, .75);
-  font: 700 max(9.5px, .54em)/1 var(--nf-mono);
-  letter-spacing: .2em;
+  border-bottom: 1px solid var(--nf-hair);
+  color: var(--nf-faint);
+  font: 500 max(9.5px, .52em)/1 var(--nf-ui);
+  letter-spacing: .28em;
 }
 .nf-board-columns span:first-child { justify-self: center; letter-spacing: .06em; }
 .nf-main-actions {
@@ -258,129 +236,101 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 2.5em minmax(0, 1fr);
+  grid-template-columns: 2.1em minmax(0, 1fr);
   align-items: center;
   justify-items: start;
   column-gap: .5em;
   row-gap: .22em;
   width: 100%;
   min-height: 44px;
-  padding: clamp(7px, 1.9vh, 30px) 1.3em clamp(7px, 1.9vh, 30px) 1.05em;
+  padding: clamp(7px, 1.9vh, 30px) .8em clamp(7px, 1.9vh, 30px) 1.05em;
   appearance: none;
   border: 0;
-  border-bottom: 1px dashed rgba(176, 138, 74, .3);
-  color: var(--nf-ivory);
+  border-bottom: 1px solid rgba(241, 237, 228, .07);
+  color: #cbc4b7;
   background: transparent;
   font: inherit;
   text-align: left;
   cursor: pointer;
   touch-action: manipulation;
-  transition: transform 150ms ease;
+  transition: transform 160ms ease, color 120ms linear;
 }
 .nf-main-actions .nf-action::before {
   content: attr(data-index);
   grid-row: 1 / span 2;
   grid-column: 1;
   justify-self: center;
-  color: var(--nf-brass);
-  font: 700 max(10px, .7em)/1 var(--nf-mono);
-  letter-spacing: .06em;
+  color: var(--nf-faint);
+  font: 500 max(10px, .62em)/1 var(--nf-ui);
+  letter-spacing: .12em;
 }
 .nf-main-actions .nf-action::after,
 .nf-dialog .nf-checkpoint::after {
   content: "";
   position: absolute;
   z-index: -1;
-  inset: -1px -.3em -1px -.4em;
+  inset: 0 -.3em 0 -.4em;
   opacity: 0;
-  transform: scaleX(.97);
-  transform-origin: left center;
-  clip-path: polygon(.85em 0, 100% 0, 100% 100%, .85em 100%, 0 50%);
-  background:
-    radial-gradient(circle at 1.25em 50%, #140d08 0 .3em, rgba(20, 13, 8, .35) .36em, transparent .44em),
-    repeating-linear-gradient(180deg, rgba(42, 29, 20, .35) 0 3px, transparent 3px 7px) calc(100% - 1.35em) 0 / 1px 100% no-repeat,
-    linear-gradient(90deg, rgba(255, 255, 255, .22), transparent 30%),
-    var(--nf-tex-paper, none) 0 0 / 256px 256px,
-    var(--nf-paper);
-  transition: opacity 110ms linear, transform 150ms ease;
+  border-left: 2px solid var(--nf-amber);
+  background: linear-gradient(90deg, rgba(241, 237, 228, .09), rgba(241, 237, 228, .02) 72%, transparent);
+  transition: opacity 120ms linear;
 }
 .nf-action-label {
   grid-column: 2;
-  font: 400 1.12em/1.15 var(--nf-serif);
-  letter-spacing: .05em;
+  font: 400 1em/1.2 var(--nf-ui);
+  letter-spacing: .2em;
 }
 /* on the board the lines grow with the window, never past its width */
-.nf-main-actions .nf-action-label { font-size: calc(max(1.12em, min(2.2vh, var(--nf-board) * .046)) * var(--nf-fit, 1)); }
+.nf-main-actions .nf-action-label {
+  font-size: calc(max(1em, min(2vh, var(--nf-board) * .04)) * var(--nf-fit, 1));
+  /* the capitals close up a little as TEXT SIZE grows, so no line wraps */
+  letter-spacing: calc(.2em - (var(--nightfall-text-scale, 1) - 1) * .27em);
+}
 .nf-action-detail {
   grid-column: 2;
-  color: rgba(234, 223, 198, .55);
-  font: 400 max(10px, .6em, 1.15vh)/1.2 var(--nf-mono);
-  letter-spacing: .12em;
+  color: var(--nf-faint);
+  font: 400 max(10px, .56em, 1.1vh)/1.2 var(--nf-ui);
+  letter-spacing: .2em;
 }
 .nf-main-actions .nf-action-label::after,
 .nf-dialog .nf-checkpoint .nf-action-label::after {
   content: "";
   position: absolute;
-  right: -.2em;
-  top: -.28em;
-  width: .56em;
-  height: .56em;
-  border-radius: 50%;
+  right: -1.1em;
+  top: 50%;
+  width: .34em;
+  height: .34em;
+  margin-top: -.17em;
+  rotate: 45deg;
   background: var(--nf-amber);
-  box-shadow: 0 0 .7em .25em rgba(224, 162, 74, .7);
   opacity: 0;
-  transform: scale(.6);
-  transition: opacity 110ms linear;
+  transition: opacity 120ms linear;
 }
+/* on the board the amber edge is the mark (a mark after the label could
+   leave the plaque at large text) */
+.nf-main-actions .nf-action-label::after { content: none; }
 
 .nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled),
 .nf-dialog .nf-checkpoint:is(:hover, :focus-visible) {
   outline: 0;
   z-index: 1;
-  color: var(--nf-paper-ink);
-  transform: translateX(-.45em) rotate(-.7deg);
-  border-bottom-color: transparent;
+  color: var(--nf-white);
+  transform: translateX(.3em);
 }
 .nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled)::after,
 .nf-dialog .nf-checkpoint:is(:hover, :focus-visible)::after { opacity: 1; transform: none; }
-.nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled)::before { color: var(--nf-oxblood); }
-.nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled) .nf-action-detail { color: var(--nf-oxblood); }
+.nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled)::before { color: var(--nf-amber); }
+.nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled) .nf-action-detail { color: var(--nf-muted); }
 .nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled) .nf-action-label::after,
 .nf-dialog .nf-checkpoint:is(:hover, :focus-visible) .nf-action-label::after {
   opacity: 1;
-  animation: nf-glint 2.2s ease-in-out infinite;
 }
-.nf-main-actions .nf-action:active:not(.is-disabled) { transform: translateX(-.45em) translateY(1px) rotate(-.7deg); }
-/* the ticket's soft shadow on the board: a blurred card under it, kept off
-   the button itself so the pulsing glint never re-filters the whole line */
-.nf-main-actions .nf-action-label::before,
-.nf-dialog .nf-checkpoint .nf-action-label::before {
-  content: "";
-  position: absolute;
-  z-index: -2;
-  inset: .3em -.2em -.35em .2em;
-  border-radius: 3px;
-  background: rgba(0, 0, 0, .6);
-  filter: blur(5px);
-  opacity: 0;
-  transition: opacity 110ms linear;
-}
-.nf-main-actions .nf-action:is(:hover, :focus-visible, :focus):not(.is-disabled) .nf-action-label::before,
-.nf-dialog .nf-checkpoint:is(:hover, :focus-visible) .nf-action-label::before { opacity: 1; }
-
-/* no journey: the ticket is missing, only its outline is left on the board */
-.nf-main-actions .nf-action.is-disabled { color: rgba(234, 223, 198, .3); cursor: not-allowed; }
-.nf-main-actions .nf-action.is-disabled::before { color: rgba(176, 138, 74, .35); }
-.nf-main-actions .nf-action.is-disabled .nf-action-detail { color: rgba(234, 223, 198, .28); }
-.nf-main-actions .nf-action.is-disabled::after {
-  opacity: 1;
-  transform: none;
-  inset: 3px -.1em 3px .1em;
-  clip-path: none;
-  border: 1px dashed rgba(217, 181, 110, .26);
-  border-radius: 3px;
-  background: rgba(0, 0, 0, .18);
-}
+.nf-main-actions .nf-action:active:not(.is-disabled) { transform: translateX(.3em) translateY(1px); }
+/* no journey: the line is there, unlit */
+.nf-main-actions .nf-action.is-disabled { color: rgba(241, 237, 228, .26); cursor: not-allowed; }
+.nf-main-actions .nf-action.is-disabled::before { color: rgba(241, 237, 228, .18); }
+.nf-main-actions .nf-action.is-disabled .nf-action-detail { color: rgba(241, 237, 228, .2); }
+.nf-main-actions .nf-action.is-disabled::after { display: none; }
 
 .nf-main-actions .nf-quit { margin-top: .15em; }
 .nf-main-actions .nf-quit .nf-action-label { color: inherit; }
@@ -389,24 +339,24 @@
   display: grid;
   gap: .55em;
   padding-top: .85em;
-  border-top: 1px solid rgba(176, 138, 74, .4);
+  border-top: 1px solid var(--nf-hair);
   text-align: center;
 }
 .nf-status {
   min-height: 1.2em;
   margin: 0;
-  color: var(--nf-amber);
-  font: 700 max(10px, .62em)/1.3 var(--nf-mono);
-  letter-spacing: .16em;
+  color: var(--nf-muted);
+  font: 500 max(10px, .56em)/1.3 var(--nf-ui);
+  letter-spacing: .24em;
 }
 .nf-hint {
   margin: 0;
-  color: rgba(234, 223, 198, .55);
+  color: var(--nf-faint);
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  font: 400 max(10px, .56em)/1.9 var(--nf-mono);
-  letter-spacing: .06em;
+  font: 500 max(10px, .52em)/2 var(--nf-ui);
+  letter-spacing: .18em;
 }
 /* each hint wraps as a whole, never between a key and its word; they are
    spaced, not dotted, so a wrapped line never starts on a lone "·" (alpha R4) */
@@ -416,17 +366,18 @@
 .nf-credits-legend kbd {
   display: inline-block;
   min-width: 1.9em;
-  margin: 0 .12em;
-  padding: .12em .4em .08em;
+  margin: 0 .25em 0 .12em;
+  padding: .16em .42em .1em;
+  border: 1px solid var(--nf-hair-strong);
   border-radius: 3px;
-  color: var(--nf-paper-ink);
-  background: linear-gradient(180deg, #e3c27e, #b08a4a 60%, #8a6934);
-  box-shadow: 0 1px 0 #3d2c15, inset 0 1px 0 rgba(255, 238, 190, .6);
-  font: 700 1em/1.3 var(--nf-mono);
+  color: var(--nf-muted);
+  background: transparent;
+  font: 500 .95em/1.25 var(--nf-ui);
+  letter-spacing: .06em;
   text-align: center;
 }
 .nf-hint i::after,
-.nf-credits-legend i::after { content: "·"; padding: 0 .45em; color: var(--nf-brass); }
+.nf-credits-legend i::after { content: "·"; padding: 0 .45em; color: var(--nf-faint); }
 
 /* ---------- dialogs: brass-framed walnut panels ---------- */
 
@@ -435,56 +386,46 @@
   max-height: min(820px, calc(100vh - 40px));
   padding: 0;
   overflow: hidden;
-  border: 3px solid var(--nf-brass);
-  border-top-color: var(--nf-brass-hi);
-  border-bottom-color: var(--nf-brass-dark);
-  border-radius: 14px;
-  outline: 1px solid rgba(255, 230, 170, .22);
-  outline-offset: -9px;
-  color: var(--nf-ivory);
-  background:
-    var(--nf-rivet) 7px 7px / 7px 7px no-repeat,
-    var(--nf-rivet) calc(100% - 7px) 7px / 7px 7px no-repeat,
-    var(--nf-rivet) 7px calc(100% - 7px) / 7px 7px no-repeat,
-    var(--nf-rivet) calc(100% - 7px) calc(100% - 7px) / 7px 7px no-repeat,
-    radial-gradient(ellipse 80% 30% at 50% 0%, rgba(255, 184, 96, .1), transparent 70%),
-    var(--nf-tex-panel, none) 0 0 / 100% 512px repeat-y,
-    #22170f;
-  box-shadow: 0 0 0 1px rgba(20, 12, 6, .9), 0 32px 90px rgba(0, 0, 0, .85), inset 0 0 40px rgba(0, 0, 0, .5);
+  border: 1px solid var(--nf-hair);
+  border-radius: 2px;
+  color: var(--nf-white);
+  background: rgba(10, 9, 8, .97);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, .8);
   font-size: inherit;
 }
 .nf-dialog[open] { animation: nf-panel-in 140ms ease-out both; }
-.nf-dialog::backdrop { background: radial-gradient(ellipse at 50% 40%, rgba(12, 8, 5, .55), rgba(6, 4, 2, .82)); }
-.nf-dialog-ornament { margin: 0; padding: 1.25em 2.2em 0; color: var(--nf-brass-hi); }
-.nf-dialog-ornament b { font-weight: 400; font-size: .9em; }
+.nf-dialog::backdrop { background: rgba(4, 4, 3, .78); }
+.nf-dialog-ornament { margin: 0; padding: 1.4em 2.2em 0; color: var(--nf-faint); }
+.nf-dialog-ornament b { font-weight: 400; font-size: .6em; }
 .nf-dialog-inner {
   display: grid;
   gap: .6em;
   max-height: calc(100vh - 110px);
   padding: .9em clamp(22px, 4.5vw, 52px) clamp(24px, 4vw, 44px);
   overflow: auto;
-  scrollbar-color: var(--nf-brass) rgba(0, 0, 0, .25);
+  scrollbar-color: var(--nf-hair-strong) transparent;
   scrollbar-width: thin;
 }
 .nf-dialog-heading { text-align: center; }
 .nf-dialog h2 {
-  margin: .3em 0 .8em;
-  font: 400 1.5em/1.2 var(--nf-serif);
-  letter-spacing: .12em;
+  margin: .35em 0 .9em;
+  padding-left: .36em;
+  font: 300 1.45em/1.2 var(--nf-ui);
+  letter-spacing: .36em;
   text-align: center;
 }
 .nf-eyebrow {
   margin: 0;
-  color: var(--nf-brass-hi);
-  font: 700 max(10px, .64em)/1.3 var(--nf-mono);
-  letter-spacing: .26em;
+  color: var(--nf-muted);
+  font: 500 max(10px, .58em)/1.3 var(--nf-ui);
+  letter-spacing: .32em;
   text-align: center;
 }
 .nf-empty {
   margin: 0 0 .4em;
-  color: rgba(234, 223, 198, .72);
-  font: italic 400 .82em/1.6 var(--nf-serif);
-  letter-spacing: .01em;
+  color: #cfc8bb;
+  font: italic 400 .9em/1.55 var(--nf-serif);
+  letter-spacing: .005em;
   text-align: center;
 }
 
@@ -499,14 +440,14 @@
   min-width: 11em;
   min-height: 40px;
   margin-top: .45em;
-  padding: .7em 1.4em .62em;
+  padding: .72em 1.5em .64em;
   appearance: none;
-  border: 1px solid rgba(176, 138, 74, .75);
-  border-radius: 6px;
-  color: var(--nf-ivory);
-  background: rgba(234, 223, 198, .06);
-  font: 700 .66em/1 var(--nf-mono);
-  letter-spacing: .18em;
+  border: 1px solid var(--nf-hair-strong);
+  border-radius: 2px;
+  color: var(--nf-white);
+  background: transparent;
+  font: 500 .6em/1 var(--nf-ui);
+  letter-spacing: .26em;
   cursor: pointer;
   transition: border-color 90ms linear, background-color 90ms linear, color 90ms linear;
 }
@@ -514,22 +455,21 @@
 .nf-exit-screen .nf-action:is(:hover, :focus-visible) {
   outline: 0;
   border-color: var(--nf-amber);
-  color: #fff3dc;
-  background: rgba(224, 162, 74, .16);
-  box-shadow: 0 0 0 1px var(--nf-amber), 0 0 14px rgba(224, 162, 74, .25);
+  color: var(--nf-white);
+  background: rgba(224, 162, 74, .08);
+  box-shadow: 0 0 0 1px var(--nf-amber);
 }
 .nf-dialog .nf-action:not(.nf-checkpoint) .nf-action-label,
 .nf-exit-screen .nf-action .nf-action-label { font: inherit; letter-spacing: inherit; }
 .nf-dialog .nf-action:not(.nf-checkpoint):active { transform: translateY(1px); }
 .nf-dialog .nf-back { margin-top: .9em; }
-/* delete / quit: an oxblood stamp */
+/* delete / quit: oxblood */
 .nf-dialog .nf-action.nf-danger {
-  border-color: #b0493a;
-  color: #f7ead2;
-  background: var(--nf-oxblood);
-  box-shadow: inset 0 0 0 2px rgba(247, 234, 210, .12);
+  border-color: #b4483a;
+  color: #f6e6dc;
+  background: rgba(138, 42, 30, .72);
 }
-.nf-dialog .nf-action.nf-danger:is(:hover, :focus-visible) { border-color: var(--nf-amber); background: #9c3323; color: #fff; box-shadow: 0 0 0 2px var(--nf-amber), 0 0 14px rgba(224, 162, 74, .35); }
+.nf-dialog .nf-action.nf-danger:is(:hover, :focus-visible) { border-color: var(--nf-amber); background: #9c3323; color: #fff; box-shadow: 0 0 0 1px var(--nf-amber); }
 
 /* ---------- archive slots: paper tickets ---------- */
 
@@ -541,83 +481,72 @@
   align-items: center;
   gap: .12em .9em;
   min-height: 4.6em;
-  padding: .8em .9em .8em 1em;
-  border: 0;
-  border-radius: 4px;
-  color: var(--nf-paper-ink);
-  background:
-    linear-gradient(90deg, transparent 3.6em, rgba(138, 42, 30, .35) 3.6em calc(3.6em + 1px), transparent calc(3.6em + 1px)),
-    radial-gradient(circle at 20% 0%, rgba(255, 255, 255, .3), transparent 60%),
-    var(--nf-tex-paper, none) 0 0 / 256px 256px,
-    var(--nf-paper);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, .45), inset 0 0 0 1px rgba(42, 29, 20, .16);
+  padding: .85em .9em .85em 1em;
+  border: 1px solid var(--nf-hair);
+  border-radius: 2px;
+  color: var(--nf-white);
+  background: rgba(241, 237, 228, .025);
   cursor: pointer;
-  rotate: -.35deg;
-  transition: transform 140ms ease, box-shadow 140ms ease;
+  transition: transform 140ms ease, border-color 120ms linear, background-color 120ms linear;
 }
-.nf-slot:nth-of-type(even) { rotate: .3deg; }
 button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: inherit; appearance: none; }
-.nf-slot-index { grid-row: 1 / 4; align-self: center; justify-self: center; color: var(--nf-oxblood); font: 700 1.45em/1 var(--nf-serif); }
-.nf-slot-meta { color: var(--nf-oxblood); font: 700 max(9.5px, .56em)/1.2 var(--nf-mono); letter-spacing: .2em; }
-.nf-slot strong { font: 700 .98em/1.25 var(--nf-serif); letter-spacing: .05em; }
-.nf-slot small { color: rgba(42, 29, 20, .72); font: 400 .78em/1.35 var(--nf-serif); letter-spacing: .01em; }
-/* the punch hole at the ticket's right end */
+.nf-slot-index { grid-row: 1 / 4; align-self: center; justify-self: center; color: var(--nf-muted); font: 400 1.5em/1 var(--nf-serif); }
+.nf-slot-meta { color: var(--nf-faint); font: 500 max(9.5px, .52em)/1.2 var(--nf-ui); letter-spacing: .3em; }
+.nf-slot strong { font: 400 .82em/1.3 var(--nf-ui); letter-spacing: .18em; }
+.nf-slot small { color: var(--nf-muted); font: italic 400 .84em/1.35 var(--nf-serif); letter-spacing: .005em; }
+/* the punch hole at the ticket's right end: a small ring */
 .nf-slot b {
   grid-column: 3;
   grid-row: 1 / 4;
   align-self: center;
   justify-self: center;
-  width: 1.05em;
-  height: 1.05em;
+  width: .8em;
+  height: .8em;
   border-radius: 50%;
   overflow: hidden;
   color: transparent;
   font-size: 1em;
-  background: #120b07;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, .8), 0 0 0 2px rgba(42, 29, 20, .14);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--nf-hair-strong);
 }
 .nf-slot::after {
   content: "";
   position: absolute;
-  right: -.3em;
-  top: -.3em;
-  width: .62em;
-  height: .62em;
-  border-radius: 50%;
+  left: -1px;
+  top: -1px;
+  bottom: -1px;
+  width: 2px;
   background: var(--nf-amber);
-  box-shadow: 0 0 .75em .3em rgba(224, 162, 74, .7);
   opacity: 0;
 }
 .nf-slot:is(:hover, :focus-visible) {
-  outline: 2px solid var(--nf-amber);
-  outline-offset: 3px;
-  transform: translateX(.35em);
-  rotate: 0deg;
-  box-shadow: 0 10px 22px rgba(0, 0, 0, .55), inset 0 0 0 1px rgba(42, 29, 20, .16);
+  outline: 0;
+  transform: translateX(.25em);
+  border-color: var(--nf-hair-strong);
+  background: rgba(241, 237, 228, .06);
 }
-.nf-slot:is(:hover, :focus-visible)::after { opacity: 1; animation: nf-glint 2.2s ease-in-out infinite; }
-.nf-slot:active { transform: translateX(.35em) translateY(1px); }
+.nf-slot:is(:hover, :focus-visible)::after { opacity: 1; }
+.nf-slot:is(:hover, :focus-visible) b { background: var(--nf-amber); box-shadow: none; }
+.nf-slot:active { transform: translateX(.25em) translateY(1px); }
 
-/* LOAD: an empty slot is a missing ticket */
+/* LOAD: an empty slot is an unlit line */
 .nf-dialog[data-variant="slots-load"] .nf-slot.is-empty {
-  color: rgba(234, 223, 198, .42);
-  background: rgba(0, 0, 0, .2);
-  box-shadow: none;
-  outline: 1px dashed rgba(217, 181, 110, .32);
-  outline-offset: -1px;
+  color: rgba(241, 237, 228, .36);
+  background: transparent;
+  border-style: dashed;
   cursor: default;
 }
-.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty :is(.nf-slot-index, .nf-slot-meta) { color: rgba(217, 181, 110, .4); }
-.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty small { color: rgba(234, 223, 198, .36); }
-.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty b { background: transparent; box-shadow: inset 0 0 0 1px rgba(217, 181, 110, .3); }
-.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty:is(:hover, :focus-visible) { outline: 2px dashed rgba(224, 162, 74, .6); transform: none; }
+.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty :is(.nf-slot-index, .nf-slot-meta) { color: rgba(241, 237, 228, .25); }
+.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty small { color: rgba(241, 237, 228, .3); }
+.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty b { background: transparent; box-shadow: inset 0 0 0 1px rgba(241, 237, 228, .14); }
+.nf-dialog[data-variant="slots-load"] .nf-slot.is-empty:is(:hover, :focus-visible) { border-color: rgba(224, 162, 74, .5); transform: none; }
 .nf-dialog[data-variant="slots-load"] .nf-slot.is-empty::after { display: none; }
 
 /* ---------- checkpoints: the timetable, torn off as tickets ---------- */
 
 .nf-dialog .nf-checkpoint { grid-template-columns: 0 minmax(0, 1fr); column-gap: 0; padding-left: 1.9em; }
-.nf-dialog .nf-checkpoint .nf-action-label { font-size: .92em; letter-spacing: .05em; white-space: pre-wrap; }
-.nf-dialog .nf-checkpoint:is(:hover, :focus-visible) { transform: translateX(-.2em) rotate(-.4deg); }
+.nf-dialog .nf-checkpoint .nf-action-label { font-size: .78em; letter-spacing: .16em; white-space: pre-wrap; }
+.nf-dialog .nf-checkpoint:is(:hover, :focus-visible) { transform: translateX(.25em); }
 
 /* ---------- settings: brass controls ---------- */
 
@@ -626,10 +555,11 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
   grid-template-columns: minmax(170px, 1fr) 1.25fr;
   align-items: center;
   gap: 1em;
-  padding: .75em .3em;
-  border-bottom: 1px dashed rgba(176, 138, 74, .28);
-  font: 700 max(10px, .7em)/1.3 var(--nf-mono);
-  letter-spacing: .16em;
+  padding: .8em .3em;
+  border-bottom: 1px solid rgba(241, 237, 228, .07);
+  color: #d2cbbf;
+  font: 500 max(10px, .62em)/1.3 var(--nf-ui);
+  letter-spacing: .24em;
 }
 .nf-setting input[type="range"] {
   --nf-range: 50%;
@@ -642,82 +572,68 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
   cursor: pointer;
 }
 .nf-setting input[type="range"]::-webkit-slider-runnable-track {
-  height: 7px;
-  border-radius: 4px;
-  background: linear-gradient(90deg, var(--nf-amber) 0 var(--nf-range), #0d0906 var(--nf-range));
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, .8), 0 0 0 1px rgba(176, 138, 74, .6);
+  height: 2px;
+  background: linear-gradient(90deg, var(--nf-amber) 0 var(--nf-range), rgba(241, 237, 228, .2) var(--nf-range));
 }
 .nf-setting input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 20px;
-  height: 20px;
-  margin-top: -6.5px;
+  width: 14px;
+  height: 14px;
+  margin-top: -6px;
+  border: 0;
   border-radius: 50%;
-  border: 1px solid #3d2c15;
-  background: radial-gradient(circle at 38% 34%, #f6dfa3 0 14%, #b08a4a 55%, #5e4522 100%);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .6);
+  background: var(--nf-white);
+  box-shadow: 0 0 0 4px rgba(10, 9, 8, .95);
 }
-.nf-setting input[type="range"]::-moz-range-track { height: 7px; border-radius: 4px; background: #0d0906; box-shadow: 0 0 0 1px rgba(176, 138, 74, .6); }
-.nf-setting input[type="range"]::-moz-range-progress { height: 7px; border-radius: 4px; background: var(--nf-amber); }
-.nf-setting input[type="range"]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; border: 1px solid #3d2c15; background: radial-gradient(circle at 38% 34%, #f6dfa3 0 14%, #b08a4a 55%, #5e4522 100%); }
+.nf-setting input[type="range"]::-moz-range-track { height: 2px; background: rgba(241, 237, 228, .2); }
+.nf-setting input[type="range"]::-moz-range-progress { height: 2px; background: var(--nf-amber); }
+.nf-setting input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border: 0; border-radius: 50%; background: var(--nf-white); }
 .nf-setting input[type="range"]:focus-visible { outline: 0; }
-.nf-setting input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px rgba(224, 162, 74, .55), 0 0 12px rgba(224, 162, 74, .6); }
-.nf-setting input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 3px rgba(224, 162, 74, .55); }
-/* a brass lever switch */
+.nf-setting input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 4px rgba(10, 9, 8, .95), 0 0 0 5px var(--nf-amber); }
+.nf-setting input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 2px var(--nf-amber); }
+/* a thin switch */
 .nf-setting input[type="checkbox"] {
   justify-self: end;
-  width: 46px;
-  height: 24px;
+  width: 38px;
+  height: 20px;
   margin: 0;
   appearance: none;
   -webkit-appearance: none;
-  border-radius: 12px;
-  background: radial-gradient(circle at 12px 50%, #f6dfa3 0 2px, #b08a4a 6px, #5e4522 9px, transparent 9.5px), #0d0906;
-  box-shadow: inset 0 1px 3px rgba(0, 0, 0, .8), 0 0 0 1px rgba(176, 138, 74, .7);
+  border: 1px solid var(--nf-hair-strong);
+  border-radius: 10px;
+  background: radial-gradient(circle at 9px 50%, var(--nf-muted) 0 5px, transparent 5.5px), transparent;
   cursor: pointer;
   transition: background 120ms linear;
 }
 .nf-setting input[type="checkbox"]:checked {
-  background: radial-gradient(circle at 34px 50%, #fff1cf 0 2px, #e3c27e 6px, #8a6934 9px, transparent 9.5px), var(--nf-amber);
+  border-color: var(--nf-amber);
+  background: radial-gradient(circle at 27px 50%, #14110e 0 5px, transparent 5.5px), var(--nf-amber);
 }
 .nf-setting input[type="checkbox"]:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 3px; }
-.nf-setting:has(input:focus-visible) > span { color: var(--nf-amber); }
+.nf-setting:has(input:focus-visible) > span { color: var(--nf-white); }
 
 /* ---------- quit: an archive card ---------- */
 
 .nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) {
   width: min(540px, calc(100vw - 40px));
-  border: 0;
-  border-radius: 4px;
+  border: 1px solid var(--nf-hair);
+  border-top: 2px solid rgba(180, 72, 58, .7);
+  border-radius: 2px;
   outline: 0;
-  color: var(--nf-paper-ink);
-  background:
-    radial-gradient(circle at 20% 10%, rgba(255, 255, 255, .35), transparent 60%),
-    var(--nf-tex-paper, none) 0 0 / 256px 256px,
-    var(--nf-paper);
-  box-shadow: 0 24px 60px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(42, 29, 20, .18);
-  rotate: -.6deg;
+  color: var(--nf-white);
+  background: rgba(10, 9, 8, .98);
+  box-shadow: 0 40px 100px rgba(0, 0, 0, .8);
 }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"])::before {
-  content: "";
-  position: absolute;
-  top: 20px;
-  right: 22px;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #120b07;
-  box-shadow: inset 0 2px 3px rgba(0, 0, 0, .7), 0 0 0 2px rgba(42, 29, 20, .15);
-}
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"])::before { content: none; }
+.nf-dialog[data-variant="stones"] { border-top-color: rgba(224, 162, 74, .6); }
 .nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-ornament { display: none; }
 .nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-inner { grid-template-columns: 1fr 1fr; gap: .5em 1em; padding: 2.1em 2.4em 2em; }
 .nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-dialog-inner > :not(button) { grid-column: 1 / -1; text-align: left; }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-eyebrow { color: var(--nf-oxblood); font-size: .7em; letter-spacing: .18em; }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) h2 { margin: .15em 0 .2em; font-weight: 700; font-size: 1.7em; letter-spacing: .03em; }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-empty { color: rgba(42, 29, 20, .8); font-style: normal; font-size: .95em; margin-bottom: .8em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-eyebrow { color: var(--nf-danger); font-size: .58em; letter-spacing: .32em; }
+.nf-dialog[data-variant="stones"] .nf-eyebrow { color: var(--nf-amber); }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) h2 { margin: .3em 0 .3em; padding-left: 0; font-weight: 300; font-size: 1.5em; letter-spacing: .26em; }
+.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-empty { color: #d8d1c5; font-style: normal; font-size: 1em; margin-bottom: .8em; }
 .nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-action { justify-self: stretch; min-width: 0; margin: 0; }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-back { color: var(--nf-paper-ink); border-color: rgba(42, 29, 20, .5); background: rgba(42, 29, 20, .05); }
-.nf-dialog:is([data-variant="quit"], [data-variant="confirm"], [data-variant="stones"]) .nf-back:is(:hover, :focus-visible) { color: var(--nf-paper-ink); border-color: var(--nf-amber); background: rgba(224, 162, 74, .22); box-shadow: 0 0 0 1px var(--nf-amber); }
 
 /* confirmations (overwrite, delete) read as the quit card; so does the
    magic-stones card after a normal ending, one column wide */
@@ -727,20 +643,21 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 .nf-dialog[data-variant="stones"] .nf-back { justify-self: start; min-width: 14em; }
 .nf-stones-card { display: grid; gap: .45em; }
 .nf-stones-sockets { margin: .2em 0 .5em; }
-.nf-stones-sockets .nf-stones i { border-color: #8a6934; background: rgba(42, 29, 20, .16); }
+.nf-stones-sockets .nf-stones i { border-color: var(--nf-hair-strong); background: rgba(0, 0, 0, .35); }
 /* a held stone lights its socket here too (same specificity as the rule
    above, so it must be scoped as tightly: alpha R4-6) */
-.nf-stones-sockets .nf-stones i.is-held { border-color: #7a4a18; background: radial-gradient(circle at 35% 35%, #ffd79a, #e0a24a 60%, #7a4a18); box-shadow: 0 0 8px rgba(224, 162, 74, .55); }
+.nf-stones-sockets .nf-stones i.is-held { border-color: var(--nf-amber); background: radial-gradient(circle at 38% 36%, #f3c27a, #e0a24a 55%, #8a5a20); box-shadow: 0 0 8px rgba(224, 162, 74, .45); }
 .nf-stones-clues { display: grid; gap: .55em; margin: 0; padding: 0; list-style: none; }
-.nf-stones-hint { margin: 1em 0 0; font: calc(13px * var(--nightfall-text-scale, 1)) / 1.4 var(--nf-mono, monospace); letter-spacing: .08em; color: var(--nf-amber, #e0a24a); text-transform: uppercase; }
+.nf-stones-hint { margin: 1em 0 0; font: 500 calc(12px * var(--nightfall-text-scale, 1)) / 1.5 var(--nf-ui, sans-serif); letter-spacing: .2em; color: var(--nf-amber, #e0a24a); text-transform: uppercase; }
 .nf-stones-clues li {
   position: relative;
   padding: .5em .8em .5em 1.6em;
-  border-left: 3px solid var(--nf-oxblood);
-  background: rgba(42, 29, 20, .06);
-  font: italic .92em/1.45 var(--nf-serif);
+  border-left: 1px solid var(--nf-hair-strong);
+  background: rgba(241, 237, 228, .03);
+  color: #ddd6ca;
+  font: italic .95em/1.45 var(--nf-serif);
 }
-.nf-stones-clues li::before { content: ""; position: absolute; left: .55em; top: .95em; width: .42em; height: .42em; border-radius: 50%; border: 1.5px dashed rgba(42, 29, 20, .6); }
+.nf-stones-clues li::before { content: ""; position: absolute; left: .55em; top: .95em; width: .42em; height: .42em; border-radius: 50%; border: 1px dashed rgba(241, 237, 228, .5); }
 
 /* ---------- the 1111 router: the conductor's routing ledger ---------- */
 
@@ -885,15 +802,16 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 .nf-credits-heading h2 {
   margin: 1.2rem 0 0;
   padding: 0 0 .2em .06em;
-  color: var(--nf-ivory);
-  font: 400 clamp(3.4rem, 11vw, 8.5rem)/.95 var(--nf-display);
-  letter-spacing: .06em;
-  text-shadow: 0 .04em 0 rgba(26, 14, 6, .9), 0 4px 30px #000;
+  color: var(--nf-white);
+  font: 300 clamp(2.4rem, 7.5vw, 5.6rem)/1 var(--nf-display);
+  letter-spacing: .34em;
+  padding-left: .34em;
+  text-shadow: 0 4px 30px #000;
   border-bottom: 3px solid transparent;
   border-image: linear-gradient(90deg, transparent, var(--nf-brass) 15%, var(--nf-brass-hi) 50%, var(--nf-brass) 85%, transparent) 1;
 }
-.nf-credits-heading > p { margin: .9rem 0 0; color: var(--nf-brass-hi); font: 700 clamp(.66rem, 1.3vw, .95rem)/1.3 var(--nf-mono); letter-spacing: .42em; }
-.nf-credits-heading > span { margin-top: 18vh; color: var(--nf-amber); font: 700 .72rem/1 var(--nf-mono); letter-spacing: .32em; }
+.nf-credits-heading > p { margin: 1.1rem 0 0; color: rgba(241, 237, 228, .78); font: 400 clamp(.66rem, 1.3vw, .95rem)/1.3 var(--nf-ui); letter-spacing: .56em; }
+.nf-credits-heading > span { margin-top: 18vh; color: var(--nf-amber); font: 500 .72rem/1 var(--nf-ui); letter-spacing: .4em; }
 
 .nf-credit-section { display: grid; gap: 1.25rem; min-height: 90vh; align-content: center; padding: 12vh 0; }
 .nf-credit-section h3 { display: flex; align-items: center; gap: .8rem; margin: 0 0 1.2rem; color: var(--nf-ivory); font: 700 .8rem/1.2 var(--nf-mono); letter-spacing: .2em; }
@@ -979,7 +897,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 .nf-credit-world::before { content: ""; position: absolute; inset: 0; opacity: .16; background: repeating-linear-gradient(0deg, transparent 0 24px, var(--credit-hi) 25px 26px); mask-image: linear-gradient(90deg, transparent, black, transparent); }
 .nf-credit-world span, .nf-credit-world strong, .nf-credit-world small { position: relative; }
 .nf-credit-world span { color: var(--credit-hi); font: 700 .68rem/1 var(--nf-mono); letter-spacing: .26em; }
-.nf-credit-world strong { color: var(--nf-ivory); font: 400 clamp(1.8rem, 5.5vw, 3.4rem)/1 var(--nf-display); letter-spacing: .08em; }
+.nf-credit-world strong { color: var(--nf-white); font: 300 clamp(1.4rem, 4vw, 2.6rem)/1.1 var(--nf-display); letter-spacing: .26em; }
 .nf-credit-world small { color: rgba(234, 223, 198, .6); font: 400 .62rem/1.3 var(--nf-mono); letter-spacing: .2em; }
 
 .nf-credit-ledger {
@@ -1011,7 +929,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
 .nf-credit-note { margin: 12vh auto 0; max-width: 620px; padding-top: 1.5rem; border-top: 1px dashed rgba(176, 138, 74, .4); color: rgba(234, 223, 198, .55); font: italic .78rem/1.8 var(--nf-serif); text-align: center; }
 .nf-credits-end { display: grid; place-items: center; align-content: center; min-height: 92vh; text-align: center; }
 .nf-credits-end span { color: var(--nf-amber); font-size: 1.5rem; text-shadow: 0 0 14px rgba(224, 162, 74, .6); }
-.nf-credits-end p { margin: 1.5rem 0 .7rem; color: var(--nf-ivory); font: 400 clamp(2rem, 6vw, 3.6rem)/1 var(--nf-display); letter-spacing: .12em; }
+.nf-credits-end p { margin: 1.5rem 0 .7rem; color: var(--nf-white); font: 300 clamp(1.6rem, 4.6vw, 2.8rem)/1 var(--nf-display); letter-spacing: .34em; padding-left: .34em; }
 .nf-credits-end small { color: var(--nf-brass-hi); font: 700 .66rem/1.3 var(--nf-mono); letter-spacing: .24em; }
 
 .nf-credits-controls {
@@ -1024,10 +942,10 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
   gap: .4rem;
   translate: -50% 0;
   padding: .45rem .7rem;
-  border: 2px solid var(--nf-brass);
-  border-radius: 10px;
-  background: linear-gradient(180deg, rgba(28, 19, 13, .94), rgba(20, 13, 9, .96));
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, .6), 0 10px 30px rgba(0, 0, 0, .55), inset 0 1px 0 rgba(217, 181, 110, .25);
+  border: 1px solid var(--nf-hair);
+  border-radius: 2px;
+  background: rgba(9, 8, 7, .92);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, .55);
   opacity: .62;
   transition: opacity 120ms linear;
 }
@@ -1052,7 +970,7 @@ button.nf-slot { width: 100%; font: inherit; text-align: left; letter-spacing: i
     var(--nf-tex-wall, none) 0 0 / 1024px 100% repeat-x,
     var(--nf-walnut);
 }
-.nf-exit-screen p { margin: 0; color: var(--nf-ivory); font: 400 clamp(1.8rem, 4vw, 3rem)/1 var(--nf-display); letter-spacing: .12em; }
+.nf-exit-screen p { margin: 0; color: var(--nf-white); font: 300 clamp(1.4rem, 3.2vw, 2.4rem)/1 var(--nf-display); letter-spacing: .34em; padding-left: .34em; }
 .nf-exit-screen small { color: rgba(234, 223, 198, .6); font: italic 1em var(--nf-serif); }
 .nf-exit-screen .nf-action { margin-top: 1.5rem; font-size: .7em; }
 
@@ -1086,7 +1004,7 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
   margin-inline: -1.1em;
   padding-inline: 1.1em;
   scrollbar-width: thin;
-  scrollbar-color: var(--nf-brass) transparent;
+  scrollbar-color: var(--nf-hair-strong) transparent;
 }
 /* the key hints keep to one line across the plaque */
 #nightfall-title[data-layout="wide"] .nf-hint { font-size: calc(clamp(8.5px, var(--nf-board) * .026, 13px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); }

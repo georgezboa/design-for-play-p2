@@ -17,6 +17,7 @@ import {
 import { createCutsceneSfx } from './sfx.js';
 import { isSoftwareRenderer, nativeRequestAnimationFrame, setPageCovered } from '../framePacing.js';
 import { useSoftwareCanvas } from './painters.js';
+import { waitForFonts } from '../../shared/fonts.js';
 
 /** The largest backing store for the window canvas (device px). */
 export const MAX_PIXELS = 2560 * 1440;
@@ -545,13 +546,10 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       if (started || destroyed) return;
       started = true;
       layout();
-      // the plates and tags are lettered in Space Mono: wait for it briefly
-      if (document.fonts?.load) {
-        await Promise.race([
-          document.fonts.load('700 12px "Space Mono"').catch(() => {}),
-          new Promise((resolve) => setTimeout(resolve, 900)),
-        ]);
-      }
+      // the plates, tags and letters are lettered in the house faces (Jost,
+      // EB Garamond): canvas text keeps whatever face is loaded when it is
+      // painted, so wait for them briefly
+      await waitForFonts({ timeoutMs: 900 });
       if (destroyed) return;
       // the scene's pictures (paper grain, the night carriage): briefly
       if (typeof def.prepare === 'function') {

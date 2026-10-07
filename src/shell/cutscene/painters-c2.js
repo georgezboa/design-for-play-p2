@@ -16,6 +16,7 @@ import { appleTree, artLayers, hawthorn, house } from '../../chapters/paintedCou
 import { TRAIN_WASH_ALPHA, paintTrain, trainTint } from '../../chapters/paintedCountry/art/trainArt.js';
 import { PAL, glow, rng } from './painters.js';
 import { isSoftwareRenderer } from '../framePacing.js';
+import { FONT_UI } from '../../shared/fonts.js';
 
 export { HUE, INK };
 
@@ -237,7 +238,7 @@ export function rubberStamp(c, x, y, text, { size = 60, angle = -0.1, alpha = 0.
   c.save();
   c.translate(x, y);
   c.rotate(angle);
-  c.font = `700 ${size}px "Space Mono", monospace`;
+  c.font = `700 ${size}px ${FONT_UI}`;
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   const tw = c.measureText(text).width + size * 0.7;

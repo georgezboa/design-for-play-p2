@@ -18,12 +18,31 @@ import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin, 
 import { installAudioRegistry, leaveForTitle } from './titleReturn.js';
 import { installFramePacing } from './framePacing.js';
 import { installPlayClock } from './playClock.js';
+import {
+  CONTROLS_STAGE_EVENT, controlSetIdForList, controlSetIdForPage, pauseControlsView, resolveControlSetId,
+} from './chapterControls.js';
+import { controlRowsHtml, diagramHtml, stageTitle } from './controlsView.js';
+import { installControlsCardListener } from './controlsCard.js';
 
 // Before any chapter code creates its renderer or asks for a frame (this
 // module is imported ahead of every chapter's main body): see framePacing.js.
 installFramePacing(globalThis.window);
 
 const PAUSE_ID = 'nightfall-pause-menu';
+
+// The chapter's current stage for the controls list (feedback item 19), as
+// the last `nightfall:controls-stage` event said it (chapterControls.js
+// header). Recorded from the moment this module loads, so a stage announced
+// before the menu is installed is not lost.
+let lastControlsStage = null;
+if (typeof window !== 'undefined' && !window.__nfControlsStageRecorder) {
+  window.__nfControlsStageRecorder = true;
+  window.addEventListener(CONTROLS_STAGE_EVENT, (event) => {
+    lastControlsStage = event?.detail && typeof event.detail === 'object' ? { ...event.detail } : null;
+  });
+}
+/** The last stage a chapter announced on this page (null before any). */
+export const currentControlsStage = () => lastControlsStage;
 
 // Generic fallback only; every chapter passes its own `controls` list.
 export const DEFAULT_PAUSE_CONTROLS = Object.freeze([
@@ -74,8 +93,8 @@ function action(label, handler, className = '') {
   return button;
 }
 
-// The chapter's controls as a compact two-column key legend (the main
-// pause screen shows it; nothing is buried under SETTINGS any more).
+// The chapter's full controls as a compact two-column key legend (the pause
+// screen's ALL CONTROLS; the rows for now come first, controlsView.js).
 export function controlsLegendHtml(rows = DEFAULT_PAUSE_CONTROLS) {
   const list = rows?.length ? rows : DEFAULT_PAUSE_CONTROLS;
   return list.map(([name, keys]) => `<div><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(keys)}</dd></div>`).join('');
@@ -88,6 +107,9 @@ export function installPauseMenu({
   allowEmbedded = false,
   onEscape = null,
   controls = DEFAULT_PAUSE_CONTROLS,
+  // The chapter's control set (chapterControls.js CONTROL_SETS) for the
+  // stage lists; found from `controls` or the page when left out.
+  chapter = null,
   // Chapter-specific actions listed after RESUME, as [{ label, onSelect }].
   // Selecting one resumes play first, then runs it (e.g. Chapter 1's SHOW ME).
   extraActions = [],
@@ -98,11 +120,12 @@ export function installPauseMenu({
   installAudioRegistry(window);
   // Time played, for the save slot (paused and hidden time do not count).
   installPlayClock();
+  // A chapter may ask for its entry card with an event (controlsCard.js).
+  installControlsCardListener(window);
 
-  // The title screen's language (titleMenu.css): a brass-framed walnut
-  // panel with rivets, the actions as departure-board lines that turn into a
-  // punched paper ticket when selected, the controls as a key legend, and
-  // the magic stones with their one-line meaning.
+  // Round 6 (pauseMenu.css): a matte black card, the actions as a quiet
+  // list, the controls that matter now (with ALL CONTROLS behind an
+  // expander) and the magic stones with their one-line meaning.
   const root = document.createElement('aside');
   root.id = PAUSE_ID;
   root.hidden = true;
@@ -117,9 +140,15 @@ export function installPauseMenu({
       </header>
       <div class="nf-pause-body">
         <nav class="nf-pause-actions" aria-label="Pause menu"></nav>
-        <section class="nf-pause-controls" aria-label="Controls">
-          <p class="nf-pause-controls__title">CONTROLS</p>
-          <dl class="nf-pause-controls-note"></dl>
+        <section class="nf-pause-controls" aria-label="Controls" data-expanded="false">
+          <header class="nf-pause-controls__head">
+            <p class="nf-pause-controls__title">CONTROLS</p>
+            <p class="nf-pause-controls__stage"></p>
+          </header>
+          <div class="nf-pause-controls__diagrams" hidden></div>
+          <dl class="nf-pause-controls-now"></dl>
+          <dl class="nf-pause-controls-note" id="nf-pause-all-controls" hidden></dl>
+          <button type="button" class="nf-pause-controls-toggle" aria-expanded="false" aria-controls="nf-pause-all-controls">ALL CONTROLS</button>
         </section>
         <div class="nf-pause-settings" hidden></div>
         <div class="nf-pause-confirm" hidden role="alertdialog" aria-labelledby="nf-pause-confirm-title" aria-describedby="nf-pause-confirm-copy">
@@ -140,14 +169,60 @@ export function installPauseMenu({
   const actions = root.querySelector('.nf-pause-actions');
   const controlsBox = root.querySelector('.nf-pause-controls');
   const controlsNote = root.querySelector('.nf-pause-controls-note');
+  const controlsNow = root.querySelector('.nf-pause-controls-now');
+  const controlsTitle = root.querySelector('.nf-pause-controls__title');
+  const controlsStage = root.querySelector('.nf-pause-controls__stage');
+  const controlsDiagrams = root.querySelector('.nf-pause-controls__diagrams');
+  const controlsToggle = root.querySelector('.nf-pause-controls-toggle');
+  const mainPanel = root.querySelector('.nf-pause-body');
   const settingsPanel = root.querySelector('.nf-pause-settings');
   const confirmPanel = root.querySelector('.nf-pause-confirm');
   const checkpointLine = root.querySelector('.nf-pause-checkpoint');
   const stonesLine = root.querySelector('.nf-pause-stones');
-  const renderControls = () => {
-    const rows = typeof controls === 'function' ? controls() : controls;
-    controlsNote.innerHTML = controlsLegendHtml(rows);
+  // Which control set this page speaks for: the one named, else the one its
+  // full list belongs to, else the page's (final-boss.html passes an inline
+  // list).
+  const pageSet = resolveControlSetId(chapter)
+    ?? controlSetIdForList(typeof controls === 'function' ? null : controls)
+    ?? controlSetIdForPage(globalThis.location?.pathname);
+  let expanded = false;
+  const controlsView = () => {
+    const full = typeof controls === 'function' ? controls() : controls;
+    const stage = lastControlsStage;
+    const setId = resolveControlSetId(stage?.chapter) ?? pageSet;
+    return pauseControlsView({
+      setId,
+      stage: stage?.stage ?? null,
+      eventControls: stage?.controls ?? null,
+      label: stage?.label ?? null,
+      // a page that passed no list of its own shows its set's full list
+      full: full === DEFAULT_PAUSE_CONTROLS && pageSet ? null : full,
+    });
   };
+  // The rows for now by default (feedback item 19); ALL CONTROLS opens the
+  // chapter's full list in their place.
+  const renderControls = () => {
+    const view = controlsView();
+    controlsNow.innerHTML = controlRowsHtml(view.rows);
+    controlsNote.innerHTML = controlsLegendHtml(view.all.length ? view.all : view.rows);
+    const diagrams = view.diagrams.map(diagramHtml).join('');
+    controlsDiagrams.innerHTML = diagrams;
+    controlsDiagrams.hidden = !diagrams;
+    const open = expanded && view.expandable;
+    controlsBox.dataset.expanded = String(open);
+    controlsBox.dataset.source = view.source;
+    controlsNote.hidden = !open;
+    controlsTitle.textContent = open ? 'ALL CONTROLS' : view.source === 'event' || view.source === 'stage' ? 'CONTROLS · NOW' : 'CONTROLS';
+    controlsStage.textContent = open || !view.label ? '' : stageTitle(view.label);
+    controlsToggle.hidden = !view.expandable;
+    controlsToggle.setAttribute('aria-expanded', String(open));
+    controlsToggle.textContent = open ? (view.label ? 'ONLY WHAT MATTERS NOW' : 'ONLY THE BASICS') : 'ALL CONTROLS';
+  };
+  controlsToggle.addEventListener('click', () => {
+    expanded = !expanded;
+    renderControls();
+  });
+  window.addEventListener(CONTROLS_STAGE_EVENT, () => { if (paused) renderControls(); });
   // The five-stone meta-goal is visible from the first pause of the game,
   // long before the Museum's last stone is offered: its name, the count and
   // what the stones are, in one visible line (no hover needed).
@@ -155,14 +230,6 @@ export function installPauseMenu({
     let snapshot;
     try { snapshot = magicStoneSnapshot(); } catch { return; }
     stonesLine.innerHTML = `<div class="nf-pause-stones__row"><span class="nf-pause-stones__label">${escapeHtml(magicStoneCountLabel(snapshot))}</span>${magicStoneRowHtml(snapshot)}</div><p class="nf-pause-stones__meaning">${escapeHtml(MAGIC_STONE_LINE)}</p>`;
-  };
-  // The carriage-wall textures of the title (titleCarriage.js), painted the
-  // first time the menu opens; flat walnut until then.
-  let dressed = false;
-  const dress = () => {
-    if (dressed) return;
-    dressed = true;
-    import('./titleCarriage.js').then(({ dressCarriageWall }) => dressCarriageWall(root)).catch(() => {});
   };
   const status = root.querySelector('.nf-pause-status');
   let paused = false;
@@ -201,7 +268,8 @@ export function installPauseMenu({
   // one the title screen and its dialogs use (menuNavigation.js).
   const currentPanel = () => {
     const panel = inConfirm ? confirmPanel : inSettings ? settingsPanel : actions;
-    return panel;
+    // the main view also reaches the ALL CONTROLS expander, after the actions
+    return panel === actions ? mainPanel : panel;
   };
   const moveFocus = (direction) => moveFocusWithin(currentPanel(), direction);
   const activateFocused = () => activateWithin(currentPanel());
@@ -253,10 +321,11 @@ export function installPauseMenu({
     if (notice.open) notice.close();
     priorFocus = document.activeElement;
     paused = true;
-    dress();
     root.hidden = false;
     setView('main');
     checkpointLine.textContent = describeLastCheckpoint();
+    // each pause opens on the rows for now
+    expanded = false;
     renderControls();
     renderStones();
     setRuntimePaused(true);
@@ -435,6 +504,10 @@ export function installPauseMenu({
   };
   // A chapter can show a one-time archive card through the same pause.
   root.showNotice = (spec) => notice.show(spec);
+  // The same as the stage event (chapterControls.js), for a chapter holding
+  // the menu: root.setControlsStage({ stage: 'act2' }).
+  root.setControlsStage = (detail = {}) => window.dispatchEvent(new CustomEvent(CONTROLS_STAGE_EVENT, { detail }));
+  root.controlsView = controlsView;
   root.navigable = () => navigableControls(currentPanel());
   return root;
 }

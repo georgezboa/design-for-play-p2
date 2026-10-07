@@ -15,6 +15,7 @@
 import {
   PAL, brassFill, glow, ink, inkEllipse, inkRect, lightCone, rivet, rng, roundRectPath, vgrad, wood,
 } from './painters.js';
+import { FONT_UI } from '../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -324,7 +325,7 @@ export function drawLitSign(c, x, y, w, h, text, { on = 1, tone = 'amber', font 
     c.strokeStyle = 'rgba(176, 138, 74, 0.6)'; c.lineWidth = Math.max(1.4, h * 0.04);
     roundRectPath(c, x, y, w, h, Math.min(6, h * 0.12)); c.stroke();
   }
-  c.font = font ?? `700 ${h * 0.5}px "Space Mono", monospace`;
+  c.font = font ?? `700 ${h * 0.5}px ${FONT_UI}`;
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   // the unlit letters stay faintly visible, as bulbs do
