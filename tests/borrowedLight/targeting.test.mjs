@@ -137,7 +137,7 @@ test('mouse: a click on a node\'s box or tag picks that node, not just the neare
 test('the scene acts on the node it highlights (one target, chosen once per frame)', () => {
   const scene = readFileSync(new URL('../../src/chapters/borrowedLight/BorrowedLightScene.js', import.meta.url), 'utf8');
   assert.match(scene, /pickTarget\(/);
-  assert.match(scene, /const node = this\.pressTarget\(/);
+  assert.match(scene, /(?:const|let) node = this\.pressTarget\(/);
   assert.doesNotMatch(scene, /if \(!node\) return;\n\s+const view = this\.nodeViews\.get\(node\.id\);\n\s+const res = this\.tt\.punch/, 'no silent return when nothing is in reach');
   assert.match(scene, /HINTS\.outOfReach/);
 });

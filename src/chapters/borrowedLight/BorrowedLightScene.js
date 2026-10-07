@@ -613,18 +613,23 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.jumpDownAt = stamp(event);
       this.jumpUpAt = null;
     };
+    // Round 6 · unified controls (feedback item 18): Space, W and ↑ only
+    // ever jump. While a line or a card is up a jump key does not advance
+    // it (E / Enter do): the caption's E hint pulses instead, so the press
+    // is never silent.
     const jumpDown = (event) => {
-      if (this.hud.cardOpen) { this.hud.closeCard(); return; }
-      if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
+      if (this.hud.cardOpen || this.hud.dialogOpen) { this.hud.nudgeConfirm(); return; }
       queueJump(event);
     };
     this.keys.space.on('down', once(jumpDown));
-    this.keys.up.on('down', once((event) => { if (!this.hud.dialogOpen && !this.hud.cardOpen) queueJump(event); }));
-    this.keys.w.on('down', once((event) => { if (!this.hud.dialogOpen && !this.hud.cardOpen) queueJump(event); }));
+    this.keys.up.on('down', once(jumpDown));
+    this.keys.w.on('down', once(jumpDown));
     // Remember when the tap ended (see controller.js tapHoldMs).
     for (const key of [this.keys.space, this.keys.up, this.keys.w]) key.on('up', (_key, event) => { this.jumpUpAt = stamp(event); });
-    this.keys.e.on('down', once(() => this.interact()));
-    this.keys.enter.on('down', once(() => { if (this.hud.cardOpen) this.hud.closeCard(); else if (this.hud.dialogOpen) this.hud.advanceDialog(); }));
+    // E and Enter: talk, read, punch, borrow, confirm: whatever the marked
+    // target is (act). F stays a silent alias of the punch.
+    this.keys.e.on('down', once(() => this.act({ source: 'key' })));
+    this.keys.enter.on('down', once(() => this.act({ source: 'key' })));
     this.keys.f.on('down', once(() => this.punch({ source: 'key' })));
     this.input.on('pointerdown', (pointer) => {
       if (pointer.rightButtonDown()) return;
@@ -999,7 +1004,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.holdG.clear();
     if (!hb) return;
     const pad = this.input.gamepad?.pad1;
-    const held = hb.source === 'key' ? this.keys.f.isDown : hb.source === 'pointer' ? this.input.activePointer.isDown : Boolean(pad?.R1);
+    const keys = this.keys;
+    const held = hb.source === 'key' ? (keys.e.isDown || keys.f.isDown || keys.enter.isDown) : hb.source === 'pointer' ? this.input.activePointer.isDown : Boolean(pad?.R1 || pad?.X);
     const there = this.tt.isQueued(hb.nodeId) && (hb.source === 'pointer' || this.currentTarget?.id === hb.nodeId);
     if (!held || !there || this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen) { this.takeBack = null; return; }
     hb.ms += dt;
@@ -1062,10 +1068,12 @@ export class BorrowedLightScene extends Phaser.Scene {
       }
     }
     if (!node) { this.missFeedback(); return; }
-    // F at a dead node with a light in the lamp gives it (same as E).
+    // A dead node takes the lamp's verbs (borrow, give, take back, put
+    // back) and says why when it cannot; with nothing to give it, the punch
+    // below names it a dead node that needs light.
     if (node.dead && this.section === 'B') {
       const pre = this.tt.borrowPreview(node.id, { riding: this.ridingMachine() });
-      if (['give', 'retrieve', 'return', 'borrow', 'step-off'].includes(pre.result)) { this.lampAction(node); return; }
+      if (['give', 'retrieve', 'return', 'borrow', 'step-off', 'full', 'lit'].includes(pre.result)) { this.lampAction(node); return; }
     }
     const view = this.nodeViews.get(node.id);
     const res = this.tt.punch(node.id);
@@ -1085,7 +1093,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         view.pulse = 0;
         view.pulseSpeed = 1.6;
         if (res.result === 'caught') this.floatHint(node.id, HINTS.caught, color.css, 1200);
-        else if (res.result === 'renew') this.floatHint(node.id, HINTS.renew.replace('F · ', ''), color.css, 1600);
+        else if (res.result === 'renew') this.floatHint(node.id, HINTS.renew.replace('E · ', ''), color.css, 1600);
         else if (res.result === 'renewed') this.floatHint(node.id, HINTS.renewed, color.css, 1600);
         else if (res.inBells === 2) this.floatHint(node.id, HINTS.waitsABell(node.phase), color.css, 2400);
         if (node.phase) this.flags.phasePunched = true;
@@ -1221,6 +1229,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hintText.setPosition(x, y).setAlpha(1);
   }
 
+  // The mechanic has something new to say: her story, after the first box.
+  mechanicHasNews() {
+    return this.flags.firstPunch && !this.flags.mechanicTalked;
+  }
+
   interactTarget() {
     const x = this.feetX;
     const y = this.feetY;
@@ -1231,6 +1244,31 @@ export class BorrowedLightScene extends Phaser.Scene {
     return null;
   }
 
+  // Round 6 · E / Enter (and the pad's X) act on one target: the mechanic,
+  // the hotel window or the bench when that is the nearer thing in reach,
+  // otherwise the marked node (punch it, or the lamp's verbs at a dead one).
+  // The prompts show exactly that target's E (updatePrompts).
+  act({ source = 'key' } = {}) {
+    if (this.hud.cardOpen) { this.hud.closeCard(); return; }
+    if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
+    const action = this.actionTarget();
+    if (action?.kind === 'prop') { this.interact(); return; }
+    this.punch({ source });
+  }
+
+  // What E would act on now: { kind: 'prop', prop } | { kind: 'node', node } | null.
+  actionTarget() {
+    if (this.locked || this.respawning || this.hud.dialogOpen || this.hud.cardOpen) return null;
+    const prop = this.interactTarget();
+    const node = this.currentTarget ?? null;
+    if (!prop) return node ? { kind: 'node', node } : null;
+    if (!node) return { kind: 'prop', prop };
+    // A1 is taught do-first: until the first box is punched, the box wins.
+    if (prop === 'mechanic' && !this.flags.firstPunch) return { kind: 'node', node };
+    const px = { mechanic: MECHANIC.x, window: HOTEL_WINDOW.x, letter: BENCH.x }[prop];
+    return Math.abs(px - this.feetX) < Math.abs(node.x - this.feetX) ? { kind: 'prop', prop } : { kind: 'node', node };
+  }
+
   interact() {
     const now = performance.now();
     if (now - (this.lastInteractAt ?? -1e9) < 160) return;
@@ -1239,10 +1277,6 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.hud.dialogOpen) { this.hud.advanceDialog(); return; }
     if (this.locked || this.respawning || this.clock < (this.interactCooldown ?? 0)) return;
     const target = this.interactTarget();
-    if (!target && this.section === 'B') {
-      const node = this.pressTarget();
-      if (node) { this.lampAction(node); return; }
-    }
     if (target === 'mechanic') {
       sfx.paper();
       const lines = this.flags.mechanicTalked ? [MECHANIC_REPEAT] : MECHANIC_LINES;
@@ -1957,7 +1991,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         this.jumpUpAt = null;
       }
     }
-    if (edge('X', pad.X)) this.interact();
+    if (edge('X', pad.X)) this.act({ source: 'pad' });
     if (edge('R1', pad.R1)) this.punch({ source: 'pad' });
     const start = pad.buttons[9]?.pressed;
     if (edge('start', start)) window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape' }));
@@ -2679,15 +2713,13 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     this.talkText.setVisible(false);
     if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
-    // Something already read keeps its E (you can read it again) but no
-    // longer advertises it.
-    const raw = this.interactTarget();
-    const target = (raw === 'window' && this.flags.cardRead) || (raw === 'letter' && this.flags.letterRead) ? null : raw;
-    // A1 (alpha r3, d08): by the mechanic and the first pole at once, the
-    // pole keeps its punch tag; E · TALK stays on the mechanic until his
-    // first lines are done.
-    if (target === 'mechanic' && this.currentTarget) {
-      if (!this.flags.mechanicTalked) this.talkText.setPosition(MECHANIC.x, MECHANIC.y - 208).setVisible(true);
+    // Round 6: exactly one E prompt, on what E will act on (actionTarget).
+    const action = this.actionTarget();
+    const target = action?.kind === 'prop' ? action.prop : null;
+    // By the mechanic with the box nearer (or not yet punched), the box
+    // keeps E; she shows, without a key, that she has more to say.
+    if (action?.kind === 'node' && this.interactTarget() === 'mechanic') {
+      if (this.mechanicHasNews()) this.talkText.setText(HINTS.talkCloser).setPosition(MECHANIC.x, MECHANIC.y - 208).setVisible(true);
     } else if (target) {
       const [x, y, label] = target === 'mechanic'
         // Above the kiosk awning (its valance hangs 160–196 px up), clear of it.

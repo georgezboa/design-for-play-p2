@@ -36,7 +36,7 @@ test('R3-1: the scene plays by the round-3 rules; a press never takes a punch ba
   assert.match(scene, /moving: Math\.abs\(this\.player\.body\.velocity\.x\) > MOVING_VX,/);
   assert.match(scene, /spent: \(node\) => this\.tt\.isQueued\(node\.id\),/);
   const rows = CHAPTER_CONTROLS.borrowedLight.map(([a, k]) => `${a} ${k}`).join(' | ');
-  assert.match(rows, /TAKE BACK A PUNCH HOLD F \/ HOLD CLICK ON IT/);
+  assert.match(rows, /TAKE BACK A PUNCH HOLD E \/ HOLD CLICK ON IT/);
 });
 
 test('R3-2: every borrow the scene makes knows what Butch is standing on', () => {
@@ -61,8 +61,10 @@ test('P2: toasts sit on a dark band; the dark-deck hint is bright and stays on s
   assert.match(scene, /x = Phaser\.Math\.Clamp\(x, view\.x \+ half, view\.right - half\);/);
 });
 
-test('P2: A1 shows the punch tag with E · TALK; the chase shows no teach tag but its own', () => {
-  assert.match(scene, /if \(target === 'mechanic' && this\.currentTarget\) \{\n\s+if \(!this\.flags\.mechanicTalked\) this\.talkText/);
+test('P2: A1 shows the punch tag beside the mechanic; the chase shows no teach tag but its own', () => {
+  // Round 6: one E prompt, on what E acts on; the mechanic beside the box
+  // shows (without a key) that she has more to say.
+  assert.match(scene, /if \(action\?\.kind === 'node' && this\.interactTarget\(\) === 'mechanic'\) \{\n\s+if \(this\.mechanicHasNews\(\)\) this\.talkText/);
   const teach = scene.slice(scene.indexOf('  teachPrompt() {'), scene.indexOf('  updatePrompts() {'));
   const chase = teach.indexOf('this.feetX >= CHASE.fromX && this.feetX < CHASE.toX');
   const listen = teach.indexOf('HINTS.listen');

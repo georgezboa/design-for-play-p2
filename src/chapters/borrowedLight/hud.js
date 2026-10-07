@@ -359,6 +359,16 @@ export class BorrowedLightHud {
 
   get dialogOpen() { return Boolean(this.dialog); }
 
+  // A jump key pressed while a line or a card is up: E / Enter advance it,
+  // so their hint answers the press (round 6: Space only ever jumps).
+  nudgeConfirm() {
+    const hint = this.cardOpen ? this.cardHint : this.dialog ? this.captionHint : null;
+    if (!hint) return;
+    this.scene.tweens.killTweensOf(hint);
+    hint.setScale(1.35).setAlpha(1);
+    this.scene.tweens.add({ targets: hint, scale: 1, duration: 420, ease: 'Back.easeOut' });
+  }
+
   advanceDialog() {
     const d = this.dialog;
     if (!d) return;

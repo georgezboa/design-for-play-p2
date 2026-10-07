@@ -123,7 +123,7 @@ test('story text: the mechanic line from the spec and Mara\'s letter kept word f
 
 test('controls list the chapter\'s verbs, including Listen and the gamepad', () => {
   const rows = CHAPTER_CONTROLS.borrowedLight.map(([a, k]) => `${a} ${k}`).join(' | ');
-  for (const needle of ['MOVE', 'JUMP', 'PUNCH', 'F / LEFT CLICK', 'HOLD Q', 'E', 'ESC', 'RB', 'LB']) assert.match(rows, new RegExp(needle));
+  for (const needle of ['MOVE', 'JUMP', 'PUNCH', 'E / LEFT CLICK', 'HOLD Q', 'E / ENTER', 'ESC', 'RB', 'LB']) assert.match(rows, new RegExp(needle));
 });
 
 test('player-visible chapter name is BORROWED LIGHT in the router, credits and chapter select', () => {
