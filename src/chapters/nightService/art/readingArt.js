@@ -211,7 +211,8 @@ export function paintReadingPaper(c, w, h, spec = {}, { pad = 40, paper = null, 
   }
   if (spec.hole) {
     // the conductor's punch: a clean round hole through the paper
-    const [hx, hy] = shape === 'ticket' ? [x + w * 0.62, y + h * 0.3] : [x + w - 56, y + 56];
+    // (on a ticket: the right of the paper, clear of the words)
+    const [hx, hy] = shape === 'ticket' ? [x + w * 0.84, y + h * 0.58] : [x + w - 56, y + 56];
     c.save();
     c.globalCompositeOperation = 'destination-out';
     c.beginPath(); c.arc(hx, hy, 17, 0, Math.PI * 2); c.fill();

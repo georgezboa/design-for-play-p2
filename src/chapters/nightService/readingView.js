@@ -136,8 +136,19 @@ export class ReadingView {
     const s = clamp(this.s ?? 1, 0.8, 1.6);
     const shape = card.shape ?? 'paper';
     this.sheet.removeAll(true);
-    const W = Math.round(clamp((WIDTH[shape] ?? WIDTH.paper) * (0.9 + 0.1 * s), 600, 1640));
     const [il, it, ir, ib] = readingInsets(shape, s);
+    let W = Math.round(clamp((WIDTH[shape] ?? WIDTH.paper) * (0.9 + 0.1 * s), 600, 1640));
+    // a brass label grows to keep its one line on one line (it reads as a label)
+    if (shape === 'plate') {
+      const widest = Math.max(0, ...(card.lines ?? []).map((line) => {
+        const spec = typeof line === 'string' ? { text: line } : line;
+        const probe = scene.add.text(0, 0, spec.text ?? '', { fontFamily: spec.font === 'mono' ? MONO : SERIF, fontSize: `${readingFontPx(spec, s)}px`, fontStyle: 'bold', letterSpacing: spec.font === 'mono' ? 2 : 0 });
+        const width = probe.width;
+        probe.destroy();
+        return width;
+      }));
+      W = Math.round(clamp(Math.max(W, widest + il + ir), 600, 1640));
+    }
     // a seal or a stamp keeps the right of the paper for itself
     const reserve = card.seal ? W * 0.3 : 0;
     const textW = W - il - ir - reserve;
@@ -170,6 +181,7 @@ export class ReadingView {
         letterSpacing: spec.font === 'mono' ? 2 : 0,
         wordWrap: { width: textW, useAdvancedWrap: true },
         lineSpacing: Math.round(px * 0.12),
+        align: shape === 'plate' ? 'center' : 'left',
       }).setOrigin(0, 0);
       objects.push(t);
       y += t.height + (i < card.lines.length - 1 ? px * 0.32 : 0);
