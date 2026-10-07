@@ -184,7 +184,7 @@ const sceneStage = (byKey) => () => {
 };
 const STEP_BACK = ['STEP BACK', 'RIGHT-CLICK · ⌫'];
 const SHOW_ME = ['SHOW ME (A HINT)', 'H'];
-const DRAG_WINDOW = ['MOVE A WINDOW', 'DRAG ITS PICTURE ONTO ANOTHER'];
+const DRAG_WINDOW = ['MOVE A WINDOW', 'DRAG ITS PICTURE'];
 const LOOK_CLOSER = ['LOOK CLOSER / USE', 'CLICK A TAG · TAB, ENTER'];
 const SIDE_MOVE = ['MOVE', 'A / D · ← →'];
 const SIDE_JUMP = ['JUMP', 'SPACE · W · ↑'];
@@ -201,19 +201,19 @@ export const CONTROL_SETS = Object.freeze({
     stages: Object.freeze({
       act0: stage('ACT 0 · ONE WINDOW', [
         ['LOOK CLOSER', 'CLICK A TAG · TAB, ENTER'],
-        ['RING / USE', 'CLICK WHAT THE TAG NAMES'],
+        ['USE', 'CLICK THE MARKED PART, UP CLOSE'],
         ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · ⌫'],
         SHOW_ME,
       ]),
       act05: stage('ACT 0.5 · TWO WINDOWS', [
-        ['UNFOLD THE WALL', 'DRAG THE BRASS PULL OUTWARD'],
-        ['MOVE A WINDOW', 'DRAG ITS PICTURE ONTO THE OTHER'],
+        ['UNFOLD THE WALL', 'DRAG THE PULL OUTWARD'],
+        ['SWAP THE WINDOWS', 'DRAG A PICTURE ONTO THE OTHER'],
         ['LOOK CLOSER', 'CLICK A TAG'],
         STEP_BACK,
         SHOW_ME,
       ], { diagrams: ['unfold', 'swap'] }),
       act1: stage('ACT I · LOST PROPERTY', [
-        ['UNFOLD THE WALL', 'DRAG THE BRASS PULL OUTWARD'],
+        ['UNFOLD THE WALL', 'DRAG THE PULL OUTWARD'],
         DRAG_WINDOW,
         ['LOOK CLOSER', 'CLICK A TAG'],
         STEP_BACK,

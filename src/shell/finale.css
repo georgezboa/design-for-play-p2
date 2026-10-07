@@ -4,8 +4,8 @@
  *
  * Built on uiKit.css tokens so the finale speaks the title's and the credits'
  * language: walnut and brass frames, ivory paper and ink, amber for "you can
- * act on this", oxblood stamps, Anton for titles, Georgia for voice, Space
- * Mono for labels. No neon.
+ * act on this", oxblood stamps; the house faces of uiKit.css (round 6: Jost
+ * capitals for titles and labels, EB Garamond for voice). No neon.
  */
 @import '../fonts/fonts.css';
 @import './uiKit.css';
@@ -44,7 +44,7 @@
 .nf-board::before { left: 14px; }
 .nf-board::after { right: 14px; }
 .nf-board__kicker { margin: 0; font: 700 calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.34em; color: var(--nf-amber); text-transform: uppercase; }
-.nf-board__title { margin: 12px 0 6px; font: calc(64px * var(--nf-scale)) / 0.95 var(--nf-display); letter-spacing: 0.06em; color: var(--nf-ivory); text-shadow: 0 6px 24px rgba(0, 0, 0, 0.7); }
+.nf-board__title { margin: 12px 0 6px; font: 300 calc(54px * var(--nf-scale)) / 1.05 var(--nf-display); letter-spacing: 0.12em; color: var(--nf-ivory); text-shadow: 0 6px 24px rgba(0, 0, 0, 0.7); }
 .nf-board__rule { width: 300px; max-width: 70%; height: 2px; margin: 12px auto 18px; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
 .nf-board__intro { margin: 0 auto 22px; max-width: 560px; font: calc(19px * var(--nf-scale)) / 1.55 var(--nf-serif); color: #d8ccb0; }
 .nf-board__controls { margin: 20px 0 0; font: calc(12px * var(--nf-scale)) / 1.8 var(--nf-mono); letter-spacing: 0.12em; color: #a8987c; text-transform: uppercase; }
@@ -237,7 +237,7 @@
    the passenger's name (BUTCH) is the payoff it confirms (alpha A4-9). */
 .nf-stamp {
   position: absolute; right: 34px; bottom: 22px; padding: 8px 16px; transform: rotate(-6deg) scale(2.6); transform-origin: 70% 50%; opacity: 0;
-  font: calc(28px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; color: var(--nf-oxblood);
+  font: 500 calc(24px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.2em; color: var(--nf-oxblood);
   border: 4px double var(--nf-oxblood); border-radius: 6px; mix-blend-mode: multiply;
 }
 .nf-stamp.is-down { animation: nf-stamp-down 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) forwards; }
@@ -255,7 +255,7 @@
 /* ---------- big in-fiction stamps over the stage (DEPARTING, CLAIM CLOSED) ---------- */
 .nf-announce {
   position: absolute; left: 50%; top: 42%; z-index: 20; transform: translate(-50%, -50%) rotate(-6deg) scale(2); opacity: 0; pointer-events: none;
-  padding: 10px 26px; font: calc(64px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.1em; color: var(--nf-ivory);
+  padding: 10px 26px; font: 300 calc(54px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.22em; color: var(--nf-ivory);
   border: 5px double var(--nf-amber); border-radius: 8px; background: rgba(22, 15, 10, 0.72); text-shadow: 0 4px 18px rgba(0, 0, 0, 0.8);
 }
 .nf-announce.show { animation: nf-announce 1.3s ease forwards; }

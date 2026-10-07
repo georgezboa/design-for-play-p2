@@ -123,7 +123,8 @@
   left: 50%;
   top: var(--nf-cap-top, auto);
   z-index: 2;
-  width: min(var(--nf-cap-w, 1180px), calc(100vw - 32px));
+  /* clear of the HOLD TO SKIP prompt in the bottom right corner */
+  width: min(var(--nf-cap-w, 1180px), calc(100vw - 2 * max(190px, 15vw)));
   box-sizing: border-box;
   padding: calc(11px * var(--nf-cs)) 28px calc(14px * var(--nf-cs));
   translate: -50% -50%;
