@@ -36,6 +36,44 @@ export function difficultyPreset(id) {
 }
 
 // ---------------------------------------------------------------------------
+// A torn last layer (round 6, item 16: one hit in Movement III put his
+// ticket back where the movement began, after an answer had landed).
+//
+// It costs Butch his place and the chance in hand, never what he has done:
+// the Conductor's ticket stays where it was, answers given and facts struck
+// stand (the debate is never reset), Movement II's lessons stay learned. A
+// window earned in Movement III stays open: he walks back to the front edge.
+// What goes: his position, the cases on the floor (I), the queued lamps (II,
+// a new arena), the colour on the brush (IV).
+
+export function keptAfterTornLayers(movement, { echoWindow = false } = {}) {
+  if (movement === 0) return 'His ticket stays where you left it. The cases on the floor are cleared; he will drop more.';
+  if (movement === 1) return 'His ticket stays where you left it, and what you learned of the bell stays learned. The lamps start dark.';
+  if (movement === 2) {
+    return echoWindow
+      ? 'His ticket stays where you left it, and your answer stands: walk back to the lit front edge.'
+      : 'His ticket stays where you left it. Your answers stand, and struck cards stay struck.';
+  }
+  return 'His ticket stays where you left it. The colour on your brush is spilled; take more.';
+}
+
+export function tornLayerReset({ movement = 0, bossHp = 0, echoStage = 'combat', echoClock = 0, brush = 0 } = {}) {
+  const keepWindow = movement === 2 && echoStage === 'window';
+  return {
+    bossHp,
+    brush: 0,
+    spilled: brush,
+    clearCases: movement === 0,
+    newArena: movement === 1,
+    keepWindow,
+    echoStage: movement === 2 && !keepWindow ? 'combat' : echoStage,
+    // The next exchange never waits longer for a torn layer.
+    echoClock: movement === 2 && !keepWindow ? Math.min(echoClock, 5) : echoClock,
+    kept: keptAfterTornLayers(movement, { echoWindow: keepWindow }),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Death ledger: STORY is offered once per movement, after the third death in
 // that movement, and only to a player who is not already on STORY.
 
@@ -360,7 +398,7 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     return best?.node ?? null;
   };
 
-  // Space on the front platform, in the lit lane, while the Conductor is lit:
+  // E on the front platform, in the lit lane, while the Conductor is lit:
   // the borrowed light goes back to him. Once per window.
   const punchConductor = (x, z) => {
     if (!onFrontPlatform(z)) return { result: 'not-front' };
@@ -502,7 +540,7 @@ export function createBellTutorial({ stage = 'bridge' } = {}) {
     // lane; `litLane`: the lane he is lit in (null when dark).
     hint({ lane = 'centre', litLane = null, bridgeOut = false, onFront = false, inLitLane = false } = {}) {
       const next = upper(lane);
-      if (current === 'bridge') return 'PUNCH THE <kbd>AMBER</kbd> LAMP · ITS BRIDGE CROSSES THE GAP ON THE BELL';
+      if (current === 'bridge') return 'PUNCH THE <kbd>AMBER</kbd> LAMP WITH <kbd>E</kbd> · ITS BRIDGE CROSSES THE GAP ON THE BELL';
       if (current === 'bridge-wait') return 'QUEUED · WATCH THE BRIDGE CROSS ON THE NEXT BELL';
       if (current === 'lamp') {
         return wrongLane
@@ -513,10 +551,10 @@ export function createBellTutorial({ stage = 'bridge' } = {}) {
       if (current === 'punch') {
         if (!litLane) return `NOW THE <kbd>ROSE</kbd> SIGNAL IN THE ${next} LANE · HE STEPS INTO ITS LIGHT ON THE NEXT BELL`;
         if (!onFront) return 'HE IS LIT · THE BELL WAITS FOR YOU · CROSS THE BRIDGE TO HIM';
-        return inLitLane ? '<kbd>SPACE</kbd> · PUNCH HIM · THE BORROWED LIGHT GOES BACK' : `STEP INTO THE ${upper(litLane)} LANE · THEN <kbd>SPACE</kbd>`;
+        return inLitLane ? '<kbd>E</kbd> · PUNCH HIM · THE BORROWED LIGHT GOES BACK' : `STEP INTO THE ${upper(litLane)} LANE · THEN <kbd>E</kbd>`;
       }
       if (current === 'combo') {
-        if (litLane && bridgeOut) return onFront && inLitLane ? '<kbd>SPACE</kbd> · PUNCH HIM' : `HE IS LIT · ${upper(litLane)} LANE · CROSS AND PUNCH`;
+        if (litLane && bridgeOut) return onFront && inLitLane ? '<kbd>E</kbd> · PUNCH HIM' : `HE IS LIT · ${upper(litLane)} LANE · CROSS AND PUNCH`;
         return `BOTH BEFORE ONE BELL · AN <kbd>AMBER</kbd> BRIDGE + THE <kbd>ROSE</kbd> SIGNAL IN HIS NEXT LANE (${next})`;
       }
       return '';
@@ -527,48 +565,149 @@ export function createBellTutorial({ stage = 'bridge' } = {}) {
 // ---------------------------------------------------------------------------
 // Movement III · ECHO CITY — the argument.
 //
-// Each exchange is a voiced Conductor claim and two voiced Butch answers. The
-// answer that holds two true things at once opens a real attack window; the
-// other is deflected by the Conductor's rebuttal and the exchange goes to the
-// back of the queue. choose() resolves an exchange exactly once: a second key
-// press on the same exchange is ignored (the old verse-spam bug).
+// Each exchange is a voiced Conductor claim, four facts and two voiced Butch
+// answers (echoExchanges.js). Butch answers in two steps (round 6, item 17):
+//
+//   facts    pick two of the four (pickFact toggles; a third pick lets the
+//            oldest go), then confirmFacts(). Both true things: on to the
+//            framing. A misreading: the Conductor answers it from the record
+//            (`rebut`), that fact is struck, and the exchange is deflected.
+//   framing  choose() one of the two answers. The one that holds both truths
+//            opens a real attack window; the other is deflected.
+//
+// A deflected exchange goes to the back of the queue, and what was worked
+// out stays worked out (round 6, item 16): a struck fact stays struck, true
+// facts once found are kept (the exchange comes back straight at the
+// framing) and a deflected answer stays struck. `returning` tells the stage
+// not to replay the claim it has already heard. Each step resolves once: a
+// second key press on a resolved exchange is ignored (the old verse-spam
+// bug), and the queue never runs dry.
 
 export const ECHO_WINDOW_SECONDS = 4.6;
 export const ECHO_WINDOW_DAMAGE = 25;
+export const ECHO_FACTS_TO_PICK = 2;
+
+function checkExchange(exchange) {
+  const id = exchange?.id ?? '?';
+  if (exchange?.replies?.length !== 2) throw new Error(`echo debate: exchange ${id} needs two replies`);
+  if (exchange.replies.filter((reply) => reply.holdsBoth).length !== 1) throw new Error(`echo debate: exchange ${id} needs one answer that holds both`);
+  const facts = exchange.facts ?? [];
+  if (facts.length < 3) throw new Error(`echo debate: exchange ${id} needs at least three facts`);
+  if (facts.filter((entry) => entry.holds).length !== ECHO_FACTS_TO_PICK) throw new Error(`echo debate: exchange ${id} needs exactly two true things`);
+  facts.filter((entry) => !entry.holds).forEach((entry) => { if (!entry.rebut) throw new Error(`echo debate: ${id}/${entry.id} needs a rebuttal`); });
+}
 
 export function createEchoDebate(exchanges) {
   if (!Array.isArray(exchanges) || !exchanges.length) throw new Error('echo debate: no exchanges');
+  exchanges.forEach(checkExchange);
   const queue = exchanges.map((_, index) => index);
+  // What has been worked out per exchange; nothing here is ever undone.
+  const memory = new Map(exchanges.map((exchange) => [exchange.id, { seen: false, struck: new Set(), known: false, struckReplies: new Set(), landed: false }]));
   let current = null;
   let opened = 0;
   const history = [];
+  const factAt = (ref) => (Number.isInteger(ref) ? current.facts[ref] : current.facts.find((entry) => entry.id === ref)) ?? null;
+  const truths = (exchange) => exchange.facts.filter((entry) => entry.holds).map((entry) => entry.id);
+  const deflect = () => {
+    current.resolved = true;
+    queue.shift();
+    queue.push(current.index);
+  };
+  const view = () => {
+    if (!current) return null;
+    const m = memory.get(current.id);
+    return Object.assign(current, { struck: [...m.struck], struckReplies: [...m.struckReplies] });
+  };
   return {
     open() {
       if (current && !current.resolved) return current;
+      // Only a debug jump past the window can empty it: deal the unlanded again.
+      if (!queue.length) exchanges.forEach((exchange, index) => { if (!memory.get(exchange.id).landed) queue.push(index); });
+      if (!queue.length) exchanges.forEach((_, index) => queue.push(index));
       const index = queue[0];
       const exchange = exchanges[index];
-      if (exchange.replies?.length !== 2) throw new Error(`echo debate: exchange ${exchange.id} needs two replies`);
+      const m = memory.get(exchange.id);
       opened += 1;
-      current = { index, id: exchange.id, exchange, replies: exchange.replies, resolved: false, choice: null };
-      return current;
+      const returning = m.seen;
+      m.seen = true;
+      current = {
+        index, id: exchange.id, exchange, replies: exchange.replies, facts: exchange.facts,
+        step: m.known ? 'framing' : 'facts', picked: m.known ? truths(exchange) : [], returning, resolved: false, choice: null,
+        struck: [], struckReplies: [],
+      };
+      return view();
     },
+    // Toggle a fact by its index (0-based) or id.
+    pickFact(ref) {
+      if (!current || current.resolved || current.step !== 'facts') return { result: 'ignored' };
+      const entry = factAt(ref);
+      if (!entry) return { result: 'ignored' };
+      if (memory.get(current.id).struck.has(entry.id)) return { result: 'struck', fact: entry };
+      if (current.picked.includes(entry.id)) {
+        current.picked = current.picked.filter((id) => id !== entry.id);
+        return { result: 'unpicked', fact: entry, picked: [...current.picked] };
+      }
+      let dropped = null;
+      if (current.picked.length >= ECHO_FACTS_TO_PICK) [dropped] = current.picked.splice(0, 1);
+      current.picked.push(entry.id);
+      return { result: 'picked', fact: entry, dropped, picked: [...current.picked] };
+    },
+    confirmFacts() {
+      if (!current || current.resolved || current.step !== 'facts') return { result: 'ignored' };
+      if (current.picked.length !== ECHO_FACTS_TO_PICK) return { result: 'need-two', picked: [...current.picked] };
+      const chosen = current.picked.map((id) => factAt(id));
+      const wrong = chosen.find((entry) => !entry.holds);
+      const m = memory.get(current.id);
+      if (!wrong) {
+        m.known = true;
+        current.step = 'framing';
+        history.push({ exchangeId: current.id, step: 'facts', facts: [...current.picked], result: 'hold' });
+        return { result: 'hold', exchangeId: current.id, facts: chosen };
+      }
+      // The Conductor answers the first misreading; only that one is struck.
+      m.struck.add(wrong.id);
+      deflect();
+      history.push({ exchangeId: current.id, step: 'facts', facts: [...current.picked], result: 'misread', fact: wrong.id });
+      view();
+      return { result: 'misread', exchangeId: current.id, fact: wrong, rebut: wrong.rebut, facts: chosen };
+    },
+    // The framing: which of the two answers Butch says.
     choose(choice) {
-      if (!current || current.resolved) return { result: 'ignored' };
+      if (!current || current.resolved || current.step !== 'framing') return { result: 'ignored' };
       const reply = current.replies[choice];
-      if (!reply) return { result: 'ignored' };
-      current.resolved = true;
+      const m = memory.get(current.id);
+      if (!reply || m.struckReplies.has(choice)) return { result: 'ignored' };
       current.choice = choice;
-      queue.shift();
-      if (!reply.holdsBoth) queue.push(current.index);
+      if (reply.holdsBoth) {
+        current.resolved = true;
+        queue.shift();
+        m.landed = true;
+      } else {
+        m.struckReplies.add(choice);
+        deflect();
+      }
       const outcome = { result: reply.holdsBoth ? 'window' : 'deflected', exchangeId: current.id, choice, reply };
-      history.push({ exchangeId: current.id, choice, result: outcome.result });
+      history.push({ exchangeId: current.id, step: 'framing', choice, result: outcome.result });
+      view();
       return outcome;
+    },
+    // The answers still open to Butch in the framing step (indices).
+    openReplies() {
+      if (!current) return [];
+      const m = memory.get(current.id);
+      return current.replies.map((_, index) => index).filter((index) => !m.struckReplies.has(index));
     },
     get current() { return current; },
     get isOpen() { return Boolean(current && !current.resolved); },
+    get step() { return current && !current.resolved ? current.step : null; },
     get opened() { return opened; },
     history: () => history.map((entry) => ({ ...entry })),
     remaining: () => queue.length,
+    landed: () => exchanges.filter((exchange) => memory.get(exchange.id).landed).map((exchange) => exchange.id),
+    memory: (id) => {
+      const m = memory.get(id);
+      return m ? { seen: m.seen, struck: [...m.struck], known: m.known, struckReplies: [...m.struckReplies], landed: m.landed } : null;
+    },
   };
 }
 

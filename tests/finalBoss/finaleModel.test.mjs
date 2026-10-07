@@ -27,22 +27,32 @@ test('Movement IV damage scales with the absorbed charge: 16 / 34 / 52', () => {
 
 // --------------------------------------------------------------- Movement III
 
+// Round 6: an answer is two steps (the facts, then the framing); these walk
+// the facts step with the two true things.
+const throughFacts = (debate) => {
+  const open = debate.open();
+  open.facts.forEach((fact, index) => { if (fact.holds) debate.pickFact(index); });
+  assert.equal(debate.confirmFacts().result, 'hold');
+  return open;
+};
+
 test('the echo debate resolves an exchange once: repeated answer keys are ignored', () => {
   const debate = createEchoDebate(ECHO_EXCHANGES);
-  const open = debate.open();
+  const open = throughFacts(debate);
   const right = open.replies.findIndex((reply) => reply.holdsBoth);
   const first = debate.choose(right);
   assert.equal(first.result, 'window');
   // the old bug: pressing the same number again re-dealt the damage
   assert.deepEqual(debate.choose(right), { result: 'ignored' });
   assert.deepEqual(debate.choose(1 - right), { result: 'ignored' });
-  assert.equal(debate.history().length, 1);
+  assert.deepEqual(debate.confirmFacts(), { result: 'ignored' });
+  assert.equal(debate.history().filter((entry) => entry.step === 'framing').length, 1);
   assert.equal(debate.isOpen, false);
 });
 
 test('a deflected answer sends the exchange to the back of the queue', () => {
   const debate = createEchoDebate(ECHO_EXCHANGES);
-  const first = debate.open();
+  const first = throughFacts(debate);
   const wrong = first.replies.findIndex((reply) => !reply.holdsBoth);
   assert.equal(debate.choose(wrong).result, 'deflected');
   const second = debate.open();
