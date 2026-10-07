@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import test from 'node:test';
-import { BUTCH_FRAMES, butchPose } from '../../src/chapters/paintedCountry/paintedPlayerPose.js';
+import { BUTCH_FRAMES, STRIDE_PX, butchPose } from '../../src/chapters/paintedCountry/paintedPlayerPose.js';
 
 const read = (path) => readFile(new URL(`../../src/chapters/paintedCountry/${path}`, import.meta.url), 'utf8');
 const sceneSource = await read('PaintedCountryScene.js');
@@ -24,7 +24,9 @@ test('Butch is the pencil walk cycle, not a code-drawn silhouette (round 3 art u
 });
 
 test('the figure aims its brush at the brush cursor, whichever hand drives it', () => {
-  assert.match(playerFigureSource, /Math\.atan2\(pointer\.worldY - handY, pointer\.worldX - handX\)/);
+  assert.match(playerFigureSource, /Math\.atan2\(\(pointer\?\.worldY \?\? handY\) - handY, \(pointer\?\.worldX \?\? handX \+ 40\) - handX\)/);
+  // round 6: on a damped spring (it swings and settles), not snapped
+  assert.match(playerFigureSource, /const angle = m\.arm;/);
   assert.match(playerFigureSource, /g\.fillCircle\(tipX, tipY, 4\.2\)/);
 });
 
@@ -32,7 +34,7 @@ test('Butch walks with his stride, jumps and falls in their own poses, and faces
   assert.deepEqual(butchPose({ vx: 0, grounded: true }).frame, BUTCH_FRAMES.idle);
   assert.equal(butchPose({ vx: 0, vy: -300, grounded: false }).frame, BUTCH_FRAMES.jump);
   assert.equal(butchPose({ vx: 0, vy: 200, grounded: false }).frame, BUTCH_FRAMES.fall);
-  const frames = [0, 13, 26, 39, 52].map((stride) => butchPose({ vx: 200, grounded: true, stride }).frame);
+  const frames = [0, 1, 2, 3, 4].map((i) => butchPose({ vx: 200, grounded: true, stride: i * STRIDE_PX }).frame);
   assert.deepEqual(frames, [0, 1, 2, 3, 0], 'the walk advances with distance, so the feet never skate');
   assert.equal(butchPose({ vx: -200, grounded: true }).facing, -1);
   assert.equal(butchPose({ vx: 0, grounded: true, facing: -1, aimX: 500, x: 100 }).facing, 1, 'standing still he turns to the brush');

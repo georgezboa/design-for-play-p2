@@ -21,6 +21,7 @@ import {
   paintedFill,
 } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
+import { nibCursorCss } from './brushNib.js';
 import {
   HOLD_SECONDS,
   MONO,
@@ -315,6 +316,9 @@ export class DrawingStudioScene extends Phaser.Scene {
       else this.scale.startFullscreen();
     });
     this.brush = new BrushInput(this, { anchor: null });
+    // The pointer is a brush in every Chapter 4 room (round 6, item 11).
+    this.input.setDefaultCursor(nibCursorCss('paint'));
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.setDefaultCursor('default'));
     this.brush.cursor.setDepth(DEPTH.PROMPT + 5);
     this.tag = new PaperTag(this, { depth: DEPTH.PROMPT + 4 });
     this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });

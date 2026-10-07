@@ -69,3 +69,83 @@ export function whistle({ long = false } = {}) {
     // Sound is never allowed to break the line.
   }
 }
+
+// A brush run dry on the paper (round 6, item 12): a short, soft scratch of
+// filtered noise, falling in pitch, where a stroke hit the edge of the
+// brush's reach. `soft` for a press that never touched paper.
+let noiseBuffer = null;
+function noise(c) {
+  if (noiseBuffer && noiseBuffer.sampleRate === c.sampleRate) return noiseBuffer;
+  const length = Math.floor(c.sampleRate * 0.4);
+  noiseBuffer = c.createBuffer(1, length, c.sampleRate);
+  const data = noiseBuffer.getChannelData(0);
+  let seed = 0x5eed;
+  for (let i = 0; i < length; i += 1) {
+    seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+    data[i] = (seed / 0x7fffffff) * 2 - 1;
+  }
+  return noiseBuffer;
+}
+
+export function dryBrush({ soft = false } = {}) {
+  const c = audio();
+  if (!c || paused) return;
+  if (c.state === 'suspended') c.resume().catch(() => {});
+  try {
+    const t = c.currentTime;
+    const dur = soft ? 0.14 : 0.24;
+    const peak = Math.max(0.0002, (soft ? 0.035 : 0.06) * level());
+    const src = c.createBufferSource();
+    src.buffer = noise(c);
+    const bp = c.createBiquadFilter();
+    bp.type = 'bandpass';
+    bp.Q.value = 1.4;
+    bp.frequency.setValueAtTime(3200, t);
+    bp.frequency.exponentialRampToValueAtTime(900, t + dur);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(peak, t + 0.02);
+    // a bristle catching: two small bumps in the scratch
+    out.gain.setValueAtTime(peak * 0.55, t + dur * 0.45);
+    out.gain.linearRampToValueAtTime(peak * 0.8, t + dur * 0.55);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp);
+    bp.connect(out);
+    out.connect(c.destination);
+    src.start(t);
+    src.stop(t + dur + 0.02);
+  } catch {
+    // Sound is never allowed to break the brush.
+  }
+}
+
+// The painted train's exhaust beat: one soft chuff, louder and brighter the
+// harder the engine is working.
+export function chuff(intensity = 0.5) {
+  const c = audio();
+  if (!c || paused) return;
+  if (c.state === 'suspended') c.resume().catch(() => {});
+  try {
+    const k = Math.min(1, Math.max(0, intensity));
+    const t = c.currentTime;
+    const dur = 0.16 + (1 - k) * 0.08;
+    const peak = Math.max(0.0002, (0.012 + 0.03 * k) * level());
+    const src = c.createBufferSource();
+    src.buffer = noise(c);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.setValueAtTime(700 + 1300 * k, t);
+    lp.frequency.exponentialRampToValueAtTime(260, t + dur);
+    const out = c.createGain();
+    out.gain.setValueAtTime(0.0001, t);
+    out.gain.exponentialRampToValueAtTime(peak, t + 0.015);
+    out.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(lp);
+    lp.connect(out);
+    out.connect(c.destination);
+    src.start(t, Math.random() * 0.2);
+    src.stop(t + dur + 0.02);
+  } catch {
+    // Sound is never allowed to break the line.
+  }
+}

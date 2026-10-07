@@ -3,17 +3,16 @@
 // Every room reads its brush through this object instead of the raw pointer,
 // so the mouse, the keyboard and a gamepad are the same verbs:
 //
-//   aim    mouse · arrow keys · right stick   (a virtual cursor)
-//   paint  left mouse · SPACE · pad A         ("apply")
-//   wash   right mouse · SHIFT · pad B        ("take")
+//   aim    mouse · I J K L · right stick          (a virtual cursor)
+//   paint  left mouse · F · pad RT / RB           ("apply")
+//   wash   right mouse · SHIFT · pad LT / LB      ("take")
 //
-// Butch still walks on A / D (or the left stick / d-pad), jumps on W (or pad
-// Y / RB) and reads on E (or pad X). The arrows no longer walk him: they aim.
-//
-// Alpha round 2 (R3-5): testers reached for ↑ to jump. ↑ jumps too, unless
-// the arrows are steering the brush: pressing ← / → / ↓ hands the arrows to
-// the brush (its amber ring appears) and ↑ then aims up with them; moving the
-// mouse or the right stick hands ↑ back to jumping.
+// Round 6 (feedback item 18, the cross-chapter controls decision): Butch
+// walks on A / D and ← / →, jumps on SPACE, W and ↑ (pad A, or Y), and reads
+// / talks / confirms on E or ENTER (pad X). SPACE is never the brush any more
+// and the arrows never aim it: in a chapter with a jump, SPACE only jumps.
+// The keyboard brush moved to the right hand (I J K L aim, F paints, SHIFT
+// washes) so the left hand keeps walking.
 //
 // The virtual cursor rides with Butch: it is kept as an offset from the
 // anchor, so the brush does not get left behind when he walks. With no anchor
@@ -46,9 +45,11 @@ export class BrushInput {
     this.lastPointer = { x: -1, y: -1 };
     this.queued = { paint: false, wash: false };
     this.padPrev = {};
-    this.arrowAiming = false;
     this.keys = scene.input.keyboard.addKeys({
-      up: 'UP', down: 'DOWN', left: 'LEFT', right: 'RIGHT', paint: 'SPACE', wash: 'SHIFT',
+      // walking and jumping (the unified keys)
+      left: 'LEFT', right: 'RIGHT', up: 'UP', space: 'SPACE',
+      // the keyboard brush: aim, paint, wash
+      aimUp: 'I', aimLeft: 'J', aimDown: 'K', aimRight: 'L', paint: 'F', wash: 'SHIFT',
     });
     scene.input.keyboard.addCapture(['UP', 'DOWN', 'LEFT', 'RIGHT', 'SPACE']);
     // A click can begin and end between two frames. Remember the press so a
@@ -74,14 +75,13 @@ export class BrushInput {
     // Phaser forgets a key whose down and up both land between two frames
     // (Key.onUp clears _justDown). On a slow machine that eats quick taps, so
     // the taps that matter are latched from the raw keydown event instead.
-    this.tapped = { e: false, w: false, up: false, enter: false, paint: false, wash: false };
+    this.tapped = { e: false, jump: false, enter: false, paint: false, wash: false };
     this.onKeyDown = (event) => {
       if (event.repeat) return;
       if (event.code === 'KeyE') this.tapped.e = true;
-      else if (event.code === 'KeyW') this.tapped.w = true;
-      else if (event.code === 'ArrowUp') this.tapped.up = true;
-      else if (event.code === 'Enter') this.tapped.enter = true;
-      else if (event.code === 'Space') this.tapped.paint = true;
+      else if (event.code === 'KeyW' || event.code === 'ArrowUp' || event.code === 'Space') this.tapped.jump = true;
+      else if (event.code === 'Enter' || event.code === 'NumpadEnter') this.tapped.enter = true;
+      else if (event.code === 'KeyF') this.tapped.paint = true;
       else if (event.code === 'ShiftLeft' || event.code === 'ShiftRight') this.tapped.wash = true;
     };
     scene.input.keyboard.on('keydown', this.onKeyDown);
@@ -99,25 +99,26 @@ export class BrushInput {
   }
 
   // Walking and the other buttons, merged across keyboard and gamepad.
+  // `keys` is the room's own { a, d, w, e } (plus anything else it reads).
   readMove(keys) {
     const pad = this.pad;
-    let left = keys.a.isDown;
-    let right = keys.d.isDown;
-    const upJumps = this.upArrowJumps;
-    const upDown = upJumps && (this.keys.up.isDown || this.tapped.up);
-    let jump = keys.w.isDown || this.tapped.w || upDown;
-    let interactPressed = this.tapped.e;
-    let jumpPressed = this.tapped.w || (upJumps && this.tapped.up);
+    let left = keys.a.isDown || this.keys.left.isDown;
+    let right = keys.d.isDown || this.keys.right.isDown;
+    let jump = keys.w.isDown || this.keys.up.isDown || this.keys.space.isDown || this.tapped.jump;
+    let jumpPressed = this.tapped.jump;
+    // E and ENTER are one key: read, talk, confirm (round 6 unified keys).
+    let interactPressed = this.tapped.e || this.tapped.enter;
     const enterPressed = this.tapped.enter;
     this.tapped.e = false;
-    this.tapped.w = false;
-    this.tapped.up = false;
+    this.tapped.jump = false;
     this.tapped.enter = false;
+    if (left || right || jump) this.lastKeyboardMove = true;
     if (pad) {
       const ax = pad.axes.length ? pad.axes[0].getValue() : 0;
       left = left || ax < -0.35 || pad.left;
       right = right || ax > 0.35 || pad.right;
-      const padJump = Boolean(pad.Y || pad.R1 || pad.up);
+      // A jumps, as in every other chapter; Y and d-pad up are aliases.
+      const padJump = Boolean(pad.A || pad.Y || pad.up);
       jump = jump || padJump;
       jumpPressed = this.padEdge('jump', padJump) || jumpPressed;
       interactPressed = this.padEdge('X', pad.X) || interactPressed;
@@ -128,14 +129,19 @@ export class BrushInput {
     return { left, right, jump, jumpPressed, interactPressed, enterPressed };
   }
 
-  /** ↑ is a jump key unless the arrows are steering the brush. */
+  /** ↑ always jumps now (round 6): the arrows walk and never aim. */
   get upArrowJumps() {
-    return !this.arrowAiming;
+    return true;
   }
 
-  /** The keyboard jump keys, as a tag should print them right now. */
+  /** The keyboard jump keys, as a tag prints them. */
   jumpKeysLabel() {
-    return this.upArrowJumps ? 'W / ↑' : 'W';
+    return 'SPACE';
+  }
+
+  /** The keyboard walk keys, as a tag prints them. */
+  walkKeysLabel() {
+    return 'A / D';
   }
 
   update(dt) {
@@ -148,18 +154,16 @@ export class BrushInput {
       if (this.lastPointer.x >= 0) {
         this.mode = 'mouse';
         this.device = 'mouse';
-        this.arrowAiming = false;
       }
       this.lastPointer = { x: pointer.x, y: pointer.y };
     }
 
     let ax = 0;
     let ay = 0;
-    if (this.keys.left.isDown || this.keys.right.isDown || this.keys.down.isDown) this.arrowAiming = true;
-    if (this.keys.left.isDown) ax -= 1;
-    if (this.keys.right.isDown) ax += 1;
-    if (this.keys.up.isDown && this.arrowAiming) ay -= 1;
-    if (this.keys.down.isDown) ay += 1;
+    if (this.keys.aimLeft.isDown) ax -= 1;
+    if (this.keys.aimRight.isDown) ax += 1;
+    if (this.keys.aimUp.isDown) ay -= 1;
+    if (this.keys.aimDown.isDown) ay += 1;
     if (ax || ay) this.device = 'keys';
     if (pad && pad.axes.length >= 4) {
       const sx = pad.axes[2].getValue();
@@ -168,13 +172,15 @@ export class BrushInput {
         ax += sx;
         ay += sy;
         this.device = 'pad';
-        this.arrowAiming = false;
       }
     }
     const moving = Math.hypot(ax, ay) > 0.01;
-    const keyPaint = this.keys.paint.isDown || this.tapped.paint || Boolean(pad?.A);
-    const keyWash = this.keys.wash.isDown || this.tapped.wash || Boolean(pad?.B);
-    if (pad && (pad.A || pad.B)) this.device = 'pad';
+    // Pad: the right trigger (or bumper) paints, the left one washes.
+    const padPaint = Boolean(pad && ((pad.R2 ?? 0) > 0.4 || pad.R1));
+    const padWash = Boolean(pad && ((pad.L2 ?? 0) > 0.4 || pad.L1));
+    const keyPaint = this.keys.paint.isDown || this.tapped.paint || padPaint;
+    const keyWash = this.keys.wash.isDown || this.tapped.wash || padWash;
+    if (padPaint || padWash) this.device = 'pad';
     else if (this.keys.paint.isDown || this.keys.wash.isDown || this.tapped.paint || this.tapped.wash) this.device = 'keys';
     this.tapped.paint = false;
     this.tapped.wash = false;
@@ -301,12 +307,14 @@ export class BrushInput {
   label(verb) {
     const d = this.device;
     const table = {
-      paint: { mouse: 'LEFT MOUSE', keys: 'SPACE', pad: 'A' },
-      wash: { mouse: 'RIGHT MOUSE', keys: 'SHIFT', pad: 'B' },
-      paintHold: { mouse: 'LEFT-HOLD', keys: 'SPACE-HOLD', pad: 'HOLD A' },
-      washHold: { mouse: 'RIGHT-HOLD', keys: 'SHIFT-HOLD', pad: 'HOLD B' },
+      paint: { mouse: 'LEFT MOUSE', keys: 'F', pad: 'RT' },
+      wash: { mouse: 'RIGHT MOUSE', keys: 'SHIFT', pad: 'LT' },
+      paintHold: { mouse: 'LEFT-HOLD', keys: 'HOLD F', pad: 'HOLD RT' },
+      washHold: { mouse: 'RIGHT-HOLD', keys: 'HOLD SHIFT', pad: 'HOLD LT' },
       read: { mouse: 'E', keys: 'E', pad: 'X' },
-      aim: { mouse: 'MOUSE', keys: 'ARROWS', pad: 'RIGHT STICK' },
+      jump: { mouse: 'SPACE', keys: 'SPACE', pad: 'A' },
+      walk: { mouse: 'A / D', keys: 'A / D', pad: 'LEFT STICK' },
+      aim: { mouse: 'MOUSE', keys: 'I J K L', pad: 'RIGHT STICK' },
     };
     return table[verb]?.[d] ?? table[verb]?.mouse ?? verb.toUpperCase();
   }

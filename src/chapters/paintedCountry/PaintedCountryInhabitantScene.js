@@ -7,6 +7,8 @@ import {
   INFLATION_PIGMENT,
   INFLATION_SLOT_CAPACITY,
 } from './paintedCountryInflationModel.js';
+import { createButchMotion } from './paintedPlayerPose.js';
+import { gait, stepFollower } from './residentMotion.js';
 
 export const PAINTED_COUNTRY_INHABITANT_VIEW = Object.freeze({ w: 960, h: 600 });
 const WORLD = Object.freeze({ w: 3380, h: 600 });
@@ -64,7 +66,7 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     Object.assign(this.state, {
       falls: 0, checkpoint: 150, ending: false, artifactReady: false, artifactTaken: false,
     });
-    this.player = { x: 150, y: GROUND_Y, vy: 0, onGround: true };
+    this.player = { x: 150, y: GROUND_Y, vy: 0, vx: 0, onGround: true, dist: 0, facing: 1 };
     this.cameras.main.setBounds(0, 0, WORLD.w, WORLD.h);
     this.cameras.main.setBackgroundColor(PAPER.sheetHigh);
 
@@ -499,29 +501,66 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     }
   }
 
+  // Round 6 (G2): the villagers were stamped once and slid across the
+  // paper as one picture at the end. Each is now its own small figure at its
+  // place, breathing and shifting its weight, and when the market is mended
+  // they walk (a gait that follows the ground, residentMotion.js) to the cart.
   buildPeople() {
-    this.people = [];
-    [1180, 1320, 1880, 2040, 2530, 2700, 3190, 3220].forEach((x, index) => {
-      const person = this.graphics(36);
-      this.drawPerson(person, x, GROUND_Y, index % 2 ? 0.8 : 1);
-      this.people.push(person);
+    this.people = [1180, 1320, 1880, 2040, 2530, 2700, 3190, 3220].map((x, index) => ({
+      g: this.graphics(36),
+      x,
+      homeX: x,
+      targetX: x,
+      v: 0,
+      stride: 0,
+      facing: index % 2 ? -1 : 1,
+      scale: index % 2 ? 0.8 : 1,
+      seed: index * 1.7,
+      tunic: this.tunicAt(x),
+    }));
+    this.stepPeople(0);
+  }
+
+  tunicAt(x) {
+    return Math.round(x / 24) % 3 === 0 ? PAPER.indigo : Math.round(x / 24) % 3 === 1 ? PAPER.verdigris : PAPER.bookCloth;
+  }
+
+  stepPeople(dt) {
+    const t = this.time.now / 1000;
+    this.people.forEach((p) => {
+      stepFollower(p, p.targetX, dt, { maxSpeed: 74, accel: 110, brake: 180, gain: 1.4 });
+      const walking = Math.min(1, Math.abs(p.v) / 40);
+      const step = gait(p.stride, { strideLength: 30 * p.scale, bob: 1.4 * p.scale, speed: walking });
+      const breathe = 1 + (1 - walking) * 0.014 * Math.sin(t * 1.8 + p.seed);
+      p.g.clear();
+      this.drawPerson(p.g, 0, 0, p.scale, { tunic: p.tunic, pose: step });
+      p.g.setPosition(p.x, GROUND_Y + step.bob)
+        .setScale(p.facing, breathe)
+        .setRotation(walking ? Math.sign(p.v) * 0.05 * walking : Math.sin(t * 0.8 + p.seed) * 0.012);
     });
   }
 
-  drawPerson(g, x, y, scale = 1) {
-    const tunic = Math.round(x / 24) % 3 === 0 ? PAPER.indigo : Math.round(x / 24) % 3 === 1 ? PAPER.verdigris : PAPER.bookCloth;
+  // `pose` is a gait() (legs, arms); without one they stand.
+  drawPerson(g, x, y, scale = 1, { tunic: tunicColor = null, pose = null } = {}) {
+    const tunic = tunicColor ?? this.tunicAt(x);
+    const legSwing = pose ? pose.swing * 4.5 : 0;
+    const armSwing = pose ? pose.arm * 4 : 0;
     g.fillStyle(tunic, 0.15).fillEllipse(x, y - 17 * scale, 25 * scale, 34 * scale);
     g.fillStyle(PAPER.manilla, 0.98).fillCircle(x, y - 31 * scale, 6.5 * scale);
     g.fillStyle(PAPER.graphite, 0.92).beginPath().moveTo(x - 7 * scale, y - 33 * scale).lineTo(x - 2 * scale, y - 39 * scale).lineTo(x + 7 * scale, y - 34 * scale).lineTo(x + 5 * scale, y - 29 * scale).lineTo(x - 6 * scale, y - 29 * scale).closePath().fillPath();
     g.fillStyle(tunic, 0.78).beginPath().moveTo(x - 8 * scale, y - 25 * scale).lineTo(x + 8 * scale, y - 25 * scale).lineTo(x + 10 * scale, y - 8 * scale).lineTo(x - 10 * scale, y - 8 * scale).closePath().fillPath();
-    g.lineStyle(3.2 * scale, PAPER.figureSoft, 0.84).beginPath().moveTo(x - 7 * scale, y - 21 * scale).lineTo(x - 13 * scale, y - 12 * scale).moveTo(x + 7 * scale, y - 21 * scale).lineTo(x + 13 * scale, y - 12 * scale).strokePath();
-    g.lineStyle(3.4 * scale, PAPER.figureSoft, 0.9).beginPath().moveTo(x - 5 * scale, y - 8 * scale).lineTo(x - 6 * scale, y).moveTo(x + 5 * scale, y - 8 * scale).lineTo(x + 7 * scale, y).strokePath();
+    g.lineStyle(3.2 * scale, PAPER.figureSoft, 0.84).beginPath().moveTo(x - 7 * scale, y - 21 * scale).lineTo(x - 13 * scale + armSwing * scale, y - 12 * scale).moveTo(x + 7 * scale, y - 21 * scale).lineTo(x + 13 * scale - armSwing * scale, y - 12 * scale).strokePath();
+    g.lineStyle(3.4 * scale, PAPER.figureSoft, 0.9).beginPath().moveTo(x - 5 * scale, y - 8 * scale).lineTo(x - 6 * scale + legSwing * scale, y - Math.max(0, -legSwing) * 0.5 * scale).moveTo(x + 5 * scale, y - 8 * scale).lineTo(x + 7 * scale - legSwing * scale, y - Math.max(0, legSwing) * 0.5 * scale).strokePath();
     g.fillStyle(PAPER.graphite, 0.8).fillCircle(x - 2.3 * scale, y - 31 * scale, 0.75 * scale).fillCircle(x + 2.3 * scale, y - 31 * scale, 0.75 * scale);
   }
 
   buildPlayer() {
-    this.figure = this.graphics(50);
-    this.drawPlayer();
+    // the body moves as a figure (turn, lean, breath, squash: paintedPlayerPose.js);
+    // the brush and the pigment slots are drawn over it in the world
+    this.figureBody = this.graphics(50);
+    this.figure = this.graphics(50.1);
+    this.playerMotion = createButchMotion();
+    this.drawPlayer(0);
   }
 
   buildBrushInteraction() {
@@ -909,21 +948,43 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     }
   }
 
-  drawPlayer() {
+  drawPlayer(dt = 1 / 60) {
     this.figure.clear();
-    const x = this.player.x;
-    const y = this.player.y;
-    this.figure.fillStyle(PAPER.cyan, 0.14).fillEllipse(x, y - 21, 34, 44);
-    this.figure.fillStyle(PAPER.manilla, 1).fillCircle(x, y - 38, 8);
-    this.figure.fillStyle(PAPER.figure, 1).beginPath().moveTo(x - 9, y - 41).lineTo(x - 3, y - 49).lineTo(x + 8, y - 43).lineTo(x + 7, y - 36).lineTo(x - 8, y - 36).closePath().fillPath();
-    this.figure.fillStyle(PAPER.verdigris, 0.88).beginPath().moveTo(x - 10, y - 30).lineTo(x + 10, y - 30).lineTo(x + 12, y - 10).lineTo(x - 12, y - 10).closePath().fillPath();
-    this.figure.lineStyle(4, PAPER.figure, 0.96).beginPath().moveTo(x - 7, y - 26).lineTo(x - 13, y - 17).moveTo(x + 7, y - 26).lineTo(x + 14, y - 17).strokePath();
-    this.figure.lineStyle(4, PAPER.figure, 1).beginPath().moveTo(x - 5, y - 10).lineTo(x - 7, y).moveTo(x + 5, y - 10).lineTo(x + 8, y).strokePath();
-    this.figure.fillStyle(PAPER.figure, 0.9).fillCircle(x - 3, y - 38, 1).fillCircle(x + 3, y - 38, 1);
+    const p = this.player;
+    const x = p.x;
+    const y = p.y;
     const pointer = this.input.activePointer;
-    const targetX = pointer?.worldX ?? x + 45;
-    const targetY = pointer?.worldY ?? y - 35;
-    const angle = Math.atan2(targetY - (y - 18), targetX - x);
+    const aimX = pointer?.worldX ?? x + 45;
+    const aimY = pointer?.worldY ?? y - 35;
+    const vx = p.vx ?? 0;
+    if (vx > 8) p.facing = 1;
+    else if (vx < -8) p.facing = -1;
+    else if (Math.abs(aimX - x) > 24) p.facing = aimX < x ? -1 : 1;
+    if (p.onGround) p.dist += Math.abs(vx) * dt;
+    const walking = p.onGround && Math.abs(vx) > 8;
+    const animation = !p.onGround ? (p.vy < -40 ? 'jump' : 'fall') : walking ? 'walk' : 'idle';
+    const m = this.playerMotion.step({
+      dt, vx, vy: p.vy, grounded: p.onGround, facing: p.facing, animation, stride: p.dist,
+      aim: Math.atan2(aimY - (y - 18), aimX - x), painting: Boolean(pointer?.leftButtonDown?.() || pointer?.rightButtonDown?.()),
+    });
+    // legs and arms follow the ground covered; the bob is the gait's
+    const step = gait(p.dist, { strideLength: 52, bob: 1.8, speed: walking ? 1 : 0 });
+    const b = this.figureBody;
+    b.clear();
+    b.setPosition(x, y + (p.onGround ? step.bob : 0)).setScale(m.scaleX * m.facing, m.scaleY).setRotation(m.rotation);
+    const legA = p.onGround ? step.swing * 6 : -3;
+    const legB = p.onGround ? -step.swing * 6 : 4;
+    const arm = p.onGround ? step.arm * 4 : -5;
+    b.fillStyle(PAPER.cyan, 0.14).fillEllipse(0, -21, 34, 44);
+    b.fillStyle(PAPER.manilla, 1).fillCircle(0, -38, 8);
+    b.fillStyle(PAPER.figure, 1).beginPath().moveTo(-9, -41).lineTo(-3, -49).lineTo(8, -43).lineTo(7, -36).lineTo(-8, -36).closePath().fillPath();
+    b.fillStyle(PAPER.verdigris, 0.88).beginPath().moveTo(-10, -30).lineTo(10, -30).lineTo(12 + step.hem, -10).lineTo(-12 + step.hem, -10).closePath().fillPath();
+    b.lineStyle(4, PAPER.figure, 0.96).beginPath().moveTo(-7, -26).lineTo(-13 + arm, -17).moveTo(7, -26).lineTo(14 - arm, -17).strokePath();
+    b.lineStyle(4, PAPER.figure, 1).beginPath().moveTo(-5, -10).lineTo(-7 + legA, -Math.max(0, -legA) * 0.4).moveTo(5, -10).lineTo(8 + legB, -Math.max(0, -legB) * 0.4).strokePath();
+    b.fillStyle(PAPER.figure, 0.9).fillCircle(-3, -38, 1).fillCircle(3, -38, 1);
+    this.playerArm = m.arm;
+    // the brush swings to the cursor on a spring and settles
+    const angle = this.playerArm;
     const tipX = x + Math.cos(angle) * 46;
     const tipY = y - 18 + Math.sin(angle) * 46;
     const heldPigment = this.state.brush?.find((slot) => slot.load > 0.001)?.pigment;
@@ -985,7 +1046,9 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     this.state.phase = 'complete';
     this.state.pricePressure = 0;
     this.drawMarketState();
-    this.people.forEach((person, index) => this.tweens.add({ targets: person, x: 3080 - person.x + (index - 4) * 27, duration: 1800, delay: index * 90, ease: 'Sine.easeInOut' }));
+    // they walk to the cart, a few steps apart (round 6: they used to slide
+    // there as one picture)
+    this.people.forEach((person, index) => this.time.delayedCall(index * 160, () => { person.targetX = 3080 + (index - 4) * 27; }));
     this.endingText.setText('HE DREW EVERY WISH THEY NAMED\nTHEY DREW A WAY TO MAKE ENOUGH');
     this.tweens.add({ targets: this.endingText, alpha: 1, scale: { from: 0.92, to: 1 }, duration: 700, ease: 'Back.easeOut' });
     this.time.delayedCall(2100, () => this.revealArtifact());
@@ -1026,7 +1089,9 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     const direction = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
     this.fable.update(dt);
     const maxX = this.state.phase === 'money' || this.state.phase === 'crisis' ? 1020 : WORLD.w - 50;
+    const fromX = this.player.x;
     this.player.x = Phaser.Math.Clamp(this.player.x + direction * MOVE_SPEED * dt, 50, maxX);
+    this.player.vx = dt > 0 ? (this.player.x - fromX) / dt : 0;
 
     const jump = Phaser.Input.Keyboard.JustDown(this.keys.up) || Phaser.Input.Keyboard.JustDown(this.keys.w) || Phaser.Input.Keyboard.JustDown(this.keys.space);
     if (jump && this.player.onGround) {
@@ -1058,7 +1123,8 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
 
     this.stepBrush(dt);
     this.handleFableEvents();
-    this.drawPlayer();
+    this.drawPlayer(dt);
+    this.stepPeople(dt);
     this.drawCreationStream(dt);
     this.drawBrushCursor();
     this.cameraTarget.setPosition(this.player.x, this.player.y - 100);
