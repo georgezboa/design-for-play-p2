@@ -302,6 +302,8 @@ export class PanelScene extends Phaser.Scene {
     worlds.forEach((name) => WORLDS[name].chunks.forEach(({ key, url }) => {
       if (!this.textures.exists(key)) this.load.image(key, url);
     }));
+    // painted plates (round 6): illustrated PNGs a tile state draws full-tile
+    actPlates(act).forEach(({ key, url }) => { if (!this.textures.exists(key)) this.load.image(key, url); });
   }
 
   create() {
@@ -393,6 +395,9 @@ export class PanelScene extends Phaser.Scene {
     this.buildWall();
     this.linkG = this.add.graphics();
     this.bezelLayer.add(this.linkG);
+    // pooled light on the bezel lips where two windows join (drawLinks)
+    this.linkPoolLayer = this.add.container(0, 0);
+    this.bezelLayer.add(this.linkPoolLayer);
     this.shadow = this.add.image(0, 0, 'nsv-shadow').setVisible(false).setAlpha(0);
     this.bezelLayer.add(this.shadow);
     // where a carried window will land
@@ -410,6 +415,7 @@ export class PanelScene extends Phaser.Scene {
       this.views[tileId] = new TileView(this, tileId, index);
     });
     this.bezelLayer.add(this.crossLayer);
+    this.bezelLayer.bringToTop(this.linkPoolLayer);
     this.bezelLayer.bringToTop(this.linkG);
     this.bezelLayer.bringToTop(this.targetG);
     this.bezelLayer.bringToTop(this.crossLayer);
@@ -715,14 +721,17 @@ export class PanelScene extends Phaser.Scene {
     const present = this.add.container(0, 0);
     root.add(present);
     const pctx = this.paintCtx(view, present, 'present', stateId);
+    // a painted plate (round 6) goes under the state's own drawing, which then only adds overlays
+    pctx.plate = this.drawPlate(view, present, sceneDef?.plate);
     sceneDef?.draw?.(pctx);
     let past = null;
     let animators = [...pctx.animators];
-    if (sceneDef?.drawPast) {
+    if (sceneDef?.drawPast || sceneDef?.platePast) {
       past = this.add.container(0, 0);
       root.add(past);
       const qctx = this.paintCtx(view, past, 'past', stateId);
-      sceneDef.drawPast(qctx);
+      qctx.plate = this.drawPlate(view, past, sceneDef.platePast);
+      sceneDef.drawPast?.(qctx);
       animators = animators.concat(qctx.animators);
       past.setMask(view.geomMask);
       past.setVisible(false);
@@ -779,6 +788,20 @@ export class PanelScene extends Phaser.Scene {
     return { stateId, root, present, past, animators, tags, rings };
   }
 
+  /**
+   * A painted plate: an illustrated PNG drawn full-tile (cover-fit) at the
+   * bottom of a state's layer. Returns true when one was drawn (`ctx.plate`).
+   */
+  drawPlate(view, layer, url) {
+    if (!url) return false;
+    const key = plateKey(url);
+    if (!this.textures.exists(key)) return false;
+    const src = this.textures.get(key).getSourceImage();
+    const fit = coverFit(src.width, src.height, view.w, view.h);
+    layer.add(this.add.image(fit.x, fit.y, key).setOrigin(0, 0).setScale(fit.scale));
+    return true;
+  }
+
   rebuildState(view, { instant = false } = {}) {
     const stateId = this.model.state.tiles[view.id].state;
     const next = this.buildState(view, stateId);
@@ -803,6 +826,7 @@ export class PanelScene extends Phaser.Scene {
       view.frameLayer.add(holder);
       const ctx = this.paintCtx(view, holder, 'present', `frame:${frame.id}`);
       ctx.overlay = frame.origin !== view.id;
+      ctx.plate = this.drawPlate(view, holder, def.plate);
       def.draw(ctx);
       view.frameAnimators.push(...ctx.animators);
     });
@@ -1440,6 +1464,7 @@ export class PanelScene extends Phaser.Scene {
     view.lifted = on;
     if (on) this.dragLayer.add(view.bezel); else this.bezelLayer.add(view.bezel);
     if (!on) {
+      this.bezelLayer.bringToTop(this.linkPoolLayer);
       this.bezelLayer.bringToTop(this.linkG);
       this.bezelLayer.bringToTop(this.targetG);
       this.bezelLayer.bringToTop(this.crossLayer);
@@ -1551,11 +1576,12 @@ export class PanelScene extends Phaser.Scene {
     this.audio.play('chime');
     this.bridgeFlash.set(link.key, this.clock);
     const [p, q] = this.linkEndpoints(link);
-    const span = 150;
+    // a short run of light along the join, from a little inside one picture to the other
+    const span = 70;
     const points = link.dir === 'h'
       ? [{ x: p.x - span, y: p.y }, p, q, { x: q.x + span, y: q.y }]
-      : [{ x: p.x, y: p.y - span * 0.6 }, p, q, { x: q.x, y: q.y + span * 0.6 }];
-    this.fxApi().lightRun(points, { duration: 650 });
+      : [{ x: p.x, y: p.y - span * 0.7 }, p, q, { x: q.x, y: q.y + span * 0.7 }];
+    this.fxApi().lightRun(points, { duration: 560, size: 46, trail: 9 });
   }
 
   onMismatch(list) {
@@ -1586,47 +1612,68 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: halo, alpha: 0.45, duration: 200, yoyo: true, hold: 200, onComplete: () => halo.destroy() });
   }
 
-  drawLinks() {
+  /**
+   * Links (round 6 · item G): no more flat bars across the gutter. Where two
+   * windows meet, a thin warm seam of light runs across the gap at the link
+   * height (a rail is two), and light pools softly on both bezel lips. The
+   * pictures themselves are what connect (the art is being redrawn so they
+   * continue across panels); this only says "joined". A new link flares and
+   * a short light-run crosses it (onLinkOn).
+   */
+  drawLinks(dt = 16) {
     const g = this.linkG;
     g.clear();
+    void dt;
+    const reduce = reducedMotionActive();
+    const live = new Set();
     this.model.links().forEach((link) => {
       const a = this.views[link.a];
       const b = this.views[link.b];
-      if (a.lifted || b.lifted || a.moving || b.moving || a.zooming || b.zooming) return;
+      if (!a || !b || a.lifted || b.lifted || a.moving || b.moving || a.zooming || b.zooming) return;
       const [p, q] = this.linkEndpoints(link);
       const since = this.clock - (this.bridgeFlash.get(link.key) ?? -1e9);
-      const flash = Math.max(0, 1 - since / 900);
-      const pulse = 0.5 + Math.sin(this.clock / 700 + link.at * 9) * 0.5;
-      const glowA = 0.18 + pulse * 0.1 + flash * 0.6;
-      if (link.type === 'floor' || link.type === 'path') {
-        g.fillStyle(0x5a3a22, 1);
-        g.fillRect(p.x - 3, p.y - 1, q.x - p.x + 6, 7);
-        g.fillStyle(0xe0a24a, glowA);
-        g.fillRect(p.x - 3, p.y - 3, q.x - p.x + 6, 3);
-        g.lineStyle(2.4, 0xeadfc6, 0.9);
-        g.lineBetween(p.x - 3, p.y, q.x + 3, q.y);
-      } else if (link.type === 'chute' || link.type === 'pipe') {
-        g.fillStyle(0x8a6934, 1);
-        g.fillRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-        g.fillStyle(0xe3c27e, 0.6);
-        g.fillRect(p.x - 11, p.y - 3, 5, q.y - p.y + 6);
-        g.fillStyle(0xb08a4a, 1);
-        g.fillRect(p.x - 17, p.y + (q.y - p.y) / 2 - 4, 34, 8);
-        g.lineStyle(2, 0xeadfc6, 0.8);
-        g.strokeRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-        g.fillStyle(0xffc46a, glowA * 0.8);
-        g.fillRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-      } else if (link.type === 'rail') {
-        g.lineStyle(3, 0xb08a4a, 1);
-        g.lineBetween(p.x - 2, p.y, q.x + 2, q.y);
-        g.lineBetween(p.x - 2, p.y + 6, q.x + 2, q.y + 6);
-        g.lineStyle(2, 0xeadfc6, 0.5 + flash * 0.5);
-        g.lineBetween(p.x - 2, p.y - 1, q.x + 2, q.y - 1);
-      } else {
-        g.lineStyle(4, 0xe0a24a, 0.6 + flash * 0.4);
-        g.lineBetween(p.x, p.y, q.x, q.y);
-      }
+      const flash = Math.max(0, 1 - since / 1100);
+      const breathe = reduce ? 0.5 : 0.5 + Math.sin(this.clock / 1100 + link.at * 9) * 0.5;
+      const k = 0.62 + breathe * 0.16 + flash * 0.5;
+      live.add(link.key);
+      const across = link.dir === 'h';
+      // a few px past each picture edge, so the seam starts under the bezel lip
+      const ext = 3;
+      const ends = across
+        ? [{ x: p.x - ext, y: p.y }, { x: q.x + ext, y: q.y }]
+        : [{ x: p.x, y: p.y - ext }, { x: q.x, y: q.y + ext }];
+      const lanes = link.type === 'rail' ? [-3, 3] : link.type === 'chute' || link.type === 'pipe' ? [-5, 5] : [0];
+      lanes.forEach((off) => {
+        const [s0, s1] = ends.map((e) => (across ? { x: e.x, y: e.y + off } : { x: e.x + off, y: e.y }));
+        [[8, 0xff9a40, 0.09], [3.4, 0xffc46a, 0.3], [1.4, 0xfff2d4, 0.82]].forEach(([w, color, alpha]) => {
+          g.lineStyle(w, color, clamp(alpha * k, 0, 1));
+          g.lineBetween(s0.x, s0.y, s1.x, s1.y);
+        });
+      });
+      // the light pooling on both bezel lips
+      const pools = this.linkPool(link.key);
+      const span = link.type === 'rail' || link.type === 'chute' || link.type === 'pipe' ? 64 : 50;
+      [p, q].forEach((pt, i) => {
+        pools[i].setVisible(true).setPosition(pt.x + (across ? (i ? 7 : -7) : 0), pt.y + (across ? 0 : i ? 7 : -7))
+          .setDisplaySize(across ? 30 : span, across ? span : 30).setAlpha(clamp(0.34 * k, 0, 0.8));
+      });
     });
+    this.linkPools?.forEach((pools, key) => { if (!live.has(key)) pools.forEach((pool) => pool.setVisible(false)); });
+  }
+
+  /** The two pooled-light sprites of a link (kept between frames). */
+  linkPool(key) {
+    if (!this.linkPools) this.linkPools = new Map();
+    let pools = this.linkPools.get(key);
+    if (!pools) {
+      pools = [0, 1].map(() => {
+        const img = this.add.image(0, 0, 'nsv-radial').setBlendMode('ADD').setTint(0xffb860).setVisible(false);
+        this.linkPoolLayer.add(img);
+        return img;
+      });
+      this.linkPools.set(key, pools);
+    }
+    return pools;
   }
 
   // ---------------------------------------------------------------------------
@@ -1994,8 +2041,8 @@ export class PanelScene extends Phaser.Scene {
           this.tweens.add({ targets: spark, x: x + Math.cos(a) * 34, y: y + Math.sin(a) * 34, alpha: 0, scale: 0.1, duration: 620, ease: 'Sine.easeOut', onComplete: () => spark.destroy() });
         }
       },
-      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a, trail: trailMax = 14 } = {}) => {
-        const dot = this.add.image(points[0].x, points[0].y, 'nsv-radial').setBlendMode('ADD').setTint(color).setDisplaySize(70, 70).setAlpha(0);
+      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a, trail: trailMax = 14, size = 70 } = {}) => {
+        const dot = this.add.image(points[0].x, points[0].y, 'nsv-radial').setBlendMode('ADD').setTint(color).setDisplaySize(size, size).setAlpha(0);
         const core = this.add.image(points[0].x, points[0].y, 'nsv-dot').setBlendMode('ADD').setScale(1.2).setAlpha(0);
         this.topLayer.add([dot, core]);
         const lengths = [];
@@ -3785,7 +3832,7 @@ export class PanelScene extends Phaser.Scene {
     }
 
     this.syncActors(dt);
-    this.drawLinks();
+    this.drawLinks(dt);
     this.drawGrip();
     this.updateFrameTag(dt);
     this.drawFocus();
