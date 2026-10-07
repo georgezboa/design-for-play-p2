@@ -898,8 +898,11 @@ export class PanelScene extends Phaser.Scene {
     const tag = this.add.image(0, 0, 'nsv-unfold-tag').setOrigin(UNFOLD_TAG.eyelet[0] / UNFOLD_TAG.w, UNFOLD_TAG.eyelet[1] / UNFOLD_TAG.h);
     const glint = this.add.image(0, 0, 'nsv-glint').setBlendMode('ADD');
     const focus = this.add.graphics();
-    ui.add([wash, line, halo, string, pull, tag, glint, focus]);
-    this.foldUi = { ui, wash, line, halo, string, pull, tag, glint, focus, len, alpha: 0 };
+    // Alpha round 5: chevrons marching from the grip the way the wall opens,
+    // so the first drag goes the right way (testers pulled the wrong way).
+    const arrow = this.add.graphics();
+    ui.add([wash, line, halo, string, pull, tag, glint, arrow, focus]);
+    this.foldUi = { ui, wash, line, halo, string, pull, tag, glint, arrow, focus, len, alpha: 0 };
   }
 
   /** Lay the windows out at unfold progress `p` (0 folded … 1 open). */
@@ -969,6 +972,8 @@ export class PanelScene extends Phaser.Scene {
     const tw = Math.max(0, Math.sin(t * 1.3)) ** 8;
     ui.glint.setPosition(eyelet.x + gx * Math.cos(sway) - gy * Math.sin(sway), eyelet.y + gx * Math.sin(sway) + gy * Math.cos(sway))
       .setAlpha((0.4 + tw * 0.6) * tagA).setScale(0.55 + tw * 0.3);
+    // the way to drag: three chevrons leading out from the grip
+    this.drawFoldArrow(ui.arrow, grip, rot, { p, grabbing, reduce, t });
     // keyboard focus: ivory on a dark outline, round the grip
     ui.focus.clear();
     if (this.keyboardMode && this.foldFocus) {
@@ -977,6 +982,41 @@ export class PanelScene extends Phaser.Scene {
       ui.focus.strokeCircle(grip.x, grip.y, r);
       ui.focus.lineStyle(4, 0xfff4dc, 1);
       ui.focus.strokeCircle(grip.x, grip.y, r);
+    }
+  }
+
+  /**
+   * Chevrons from the grip towards the side the wall opens (the pull is drawn
+   * opening towards -x and rotated by `rot`). They march outward, fade once
+   * the drag is under way, and stay still under REDUCE MOTION.
+   */
+  drawFoldArrow(g, grip, rot, { p, grabbing, reduce, t }) {
+    g.clear();
+    const dir = { x: -Math.cos(rot), y: -Math.sin(rot) };
+    const side = { x: -dir.y, y: dir.x };
+    const show = clamp(1 - p * 6, 0, 1) * (grabbing ? 0.35 : 1);
+    if (show <= 0.01) return;
+    const start = 58;
+    const step = 38;
+    const march = reduce ? 0 : (t * 1.1) % 1;
+    for (let i = 0; i < 3; i += 1) {
+      const phase = (i + march) / 3;
+      const alpha = show * (reduce ? 0.9 - i * 0.2 : Math.sin(Math.PI * phase) * 0.95);
+      if (alpha <= 0.02) continue;
+      const d = start + (i + march) * step;
+      const cx = grip.x + dir.x * d;
+      const cy = grip.y + dir.y * d;
+      const tip = { x: cx + dir.x * 12, y: cy + dir.y * 12 };
+      const a = { x: cx - dir.x * 10 + side.x * 19, y: cy - dir.y * 10 + side.y * 19 };
+      const b = { x: cx - dir.x * 10 - side.x * 19, y: cy - dir.y * 10 - side.y * 19 };
+      [[11, 0x0b0705, 0.7], [5.5, 0xfff2d4, 1]].forEach(([w, color, k]) => {
+        g.lineStyle(w, color, alpha * k);
+        g.beginPath();
+        g.moveTo(a.x, a.y);
+        g.lineTo(tip.x, tip.y);
+        g.lineTo(b.x, b.y);
+        g.strokePath();
+      });
     }
   }
 
