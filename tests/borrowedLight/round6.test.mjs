@@ -431,3 +431,9 @@ test('R6-F: matte is Chapter 2\'s own look; the finale keeps the classic paint i
   assert.match(world, /const spill = sign\.scroll \? null : scene\.add\.graphics\(\)/);
   assert.match(scene, /the lantern lays a small defined pool on the wet roof/);
 });
+
+test('R6-A: the tags that follow Butch wait while a box explains itself on its card', () => {
+  assert.match(scene, /if \(teach\?\.follow && this\.card\.visible\) teach = null;/);
+  // … and a teach tag that does show keeps clear of the card.
+  assert.match(scene, /rects: \[\.\.\.\(this\.signRects \?\? \(this\.signRects = signRects\(SIGNS\)\)\), \.\.\.this\.tagObstacles\(\)\]/);
+});

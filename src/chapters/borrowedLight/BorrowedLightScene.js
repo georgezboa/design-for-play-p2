@@ -2925,7 +2925,10 @@ export class BorrowedLightScene extends Phaser.Scene {
   updatePrompts() {
     const pt = this.promptText;
     this.cardShown = null;
-    const teach = this.locked || this.hud.dialogOpen || this.hud.cardOpen ? null : this.teachPrompt();
+    let teach = this.locked || this.hud.dialogOpen || this.hud.cardOpen ? null : this.teachPrompt();
+    // Round 6: while a box explains itself on its card, the tags that follow
+    // Butch (walk, jump, listen) wait: they landed on the box's own tag.
+    if (teach?.follow && this.card.visible) teach = null;
     this.teachText.setVisible(Boolean(teach));
     if (teach) {
       this.teachText.setText(teach.text);

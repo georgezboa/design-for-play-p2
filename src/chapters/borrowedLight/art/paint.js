@@ -418,17 +418,17 @@ const STYLE = {
 
 // The matte walls: the same buildings, heavier and cooler, near ink.
 const MATTE_WALLS = {
-  tenement: ['#1d1a1b', '#08080a'],
-  brick: ['#221819', '#0a0809'],
-  office: ['#111d24', '#05090c'],
-  terminal: ['#1b1a1c', '#070709'],
-  hotel: ['#141a26', '#06080d'],
-  watertower: ['#1e1a19', '#09080a'],
-  stairhead: ['#221c1a', '#100d0c'],
-  plantroom: ['#16201f', '#0b1112'],
-  concourse: ['#1d1b1a', '#09090a'],
-  platform: ['#242120', '#0d0c0b'],
-  gantry: ['#151b1f', '#090c0e'],
+  tenement: ['#231e1e', '#0a0a0c'],
+  brick: ['#271a1a', '#0c0909'],
+  office: ['#14232a', '#060b0e'],
+  terminal: ['#211f20', '#09090b'],
+  hotel: ['#171e2b', '#07090f'],
+  watertower: ['#241e1c', '#0b0a0b'],
+  stairhead: ['#28201d', '#120f0e'],
+  plantroom: ['#192423', '#0c1314'],
+  concourse: ['#221f1d', '#0b0b0b'],
+  platform: ['#2a2624', '#0f0e0d'],
+  gantry: ['#182025', '#0a0e10'],
 };
 
 export function styleOf(name) {
