@@ -48,3 +48,208 @@ test('R6-E: one E target at a time; at A1 the box wins until it has been punched
   // The prompts follow the same choice.
   assert.match(scene, /const action = this\.actionTarget\(\);\n\s+const target = action\?\.kind === 'prop' \? action\.prop : null;/);
 });
+
+// ---------------------------------------------------------------------------
+// Item 6 · the first box, do-then-explain (firstLesson.js).
+import { LESSON, afterTalk, createLesson, lessonPointing, ruleTaught, storyWaiting, talkLines, updateLesson } from '../../src/chapters/borrowedLight/firstLesson.js';
+import { LESSON_LINES, MECHANIC_LINES } from '../../src/chapters/borrowedLight/story.js';
+
+test('R6-B: she points, Butch punches, the bell brings the bridge, and only then the rule', () => {
+  const lesson = createLesson();
+  const step = (ctx) => updateLesson(lesson, { section: 'A', x: 900, nowMs: 0, queued: false, powered: false, ...ctx });
+  assert.deepEqual(step({ x: 400 }), [], 'nothing on the far end of the roof');
+  assert.deepEqual(step({ x: LESSON.pointFromX }), ['point']);
+  assert.ok(lessonPointing(lesson));
+  assert.deepEqual(step({}), [], 'she says it once');
+  assert.deepEqual(step({ queued: true, nowMs: 1000 }), ['wait']);
+  assert.ok(lessonPointing(lesson) && !ruleTaught(lesson));
+  assert.deepEqual(step({ queued: false, powered: true, nowMs: 3000 }), ['success']);
+  assert.equal(lessonPointing(lesson), false);
+  assert.deepEqual(step({ powered: true, nowMs: 3000 + LESSON.ruleDelayMs - 1 }), [], 'the rule waits for the success line');
+  assert.deepEqual(step({ powered: true, nowMs: 3000 + LESSON.ruleDelayMs }), ['rule']);
+  assert.ok(ruleTaught(lesson) && storyWaiting(lesson));
+  // Every key it says is a line.
+  for (const key of ['point', 'wait', 'success', 'rule']) assert.ok(LESSON_LINES[key]?.text, key);
+});
+
+test('R6-B: her story (night service, Mara, the letter) only after the first success; the rule is re-readable', () => {
+  const story = LESSON_LINES.story.map((l) => l.text).join(' ');
+  assert.match(story, /night service/);
+  assert.match(story, /She came through last night/);
+  assert.match(story, /letter/);
+  const lesson = createLesson();
+  for (const stepName of ['wait', 'point', 'punched']) {
+    lesson.step = stepName;
+    const said = talkLines(lesson, LESSON_LINES).map((l) => l.text).join(' ');
+    assert.doesNotMatch(said, /night service|came through|letter/, `${stepName}: no story before the box has worked`);
+  }
+  lesson.step = 'point';
+  assert.deepEqual(talkLines(lesson, LESSON_LINES), [LESSON_LINES.point]);
+  lesson.step = 'success';
+  assert.deepEqual(talkLines(lesson, LESSON_LINES), [LESSON_LINES.success, LESSON_LINES.rule]);
+  assert.equal(afterTalk(lesson), 'ruled');
+  assert.deepEqual(talkLines(lesson, LESSON_LINES), [...LESSON_LINES.story]);
+  assert.equal(afterTalk(lesson), 'told');
+  assert.match(talkLines(lesson, LESSON_LINES)[0].text, /One colour, one line/);
+  // The lines a first visit hears, in order: the box first, the story last.
+  assert.equal(MECHANIC_LINES[0], LESSON_LINES.point);
+  assert.equal(MECHANIC_LINES.at(-1), LESSON_LINES.story.at(-1));
+  // A take-back before the bell: she is pointing again, silently.
+  const back = createLesson();
+  updateLesson(back, { x: 900 });
+  updateLesson(back, { x: 900, queued: true });
+  assert.deepEqual(updateLesson(back, { x: 900, queued: false }), []);
+  assert.equal(back.step, 'point');
+  // A caught bell straight away is a success; other sections never teach it.
+  const caught = createLesson();
+  assert.deepEqual(updateLesson(caught, { x: 300, powered: true }), ['success']);
+  assert.deepEqual(updateLesson(createLesson(), { section: 'B', x: 9000 }), []);
+  assert.equal(createLesson({ done: true }).step, 'told');
+});
+
+test('R6-B: the scene runs the lesson, and Mara is seen across the gap when the bridge comes out', async () => {
+  const { MARA_SIGHTINGS } = await import('../../src/chapters/borrowedLight/level.js');
+  assert.equal(MARA_SIGHTINGS.find((s) => s.id === 'first').trigger, 'first-bridge');
+  assert.match(scene, /this\.updateLessonStep\(\);/);
+  assert.match(scene, /const lines = talkLines\(this\.lesson, LESSON_LINES\);/);
+  assert.match(scene, /if \(said\.includes\('success'\)\) \{/);
+  assert.match(scene, /const pointing = lessonPointing\(this\.lesson\) \|\| line === LESSON_LINES\.point;/);
+  // Lines are captions that take no input (Butch keeps control).
+  assert.match(scene, /if \(line && this\.hud\.say\(line, ms\)\)/);
+  assert.match(scene, /if \(section !== 'A' \|\| lamp\.id !== SECTIONS\.A\.spawn\) this\.lesson = createLesson\(\{ done: true \}\);/);
+});
+
+// ---------------------------------------------------------------------------
+// Owner G3 · the cause card at a box (causeCard.js).
+import { CARD_FONT, DWELL_MS, MIN_WORLD_FONT, RULE_TEXT, TEACH_USES, cardLayout, causeCard, effectLabel, placeCard, showCard } from '../../src/chapters/borrowedLight/causeCard.js';
+import { CH2_RULES, createTimetable } from '../../src/chapters/borrowedLight/timetableModel.js';
+import { machineById, nodeById, timetableDefinition } from '../../src/chapters/borrowedLight/level.js';
+import { WARN_MS, blinkOn, litLamps, machineTotalMs, ticksCrossed, timerOf } from '../../src/chapters/borrowedLight/timerLights.js';
+
+const city = () => createTimetable(timetableDefinition(), CH2_RULES);
+const cardFor = (tt, id, extra = {}) => {
+  const node = nodeById(id);
+  const machine = machineById(node.machine);
+  return causeCard({
+    node,
+    machine,
+    preview: tt.punchPreview(id),
+    status: tt.nodeStatus(id),
+    msToBell: tt.msToBell(),
+    bellMs: tt.bellMs,
+    timer: timerOf(tt.machineStatus(machine.id), machineTotalMs(machine)),
+    ...extra,
+  });
+};
+
+test('R6-A: the card reads punch → next bell → bridge, and the lit cell follows the box', () => {
+  const tt = city();
+  tt.update(500);
+  let card = cardFor(tt, 'a-n1');
+  assert.deepEqual(card.cells.map((c) => c.label), ['PUNCH', 'NEXT BELL', 'BRIDGE OUT']);
+  assert.equal(card.cells[0].key, 'E');
+  assert.equal(card.active, 0);
+  assert.equal(card.rule, null, 'the rule waits until it has been taught');
+  tt.punch('a-n1');
+  tt.update(1000);
+  card = cardFor(tt, 'a-n1');
+  assert.equal(card.active, 1, 'punched: the bell is the step');
+  assert.equal(card.seconds, Math.ceil(tt.msToBell() / 1000));
+  assert.ok(card.bellK > 0.3 && card.bellK < 0.5, `ring ${card.bellK}`);
+  assert.match(card.note, /HOLD E · TAKE BACK/);
+  tt.update(tt.msToBell() + 1000);
+  card = cardFor(tt, 'a-n1', { ruleTaught: true });
+  assert.equal(card.active, 2, 'the bridge is out');
+  assert.equal(card.cells[0].label, 'PUNCH');
+  assert.ok(card.machineK > 0.7 && card.machineK < 1, `time left ${card.machineK}`);
+  assert.equal(card.rule, RULE_TEXT);
+  // Two-phase lines name their bell; a dead node or a busy line keeps its own tag.
+  assert.equal(cardFor(city(), 'a-n9').cells[1].label, 'BELL II');
+  assert.equal(cardFor(city(), 'b-n9'), null);
+  const busy = city();
+  busy.punch('a-n5');
+  busy.update(busy.msToBell() + 10);
+  assert.equal(busy.punchPreview('a-n6').result, 'busy');
+  assert.equal(cardFor(busy, 'a-n6'), null);
+  assert.equal(effectLabel(machineById('a-lift1')), 'LIFT UP');
+  assert.equal(effectLabel(machineById('c-drop')), 'LEDGE DROPS');
+});
+
+test('R6-A: big type (≥ 18 px on a 1280×720 window), shown for the first punches and on a pause at any box', () => {
+  assert.ok(CARD_FONT >= MIN_WORLD_FONT);
+  assert.ok(MIN_WORLD_FONT * (1280 / 1920) >= 18, 'the smallest world text is 18 px at 1280×720');
+  assert.match(scene, /export const TAG_FONT = MIN_WORLD_FONT;/);
+  assert.match(scene, /fontSize: `\$\{TAG_FONT\}px`/);
+  assert.ok(showCard({ uses: 0, dwellMs: 0 }));
+  assert.ok(showCard({ uses: TEACH_USES - 1, dwellMs: 0 }));
+  assert.equal(showCard({ uses: TEACH_USES, dwellMs: 0 }), false);
+  assert.ok(showCard({ uses: 9, dwellMs: DWELL_MS }));
+  // It scales with TEXT SIZE and sits above the box, reaching toward the machine.
+  const small = cardLayout({ k: 1 });
+  const big = cardLayout({ k: 1.5, labelW: [135, 255, 285] });
+  assert.ok(big.w > small.w * 1.4 && big.h > small.h * 1.4);
+  assert.ok(cardLayout({ k: 1, ruleW: 400 }).h > small.h, 'the rule strip adds a row');
+  const at = placeCard({ headX: 1400, headY: 610, w: small.w, h: small.h, side: 1 });
+  assert.ok(at.y1 <= 610 - 40 && at.x0 < 1400 && at.x1 > 1400 + small.w / 2);
+  const left = placeCard({ headX: 1400, headY: 610, w: small.w, h: small.h, side: -1 });
+  assert.ok(left.x1 > 1400 && left.x0 < 1400 - small.w / 2);
+  const clamped = placeCard({ headX: 1900, headY: 610, w: 600, h: 120, side: 1, view: { x: 0, right: 1920 } });
+  assert.ok(clamped.x1 <= 1920 - 24);
+  // The scene uses it in place of the small tag.
+  assert.match(scene, /if \(card && showCard\(\{ uses: this\.punchUses, dwellMs: this\.cardDwell \}\)\) \{/);
+  assert.match(scene, /this\.card\.update\(this\.cardShown, this\.cardAt, t, dt\);/);
+});
+
+test('R6-A: the punched box rings toward its bell, the machine shows a ghost and a dial, the station clock keeps the bell', () => {
+  assert.match(read('src/chapters/borrowedLight/art/machineArt.js'), /if \(view\.countdown != null\) \{/);
+  assert.match(scene, /drawPunchedMachines\(t\) \{/);
+  assert.match(scene, /drawGhost\(g, machine, 'on', line, t\);/);
+  assert.match(scene, /drawBellDial\(dg, x, y, k, \{ color: color\.hex, glow: color\.glow, t \}\);/);
+  assert.match(scene, /drawStationClock\(t\) \{/);
+  assert.match(scene, /const k = this\.tt\.bellPhase\(\);/);
+  assert.doesNotMatch(read('src/chapters/borrowedLight/art/paint.js'), /ctx\.lineTo\(cx \+ 12, canopyY \+ 94\)/, 'the painted clock has no frozen hands');
+  assert.match(hud, /`NEXT BELL · \$\{Math\.max\(1, Math\.ceil\(msToBell \/ 1000\)\)\}`/);
+});
+
+// ---------------------------------------------------------------------------
+// Item 7 · the bridge shows its time (timerLights.js).
+test('R6-C: lamps along the bridge go out as its time runs down; the last second blinks; soft ticks near the end', () => {
+  assert.equal(timerOf({ powered: false }, 6000), null);
+  assert.deepEqual(timerOf({ powered: true, held: true, remaining: null }, 6000), { k: 1, warn: 0, held: true, remaining: Infinity });
+  const half = timerOf({ powered: true, held: false, remaining: 3000 }, 6000);
+  assert.equal(half.k, 0.5);
+  assert.equal(half.warn, 0);
+  assert.ok(Math.abs(timerOf({ powered: true, remaining: WARN_MS / 2 }, 6000).warn - 0.5) < 1e-9);
+  assert.equal(litLamps(1, 11), 11);
+  assert.equal(litLamps(0.5, 11), 6);
+  assert.equal(litLamps(0.01, 11), 1, 'a sliver of time keeps one lamp');
+  assert.equal(litLamps(0, 11), 0);
+  assert.equal(blinkOn(0, 1.234), true, 'steady until the last second');
+  const blinks = Array.from({ length: 200 }, (_, i) => blinkOn(0.8, i / 100)).filter((on) => !on).length;
+  assert.ok(blinks > 20 && blinks < 120, `the warning blinks (${blinks})`);
+  assert.deepEqual(ticksCrossed(2100, 1900), [2000]);
+  assert.deepEqual(ticksCrossed(1100, 400), [1000, 750, 500]);
+  assert.deepEqual(ticksCrossed(400, 1100), []);
+  assert.equal(machineTotalMs(machineById('a-bridge1')), 6000);
+  assert.equal(machineTotalMs(machineById('b-bridge')), null, 'the held bridge has no clock until it is cut');
+  assert.equal(machineTotalMs(machineById('b-bridge'), 3200), 3200);
+  // The first bridge, run through the model: its lamps only ever go out.
+  const tt = city();
+  tt.punch('a-n1');
+  tt.update(tt.msToBell() + 1);
+  let prev = 11;
+  for (let ms = 0; ms < 6000; ms += 100) {
+    const timer = timerOf(tt.machineStatus('a-bridge1'), 6000);
+    if (!timer) break;
+    const lit = litLamps(timer.k, 11);
+    assert.ok(lit <= prev, `lamps never relight (${ms} ms)`);
+    prev = lit;
+    tt.update(100);
+  }
+  assert.ok(prev <= 1);
+  const art = read('src/chapters/borrowedLight/art/machineArt.js');
+  assert.match(art, /timerLamps\(g, posts, y - 29, on > 0 \? \(timer \?\? FULL\) : null, color, t\);/);
+  assert.match(scene, /drawMachine\(entry\.view, status, t, \{ timer \}\);/);
+  assert.match(scene, /if \(near && this\.player\.visible\) sfx\.timerTick\(/);
+  assert.match(read('src/chapters/borrowedLight/audio.js'), /export function timerTick\(urgent = false\) \{/);
+});

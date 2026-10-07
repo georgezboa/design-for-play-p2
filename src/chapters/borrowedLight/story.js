@@ -7,16 +7,30 @@
 export const CHAPTER_TITLE = 'BORROWED LIGHT';
 export const CHAPTER_NUMBER = 2;
 
-export const MECHANIC_LINES = Object.freeze([
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'That punch. You\'re off the night service.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She came through last night. Took the same roofs. Said you\'d be along.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'This city runs on borrowed light. Punch a box and it switches on at the next bell. Try the one with the paper tag, on the pole by the gap.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'One line, one moment. Punch two on the same colour and the first one forgets.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She left a letter at the platform. She said the person looking for her would know the name.' }),
-]);
+// Round 6 (playtest item 6): the first box is taught do-then-explain
+// (firstLesson.js). She points and says only "punch it"; the next bell's
+// bridge is the explanation; the same-colour limit comes after that first
+// success, and her story only after it, on E · TALK.
+const mech = (text) => Object.freeze({ speaker: 'ROOFTOP MECHANIC', text });
+export const LESSON_LINES = Object.freeze({
+  point: mech('You want across? Punch the box with the paper tag, on the pole by the gap.'),
+  wait: mech('Good. Now wait for the bell.'),
+  success: mech('There. This city runs on borrowed light: punch a box and it switches on at the next bell.'),
+  rule: mech('One line, one moment. Punch two boxes on the same colour and the first one forgets.'),
+  story: Object.freeze([
+    mech('That punch. You\'re off the night service.'),
+    mech('She came through last night. Took the same roofs. Said you\'d be along.'),
+    mech('She left a letter at the platform. She said the person looking for her would know the name.'),
+  ]),
+  // A repeat visit gets the one line that matters.
+  repeat: mech('Punch a box, then wait for the bell. One colour, one line. The city keeps its own time.'),
+});
 
-// A repeat visit gets the one line that matters.
-export const MECHANIC_REPEAT = Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'Punch it, then wait for the bell. The city keeps its own time.' });
+// Everything she says, in the order a first visit hears it.
+export const MECHANIC_LINES = Object.freeze([
+  LESSON_LINES.point, LESSON_LINES.wait, LESSON_LINES.success, LESSON_LINES.rule, ...LESSON_LINES.story,
+]);
+export const MECHANIC_REPEAT = LESSON_LINES.repeat;
 
 export const MARA_LETTER = Object.freeze({
   speaker: 'MARA',
@@ -142,7 +156,7 @@ const hint = (nudge, full) => Object.freeze({ nudge, full });
 export const IDLE_HINTS = Object.freeze({
   'walk-drop': hint('THE WAY ON IS TO THE RIGHT · DROP TO THE ROOF BELOW', 'Nothing to punch up here. Down, and on.'),
   a1: hint('E AT THE TAGGED POLE BY THE GAP · THE BRIDGE COMES OUT ON THE NEXT BELL', 'The mechanic\'s pole by the gap. Punch it, wait for the bell, and cross while the bridge is out.'),
-  'a1-cross': hint('THE BRIDGE IS OUT · CROSS BEFORE IT FLICKERS', 'It holds a few seconds. Go.'),
+  'a1-cross': hint('THE BRIDGE IS OUT · CROSS BEFORE ITS LAMPS GO OUT', 'It holds a few seconds. Go.'),
   a2: hint('E AT THE TEAL POLE · THEN STAND IN THE LIFT CAGE FOR THE BELL', 'A lift. Punch its pole, stand in the cage, and let the bell take me up.'),
   a3: hint('PUNCH BOTH POLES · THE BELL RAISES THE LIFT AND SENDS THE BRIDGE OUT AT ITS TOP', 'Two colours, two lines: both can ring on the same bell. Punch them both and ride.'),
   a4: hint('ONE AMBER LINE · PUNCH THE BILLBOARD\'S POLE · CLIMB THE AC UNIT (SPACE) TO REACH IT', 'One line, one moment: the billboard or the bridge, not both. The billboard goes up and on.'),

@@ -8,6 +8,12 @@
 // lantern on the left shows a light Butch is carrying. Also: world prompts,
 // the caption bar (typewriter), archive / letter cards, title cards and
 // toasts. Text follows the TEXT SIZE setting.
+//
+// Round 6 (owner G3, "the text beside it is too small"): every label here is
+// sized for a 1280×720 window too (≥ 13 px there for the small chips, ≥ 16 px
+// for anything read in play), the line tags are larger, and while a punch
+// waits a NEXT BELL count sits under the meter. The caption bar fits its
+// text.
 
 import Phaser from 'phaser';
 import { DEPTH, FONTS, INK, INK_HEX, LINE_COLORS } from './art/palette.js';
@@ -33,16 +39,18 @@ export class BorrowedLightHud {
     this.meter = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud);
     this.bell = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 1).setPosition(CX, CY - 22);
     this.drawBellGlyph();
-    this.meterLabel = this.text(CX, CY + R + 58, '', 13, INK, { alpha: 0.7, letter: 3 });
-    this.nextLabel = this.text(CX, CY + R + 58, '', 13, '#e6aab0', { alpha: 0.9, letter: 3 });
+    this.meterLabel = this.text(CX, CY + R + 58, '', 22, INK, { alpha: 0.7, letter: 3 });
+    this.nextLabel = this.text(CX, CY + R + 58, '', 24, '#e6aab0', { alpha: 0.9, letter: 3 });
+    // Round 6: while a punch waits, the seconds to its bell, under the tags.
+    this.bellLabel = this.text(CX, CY + R + 90, '', 24, '#f2c27a', { alpha: 0, letter: 3 });
     // v2 · two-phase bells: which bell comes next (I or II), beside the meter.
-    this.parityLabel = this.text(CX + R + 58, CY - 2, '', 30, '#e6dcc2', { font: FONTS.display, alpha: 0, letter: 4 });
-    this.paritySub = this.text(CX + R + 58, CY + 24, 'NEXT', 11, '#b08a4a', { alpha: 0, letter: 3 });
+    this.parityLabel = this.text(CX + R + 58, CY - 4, '', 38, '#e6dcc2', { font: FONTS.display, alpha: 0, letter: 4 });
+    this.paritySub = this.text(CX + R + 58, CY + 24, 'NEXT', 19, '#d9b774', { alpha: 0, letter: 2 });
     // v2 · the light Butch carries, left of the meter.
-    this.carryLabel = this.text(CX - R - 70, CY + 24, 'LIGHT', 11, '#f6e2b4', { alpha: 0, letter: 3 });
+    this.carryLabel = this.text(CX - R - 70, CY + 24, 'LIGHT', 19, '#f6e2b4', { alpha: 0, letter: 2 });
 
     this.listenDim = scene.add.image(0, 0, 'bl-px').setOrigin(0).setScrollFactor(0).setDisplaySize(1920, 1080).setTint(0x0a1a20).setAlpha(0).setDepth(DEPTH.ghost - 1);
-    this.listenLabel = this.text(CX, CY + R + 80, 'LISTENING · NEXT BELL', 14, '#9fd9cf', { alpha: 0, letter: 4 });
+    this.listenLabel = this.text(CX, CY + R + 80, 'LISTENING · NEXT BELL', 24, '#9fd9cf', { alpha: 0, letter: 4 });
 
     // Title card: high in the sky band, on its own soft dark backing, so it
     // never sits on Butch, a node or a sign.
@@ -51,12 +59,12 @@ export class BorrowedLightHud {
     this.titleBand.fillStyle(0x03070b, 0.66).fillRect(0, TITLE_Y - 66, 1920, 136);
     this.titleBand.fillGradientStyle(0x03070b, 0x03070b, 0x03070b, 0x03070b, 0.66, 0.66, 0, 0).fillRect(0, TITLE_Y + 70, 1920, 44);
     this.titleBig = this.text(CX, TITLE_Y - 14, '', 76, '#eadfc6', { font: FONTS.display, alpha: 0, letter: 10 });
-    this.titleSmall = this.text(CX, TITLE_Y + 50, '', 18, '#e0a24a', { alpha: 0, letter: 8 });
+    this.titleSmall = this.text(CX, TITLE_Y + 50, '', 24, '#e0a24a', { alpha: 0, letter: 8 });
     this.titleRule = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.dialog).setAlpha(0);
     [this.titleBig, this.titleSmall].forEach((t) => t.setDepth(DEPTH.dialog + 0.5));
 
     // Toast.
-    this.toastText = this.text(CX, 980, '', 18, INK, { alpha: 0, letter: 4 });
+    this.toastText = this.text(CX, 980, '', 28, INK, { alpha: 0, letter: 3 });
     // Alpha r3 (g04): a toast over the blackout read dark on dark. It sits
     // on its own soft walnut-black band, like the title card.
     this.toastBand = scene.add.graphics().setScrollFactor(0).setDepth(DEPTH.hud + 1).setAlpha(0);
@@ -64,28 +72,28 @@ export class BorrowedLightHud {
     // Caption bar.
     this.caption = scene.add.container(0, 0).setScrollFactor(0).setDepth(DEPTH.dialog).setVisible(false);
     const bar = scene.add.graphics();
-    bar.fillStyle(0x0b0907, 0.92).fillRect(360, 862, 1200, 150);
-    bar.lineStyle(2, 0xb08a4a, 0.9).strokeRect(360, 862, 1200, 150);
-    bar.lineStyle(1, INK_HEX, 0.35).strokeRect(368, 870, 1184, 134);
-    this.captionSpeaker = scene.add.text(396, 884, '', { fontFamily: FONTS.mono, fontSize: '17px', color: '#e0a24a', fontStyle: 'bold' }).setLetterSpacing(4);
-    this.captionBody = scene.add.text(396, 918, '', { fontFamily: FONTS.mono, fontSize: '24px', color: '#eadfc6', wordWrap: { width: 1120 }, lineSpacing: 6 });
-    this.captionHint = scene.add.text(1528, 990, 'E ›', { fontFamily: FONTS.mono, fontSize: '15px', color: '#b08a4a' }).setOrigin(1, 1);
+    this.captionBar = bar;
+    this.captionSpeaker = scene.add.text(396, 884, '', { fontFamily: FONTS.mono, fontSize: '22px', color: '#e0a24a', fontStyle: 'bold' }).setLetterSpacing(4);
+    this.captionBody = scene.add.text(396, 918, '', { fontFamily: FONTS.mono, fontSize: '30px', color: '#eadfc6', wordWrap: { width: 1120 }, lineSpacing: 8 });
+    this.captionHint = scene.add.text(1528, 990, 'E ›', { fontFamily: FONTS.mono, fontSize: '24px', color: '#d9b774', fontStyle: 'bold' }).setOrigin(1, 1);
     this.caption.add([bar, this.captionSpeaker, this.captionBody, this.captionHint]);
+    this.captionTop = 862;
+    this.layoutCaption('');
     this.dialog = null;
 
     // Card (archive card / letter).
     this.card = scene.add.container(0, 0).setScrollFactor(0).setDepth(DEPTH.dialog + 1).setVisible(false);
     this.cardShade = scene.add.image(0, 0, 'bl-px').setOrigin(0).setDisplaySize(1920, 1080).setTint(0x020406).setAlpha(0.72);
     this.cardPaper = scene.add.graphics();
-    this.cardHeading = scene.add.text(CX, 300, '', { fontFamily: FONTS.mono, fontSize: '18px', color: '#6b2a22', fontStyle: 'bold' }).setOrigin(0.5, 0).setLetterSpacing(6);
-    this.cardSub = scene.add.text(CX, 332, '', { fontFamily: FONTS.mono, fontSize: '14px', color: '#6d5a40' }).setOrigin(0.5, 0).setLetterSpacing(4);
+    this.cardHeading = scene.add.text(CX, 300, '', { fontFamily: FONTS.mono, fontSize: '24px', color: '#6b2a22', fontStyle: 'bold' }).setOrigin(0.5, 0).setLetterSpacing(6);
+    this.cardSub = scene.add.text(CX, 332, '', { fontFamily: FONTS.mono, fontSize: '19px', color: '#6d5a40' }).setOrigin(0.5, 0).setLetterSpacing(4);
     this.cardBody = scene.add.text(CX, 390, '', { fontFamily: FONTS.serif, fontSize: '28px', color: '#2a1d14', align: 'left', wordWrap: { width: 820 }, lineSpacing: 14 }).setOrigin(0.5, 0);
-    this.cardHint = scene.add.text(CX, 800, 'E · CLOSE', { fontFamily: FONTS.mono, fontSize: '14px', color: '#6d5a40' }).setOrigin(0.5, 0).setLetterSpacing(4);
+    this.cardHint = scene.add.text(CX, 800, 'E · CLOSE', { fontFamily: FONTS.mono, fontSize: '22px', color: '#6d5a40', fontStyle: 'bold' }).setOrigin(0.5, 0).setLetterSpacing(4);
     this.card.add([this.cardShade, this.cardPaper, this.cardHeading, this.cardSub, this.cardBody, this.cardHint]);
     this.cardState = null;
 
     // Stone indicator (top right) after pickup.
-    this.stoneText = this.text(1850, 60, '', 13, '#9fd9cf', { alpha: 0, letter: 3, originX: 1 });
+    this.stoneText = this.text(1850, 60, '', 22, '#9fd9cf', { alpha: 0, letter: 3, originX: 1 });
 
     // Fade.
     this.fade = scene.add.image(0, 0, 'bl-px').setOrigin(0).setScrollFactor(0).setDisplaySize(1920, 1080).setTint(0x000000).setAlpha(0).setDepth(DEPTH.fade);
@@ -104,11 +112,37 @@ export class BorrowedLightHud {
   applyTextScale() {
     const k = textScale();
     this.texts.forEach((t) => t.setFontSize(`${Math.round(t.baseSize * k)}px`));
-    this.captionSpeaker.setFontSize(`${Math.round(17 * k)}px`);
-    this.captionBody.setFontSize(`${Math.round(24 * k)}px`);
+    this.captionSpeaker.setFontSize(`${Math.round(22 * k)}px`);
+    this.captionBody.setFontSize(`${Math.round(30 * k)}px`);
+    this.captionHint.setFontSize(`${Math.round(24 * k)}px`);
     this.cardBody.setFontSize(`${Math.round(28 * k)}px`);
-    this.cardHeading.setFontSize(`${Math.round(18 * k)}px`);
-    this.cardSub.setFontSize(`${Math.round(14 * k)}px`);
+    this.cardHeading.setFontSize(`${Math.round(24 * k)}px`);
+    this.cardSub.setFontSize(`${Math.round(19 * k)}px`);
+    this.cardHint.setFontSize(`${Math.round(22 * k)}px`);
+    if (this.captionBar) this.layoutCaption(this.captionFull ?? '');
+  }
+
+  // The caption bar grows to fit its line (round 6: larger type), standing
+  // on the bottom of the screen; the speaker, body and E hint follow it.
+  layoutCaption(full) {
+    this.captionFull = full;
+    const body = this.captionBody;
+    const shown = body.text;
+    body.setText(full || ' ');
+    const textH = body.height;
+    body.setText(shown);
+    const k = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
+    const h = Math.max(150, 76 * k + textH + 26);
+    const top = 1040 - h;
+    this.captionTop = top;
+    const g = this.captionBar;
+    g.clear();
+    g.fillStyle(0x0b0907, 0.92).fillRect(360, top, 1200, h);
+    g.lineStyle(2, 0xb08a4a, 0.9).strokeRect(360, top, 1200, h);
+    g.lineStyle(1, INK_HEX, 0.35).strokeRect(368, top + 8, 1184, h - 16);
+    this.captionSpeaker.setY(top + 20);
+    body.setY(top + 26 + 36 * k);
+    this.captionHint.setY(top + h - 14);
   }
 
   drawBellGlyph() {
@@ -142,7 +176,7 @@ export class BorrowedLightHud {
     const ma = this.meterAlpha;
     [g, this.bell].forEach((o) => o.setAlpha(ma));
     if (ma < 0.01) {
-      [this.parityLabel, this.paritySub, this.carryLabel, this.nextLabel, this.meterLabel].forEach((o) => o.setAlpha(0));
+      [this.parityLabel, this.paritySub, this.carryLabel, this.nextLabel, this.meterLabel, this.bellLabel].forEach((o) => o.setAlpha(0));
       return;
     }
     // Alpha r4: with the departure ring round the meter, the NEXT chip, the
@@ -189,32 +223,37 @@ export class BorrowedLightHud {
     }
 
     // Line tags under the meter: empty, punched (queued), lit (powering).
+    // Round 6: larger tags (30 × 38) so a punched line reads at a glance.
     LINES_ORDER.forEach((line, i) => {
       const color = LINE_COLORS[line];
-      const x = CX - 54 + i * 54;
+      const x = CX - 66 + i * 66;
       const y = tagsY;
       const state = lines[line];
-      const swing = Math.sin(t * 1.5 + i) * 0.05;
-      g.fillStyle(0xe6dcc2, state === 'idle' ? 0.35 : 0.95).fillRect(x - 12, y - 4 + swing * 20, 24, 30);
-      g.fillStyle(color.hex, state === 'idle' ? 0.35 : 1).fillRect(x - 12, y - 4 + swing * 20, 24, 6);
+      const sw = Math.sin(t * 1.5 + i) * 0.05 * 20;
+      g.fillStyle(0xe6dcc2, state === 'idle' ? 0.35 : 0.95).fillRect(x - 15, y - 4 + sw, 30, 38);
+      g.fillStyle(color.hex, state === 'idle' ? 0.35 : 1).fillRect(x - 15, y - 4 + sw, 30, 8);
       if (state === 'queued') {
-        g.fillStyle(0x05070a, 1).fillCircle(x, y + 13 + swing * 20, 4.5);
-        g.fillStyle(color.glow, 0.5 + 0.4 * Math.sin(t * 6)).fillCircle(x, y + 13 + swing * 20, 2.5);
+        g.fillStyle(0x05070a, 1).fillCircle(x, y + 17 + sw, 6);
+        g.fillStyle(color.glow, 0.5 + 0.4 * Math.sin(t * 6)).fillCircle(x, y + 17 + sw, 3.4);
       } else if (state === 'powering') {
-        g.fillStyle(color.glow, 0.25).fillCircle(x, y + 12, 18);
-        g.fillStyle(color.hex, 1).fillCircle(x, y + 13 + swing * 20, 4.5);
+        g.fillStyle(color.glow, 0.25).fillCircle(x, y + 15, 22);
+        g.fillStyle(color.hex, 1).fillCircle(x, y + 17 + sw, 6);
       } else if (state === 'held') {
-        g.fillStyle(color.hex, 1).fillRect(x - 8, y + 10 + swing * 20, 16, 5);
+        g.fillStyle(color.hex, 1).fillRect(x - 10, y + 14 + sw, 20, 6);
       }
       // Phase stamp: I or II, the bell this line rings on.
       if (phases[line]) {
-        const bars = phases[line] === 'even' ? [-4, 4] : [0];
-        g.lineStyle(2.4, 0x2a1d14, state === 'idle' ? 0.5 : 0.95);
-        bars.forEach((o) => g.lineBetween(x + o, y + 20 + swing * 20, x + o, y + 25 + swing * 20));
+        const bars = phases[line] === 'even' ? [-5, 5] : [0];
+        g.lineStyle(3, 0x2a1d14, state === 'idle' ? 0.5 : 0.95);
+        bars.forEach((o) => g.lineBetween(x + o, y + 25 + sw, x + o, y + 32 + sw));
         const on = nextParity === phases[line];
-        if (on) g.lineStyle(2, color.glow, 0.5 + 0.4 * Math.sin(t * 5)).strokeRect(x - 15, y - 7 + swing * 20, 30, 36);
+        if (on) g.lineStyle(2.4, color.glow, 0.5 + 0.4 * Math.sin(t * 5)).strokeRect(x - 18, y - 7 + sw, 36, 44);
       }
     });
+    // While a punch waits on this district's lines: NEXT BELL · seconds.
+    const waiting = Object.values(lines).includes('queued');
+    this.bellLabel.setText(waiting ? `NEXT BELL · ${Math.max(1, Math.ceil(msToBell / 1000))}` : '')
+      .setY(tagsY + 58).setAlpha((waiting ? 0.95 : 0) * ma);
     // The next bell's number, only where lines ring on I / II.
     const phased = Object.values(phases).some(Boolean);
     const pa = phased ? 1 : 0;
@@ -239,7 +278,7 @@ export class BorrowedLightHud {
       g.lineStyle(1.4, 0x0b0907, 1).strokeRect(lx - 7, ly - 12, 14, 18);
     }
     this.meterLabel.setText(departure ? '' : '');
-    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(tagsY + 52).setAlpha(0.9 * ma);
+    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(tagsY + (waiting ? 92 : 58)).setAlpha(0.9 * ma);
   }
 
   ring({ departure = false } = {}) {
@@ -257,7 +296,8 @@ export class BorrowedLightHud {
     const next = Phaser.Math.Linear(a, target, Math.min(1, dt / 120));
     this.listenDim.setAlpha(0.42 * next);
     // Sit under the departure count when there is one, never on it.
-    this.listenLabel.setAlpha(next).setY(this.nextLabel.text ? this.nextLabel.y + 26 : CY + R + 80);
+    const under = this.nextLabel.text ? this.nextLabel : this.bellLabel.text ? this.bellLabel : null;
+    this.listenLabel.setAlpha(next).setY(under ? under.y + 34 : CY + R + 92);
   }
 
   // ---- title cards and toasts ---------------------------------------------
@@ -283,7 +323,7 @@ export class BorrowedLightHud {
     const scene = this.scene;
     // Above the caption bar while a line is on it (alpha r4: an idle hint's
     // toast ran under Butch's line).
-    const ty = this.caption.visible ? 820 : 980;
+    const ty = this.caption.visible ? this.captionTop - 44 : 990;
     this.toastBand.setY(0);
     this.toastText.setText(message).setColor(color).setY(ty);
     const w = this.toastText.width + 120;
@@ -320,9 +360,10 @@ export class BorrowedLightHud {
 
   // A toast already up when a caption opens moves above the caption bar.
   liftToast() {
-    if (this.toastText.alpha <= 0 || this.toastText.y !== 980) return;
-    this.toastText.setY(820);
-    this.toastBand.setY(-160);
+    if (this.toastText.alpha <= 0 || this.toastText.y !== 990) return;
+    const ty = this.captionTop - 44;
+    this.toastText.setY(ty);
+    this.toastBand.setY(ty - 990);
   }
 
   // A one-line caption that takes no input and clears itself (the boarding
@@ -334,6 +375,7 @@ export class BorrowedLightHud {
     this.caption.setVisible(true).setAlpha(1);
     this.captionSpeaker.setText(line.speaker);
     this.captionBody.setText(line.text);
+    this.layoutCaption(line.text);
     this.captionHint.setAlpha(0);
     this.scene.tweens.killTweensOf(this.caption);
     this.scene.tweens.add({
@@ -404,6 +446,7 @@ export class BorrowedLightHud {
     const d = this.dialog;
     const line = d.lines[d.index];
     this.captionSpeaker.setText(line.speaker);
+    if (this.captionFull !== line.text) this.layoutCaption(line.text);
     this.captionBody.setText(line.text.slice(0, Math.floor(d.shown)));
   }
 

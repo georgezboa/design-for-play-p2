@@ -65,6 +65,7 @@ import {
   districtOf,
   lampById,
   lampStartState,
+  machineAnchor,
   machineBounds,
   machineById,
   nodeById,
@@ -75,7 +76,10 @@ import {
   standsOn,
   timetableDefinition,
 } from './level.js';
-import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, IDLE_HINTS, MARA_LETTER, MECHANIC_LINES, MECHANIC_REPEAT, TEACH, stoneToast } from './story.js';
+import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, IDLE_HINTS, LESSON_LINES, MARA_LETTER, TEACH, stoneToast } from './story.js';
+import { LESSON, afterTalk, createLesson, lessonPointing, ruleTaught, storyWaiting, talkLines, updateLesson } from './firstLesson.js';
+import { MIN_WORLD_FONT, causeCard, showCard } from './causeCard.js';
+import { machineTotalMs, ticksCrossed, timerOf } from './timerLights.js';
 import { createIdleHints, progressKey, roomStep } from './idleHints.js';
 import { afterglowLight, carriedLight, deckReveal, deckSolid, lampRim, machineLight } from './memoryLight.js';
 import { DEPTH, FONTS, INK_HEX, LINE_COLORS } from './art/palette.js';
@@ -96,6 +100,7 @@ import {
   setLampLit,
 } from './art/worldArt.js';
 import { createMachineView, drawCable, drawGhost, drawMachine, drawNode, drawNodePole, powerLevel } from './art/machineArt.js';
+import { CauseCardView, drawBellDial, drawBellGlyph } from './art/causeCardView.js';
 import { BorrowedLightHud } from './hud.js';
 import { MAX_FRAME_MS, QA_MAX_FRAME_MS } from './frameClock.js';
 import { Fx } from './art/fx.js';
@@ -130,6 +135,15 @@ export const MARA_FLEE_PX = 420;
 export const TAKE_BACK_MS = 500;
 // A lift waits a bell for a rider this far away (≈ 1.5 s of running).
 export const RIDER_APPROACH_PX = Math.round(CONTROLLER.maxRun * 1.5);
+
+// Round 6 (owner G3: "the text beside it is too small"): world tags and float
+// hints at 1920×1080 sizes that stay ≥ 18 px on a 1280×720 window, before
+// TEXT SIZE scales them.
+export const TAG_FONT = MIN_WORLD_FONT;
+export const HINT_FONT = 26;
+const TAG_WRAP = 760;
+// Machines whose running out matters to a crossing: they tick near the end.
+const TIMED_KINDS = new Set(['bridge', 'cradle', 'points', 'drawbridge', 'billboard', 'fan', 'sign', 'lift']);
 
 export class BorrowedLightScene extends Phaser.Scene {
   constructor() {
@@ -199,6 +213,15 @@ export class BorrowedLightScene extends Phaser.Scene {
     // Amber rings that point at a node or a prop (a busy line's holder, idle
     // hints): { x, y, t, n }.
     this.pulses = [];
+    // Round 6 · the first box is taught do-then-explain (firstLesson.js); a
+    // box explains itself on a large cause card (causeCard.js) for the first
+    // few punches, then whenever Butch stands at it a moment.
+    this.lesson = createLesson();
+    this.punchUses = 0;
+    this.cardDwell = 0;
+    this.cardFor = null;
+    // Each timed machine's last remaining ms, for its closing ticks.
+    this.timerPrev = new Map();
 
     const cam = this.cameras.main;
     // The camera looks at a 1920×1080 world window at any internal canvas
@@ -237,7 +260,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.hud = new BorrowedLightHud(this);
     // World prompts are paper tags (ivory paper, walnut ink), like every
     // chapter's tags. The teach tag carries first-use keys (jump, listen).
-    const tagStyle = { fontFamily: FONTS.mono, fontSize: '16px', fontStyle: 'bold', color: '#2a1d14', backgroundColor: '#e6dcc2', padding: { x: 12, y: 6 }, align: 'center', lineSpacing: 4 };
+    const tagStyle = { fontFamily: FONTS.mono, fontSize: `${TAG_FONT}px`, fontStyle: 'bold', color: '#2a1d14', backgroundColor: '#e6dcc2', padding: { x: 16, y: 8 }, align: 'center', lineSpacing: 6, wordWrap: { width: TAG_WRAP } };
     this.promptText = this.add.text(0, 0, '', tagStyle)
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
     // A1: E · TALK on the mechanic while the first pole shows its own tag.
@@ -247,14 +270,22 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.holdG = this.add.graphics().setDepth(DEPTH.ghost + 1);
     this.teachText = this.add.text(0, 0, '', tagStyle)
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
-    this.hintText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '14px', color: '#e6aab0', align: 'center' })
+    // Float hints sit on a dark band of their own so they read on any roof.
+    this.hintText = this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: `${HINT_FONT}px`, fontStyle: 'bold', color: '#e6aab0', align: 'center', backgroundColor: 'rgba(8,10,14,0.78)', padding: { x: 12, y: 6 }, wordWrap: { width: 900 } })
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 3).setLetterSpacing(2).setAlpha(0);
     this.ghostG = this.add.graphics().setDepth(DEPTH.ghost);
     this.pulseG = this.add.graphics().setDepth(DEPTH.ghost + 0.5);
     this.cutG = this.add.graphics().setDepth(DEPTH.ghost + 0.5);
     this.cutText = this.add.text(0, 0, '', tagStyle).setOrigin(0.5, 1).setDepth(DEPTH.ghost + 2).setLetterSpacing(3).setVisible(false);
-    this.ghostLabels = Array.from({ length: 6 }, () => this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: '15px', color: '#eadfc6', backgroundColor: 'rgba(8,12,14,0.8)', padding: { x: 8, y: 4 } })
+    this.ghostLabels = Array.from({ length: 6 }, () => this.add.text(0, 0, '', { fontFamily: FONTS.mono, fontSize: `${HINT_FONT}px`, fontStyle: 'bold', color: '#eadfc6', backgroundColor: 'rgba(8,12,14,0.8)', padding: { x: 10, y: 5 } })
       .setOrigin(0.5, 1).setDepth(DEPTH.ghost + 1).setLetterSpacing(3).setVisible(false));
+    // Round 6 · the cause card, and what a punched machine shows by itself
+    // (its ghost, and a next-bell dial with the seconds left).
+    this.card = new CauseCardView(this);
+    this.autoGhostG = this.add.graphics().setDepth(DEPTH.ghost - 0.5).setAlpha(0.7);
+    this.dialG = this.add.graphics().setDepth(DEPTH.ghost + 0.2);
+    this.dialTexts = Array.from({ length: 3 }, () => this.add.text(0, 0, '', { fontFamily: FONTS.display, fontSize: '34px', color: '#eadfc6' })
+      .setOrigin(0.5).setDepth(DEPTH.ghost + 0.3).setVisible(false));
     this.fx = new Fx(this);
     this.squash = 1;
 
@@ -265,10 +296,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.onSettings = () => {
       this.hud.applyTextScale();
       const k = (globalThis.NIGHTFALL_SETTINGS?.textScale ?? 100) / 100;
-      this.promptText.setFontSize(`${Math.round(16 * k)}px`);
-      this.talkText.setFontSize(`${Math.round(16 * k)}px`);
-      this.teachText.setFontSize(`${Math.round(16 * k)}px`);
-      this.hintText.setFontSize(`${Math.round(14 * k)}px`);
+      [this.promptText, this.talkText, this.teachText, this.cutText].forEach((t) => t.setFontSize(`${Math.round(TAG_FONT * k)}px`).setWordWrapWidth(TAG_WRAP * k));
+      this.hintText.setFontSize(`${Math.round(HINT_FONT * k)}px`).setWordWrapWidth(900 * k);
+      this.ghostLabels.forEach((t) => t.setFontSize(`${Math.round(HINT_FONT * k)}px`));
+      this.dialTexts.forEach((t) => t.setFontSize(`${Math.round(34 * k)}px`));
+      this.card.setTextScale(k);
       const low = globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true;
       if (low !== this.lowGraphics) this.applyQuality(low);
     };
@@ -377,6 +409,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     mg.fillStyle(0xffd08a, 1).fillRect(mx - 62, my - 146, 6, 6);
     this.mechanicG = this.add.graphics().setDepth(DEPTH.npc);
     this.addCull([mg, this.mechanicLamp, this.mechanicG], mx - 400, mx + 400);
+    // The terminal canopy's clock (art/paint.js terminalCanopy paints its
+    // case): drawn live, it keeps the city's bell (drawStationClock).
+    const terminal = PLATFORMS.find((p) => p.style === 'terminal');
+    if (terminal) this.stationClock = { g: this.add.graphics().setDepth(DEPTH.building + 0.5), x: terminal.x + terminal.w * 0.62, y: terminal.y - 160 };
 
     // Hotel penthouse with the dark window and Mara's ticket stub.
     const hg = this.add.graphics().setDepth(DEPTH.building + 0.6);
@@ -665,6 +701,8 @@ export class BorrowedLightScene extends Phaser.Scene {
       this.time.delayedCall(0, () => behind.platformLamps.forEach((id) => this.lightPlatformLamp(id)));
     }
     this.startFeetX = lamp.spawnX;
+    // Anyone starting past the first box has met it (round 6 lesson).
+    if (section !== 'A' || lamp.id !== SECTIONS.A.spawn) this.lesson = createLesson({ done: true });
     // A section title on a resume is short and gets out of the way as soon
     // as Butch moves (alpha r4: it came back over the chase).
     const titleHold = lamp.id === SECTIONS[section].spawn ? 2600 : 1400;
@@ -1097,6 +1135,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         else if (res.result === 'renewed') this.floatHint(node.id, HINTS.renewed, color.css, 1600);
         else if (res.inBells === 2) this.floatHint(node.id, HINTS.waitsABell(node.phase), color.css, 2400);
         if (node.phase) this.flags.phasePunched = true;
+        if (res.result === 'queued' || res.result === 'caught') this.punchUses += 1;
         // Listen is taught by a tag over Butch from the second punch on
         // (updatePrompts), until he has listened once.
         if (this.flags.firstPunch) this.flags.listenHinted = true;
@@ -1231,7 +1270,33 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   // The mechanic has something new to say: her story, after the first box.
   mechanicHasNews() {
-    return this.flags.firstPunch && !this.flags.mechanicTalked;
+    return storyWaiting(this.lesson);
+  }
+
+  // Round 6 · the first box, do-then-explain: she points, Butch punches, the
+  // next bell brings the bridge out, and only then the same-colour rule. Her
+  // lines are captions that take no input; they queue behind a conversation.
+  updateLessonStep() {
+    if (this.locked || this.respawning) return;
+    const said = updateLesson(this.lesson, {
+      section: this.section,
+      x: this.feetX,
+      nowMs: this.clock * 1000,
+      queued: this.tt.isQueued(LESSON.node),
+      powered: this.tt.machineStatus(LESSON.machine).powered,
+    });
+    if (said.length) this.lessonQueue = [...(this.lessonQueue ?? []), ...said];
+    if (said.includes('success')) {
+      // The bridge is out, and Mara is seen across it: the way on.
+      const first = MARA_SIGHTINGS.find((sighting) => sighting.trigger === 'first-bridge');
+      if (first && !this.sightingsDone.has(first.id)) this.time.delayedCall(700, () => { if (!this.sightingsDone.has(first.id)) this.startSighting(first); });
+    }
+    const next = this.lessonQueue?.[0];
+    if (!next || this.hud.dialogOpen || this.clock < (this.lessonSayUntil ?? 0)) return;
+    this.lessonQueue.shift();
+    const ms = { point: 4600, wait: 2600, success: 4400, rule: 5600 }[next] ?? 3400;
+    const line = LESSON_LINES[next];
+    if (line && this.hud.say(line, ms)) this.lessonSayUntil = this.clock + Math.min(ms, 1800) / 1000;
   }
 
   interactTarget() {
@@ -1279,9 +1344,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     const target = this.interactTarget();
     if (target === 'mechanic') {
       sfx.paper();
-      const lines = this.flags.mechanicTalked ? [MECHANIC_REPEAT] : MECHANIC_LINES;
+      // Round 6: before the first success she only says what the step needs;
+      // her story waits until the box has worked (firstLesson.js).
+      const lines = talkLines(this.lesson, LESSON_LINES);
       this.hud.openDialog(lines, () => {
-        this.flags.mechanicTalked = true;
+        afterTalk(this.lesson);
+        this.flags.mechanicTalked = this.lesson.step === 'told';
         this.interactCooldown = this.clock + 0.4;
       });
     } else if (target === 'window') {
@@ -1893,7 +1961,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.updateCulling();
     this.updateTarget();
     this.updateTakeBack(dt);
+    this.updateLessonStep();
+    this.updateCardDwell(dt);
+    this.updateTimerTicks();
     this.drawWorld(t, dt);
+    this.drawPunchedMachines(t);
+    this.drawStationClock(t);
     this.drawPlayer(t, dt);
     this.fx.update(dt);
     this.drawLightTrails(dt);
@@ -1904,6 +1977,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.updateDarkness(t, dt);
     this.updateHud(t, dt);
     this.updatePrompts();
+    this.card.update(this.cardShown, this.cardAt, t, dt);
     this.updateFloatHint(dt);
     this.updateIdleHints(dt);
   }
@@ -2133,13 +2207,124 @@ export class BorrowedLightScene extends Phaser.Scene {
     });
   }
 
+  // The cause card comes back whenever Butch stands at a box a moment: the
+  // clock runs while he is still and resets when the box changes.
+  updateCardDwell(dt) {
+    const id = this.currentTarget?.id ?? null;
+    if (id !== this.cardFor) { this.cardFor = id; this.cardDwell = 0; return; }
+    if (id && this.player.ctrl.grounded && Math.abs(this.player.body.velocity.x) < 40) this.cardDwell += dt;
+  }
+
+  // The card for a node (causeCard.js), or null.
+  cardModel(node) {
+    const machine = machineById(node.machine);
+    const mst = this.tt.machineStatus(node.machine);
+    return causeCard({
+      node,
+      machine,
+      preview: this.tt.punchPreview(node.id),
+      status: this.tt.nodeStatus(node.id),
+      msToBell: this.tt.msToBell(),
+      bellMs: this.tt.bellMs,
+      ruleTaught: ruleTaught(this.lesson),
+      timer: timerOf(mst, machineTotalMs(machine, this.cutTotals.get(machine.id))),
+    });
+  }
+
+  // Round 6 (item 7): a timed machine near Butch ticks softly as its last
+  // two seconds run out (its lamps go out and its edge blinks: machineArt).
+  updateTimerTicks() {
+    for (const entry of this.machineViews.values()) {
+      const m = entry.machine;
+      if (!TIMED_KINDS.has(m.kind) || m.section !== this.section) continue;
+      const st = this.tt.machineStatus(m.id);
+      const now = st.powered && !st.held ? st.remaining : null;
+      const prev = this.timerPrev.get(m.id) ?? null;
+      this.timerPrev.set(m.id, now);
+      if (prev == null || now == null) continue;
+      const crossed = ticksCrossed(prev, now);
+      if (!crossed.length) continue;
+      const b = machineBounds(m, st.level);
+      const near = this.feetX > b.x - 520 && this.feetX < b.x + b.w + 320 && Math.abs(this.feetY - b.y) < 420;
+      if (near && this.player.visible) sfx.timerTick(crossed[crossed.length - 1] <= 500);
+    }
+  }
+
+  // Round 6 (owner G3, item 7): a punched machine shows by itself what the
+  // next bell will do and when: its ghost where it will be, and a bell dial
+  // there counting down, so the eye on the gap sees the same clock as the
+  // box. Listen (Q) draws the full preview instead.
+  drawPunchedMachines(t) {
+    const g = this.autoGhostG;
+    const dg = this.dialG;
+    g.clear();
+    dg.clear();
+    this.dialTexts.forEach((d) => d.setVisible(false));
+    if (this.listening || this.locked === 'intro') return;
+    const view = this.view;
+    let n = 0;
+    for (const change of this.tt.preview()) {
+      if (change.to !== 'on') continue;
+      const machine = machineById(change.machineId);
+      if (machine.section !== this.section) continue;
+      const b = machineBounds(machine, 1);
+      if (b.x > view.right + 100 || b.x + b.w < view.x - 100) continue;
+      const line = this.tt.lineOf(change.machineId);
+      const color = LINE_COLORS[line];
+      const st = this.tt.machineStatus(machine.id);
+      if (!st.powered || st.level < 0.95) drawGhost(g, machine, 'on', line, t);
+      if (n >= this.dialTexts.length) continue;
+      const inBells = Math.max(1, change.inBells ?? 1);
+      const ms = this.tt.msToBell() + (inBells - 1) * this.tt.bellMs;
+      const k = 1 - ms / (inBells * this.tt.bellMs);
+      const anchor = machine.kind === 'fan'
+        ? { x: b.x + b.w / 2, y: this.feetY - 260 }
+        : { x: b.x + b.w / 2, y: b.y - (machine.kind === 'lift' ? 150 : 86) };
+      const x = Phaser.Math.Clamp(anchor.x, view.x + 90, view.right - 140);
+      const y = Phaser.Math.Clamp(anchor.y, view.y + 250, view.bottom - 140);
+      drawBellDial(dg, x, y, k, { color: color.hex, glow: color.glow, t });
+      this.dialTexts[n].setText(String(Math.max(1, Math.ceil(ms / 1000)))).setColor(color.css).setPosition(x + 66, y).setVisible(true);
+      n += 1;
+    }
+  }
+
+  // The station clock on the terminal canopy is the city's bell: its hand
+  // sweeps once a bell and its little bell swings when the bell rings.
+  drawStationClock(t) {
+    const c = this.stationClock;
+    if (!c) return;
+    const g = c.g;
+    g.clear();
+    if (!this.isVisibleX(c.x - 60, c.x + 60)) return;
+    const k = this.tt.bellPhase();
+    g.fillStyle(0x0d0a08, 1).fillCircle(c.x, c.y, 30);
+    g.fillStyle(0xe6dcc2, 0.92).fillCircle(c.x, c.y, 23);
+    // Quarter ticks, like the bell meter's.
+    for (let i = 0; i < 4; i += 1) {
+      const a = -Math.PI / 2 + (i * Math.PI) / 2;
+      g.lineStyle(2.4, 0x2a1d14, 1).lineBetween(c.x + Math.cos(a) * 16, c.y + Math.sin(a) * 16, c.x + Math.cos(a) * 21, c.y + Math.sin(a) * 21);
+    }
+    // The elapsed part of the bell, a thin amber wedge, then the hand.
+    g.lineStyle(4, 0xe0a24a, 0.85).beginPath();
+    g.arc(c.x, c.y, 19, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.001, k), false);
+    g.strokePath();
+    const a = -Math.PI / 2 + Math.PI * 2 * k;
+    g.lineStyle(3, 0x1b1510, 1).lineBetween(c.x, c.y, c.x + Math.cos(a) * 18, c.y + Math.sin(a) * 18);
+    g.fillStyle(0x1b1510, 1).fillCircle(c.x, c.y, 3);
+    const since = this.clock - this.lastBellAt;
+    const swing = since < 1.2 ? Math.sin(since * 18) * 0.5 * (1 - since / 1.2) : 0;
+    drawBellGlyph(g, c.x, c.y - 52, 20, { swing });
+    if (since < 0.6) g.lineStyle(3, 0xf2c27a, 0.8 * (1 - since / 0.6)).strokeCircle(c.x, c.y, 30 + since * 60);
+  }
+
   drawWorld(t, dt) {
     const target = this.currentTarget;
     // Machines.
     this.machineViews.forEach((entry) => {
       if (!this.isVisibleX(entry.view.x0, entry.view.x1)) return;
       const status = this.tt.machineStatus(entry.machine.id);
-      drawMachine(entry.view, status, t);
+      const timer = timerOf(status, machineTotalMs(entry.machine, this.cutTotals.get(entry.machine.id)));
+      drawMachine(entry.view, status, t, { timer });
     });
     this.drawCutCountdowns();
     this.drawPulses(dt);
@@ -2156,13 +2341,16 @@ export class BorrowedLightScene extends Phaser.Scene {
       view.cutMark = mstatus.cut ? 1 : Math.max(0, view.cutMark - decay * 1.5);
       view.target = Phaser.Math.Linear(view.target, target?.id === id ? 1 : 0, Math.min(1, decay * 12));
       if (view.pulse !== null) { view.pulse += decay * (view.pulseSpeed ?? 2.2); if (view.pulse > 1) view.pulse = null; }
-      const hinted = (this.hud.dialogOpen && this.hud.dialog?.index === 2 && id === 'a-n1') || (view.hintUntil ?? 0) > this.clock;
+      const hinted = (lessonPointing(this.lesson) && id === LESSON.node) || (view.hintUntil ?? 0) > this.clock;
       view.glint = Phaser.Math.Linear(view.glint, hinted ? 2.2 : 1, Math.min(1, decay * 5));
       if (!this.isVisibleX(view.x0, view.x1)) return;
       const powered = mstatus.powered ? powerLevel(mstatus, t) * (mstatus.poweredBy === id ? 1 : 0.55) : 0;
       drawCable(view.cableG, view.points, view.node.line, { queued: status.queued || status.given, powered, pulse: view.pulse, t, busyFlash: Math.min(1, view.busyFlash), dead: status.dead, charged: status.charged || status.given });
       // An out-of-reach press flashes the node it names, brackets and all.
-      drawNode(view.g, view.node, { status, target: Math.max(view.target, view.missFlash * 0.7), hole: view.hole, sealing: view.sealing, busyShake: view.busyShake, cutMark: view.cutMark, glint: view.glint, flicker: mstatus.flicker }, t);
+      // Punched (or given light): a ring round the box fills toward its bell.
+      const inBells = Math.max(1, status.inBells ?? 1);
+      const countdown = status.queued || status.given ? 1 - (this.tt.msToBell() + (inBells - 1) * this.tt.bellMs) / (inBells * this.tt.bellMs) : null;
+      drawNode(view.g, view.node, { status, target: Math.max(view.target, view.missFlash * 0.7), hole: view.hole, sealing: view.sealing, busyShake: view.busyShake, cutMark: view.cutMark, glint: view.glint, flicker: mstatus.flicker, countdown }, t);
     });
     // Listen ghosts.
     this.ghostG.clear();
@@ -2242,11 +2430,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (!st?.powered || !st.cut) { this.cutTotals.delete(id); continue; }
       const machine = machineById(id);
       const b = machineBounds(machine, st.level);
-      const k = Math.max(0, Math.min(1, st.remaining / Math.max(1, total)));
-      const color = LINE_COLORS[this.tt.lineOf(id)] ?? LINE_COLORS.teal;
-      g.fillStyle(0x0b0907, 0.85).fillRect(b.x, b.y - 12, b.w, 7);
-      g.fillStyle(st.flicker ? 0xe6aab0 : color.glow, 0.95).fillRect(b.x, b.y - 11, b.w * k, 5);
-      this.cutText.setText(`${(st.remaining / 1000).toFixed(1)} s`).setPosition(b.x + b.w / 2, b.y - 20).setVisible(true);
+      // Round 6: the lamps along its rail run down with it (machineArt);
+      // the seconds ride above them.
+      this.cutText.setText(`${(st.remaining / 1000).toFixed(1)} s`).setPosition(b.x + b.w / 2, b.y - 44).setVisible(true);
       shown = true;
     }
     if (!shown) this.cutText.setVisible(false);
@@ -2342,20 +2528,29 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (this.isVisibleX(MECHANIC.x - 200, MECHANIC.x + 200)) {
       const g = this.mechanicG;
       g.clear();
-      const talking = this.hud.dialogOpen;
-      const pointing = talking && this.hud.dialog?.index === 2;
+      const line = this.hud.dialog?.lines?.[this.hud.dialog.index] ?? null;
+      const saying = this.hud.caption.visible && this.hud.saying?.speaker === 'ROOFTOP MECHANIC';
+      const talking = (this.hud.dialogOpen && line?.speaker === 'ROOFTOP MECHANIC') || saying;
+      // Round 6: she points at the box until it has worked (firstLesson.js).
+      const pointing = lessonPointing(this.lesson) || line === LESSON_LINES.point;
+      const box = nodeHead(nodeById(LESSON.node));
       drawFigure(g, MECHANIC_SPEC, {
         x: MECHANIC.x,
         y: MECHANIC.y,
-        facing: this.feetX < MECHANIC.x - 10 ? -1 : 1,
+        facing: pointing ? Math.sign(box.x - MECHANIC.x) || 1 : this.feetX < MECHANIC.x - 10 ? -1 : 1,
         pose: pointing ? 'look' : talking ? 'talk' : 'idle',
         t,
         rim: 0.5,
       });
       if (pointing) {
-        // Points at the node by the edge.
-        g.lineStyle(7, MECHANIC_SPEC.coat, 1).lineBetween(MECHANIC.x + 4, MECHANIC.y - 82, MECHANIC.x + 36, MECHANIC.y - 100);
-        g.fillStyle(MECHANIC_SPEC.skin, 1).fillCircle(MECHANIC.x + 38, MECHANIC.y - 101, 4);
+        // A whole arm out at the box, with a small beat to it.
+        const sx = MECHANIC.x + 4;
+        const sy = MECHANIC.y - 82;
+        const ang = Math.atan2(box.y + 4 - sy, box.x - sx) + Math.sin(t * 3) * 0.04;
+        const ex = sx + Math.cos(ang) * 42;
+        const ey = sy + Math.sin(ang) * 42;
+        g.lineStyle(7, MECHANIC_SPEC.coat, 1).lineBetween(sx, sy, ex, ey);
+        g.fillStyle(MECHANIC_SPEC.skin, 1).fillCircle(ex + Math.cos(ang) * 3, ey + Math.sin(ang) * 3, 4.2);
       }
     }
     // Mara.
@@ -2682,8 +2877,16 @@ export class BorrowedLightScene extends Phaser.Scene {
     return null;
   }
 
+  // Other things a following teach tag keeps clear of (round 6).
+  tagObstacles() {
+    const r = this.card?.rect;
+    // The card, with its pointer and a margin under it.
+    return r ? [{ x0: r.x0, x1: r.x1, y0: r.y0, y1: r.y1 + 44 }] : [];
+  }
+
   updatePrompts() {
     const pt = this.promptText;
+    this.cardShown = null;
     const teach = this.locked || this.hud.dialogOpen || this.hud.cardOpen ? null : this.teachPrompt();
     this.teachText.setVisible(Boolean(teach));
     if (teach) {
@@ -2695,7 +2898,8 @@ export class BorrowedLightScene extends Phaser.Scene {
           bodyH: BODY_H + 16,
           tagW: this.teachText.width,
           tagH: this.teachText.height,
-          rects: this.signRects ?? (this.signRects = signRects(SIGNS)),
+          // Round 6: clear of the neon and of the cause card.
+          rects: [...(this.signRects ?? (this.signRects = signRects(SIGNS))), ...this.tagObstacles()],
         })
         : teach;
       this.teachText.setPosition(at.x, at.y);
@@ -2733,6 +2937,16 @@ export class BorrowedLightScene extends Phaser.Scene {
     const node = this.currentTarget;
     if (node) {
       const head = nodeHead(node);
+      // Round 6 · walking up to a box shows what it does, large: for the
+      // first few punches, and whenever Butch stands at it a moment.
+      const card = action?.kind === 'node' ? this.cardModel(node) : null;
+      if (card && showCard({ uses: this.punchUses, dwellMs: this.cardDwell })) {
+        const anchor = machineAnchor(machineById(node.machine));
+        this.cardShown = card;
+        this.cardAt = { headX: head.x, headY: head.y, side: anchor.x >= node.x ? 1 : -1, view: this.view };
+        pt.setVisible(false);
+        return;
+      }
       pt.setText(this.promptFor(node)).setPosition(head.x, head.y - 36).setVisible(true);
       return;
     }
@@ -2756,6 +2970,12 @@ export class BorrowedLightScene extends Phaser.Scene {
       const a = box(tag);
       const b = { x0: f.x - h.width / 2, x1: f.x + h.width / 2, y0: y - h.height, y1: y };
       if (a.x1 > b.x0 && a.x0 < b.x1 && a.y1 > b.y0 - 6 && a.y0 < b.y1 + 6) y = a.y0 - 8;
+    }
+    // … and off the cause card (round 6).
+    const cr = this.card?.rect;
+    if (cr) {
+      const b = { x0: f.x - h.width / 2, x1: f.x + h.width / 2, y0: y - h.height, y1: y };
+      if (cr.x1 > b.x0 && cr.x0 < b.x1 && cr.y1 + 24 > b.y0 - 6 && cr.y0 < b.y1 + 6) y = cr.y0 - 10;
     }
     h.setPosition(f.x, y).setAlpha(1 - fade);
   }
@@ -2857,6 +3077,10 @@ export class BorrowedLightScene extends Phaser.Scene {
       flags: this.flags,
       idle: this.idle ? { ms: Math.round(this.idle.idle), tier: this.idle.tier, step: this.idleHint?.step ?? null, last: this.lastIdleHint ?? null } : null,
       cutCountdown: this.cutText.visible ? this.cutText.text : null,
+      lesson: this.lesson.step,
+      punchUses: this.punchUses,
+      causeCard: this.cardShown ? { active: this.cardShown.active, cells: this.cardShown.cells.map((c) => c.label), seconds: this.cardShown.seconds, rule: this.cardShown.rule, note: this.cardShown.note } : null,
+      dials: this.dialTexts.filter((d) => d.visible).map((d) => d.text),
       viewScale: this.viewScale,
       lowGraphics: this.lowGraphics,
       resumed: this.resumed,

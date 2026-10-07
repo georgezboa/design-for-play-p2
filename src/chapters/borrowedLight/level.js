@@ -313,7 +313,9 @@ export const REMEMBER_PLACE = Object.freeze({ x: D(20020), y: 180, upperFromX: D
 // Mara, always one roof ahead. Each sighting is a short authored run.
 // `waitForX`: she stands and looks back until Butch gets that close.
 export const MARA_SIGHTINGS = Object.freeze([
-  Object.freeze({ id: 'first', triggerX: 1290, section: 'A', path: [[2060, 760], [2390, 760]], leap: [2770, 420], waitMs: 1800, speed: 0.3 }),
+  // Round 6: she is seen across the gap the moment the first bridge comes
+  // out (the lesson's success, firstLesson.js), not while it is taught.
+  Object.freeze({ id: 'first', trigger: 'first-bridge', triggerX: 1290, section: 'A', path: [[2060, 760], [2390, 760]], leap: [2770, 420], waitMs: 1800, speed: 0.3 }),
   Object.freeze({ id: 'one-roof-ahead', triggerX: 6440, altTriggerX: 6100, section: 'A', path: [[6980, 260], [7440, 260]], leap: [7780, 0], waitMs: 1600, speed: 0.32 }),
   // The chase: she waits on the far roof until Butch is on the last cradle.
   // Alpha r4: she waits deeper on that roof and runs off it before Butch can

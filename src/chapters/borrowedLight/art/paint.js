@@ -636,14 +636,13 @@ function terminalCanopy(ctx, x0, top, w, r) {
     const py = canopyY + 26 - 86 * 4 * t * (1 - t) * 0.5 * 2 * 0.5;
     return [px, py];
   }), { width: 1.6, alpha: 0.35, r });
-  // Hanging clock.
+  // Hanging clock (the case and its hanger).
   const cx = x0 + w * 0.62;
   ctx.fillStyle = '#0d0a08';
   ctx.fillRect(cx - 2, canopyY + 4, 4, 60);
   ctx.beginPath(); ctx.arc(cx, canopyY + 90, 28, 0, Math.PI * 2); ctx.fillStyle = '#1b1510'; ctx.fill();
-  ctx.beginPath(); ctx.arc(cx, canopyY + 90, 22, 0, Math.PI * 2); ctx.fillStyle = 'rgba(230,220,194,0.8)'; ctx.fill();
-  ctx.strokeStyle = '#1b1510'; ctx.lineWidth = 2.5;
-  ctx.beginPath(); ctx.moveTo(cx, canopyY + 90); ctx.lineTo(cx + 2, canopyY + 74); ctx.moveTo(cx, canopyY + 90); ctx.lineTo(cx + 12, canopyY + 94); ctx.stroke();
+  // Round 6: its face and hand are drawn live by the scene (it keeps the
+  // city's bell: BorrowedLightScene drawStationClock); only the case is painted.
 }
 
 function stationEdge(ctx, x0, top, w, h, r, style) {

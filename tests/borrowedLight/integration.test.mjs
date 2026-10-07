@@ -160,7 +160,8 @@ test('alpha F2: jump and listen are taught in the world at first use', async () 
 
 test('alpha F2: the mechanic names one box, and E · TALK clears the awning', () => {
   const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
-  const pointing = MECHANIC_LINES[2].text;
+  // Round 6: the pointing line is the first thing she says (do-then-explain).
+  const pointing = MECHANIC_LINES[0].text;
   assert.doesNotMatch(pointing, /by the edge/);
   assert.match(pointing, /paper tag, on the pole by the gap/);
   assert.match(scene, /\[MECHANIC\.x, MECHANIC\.y - 208, HINTS\.talk\]/);

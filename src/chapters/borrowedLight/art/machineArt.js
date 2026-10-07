@@ -8,6 +8,7 @@ import Phaser from 'phaser';
 import { DEPTH, INK_HEX, LINE_COLORS } from './palette.js';
 import { makeCanvas, paintBillboard, paintSign } from './paint.js';
 import { NODE_POLE, cagesAt, machineBounds, nodeHead } from '../level.js';
+import { blinkOn, lampLit } from '../timerLights.js';
 
 const TAU = Math.PI * 2;
 
@@ -202,6 +203,16 @@ export function drawNode(g, node, view, t) {
   g.fillStyle(0xffd08a, 0.9 * glint).fillTriangle(gp.x - s, gp.y, gp.x + s, gp.y, gp.x, gp.y - 0.4);
   g.fillStyle(0xffd08a, 0.9 * glint).fillTriangle(gp.x, gp.y - s, gp.x, gp.y + s, gp.x + 0.4, gp.y);
   g.fillStyle(0xffffff, 0.9 * glint).fillCircle(gp.x, gp.y, 1.4);
+  // Round 6: punched, the box shows the next bell coming: a ring round the
+  // lamp box fills toward its bell (the cause card says the same, larger).
+  if (view.countdown != null) {
+    const k = Math.max(0.001, Math.min(1, view.countdown));
+    g.lineStyle(7, 0x0b0907, 0.8).strokeCircle(bx, by - 2, 29);
+    g.lineStyle(4.5, color.glow, 0.95).beginPath();
+    g.arc(bx, by - 2, 29, -Math.PI / 2, -Math.PI / 2 + TAU * k, false);
+    g.strokePath();
+    if (k > 0.85) g.lineStyle(9, color.glow, 0.25 + 0.2 * Math.sin(t * 16)).strokeCircle(bx, by - 2, 29);
+  }
   // Targeted: ink brackets.
   if (target > 0) {
     const k = target;
@@ -284,7 +295,30 @@ function hazard(g, x, y, w, h, alpha = 1) {
   }
 }
 
-export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) {
+// Round 6 · a row of timer lamps (timerLights.js): lamp i of `xs` (0 by the
+// housing) burns while the machine has time; the far ones go out first. In
+// the last second they and the edge blink, faster toward the end.
+function timerLamps(g, xs, y, timer, color, t, { r = 4.4 } = {}) {
+  const n = xs.length;
+  const k = timer ? timer.k : 0;
+  const blink = timer ? blinkOn(timer.warn, t) : true;
+  xs.forEach((x, i) => {
+    const lit = timer && lampLit(i, k, n) && blink;
+    g.fillStyle(0x07090a, 1).fillRect(x - r - 1.5, y - r - 1.5, (r + 1.5) * 2, (r + 1.5) * 2);
+    g.fillStyle(lit ? color.glow : 0x241f1a, 1).fillRect(x - r, y - r, r * 2, r * 2);
+    if (lit) {
+      g.fillStyle(color.glow, 0.2).fillCircle(x, y, r * 3.6);
+      g.fillStyle(0xfff3d6, 0.85).fillRect(x - r * 0.45, y - r * 0.45, r * 0.9, r * 0.9);
+    }
+  });
+}
+
+const FULL = Object.freeze({ k: 1, warn: 0 });
+
+// The edge light of a deck: steady, then blinking in the last second.
+const edgeOn = (on, timer, t) => (timer && timer.warn > 0 ? (blinkOn(timer.warn, t) ? on : on * 0.15) : on);
+
+export function drawMachine(view, status, t, { lineColor, ghost = false, timer = null } = {}) {
   const { machine, g, images } = view;
   const color = LINE_COLORS[lineColor ?? status.line ?? 'amber'];
   const on = powerLevel(status, t);
@@ -335,13 +369,17 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
         }
         // Rail posts and hand rail.
         g.lineStyle(2, 0x0e0c0a, 1);
-        for (let tx = 10; tx < len; tx += 46) g.lineBetween(x + dir * tx, y, x + dir * tx, y - 26);
+        const posts = [];
+        for (let tx = 10; tx < len; tx += 46) { g.lineBetween(x + dir * tx, y, x + dir * tx, y - 26); posts.push(x + dir * tx); }
         g.lineBetween(x, y - 26, x2, y - 26);
+        // Round 6: a lamp on every post says how long the bridge has.
+        timerLamps(g, posts, y - 29, on > 0 ? (timer ?? FULL) : null, color, t);
         // Walkable ink rim, and the powered edge light.
         g.lineStyle(2.6, INK_HEX, 0.9).lineBetween(xa, y + 1, xa + len, y + 1);
-        if (on > 0) {
-          g.lineStyle(3, color.hex, 0.85 * on).lineBetween(xa, y + 5, xa + len, y + 5);
-          g.fillStyle(color.glow, on).fillCircle(x2, y + 5, 4);
+        const edge = edgeOn(on, timer, t);
+        if (edge > 0) {
+          g.lineStyle(3, color.hex, 0.85 * edge).lineBetween(xa, y + 5, xa + len, y + 5);
+          g.fillStyle(color.glow, edge).fillCircle(x2, y + 5, 4);
         }
         images.glow?.setPosition(xa + len / 2, y + 10).setDisplaySize(len + 120, 120).setTint(color.hex).setAlpha(0.28 * on);
       } else images.glow?.setAlpha(0);
@@ -377,7 +415,7 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       // a ring on the deck says "in here".
       const wait = status.waiting ? 0.5 + 0.5 * Math.sin(t * 11) : 0;
       g.fillStyle(0x07090a, 1).fillCircle(x + w - 22, y - 46, 6);
-      g.fillStyle(on > 0 || wait > 0.5 ? color.hex : color.dim, 1).fillCircle(x + w - 22, y - 46, 4.5);
+      g.fillStyle((on > 0 && edgeOn(1, timer, t) > 0.5) || wait > 0.5 ? color.hex : color.dim, 1).fillCircle(x + w - 22, y - 46, 4.5);
       if (status.waiting) {
         g.lineStyle(3, color.glow, 0.35 + 0.5 * wait).strokeEllipse(x + w / 2, y - 2, w - 30, 22);
         g.fillStyle(color.glow, 0.5 * wait).fillCircle(x + w - 22, y - 46, 9);
@@ -401,11 +439,19 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       images.on.setAlpha(lit);
       images.off.setAlpha(1 - lit * 0.9);
       images.glow.setAlpha(0.45 * lit);
-      // Lamp hoods along the top: they light the board.
-      for (let lx = x + 60; lx < x + w; lx += 140) {
+      // Lamp hoods along the top: they light the board, and go out one by
+      // one, far end first, as its power runs down (round 6).
+      const hoods = [];
+      for (let lx = x + 60; lx < x + w; lx += 140) hoods.push(lx);
+      const nh = hoods.length;
+      hoods.forEach((lx, i) => {
         g.fillStyle(0x0c0b0a, 1).fillRect(lx - 14, y - 14, 28, 8);
-        if (lit > 0) g.fillStyle(0xffd08a, lit).fillRect(lx - 10, y - 7, 20, 3);
-      }
+        const hoodOn = lit > 0 && (!timer || (lampLit(i, timer.k, nh) && blinkOn(timer.warn, t)));
+        if (hoodOn) {
+          g.fillStyle(0xffd08a, lit).fillRect(lx - 10, y - 7, 20, 3);
+          g.fillStyle(0xffd08a, 0.12 * lit).fillTriangle(lx - 10, y - 4, lx + 10, y - 4, lx, y + h * 0.7);
+        }
+      });
       if (lit > 0.5) g.lineStyle(2.6, INK_HEX, 0.9).lineBetween(x - 3, y - 2, x + w + 3, y - 2);
       else {
         // Unlit: dashed outline, it is only paper.
@@ -500,7 +546,12 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
         g.lineStyle(3, 0x6d6a62, 1).lineBetween(x, y - 2, ex, ey - 2);
       }
       g.lineStyle(level > 0.97 ? 2.6 : 1.4, INK_HEX, level > 0.97 ? 0.9 : 0.4).lineBetween(x, y + 1, ex, ey + 1);
-      if (on > 0) g.lineStyle(3, color.hex, 0.8 * on).lineBetween(x + nx * 6, y + ny * 6, ex + nx * 6, ey + ny * 6);
+      const blade = edgeOn(on, timer, t);
+      if (blade > 0) {
+        // The lit strip along the blade shortens toward the pivot as its time runs out.
+        const kk = timer ? Math.max(0.04, timer.k) : 1;
+        g.lineStyle(3, color.hex, 0.8 * blade).lineBetween(x + nx * 6, y + ny * 6, x + (ex - x) * kk + nx * 6, y + (ey - y) * kk + ny * 6);
+      }
       g.fillStyle(on > 0 ? color.hex : color.dim, 1).fillCircle(x - 11, y - (machine.kind === 'drawbridge' ? 128 : 20), 5);
       images.glow?.setPosition((x + ex) / 2, (y + ey) / 2 + 8).setDisplaySize(length + 100, 130).setTint(color.hex).setAlpha(0.25 * on);
       break;
@@ -531,12 +582,15 @@ export function drawMachine(view, status, t, { lineColor, ghost = false } = {}) 
       g.fillStyle(0x2a241e, 1).fillRect(x, cy, w, 18);
       g.fillStyle(0x0a0908, 0.9).fillRect(x, cy + 15, w, 4);
       g.lineStyle(2, 0x0e0c0a, 1);
-      for (let tx = x + 6; tx <= x + w - 6; tx += 38) g.lineBetween(tx, cy, tx, cy - 40);
+      const rail = [];
+      for (let tx = x + 6; tx <= x + w - 6; tx += 38) { g.lineBetween(tx, cy, tx, cy - 40); rail.push(tx); }
       g.lineBetween(x, cy - 40, x + w, cy - 40);
+      if (on > 0) timerLamps(g, rail, cy - 43, timer ?? FULL, color, t, { r: 4 });
       g.lineBetween(x + 14, cy - 40, x + 14, cy);
       g.lineBetween(x + w - 14, cy - 40, x + w - 14, cy);
       g.lineStyle(level > 0.85 && on > 0 ? 2.6 : 1.4, INK_HEX, level > 0.85 && on > 0 ? 0.9 : 0.4).lineBetween(x, cy + 1, x + w, cy + 1);
-      if (on > 0) g.lineStyle(3, color.hex, 0.8 * on).lineBetween(x, cy + 5, x + w, cy + 5);
+      const cradleEdge = edgeOn(on, timer, t);
+      if (cradleEdge > 0) g.lineStyle(3, color.hex, 0.8 * cradleEdge).lineBetween(x, cy + 5, x + w, cy + 5);
       images.glow?.setPosition(x + w / 2, cy + 6).setDisplaySize(w + 140, 120).setTint(color.hex).setAlpha(0.3 * on);
       break;
     }
