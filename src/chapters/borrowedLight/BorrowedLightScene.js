@@ -83,7 +83,9 @@ import { machineTotalMs, ticksCrossed, timerOf } from './timerLights.js';
 import { createIdleHints, progressKey, roomStep } from './idleHints.js';
 import { afterglowLight, carriedLight, deckReveal, deckSolid, lampRim, machineLight } from './memoryLight.js';
 import { DEPTH, FONTS, INK_HEX, LINE_COLORS } from './art/palette.js';
-import { BUTCH_SPEC, MARA_SPEC, MECHANIC_SPEC, drawFigure } from './art/figures.js';
+import { MARA_SPEC, MECHANIC_SPEC, drawFigure } from './art/figures.js';
+import { BUTCH_LOOK, butchFrame, createButchAnim, stepButchAnim } from './art/butchRig.js';
+import { createButchRenderer } from './art/butchSprites.js';
 import {
   buildBackground,
   buildDarkness,
@@ -287,7 +289,6 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.dialTexts = Array.from({ length: 3 }, () => this.add.text(0, 0, '', { fontFamily: FONTS.display, fontSize: '34px', color: '#eadfc6' })
       .setOrigin(0.5).setDepth(DEPTH.ghost + 0.3).setVisible(false));
     this.fx = new Fx(this);
-    this.squash = 1;
 
     this.setupInput();
     sfx.installAudio();
@@ -604,8 +605,13 @@ export class BorrowedLightScene extends Phaser.Scene {
       ctrl: createControllerState(),
       g: this.add.graphics().setDepth(DEPTH.player),
       lampGlow: this.add.image(0, 0, 'bl-glow').setDisplaySize(260, 260).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.55).setDepth(DEPTH.fx),
-      lampSwing: 0,
-      lampVel: 0,
+      // Round 6: Butch's rig (art/butchRig.js): the animation state the
+      // drawn figure (or painted frames, art/butchSprites.js) is posed from.
+      anim: createButchAnim(),
+      justJumped: false,
+      justLanded: false,
+      fallVy: 0,
+      landVy: 0,
       lampAt: null,
       alpha: 1,
       visible: true,
@@ -1720,10 +1726,14 @@ export class BorrowedLightScene extends Phaser.Scene {
     // state keeps the last jump's peak (feet y) as well as the live pose.
     if (out.jumped) this.lastJump = { count: (this.lastJump?.count ?? 0) + 1, fromY: Math.round(this.feetY), peakY: Math.round(this.feetY) };
     else if (this.lastJump && !grounded) this.lastJump.peakY = Math.min(this.lastJump.peakY, Math.round(this.feetY));
+    // The rig hears about the jump and the landing (its anticipation,
+    // stretch and squash); the fall speed sets how hard he lands.
+    const pl = this.player;
+    if (!grounded) pl.fallVy = Math.max(pl.fallVy, body.velocity.y);
     if (out.jumped) {
       this.flags.jumped = true;
       sfx.jumpSound();
-      this.squash = 1.1;
+      pl.justJumped = true;
       this.fx.dust(this.feetX, this.feetY, { dir: -ctrl.facing });
     }
     if (out.landed) {
@@ -1731,7 +1741,9 @@ export class BorrowedLightScene extends Phaser.Scene {
       sfx.land(hard);
       this.spawnLandingSplash(this.feetX, this.feetY, hard);
       this.fx.dust(this.feetX, this.feetY, { hard });
-      this.squash = hard ? 0.82 : 0.92;
+      pl.justLanded = true;
+      pl.landVy = Math.max(pl.fallVy, hard ? CONTROLLER.hardLandingVy : 300);
+      pl.fallVy = 0;
     }
   }
 
@@ -1899,8 +1911,8 @@ export class BorrowedLightScene extends Phaser.Scene {
         { x: x - 58 - flap, y: y + 92 + flap * 0.5 }, { x: x - 46 - flap * 0.6, y: y + 40 },
         { x: x - 30 - flap * 0.3, y: y + 8 },
       ];
-      g.fillStyle(BUTCH_SPEC.coat, 1).fillPoints(tail, true);
-      g.fillStyle(BUTCH_SPEC.coatShade, 1).fillPoints([tail[0], tail[1], { x: x - 20 - flap * 0.4, y: y + 84 }, { x: x - 12, y: y + 20 }], true);
+      g.fillStyle(BUTCH_LOOK.coat, 1).fillPoints(tail, true);
+      g.fillStyle(BUTCH_LOOK.coatShade, 1).fillPoints([tail[0], tail[1], { x: x - 20 - flap * 0.4, y: y + 84 }, { x: x - 12, y: y + 20 }], true);
       g.lineStyle(2, INK_HEX, 0.7).strokePoints(tail, true);
     };
     draw(0);
@@ -2473,15 +2485,23 @@ export class BorrowedLightScene extends Phaser.Scene {
     const g = p.g;
     g.clear();
     const body = p.body;
-    // Lamp pendulum reacts to acceleration.
-    const ax = (body.velocity.x - (p.prevVx ?? 0)) / Math.max(1, dt);
-    p.prevVx = body.velocity.x;
-    p.lampVel += (-p.lampSwing * 0.02 - ax * 0.02 * p.ctrl.facing) * dt;
-    p.lampVel *= Math.pow(0.08, dt / 1000);
-    p.lampSwing = Phaser.Math.Clamp(p.lampSwing + p.lampVel * dt / 1000, -0.9, 0.9);
-    if (!p.visible) { p.lampGlow.setAlpha(0); return; }
-    // Squash and stretch settle back quickly.
-    this.squash += (1 - this.squash) * Math.min(1, dt / 70);
+    // Round 6: the rig steps every frame (its springs keep running while he
+    // is hidden, so he never pops back in mid-swing).
+    stepButchAnim(p.anim, {
+      pose: p.pose,
+      phase: p.ctrl.runPhase,
+      vx: body.velocity.x,
+      vy: body.velocity.y,
+      facing: p.ctrl.facing,
+      grounded: p.ctrl.grounded,
+      jumped: p.justJumped,
+      landed: p.justLanded,
+      impactVy: p.landVy,
+      maxRun: CONTROLLER.maxRun,
+    }, dt);
+    p.justJumped = false;
+    p.justLanded = false;
+    if (!p.visible) { p.lampGlow.setAlpha(0); this.butchArt?.hide(); return; }
     // Rain lands on his cap and shoulders.
     this.rainOnPlayer = (this.rainOnPlayer ?? 0) - dt;
     if (this.rainOnPlayer <= 0) {
@@ -2494,17 +2514,13 @@ export class BorrowedLightScene extends Phaser.Scene {
       if ((p.stepPhase < 0.5 && phase >= 0.5) || (p.stepPhase > phase)) { sfx.step(); if (Math.random() < 0.5) this.spawnSplash(this.feetX, this.feetY, 0.7); }
       p.stepPhase = phase;
     }
-    const lampAt = drawFigure(g, BUTCH_SPEC, {
+    this.butchArt ??= createButchRenderer(this, { depth: DEPTH.player });
+    const lampAt = this.butchArt.draw(g, butchFrame(p.anim), {
       x: this.feetX,
       y: this.feetY,
       facing: p.ctrl.facing,
-      pose: p.pose,
-      phase: p.ctrl.runPhase,
-      t,
-      squash: this.squash,
       alpha: p.alpha,
-      lampSwing: p.lampSwing,
-      rim: this.blackout ? 0.75 : 0.55,
+      rim: this.blackout ? 0.8 : 0.62,
     });
     p.lampAt = lampAt;
     if (lampAt) {

@@ -253,3 +253,128 @@ test('R6-C: lamps along the bridge go out as its time runs down; the last second
   assert.match(scene, /if \(near && this\.player\.visible\) sfx\.timerTick\(/);
   assert.match(read('src/chapters/borrowedLight/audio.js'), /export function timerTick\(urgent = false\) \{/);
 });
+
+// ---------------------------------------------------------------------------
+// Owner G3 · Butch redrawn (art/butchRig.js) and the control feel.
+import { BUTCH_FRAME_SETS, BUTCH_LOOK, RIG, butchFrame, butchLampAt, createButchAnim, drawButch, stepButchAnim } from '../../src/chapters/borrowedLight/art/butchRig.js';
+import { BUTCH_TEXTURE, butchFrameName } from '../../src/chapters/borrowedLight/art/butchSprites.js';
+import { CONTROLLER, jumpArc } from '../../src/chapters/borrowedLight/controller.js';
+
+const FRAME_MS = 1000 / 60;
+const run = (anim, ms, input) => { for (let t = 0; t < ms; t += FRAME_MS) stepButchAnim(anim, { maxRun: 420, facing: 1, grounded: true, ...input(t) }, FRAME_MS); return anim; };
+
+// A Graphics stand-in that records every point drawn.
+function recorder() {
+  const pts = [];
+  const g = {};
+  for (const name of ['fillStyle', 'lineStyle', 'beginPath', 'strokePath', 'closePath']) g[name] = () => g;
+  g.fillPoints = (list) => { list.forEach((p) => pts.push(p)); return g; };
+  g.fillCircle = (x, y, r) => { pts.push({ x: x - r, y: y - r }, { x: x + r, y: y + r }); return g; };
+  g.fillRect = (x, y, w, h) => { pts.push({ x, y }, { x: x + w, y: y + h }); return g; };
+  g.lineBetween = (x0, y0, x1, y1) => { pts.push({ x: x0, y: y0 }, { x: x1, y: y1 }); return g; };
+  g.moveTo = (x, y) => { pts.push({ x, y }); return g; };
+  g.lineTo = g.moveTo;
+  return { g, pts };
+}
+
+test('R6-D: a run cycle with knee lift and arm swing; the greatcoat trails and follows through on a stop', () => {
+  const anim = createButchAnim();
+  const thighs = [];
+  run(anim, 1200, (t) => { const phase = (t / 600) % 1; return { pose: 'run', phase, vx: 420 }; });
+  for (let i = 0; i < 8; i += 1) {
+    anim.phase = i / 8;
+    thighs.push(butchFrame(anim).legA[0]);
+  }
+  assert.ok(Math.max(...thighs) > 0.4 && Math.min(...thighs) < -0.2, `the near leg swings through (${thighs.map((v) => v.toFixed(2))})`);
+  anim.phase = 0.75;
+  assert.ok(butchFrame(anim).legA[1] > 1.1, 'the knee lifts high in the swing');
+  assert.ok(anim.coat > 0.25, `the coat tail trails a run (${anim.coat.toFixed(2)})`);
+  // Stop dead: the tail swings on past rest (follow-through), the lantern swings and settles.
+  let minCoat = anim.coat;
+  let maxLamp = 0;
+  run(anim, 600, () => ({ pose: 'idle', vx: 0 }));
+  run(anim, 1, () => ({ pose: 'idle', vx: 0 }));
+  const stop = createButchAnim();
+  run(stop, 800, (t) => ({ pose: 'run', phase: (t / 600) % 1, vx: 420 }));
+  for (let t = 0; t < 1500; t += FRAME_MS) {
+    stepButchAnim(stop, { pose: 'idle', vx: t < 100 ? 420 * (1 - t / 100) : 0, facing: 1, grounded: true, maxRun: 420 }, FRAME_MS);
+    minCoat = Math.min(minCoat, stop.coat);
+    maxLamp = Math.max(maxLamp, Math.abs(stop.lamp));
+  }
+  assert.ok(minCoat < 0.05, `the coat swings forward past rest on the stop (${minCoat.toFixed(2)})`);
+  assert.ok(maxLamp > 0.15, `the lantern swings (${maxLamp.toFixed(2)})`);
+  run(stop, 4000, () => ({ pose: 'idle', vx: 0 }));
+  assert.ok(Math.abs(stop.lamp) < 0.05, 'and settles');
+});
+
+test('R6-D: anticipation before a jump, a stretch off the ground, a squash on landing that springs back', () => {
+  const anim = createButchAnim();
+  stepButchAnim(anim, { pose: 'jump', vx: 300, vy: -980, facing: 1, grounded: false, jumped: true }, FRAME_MS);
+  let frame = butchFrame(anim);
+  assert.equal(frame.sprite.set, 'crouch', 'the crouch reads first');
+  assert.ok(frame.hip > 5, 'hips drop for the push-off');
+  run(anim, RIG.anticMs + 20, () => ({ pose: 'jump', vx: 300, vy: -800, grounded: false }));
+  assert.ok(anim.squash > 1.02, `then the stretch (${anim.squash.toFixed(2)})`);
+  run(anim, 300, () => ({ pose: 'fall', vx: 300, vy: 900, grounded: false }));
+  stepButchAnim(anim, { pose: 'land', vx: 300, vy: 0, facing: 1, grounded: true, landed: true, impactVy: 1200 }, FRAME_MS);
+  frame = butchFrame(anim);
+  assert.ok(anim.squash < 0.88, `a hard landing squashes (${anim.squash.toFixed(2)})`);
+  assert.ok(frame.hip > 10, 'and bends the knees');
+  run(anim, 450, () => ({ pose: 'idle', vx: 0 }));
+  assert.ok(Math.abs(anim.squash - 1) < 0.03, `it springs back (${anim.squash.toFixed(3)})`);
+});
+
+test('R6-D: the figure: ~118 px, peaked cap with a visor forward, a coat to the shins, the lantern in his hand', () => {
+  const anim = createButchAnim();
+  run(anim, 500, () => ({ pose: 'idle', vx: 0 }));
+  const frame = butchFrame(anim);
+  const { g, pts } = recorder();
+  const lamp = drawButch(g, frame, { x: 1000, y: 700, facing: 1 });
+  const ys = pts.map((p) => p.y);
+  const height = 700 - Math.min(...ys);
+  assert.ok(height > 110 && height < 132, `height ${height.toFixed(1)}`);
+  assert.ok(Math.max(...ys) <= 701.5, 'feet on the ground');
+  // The visor reaches forward past the face; facing left mirrors it.
+  const front = Math.max(...pts.filter((p) => p.y < 700 - 100).map((p) => p.x));
+  assert.ok(front > 1000 + 18, `visor forward (${front.toFixed(1)})`);
+  const mirror = recorder();
+  drawButch(mirror.g, frame, { x: 1000, y: 700, facing: -1 });
+  assert.ok(Math.min(...mirror.pts.filter((p) => p.y < 700 - 100).map((p) => p.x)) < 1000 - 18);
+  // The lantern hangs from the leading hand, below the waist.
+  assert.ok(lamp.x > 1000 && lamp.y > 700 - RIG.hipY * -1 + 20 - 60 && lamp.y < 700 - 20, `lamp ${lamp.x.toFixed(0)},${lamp.y.toFixed(0)}`);
+  const L = butchLampAt(frame);
+  assert.ok(Math.hypot(L.x - L.hand[0], L.y - L.hand[1]) > 8, 'on a bail');
+  // Navy greatcoat, brass cap band, amber glass: the limited palette.
+  assert.equal(BUTCH_LOOK.height, 118);
+  assert.ok((BUTCH_LOOK.coat & 0xff) > ((BUTCH_LOOK.coat >> 16) & 0xff), 'the coat is navy (blue over red)');
+});
+
+test('R6-D: painted frames can replace the drawn figure (a frame name for every pose, the same lantern point)', () => {
+  const anim = createButchAnim();
+  const seen = new Set();
+  const poses = [['idle', {}], ['run', { vx: 420 }], ['jump', { vy: -900, grounded: false }], ['jump', { vy: -20, grounded: false }], ['fall', { vy: 900, grounded: false }], ['float', { grounded: false }], ['land', { landed: true }]];
+  for (const [pose, extra] of poses) {
+    for (let i = 0; i < 12; i += 1) {
+      stepButchAnim(anim, { pose, phase: i / 12, vx: 0, vy: 0, facing: 1, grounded: true, ...extra }, 40);
+      const { sprite } = butchFrame(anim);
+      assert.ok(BUTCH_FRAME_SETS[sprite.set] > sprite.index && sprite.index >= 0, `${sprite.set}-${sprite.index}`);
+      seen.add(sprite.set);
+    }
+  }
+  for (const set of ['idle', 'run', 'rise', 'apex', 'fall', 'float', 'land']) assert.ok(seen.has(set), set);
+  assert.equal(butchFrameName({ sprite: { set: 'run', index: 3 } }), 'run-3');
+  assert.equal(BUTCH_TEXTURE, 'ch2-butch');
+  assert.match(scene, /this\.butchArt \?\?= createButchRenderer\(this, \{ depth: DEPTH\.player \}\);/);
+  assert.doesNotMatch(scene, /BUTCH_SPEC/, 'Chapter 2 draws Butch with the new rig only');
+});
+
+test('R6-D: control feel: the same 420 px/s and 180 px apex, a heavier fall, tighter air control, wider forgiveness', () => {
+  const arc = jumpArc();
+  assert.equal(CONTROLLER.maxRun, 420);
+  assert.ok(Math.abs(arc.apex - 180) < 1);
+  assert.ok(arc.timeToApex < 0.38, `rise ${arc.timeToApex.toFixed(3)} s`);
+  assert.ok(CONTROLLER.fallGravityScale >= 1.5, 'no floaty hang on the way down');
+  assert.ok(arc.airTime < 0.7, `air time ${arc.airTime.toFixed(3)} s`);
+  assert.ok(CONTROLLER.airDecel >= 1600, 'letting go in the air stops the drift');
+  assert.ok(CONTROLLER.coyoteMs >= 110 && CONTROLLER.bufferMs >= 140);
+});

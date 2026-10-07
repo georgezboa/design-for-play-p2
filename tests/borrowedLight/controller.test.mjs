@@ -26,8 +26,10 @@ test('the tuned feel matches the spec: ~420 px/s run, ~180 px apex', () => {
   const arc = jumpArc();
   assert.equal(CONTROLLER.maxRun, 420);
   assert.ok(Math.abs(arc.apex - 180) < 2, `apex ${arc.apex}`);
-  assert.ok(arc.flatRange > 290 && arc.flatRange < 330, `flat range ${arc.flatRange}`);
-  assert.ok(arc.safeGap >= 220 && arc.safeGap < arc.flatRange);
+  // Round 6: a heavier fall (no floaty hang) shortens the flat range a
+  // little; every jump gap in the level is ≤ 200 px (level.test.mjs).
+  assert.ok(arc.flatRange > 260 && arc.flatRange < 300, `flat range ${arc.flatRange}`);
+  assert.ok(arc.safeGap >= 200 && arc.safeGap < arc.flatRange);
   assert.ok(arc.safeStepUp >= 140 && arc.safeStepUp < arc.apex);
   // Reaching a higher ledge is harder than a level one; a lower one is easier.
   assert.ok(arc.reachAtRise(140) < arc.reachAtRise(0));
@@ -50,7 +52,7 @@ test('releasing jump early gives a short hop (variable jump height)', () => {
   assert.ok(peak(hop) > 30);
 });
 
-test('coyote time: a jump pressed up to 100 ms after leaving a ledge still fires', () => {
+test('coyote time: a jump pressed up to 110 ms after leaving a ledge still fires', () => {
   const state = createControllerState();
   stepController(state, idle, { grounded: true, vx: 300, vy: 0 }, FRAME);
   // Walk off the ledge: four frames airborne (~67 ms), press on the fifth.
@@ -66,7 +68,7 @@ test('coyote time: a jump pressed up to 100 ms after leaving a ledge still fires
   assert.equal(out.jumped, false);
 });
 
-test('jump buffer: a press up to 120 ms before landing jumps on touchdown', () => {
+test('jump buffer: a press up to 140 ms before landing jumps on touchdown', () => {
   const state = createControllerState();
   let out = stepController(state, { ...idle, jumpPressed: true, jumpHeld: true }, { grounded: false, vx: 0, vy: 500 }, FRAME);
   assert.equal(out.jumped, false);
