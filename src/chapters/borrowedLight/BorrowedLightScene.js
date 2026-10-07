@@ -100,7 +100,11 @@ import {
   addViaduct,
   drawBlackoutRims,
   setLampLit,
+  LAMP_GLOW,
+  SIGN_GLOW,
 } from './art/worldArt.js';
+import { setPaintLook } from './art/paint.js';
+import { applyGrade } from './art/grade.js';
 import { createMachineView, drawCable, drawGhost, drawMachine, drawNode, drawNodePole, powerLevel } from './art/machineArt.js';
 import { CauseCardView, drawBellDial, drawBellGlyph } from './art/causeCardView.js';
 import { BorrowedLightHud } from './hud.js';
@@ -240,12 +244,15 @@ export class BorrowedLightScene extends Phaser.Scene {
     // QA on a slow software renderer: tweens must not drop long frames either.
     if (this.maxFrameMs > 100) this.tweens.setLagSmooth(5000, 1000);
 
+    // Round 6 (owner G4 / G7): the matte look and the grade (art/grade.js).
+    setPaintLook('matte');
+    this.grade = applyGrade(cam);
     buildSharedTextures(this);
     this.bg = buildBackground(this);
     this.buildPlatforms();
     this.buildForegroundWires();
     this.signs = buildSigns(this, SIGNS);
-    this.signs.filter((sign) => !sign.scroll).forEach((sign) => this.addCull([sign.img, sign.glow, sign.g], sign.x0, sign.x1));
+    this.signs.filter((sign) => !sign.scroll).forEach((sign) => this.addCull([sign.img, sign.glow, sign.g, sign.spill], sign.x0, sign.x1));
     this.puddles = buildPuddles(this, PLATFORMS);
     this.puddles.forEach((p) => this.addCull([p.img], p.x0, p.x1));
     this.lamps = LAMPS.map((lamp) => buildLamp(this, lamp));
@@ -405,11 +412,16 @@ export class BorrowedLightScene extends Phaser.Scene {
     mg.fillStyle(0x6b2a22, 1).fillRect(mx + 40, my - 36, 70, 8);
     mg.fillStyle(0x16100c, 1).fillRect(mx - 100, my - 60, 44, 60);
     mg.lineStyle(1.2, INK_HEX, 0.4).strokeRect(mx - 100, my - 60, 44, 60);
-    this.mechanicLamp = this.add.image(mx - 60, my - 150, 'bl-glow').setDisplaySize(420, 320).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.45).setDepth(DEPTH.fx);
+    this.mechanicLamp = this.add.image(mx - 60, my - 150, 'bl-glow').setDisplaySize(380, 280).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0.26).setDepth(DEPTH.fx);
+    // Round 6: her work lamp's light as a shape: a cone to the roof and its pool.
+    const workCone = this.add.graphics().setDepth(DEPTH.fx - 0.5).setBlendMode(Phaser.BlendModes.ADD);
+    workCone.fillStyle(0xf2c27a, 0.06).fillTriangle(mx - 59, my - 140, mx - 170, my, mx + 70, my);
+    workCone.fillStyle(0xf2c27a, 0.13).fillEllipse(mx - 50, my + 2, 240, 14);
+    this.mechanicCone = workCone;
     mg.fillStyle(0x0c0907, 1).fillRect(mx - 64, my - 156, 10, 12);
     mg.fillStyle(0xffd08a, 1).fillRect(mx - 62, my - 146, 6, 6);
     this.mechanicG = this.add.graphics().setDepth(DEPTH.npc);
-    this.addCull([mg, this.mechanicLamp, this.mechanicG], mx - 400, mx + 400);
+    this.addCull([mg, this.mechanicLamp, this.mechanicG, workCone], mx - 400, mx + 400);
     // The terminal canopy's clock (art/paint.js terminalCanopy paints its
     // case): drawn live, it keeps the city's bell (drawStationClock).
     const terminal = PLATFORMS.find((p) => p.style === 'terminal');
@@ -876,6 +888,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         sign.lit = false;
         sign.img.setTexture(sign.offKey);
         sign.glow.setAlpha(0);
+        sign.spill?.setAlpha(0);
       };
       if (instant) { off(); return; }
       // Die in a quick ripple, each with a last stutter.
@@ -958,7 +971,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         const lv = this.lamps.find((l) => l.id === lamp.id);
         if (lv) {
           lv.glow.setAlpha(1);
-          this.tweens.add({ targets: lv.glow, alpha: 0.55, duration: 700, ease: 'Sine.easeOut' });
+          this.tweens.add({ targets: lv.glow, alpha: LAMP_GLOW, duration: 700, ease: 'Sine.easeOut' });
           sfx.lampLit();
         }
         this.tweens.add({
@@ -2501,7 +2514,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     }, dt);
     p.justJumped = false;
     p.justLanded = false;
-    if (!p.visible) { p.lampGlow.setAlpha(0); this.butchArt?.hide(); return; }
+    if (!p.visible) { p.lampGlow.setAlpha(0); p.poolG?.clear(); this.butchArt?.hide(); return; }
     // Rain lands on his cap and shoulders.
     this.rainOnPlayer = (this.rainOnPlayer ?? 0) - dt;
     if (this.rainOnPlayer <= 0) {
@@ -2526,9 +2539,17 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (lampAt) {
       const flick = 0.92 + Math.sin(t * 17) * 0.03 + Math.sin(t * 5.3) * 0.04;
       const carrying = Boolean(this.tt.carried());
-      const size = carrying ? 520 : this.blackout ? 340 : 240;
+      const size = carrying ? 520 : this.blackout ? 330 : 210;
       p.lampGlow.setPosition(lampAt.x, lampAt.y).setTint(carrying ? 0xf6e2b4 : 0xf2c27a)
-        .setAlpha((carrying ? 0.95 : this.blackout ? 0.8 : 0.5) * flick * p.alpha).setDisplaySize(size, size);
+        .setAlpha((carrying ? 0.9 : this.blackout ? 0.72 : 0.36) * flick * p.alpha).setDisplaySize(size, size);
+      // Round 6: the lantern lays a small defined pool on the wet roof.
+      const pg = p.poolG ?? (p.poolG = this.add.graphics().setDepth(DEPTH.fx - 0.4).setBlendMode(Phaser.BlendModes.ADD));
+      pg.clear();
+      if (p.ctrl.grounded) {
+        const k = (carrying ? 1.4 : 1) * flick * p.alpha;
+        pg.fillStyle(carrying ? 0xf6e2b4 : 0xf2c27a, 0.12 * k).fillEllipse(lampAt.x, this.feetY + 1, 170, 12);
+        pg.fillStyle(0xffd08a, 0.1 * k).fillEllipse(lampAt.x, this.feetY + 1, 70, 6);
+      }
       if (carrying) {
         // Motes of the borrowed light circle the lamp.
         for (let i = 0; i < 5; i += 1) {
@@ -2675,7 +2696,8 @@ export class BorrowedLightScene extends Phaser.Scene {
       if (!sign.lit || !sign.img.visible) return;
       const f = Math.sin(t * 0.7 + sign.flickerSeed) > 0.985 ? 0.4 : 1;
       sign.img.setAlpha(f);
-      sign.glow.setAlpha(0.32 * f);
+      sign.glow.setAlpha(SIGN_GLOW * f);
+      sign.spill?.setAlpha(f);
     });
     // Machine hum.
     let hum = 0;

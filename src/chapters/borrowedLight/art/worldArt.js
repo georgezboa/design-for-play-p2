@@ -29,6 +29,13 @@ import { addTileBand } from './tileBand.js';
 const VIEW_W = 1920;
 const VIEW_H = 1080;
 
+// Round 6 (owner G4 / G7, heavier, toward Kentucky Route Zero): light comes
+// from its sources as defined shapes (a lamp's cone and the pool it throws, a
+// sign's spill on the wall below it), and the soft blooms round them are
+// turned down so they stop reading as plastic shine.
+export const LAMP_GLOW = 0.3;
+export const SIGN_GLOW = 0.18;
+
 function addCanvasTexture(scene, key, canvas) {
   if (scene.textures.exists(key)) scene.textures.remove(key);
   scene.textures.addCanvas(key, canvas);
@@ -57,10 +64,12 @@ export function buildSharedTextures(scene) {
   const sky = makeCanvas(8, 540);
   const sctx = sky.getContext('2d');
   const g = sctx.createLinearGradient(0, 0, 0, 540);
-  g.addColorStop(0, '#05080d');
-  g.addColorStop(0.45, '#0b1520');
-  g.addColorStop(0.78, '#15222a');
-  g.addColorStop(1, '#2a2622');
+  // Round 6: heavier and cooler, the city's warm haze kept low and thin.
+  g.addColorStop(0, '#020409');
+  g.addColorStop(0.42, '#070e17');
+  g.addColorStop(0.74, '#0e1820');
+  g.addColorStop(0.93, '#18201f');
+  g.addColorStop(1, '#221f1c');
   sctx.fillStyle = g;
   sctx.fillRect(0, 0, 8, 540);
   addCanvasTexture(scene, 'bl-sky', sky);
@@ -88,7 +97,7 @@ export function buildSharedTextures(scene) {
 export function buildBackground(scene) {
   const layers = { panorama: [], far: [], mid: [] };
   layers.sky = scene.add.image(0, 0, 'bl-sky').setOrigin(0).setScrollFactor(0).setDisplaySize(VIEW_W, VIEW_H).setDepth(DEPTH.sky);
-  layers.clouds = scene.add.tileSprite(0, 40, VIEW_W, 300, 'bl-clouds').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.sky + 1).setAlpha(0.9);
+  layers.clouds = scene.add.tileSprite(0, 40, VIEW_W, 300, 'bl-clouds').setOrigin(0).setScrollFactor(0).setDepth(DEPTH.sky + 1).setAlpha(0.6);
 
   // The painted rainy skyline at scroll 0.1 (~2900 px of travel across the
   // chapter). Painted small, shown ×1.9: soft, like distance in the rain.
@@ -233,7 +242,21 @@ export function buildSigns(scene, signs) {
     const onKey = addCanvasTexture(scene, `bl-sign-on-${sign.layer}-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: true }));
     const offKey = addCanvasTexture(scene, `bl-sign-off-${sign.layer}-${sign.text}`, paintSign(sign.text, color.css, { w: sign.w, h, lit: false }));
     const depth = sign.scroll ? DEPTH.mid + 0.5 : DEPTH.sign;
-    const glow = scene.add.image(sign.x, sign.y + h / 2 + 30, 'bl-glow').setDepth(depth - 0.2).setTint(color.hex).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(sign.w * 1.9, h * 3.4).setAlpha(0.35);
+    const glow = scene.add.image(sign.x, sign.y + h / 2 + 30, 'bl-glow').setDepth(depth - 0.2).setTint(color.hex).setBlendMode(Phaser.BlendModes.ADD).setDisplaySize(sign.w * 1.9, h * 3.4).setAlpha(SIGN_GLOW);
+    // The sign's light on the wall below it: a defined trapezoid of its
+    // colour, not a bloom (dies with the sign: sign.glow's alpha drives it).
+    const spill = sign.scroll ? null : scene.add.graphics().setDepth(DEPTH.building + 0.4).setBlendMode(Phaser.BlendModes.ADD);
+    if (spill) {
+      const top = sign.y + 30 + h;
+      spill.fillStyle(color.hex, 0.09).fillPoints([
+        { x: sign.x - sign.w * 0.46, y: top }, { x: sign.x + sign.w * 0.46, y: top },
+        { x: sign.x + sign.w * 0.72, y: top + 150 }, { x: sign.x - sign.w * 0.72, y: top + 150 },
+      ], true);
+      spill.fillStyle(color.hex, 0.06).fillPoints([
+        { x: sign.x - sign.w * 0.3, y: top }, { x: sign.x + sign.w * 0.3, y: top },
+        { x: sign.x + sign.w * 0.44, y: top + 90 }, { x: sign.x - sign.w * 0.44, y: top + 90 },
+      ], true);
+    }
     const img = scene.add.image(sign.x, sign.y, onKey).setOrigin(0.5, 0).setDepth(depth);
     // Hanging brackets.
     const g = scene.add.graphics().setDepth(depth - 0.1);
@@ -245,7 +268,7 @@ export function buildSigns(scene, signs) {
       img.setScale(0.8);
       glow.setAlpha(0.45);
     }
-    return { ...sign, img, glow, g, onKey, offKey, lit: true, x0: sign.x - sign.w, x1: sign.x + sign.w, flickerSeed: hashString(sign.text + sign.layer) % 100 };
+    return { ...sign, img, glow, g, spill, onKey, offKey, lit: true, x0: sign.x - sign.w, x1: sign.x + sign.w, flickerSeed: hashString(sign.text + sign.layer) % 100 };
   });
 }
 
@@ -266,10 +289,16 @@ export function buildLamp(scene, lamp) {
   const head = scene.add.image(x + 29, y - 160, 'bl-px').setDisplaySize(16, 12).setTint(0x3a2a18).setDepth(DEPTH.prop + 1.1);
   const glow = scene.add.image(x + 29, y - 150, 'bl-glow').setDisplaySize(300, 300).setTint(0xf2c27a).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0).setDepth(DEPTH.fx);
   const cone = scene.add.graphics().setDepth(DEPTH.fx - 0.5).setBlendMode(Phaser.BlendModes.ADD).setAlpha(0);
-  cone.fillStyle(0xf2c27a, 0.08);
-  cone.fillTriangle(x + 29, y - 156, x - 50, y, x + 110, y);
+  // Round 6: a hard-edged cone in two steps and the pool it lays on the
+  // wet roof, the lamp's light as a shape.
+  cone.fillStyle(0xf2c27a, 0.055);
+  cone.fillTriangle(x + 29, y - 156, x - 60, y, x + 118, y);
   cone.fillStyle(0xf2c27a, 0.06);
-  cone.fillEllipse(x + 29, y + 2, 180, 14);
+  cone.fillTriangle(x + 29, y - 156, x - 18, y, x + 76, y);
+  cone.fillStyle(0xf2c27a, 0.14);
+  cone.fillEllipse(x + 29, y + 2, 200, 14);
+  cone.fillStyle(0xffd08a, 0.12);
+  cone.fillEllipse(x + 29, y + 2, 96, 7);
   return { ...lamp, g, head, glow, cone, lit: false, x0: x - 120, x1: x + 150 };
 }
 
@@ -277,10 +306,10 @@ export function setLampLit(lamp, lit, scene) {
   lamp.lit = lit;
   lamp.head.setTint(lit ? 0xffd08a : 0x3a2a18);
   if (scene && lit) {
-    scene.tweens.add({ targets: [lamp.glow], alpha: 0.55, duration: 380, ease: 'Sine.easeOut' });
+    scene.tweens.add({ targets: [lamp.glow], alpha: LAMP_GLOW, duration: 380, ease: 'Sine.easeOut' });
     scene.tweens.add({ targets: [lamp.cone], alpha: 1, duration: 380, ease: 'Sine.easeOut' });
   } else {
-    lamp.glow.setAlpha(lit ? 0.55 : 0);
+    lamp.glow.setAlpha(lit ? LAMP_GLOW : 0);
     lamp.cone.setAlpha(lit ? 1 : 0);
   }
 }

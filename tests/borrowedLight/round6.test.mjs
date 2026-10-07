@@ -378,3 +378,56 @@ test('R6-D: control feel: the same 420 px/s and 180 px apex, a heavier fall, tig
   assert.ok(CONTROLLER.airDecel >= 1600, 'letting go in the air stops the drift');
   assert.ok(CONTROLLER.coyoteMs >= 110 && CONTROLLER.bufferMs >= 140);
 });
+
+// ---------------------------------------------------------------------------
+// Owner G4 / G7 · heavier, matte, toward Kentucky Route Zero (art/grade.js,
+// paint.js setPaintLook('matte'), worldArt light shapes).
+import { GRADE, gradeColor, gradeMatrix } from '../../src/chapters/borrowedLight/art/grade.js';
+
+const hex = (n) => [((n >> 16) & 255) / 255, ((n >> 8) & 255) / 255, (n & 255) / 255];
+const lum = ([r, g, b]) => 0.2126 * r + 0.7152 * g + 0.0722 * b;
+const chroma = ([r, g, b]) => Math.max(r, g, b) - Math.min(r, g, b);
+
+test('R6-F: the grade deepens the darks toward navy, keeps the practical lights, and pulls colour back', () => {
+  const m = gradeMatrix();
+  assert.equal(m.length, 20);
+  assert.deepEqual(m.slice(15), [0, 0, 0, 1, 0], 'alpha untouched');
+  // A dark wall goes darker; its black sits in navy (blue over red).
+  const wall = hex(0x2a1e16);
+  const graded = gradeColor(wall, m);
+  assert.ok(lum(graded) < lum(wall) * 0.85, `darker (${lum(wall).toFixed(3)} → ${lum(graded).toFixed(3)})`);
+  const night = gradeColor(hex(0x05080d), m);
+  assert.ok(lum(night) < lum(hex(0x05080d)) && night[2] > night[0], 'the night sky goes deeper, toward navy');
+  assert.ok(graded[2] / graded[0] > wall[2] / wall[0], 'brown walls lean navy');
+  // A lit amber window keeps its value; the paper tags stay paper.
+  const amber = hex(0xf2c27a);
+  assert.ok(lum(gradeColor(amber, m)) > lum(amber) * 0.98);
+  const paper = hex(0xe6dcc2);
+  assert.ok(Math.abs(lum(gradeColor(paper, m)) - lum(paper)) < 0.08);
+  // Saturated paint is pulled back toward the limited palette.
+  const rose = hex(0xc98088);
+  assert.ok(chroma(gradeColor(rose, m)) < chroma(rose) * 1.05);
+  assert.ok(GRADE.saturation < 1 && GRADE.contrast > 1);
+  assert.match(scene, /setPaintLook\('matte'\);\n\s+this\.grade = applyGrade\(cam\);\n\s+buildSharedTextures\(this\);/);
+});
+
+test('R6-F: matte is Chapter 2\'s own look; the finale keeps the classic paint it borrows', async () => {
+  const paint = read('src/chapters/borrowedLight/art/paint.js');
+  assert.match(paint, /let look = 'classic';/);
+  assert.match(paint, /if \(lit && !matte\(\)\) \{\n\s+ctx\.save\(\);\n\s+ctx\.globalCompositeOperation = 'lighter';/, 'no glossy window halo when matte');
+  assert.doesNotMatch(read('src/chapters/finalBoss/finaleArt.js'), /setPaintLook/);
+  const { styleOf, setPaintLook, paintLook } = await import('../../src/chapters/borrowedLight/art/paint.js');
+  assert.equal(paintLook(), 'classic');
+  const classic = styleOf('brick');
+  setPaintLook('matte');
+  const heavy = styleOf('brick');
+  setPaintLook('classic');
+  const value = (css) => lum(hex(Number.parseInt(css.slice(1), 16)));
+  assert.ok(value(heavy.top) < value(classic.top), 'matte walls are heavier');
+  assert.equal(styleOf('brick').top, classic.top);
+  // Light as shapes from its sources, the blooms turned down.
+  const world = read('src/chapters/borrowedLight/art/worldArt.js');
+  assert.match(world, /export const LAMP_GLOW = 0\.3;/);
+  assert.match(world, /const spill = sign\.scroll \? null : scene\.add\.graphics\(\)/);
+  assert.match(scene, /the lantern lays a small defined pool on the wet roof/);
+});

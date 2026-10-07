@@ -8,6 +8,20 @@
 
 import { INK, PALETTE, rng } from './palette.js';
 
+// Round 6 · the look (owner G4 / G7: "too plastic, heavier, toward Kentucky
+// Route Zero"). 'classic' paints as before: the Chapter 6 finale borrows
+// this kit and keeps it. Chapter 2 asks for 'matte' before it paints:
+// darker, cooler, heavier walls; flat lit windows with no glossy halo;
+// no sheen gradients on cornices, pilasters or side light; light stays in
+// defined shapes from its sources.
+let look = 'classic';
+export function setPaintLook(next) {
+  look = next === 'matte' ? 'matte' : 'classic';
+  return look;
+}
+export const paintLook = () => look;
+const matte = () => look === 'matte';
+
 // Context attributes for canvases made inside withCanvasOptions(): the
 // Chapter 6 finale borrows this kit and asks for CPU (willReadFrequently)
 // canvases so its paintings stay on one backing. Borrowed Light itself never
@@ -69,6 +83,7 @@ function grain(ctx, w, h, r, { alpha = 0.05, count = null, light = '#ffffff', da
 }
 
 function wetStreaks(ctx, x, y, w, h, r, alpha = 0.05) {
+  if (matte()) alpha *= 0.45;
   const n = Math.floor(w / 9);
   for (let i = 0; i < n; i += 1) {
     const sx = x + r() * w;
@@ -117,7 +132,14 @@ export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false,
     ctx.restore();
     return;
   }
-  if (lit && tint === 'tv') {
+  if (lit && matte()) {
+    // Matte: one flat colour per window, a darker floor band below it, no
+    // radial glow (the room's light is a shape, not a shine).
+    const flat = tint === 'tv' ? rgba('#4f8a86', 0.55 + 0.35 * warmth)
+      : tint === 'lamp' ? rgba('#8a4f22', 0.75 + 0.2 * warmth)
+        : rgba('#d08c46', 0.5 + 0.42 * warmth);
+    ctx.fillStyle = flat;
+  } else if (lit && tint === 'tv') {
     // A television's cold, flickering blue-green.
     const g = ctx.createRadialGradient(x + w * 0.5, y + h * 0.6, 2, x + w * 0.5, y + h * 0.55, Math.max(w, h) * 0.8);
     g.addColorStop(0, rgba('#bfe3dc', 0.75 * warmth));
@@ -146,6 +168,14 @@ export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false,
   }
   ctx.fill();
   ctx.clip();
+  if (lit && matte()) {
+    ctx.fillStyle = 'rgba(40,20,10,0.42)';
+    ctx.fillRect(x, y + h * 0.68, w, h * 0.32);
+    if (tint === 'lamp') {
+      ctx.fillStyle = rgba('#f0b865', 0.55 * warmth);
+      ctx.fillRect(x + w * 0.3, y + h * 0.5, w * 0.3, h * 0.2);
+    }
+  }
   if (lit && r() < 0.3) {
     // A blind half down.
     ctx.fillStyle = 'rgba(70,40,18,0.55)';
@@ -189,7 +219,7 @@ export function paintWindow(ctx, x, y, w, h, r, { lit = r() < 0.4, arch = false,
   ctx.fillRect(x - 5, y + h + 1, w + 10, 5);
   ctx.fillStyle = rgba(INK, 0.16);
   ctx.fillRect(x - 5, y + h + 1, w + 10, 1);
-  if (lit) {
+  if (lit && !matte()) {
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     const halo = ctx.createRadialGradient(x + w / 2, y + h / 2, 0, x + w / 2, y + h / 2, Math.max(w, h) * 1.25);
@@ -312,9 +342,12 @@ function skylight(ctx, x, base, r) {
   const h = 34;
   ctx.fillStyle = '#16100c';
   ctx.fillRect(x, base - 12, w, 12);
-  const g = ctx.createLinearGradient(0, base - h, 0, base - 10);
-  g.addColorStop(0, 'rgba(240,184,101,0.25)');
-  g.addColorStop(1, 'rgba(240,184,101,0.55)');
+  let g = 'rgba(240,184,101,0.42)';
+  if (!matte()) {
+    g = ctx.createLinearGradient(0, base - h, 0, base - 10);
+    g.addColorStop(0, 'rgba(240,184,101,0.25)');
+    g.addColorStop(1, 'rgba(240,184,101,0.55)');
+  }
   ctx.fillStyle = g;
   ctx.beginPath();
   ctx.moveTo(x + 6, base - 12);
@@ -383,7 +416,27 @@ const STYLE = {
   gantry: { top: '#1b2226', bottom: '#0d1114', trim: '#0d1114', win: [0, 0], cols: 0, rows: 0, lit: 0 },
 };
 
-export function styleOf(name) { return STYLE[name] ?? STYLE.tenement; }
+// The matte walls: the same buildings, heavier and cooler, near ink.
+const MATTE_WALLS = {
+  tenement: ['#1d1a1b', '#08080a'],
+  brick: ['#221819', '#0a0809'],
+  office: ['#111d24', '#05090c'],
+  terminal: ['#1b1a1c', '#070709'],
+  hotel: ['#141a26', '#06080d'],
+  watertower: ['#1e1a19', '#09080a'],
+  stairhead: ['#221c1a', '#100d0c'],
+  plantroom: ['#16201f', '#0b1112'],
+  concourse: ['#1d1b1a', '#09090a'],
+  platform: ['#242120', '#0d0c0b'],
+  gantry: ['#151b1f', '#090c0e'],
+};
+
+export function styleOf(name) {
+  const st = STYLE[name] ?? STYLE.tenement;
+  if (!matte()) return st;
+  const [top, bottom] = MATTE_WALLS[name] ?? MATTE_WALLS.tenement;
+  return { ...st, top, bottom, trim: bottom };
+}
 
 // Paint the top of a building: HEADROOM px of sky with props, then the roof
 // edge at y = HEADROOM, then FACADE_DEPTH px of wall with windows.
@@ -407,13 +460,19 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
   ctx.fillStyle = wall;
   ctx.fillRect(x0, top, w, facadeH);
   // Side light: a cold edge on the left, warm bounce on the right.
-  const side = ctx.createLinearGradient(x0, 0, x0 + w, 0);
-  side.addColorStop(0, 'rgba(111,183,173,0.10)');
-  side.addColorStop(0.12, 'rgba(111,183,173,0)');
-  side.addColorStop(0.88, 'rgba(224,162,74,0)');
-  side.addColorStop(1, 'rgba(224,162,74,0.06)');
-  ctx.fillStyle = side;
-  ctx.fillRect(x0, top, w, facadeH);
+  if (matte()) {
+    // Matte: one defined strip of cold sky light down the left edge.
+    ctx.fillStyle = 'rgba(111,183,173,0.07)';
+    ctx.fillRect(x0, top, 7, facadeH);
+  } else {
+    const side = ctx.createLinearGradient(x0, 0, x0 + w, 0);
+    side.addColorStop(0, 'rgba(111,183,173,0.10)');
+    side.addColorStop(0.12, 'rgba(111,183,173,0)');
+    side.addColorStop(0.88, 'rgba(224,162,74,0)');
+    side.addColorStop(1, 'rgba(224,162,74,0.06)');
+    ctx.fillStyle = side;
+    ctx.fillRect(x0, top, w, facadeH);
+  }
 
   // Masonry courses.
   if (['tenement', 'brick', 'watertower', 'terminal', 'concourse', 'hotel'].includes(platform.style)) {
@@ -423,7 +482,8 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
     ctx.fillStyle = 'rgba(0,0,0,0.25)';
     for (let yy = top + 40; yy < top + facadeH; yy += st.rows) ctx.fillRect(x0, yy, w, 8);
   }
-  grain(ctx, w + pad, facadeH, r, { alpha: 0.05 });
+  // Grain: a matte wall has a little more tooth to it.
+  grain(ctx, w + pad, facadeH, r, { alpha: matte() ? 0.07 : 0.05 });
 
   // Windows. Round 3 (art audit: "a huge repeated grid of identical
   // windows"): each column is a bay of its own kind — single, paired, a
@@ -487,6 +547,14 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
     // Pilasters between bays give the wall depth.
     if (!st.ribbon && w > 300) {
       for (let px = offset - (st.cols - ww) / 2; px < x0 + w; px += st.cols * 2) {
+        if (matte()) {
+          // Flat: a pilaster is a darker strip with one lit edge.
+          ctx.fillStyle = 'rgba(0,0,0,0.24)';
+          ctx.fillRect(px - 7, top + 24, 14, facadeH);
+          ctx.fillStyle = 'rgba(111,183,173,0.035)';
+          ctx.fillRect(px - 7, top + 24, 2, facadeH);
+          continue;
+        }
         const g = ctx.createLinearGradient(px - 7, 0, px + 7, 0);
         g.addColorStop(0, 'rgba(0,0,0,0.28)');
         g.addColorStop(0.5, 'rgba(255,235,200,0.04)');
@@ -532,12 +600,17 @@ export function paintFacade(platform, { seed = 1, props = true, blackout = false
   ctx.fillRect(x0 - 8, top, w + 16, corniceH);
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.fillRect(x0 - 8, top + corniceH, w + 16, 8);
-  // Wet top sheen.
-  const sheen = ctx.createLinearGradient(0, top, 0, top + corniceH);
-  sheen.addColorStop(0, 'rgba(234,223,198,0.20)');
-  sheen.addColorStop(1, 'rgba(234,223,198,0)');
-  ctx.fillStyle = sheen;
-  ctx.fillRect(x0 - 8, top, w + 16, corniceH);
+  // Wet top sheen (matte: one thin flat line, no gloss).
+  if (matte()) {
+    ctx.fillStyle = 'rgba(234,223,198,0.12)';
+    ctx.fillRect(x0 - 8, top + 2, w + 16, 2);
+  } else {
+    const sheen = ctx.createLinearGradient(0, top, 0, top + corniceH);
+    sheen.addColorStop(0, 'rgba(234,223,198,0.20)');
+    sheen.addColorStop(1, 'rgba(234,223,198,0)');
+    ctx.fillStyle = sheen;
+    ctx.fillRect(x0 - 8, top, w + 16, corniceH);
+  }
 
   // Ink rim: bright along the walkable top, fading down the sides.
   inkLine(ctx, x0 - 8, top + 1, x0 + w + 8, top + 1, { width: 2.6, alpha: 0.85, r });
@@ -990,17 +1063,22 @@ export function paintSkylineStrip({ width = 2048, height = 900, seed = 1, tone =
   const canvas = makeCanvas(width, height);
   const ctx = canvas.getContext('2d');
   const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
-  const near = [16, 13, 12];
-  const far = [30, 42, 50];
+  // Matte: the distance goes to deep navy, not grey-green.
+  const near = matte() ? [11, 12, 16] : [16, 13, 12];
+  const far = matte() ? [22, 32, 44] : [30, 42, 50];
   const base = mix(near, far, tone);
   const col = (k = 0, a = 1) => `rgba(${Math.round(base[0] + k)},${Math.round(base[1] + k)},${Math.round(base[2] + k * 1.1)},${a})`;
   const building = (x, bw, bh) => {
     const by = height - bh;
     // Body with a faint vertical falloff and a cold lit edge.
-    const g = ctx.createLinearGradient(0, by, 0, height);
-    g.addColorStop(0, col(4));
-    g.addColorStop(1, col(-4));
-    ctx.fillStyle = g;
+    if (matte()) {
+      ctx.fillStyle = col(0);
+    } else {
+      const g = ctx.createLinearGradient(0, by, 0, height);
+      g.addColorStop(0, col(4));
+      g.addColorStop(1, col(-4));
+      ctx.fillStyle = g;
+    }
     ctx.fillRect(x, by, bw, bh);
     ctx.fillStyle = `rgba(111,183,173,${0.05 * (1 - tone * 0.4)})`;
     ctx.fillRect(x, by, 3, bh);
