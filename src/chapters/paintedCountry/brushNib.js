@@ -198,7 +198,7 @@ export class BrushNib {
    * would land in, `pressing` whether a button is held, `keyHint` the
    * "LEFT CLICK · PAINT" text while it is still being taught (or null).
    */
-  draw({ anchor, x, y, state, cell = null, pressing = false, virtual = false, keyHint = null, dt = 1 / 60 }) {
+  draw({ anchor, x, y, state, cell = null, pressing = false, virtual = false, keyHint = null, avoid = null, dt = 1 / 60 }) {
     const now = this.scene.time.now;
     const R = this.reach;
     this.setCursor(state);
@@ -219,7 +219,9 @@ export class BrushNib {
       g.strokePath();
     }
     if (teaching) {
-      const at = nearestOnReach(anchor, x, y, R);
+      // on top of the ring, where it names the circle without covering the
+      // stroke that just stopped at its edge
+      const at = nearestOnReach(anchor, anchor.x, anchor.y - R, R);
       this.ringLabel.setPosition(at.x, at.y).setVisible(true).setAlpha(Math.min(1, (3600 - (now - this.ringTaughtAt)) / 500));
     } else {
       this.ringLabel.setVisible(false);
@@ -255,12 +257,29 @@ export class BrushNib {
     if (state === 'far' && moved) this.farHover += dt;
     const justCut = this.stops.length && now - this.stops[this.stops.length - 1].at < 2200;
     const showFar = state === 'far' && (pressing || justCut || now - (this.refusedAt ?? -Infinity) < 2000 || this.farHover < 6);
-    // to the right of the brush's handle, clear of the paint under the tip
-    this.farLabel.setVisible(showFar).setPosition(x + 30, y - 16);
+    // to the right of the brush's handle, clear of the paint under the tip;
+    // below the nib instead if a paper tag is there (`avoid`, screen px)
+    const spot = (label) => {
+      const cam = this.scene.cameras.main;
+      const sx = (x - cam.worldView.x) * cam.zoom;
+      const sy = (y - cam.worldView.y) * cam.zoom;
+      const above = { x: sx + 30, y: sy - 16 - label.height / 2, w: label.width, h: label.height };
+      const hit = avoid && above.x < avoid.x + avoid.w && avoid.x < above.x + above.w && above.y < avoid.y + avoid.h && avoid.y < above.y + above.h;
+      return hit ? { x: x + 16, y: y + 22 } : { x: x + 30, y: y - 16 };
+    };
+    if (showFar) {
+      const at = spot(this.farLabel);
+      this.farLabel.setPosition(at.x, at.y);
+    }
+    this.farLabel.setVisible(showFar);
     // the verb's key, beside the nib, for the first strokes
     const showKey = Boolean(keyHint) && (state === 'paint' || state === 'wash') && !showFar;
     this.keyLabel.setVisible(showKey);
-    if (showKey) this.keyLabel.setText(keyHint).setPosition(x + 30, y - 16);
+    if (showKey) {
+      this.keyLabel.setText(keyHint);
+      const at = spot(this.keyLabel);
+      this.keyLabel.setPosition(at.x, at.y);
+    }
 
     this.drawStops(now);
   }

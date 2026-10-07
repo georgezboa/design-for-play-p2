@@ -1122,6 +1122,7 @@ export class PaintedLineScene extends Phaser.Scene {
       pressing: b.paintDown || b.washDown,
       virtual: b.mode === 'virtual',
       keyHint,
+      avoid: this.tag.visible ? this.tag.rect : null,
       dt,
     });
   }

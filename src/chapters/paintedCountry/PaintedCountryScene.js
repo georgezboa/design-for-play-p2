@@ -1005,6 +1005,7 @@ export class PaintedCountryScene extends Phaser.Scene {
       pressing: this.brush.paintDown || this.brush.washDown,
       virtual: this.brush.mode === 'virtual',
       keyHint: this.keyHint(state),
+      avoid: this.tag.visible ? this.tag.rect : null,
       dt,
     });
   }
@@ -1414,8 +1415,9 @@ export class PaintedCountryScene extends Phaser.Scene {
         return true;
       }
       if (step === 'gap' && this.walker.x < 700) {
-        const verb = this.walker.x < 260 ? `${b.label('walk')} · WALK TO THE GAP, THEN ` : '';
-        this.tag.show(`${verb}${b.label('paint')} · DRAW PAPER ACROSS THE GAP`, 25 * CELL, FLOOR_Y - 96);
+        // one instruction at a time: walk up to it, then paint across it
+        const text = this.walker.x < 260 ? `${b.label('walk')} · WALK TO THE GAP` : `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`;
+        this.tag.show(text, 25 * CELL, FLOOR_Y - 96);
         this.activeTutorial = 'lesson';
         return true;
       }

@@ -139,11 +139,6 @@ export class BrushInput {
     return 'SPACE';
   }
 
-  /** The keyboard walk keys, as a tag prints them. */
-  walkKeysLabel() {
-    return 'A / D';
-  }
-
   update(dt) {
     const scene = this.scene;
     const cam = scene.cameras.main;
