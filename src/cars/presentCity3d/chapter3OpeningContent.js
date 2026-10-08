@@ -32,7 +32,10 @@ export const OPENING_POSITIONS = Object.freeze({
   // In the sun on the platform paving in front of the shelter, where the
   // opening camera can see him (the old spot was under the shelter roof).
   playerStart: [-3.0, 0.5, 32.6],
-  levStart: [-7.8, 0.5, 26.4],
+  // Round 6 (G5): Lev waits in view, in the open paving across from Butch
+  // (he stood at the top edge of the frame in the scanner arch's shadow, so
+  // "the man on the platform" walked in from off screen).
+  levStart: [-2.9, 0.5, 26.1],
   levInterview: [1.8, 0.5, 11.8],
   seam: [8.2, 0.71, 7.3],
   seamApproach: [5.7, 0.5, 9.6],
@@ -217,11 +220,12 @@ export const NIKA_TOPIC_RESPONSES = Object.freeze({
   ],
 });
 
-// Always shown: this is the line that explains VENN (STORY_BIBLE).
+// Always shown: the facts that explain VENN (STORY_BIBLE). Round 6 (item 8):
+// Nika gives the rule, not its answer: nobody says "VE, NN" or "Venn" any
+// more; the player applies the rule at the public table.
 export const NIKA_CONCLUSION = Object.freeze([
   { speaker: 'NIKA', text: 'The first forty-three was issued to VELEZ, M. The second printed on the same seat, so the terminal filed it as a duplicate.' },
-  { speaker: 'NIKA', text: 'Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. VE, NN.' },
-  { speaker: 'BUTCH', text: 'Venn.' },
+  { speaker: 'NIKA', text: 'Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. My note is with the prints.' },
   { speaker: 'LEV', text: 'Lay both on the public table. We look at them before anyone tells us what they mean.' },
 ]);
 
@@ -236,7 +240,7 @@ export const TICKET_BOARD_CARDS = Object.freeze([
     title: 'VELEZ, M.',
     lines: Object.freeze(['Issued Echo City terminal.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['City case.']) }),
-    at: Object.freeze([0.19, 0.32]),
+    at: Object.freeze([0.16, 0.31]),
   }),
   Object.freeze({
     id: 'ticket-venn',
@@ -245,30 +249,110 @@ export const TICKET_BOARD_CARDS = Object.freeze([
     title: 'M. VENN',
     lines: Object.freeze(['Reserved 15:38, cash.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['Orchard case.']) }),
-    at: Object.freeze([0.72, 0.36]),
+    at: Object.freeze([0.82, 0.33]),
   }),
   Object.freeze({
     id: 'terminal-note',
     stamp: 'TERMINAL NOTE · NIKA',
     title: 'Duplicates',
-    lines: Object.freeze(['Long surnames are cut on a duplicate:', 'two letters, then NN. <b>VE · NN</b>']),
-    at: Object.freeze([0.46, 0.73]),
+    // Round 6 (item 8): the rule with a neutral example; the player applies
+    // it to VELEZ (the card used to print the answer, VE · NN).
+    lines: Object.freeze(['Long surnames are cut:', 'two letters, then NN.', '<b>ARDIN → AR · NN</b>']),
+    at: Object.freeze([0.49, 0.66]),
   }),
   Object.freeze({
     id: 'market-sale',
     stamp: 'MARKET WARD · EDA\'S STALL · 14:12',
     title: 'Lamp oil ×2',
     lines: Object.freeze(['Paid in cash, stamped SEAT 43.', 'Carried by the porter, Olek.']),
-    at: Object.freeze([0.17, 0.76]),
+    at: Object.freeze([0.17, 0.65]),
   }),
   Object.freeze({
     id: 'claim-card',
     stamp: 'NIGHT SERVICE · LOST PROPERTY',
     title: 'Claim 1978-0412',
     lines: Object.freeze(['VELEZ, MARA. Two claims.', 'City case collected. Orchard case on board.']),
-    at: Object.freeze([0.78, 0.76]),
+    at: Object.freeze([0.81, 0.65]),
   }),
 ]);
+
+// Round 6 (item 8): the board's words. By default it states the question
+// only; what to do lives in the tiered hints (TICKET_BOARD_HINTS), shown
+// after a while without progress or on H. Operations are taught where the
+// player first touches them (TICKET_BOARD_TEXT.affordances).
+export const TICKET_BOARD_TEXT = Object.freeze({
+  question: 'Two tickets for one seat. How are they related?',
+  affordances: Object.freeze({
+    lens: '<kbd>DRAG</kbd> · 1978 LENS',
+    card: '<kbd>DRAG</kbd> · MOVE THE PAPER',
+    punch: '<kbd>CLICK</kbd> · PUNCH THE STACK',
+    pin: '<kbd>CLICK</kbd> · PIN AS PROOF',
+    mark: '<kbd>CLICK</kbd> · KEEP BESIDE THE OTHER',
+  }),
+  // What the board reports as it happens (feedback, never the next step).
+  seen: (title) => `1978 · checked: ${title}.`,
+  stacked: 'The two tickets lie one on the other.',
+  unstacked: 'The tickets lie apart again.',
+  checkedMark: '1978 · CHECKED',
+  recordsTitle: '1978 · ON FILE',
+  // The punch asks what the stack is.
+  fileQuestion: 'One punch files them. File the stack as:',
+  fileChoices: Object.freeze([
+    Object.freeze({ id: 'one', label: 'ONE PASSENGER, PRINTED TWICE' }),
+    Object.freeze({ id: 'two', label: 'TWO PASSENGERS ON ONE SEAT' }),
+  ]),
+  notYet: 'NOT YET',
+  proveIt: 'Pin the papers that prove it, then file.',
+  file: 'FILE AS ONE',
+  // Lev answers a conclusion or a proof that does not hold.
+  refuse: Object.freeze({
+    unchecked: 'LEV · Two passengers on one seat? Look at where these tickets came from before you file that.',
+    'same-claim': 'LEV · Two passengers under one claim from 1978? Put their records side by side again.',
+    'no-records': 'LEV · The names differ. What makes these two tickets the same claim?',
+    'one-record': 'LEV · One ticket\'s 1978 record says nothing about the other. Set the two side by side.',
+    'no-rule': 'LEV · One claim, then. So why would the terminal print the second as VENN?',
+    'not-proof': 'LEV · The oil was charged to the seat, not to a name. It says where she went, not who she is.',
+    unchecked_pin: 'LEV · Its face says seat 43. You have not read what it was in 1978.',
+  }),
+  accepted: 'LEV · Then show me.',
+  claimAgrees: 'LEV · The claim card agrees: one owner, two cases.',
+  filed: 'Filed as one person.',
+});
+
+// Tiered hints, per stuck point (Chapter3TicketBoard.ticketBoardHintStep).
+// Tier 1 nudges, tier 2 points at the thing, tier 3 says what to do.
+export const TICKET_BOARD_HINTS = Object.freeze({
+  lens: Object.freeze([
+    'LEV · Every paper on this table was printed over an older one.',
+    'LEV · The brass lens shows 1978. Try it on the tickets.',
+    'HINT · Drag the 1978 lens over each ticket and read what it was in 1978.',
+  ]),
+  lensOne: Object.freeze([
+    'LEV · You have read one ticket\'s past. Only one.',
+    'LEV · Now the other ticket, under the same lens.',
+    'HINT · Drag the lens over the second ticket, then compare the two 1978 records.',
+  ]),
+  stack: Object.freeze([
+    'LEV · Same claim, two names. If they are one thing, treat them as one.',
+    'LEV · Lay one ticket on the other.',
+    'HINT · Drag one ticket onto the other, then click PUNCH THE STACK.',
+  ]),
+  conclude: Object.freeze([
+    'LEV · How many people does one claim number make?',
+    'LEV · One claim, two cases: the city case and the orchard case. Count the passengers.',
+    'HINT · File the stack as ONE PASSENGER, PRINTED TWICE.',
+  ]),
+  prove: Object.freeze([
+    'LEV · Two questions. Why are they one claim, and why does one say VENN?',
+    'LEV · The 1978 records answer the first. Nika\'s note on duplicates answers the second.',
+    'HINT · Pin both tickets (their 1978 records) and the terminal note, then FILE AS ONE.',
+  ]),
+  proveUnchecked: Object.freeze([
+    'LEV · You are proving a claim you have not read yet.',
+    'LEV · The lens still works while you choose. Check what is under both tickets.',
+    'HINT · Drag the lens over both tickets, pin them and the terminal note, then FILE AS ONE.',
+  ]),
+});
 
 export const TICKET_BOARD_FILED_CARD = Object.freeze({
   stamp: 'FILED AS ONE · CLAIM 1978-0412',
@@ -564,7 +648,8 @@ export const CHAPTER3_OBJECTIVES = Object.freeze({
   publicHall: 'ENTER THE PUBLIC HALL',
   nika: 'ASK NIKA ABOUT SEAT 43',
   publicTable: 'LAY BOTH TICKETS ON THE PUBLIC TABLE',
-  fileTickets: 'FILE THE TWO TICKETS',
+  // Round 6 (item 8): the question only, never the method.
+  fileTickets: 'FIND OUT HOW THE TWO TICKETS ARE RELATED',
   eda: 'ASK EDA WHO BOUGHT THE OIL',
   marketScanner: 'CROSS THE MARKET SCANNER BESIDE OLEK',
   keepPaceOlek: 'KEEP PACE WITH OLEK',

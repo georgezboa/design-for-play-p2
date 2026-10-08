@@ -93,6 +93,9 @@ class AnimatedCharacterInstance {
     this.visualBaseY = 0;
     this.groundCorrection = 0;
     this.groundHeight = null;
+    // Round 6 (G5): the first update snaps the rig to the ground (it used to
+    // ease up from the bind offset), and so does any teleport.
+    this.groundSnap = true;
     host.getWorldPosition(this.previousHostPosition);
     this.loaded = false;
     this.error = null;
@@ -117,7 +120,12 @@ class AnimatedCharacterInstance {
     }
     for (const child of this.fallbackChildren) child.visible = false;
     this.loaded = true;
-    this.play('idle', { immediate: true });
+    // Round 6 (G5): pose the rig before it is ever drawn, in the state the
+    // runtime already asked for (a rig installed between frames drew one
+    // bind-pose frame, then switched to idle whatever it should be doing).
+    this.play(this.currentState && this.actions.has(CHAPTER3_CHARACTER_ACTIONS[this.currentState] || this.currentState) ? this.currentState : 'idle', { immediate: true });
+    this.mixer.update(0);
+    this.groundSnap = true;
   }
 
   fail(error) {
@@ -126,7 +134,7 @@ class AnimatedCharacterInstance {
     for (const child of this.fallbackChildren) child.visible = true;
   }
 
-  play(state, { immediate = false } = {}) {
+  play(state, { immediate = false, fade = 0.18 } = {}) {
     const clipName = CHAPTER3_CHARACTER_ACTIONS[state] || state;
     this.currentState = state;
     if (!this.mixer || this.currentAction === clipName) return Boolean(this.actions.get(clipName));
@@ -137,7 +145,7 @@ class AnimatedCharacterInstance {
     next.reset();
     next.setLoop(THREE.LoopRepeat, Infinity);
     next.clampWhenFinished = false;
-    if (previous && !immediate) previous.crossFadeTo(next, 0.18, true);
+    if (previous && !immediate) previous.crossFadeTo(next, fade, true);
     else {
       previous?.stop();
       next.play();
@@ -153,8 +161,15 @@ class AnimatedCharacterInstance {
       const dx = this.currentHostPosition.x - this.previousHostPosition.x;
       const dz = this.currentHostPosition.z - this.previousHostPosition.z;
       const measuredSpeed = Math.hypot(dx, dz) / dt;
-      const response = 1 - Math.exp(-dt * 9);
-      this.smoothedSpeed = THREE.MathUtils.lerp(this.smoothedSpeed, measuredSpeed, response);
+      // Round 6 (G5): a jump no walker makes (a placement, a cut) is not a
+      // speed: it played the next steps at 3.4x (the Mara ahead's glimpse).
+      if (measuredSpeed > 14 || !this.host.visible) {
+        this.groundSnap = true;
+        if (!this.host.visible) this.smoothedSpeed = 0;
+      } else {
+        const response = 1 - Math.exp(-dt * 9);
+        this.smoothedSpeed = THREE.MathUtils.lerp(this.smoothedSpeed, measuredSpeed, response);
+      }
     }
     this.previousHostPosition.copy(this.currentHostPosition);
 
@@ -169,12 +184,13 @@ class AnimatedCharacterInstance {
     } else {
       this.groundHeight = null;
     }
-    this.groundCorrection = THREE.MathUtils.damp(
+    this.groundCorrection = this.groundSnap ? targetGroundCorrection : THREE.MathUtils.damp(
       this.groundCorrection,
       targetGroundCorrection,
       18,
       Math.min(dt, 0.1),
     );
+    this.groundSnap = false;
     if (this.visual) this.visual.position.y = this.visualBaseY + this.groundCorrection;
 
     const referenceSpeed = LOCOMOTION_REFERENCE_SPEEDS[this.currentState];

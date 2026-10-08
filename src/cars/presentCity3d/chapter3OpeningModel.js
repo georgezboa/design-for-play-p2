@@ -25,6 +25,27 @@ export const EDA_TOPICS = Object.freeze(['order', 'collector', 'face']);
 export const CUT_INTERFACE_OBSERVATIONS = Object.freeze(['cut', 'placement', 'reconnection']);
 export const HANA_TOPICS = Object.freeze(['register', 'departure', 'face']);
 export const TICKET_IDS = Object.freeze(['ticket-velez', 'ticket-venn']);
+// Round 6 (item 8): papers on the public table the player can pin as proof
+// when they file the stack. A ticket pinned stands for its 1978 record, so
+// it can be pinned only once the lens has checked it.
+export const TICKET_PROOF_IDS = Object.freeze([...TICKET_IDS, 'terminal-note', 'claim-card', 'market-sale']);
+
+// What the pinned papers prove (pure; the board and the model share it).
+// One passenger needs both tickets' 1978 records side by side (the same
+// claim, 1978-0412, under both) and the terminal's duplicate rule (VELEZ
+// cut to VE·NN). The claim card agrees and may stay pinned; the oil receipt
+// names a seat, not a person, so it is refused.
+//   problem: null | 'no-records' | 'one-record' | 'no-rule' | 'not-proof'
+export function ticketProofVerdict(board, ticketIds = TICKET_IDS) {
+  const proofs = new Set(board?.proofs ?? []);
+  const records = ticketIds.filter((id) => proofs.has(id)).length;
+  let problem = null;
+  if (proofs.has('market-sale')) problem = 'not-proof';
+  else if (records === 0) problem = 'no-records';
+  else if (records < ticketIds.length) problem = 'one-record';
+  else if (!proofs.has('terminal-note')) problem = 'no-rule';
+  return { valid: problem === null, problem, records };
+}
 export const SCANNER_IDS = Object.freeze(['market', 'station']);
 
 // Departure after the doors close (ms since boarding).
@@ -63,7 +84,11 @@ function initialState() {
     transportNumber: null,
     nikaTopics: [],
     nikaComplete: false,
-    ticketBoard: { lensSeen: [], stacked: false, punched: false },
+    // Round 6 (item 8): the board is the player's deduction. `filing` is the
+    // stack held under the punch while they say what it is; `conclusion` is
+    // 'one' once they file it as one passenger; `proofs` are the papers they
+    // pinned for it (TICKET_PROOF_IDS).
+    ticketBoard: { lensSeen: [], stacked: false, filing: false, conclusion: null, proofs: [], punched: false },
     ticketBoardComplete: false,
     edaTopics: [],
     edaComplete: false,
@@ -153,7 +178,9 @@ const START_SCRIPT = Object.freeze({
   market: (m) => {
     START_SCRIPT['ticket-board'](m);
     for (const id of TICKET_IDS) m.seeTicketThroughLens(id);
-    m.stackTickets(); m.punchTickets(); m.completeTicketBoard();
+    m.stackTickets(); m.beginTicketFiling(); m.concludeTickets('one');
+    for (const id of [...TICKET_IDS, 'terminal-note']) m.pinTicketProof(id);
+    m.punchTickets(); m.completeTicketBoard();
   },
   'market-scanner': (m) => {
     START_SCRIPT.market(m);
@@ -416,18 +443,80 @@ export function createChapter3OpeningModel(options = {}) {
       return true;
     },
 
-    // Both claim numbers must have been seen through the 1978 lens, and the
-    // two tickets must lie one on the other, before one punch files them.
+    // Round 6 (item 8): nothing on the board names the steps. The player
+    // decides to lay one ticket on the other and put the stack under the
+    // punch; the board then asks what the stack is.
+    beginTicketFiling() {
+      const board = state.ticketBoard;
+      if (!state.nikaComplete || board.punched || !board.stacked || board.filing) return false;
+      board.filing = true;
+      state.lastEvent = 'tickets-under-the-punch';
+      return true;
+    },
+
+    cancelTicketFiling() {
+      const board = state.ticketBoard;
+      if (!board.filing || board.punched) return false;
+      board.filing = false;
+      state.lastEvent = 'ticket-filing-put-off';
+      return true;
+    },
+
+    // 'two' is refused (two passengers cannot hold one 1978 claim); 'one'
+    // is taken and must then be proved. Returns { accepted, reason }.
+    concludeTickets(answer) {
+      const board = state.ticketBoard;
+      if (!board.filing || board.punched || !['one', 'two'].includes(answer)) return { accepted: false, reason: 'not-filing' };
+      if (answer === 'two') {
+        state.lastEvent = 'tickets-filed-as-two-refused';
+        const checked = TICKET_IDS.every((id) => board.lensSeen.includes(id));
+        return { accepted: false, reason: checked ? 'same-claim' : 'unchecked' };
+      }
+      board.conclusion = 'one';
+      state.lastEvent = 'tickets-concluded-one-passenger';
+      return { accepted: true, reason: null };
+    },
+
+    // Toggles a pin. A ticket stands for its 1978 record: unchecked, it
+    // cannot be pinned. Returns { pinned, changed, reason }.
+    pinTicketProof(id) {
+      const board = state.ticketBoard;
+      if (board.conclusion !== 'one' || board.punched || !TICKET_PROOF_IDS.includes(id)) {
+        return { pinned: false, changed: false, reason: 'not-proving' };
+      }
+      if (board.proofs.includes(id)) {
+        board.proofs = board.proofs.filter((entry) => entry !== id);
+        state.lastEvent = `proof-unpinned-${id}`;
+        return { pinned: false, changed: true, reason: null };
+      }
+      if (TICKET_IDS.includes(id) && !board.lensSeen.includes(id)) {
+        return { pinned: false, changed: false, reason: 'unchecked' };
+      }
+      board.proofs.push(id);
+      state.lastEvent = `proof-pinned-${id}`;
+      return { pinned: true, changed: true, reason: null };
+    },
+
+    proofVerdict() {
+      return ticketProofVerdict(state.ticketBoard);
+    },
+
+    // One punch files the stack as one passenger: the two tickets lie one
+    // on the other, the player said "one passenger", and the pinned papers
+    // prove it (ticketProofVerdict).
     canPunchTickets() {
+      const board = state.ticketBoard;
       return state.nikaComplete
-        && !state.ticketBoard.punched
-        && state.ticketBoard.stacked
-        && TICKET_IDS.every((id) => state.ticketBoard.lensSeen.includes(id));
+        && !board.punched
+        && board.stacked
+        && board.conclusion === 'one'
+        && ticketProofVerdict(board).valid;
     },
 
     punchTickets() {
       if (!this.canPunchTickets()) return false;
       state.ticketBoard.punched = true;
+      state.ticketBoard.filing = false;
       state.evidence.duplicateTicket = 'venn-is-the-duplicate-of-velez-claim-1978-0412';
       state.lastEvent = 'tickets-filed-as-one';
       return true;

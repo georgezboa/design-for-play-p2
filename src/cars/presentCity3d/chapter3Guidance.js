@@ -64,7 +64,8 @@ export function idleLookHintDue({ idleSeconds, locked = false, tabHeld = false, 
 // (holding Tab is offered, not required). It hides while a line or a card
 // holds the screen and comes back after.
 export const CONTROLS_HINT_SEGMENTS = Object.freeze([
-  Object.freeze({ id: 'walk', html: '<kbd>CLICK</kbd> TO WALK' }),
+  // Round 6 (item 18): WASD / arrows walk too.
+  Object.freeze({ id: 'walk', html: '<kbd>CLICK</kbd> / <kbd>WASD</kbd> TO WALK' }),
   Object.freeze({ id: 'look', html: '<kbd>E</kbd> TO LOOK' }),
   Object.freeze({ id: 'tab', html: 'HOLD <kbd>TAB</kbd> TO LOOK AROUND' }),
 ]);
