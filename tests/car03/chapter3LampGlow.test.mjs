@@ -59,7 +59,11 @@ describe('Chapter 3 street lamps and Butch readability (round 3)', () => {
     assert.match(shader.fragmentShader, /totalEmissiveRadiance \+= chapter3RimColor/);
     assert.match(shader.fragmentShader, /nonPerturbedNormal/, 'the rim follows the geometry, not the cloth normal map');
     const runtime = read('src/cars/presentCity3d/Chapter3OpeningRuntime.js');
-    assert.match(runtime, /applyRimLight\(rig, \{[^}]*power: 4 \}\)/, 'a tight edge, not a body-wide wash');
+    // Round 6: Butch's rim now comes from the cast look with the rest of the
+    // story cast (tests/car03/chapter3LeoneLook); the warm emissive lift that
+    // muddied his navy coat is gone.
+    assert.doesNotMatch(runtime, /emissive\.setHex\(0x3a2210\)/);
+    assert.match(read('src/cars/presentCity3d/Chapter3AnimatedCharacters.js'), /applyChapter3CastLook\(root, this\.castLook\)/);
     // ... and the street camera sits a little closer on every tier.
     assert.match(runtime, /const STREET_ZOOM_BOOST = 0\.4;/);
     assert.match(runtime, /let target = this\.baseZoom \+ STREET_ZOOM_BOOST;/);

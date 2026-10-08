@@ -147,7 +147,10 @@ describe('Chapter 3 alpha round 3 (L1)', () => {
     assert.match(builders, /gl_Position\.z \+= chapter3OutlineDepthPush \* gl_Position\.w;/);
     assert.match(builders, /outline\.bind\(source\.skeleton, source\.bindMatrix\);/);
     assert.match(runtime, /if \(!rig \|\| this\.preview\.qualityTier === 'high'\) return false;/);
-    assert.match(runtime, /setRimLightStrength\(rig, 0\);/);
+    // Round 6: the rim is the cast look's (chapter3CastLook.js); LOW switches
+    // it off for the whole cast when the tier drops.
+    const preview = fs.readFileSync(new URL('../../src/cars/presentCity3d/EchoCity3DPreview.js', import.meta.url), 'utf8');
+    assert.match(preview.match(/applyQualityTier\(tier\) \{[\s\S]*?\n  \}/)?.[0] ?? '', /setChapter3CastRimEnabled\(false\);/);
     assert.match(runtime, /this\.updateButchSilhouette\(\);\n    this\.updateGuidanceBeacons\(\);/);
   });
 });

@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import { clone as cloneSkeleton } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { applyChapter3CastLook, chapter3CastLookFor } from './chapter3CastLook.js';
 
 const CHARACTER_ROOT = '/assets/chapter03-3d/characters';
 const ANIMATION_LIBRARY = '/assets/chapter03-3d/animations/quaternius_ual1_standard.glb';
@@ -99,6 +100,7 @@ class AnimatedCharacterInstance {
     host.getWorldPosition(this.previousHostPosition);
     this.loaded = false;
     this.error = null;
+    this.castLook = null;
   }
 
   install(gltf, spec, sharedAnimations = []) {
@@ -107,6 +109,11 @@ class AnimatedCharacterInstance {
     const root = prepareVisual(cloneSkeleton(gltf.scene), spec.height, groundOffset);
     root.name = `${this.id}-shared-rig-visual`;
     root.userData.characterAsset = this.assetId;
+    // Round 6 (playtest item 10): the story cast's signature colour block,
+    // rim and fill; ambient extras muted (chapter3CastLook.js). Per instance,
+    // so rigs shared by several characters still read apart.
+    this.castLook = chapter3CastLookFor(this.id);
+    applyChapter3CastLook(root, this.castLook);
     this.host.add(root);
     this.visual = root;
     this.groundOffset = groundOffset;
@@ -213,6 +220,7 @@ class AnimatedCharacterInstance {
     return {
       id: this.id,
       asset: this.assetId,
+      look: this.castLook ? (this.castLook.muted ? 'muted' : 'signature') : 'none',
       loaded: this.loaded,
       fallback: !this.loaded,
       action: this.currentAction,

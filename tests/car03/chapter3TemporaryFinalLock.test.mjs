@@ -34,7 +34,7 @@ function aggregateSignature(files) {
   return createHash('sha256').update(`${manifest}\n`).digest('hex');
 }
 
-describe('Chapter 3 integrated final lock v47-ch3a', () => {
+describe('Chapter 3 integrated final lock v48', () => {
   it('preserves the George-approved final Toma composition', () => {
     assert.deepEqual(OPENING_POSITIONS.toma, [37.68, 0.5, -15.87]);
     assert.deepEqual(OPENING_POSITIONS.transportApproach, [37.68, 0.5, -14.35]);
@@ -145,10 +145,27 @@ describe('Chapter 3 integrated final lock v47-ch3a', () => {
     // tray. WASD / arrows walk everywhere; E / Enter act on the board.
     // Files: +1 (chapter3Entrance): 29 -> 30. Toma's composition unchanged.
     // Assets unchanged. (The lead reconciles this lock at merge.)
-    assert.equal(sourceFiles.length, 30);
+    // v47-ch3b (round 6 look pass, agent ch3b, 2026-10-07; the lead
+    // reconciles this lock with the other round-6 Chapter 3 branch at
+    // merge): owner note G8 "too sallow; it needs the West of Leone's
+    // Dollars films" and playtest item 10 (tests/car03/chapter3LeoneLook).
+    // A white high afternoon sun with hard PCF shadows, a bleached sky and
+    // a linear far haze instead of the exponential veil; a backlit
+    // blood-orange dusk; blue day-for-night; a cool clear morning; a colour
+    // grade inside the materials' tone mapping (CustomToneMapping = ACES +
+    // S-curve, saturation, split tone, white balance, grain on HIGH; no
+    // extra pass) replacing the canvas CSS filter; sienna / terracotta
+    // paving tints and a neutral vignette; the story cast gets signature
+    // colour blocks with rim and fill (Butch navy, Lev bottle green, ...),
+    // extras muted. Files: +2 (chapter3ColorGrade, chapter3CastLook):
+    // 29 -> 31. Toma's composition unchanged. Assets unchanged.
+    // v48 (round 6 merge, lead, 2026-10-07): v47-ch3a and v47-ch3b
+    // together. Files: 29 + 1 (chapter3Entrance) + 2 (chapter3ColorGrade,
+    // chapter3CastLook) -> 32. Toma's composition unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 32);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '749121af5c8316dc61218ef6fffa5c6c6b968018ba317db8e229eda867b4f7e7',
+      'cfc715cbed221df273e4b01395ceac2b1e3d3394737d85f400e81da3a32d7acd',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

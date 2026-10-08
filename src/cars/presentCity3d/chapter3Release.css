@@ -294,7 +294,9 @@ body.c3-board-open .nf-caption { display: none; }
 /* ---------- fades, vignette, end card ---------- */
 .c3-blackout { position: fixed; inset: 0; z-index: 9700; pointer-events: none; opacity: 0; background: #000; transition: opacity 0.7s linear; }
 .c3-blackout.visible { opacity: 1; }
-.c3-vignette { position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 120px 24px rgba(10, 7, 5, 0.42); }
+/* Round 6: a neutral edge (the old brown one added to the sepia cast); the
+   colour grade lives in the renderer (chapter3ColorGrade.js), not in CSS. */
+.c3-vignette { position: fixed; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 120px 24px rgba(6, 8, 10, 0.34); }
 body[data-chapter3-dream-rendering='active'] .c3-vignette {
   background: radial-gradient(ellipse 56% 49% at 50% 50%, transparent 0 43%, #10131a24 65%, #080b11a6 100%);
   box-shadow: inset 0 0 132px 30px #080b1194;
