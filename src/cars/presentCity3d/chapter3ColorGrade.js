@@ -147,8 +147,13 @@ vec3 CustomToneMapping( vec3 color ) {
 	vec3 c = sqrt( ACESFilmicToneMapping( color ) );
 	c *= vec3( 1.0 ) + chapter3GradeB.rgb;
 	float luma = dot( c, vec3( 0.2126, 0.7152, 0.0722 ) );
-	float chroma = max( c.r, max( c.g, c.b ) ) - min( c.r, min( c.g, c.b ) );
-	float keep = chapter3GradeB.w * smoothstep( 0.42, 0.78, luma ) * smoothstep( 0.08, 0.3, chroma );
+	// Uniform branches (the same way for every pixel): the night-only warm
+	// keep and the HIGH-only grain cost nothing when they are off.
+	float keep = 0.0;
+	if ( chapter3GradeB.w > 0.0 ) {
+		float chroma = max( c.r, max( c.g, c.b ) ) - min( c.r, min( c.g, c.b ) );
+		keep = chapter3GradeB.w * smoothstep( 0.42, 0.78, luma ) * smoothstep( 0.08, 0.3, chroma );
+	}
 	float saturation = mix( 1.0 + chapter3GradeA.y, max( 1.0 + chapter3GradeA.y, 1.05 ), keep );
 	c = clamp( mix( vec3( luma ), c, saturation ), 0.0, 1.0 );
 	// An S-curve that keeps black at black and white at white (a straight
@@ -161,9 +166,11 @@ vec3 CustomToneMapping( vec3 color ) {
 	// Gamma as a mid-tone bow, ends pinned.
 	c += chapter3GradeA.w * c * ( 1.0 - c );
 	// Film grain: interleaved gradient noise, a new offset every frame.
-	vec2 grainAt = gl_FragCoord.xy + 64.0 * fract( chapter3GradeD.w * 7.31 );
-	float grain = fract( 52.9829189 * fract( dot( grainAt, vec2( 0.06711056, 0.00583715 ) ) ) ) - 0.5;
-	c += grain * chapter3GradeC.w * ( 1.0 - 0.6 * l );
+	if ( chapter3GradeC.w > 0.0 ) {
+		vec2 grainAt = gl_FragCoord.xy + 64.0 * fract( chapter3GradeD.w * 7.31 );
+		float grain = fract( 52.9829189 * fract( dot( grainAt, vec2( 0.06711056, 0.00583715 ) ) ) ) - 0.5;
+		c += grain * chapter3GradeC.w * ( 1.0 - 0.6 * l );
+	}
 	c = clamp( c, 0.0, 1.0 );
 	return c * c;
 }`;
