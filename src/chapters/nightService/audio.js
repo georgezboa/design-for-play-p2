@@ -202,6 +202,23 @@ export function createNightServiceAudio({ music = true, soundTag = setSoundTagVi
     },
     carrier() { burst({ dur: 0.9, peak: 0.08, freq: 1800, to: 3800, q: 6, attack: 0.05 }); tone(880, { type: 'sine', peak: 0.02, decay: 0.8, to: 1320, attack: 0.05 }); },
     lock() { burst({ dur: 0.03, peak: 0.4, freq: 2600, q: 3 }); tone(220, { type: 'triangle', peak: 0.18, decay: 0.08, to: 140 }); burst({ t: 0.18, dur: 0.04, peak: 0.3, freq: 1900, q: 3 }); tone(160, { type: 'triangle', t: 0.18, peak: 0.16, decay: 0.1, to: 90 }); },
+    // round 6: a wrong-way pull springs back (a soft wooden tock and a short
+    // brass ring), and the teaching unfold's demonstration (a quiet creak)
+    unfoldRebound() {
+      tone(132, { type: 'triangle', peak: 0.11, decay: 0.09, to: 96 });
+      burst({ dur: 0.04, peak: 0.07, freq: 1100, q: 2 });
+      tone(660, { type: 'sine', t: 0.03, peak: 0.018, decay: 0.32, to: 610 });
+    },
+    unfoldNudge() { burst({ dur: 0.34, peak: 0.035, freq: 520, to: 760, q: 1.6, attack: 0.08 }); tone(118, { type: 'triangle', t: 0.32, peak: 0.05, decay: 0.12, to: 84 }); },
+    // the bolt drawing back as a lock gives (Act 0.5's key, Act 1's ticket slot)
+    unlatch() {
+      burst({ dur: 0.05, peak: 0.28, freq: 2100, q: 3 });
+      tone(180, { type: 'triangle', peak: 0.16, decay: 0.12, to: 110 });
+      burst({ t: 0.16, dur: 0.18, peak: 0.06, freq: 900, to: 500, q: 1.4, attack: 0.03 });
+      tone(988, { type: 'sine', t: 0.22, peak: 0.025, decay: 0.9 });
+    },
+    // a click that did nothing: the softest paper tick
+    nothing() { burst({ dur: 0.025, peak: 0.05, freq: 1500, q: 1.5 }); },
   };
 
   function play(name) {

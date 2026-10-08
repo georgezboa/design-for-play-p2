@@ -33,7 +33,52 @@ export const UNFOLD = Object.freeze({
   minTravel: 220,
   /** Velocity window for the flick (ms). */
   flickWindowMs: 90,
+  /**
+   * A drag the wrong way (round 6 · item 2) meets resistance: the pull gives
+   * at most this many px, ever stiffer, and springs back on release.
+   */
+  backMaxPx: 14,
+  /** px of wrong-way pointer travel for the give to reach ~63 % of backMaxPx. */
+  backSoftPx: 46,
+  /** The springy rebound: how long, how fast it rings, how fast it settles. */
+  reboundMs: 520,
+  reboundPeriodMs: 250,
+  reboundDecayMs: 120,
+  /** Wrong-way give past this (px) counts as a wrong-way pull. */
+  wrongPx: 2,
 });
+
+/** The give a wrong-way pull meets: `px` of pointer travel → px the pull moves (≤ max). */
+export function wrongWayGive(px, { max = UNFOLD.backMaxPx, soft = UNFOLD.backSoftPx } = {}) {
+  if (!(px > 0)) return 0;
+  return max * (1 - Math.exp(-px / soft));
+}
+
+/** The rebound's offset at `t` ms after letting go of a wrong-way pull that had given `from` px. */
+export function reboundOffset(from, t, { ms = UNFOLD.reboundMs, period = UNFOLD.reboundPeriodMs, decay = UNFOLD.reboundDecayMs } = {}) {
+  if (t >= ms) return 0;
+  return from * Math.exp(-t / decay) * Math.cos((2 * Math.PI * t) / period);
+}
+
+/**
+ * The teaching unfold's one demonstration (round 6 · item 2): after ~3 s of
+ * nobody touching the fold, the pull draws the wall a short way open in the
+ * right direction and springs back. Returns extra progress at `idleMs`
+ * (0 outside the beat). PanelScene plays it once.
+ */
+export const DEMO_NUDGE = Object.freeze({ at: 3000, ms: 1150, amp: 0.15 });
+export function demoNudge(idleMs, { teach = true, reduce = false, at = DEMO_NUDGE.at, ms = DEMO_NUDGE.ms, amp = DEMO_NUDGE.amp } = {}) {
+  if (!teach || idleMs < at || idleMs > at + ms) return 0;
+  const t = (idleMs - at) / ms;
+  const a = amp * (reduce ? 0.6 : 1);
+  // out (quick, eased), a short hold, then back with a little bounce
+  if (t < 0.32) return a * (1 - (1 - t / 0.32) ** 3);
+  if (t < 0.48) return a;
+  const k = (t - 0.48) / 0.52;
+  const back = (1 - k) ** 2;
+  const bounce = reduce ? 0 : Math.sin(k * Math.PI * 2) * (1 - k) * 0.12;
+  return Math.max(0, a * (back - bounce));
+}
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -174,6 +219,16 @@ export function createUnfold(fold, options = {}) {
   let samples = [];
   let anim = null; // { from, to, ms, t }
   let opened = 0; // completions (a guard for callers: exactly one 'done')
+  // a wrong-way pull: how far the pull has given (px, ≤ 0), and its rebound
+  let back = 0;
+  let rebound = null; // { from, t }
+  let wrongPulls = 0;
+  const startRebound = () => {
+    if (back > -0.5) { back = 0; return null; }
+    rebound = { from: back, t: 0 };
+    wrongPulls += 1;
+    return 'rebound';
+  };
   const along = (pos) => (fold.axis === 'x' ? pos.x : pos.y) * fold.sign;
   const animate = (to, ms) => { anim = { from: progress, to, ms: Math.max(1, ms), t: 0 }; };
   const snap = () => {
@@ -193,21 +248,31 @@ export function createUnfold(fold, options = {}) {
     get done() { return state === 'done'; },
     get busy() { return state === 'dragging' || state === 'snapping'; },
     get opened() { return opened; },
+    /** How far the pull has given the wrong way (px along the opening direction, ≤ 0). */
+    get back() { return back; },
+    /** Is the pull being pulled the wrong way right now (past a hair)? */
+    get wrongWay() { return state === 'dragging' && back < -o.wrongPx; },
+    /** Wrong-way pulls let go so far (each one rebounded). */
+    get wrongPulls() { return wrongPulls; },
     /** Take hold (pointer down on the pull or the frame). */
     grab(pos, timeMs = 0) {
       if (state === 'done' || state === 'snapping') return false;
       state = 'dragging';
       anim = null;
+      // taking hold mid-rebound: the pull stays where it is
+      rebound = null;
       grabAt = along(pos);
       grabProgress = progress;
       samples = [{ a: grabAt, t: timeMs }];
       return true;
     },
-    /** The pointer moved: progress follows it 1:1 (with resistance). */
+    /** The pointer moved: progress follows it 1:1 (with resistance); the wrong way, it gives a little. */
     move(pos, timeMs = 0) {
       if (state !== 'dragging') return progress;
       const a = along(pos);
-      progress = clamp(grabProgress + ((a - grabAt) / fold.pointerTravel), 0, 1);
+      const raw = grabProgress + ((a - grabAt) / fold.pointerTravel);
+      back = raw < 0 ? -wrongWayGive(-raw * fold.pointerTravel, { max: o.backMaxPx, soft: o.backSoftPx }) : 0;
+      progress = clamp(raw, 0, 1);
       samples.push({ a, t: timeMs });
       samples = samples.filter((s) => timeMs - s.t <= o.flickWindowMs);
       return progress;
@@ -223,8 +288,17 @@ export function createUnfold(fold, options = {}) {
     /** Let go: past the threshold (or flicked) it snaps open, else it springs back. */
     release() {
       if (state !== 'dragging') return null;
+      // pulled the wrong way: it springs back into place, with a little ring
+      if (progress <= 0 && back < -o.wrongPx) { state = 'folded'; return startRebound(); }
+      back = 0;
       const flick = this.velocity() >= o.flickSpeed && progress >= o.flickMin;
       return progress >= o.threshold || flick ? snap() : spring();
+    },
+    /** A wrong-way bump (the opposite arrow key): the pull gives `px` and rebounds. */
+    kick(px = o.backMaxPx * 0.7) {
+      if (state !== 'folded') return null;
+      back = -Math.min(o.backMaxPx, Math.abs(px));
+      return startRebound();
     },
     /**
      * The hand went away without a release we saw (the game paused mid-drag,
@@ -235,6 +309,8 @@ export function createUnfold(fold, options = {}) {
     cancel() {
       if (state !== 'dragging') return null;
       samples = [];
+      if (progress <= 0 && back < 0) { state = 'folded'; return startRebound() ?? 'spring'; }
+      back = 0;
       return progress >= o.threshold ? snap() : spring();
     },
     /** Arrow held in the opening direction. */
@@ -256,8 +332,13 @@ export function createUnfold(fold, options = {}) {
       if (state === 'done' || state === 'snapping') return null;
       return snap();
     },
-    /** Advance the snap / spring. Returns 'done' the frame the wall is open. */
+    /** Advance the snap / spring / rebound. Returns 'done' the frame the wall is open. */
     update(dt) {
+      if (rebound) {
+        rebound.t += dt;
+        back = reboundOffset(rebound.from, rebound.t, { ms: o.reboundMs, period: o.reboundPeriodMs, decay: o.reboundDecayMs });
+        if (rebound.t >= o.reboundMs) { rebound = null; back = 0; }
+      }
       if (!anim) return null;
       anim.t = Math.min(anim.ms, anim.t + dt);
       const k = easeOut(anim.t / anim.ms);

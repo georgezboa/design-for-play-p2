@@ -54,7 +54,8 @@ test('Act 1: scripted solution reaches the Conductor, bell #1 and the act-2 chec
   assert.ok(names.includes('dialogue'));
   assert.deepEqual(log.filter(([name]) => name === 'checkpoint').map(([, p]) => p.id), ['chapter-1-act-2']);
   const fx = log.filter(([name]) => name === 'fx').map(([, p]) => p.name);
-  assert.deepEqual(fx, ['slotFlash', 'ticketDrop', 'punchHandover', 'fadeAll']);
+  // round 6 · item 4: the unlock leaves evidence (doorUnlocked) before the card
+  assert.deepEqual(fx, ['slotFlash', 'ticketDrop', 'doorUnlocked', 'punchHandover', 'fadeAll']);
   // the carried state for Act 2
   assert.deepEqual(model.carry().items, ['punch']);
   assert.equal(model.carry().bell, 1);

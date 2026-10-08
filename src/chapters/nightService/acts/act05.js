@@ -68,6 +68,12 @@ export const ACT05 = defineAct({
           draw: drawLockClose,
           edges: { right: [{ type: 'wire', at: WIRE_CLOSE, when: { notFlag: 'keySent' } }] },
         },
+        // round 6 · item 4: the wide view the key leaves behind — the lock
+        // lit, the leaf off its latch with lamplight in the crack
+        unlocked: {
+          draw: (ctx) => drawStoresDoor(ctx, 'unlocked'),
+          edges: { left: [{ type: 'floor', at: FLOOR }] },
+        },
         open: {
           draw: (ctx) => drawStoresDoor(ctx, 'open'),
           edges: { left: [{ type: 'floor', at: FLOOR }] },
@@ -158,10 +164,16 @@ export const ACT05 = defineAct({
         { clearFlag: 'keyInFlight' },
         { wait: 350 },
         { setFlag: 'unlocked' },
-        { fx: { name: 'keyTurn', ms: 800 } },
-        { zoomOut: 'door' },
+        // round 6 · item 4: the result holds in the close-up — the key turns,
+        // the bolt draws back, the plate lights — before the camera steps back
+        { fx: { name: 'keyTurn', ms: 1650 } },
+        // ... and the wide view keeps the evidence: the door off its latch
+        { zoomOut: { tile: 'door', to: 'unlocked' } },
+        { placeActor: { actor: 'butch', state: 'unlocked' } },
+        { wait: 280 },
         { zoomOut: 'desk' },
-        { wait: 600 },
+        { wait: 700 },
+        { fx: { name: 'doorAjar', ms: 900 } },
         { placeActor: { actor: 'butch', state: 'open' } },
         { setState: { tile: 'door', state: 'open' } },
         { sfx: 'door' },
@@ -175,6 +187,8 @@ export const ACT05 = defineAct({
         { actorPose: { actor: 'butch', pose: 'idle', facing: -1 } },
         { wait: 400 },
         { unlockInput: true },
+        // the next goal, in his words (he is in the stores; the desk is next door)
+        { caption: { speaker: 'BUTCH', text: 'The counter bell. Someone’s waiting at my desk.', ms: 5600 } },
       ],
       skip: [
         { setSlots: ['door', 'desk'] },

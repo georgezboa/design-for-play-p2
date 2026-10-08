@@ -882,6 +882,25 @@ export function drawDoor(ctx, variant = 'locked') {
       ink(c, [[hx - 2, hy - 4], [hx + 24, hy - 4], [hx + 24, hy + 4], [hx - 2, hy + 4]], { w: 1.4, closed: true });
       c.fillStyle = '#0d0907'; c.fillRect(hx - 2, hy + 10, 4, 7);
       ink(c, [[dx, dTop], [dx + dw, dTop], [dx + dw, floorY], [dx, floorY]], { w: 2.4, closed: true });
+      if (variant === 'unlocked') {
+        // round 6 · item 4: off its latch — a crack of the Conductor's lamplight
+        // down the handle side, and a fan of it across the runner
+        c.fillStyle = '#0a0604';
+        c.fillRect(dx - 4, dTop + 2, 8, floorY - dTop - 2);
+        c.save();
+        c.globalCompositeOperation = 'lighter';
+        c.fillStyle = vgrad(c, dTop, floorY, [[0, 'rgba(255, 214, 140, 0.6)'], [0.5, 'rgba(255, 205, 130, 1)'], [1, 'rgba(255, 190, 110, 0.65)']]);
+        c.fillRect(dx - 2.5, dTop + 4, 5, floorY - dTop - 6);
+        const spill = c.createLinearGradient(dx, 0, dx - 46, 0);
+        spill.addColorStop(0, 'rgba(255, 196, 120, 0.42)');
+        spill.addColorStop(1, 'rgba(255, 196, 120, 0)');
+        c.fillStyle = spill;
+        c.fillRect(dx - 46, dTop + 6, 46, floorY - dTop - 10);
+        glow(c, dx, dTop + (floorY - dTop) * 0.5, (floorY - dTop) * 0.6, 'rgba(255, 196, 120, 0.9)', 0.32);
+        c.fillStyle = 'rgba(255, 190, 100, 0.12)';
+        c.beginPath(); c.moveTo(dx - 2, floorY); c.lineTo(dx + 2, floorY); c.lineTo(dx + 30, h + 10); c.lineTo(dx - 80, h + 10); c.closePath(); c.fill();
+        c.restore();
+      }
     }
     // lock lamp above the door
     const lampColor = lit ? '#ffcf7a' : '#c0392b';
@@ -909,6 +928,11 @@ export function drawDoor(ctx, variant = 'locked') {
   });
   ctx.glow(w * 0.3, h * 0.18, 150, { color: 0xffc070, alpha: 0.22, flicker: 0.07 });
   if (variant === 'open') ctx.glow(dx + dw * 0.5, h * 0.5, 240, { color: 0xffb060, alpha: 0.38, flicker: 0.06 });
+  if (variant === 'unlocked') {
+    // the lock lamp is lit amber now, and the crack breathes with the lamp beyond
+    ctx.glow(dx + dw / 2, dTop - 15, 70, { color: 0xffcf7a, alpha: 0.55, flicker: 0.08 });
+    ctx.glow(dx, dTop + (floorY - dTop) * 0.5, 150, { color: 0xffc070, alpha: 0.26, flicker: 0.1 });
+  }
   ctx.dust(w * 0.05, h * 0.1, w * 0.5, h * 0.6, { count: 8 });
 }
 

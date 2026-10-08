@@ -49,6 +49,79 @@ const ROUTE_SEAMS = Object.freeze([
 const FIRST_PULSE_MS = 10000;
 const PULSE_MS = 15000;
 
+// ---------------------------------------------------------------------------
+// Readables (round 6 · item 14): the papers whose words carry the case. A
+// click on one holds it up in a large reading view (PanelScene, TEXT SIZE
+// applies); through the lens it shows its 1978 words. They mirror what is
+// painted on each paper (art/oneAnswerArt.js), nothing more.
+
+const stubReading = (hole) => ({
+  shape: 'ticket', hole,
+  kicker: 'MARA’S TICKET STUB · PINNED ON THE NOTICEBOARD',
+  header: { left: 'CITY LINE', right: '0412', band: '#23434a' },
+  lines: [
+    { text: 'Terminal Row', size: 'xl' },
+    { text: '→ Bellwether', size: 'xl' },
+    { text: '17 OCT 1978', font: 'mono', size: 'm', color: 'red' },
+  ],
+});
+const SLIP_HEADER = Object.freeze({ left: 'RESERVATIONS · ECHO CITY', right: 'No 43' });
+const slipReadable = (seal) => ({
+  id: 'slip', rect: [...SLIP_RECT], era: 'both',
+  reading: {
+    shape: 'slip', seal, kicker: 'RESERVATION SLIP · PINNED BY THE COUNTER',
+    header: SLIP_HEADER,
+    lines: [
+      { text: 'M. VENN', font: 'mono', size: 'xl' },
+      { text: '07:10 EASTBOUND · CASH', font: 'mono', size: 'm' },
+    ],
+    stamp: { text: 'DUPLICATE', angle: -0.14 },
+  },
+  // 1978: nobody had stamped it yet
+  past: {
+    shape: 'slip', kicker: 'THE SAME SLIP',
+    header: SLIP_HEADER,
+    lines: [
+      { text: 'Mara Velez', size: 'xl' },
+      { text: '07:10 EASTBOUND', font: 'mono', size: 'm' },
+      { text: '→ BELLWETHER', font: 'mono', size: 'm', color: 'red' },
+    ],
+  },
+});
+/** The page torn from the ledger, pinned behind the slip (today only). */
+const TORN_PAGE = Object.freeze({
+  id: 'torn', rect: [SLIP_RECT[0] + SLIP_RECT[2], SLIP_RECT[1] + 0.01, 0.075, SLIP_RECT[3] + 0.04], era: 'present',
+  reading: { shape: 'torn', kicker: 'A PAGE TORN FROM THE RESERVATIONS LEDGER', lines: [{ text: 'RES 43 · M. VE', font: 'mono', size: 'l' }] },
+});
+const PLATE_LABEL = Object.freeze({
+  id: 'label', rect: [0.35, 0.62, 0.3, 0.09], era: 'both',
+  reading: { shape: 'plate', kicker: 'THE LABEL UNDER PLATE IV', lines: [{ text: 'PLATE IV · ARTIST UNKNOWN', font: 'mono', size: 'l' }] },
+  past: { shape: 'plate', kicker: 'THE LABEL UNDER PLATE IV', lines: [{ text: 'ROSA VELEZ · AGE 9', font: 'mono', size: 'l' }] },
+});
+const TAG_BACK = Object.freeze({
+  id: 'tag', rect: [0.14, 0.12, 0.72, 0.76], era: 'both',
+  reading: {
+    shape: 'tag', kicker: 'THE ORCHARD CASE’S TAG · FACE DOWN',
+    lines: [
+      { text: 'NO FORWARDING ADDRESS', font: 'mono', size: 'm' },
+      { text: 'CLAIM 1978-0412', font: 'mono', size: 'm' },
+    ],
+    stamp: { text: 'UNCLAIMED', size: 60, angle: -0.08 },
+  },
+  // in 1978 the tag had been written the right way round
+  past: {
+    shape: 'tag', kicker: 'THE ORCHARD CASE’S TAG',
+    lines: [
+      { text: 'Bellwether', size: 'xl', italic: true },
+      { text: 'THE ORCHARD HOUSE · M. VELEZ', font: 'mono', size: 'm', color: 'red' },
+    ],
+  },
+});
+const TAG_FACE = Object.freeze({
+  id: 'tag', rect: [0.64, 0.04, 0.32, 0.28], era: 'present',
+  reading: { shape: 'tag', kicker: 'THE ORCHARD CASE’S TAG · TURNED OVER', lines: [{ text: 'BELLWETHER', font: 'mono', size: 'xl' }] },
+});
+
 /** Mara's route: the platform, the office (whole only in 1978), the drawing, the orchard. */
 export const MARA_ROUTE = Object.freeze([
   { tile: 'stub', x: 1, y: CITY_AT },
@@ -80,6 +153,10 @@ export const ONE_ANSWER_ACT = defineAct({
   fx: ONE_ANSWER_FX,
   // dev `N`: file the exhibit at once (never a Chapter 1 checkpoint)
   devSkip: [{ endChapter: true }],
+  // Esc leaves the case for the Museum (it does not step out of a close-up here)
+  escapeZoomsOut: false,
+  // a drag on a window the Archivist has locked says so
+  fixedText: 'FILED · THE ARCHIVE HAS LOCKED IT',
   cards: {
     P1: {
       stamp: 'ACC. 1978-0412 · PENDING',
@@ -102,10 +179,14 @@ export const ONE_ANSWER_ACT = defineAct({
           draw: drawStub,
           drawPast: drawStubPast,
           edges: { right: [{ type: 'route', at: CITY_AT }] },
+          readables: [
+            { id: 'stub', rect: [0.09, 0.19, 0.25, 0.3], requires: { notFlag: 'punched' }, reading: stubReading(false) },
+            { id: 'stub', rect: [0.09, 0.19, 0.25, 0.3], requires: { flag: 'punched' }, reading: stubReading(true) },
+          ],
           hotspots: [{
             // the first move: a generous target (the whole stub around the
             // hole), with the amber ring breathing round the hole itself
-            id: 'hole', kind: 'use', once: true, requires: { notFlag: 'punched' },
+            id: 'hole', kind: 'use', once: true, requires: { notFlag: 'punched' }, verb: 'PUNCH',
             rect: [STUB_HOLE.x - 0.09, STUB_HOLE.y - 0.15, 0.18, 0.3],
             ringRect: [STUB_HOLE.x - 0.025, STUB_HOLE.y - 0.045, 0.05, 0.09],
             do: [{ setFlag: 'punched' }],
@@ -126,21 +207,23 @@ export const ONE_ANSWER_ACT = defineAct({
             left: [{ type: 'route', at: CITY_AT, ...officeEdge }],
             bottom: [{ type: 'route', at: DOWN_AT, ...officeEdge }],
           },
+          readables: [slipReadable('whole'), TORN_PAGE],
           hotspots: [{
             // today the red FILED seal is all there is: a worded tag says what
-            // to bring to it, and a click on it says why (alpha R4 · P1)
-            id: 'sealToday', kind: 'use', era: 'present', quiet: true,
+            // to bring to it, and a click on it holds the slip up to read,
+            // then says why (alpha R4 · P1; round 6 · item 14)
+            id: 'sealToday', kind: 'use', era: 'present', quiet: true, verb: 'READ', look: true,
             rect: [...SLIP_RECT],
             requires: { lens: true },
             tag: { x: SLIP_RECT[0] + 0.02, y: SLIP_RECT[1] + SLIP_RECT[3] + 0.07, angle: -0.06, text: 'CARRY THE LENS HERE' },
             do: [
-              { sfx: 'mismatch' },
+              { read: 'duplicate.slip' },
               { caption: { speaker: 'BUTCH', text: 'FILED, today. Bring her punch hole over it — in 1978 nobody had stamped it yet.', ms: 5200 } },
               { fx: { name: 'pulse', hint: { lens: true } } },
             ],
           }, {
             // in 1978 the reservation carries no seal: unfile it there
-            id: 'seal', kind: 'use', era: 'past', once: true, requires: { lens: true },
+            id: 'seal', kind: 'use', era: 'past', once: true, requires: { lens: true }, verb: 'UNFILE',
             rect: [...SLIP_RECT],
             tag: { x: SLIP_RECT[0] + SLIP_RECT[2] + 0.02, y: SLIP_RECT[1] + 0.04, angle: 0.3, glintOnly: true },
           }],
@@ -148,6 +231,7 @@ export const ONE_ANSWER_ACT = defineAct({
         open: {
           draw: drawOfficeOpen,
           drawPast: drawOfficePast,
+          readables: [slipReadable('broken'), TORN_PAGE],
           edges: {
             left: [{ type: 'route', at: CITY_AT, ...officeEdge }],
             bottom: [{ type: 'route', at: DOWN_AT, ...officeEdge }],
@@ -162,8 +246,9 @@ export const ONE_ANSWER_ACT = defineAct({
         wall: {
           draw: drawPlateWall,
           drawPast: drawPlateWall,
+          readables: [PLATE_LABEL],
           hotspots: [{
-            id: 'print', kind: 'zoom', to: 'drawing', rect: [...PRINT_RECT],
+            id: 'print', kind: 'zoom', to: 'drawing', rect: [...PRINT_RECT], notYet: 'FILED · NOT YET',
             // opens once the record is unfiled: one prompt at a time
             requires: unfiled,
             tag: { x: PRINT_RECT[0] + PRINT_RECT[2] + 0.03, y: PRINT_RECT[1] + 0.02, angle: 0.3, text: 'OPEN PLATE IV' },
@@ -187,8 +272,9 @@ export const ONE_ANSWER_ACT = defineAct({
         filed: {
           draw: drawTagFiled,
           drawPast: drawTagFiledPast,
+          readables: [TAG_BACK],
           hotspots: [{
-            id: 'turn', kind: 'use', era: 'both', once: true,
+            id: 'turn', kind: 'use', era: 'both', once: true, verb: 'TURN OVER',
             rect: [0.14, 0.12, 0.72, 0.76],
             requires: unfiled,
             do: [{ setState: { tile: 'tag', state: 'face' } }, { sfx: 'paper' }],
@@ -198,6 +284,7 @@ export const ONE_ANSWER_ACT = defineAct({
         face: {
           draw: drawTagFace,
           drawPast: drawTagPast,
+          readables: [TAG_FACE],
           edges: { right: [{ type: 'route', at: ORCHARD_AT }] },
         },
       },

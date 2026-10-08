@@ -1,7 +1,7 @@
 // Act 1 presentation effects, run by PanelScene when the script emits
 // `{ fx: { name } }`. Each receives the renderer's fx api (see README.md).
 
-import { CHUTE_AT, SLOT_Y } from './act1Art.js';
+import { CHUTE_AT, DOOR, FLOOR, SLOT_Y } from './act1Art.js';
 
 export const ACT1_FX = {
   slotFlash(api) {
@@ -33,6 +33,22 @@ export const ACT1_FX = {
       api.flash(to.tile, to.x, to.y, { color: 0xffd27a, size: 200, duration: 700 });
       api.sparkle(b.x, b.y, 6);
     });
+  },
+
+  /**
+   * Round 6 · item 4: the ticket in the slot unlocks the door, and that is
+   * held on screen: the lock lamp flips red → amber with a flash, the bolt
+   * clacks back, and lamplight runs down the crack of the door.
+   */
+  doorUnlocked(api) {
+    const lamp = { u: DOOR.x + DOOR.w / 2, v: DOOR.top - 15 / 414 };
+    api.audio.play('unlatch');
+    api.flash('door', lamp.u, lamp.v, { color: 0xffcf7a, size: 120, duration: 900 });
+    const top = api.screen('door', DOOR.x, DOOR.top + 0.02);
+    const bottom = api.screen('door', DOOR.x, FLOOR - 0.01);
+    api.scene.time.delayedCall(260, () => api.lightRun([top, bottom], { duration: 700, size: 40, trail: 8 }));
+    const p = api.screen('door', lamp.u, lamp.v);
+    api.sparkle(p.x, p.y, 6);
   },
 
   punchHandover(api) {

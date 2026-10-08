@@ -58,7 +58,7 @@ export const ACT2 = defineAct({
           drawPast: drawRackPast,
           hotspots: [
             {
-              id: 'bellwether', kind: 'use', era: 'past', once: true,
+              id: 'bellwether', kind: 'use', era: 'past', once: true, verb: 'MARK',
               rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
               // the second use of the lens click (REQUEST STOP is the first)
               // (once marked it steps aside: a click there reaches the case tag)
@@ -69,7 +69,7 @@ export const ACT2 = defineAct({
             {
               // the same tag through the lens before the stop is requested: it
               // answers (alpha R4 · P1), so the player does not rule it out
-              id: 'bellwetherEarly', kind: 'use', era: 'past', quiet: true,
+              id: 'bellwetherEarly', kind: 'use', era: 'past', quiet: true, verb: 'MARK',
               rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
               requires: { all: [{ item: 'lens' }, { notFlag: 'stopRequested' }] },
               do: [
@@ -126,7 +126,7 @@ export const ACT2 = defineAct({
           edges: { top: [{ type: 'drop', at: DROP_AT, silent: true }] },
           hotspots: [
             {
-              id: 'ticket', kind: 'use', once: true,
+              id: 'ticket', kind: 'use', once: true, verb: 'PUNCH',
               rect: [TICKET_AT.x - 0.045, TICKET_AT.y - 0.08, 0.09, 0.16],
               requires: { notItem: 'lens' },
               tag: { x: TICKET_AT.x + 0.02, y: TICKET_AT.y - 0.05, angle: -0.4, glintOnly: true, ring: true },
@@ -156,7 +156,7 @@ export const ACT2 = defineAct({
         stone: {
           draw: drawBeneath,
           hotspots: [{
-            id: 'ember', kind: 'use', once: true, rect: [0.38, 0.32, 0.24, 0.46],
+            id: 'ember', kind: 'use', once: true, rect: [0.38, 0.32, 0.24, 0.46], verb: 'TAKE',
             requires: { notFlag: 'stone:chapter-1' },
             do: [{ grantStone: 'chapter-1' }, { fx: { name: 'emberTaken' } }],
           }],
@@ -173,7 +173,7 @@ export const ACT2 = defineAct({
             // today's plate is dead: a click on it outside the lens says where
             // it still works (alpha R4 · P1: after the ghost hand, players
             // pressed the plate where the hand had carried the lens)
-            id: 'requestDead', kind: 'use', era: 'present', quiet: true,
+            id: 'requestDead', kind: 'use', era: 'present', quiet: true, verb: 'PRESS',
             rect: [...REQUEST_STOP],
             requires: { all: [{ item: 'lens' }, { notFlag: 'stopRequested' }] },
             do: [
@@ -183,7 +183,7 @@ export const ACT2 = defineAct({
             ],
           }, {
             // punched through the lens, in 1978 light: the stop is requested
-            id: 'request', kind: 'use', era: 'past', once: true,
+            id: 'request', kind: 'use', era: 'past', once: true, verb: 'PRESS',
             rect: [...REQUEST_STOP],
             requires: { item: 'lens' },
             tag: { x: REQUEST_STOP[0] + REQUEST_STOP[2] - 0.01, y: REQUEST_STOP[1] + 0.02, angle: 0.45, scale: 1.3 },

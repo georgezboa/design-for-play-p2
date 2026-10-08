@@ -67,7 +67,8 @@ test('Act 0.5 puzzle 2: zoom level changes which edges meet — only both close-
   assert.equal(model.state.tiles.door.state, 'open');
   assert.equal(model.state.tiles.desk.state, 'office', 'both close-ups step back');
   const fx = log.filter(([n]) => n === 'fx').map(([, p]) => p.name);
-  assert.deepEqual(fx, ['carrier', 'keyTurn', 'deskBell']);
+  // round 6 · item 4: the unlock is held, and the wide view shows the door ajar
+  assert.deepEqual(fx, ['carrier', 'keyTurn', 'doorAjar', 'deskBell']);
   assert.equal(model.textState().step, 'home');
 });
 

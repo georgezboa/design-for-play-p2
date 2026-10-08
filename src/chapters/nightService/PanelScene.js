@@ -16,15 +16,22 @@
 // pull to unfold the carriage wall (unfold.js holds the rules).
 
 import Phaser from 'phaser';
-import { TAG_ART, TEXT_TAG, edgePoint, framePoints, planGrowth, textTagWidth, tilePoint } from './panelModel.js';
+import {
+  TAG_ART, TEXT_TAG, actPlates, bezelSlotAt, coverFit, edgePoint, framePoints, hotspotAffordance, planGrowth, plateKey,
+  textTagWidth, tilePoint,
+} from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
 import { FRAME_DT_CAP_MS, frameDt, stepModel } from './frameClock.js';
 import { ACTS, actById, startCarry } from './acts/index.js';
-import { FRAME_TAG_SEEN, WAIT_CUE_MS, createHintDirector, frameTagFor, pickGesture, stepVerb, unmetSeam, waitingWalkers } from './hints.js';
+import {
+  FRAME_TAG_SEEN, NEED_HINT_SEEN, WAIT_CUE_MS, createFlailMeter, createHintDirector, frameTagFor, pickGesture, stepVerb, unmetSeam, waitingWalkers,
+} from './hints.js';
 import { HINT_SPEAKER, hintLine } from './hintLines.js';
 import { INTRO_FAILSAFE_SLACK_MS, createIntroGuard, growScheduleMs, introScheduleMs } from './introGuard.js';
 import { FRAME_TAG, GHOST_HAND, UNFOLD_PULL, UNFOLD_TAG, paintGhostHand, paintUnfoldPull, paintUnfoldTag } from './art/hintArt.js';
-import { createUnfold, onFold, peekOffset, planUnfold, unfoldLayout } from './unfold.js';
+import { DEMO_NUDGE, createUnfold, demoNudge, onFold, peekOffset, planUnfold, unfoldLayout } from './unfold.js';
+import { NoticeChip } from './chips.js';
+import { ReadingView } from './readingView.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
@@ -61,8 +68,10 @@ const LENS_FRAME_HOLD_MS = 250;
 const FRAME_TAG_TEXT = 'HOLD · LIFT THE FRAME';
 /** Inside this far from the lens rim a press is on the glass, not the rim. */
 const LENS_RIM = 18;
-/** The keys the panel scene answers (besides the arrows). */
-const KEYS = new Set(['Tab', 'Enter', ' ', 'Backspace', 'f', 'F', 'l', 'L', 'h', 'H']);
+/** The keys the panel scene answers (besides the arrows). E is Enter (unified controls, round 6). */
+const KEYS = new Set(['Tab', 'Enter', 'e', 'E', ' ', 'Backspace', 'f', 'F', 'l', 'L', 'h', 'H']);
+/** Interact / confirm / advance (unified controls, feedback item 18): E is Enter. */
+const keyOf = (event) => (event.key === 'e' || event.key === 'E' ? 'Enter' : event.key);
 /** After a key that had nothing to do, the key strip blinks the one that would help. */
 const KEY_NUDGE = { Enter: 'TAB', Tab: '← ↑ ↓ →', ' ': '← ↑ ↓ →', Backspace: 'TAB', f: '← ↑ ↓ →', l: 'H' };
 // the "lift" cursor over a liftable frame: a brass frame with an arrow up
@@ -71,6 +80,21 @@ const LIFT_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"
   + '<rect x="4.5" y="13.5" width="23" height="15" rx="3" fill="none" stroke="#e0b36a" stroke-width="2.5"/>'
   + '<path d="M16 1.5 L23.5 9.5 H19 V18 H13 V9.5 H8.5 Z" fill="#fff4dc" stroke="#1c130d" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 export const LIFT_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(LIFT_SVG)}") 16 16, grab`;
+// "look closer" (round 6 · item 1): a brass magnifier with a plus, over
+// anything that zooms in or is read; acting on the world keeps the hand
+const LOOK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">'
+  + '<path d="M19.5 19.5 L28.5 28.5" stroke="#1c130d" stroke-width="7" stroke-linecap="round"/>'
+  + '<path d="M19.5 19.5 L28.5 28.5" stroke="#e0b36a" stroke-width="3.6" stroke-linecap="round"/>'
+  + '<circle cx="12.5" cy="12.5" r="9.5" fill="rgba(255,244,220,0.28)" stroke="#1c130d" stroke-width="5"/>'
+  + '<circle cx="12.5" cy="12.5" r="9.5" fill="none" stroke="#e0b36a" stroke-width="2.6"/>'
+  + '<path d="M12.5 8 V17 M8 12.5 H17" stroke="#fff4dc" stroke-width="2.4" stroke-linecap="round"/></svg>';
+export const LOOK_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(LOOK_SVG)}") 12 12, zoom-in`;
+/** The empty-click reasons, and how many times each act says one before it only nudges. */
+const DEAD_CLICK_WORDS = 3;
+/** The first close-up's one-time "how to step back" chip (round 6 · item 1). */
+const ZOOM_BACK_SEEN = 'tag:zoomBack';
+const ZOOM_BACK_TEXT = 'TO STEP BACK:  [ESC] · RIGHT-CLICK · OR THIS';
+const NEED_HINT_TEXT = 'NEED A HINT?  [H]';
 
 // the unfold: the pull is drawn opening towards -x and turned to face its side
 const FOLD_ROTATION = Object.freeze({ left: 0, right: Math.PI, top: Math.PI / 2, bottom: -Math.PI / 2 });
@@ -142,6 +166,8 @@ class TileView {
     this.bezel = s.add.container(0, 0);
     this.vignette = s.add.image(-w / 2, -h / 2, vkey).setOrigin(0, 0);
     this.cover = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
+    // round 6 · item 15: while a line is spoken the windows step back (dimmed)
+    this.dim = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
     this.ring = s.add.image(-w / 2 - BEZEL, -h / 2 - BEZEL, key).setOrigin(0, 0);
     // the keyboard's selected window: ivory on a dark outline, so it reads
     // against the brass bezel and the gold wall alike
@@ -154,7 +180,7 @@ class TileView {
     this.glyph = s.add.image(w / 2 - 12, -h / 2 + 12, 'nsv-zoomout').setScale(0.5).setVisible(false);
     // the glyph's cue when stepping back is the lesson (Act 0)
     this.glyphGlow = s.add.image(w / 2 - 12, -h / 2 + 12, 'nsv-radial').setTint(0xffc46a).setBlendMode('ADD').setDisplaySize(96, 96).setAlpha(0).setVisible(false);
-    this.bezel.add([this.vignette, this.cover, this.ring, this.select, this.glyphGlow, this.glyph]);
+    this.bezel.add([this.vignette, this.cover, this.dim, this.ring, this.select, this.glyphGlow, this.glyph]);
     s.bezelLayer.add(this.bezel);
   }
 
@@ -276,6 +302,8 @@ export class PanelScene extends Phaser.Scene {
     worlds.forEach((name) => WORLDS[name].chunks.forEach(({ key, url }) => {
       if (!this.textures.exists(key)) this.load.image(key, url);
     }));
+    // painted plates (round 6): illustrated PNGs a tile state draws full-tile
+    actPlates(act).forEach(({ key, url }) => { if (!this.textures.exists(key)) this.load.image(key, url); });
   }
 
   create() {
@@ -327,6 +355,17 @@ export class PanelScene extends Phaser.Scene {
     this.hintSeen = this.services.hintSeen ?? new Set();
     this.services.hintSeen = this.hintSeen;
     this.hints = createHintDirector({ seen: this.hintSeen });
+    // round 6: ineffective tries offer the hint key once (item 5), empty
+    // clicks say why (item 1), the first close-up says how to step back
+    this.flail = createFlailMeter({ seen: this.hintSeen });
+    this.deadWords = 0;
+    this.lastLockedTap = -1e9;
+    this.zoomBack = null;
+    this.hoverRim = null;
+    this.rimLift = {};
+    this.frameRise = {};
+    this.dialogueDim = 0;
+    this.pointerInfo = { cursor: 'default', label: null };
 
     // dev QA only (`?dtmax=`): let tweens take real-time steps on very slow
     // headless renderers instead of Phaser's 33 ms lag-smoothing.
@@ -356,6 +395,9 @@ export class PanelScene extends Phaser.Scene {
     this.buildWall();
     this.linkG = this.add.graphics();
     this.bezelLayer.add(this.linkG);
+    // pooled light on the bezel lips where two windows join (drawLinks)
+    this.linkPoolLayer = this.add.container(0, 0);
+    this.bezelLayer.add(this.linkPoolLayer);
     this.shadow = this.add.image(0, 0, 'nsv-shadow').setVisible(false).setAlpha(0);
     this.bezelLayer.add(this.shadow);
     // where a carried window will land
@@ -373,6 +415,7 @@ export class PanelScene extends Phaser.Scene {
       this.views[tileId] = new TileView(this, tileId, index);
     });
     this.bezelLayer.add(this.crossLayer);
+    this.bezelLayer.bringToTop(this.linkPoolLayer);
     this.bezelLayer.bringToTop(this.linkG);
     this.bezelLayer.bringToTop(this.targetG);
     this.bezelLayer.bringToTop(this.crossLayer);
@@ -593,8 +636,10 @@ export class PanelScene extends Phaser.Scene {
     this.captionBg = this.add.nineslice(0, 0, 'nsv-caption', null, 1240, 124, 26, 26, 26, 26).setOrigin(0.5, 1);
     this.captionSpeaker = this.add.text(-580, -100, '', { fontFamily: MONO, fontSize: '22px', color: '#e0a24a', fontStyle: 'bold' });
     this.captionText = this.add.text(-580, -68, '', { fontFamily: SERIF, fontSize: '34px', color: '#eadfc6', wordWrap: { width: 1150 }, lineSpacing: 6 });
-    this.captionNext = this.add.text(592, -10, '▸', { fontFamily: SERIF, fontSize: '30px', color: '#e0a24a' }).setOrigin(1, 1);
-    this.captionBox.add([this.captionBg, this.captionSpeaker, this.captionText, this.captionNext]);
+    // round 6 · item 15: the line says how it moves on (a click anywhere, E or Enter)
+    this.captionNext = this.add.text(592, -14, '▸ CONTINUE', { fontFamily: MONO, fontSize: '18px', color: '#e0a24a', fontStyle: 'bold', letterSpacing: 3 }).setOrigin(1, 1);
+    this.captionKeys = this.add.text(592, -14, 'CLICK · E', { fontFamily: MONO, fontSize: '15px', color: '#eadfc6', fontStyle: 'bold', letterSpacing: 2 }).setOrigin(1, 1).setAlpha(0.55);
+    this.captionBox.add([this.captionBg, this.captionSpeaker, this.captionText, this.captionNext, this.captionKeys]);
     this.topLayer.add(this.captionBox);
     // archive card
     this.cardBox = this.add.container(W / 2, H / 2 - 30).setVisible(false);
@@ -604,9 +649,18 @@ export class PanelScene extends Phaser.Scene {
     this.cardTitle = this.add.text(-250, -104, '', { fontFamily: SERIF, fontSize: '44px', color: '#2a1d14', fontStyle: 'bold' });
     this.cardLines = this.add.text(-250, -36, '', { fontFamily: SERIF, fontSize: '30px', color: '#3a2a1c', wordWrap: { width: 540 }, lineSpacing: 10 });
     // how to put it down (alpha R4 · P1: the exhibit's first card read as a wall)
-    this.cardHint = this.add.text(0, 246, 'CLICK OR PRESS ENTER TO CLOSE', { fontFamily: MONO, fontSize: '18px', color: '#e0a24a', fontStyle: 'bold', letterSpacing: 3 }).setOrigin(0.5).setAlpha(0);
+    this.cardHint = this.add.text(0, 246, 'CLICK · E · ENTER TO CLOSE', { fontFamily: MONO, fontSize: '18px', color: '#e0a24a', fontStyle: 'bold', letterSpacing: 3 }).setOrigin(0.5).setAlpha(0);
     this.cardBox.add([scrim, card, this.cardStamp, this.cardTitle, this.cardLines, this.cardHint]);
     this.topLayer.add(this.cardBox);
+    // the reading view (round 6 · item 14): evidence held up to the eye
+    this.reader = new ReadingView(this, this.topLayer, { view: this.layout.view, env: this.env });
+    // the engine's short words (round 6): verbs, reasons, step back, NEED A HINT?
+    this.chipLayer = this.add.container(0, 0);
+    this.topLayer.addAt(this.chipLayer, this.topLayer.getIndex(this.blackout));
+    this.verbChip = new NoticeChip(this, this.chipLayer, { size: 19 });
+    this.reasonChip = new NoticeChip(this, this.chipLayer, { size: 18 });
+    this.backChip = new NoticeChip(this, this.chipLayer, { size: 18 });
+    this.needChip = new NoticeChip(this, this.chipLayer, { size: 19 });
     // act title card
     this.titleBox = this.add.container(W / 2, H / 2).setAlpha(0);
     this.titleKicker = this.add.text(0, -40, '', { fontFamily: MONO, fontSize: '22px', color: '#e0a24a', letterSpacing: 6 }).setOrigin(0.5);
@@ -620,19 +674,24 @@ export class PanelScene extends Phaser.Scene {
     const s = clamp(this.textScale, 0.8, 1.6);
     this.captionText?.setFontSize(Math.round(34 * s)).setWordWrapWidth(1150);
     this.captionSpeaker?.setFontSize(Math.round(22 * s));
+    this.captionNext?.setFontSize(Math.round(18 * s));
+    this.captionKeys?.setFontSize(Math.round(15 * s));
     if (this.caption) this.layoutCaption(this.caption.text);
     this.cardTitle?.setFontSize(Math.round(44 * s));
     this.cardLines?.setFontSize(Math.round(30 * s));
     this.cardStamp?.setFontSize(Math.round(24 * s));
     this.cardBox?.setScale(Math.max(1, 0.8 + s * 0.2));
+    this.reader?.relayout(this.textScale);
   }
 
   orderCameras() {
     const tiles = Object.values(this.views);
     // while the wall is folded, the windows tucked behind the others draw first
     const tucked = (view) => (this.fold && this.foldOpenTiles?.has(view.id) ? 0 : 1);
-    const resting = tiles.filter((view) => !view.lifted).sort((a, b) => tucked(a) - tucked(b)).map((view) => view.cam);
-    const lifted = tiles.filter((view) => view.lifted).map((view) => view.cam);
+    // a window picked up by its bezel (round 6) is drawn above the shadow it casts, like a lifted one
+    const up = (view) => view.lifted || view.raised;
+    const resting = tiles.filter((view) => !up(view)).sort((a, b) => tucked(a) - tucked(b)).map((view) => view.cam);
+    const lifted = tiles.filter((view) => up(view)).map((view) => view.cam);
     this.cameras.cameras = [this.cameras.main, ...resting, this.bezelCam, ...lifted, this.dragCam, this.topCam];
   }
 
@@ -662,14 +721,17 @@ export class PanelScene extends Phaser.Scene {
     const present = this.add.container(0, 0);
     root.add(present);
     const pctx = this.paintCtx(view, present, 'present', stateId);
+    // a painted plate (round 6) goes under the state's own drawing, which then only adds overlays
+    pctx.plate = this.drawPlate(view, present, sceneDef?.plate);
     sceneDef?.draw?.(pctx);
     let past = null;
     let animators = [...pctx.animators];
-    if (sceneDef?.drawPast) {
+    if (sceneDef?.drawPast || sceneDef?.platePast) {
       past = this.add.container(0, 0);
       root.add(past);
       const qctx = this.paintCtx(view, past, 'past', stateId);
-      sceneDef.drawPast(qctx);
+      qctx.plate = this.drawPlate(view, past, sceneDef.platePast);
+      sceneDef.drawPast?.(qctx);
       animators = animators.concat(qctx.animators);
       past.setMask(view.geomMask);
       past.setVisible(false);
@@ -726,6 +788,20 @@ export class PanelScene extends Phaser.Scene {
     return { stateId, root, present, past, animators, tags, rings };
   }
 
+  /**
+   * A painted plate: an illustrated PNG drawn full-tile (cover-fit) at the
+   * bottom of a state's layer. Returns true when one was drawn (`ctx.plate`).
+   */
+  drawPlate(view, layer, url) {
+    if (!url) return false;
+    const key = plateKey(url);
+    if (!this.textures.exists(key)) return false;
+    const src = this.textures.get(key).getSourceImage();
+    const fit = coverFit(src.width, src.height, view.w, view.h);
+    layer.add(this.add.image(fit.x, fit.y, key).setOrigin(0, 0).setScale(fit.scale));
+    return true;
+  }
+
   rebuildState(view, { instant = false } = {}) {
     const stateId = this.model.state.tiles[view.id].state;
     const next = this.buildState(view, stateId);
@@ -750,9 +826,29 @@ export class PanelScene extends Phaser.Scene {
       view.frameLayer.add(holder);
       const ctx = this.paintCtx(view, holder, 'present', `frame:${frame.id}`);
       ctx.overlay = frame.origin !== view.id;
+      ctx.plate = this.drawPlate(view, holder, def.plate);
       def.draw(ctx);
       view.frameAnimators.push(...ctx.animators);
     });
+    // round 6 · item 3: a liftable frame's hover preview rises from its own
+    // shadow (a dark silhouette of the same drawing), the picture stays put
+    view.frameShadow?.destroy();
+    view.frameShadow = null;
+    const ownId = this.model.frameOn(view.id);
+    const own = ownId ? this.model.state.frames[ownId] : null;
+    const def = own ? this.model.frameDef(own.id) : null;
+    if (def?.draw && def.liftable !== false) {
+      const shade = this.add.container(0, 0).setAlpha(0);
+      view.root.addAt(shade, view.root.getIndex(view.frameLayer));
+      const ctx = this.paintCtx(view, shade, 'present', `frame:${own.id}`);
+      ctx.overlay = own.origin !== view.id;
+      ctx.shadow = true;
+      def.draw(ctx);
+      const ink = (obj) => { obj.setTintFill?.(0x060403); obj.list?.forEach(ink); };
+      ink(shade);
+      view.frameShadow = shade;
+    }
+    view.frameLayer.setPosition(0, 0);
   }
 
   /** Paint every state's canvases now so zooms never hitch mid-animation. */
@@ -775,6 +871,8 @@ export class PanelScene extends Phaser.Scene {
     m.on('zoom', ({ tile, dir, rect, to }) => {
       this.animateZoom(this.views[tile], dir, rect);
       if (dir === 'in') this.lensAside(tile, to);
+      // the first close-up's step-back chip: done with once they have stepped back
+      if (dir === 'out' && this.zoomBack?.tile === tile) this.retireZoomBack();
       // a passing line (the Conductor's wake-up call) never rides along into a close-up
       if (this.caption?.auto && this.clock - (this.caption.at ?? 0) > 600) this.hideCaption();
     });
@@ -795,8 +893,9 @@ export class PanelScene extends Phaser.Scene {
     });
     m.on('frame:drop', ({ frame, onto }) => { this.endFloatingFrame(frame, onto); Object.values(this.views).forEach((view) => this.rebuildFrames(view)); this.audio.play('settle'); });
     m.on('bell', (bell) => this.onBell(bell));
-    m.on('card', ({ card }) => this.showCard(card));
+    m.on('card', ({ card }) => (card?.reading ? this.showReading(card) : this.showCard(card)));
     m.on('card:close', () => this.hideCard());
+    m.on('step', () => this.flail.progress());
     m.on('dialogue', ({ line }) => this.showLine(line));
     m.on('dialogue:end', () => this.hideCaption());
     m.on('caption', (caption) => this.showCaption(caption));
@@ -805,7 +904,13 @@ export class PanelScene extends Phaser.Scene {
     m.on('item', ({ item, held }) => { if (held) this.audio.play('glint'); void item; });
     m.on('stone', ({ id }) => { this.audio.play('stone'); this.services.onStone?.(id); this.refreshSockets(true); });
     m.on('checkpoint', ({ id }) => this.services.onCheckpoint?.(id));
-    m.on('hotspot', ({ kind }) => { if (kind === 'read') this.audio.play('paper'); else if (kind !== 'zoom') this.audio.play('clack'); });
+    m.on('hotspot', ({ tile, kind }) => {
+      if (kind === 'read') this.audio.play('paper');
+      else if (kind !== 'zoom') this.audio.play('clack');
+      // the player's first close-up of the chapter: say how to step back out of it
+      if (kind === 'zoom') this.lastZoomed = tile;
+      if (kind === 'zoom' && !this.hintSeen.has(ZOOM_BACK_SEEN) && !this.zoomBack) this.zoomBack = { tile, shownAt: null };
+    });
     m.on('walk:blocked', ({ actor }) => { if (actor === 'butch') this.flashBlocked(); });
     m.on('lens', (lens) => { if (lens.appeared) this.audio.play('clack'); });
     m.on('act:end', ({ next, carry }) => this.time.delayedCall(120, () => this.gotoAct(next ?? this.act.next, carry)));
@@ -859,6 +964,9 @@ export class PanelScene extends Phaser.Scene {
     this.foldPointer = false;
     this.foldKeyHeld = false;
     this.foldHover = false;
+    this.foldNudged = false;
+    this.foldNudging = false;
+    this.foldWrongUntil = 0;
     // the first unfold of the chapter is the one that teaches it
     this.foldTeach = !this.hintSeen.has('unfold');
     this.foldOpenTiles = new Set(fold.open.map((win) => win.tile));
@@ -905,16 +1013,22 @@ export class PanelScene extends Phaser.Scene {
     this.foldUi = { ui, wash, line, halo, string, pull, tag, glint, arrow, focus, len, alpha: 0 };
   }
 
-  /** Lay the windows out at unfold progress `p` (0 folded … 1 open). */
-  applyFold(p) {
+  /**
+   * Lay the windows out at unfold progress `p` (0 folded … 1 open). `lean`
+   * (px, ≤ 0): a wrong-way pull pushes the kept windows a hair the wrong way.
+   */
+  applyFold(p, lean = 0) {
     const lay = unfoldLayout(this.fold, p, { bezel: BEZEL });
     this.foldLayout = lay;
+    const keep = new Set(this.fold.keep.map((win) => win.tile));
+    const ax = this.fold.axis === 'x';
     Object.entries(lay.rects).forEach(([tile, r]) => {
       const view = this.views[tile];
       if (!view) return;
       view.clip = r.clip;
       view.moving = true;
-      view.setRect(r, { scale: r.scale });
+      const push = keep.has(tile) ? lean * 0.35 * this.fold.sign : 0;
+      view.setRect(push ? { ...r, x: r.x + (ax ? push : 0), y: r.y + (ax ? 0 : push) } : r, { scale: r.scale });
     });
     // the old, smaller wall gives way to the new one as the wall opens
     this.foldWall?.setAlpha(clamp(1 - p * 2.2, 0, 1));
@@ -947,8 +1061,10 @@ export class PanelScene extends Phaser.Scene {
       if (k) ui.line.lineBetween(at, a0, at, a1);
       else ui.line.lineBetween(a0, at, a1, at);
     });
-    // the pull rides the free edge of the new window(s)
-    const pull = lay.pull;
+    // the pull rides the free edge of the new window(s); pulled the wrong
+    // way it gives a few px and rings back (round 6 · item 2)
+    const back = this.unfold?.back ?? 0;
+    const pull = k ? { x: lay.pull.x + fold.sign * back, y: lay.pull.y } : { x: lay.pull.x, y: lay.pull.y + fold.sign * back };
     const grabbing = this.foldPointer || this.foldKeyHeld;
     const hover = this.foldHover || grabbing;
     if (!this.tweens.isTweening(ui.pull)) ui.pull.setScale((PULL_SCALE / 2) * (hover ? 1.08 : 1));
@@ -972,8 +1088,9 @@ export class PanelScene extends Phaser.Scene {
     const tw = Math.max(0, Math.sin(t * 1.3)) ** 8;
     ui.glint.setPosition(eyelet.x + gx * Math.cos(sway) - gy * Math.sin(sway), eyelet.y + gx * Math.sin(sway) + gy * Math.cos(sway))
       .setAlpha((0.4 + tw * 0.6) * tagA).setScale(0.55 + tw * 0.3);
-    // the way to drag: three chevrons leading out from the grip
-    this.drawFoldArrow(ui.arrow, grip, rot, { p, grabbing, reduce, t });
+    // the way to drag: three chevrons leading out from the grip (bright
+    // while it is being pulled the wrong way: this way, not that)
+    this.drawFoldArrow(ui.arrow, grip, rot, { p, grabbing, reduce, t, wrong: Boolean(this.unfold?.wrongWay) || this.clock < (this.foldWrongUntil ?? 0) });
     // keyboard focus: ivory on a dark outline, round the grip
     ui.focus.clear();
     if (this.keyboardMode && this.foldFocus) {
@@ -990,11 +1107,11 @@ export class PanelScene extends Phaser.Scene {
    * opening towards -x and rotated by `rot`). They march outward, fade once
    * the drag is under way, and stay still under REDUCE MOTION.
    */
-  drawFoldArrow(g, grip, rot, { p, grabbing, reduce, t }) {
+  drawFoldArrow(g, grip, rot, { p, grabbing, reduce, t, wrong = false }) {
     g.clear();
     const dir = { x: -Math.cos(rot), y: -Math.sin(rot) };
     const side = { x: -dir.y, y: dir.x };
-    const show = clamp(1 - p * 6, 0, 1) * (grabbing ? 0.35 : 1);
+    const show = clamp(1 - p * 6, 0, 1) * (grabbing && !wrong ? 0.35 : 1);
     if (show <= 0.01) return;
     const start = 58;
     const step = 38;
@@ -1009,8 +1126,8 @@ export class PanelScene extends Phaser.Scene {
       const tip = { x: cx + dir.x * 12, y: cy + dir.y * 12 };
       const a = { x: cx - dir.x * 10 + side.x * 19, y: cy - dir.y * 10 + side.y * 19 };
       const b = { x: cx - dir.x * 10 - side.x * 19, y: cy - dir.y * 10 - side.y * 19 };
-      [[11, 0x0b0705, 0.7], [5.5, 0xfff2d4, 1]].forEach(([w, color, k]) => {
-        g.lineStyle(w, color, alpha * k);
+      [[11, 0x0b0705, 0.7], [5.5, wrong ? 0xffc46a : 0xfff2d4, 1]].forEach(([w, color, k]) => {
+        g.lineStyle(w + (wrong && color !== 0x0b0705 ? 1.5 : 0), color, alpha * k);
         g.beginPath();
         g.moveTo(a.x, a.y);
         g.lineTo(tip.x, tip.y);
@@ -1030,10 +1147,19 @@ export class PanelScene extends Phaser.Scene {
     const event = u.update(dt);
     const resting = u.state === 'folded' && !this.ghost;
     this.foldIdle = resting ? this.foldIdle + dt : 0;
-    const peek = resting ? peekOffset(this.foldIdle, { teach: this.foldTeach, reduce: reducedMotionActive() }) : 0;
+    const reduce = reducedMotionActive();
+    const peek = resting ? peekOffset(this.foldIdle, { teach: this.foldTeach, reduce }) : 0;
+    // round 6 · item 2: the teaching unfold shows the way once, after ~3 s idle
+    let nudge = 0;
+    if (this.foldTeach && !this.foldNudged && resting) {
+      nudge = demoNudge(this.foldIdle, { teach: true, reduce });
+      if (nudge > 0 && !this.foldNudging) { this.foldNudging = true; this.audio.play('unfoldNudge'); }
+      if (this.foldIdle > DEMO_NUDGE.at + DEMO_NUDGE.ms) { this.foldNudged = true; this.foldNudging = false; }
+    }
+    if (u.progress > 0.08) this.foldNudged = true;
     if (!this.ghost) this.foldDemo = Math.max(0, this.foldDemo - dt / 260);
-    const shown = clamp(Math.max(u.progress, this.foldDemo) + peek, 0, 1);
-    this.applyFold(shown);
+    const shown = clamp(Math.max(u.progress, this.foldDemo) + peek + nudge, 0, 1);
+    this.applyFold(shown, u.back);
     this.drawFoldUi(shown, dt);
     if (event === 'done') this.completeFold();
   }
@@ -1069,13 +1195,22 @@ export class PanelScene extends Phaser.Scene {
     const result = u.release();
     this.input.setDefaultCursor(this.foldHover ? 'grab' : 'default');
     if (result === 'snap') this.onFoldSnap();
+    else if (result === 'rebound') this.foldRebound();
     else if (result === 'spring' && u.progress > 0.02) this.audio.play('unfoldBack');
+  }
+
+  /** A wrong-way pull let go: it rings back into place, softly, and the chevrons show the way. */
+  foldRebound() {
+    this.audio.play('unfoldRebound');
+    this.foldWrongUntil = this.clock + 1400;
+    this.flailMiss();
   }
 
   /** A press anywhere else: the pull jumps and the fold breathes (it's this). */
   nudgeFold() {
     const ui = this.foldUi;
     if (!ui) return;
+    this.flailMiss();
     this.tweens.killTweensOf(ui.pull);
     ui.pull.setScale(PULL_SCALE / 2);
     this.tweens.add({ targets: ui.pull, scale: (PULL_SCALE / 2) * 1.18, duration: 140, yoyo: true, repeat: 1, ease: 'Sine.easeInOut' });
@@ -1171,7 +1306,7 @@ export class PanelScene extends Phaser.Scene {
 
   /** The keyboard while folded: Tab focuses the pull, hold the arrow or press Enter. */
   foldKey(event) {
-    const key = event.key;
+    const key = keyOf(event);
     const arrows = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'];
     const ours = arrows.includes(key) || KEYS.has(key);
     if (ours && !this.keyboardMode) this.keyboardMode = true;
@@ -1189,9 +1324,12 @@ export class PanelScene extends Phaser.Scene {
     }
     if (key === 'h' || key === 'H') { this.requestHint(); return true; }
     if (arrows.includes(key) || key === 'Backspace' || key === 'f' || key === 'F' || key === 'l' || key === 'L') {
-      // nothing else to do yet: the pull jumps and its key blinks
+      // nothing else to do yet: the pull jumps and its key blinks; the
+      // opposite arrow pushes the pull the wrong way, and it rings back
       this.keyStripBlink = { key: FOLD_CAPS[this.fold.side], until: this.clock + 1400 };
-      this.nudgeFold();
+      const opposite = { left: 'ArrowRight', right: 'ArrowLeft', top: 'ArrowDown', bottom: 'ArrowUp' }[this.fold.side];
+      if (key === opposite && !event.repeat && this.unfold.kick() === 'rebound') this.foldRebound();
+      else this.nudgeFold();
       return true;
     }
     return ours;
@@ -1326,6 +1464,7 @@ export class PanelScene extends Phaser.Scene {
     view.lifted = on;
     if (on) this.dragLayer.add(view.bezel); else this.bezelLayer.add(view.bezel);
     if (!on) {
+      this.bezelLayer.bringToTop(this.linkPoolLayer);
       this.bezelLayer.bringToTop(this.linkG);
       this.bezelLayer.bringToTop(this.targetG);
       this.bezelLayer.bringToTop(this.crossLayer);
@@ -1338,6 +1477,9 @@ export class PanelScene extends Phaser.Scene {
 
   onDragStart(tileId) {
     const view = this.views[tileId];
+    // (a bezel press may already have it rising: take over from there)
+    this.tweens.killTweensOf(view.rect);
+    view.raised = false;
     this.liftView(view, true);
     this.shadow.setVisible(true);
     this.audio.play('lift');
@@ -1434,11 +1576,12 @@ export class PanelScene extends Phaser.Scene {
     this.audio.play('chime');
     this.bridgeFlash.set(link.key, this.clock);
     const [p, q] = this.linkEndpoints(link);
-    const span = 150;
+    // a short run of light along the join, from a little inside one picture to the other
+    const span = 70;
     const points = link.dir === 'h'
       ? [{ x: p.x - span, y: p.y }, p, q, { x: q.x + span, y: q.y }]
-      : [{ x: p.x, y: p.y - span * 0.6 }, p, q, { x: q.x, y: q.y + span * 0.6 }];
-    this.fxApi().lightRun(points, { duration: 650 });
+      : [{ x: p.x, y: p.y - span * 0.7 }, p, q, { x: q.x, y: q.y + span * 0.7 }];
+    this.fxApi().lightRun(points, { duration: 560, size: 46, trail: 9 });
   }
 
   onMismatch(list) {
@@ -1469,47 +1612,68 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: halo, alpha: 0.45, duration: 200, yoyo: true, hold: 200, onComplete: () => halo.destroy() });
   }
 
-  drawLinks() {
+  /**
+   * Links (round 6 · item G): no more flat bars across the gutter. Where two
+   * windows meet, a thin warm seam of light runs across the gap at the link
+   * height (a rail is two), and light pools softly on both bezel lips. The
+   * pictures themselves are what connect (the art is being redrawn so they
+   * continue across panels); this only says "joined". A new link flares and
+   * a short light-run crosses it (onLinkOn).
+   */
+  drawLinks(dt = 16) {
     const g = this.linkG;
     g.clear();
+    void dt;
+    const reduce = reducedMotionActive();
+    const live = new Set();
     this.model.links().forEach((link) => {
       const a = this.views[link.a];
       const b = this.views[link.b];
-      if (a.lifted || b.lifted || a.moving || b.moving || a.zooming || b.zooming) return;
+      if (!a || !b || a.lifted || b.lifted || a.moving || b.moving || a.zooming || b.zooming) return;
       const [p, q] = this.linkEndpoints(link);
       const since = this.clock - (this.bridgeFlash.get(link.key) ?? -1e9);
-      const flash = Math.max(0, 1 - since / 900);
-      const pulse = 0.5 + Math.sin(this.clock / 700 + link.at * 9) * 0.5;
-      const glowA = 0.18 + pulse * 0.1 + flash * 0.6;
-      if (link.type === 'floor' || link.type === 'path') {
-        g.fillStyle(0x5a3a22, 1);
-        g.fillRect(p.x - 3, p.y - 1, q.x - p.x + 6, 7);
-        g.fillStyle(0xe0a24a, glowA);
-        g.fillRect(p.x - 3, p.y - 3, q.x - p.x + 6, 3);
-        g.lineStyle(2.4, 0xeadfc6, 0.9);
-        g.lineBetween(p.x - 3, p.y, q.x + 3, q.y);
-      } else if (link.type === 'chute' || link.type === 'pipe') {
-        g.fillStyle(0x8a6934, 1);
-        g.fillRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-        g.fillStyle(0xe3c27e, 0.6);
-        g.fillRect(p.x - 11, p.y - 3, 5, q.y - p.y + 6);
-        g.fillStyle(0xb08a4a, 1);
-        g.fillRect(p.x - 17, p.y + (q.y - p.y) / 2 - 4, 34, 8);
-        g.lineStyle(2, 0xeadfc6, 0.8);
-        g.strokeRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-        g.fillStyle(0xffc46a, glowA * 0.8);
-        g.fillRect(p.x - 13, p.y - 3, 26, q.y - p.y + 6);
-      } else if (link.type === 'rail') {
-        g.lineStyle(3, 0xb08a4a, 1);
-        g.lineBetween(p.x - 2, p.y, q.x + 2, q.y);
-        g.lineBetween(p.x - 2, p.y + 6, q.x + 2, q.y + 6);
-        g.lineStyle(2, 0xeadfc6, 0.5 + flash * 0.5);
-        g.lineBetween(p.x - 2, p.y - 1, q.x + 2, q.y - 1);
-      } else {
-        g.lineStyle(4, 0xe0a24a, 0.6 + flash * 0.4);
-        g.lineBetween(p.x, p.y, q.x, q.y);
-      }
+      const flash = Math.max(0, 1 - since / 1100);
+      const breathe = reduce ? 0.5 : 0.5 + Math.sin(this.clock / 1100 + link.at * 9) * 0.5;
+      const k = 0.62 + breathe * 0.16 + flash * 0.5;
+      live.add(link.key);
+      const across = link.dir === 'h';
+      // a few px past each picture edge, so the seam starts under the bezel lip
+      const ext = 3;
+      const ends = across
+        ? [{ x: p.x - ext, y: p.y }, { x: q.x + ext, y: q.y }]
+        : [{ x: p.x, y: p.y - ext }, { x: q.x, y: q.y + ext }];
+      const lanes = link.type === 'rail' ? [-3, 3] : link.type === 'chute' || link.type === 'pipe' ? [-5, 5] : [0];
+      lanes.forEach((off) => {
+        const [s0, s1] = ends.map((e) => (across ? { x: e.x, y: e.y + off } : { x: e.x + off, y: e.y }));
+        [[8, 0xff9a40, 0.09], [3.4, 0xffc46a, 0.3], [1.4, 0xfff2d4, 0.82]].forEach(([w, color, alpha]) => {
+          g.lineStyle(w, color, clamp(alpha * k, 0, 1));
+          g.lineBetween(s0.x, s0.y, s1.x, s1.y);
+        });
+      });
+      // the light pooling on both bezel lips
+      const pools = this.linkPool(link.key);
+      const span = link.type === 'rail' || link.type === 'chute' || link.type === 'pipe' ? 64 : 50;
+      [p, q].forEach((pt, i) => {
+        pools[i].setVisible(true).setPosition(pt.x + (across ? (i ? 7 : -7) : 0), pt.y + (across ? 0 : i ? 7 : -7))
+          .setDisplaySize(across ? 36 : span * 1.15, across ? span * 1.15 : 36).setAlpha(clamp(0.5 * k, 0, 0.85));
+      });
     });
+    this.linkPools?.forEach((pools, key) => { if (!live.has(key)) pools.forEach((pool) => pool.setVisible(false)); });
+  }
+
+  /** The two pooled-light sprites of a link (kept between frames). */
+  linkPool(key) {
+    if (!this.linkPools) this.linkPools = new Map();
+    let pools = this.linkPools.get(key);
+    if (!pools) {
+      pools = [0, 1].map(() => {
+        const img = this.add.image(0, 0, 'nsv-radial').setBlendMode('ADD').setTint(0xffb860).setVisible(false);
+        this.linkPoolLayer.add(img);
+        return img;
+      });
+      this.linkPools.set(key, pools);
+    }
+    return pools;
   }
 
   // ---------------------------------------------------------------------------
@@ -1583,6 +1747,7 @@ export class PanelScene extends Phaser.Scene {
     this.layoutCaption(this.caption.text);
     this.captionText.setText('');
     this.captionNext.setVisible(false);
+    this.captionKeys.setVisible(false);
     // a spoken line always wins over a lingering act title
     if (this.titleBox.alpha > 0) this.tweens.add({ targets: this.titleBox, alpha: 0, duration: 200 });
     if (!this.captionBox.visible) {
@@ -1599,7 +1764,8 @@ export class PanelScene extends Phaser.Scene {
     const textH = this.captionText.height;
     this.captionText.setText(prev);
     const speakerH = this.captionSpeaker.text ? this.captionSpeaker.height + 6 : 0;
-    const boxH = Math.max(116, Math.ceil(speakerH + textH + 44));
+    // (room at the bottom right for ▸ CONTINUE)
+    const boxH = Math.max(124, Math.ceil(speakerH + textH + 60));
     this.captionBg.setSize(1240, boxH);
     this.captionSpeaker.setY(-boxH + 20);
     this.captionText.setY(-boxH + 20 + speakerH);
@@ -1615,8 +1781,10 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: this.captionBox, alpha: 0, duration: 220, onComplete: () => this.captionBox.setVisible(false) });
   }
 
-  advanceCaption() {
+  advanceCaption({ at = null } = {}) {
     if (!this.caption) return false;
+    // the click went to the line: the CONTINUE mark dips, and a ripple where the hand was
+    this.cueContinue(at);
     if (!this.caption.done) {
       this.caption.shown = this.caption.text.length;
       return true;
@@ -1626,9 +1794,35 @@ export class PanelScene extends Phaser.Scene {
     return true;
   }
 
+  /** Round 6 · item 15: show that a click (anywhere) moved the dialogue on. */
+  cueContinue(at) {
+    if (this.caption?.auto) return;
+    this.tweens.killTweensOf(this.captionNext);
+    this.captionNext.setScale(1);
+    this.tweens.add({ targets: this.captionNext, scale: 1.14, duration: 90, yoyo: true, ease: 'Sine.easeOut' });
+    if (!at) return;
+    const g = this.add.graphics();
+    this.topLayer.add(g);
+    const st = { r: 6, a: 0.85 };
+    this.tweens.add({
+      targets: st, r: 34, a: 0, duration: 420, ease: 'Sine.easeOut',
+      onUpdate: () => { g.clear(); g.lineStyle(3, 0xffd9a0, st.a); g.strokeCircle(at.x, at.y, st.r); },
+      onComplete: () => g.destroy(),
+    });
+  }
+
   updateCaption(dt) {
     const cap = this.caption;
     if (!cap) return;
+    // ▸ CONTINUE: breathing once the line is out, dim while it types (a click finishes it)
+    const spoken = !cap.auto;
+    this.captionNext.setVisible(spoken);
+    this.captionKeys.setVisible(spoken);
+    if (spoken) {
+      const k = reducedMotionActive() ? 1 : 0.78 + Math.sin(this.clock / 260) * 0.22;
+      this.captionNext.setAlpha(cap.done ? k : 0.4);
+      this.captionKeys.setX(this.captionNext.x - this.captionNext.width * this.captionNext.scaleX - 14).setAlpha(cap.done ? 0.6 : 0.3);
+    }
     if (!cap.done) {
       const before = Math.floor(cap.shown);
       cap.shown = Math.min(cap.text.length, cap.shown + dt * 0.042);
@@ -1638,7 +1832,6 @@ export class PanelScene extends Phaser.Scene {
       if (now >= cap.text.length) cap.done = true;
     } else {
       this.captionText.setText(cap.text);
-      this.captionNext.setVisible(!cap.auto && Math.sin(this.clock / 260) > -0.2);
       if (cap.auto) {
         cap.auto -= dt;
         if (cap.auto <= 0) this.hideCaption();
@@ -1772,7 +1965,31 @@ export class PanelScene extends Phaser.Scene {
     });
   }
 
+  /** A readable's words, held up to the eye (round 6 · item 14). */
+  showReading(card) {
+    const src = card.source;
+    const view = src && this.views[src.tile];
+    let from = null;
+    if (view) {
+      const [x, y, w, h] = src.rect;
+      const a = view.screen(x, y);
+      const b = view.screen(x + w, y + h);
+      from = { x: Math.min(a.x, b.x), y: Math.min(a.y, b.y), w: Math.abs(b.x - a.x), h: Math.abs(b.y - a.y) };
+    }
+    this.hovered = null;
+    this.hoverLabel = null;
+    this.verbChip.hide();
+    this.reasonChip.hide();
+    this.reader.open(card, { from, s: this.textScale, reduce: reducedMotionActive() });
+    this.audio.play('paper');
+  }
+
   hideCard() {
+    if (this.reader?.isOpen) {
+      this.reader.close({ reduce: reducedMotionActive() });
+      this.audio.play('paper');
+      return;
+    }
     this.cardStrike?.destroy();
     this.cardStrike = null;
     this.audio.play('paper');
@@ -1824,8 +2041,8 @@ export class PanelScene extends Phaser.Scene {
           this.tweens.add({ targets: spark, x: x + Math.cos(a) * 34, y: y + Math.sin(a) * 34, alpha: 0, scale: 0.1, duration: 620, ease: 'Sine.easeOut', onComplete: () => spark.destroy() });
         }
       },
-      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a, trail: trailMax = 14 } = {}) => {
-        const dot = this.add.image(points[0].x, points[0].y, 'nsv-radial').setBlendMode('ADD').setTint(color).setDisplaySize(70, 70).setAlpha(0);
+      lightRun: (points, { duration = 700, delay = 0, color = 0xffd08a, trail: trailMax = 14, size = 70 } = {}) => {
+        const dot = this.add.image(points[0].x, points[0].y, 'nsv-radial').setBlendMode('ADD').setTint(color).setDisplaySize(size, size).setAlpha(0);
         const core = this.add.image(points[0].x, points[0].y, 'nsv-dot').setBlendMode('ADD').setScale(1.2).setAlpha(0);
         this.topLayer.add([dot, core]);
         const lengths = [];
@@ -2125,6 +2342,9 @@ export class PanelScene extends Phaser.Scene {
   /** SHOW ME: tier 2 at once (pause menu → `nightfall:hint`, or H). */
   requestHint() {
     if (!this.sys?.isActive() || !this.model) return false;
+    // the hint key has been found: NEED A HINT? never shows again
+    this.flail?.retire();
+    this.needChip?.hide();
     if (this.foldActive()) {
       if (this.unfold.busy || this.fading) return false;
       this.hints.setStep(`${this.act.id}:unfold`, 'unfold');
@@ -2523,6 +2743,7 @@ export class PanelScene extends Phaser.Scene {
       this.foldPointer = false;
       const result = this.unfold?.cancel();
       if (result === 'snap') this.onFoldSnap();
+      else if (result === 'rebound') this.audio.play('unfoldRebound');
       else if (result === 'spring' && this.unfold.progress > 0.02) this.audio.play('unfoldBack');
       this.input.setDefaultCursor('default');
     }
@@ -2531,7 +2752,12 @@ export class PanelScene extends Phaser.Scene {
     const press = this.press;
     if (!press) return;
     if (press.kind === 'frame' || this.drag || press.moved) this.onPointerUp(this.input.activePointer);
-    else { press.holdTimer?.remove(); this.press = null; }
+    else {
+      press.holdTimer?.remove();
+      this.press = null;
+      // a window picked up by its bezel settles back
+      if (press.rim) this.liftRim(press.tile, null);
+    }
   }
 
   onPointerDown(p) {
@@ -2540,37 +2766,50 @@ export class PanelScene extends Phaser.Scene {
     if (this.foldActive() && !this.fading) { this.foldPointerDown(p); return; }
     if (this.fading || this.growing) return;
     if (this.cardView || this.model.state.card) { this.model.closeCard(); return; }
-    // a spoken line takes the click; a passing caption never blocks play
-    if (this.caption && !this.caption.auto) { this.advanceCaption(); return; }
+    // a spoken line takes the click (round 6 · item 15: the windows are
+    // dimmed and the caption says CONTINUE, so a click on an object reads as
+    // "next line"); a passing caption never blocks play
+    if (this.caption && !this.caption.auto) { this.advanceCaption({ at: p }); return; }
+    // NEED A HINT? is a button too
+    if (this.needChip?.contains(p.x, p.y)) { this.requestHint(); return; }
+    const slot = this.slotAt(p.x, p.y);
+    // round 6 · item 3: the brass bezel round a window takes hold of the window
+    const rim = slot ? null : this.bezelAt(p.x, p.y);
+    const at = slot ?? rim;
+    const tile = at ? this.model.tileAt(at.index) : null;
     if (p.rightButtonDown()) {
-      const slot = this.slotAt(p.x, p.y);
-      const tile = slot ? this.model.tileAt(slot.index) : null;
-      if (tile && !this.busyView(tile)) this.model.zoomOut(tile);
+      if (tile && !this.busyView(tile) && !this.model.zoomOut(tile)) this.deadTap(tile, p, this.model.isLocked() ? '…' : 'NOTHING TO STEP BACK FROM');
       return;
     }
-    if (this.model.isLocked()) return;
-    const slot = this.slotAt(p.x, p.y);
-    const tile = slot ? this.model.tileAt(slot.index) : null;
+    if (this.model.isLocked()) { this.lockedTap(p); return; }
     const lens = this.model.state.lens;
     const fromLens = lens.enabled ? Math.hypot(p.x - lens.x, p.y - lens.y) : Infinity;
     if (fromLens <= lens.r + 14) {
       // moving drags the lens; a still click acts through it (1978 first,
       // then the present underneath); a still hold on a frame lifts it
       this.press = { kind: 'lens', x: p.x, y: p.y, dx: lens.x - p.x, dy: lens.y - p.y, moved: false, time: this.time.now };
-      if (tile && !this.busyView(tile) && fromLens < lens.r - LENS_RIM) this.armFrameHold(tile, slot, p, LENS_FRAME_HOLD_MS);
+      if (slot && tile && !this.busyView(tile) && fromLens < lens.r - LENS_RIM) this.armFrameHold(tile, slot, p, LENS_FRAME_HOLD_MS);
       return;
     }
     if (!tile || this.busyView(tile)) return;
-    // the zoom-out glyph
+    // the zoom-out glyph (it reaches a little into the bezel)
     if (this.onGlyph(tile, p.x, p.y)) {
       this.model.zoomOut(tile);
       return;
     }
-    this.press = { kind: 'tile', tile, slot, x: p.x, y: p.y, moved: false, time: this.time.now };
-    this.armFrameHold(tile, slot, p);
+    this.press = { kind: 'tile', tile, slot: at, x: p.x, y: p.y, moved: false, time: this.time.now, rim: Boolean(rim) };
+    // on the bezel: the window rises a little at once (it is being picked up);
+    // inside the picture a press may be a click, or the frame's hold
+    if (rim) this.liftRim(tile, this.model.canDrag(tile) ? 'press' : 'refuse');
+    else this.armFrameHold(tile, slot, p);
   }
 
-  /** A press on a frame's grip (its painted frame, generously): hold still to lift it. */
+  /** The window whose bezel (just outside its picture) is under a screen point (round 6 · item 3). */
+  bezelAt(x, y) {
+    return bezelSlotAt(this.layout, x, y, { bezel: BEZEL });
+  }
+
+  /** A press-and-hold on a frame's grip (its painted frame, generously): hold still to lift it. */
   armFrameHold(tile, slot, p, holdMs = FRAME_HOLD_MS) {
     const frame = this.model.frameGripAt(tile, (p.x - slot.x) / slot.w, (p.y - slot.y) / slot.h);
     const press = this.press;
@@ -2606,6 +2845,7 @@ export class PanelScene extends Phaser.Scene {
     if (press) {
       const dist = Math.hypot(p.x - press.x, p.y - press.y);
       if (dist > 7) press.moved = true;
+      press.far = Math.max(press.far ?? 0, dist);
       if (press.kind === 'lens' && press.moved) {
         press.holdTimer?.remove();
         press.grip = null;
@@ -2619,8 +2859,16 @@ export class PanelScene extends Phaser.Scene {
       } else if (press.kind === 'tile' && press.moved && !this.drag) {
         press.holdTimer?.remove();
         press.grip = null;
-        if (this.model.canDrag(press.tile) && this.model.beginDrag(press.tile)) {
+        if (!press.refused && this.model.canDrag(press.tile) && this.model.beginDrag(press.tile)) {
           this.drag = { tile: press.tile, offX: press.slot.x - press.x, offY: press.slot.y - press.y, lastX: p.x, vx: 0 };
+        } else if (!press.refused) {
+          // a window that cannot move strains after the hand (and, once it is
+          // clearly a drag, says why)
+          press.refused = true;
+        }
+        if (press.refused) {
+          this.strain(press, p);
+          if (!press.said && press.far > 22) { press.said = true; this.refuseDrag(press.tile, p); }
         }
       }
       if (this.drag) {
@@ -2661,8 +2909,21 @@ export class PanelScene extends Phaser.Scene {
       const cx = view.rect.x + view.rect.w / 2;
       const cy = view.rect.y + view.rect.h / 2;
       const slot = this.slotAt(cx, cy) ?? this.slotAt(p.x, p.y);
-      this.model.dropOn(slot ? slot.index : this.model.slotOf(drag.tile));
+      const swapped = this.model.dropOn(slot ? slot.index : this.model.slotOf(drag.tile));
       if (!slot) this.model.cancelDrag();
+      // put back where it was: that try did nothing (round 6 · item 5)
+      if (!swapped) this.flailMiss();
+      return;
+    }
+    if (press.refused) {
+      this.unstrain(press);
+      // a sloppy click on a window that cannot move is still a click
+      if (!press.said && !press.rim) this.clickAt(press.tile, press.slot, { x: press.x, y: press.y });
+      return;
+    }
+    if (press.rim) {
+      this.liftRim(press.tile, null);
+      if (!press.moved) this.rimTap(press.tile, p);
       return;
     }
     if (press.kind === 'lens' && press.moved) this.resumeDirty = true;
@@ -2682,9 +2943,13 @@ export class PanelScene extends Phaser.Scene {
   clickAt(tile, slot, p) {
     const u = (p.x - slot.x) / slot.w;
     const v = (p.y - slot.y) / slot.h;
-    const hit = this.model.hotspotAt(tile, u, v, { x: p.x, y: p.y });
-    if (hit) this.model.activateHotspot(tile, hit.id);
-    else this.tapPanel(tile);
+    const m = this.model;
+    const hit = m.hotspotAt(tile, u, v, { x: p.x, y: p.y });
+    if (hit) { m.activateHotspot(tile, hit.id); return; }
+    // a paper whose words matter: hold it up to read (round 6 · item 14)
+    const readable = m.readableAt(tile, u, v, { x: p.x, y: p.y });
+    if (readable) { m.openReading(tile, readable.id, { past: readable.past }); return; }
+    this.deadClick(tile, u, v, p);
   }
 
   /** A click on nothing in particular: a tiny paper wobble so input never feels dead. */
@@ -2694,31 +2959,185 @@ export class PanelScene extends Phaser.Scene {
     this.tweens.add({ targets: view.rect, scale: 0.992, duration: 70, yoyo: true, onUpdate: () => view.apply(), onComplete: () => view.apply() });
   }
 
+  // ---------- clicks that do nothing say why (round 6 · items 1 and 5) ----------
+
+  /** An ineffective try: counts towards the one-time NEED A HINT? tag. */
+  flailMiss() {
+    if (this.flail.miss(this.clock)) this.showNeedHint();
+  }
+
+  /** A short word near the pointer (the reason a click did nothing). */
+  say(text, at, { ms = 1300 } = {}) {
+    if (!text) return;
+    this.reasonChip.show(text, at.x, at.y - 52, { ms, s: this.textScale, now: this.clock });
+  }
+
+  /**
+   * A click inside a window that did nothing: something that answers later
+   * says NOT YET; otherwise the window's live tags hop (that is where clicks
+   * work) and, the first few times in an act, a word says what does work here.
+   */
+  deadClick(tile, u, v, p) {
+    const m = this.model;
+    this.tapPanel(tile);
+    this.audio.play('nothing');
+    this.flailMiss();
+    const waiting = m.waitingSpotAt(tile, u, v, { x: p.x, y: p.y });
+    if (waiting) { this.say(waiting.hotspot.notYet ?? 'NOT YET', p); return; }
+    const hopped = this.hopTags(tile);
+    const words = this.deadWords < DEAD_CLICK_WORDS;
+    if (!words) return;
+    this.deadWords += 1;
+    if (hopped) this.say('NOTHING HERE · TRY THE TAGS', p);
+    else if (m.canZoomOut(tile)) { this.say('NOTHING MORE HERE · STEP BACK', p); this.pulseHint({ tile, zoomOut: true }); }
+    else if (m.canDrag(tile)) this.say('NOTHING HERE · DRAG THE WINDOW', p);
+    else this.say('NOTHING HERE', p);
+  }
+
+  /** A press that did nothing for another reason (a right-click with nowhere to go back to). */
+  deadTap(tile, p, text) {
+    this.tapPanel(tile);
+    this.audio.play('nothing');
+    this.flailMiss();
+    if (this.deadWords < DEAD_CLICK_WORDS) { this.deadWords += 1; this.say(text, p); }
+  }
+
+  /** A click during a scripted beat: an ellipsis says "watch", at most every 1.5 s. */
+  lockedTap(p) {
+    if (this.model.state.ended || this.clock - this.lastLockedTap < 1500) return;
+    this.lastLockedTap = this.clock;
+    this.say('…', p, { ms: 700 });
+  }
+
+  /** The window's live tags give a little hop (where its clicks work). Returns how many. */
+  hopTags(tile) {
+    const view = this.views[tile];
+    const tags = (view?.current?.tags ?? []).filter((entry) => entry.shown && entry.holder.visible);
+    tags.forEach((entry, i) => {
+      if (this.tweens.isTweening(entry.holder)) return;
+      const y = entry.holder.y;
+      this.tweens.add({ targets: entry.holder, y: y - 10, scale: 1.15, duration: 150, delay: i * 70, yoyo: true, ease: 'Sine.easeOut', onComplete: () => entry.holder.setY(y).setScale(1) });
+    });
+    if (tags.length) this.audio.play('glint');
+    return tags.length;
+  }
+
+  /** The bezel was clicked, not dragged: the window bobs (it moves) and says how. */
+  rimTap(tile, p) {
+    const m = this.model;
+    this.flailMiss();
+    if (this.layout.slots.length < 2) return;
+    if (this.deadWords >= DEAD_CLICK_WORDS && m.canDrag(tile)) return;
+    this.deadWords += 1;
+    this.say(m.canDrag(tile) ? 'DRAG TO MOVE THE WINDOW' : this.fixedText(tile), p);
+  }
+
+  /** Why a window will not move. */
+  fixedText(tile) {
+    if (this.model.state.tiles[tile]?.draggable === false) return this.act.fixedText ?? 'THIS WINDOW STAYS PUT';
+    return 'NOT NOW';
+  }
+
+  /** A drag on a window that cannot move (round 6: never silent). */
+  refuseDrag(tile, p) {
+    this.flailMiss();
+    this.audio.play('nothing');
+    if (this.layout.slots.length > 1) this.say(this.fixedText(tile), p, { ms: 1500 });
+  }
+
+  /** It strains after the hand, a few px at most. */
+  strain(press, p) {
+    const view = this.views[press.tile];
+    const slot = this.model.slotRect(press.tile);
+    if (!view || !slot || reducedMotionActive()) return;
+    const give = (d) => Math.sign(d) * 12 * (1 - Math.exp(-Math.abs(d) / 70));
+    view.rect.x = slot.x + give(p.x - press.x);
+    view.rect.y = slot.y + give(p.y - press.y);
+    view.apply();
+  }
+
+  /** ... and springs back into its slot when let go. */
+  unstrain(press) {
+    const view = this.views[press.tile];
+    const slot = this.model.slotRect(press.tile);
+    this.liftRim(press.tile, null);
+    if (!view || !slot) return;
+    this.tweens.add({ targets: view.rect, x: slot.x, y: slot.y, duration: 320, ease: 'Back.easeOut', easeParams: [2.2], onUpdate: () => view.apply(), onComplete: () => view.apply() });
+    this.audio.play('settle');
+  }
+
+  /**
+   * The "move" preview (round 6 · item 3): the whole window rises a little
+   * off the wall with a shadow under it — on hover over its bezel ('hover'),
+   * more on a press there ('press'); a window that cannot move only twitches
+   * ('refuse'); null settles it back.
+   */
+  liftRim(tile, mode) {
+    const view = this.views[tile];
+    if (!view) return;
+    const want = mode === 'press' ? 1.022 : mode === 'hover' ? 1.008 : 1;
+    if (mode === 'refuse') {
+      if (!reducedMotionActive()) this.tweens.add({ targets: view.rect, scale: 1.004, duration: 80, yoyo: true, onUpdate: () => view.apply(), onComplete: () => view.apply() });
+      return;
+    }
+    this.rimLift[tile] = mode;
+    if (this.drag?.tile === tile || view.lifted || view.moving || view.zooming) return;
+    // pressed: drawn above its own shadow; let go: back among the others
+    const raise = mode === 'press';
+    if (Boolean(view.raised) !== raise) { view.raised = raise; this.orderCameras(); }
+    this.tweens.killTweensOf(view.rect);
+    this.tweens.add({ targets: view.rect, scale: want, duration: mode ? 140 : 180, ease: 'Sine.easeOut', onUpdate: () => view.apply(), onComplete: () => view.apply() });
+    if (mode === 'press') this.audio.play('lift');
+  }
+
   updateHover(p) {
     let cursor = 'default';
     let hovered = null;
     let grip = null;
+    let rimHover = null;
+    let label = null;
     const locked = this.model.isLocked() || this.fading;
     const lens = this.model.state.lens;
     const slot = this.slotAt(p.x, p.y);
-    const tile = slot ? this.model.tileAt(slot.index) : null;
+    const rim = slot ? null : this.bezelAt(p.x, p.y);
+    const tile = slot ? this.model.tileAt(slot.index) : rim ? this.model.tileAt(rim.index) : null;
     const fromLens = lens.enabled ? Math.hypot(p.x - lens.x, p.y - lens.y) : Infinity;
-    if (!locked && tile && !this.busyView(tile)) {
-      const u = (p.x - slot.x) / slot.w;
-      const v = (p.y - slot.y) / slot.h;
-      const hit = this.model.hotspotAt(tile, u, v, { x: p.x, y: p.y });
-      const frame = fromLens < lens.r - LENS_RIM || fromLens > lens.r + 14 ? this.model.frameGripAt(tile, u, v) : null;
+    const talking = Boolean(this.caption && !this.caption.auto);
+    if (talking) {
+      // the click goes to the line being spoken (the caption says CONTINUE)
+      cursor = 'pointer';
+    } else if (!locked && tile && !this.busyView(tile)) {
+      const u = slot ? (p.x - slot.x) / slot.w : 0;
+      const v = slot ? (p.y - slot.y) / slot.h : 0;
+      const hit = slot ? this.model.hotspotAt(tile, u, v, { x: p.x, y: p.y }) : null;
+      const readable = slot && !hit ? this.model.readableAt(tile, u, v, { x: p.x, y: p.y }) : null;
+      const frame = slot && (fromLens < lens.r - LENS_RIM || fromLens > lens.r + 14) ? this.model.frameGripAt(tile, u, v) : null;
       if (this.onGlyph(tile, p.x, p.y)) cursor = 'zoom-out';
-      // the hand over anything that answers a click, its tag included (alpha R4 · P1)
-      else if (hit) { cursor = 'pointer'; hovered = { tile, hotspot: hit }; }
-      else if (frame) { cursor = LIFT_CURSOR; grip = { tile, frame }; }
+      else if (rim) {
+        // the bezel moves the window: the open hand, and the window rises a little
+        if (this.model.canDrag(tile)) { cursor = 'grab'; rimHover = tile; }
+      } else if (hit || readable) {
+        // round 6 · item 1: look closer (the magnifier) or act (the hand and its verb)
+        const a = hotspotAffordance(hit ?? readable);
+        cursor = a.look ? LOOK_CURSOR : 'pointer';
+        hovered = { tile, hotspot: hit ?? readable };
+        label = a.verb;
+      } else if (frame) { cursor = LIFT_CURSOR; grip = { tile, frame }; }
       else if (this.model.canDrag(tile)) cursor = 'grab';
     }
-    if (!locked && fromLens <= lens.r + 14 && cursor === 'default') cursor = 'move';
-    if (!locked && lens.enabled && Math.abs(fromLens - lens.r) < 16) cursor = 'move';
+    if (!talking && !locked && fromLens <= lens.r + 14 && cursor === 'default') cursor = 'move';
+    if (!talking && !locked && lens.enabled && Math.abs(fromLens - lens.r) < 16) { cursor = 'move'; label = null; }
+    if (!talking && this.needChip?.contains(p.x, p.y)) cursor = 'pointer';
     this.input.setDefaultCursor(cursor);
     this.hovered = hovered;
     this.hoverGrip = grip;
+    if (rimHover !== this.hoverRim) {
+      if (this.hoverRim) this.liftRim(this.hoverRim, null);
+      if (rimHover) this.liftRim(rimHover, 'hover');
+      this.hoverRim = rimHover;
+    }
+    this.hoverLabel = label ? { text: label, x: p.x, y: p.y } : null;
+    this.pointerInfo = { cursor: cursor === LOOK_CURSOR ? 'look' : cursor === LIFT_CURSOR ? 'lift' : cursor, label };
   }
 
   /** Where the ⤢ glyph of a tile sits on screen (it scales with the window). */
@@ -2804,7 +3223,7 @@ export class PanelScene extends Phaser.Scene {
     const target = want && !this.busyView(want.tile) && !this.floating ? want : null;
     if (target) ui.target = target;
     ui.alpha = clamp(ui.alpha + (target ? dt / 380 : -dt / 200), 0, 1);
-    ui.root.setAlpha(ui.alpha).setVisible(ui.alpha > 0);
+    ui.root.setAlpha(ui.alpha * (1 - 0.8 * this.dialogueDim)).setVisible(ui.alpha > 0);
     if (!ui.alpha || !ui.target) return;
     const slot = this.model.slotRect(ui.target.tile);
     if (!slot) { ui.root.setVisible(false); return; }
@@ -2889,7 +3308,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   onKey(event) {
-    const key = event.key;
+    const key = keyOf(event);
     const m = this.model;
     this.userInput();
     if (this.foldActive() && !this.fading) return this.foldKey(event);
@@ -2903,7 +3322,7 @@ export class PanelScene extends Phaser.Scene {
       return key === 'Tab';
     }
     if (this.caption && !this.caption.auto) {
-      if (key === 'Enter' || key === ' ') { if (!event.repeat) this.advanceCaption(); return true; }
+      if (key === 'Enter' || key === ' ') { if (!event.repeat) this.advanceCaption({}); return true; }
       return key === 'Tab';
     }
     const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -2916,6 +3335,7 @@ export class PanelScene extends Phaser.Scene {
       if (arrows[key]) { this.keysDown.add(key); return true; }
       if (key === 'l' || key === 'L' || key === 'Escape') { this.lensFocus = false; return true; }
       if (key === 'Enter' || key === ' ') {
+        if (event.repeat) return true;
         const lens = m.state.lens;
         const slot = this.slotAt(lens.x, lens.y);
         const tile = slot ? m.tileAt(slot.index) : null;
@@ -2961,10 +3381,11 @@ export class PanelScene extends Phaser.Scene {
         return true;
       }
       case 'Enter': {
-        // Enter uses the focused tag (a window's first tag is focused as soon as it is selected)
+        // Enter (or E) uses the focused tag (a window's first tag is focused as soon as it is selected)
         const focus = this.kbFocus();
         if (fresh && focus) { this.kbFlash(focus.tile, focus.id); return true; }
-        if (focus && !this.busyView(focus.tile) && m.activateHotspot(focus.tile, focus.id)) {
+        if (event.repeat) return true;
+        if (focus && !this.busyView(focus.tile) && this.kbUse(focus)) {
           this.kbFlash(focus.tile, focus.id);
           this.focusedHotspot = null;
         } else this.kbNudge(tile, 'Enter');
@@ -3020,7 +3441,31 @@ export class PanelScene extends Phaser.Scene {
     if (this.kbHeld) { m.cancelDrag(); this.kbHeld = null; this.refreshSelection(); return true; }
     if (this.drag) { this.drag = null; this.press = null; m.cancelDrag(); return true; }
     if (this.lensFocus) { this.lensFocus = false; return true; }
+    // Esc is Back (unified controls, round 6): out of a close-up the player
+    // opened; with none open it pauses. The Museum's exhibit keeps Esc for
+    // "leave the case" (`escapeZoomsOut: false`).
+    if (this.act.escapeZoomsOut !== false && !this.fading && !this.growing && !this.foldActive() && !(this.caption && !this.caption.auto)) {
+      const tile = this.backTarget();
+      if (tile && m.zoomOut(tile)) { this.selectedSlot = m.slotOf(tile); this.refreshSelection(); return true; }
+    }
     return false;
+  }
+
+  /**
+   * The window Esc steps back out of: the selected one (keyboard), else the
+   * one the player last zoomed into, else any — but only from a close-up the
+   * player opened (deeper than the act started it), never a pre-zoomed view.
+   */
+  backTarget() {
+    const m = this.model;
+    const opened = (tile) => {
+      const home = this.act.tiles[tile]?.zoomStack?.length ?? 0;
+      return Boolean(tile) && (m.state.tiles[tile]?.zoomStack.length ?? 0) > home && m.canZoomOut(tile) && !this.busyView(tile);
+    };
+    const selected = this.keyboardMode ? m.tileAt(this.selectedSlot) : null;
+    if (opened(selected)) return selected;
+    if (opened(this.lastZoomed)) return this.lastZoomed;
+    return m.state.slots.find((tile) => opened(tile)) ?? null;
   }
 
   hotspotInLens(tile, h) {
@@ -3028,7 +3473,7 @@ export class PanelScene extends Phaser.Scene {
     return this.model.lensCovers(tilePoint(slot, h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2));
   }
 
-  /** Hotspots the keyboard can reach now (1978 ones only inside the lens), in slot order. */
+  /** Hotspots (and readables, `read:id`) the keyboard can reach now (1978 ones only inside the lens), in slot order. */
   kbTargets() {
     const m = this.model;
     const out = [];
@@ -3037,8 +3482,22 @@ export class PanelScene extends Phaser.Scene {
       m.hotspots(tile).forEach((h) => {
         if (h.enabled && (h.era !== 'past' || this.hotspotInLens(tile, h))) out.push({ tile, id: h.id });
       });
+      m.readables(tile).forEach((r) => {
+        const inLens = this.hotspotInLens(tile, r);
+        if (r.enabled && (inLens ? r.era !== 'present' : r.era !== 'past')) out.push({ tile, id: `read:${r.id}` });
+      });
     });
     return out;
+  }
+
+  /** Enter on a keyboard target: use the hotspot, or hold the paper up to read. */
+  kbUse(focus) {
+    const m = this.model;
+    if (String(focus.id).startsWith('read:')) {
+      const r = this.kbSpot(focus);
+      return Boolean(r) && m.openReading(focus.tile, r.id, { past: Boolean(r.past) && this.hotspotInLens(focus.tile, r) });
+    }
+    return m.activateHotspot(focus.tile, focus.id);
   }
 
   /** The focused hotspot: the one Tab chose, else the selected window's first. */
@@ -3057,12 +3516,13 @@ export class PanelScene extends Phaser.Scene {
   kbNudge(tile, key) {
     if (tile) this.tapPanel(tile);
     this.audio.play('mismatch');
+    this.flailMiss();
     this.keyStripBlink = { key: KEY_NUDGE[key] ?? 'TAB', until: this.clock + 1400 };
   }
 
   /** Enter took: a bright flash where the focus ring was. */
   kbFlash(tile, id) {
-    const h = this.model.hotspots(tile).find((spot) => spot.id === id);
+    const h = this.kbSpot({ tile, id });
     const view = this.views[tile];
     if (!h || !view) return;
     const p = view.screen(h.rect[0] + h.rect[2] / 2, h.rect[1] + h.rect[3] / 2);
@@ -3076,7 +3536,7 @@ export class PanelScene extends Phaser.Scene {
     if (!this.keyboardMode || this.kbHeld || this.floating || this.lensFocus) return;
     const focus = this.kbFocus();
     if (!focus || this.busyView(focus.tile)) return;
-    const h = this.model.hotspots(focus.tile).find((spot) => spot.id === focus.id);
+    const h = this.kbSpot(focus);
     const view = this.views[focus.tile];
     if (!h || !view) return;
     const a = view.screen(h.rect[0], h.rect[1]);
@@ -3124,8 +3584,8 @@ export class PanelScene extends Phaser.Scene {
     const { target } = this.kbHeld;
     this.kbHeld = null;
     this.selectedSlot = target;
-    // dropping back on its own slot: onDragEnd already animates home
-    this.model.dropOn(target);
+    // dropping back on its own slot: onDragEnd already animates home (a try that did nothing)
+    if (!this.model.dropOn(target)) this.flailMiss();
   }
 
   refreshSelection() {
@@ -3145,7 +3605,7 @@ export class PanelScene extends Phaser.Scene {
     if (this.lensFocus && m.state.lens.enabled) return [[arrows, 'MOVE THE LENS'], ['ENTER', 'CLICK THROUGH IT'], ['L', 'LET GO']];
     if (this.kbHeld) return [[arrows, 'CARRY'], ['SPACE', 'PUT DOWN'], ['⌫', 'PUT BACK']];
     if (this.floating) return [[arrows, 'CARRY THE FRAME'], ['SPACE', 'DROP IT'], ['⌫', 'PUT BACK']];
-    const items = [[arrows, 'WINDOW'], ['TAB', 'NEXT TAG'], ['ENTER', 'USE']];
+    const items = [[arrows, 'WINDOW'], ['TAB', 'NEXT TAG'], ['E · ENTER', 'USE']];
     if (m.state.slots.some((id) => id && m.canDrag(id))) items.push(['SPACE', 'PICK UP']);
     items.push(['⌫', 'STEP BACK']);
     if (Object.keys(m.state.frames).some((id) => m.canLiftFrame(id))) items.push(['F', 'LIFT FRAME']);
@@ -3360,9 +3820,9 @@ export class PanelScene extends Phaser.Scene {
     Object.values(this.views).forEach((view) => view.hover.setVisible(false));
     const kb = this.keyboardMode ? this.kbFocus() : null;
     const focus = kb
-      ? { tile: kb.tile, hotspot: this.model.hotspots(kb.tile).find((h) => h.id === kb.id) }
+      ? { tile: kb.tile, hotspot: this.kbSpot(kb) }
       : this.hovered;
-    if (focus?.hotspot?.enabled && !this.busyView(focus.tile)) {
+    if (focus?.hotspot?.enabled && !this.busyView(focus.tile) && this.dialogueDim < 0.3) {
       const view = this.views[focus.tile];
       const [x, y, w, h] = focus.hotspot.rect;
       view.hover.setVisible(true);
@@ -3372,11 +3832,12 @@ export class PanelScene extends Phaser.Scene {
     }
 
     this.syncActors(dt);
-    this.drawLinks();
+    this.drawLinks(dt);
     this.drawGrip();
     this.updateFrameTag(dt);
     this.drawFocus();
     this.updateKeyStrip(dt);
+    this.updateAffordances(dt);
 
     // lens
     this.lensView.setVisible(lens.enabled);
@@ -3446,11 +3907,12 @@ export class PanelScene extends Phaser.Scene {
   }
 
   /** A pulsing amber ring around an interactable (hotspot or 1978 edge anchor). */
-  drawRing(view, ring, live, current) {
+  drawRing(view, ring, live, current, fade = 1) {
     const g = ring.g;
     g.clear();
-    const on = current && !view.zooming && (ring.kind === 'edge' || Boolean(live.get(ring.hotspot.id)?.enabled));
+    const on = current && !view.zooming && fade > 0.02 && (ring.kind === 'edge' || Boolean(live.get(ring.hotspot.id)?.enabled));
     if (!on) return;
+    g.setAlpha(fade);
     const reduce = reducedMotionActive();
     const k = 0.5 + Math.sin(this.clock / (reduce ? 900 : 380) + (ring.kind === 'edge' ? 1.3 : 0)) * 0.5;
     let cx; let cy; let rx; let ry;
@@ -3476,7 +3938,7 @@ export class PanelScene extends Phaser.Scene {
     if (!state?.tags.length && !state?.rings?.length) return;
     const live = new Map(this.model.hotspots(view.id).map((h) => [h.id, h]));
     const current = state.stateId === this.model.state.tiles[view.id].state;
-    state.rings?.forEach((ring) => this.drawRing(view, ring, live, current));
+    state.rings?.forEach((ring) => this.drawRing(view, ring, live, current, 1 - this.dialogueDim));
     state.tags.forEach((entry) => {
       const h = live.get(entry.hotspot.id);
       const on = Boolean(h?.enabled) && state.stateId === this.model.state.tiles[view.id].state && !view.zooming;
@@ -3494,6 +3956,8 @@ export class PanelScene extends Phaser.Scene {
       }
       if (entry.shown) {
         const t = this.clock / 1000 + entry.seed;
+        // round 6 · item 15: while a line is spoken the tags step back
+        if (!this.tweens.isTweening(entry.holder)) entry.holder.setAlpha(1 - 0.8 * this.dialogueDim);
         entry.tag.setRotation(Math.sin(t * 1.6) * 0.06);
         const tw = Math.max(0, Math.sin(t * 1.3)) ** 8;
         entry.glint.setAlpha(0.35 + tw * 0.65).setScale(0.45 + tw * 0.25);
@@ -3538,6 +4002,127 @@ export class PanelScene extends Phaser.Scene {
   }
 
   // ---------------------------------------------------------------------------
+  // round 6: affordances drawn every frame
+
+  /**
+   * The verb by the pointer (or the keyboard focus), the reasons, the first
+   * close-up's step-back chip, NEED A HINT?, the move / lift previews, the
+   * dialogue's dimming, and the reading view.
+   */
+  updateAffordances(dt) {
+    const m = this.model;
+    const talking = Boolean(this.caption && !this.caption.auto);
+    // dialogue: the windows and their tags step back while a line is spoken
+    this.dialogueDim = clamp(this.dialogueDim + (talking ? dt / 220 : -dt / 260), 0, 1);
+    Object.values(this.views).forEach((view) => view.dim.setAlpha(0.26 * this.dialogueDim));
+    this.updateVerbChip(talking);
+    this.updateZoomBack();
+    this.updatePreviews(dt);
+    [this.verbChip, this.reasonChip, this.backChip, this.needChip].forEach((chip) => chip.update(dt, this.clock));
+    this.reader.update(dt);
+    void m;
+  }
+
+  /** The hotspot or readable a keyboard target names. */
+  kbSpot(target) {
+    if (!target) return null;
+    if (String(target.id).startsWith('read:')) return this.model.readableById(target.tile, target.id.slice(5));
+    return this.model.hotspots(target.tile).find((h) => h.id === target.id) ?? null;
+  }
+
+  updateVerbChip(talking) {
+    const chip = this.verbChip;
+    const busy = talking || this.reader.isOpen || this.model.state.card || this.drag || this.floating || this.kbHeld
+      || this.press?.moved || this.fading || this.growing || this.model.isLocked();
+    if (busy) { chip.hide(); return; }
+    const s = this.textScale;
+    if (this.keyboardMode) {
+      const focus = this.kbFocus();
+      const spot = focus ? this.kbSpot(focus) : null;
+      const view = focus ? this.views[focus.tile] : null;
+      if (!spot || !view || this.busyView(focus.tile)) { chip.hide(); return; }
+      const a = hotspotAffordance(spot);
+      const [x, y, w] = spot.rect;
+      const top = view.screen(x + w / 2, y);
+      chip.show(`[E] ${a.verb ?? 'LOOK CLOSER'}`, top.x, top.y - 34, { s, pointer: 'down' });
+      return;
+    }
+    const hover = this.hoverLabel;
+    const live = hover && this.hovered && this.spotLive(this.hovered);
+    if (!live) { chip.hide(); return; }
+    chip.build(hover.text, s);
+    chip.show(hover.text, hover.x + 30 + chip.w / 2, hover.y + 40, { s });
+  }
+
+  /** Is a hovered hotspot / readable still there and answering? */
+  spotLive({ tile, hotspot }) {
+    if (!hotspot || this.busyView(tile)) return false;
+    if (hotspot.readable) return Boolean(this.model.readableById(tile, hotspot.id)?.enabled);
+    return Boolean(this.model.hotspots(tile).find((h) => h.id === hotspot.id)?.enabled);
+  }
+
+  /** The first close-up: once stepping back is possible, a chip by the ⤢ glyph says how (once). */
+  updateZoomBack() {
+    const zb = this.zoomBack;
+    const chip = this.backChip;
+    if (!zb || this.hintSeen.has(ZOOM_BACK_SEEN)) { chip.hide(); return; }
+    const m = this.model;
+    // a one-way close-up (the carriage outside): the next close-up teaches it instead
+    if (m.scene(zb.tile)?.zoomOut === false || !m.state.tiles[zb.tile]?.zoomStack.length) { if (zb.shownAt === null) this.zoomBack = null; else this.retireZoomBack(); return; }
+    const view = this.views[zb.tile];
+    const can = m.canZoomOut(zb.tile) && !view.zooming && !m.isLocked() && !this.reader.isOpen && !m.state.card && !(this.caption && !this.caption.auto);
+    if (!can) { chip.hide(); return; }
+    if (zb.shownAt === null) zb.shownAt = this.clock;
+    if (this.clock - zb.shownAt > 9000) { this.retireZoomBack(); return; }
+    const glyph = this.glyphAt(zb.tile);
+    chip.build(ZOOM_BACK_TEXT, this.textScale, { pointer: 'right' });
+    chip.show(ZOOM_BACK_TEXT, glyph.x - glyph.r - 18 - chip.w / 2, glyph.y, { s: this.textScale, pointer: 'right' });
+  }
+
+  retireZoomBack() {
+    this.hintSeen.add(ZOOM_BACK_SEEN);
+    this.zoomBack = null;
+    this.backChip.hide();
+  }
+
+  /** NEED A HINT? [H] — once, small, on the sill (round 6 · item 5). */
+  showNeedHint() {
+    if (this.foldActive() || this.fading || this.model.state.ended) return;
+    const y = this.keyStrip?.visible ? this.stripY() - 58 : this.stripY();
+    this.needChip.show(NEED_HINT_TEXT, this.layout.view.w / 2, y, { ms: 8000, s: this.textScale, now: this.clock });
+    this.audio.play('glint');
+  }
+
+  /**
+   * The two previews (round 6 · item 3). Moving: a window pressed on its
+   * bezel rises whole, over its shadow. Lifting: over a frame's grip only
+   * the frame rises off the picture, from its own shadow.
+   */
+  updatePreviews(dt) {
+    const pressed = this.press?.rim && !this.press.refused && !this.drag ? this.press.tile : null;
+    if (pressed && !this.tweens.isTweening(this.shadow)) {
+      const view = this.views[pressed];
+      this.shadow.setVisible(true).setAlpha(Math.min(0.5, this.shadow.alpha + dt / 300));
+      this.shadow.setPosition(view.rect.x + view.rect.w / 2 + 14, view.rect.y + view.rect.h / 2 + 20).setDisplaySize(view.rect.w * 1.16, view.rect.h * 1.2);
+    } else if (!this.drag && !this.kbHeld && this.shadow.visible && !this.tweens.isTweening(this.shadow)) {
+      this.shadow.setAlpha(Math.max(0, this.shadow.alpha - dt / 200));
+      if (this.shadow.alpha <= 0) this.shadow.setVisible(false);
+    }
+    const holding = this.press?.grip && !this.press.moved ? this.press.grip.tile : null;
+    const hover = !this.drag && !this.floating && !this.keyboardMode ? this.hoverGrip?.tile : null;
+    Object.values(this.views).forEach((view) => {
+      const want = this.reduceRise() ? 0 : view.id === holding ? 10 : view.id === hover ? 6 : 0;
+      const now = this.frameRise[view.id] ?? 0;
+      const next = now + clamp(want - now, -dt / 18, dt / 18);
+      this.frameRise[view.id] = next;
+      view.frameLayer.setY(-next);
+      view.frameShadow?.setAlpha(clamp(next / 10, 0, 1) * 0.42).setPosition(next * 0.35, next * 0.4);
+    });
+  }
+
+  reduceRise() { return reducedMotionActive(); }
+
+  // ---------------------------------------------------------------------------
   // QA (dev only; wired by nightService-main.js)
 
   textState() {
@@ -3566,6 +4151,11 @@ export class PanelScene extends Phaser.Scene {
         animating: Object.values(this.views).filter((view) => view.zooming || view.moving || view.lifted).map((view) => view.id),
         caption: this.caption ? { speaker: this.caption.speaker, text: this.caption.text, typing: !this.caption.done } : null,
         cardOpen: this.cardBox.visible && this.cardBox.alpha > 0.5,
+        reading: this.reader?.isOpen ? { id: this.model.state.card?.id ?? null, era: this.reader.card.era, shape: this.reader.card.shape ?? 'paper', w: Math.round(this.reader.sheetW), h: Math.round(this.reader.sheetH) } : null,
+        pointer: this.pointerInfo,
+        chips: Object.fromEntries([['verb', this.verbChip], ['reason', this.reasonChip], ['back', this.backChip], ['needHint', this.needChip]]
+          .map(([name, chip]) => [name, chip.want ? chip.text : null])),
+        dialogueDim: Number(this.dialogueDim.toFixed(2)),
         fading: this.fading,
         keyboard: { mode: this.keyboardMode, selectedSlot: this.selectedSlot, focusedHotspot: this.focusedHotspot, held: this.kbHeld, lensFocus: this.lensFocus },
         textScale: this.textScale,
@@ -3588,6 +4178,9 @@ export class PanelScene extends Phaser.Scene {
         unfold: this.foldActive() ? {
           state: this.unfold.state,
           progress: Number(this.unfold.progress.toFixed(3)),
+          back: Number(this.unfold.back.toFixed(1)),
+          wrongPulls: this.unfold.wrongPulls,
+          nudged: Boolean(this.foldNudged),
           demo: Number((this.foldDemo ?? 0).toFixed(3)),
           side: this.fold.side,
           pull: (() => { const g = this.foldGripPoint(); return { x: Math.round(g.x), y: Math.round(g.y) }; })(),

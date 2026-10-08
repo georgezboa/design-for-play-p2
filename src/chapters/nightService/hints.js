@@ -218,6 +218,43 @@ export function waitingWalkers(model, { skip = ['train', 'farTrain'] } = {}) {
 }
 
 // ---------------------------------------------------------------------------
+// the "Need a hint?" tag (round 6 · item 5)
+
+/** A run of this many ineffective tries inside the window offers the hint key, once. */
+export const FLAIL = Object.freeze({ count: 3, windowMs: 20000 });
+/** Key in the shared `seen` set once the tag has shown, or H / SHOW ME was used. */
+export const NEED_HINT_SEEN = 'tag:needHint';
+
+/**
+ * Counts ineffective tries (a click on nothing, a drag that cannot move, a
+ * window put back where it was, a wrong-way pull) and says when to show the
+ * small NEED A HINT? H tag: the first time three land within 20 s. Never
+ * again after that, or once H / SHOW ME has been used (`seen` is shared by
+ * every act on the page). A finished step breaks the run.
+ */
+export function createFlailMeter({ count = FLAIL.count, windowMs = FLAIL.windowMs, seen = new Set() } = {}) {
+  let times = [];
+  return {
+    get retired() { return seen.has(NEED_HINT_SEEN); },
+    get recent() { return times.length; },
+    /** An ineffective try at `now` (ms). True exactly once: show the tag now. */
+    miss(now) {
+      if (seen.has(NEED_HINT_SEEN)) return false;
+      times = times.filter((t) => now - t <= windowMs);
+      times.push(now);
+      if (times.length < count) return false;
+      seen.add(NEED_HINT_SEEN);
+      times = [];
+      return true;
+    },
+    /** The player got somewhere (a step is done): the run of misses is broken. */
+    progress() { times = []; },
+    /** H or SHOW ME was used: the tag is never needed. */
+    retire() { seen.add(NEED_HINT_SEEN); times = []; },
+  };
+}
+
+// ---------------------------------------------------------------------------
 // timing
 
 /**

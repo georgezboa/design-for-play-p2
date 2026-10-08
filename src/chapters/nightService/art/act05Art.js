@@ -74,6 +74,8 @@ export function drawStoresDoor(ctx, variant = 'locked') {
   const dw = STORES.w * w;
   const dTop = STORES.top * h;
   const open = variant === 'open';
+  // round 6 · item 4: unlocked, the leaf is off its latch (still closed)
+  const ajar = variant === 'unlocked';
   ctx.paint(`act05-door-${variant}`, (c, env) => {
     backWall(c, w, h, floorY, { seed: 501 });
     ceiling(c, w);
@@ -144,6 +146,28 @@ export function drawStoresDoor(ctx, variant = 'locked') {
       roundRectPath(c, lx - 24, ly - 12, 18, 6, 3); c.fill();
       ink(c, [[lx - 24, ly - 12], [lx - 6, ly - 12], [lx - 6, ly - 6], [lx - 24, ly - 6]], { w: 1.1, closed: true });
       ink(c, [[dx, dTop], [dx + dw, dTop], [dx + dw, floorY], [dx, floorY]], { w: 2.4, closed: true });
+      if (ajar) {
+        // off the latch: a dark crack down the lock side, lamplight inside it
+        c.fillStyle = '#0a0604';
+        c.fillRect(dx + dw - 4, dTop + 2, 8, floorY - dTop - 2);
+        c.save();
+        c.globalCompositeOperation = 'lighter';
+        c.fillStyle = vgrad(c, dTop, floorY, [[0, 'rgba(255, 214, 140, 0.6)'], [0.5, 'rgba(255, 205, 130, 1)'], [1, 'rgba(255, 190, 110, 0.65)']]);
+        c.fillRect(dx + dw - 2.5, dTop + 4, 5, floorY - dTop - 6);
+        // lamplight spilling out of the crack onto the frame
+        const spill = c.createLinearGradient(dx + dw, 0, dx + dw + 46, 0);
+        spill.addColorStop(0, 'rgba(255, 196, 120, 0.42)');
+        spill.addColorStop(1, 'rgba(255, 196, 120, 0)');
+        c.fillStyle = spill;
+        c.fillRect(dx + dw, dTop + 6, 46, floorY - dTop - 10);
+        glow(c, dx + dw, dTop + (floorY - dTop) * 0.5, (floorY - dTop) * 0.6, 'rgba(255, 196, 120, 0.9)', 0.34);
+        // a fan of light across the floor from the crack
+        c.fillStyle = 'rgba(255, 190, 100, 0.12)';
+        c.beginPath(); c.moveTo(dx + dw - 2, floorY); c.lineTo(dx + dw + 2, floorY); c.lineTo(dx + dw + 70, h + 10); c.lineTo(dx + dw - 30, h + 10); c.closePath(); c.fill();
+        c.restore();
+        // the lock plate catches the light: it is open
+        glow(c, LOCK.x * w, LOCK.y * h, 46, 'rgba(255, 214, 140, 0.95)', 0.55);
+      }
     }
     // the key line: down from the corridor wall (right edge, high), over a
     // pulley, to the brass catch beside the lock
@@ -163,6 +187,11 @@ export function drawStoresDoor(ctx, variant = 'locked') {
   ctx.glow(w * 0.14, h * 0.34, 170, { color: 0xffc070, alpha: 0.22, flicker: 0.06 });
   if (open) ctx.glow(dx + dw * 0.5, h * 0.42, 220, { color: 0xffb060, alpha: 0.32, flicker: 0.06 });
   else ctx.glow(dx + dw * 0.5, dTop + (floorY - dTop) * 0.18, 120, { color: 0xffc98a, alpha: 0.18, flicker: 0.1 });
+  if (ajar) {
+    // the crack breathes with the lamp beyond it, and the lock is lit
+    ctx.glow(dx + dw, dTop + (floorY - dTop) * 0.5, 160, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
+    ctx.glow(LOCK.x * w, LOCK.y * h, 70, { color: 0xffd27a, alpha: 0.45, flicker: 0.06 });
+  }
   ctx.dust(w * 0.05, h * 0.1, w * 0.6, h * 0.6, { count: 8 });
 }
 
@@ -234,13 +263,42 @@ export function drawLockClose(ctx) {
     inkEllipse(c, 20, 20, 16, 16, { w: 1.6, bleed: false });
     ink(c, [[34, 16], [84, 16], [84, 24], [34, 24]], { w: 1.4, closed: true, bleed: false });
   }, lx, ly + 2, { origin: [0.92, 0.5] });
+  // round 6 · item 4: the bolt across the joint draws back into the leaf once
+  // the key has turned, and lamplight opens in the crack (held on screen)
+  const plateRight = lx + 44;
+  const tipShut = leafEdge + 34;
+  const tipOpen = leafEdge - 10;
+  const bolt = ctx.sprite('act05-bolt', 120, 30, (c) => {
+    c.fillStyle = brassFill(c, 0, 4, 120, 22, true);
+    roundRectPath(c, 0, 5, 118, 20, 6); c.fill();
+    c.fillStyle = 'rgba(255, 245, 210, 0.35)'; c.fillRect(6, 8, 106, 4);
+    ink(c, [[0, 5], [118, 5], [118, 25], [0, 25]], { w: 1.6, closed: true, bleed: false });
+  }, plateRight, ly + 2, { origin: [0, 0.5] });
+  bolt.setDisplaySize(tipShut - plateRight, 26);
+  const seam = ctx.sprite('act05-seam', 16, 220, (c) => {
+    const g = c.createLinearGradient(0, 0, 0, 220);
+    g.addColorStop(0, 'rgba(255, 210, 140, 0)');
+    g.addColorStop(0.2, 'rgba(255, 214, 150, 0.95)');
+    g.addColorStop(0.8, 'rgba(255, 200, 120, 0.95)');
+    g.addColorStop(1, 'rgba(255, 190, 110, 0)');
+    c.fillStyle = g;
+    c.fillRect(6, 0, 4, 220);
+  }, leafEdge, h * 0.5, { origin: [0.5, 0.5] });
+  seam.setDisplaySize(16, h * 1.1).setBlendMode('ADD').setAlpha(0);
+  const plateGlow = ctx.glow(lx, ly, 260, { color: 0xffd27a, alpha: 0 });
   let turn = 0;
+  let draw = 0;
   ctx.animate((time, dt) => {
     const sent = ctx.flag('keySent');
     trolley.setVisible(sent);
     key.setVisible(sent);
     if (ctx.flag('unlocked')) turn = Math.min(1, turn + dt / 500);
+    if (turn >= 1) draw = Math.min(1, draw + dt / (ctx.reduceMotion() ? 120 : 360));
     key.setRotation(-Math.PI / 2 + turn * (Math.PI / 2));
+    const k = 1 - (1 - draw) ** 3;
+    bolt.setDisplaySize(Math.max(4, tipShut - plateRight - k * (tipShut - tipOpen)), 26);
+    seam.setAlpha(k * 0.9);
+    plateGlow.setAlpha(k * 0.32);
   });
   ctx.glow(w * 0.2, 0, 300, { color: 0xffc070, alpha: 0.14, flicker: 0.05 });
 }
