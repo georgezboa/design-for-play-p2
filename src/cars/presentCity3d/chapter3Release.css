@@ -187,7 +187,7 @@ body.c3-board-open .nf-caption { display: none; }
 .c3-board__records-title { margin: 0 0 6px; font: 700 calc(10px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.24em; color: #d9b27a; }
 .c3-board__records-row { display: flex; gap: 12px; justify-content: center; }
 .c3-record {
-  position: relative; width: calc(196px * var(--nf-scale)); box-sizing: border-box; padding: 9px 12px 8px; text-align: left; color: #3b2410; border-radius: 3px;
+  position: relative; width: max-content; min-width: 160px; max-width: 260px; box-sizing: border-box; padding: 9px 12px 8px; text-align: left; color: #3b2410; border-radius: 3px;
   background: #d9b27a radial-gradient(circle at 30% 20%, rgba(255, 236, 190, 0.6), transparent 70%);
   box-shadow: 0 10px 22px rgba(0, 0, 0, 0.5); pointer-events: auto;
 }

@@ -212,6 +212,20 @@ export class Chapter3TicketBoard {
         mark.setAttribute('aria-label', `${spec.title}: 1978 record checked. Keep it beside the other.`);
         mark.append(recordSlip(spec, 'c3-card__record'));
         mark.addEventListener('pointerdown', (event) => event.stopPropagation());
+        // The expanded record must sit over the neighbouring papers.
+        const lift = (on) => {
+          if (on) {
+            card.dataset.z = card.style.zIndex;
+            card.style.zIndex = '60';
+          } else if (card.dataset.z !== undefined) {
+            card.style.zIndex = card.dataset.z;
+            delete card.dataset.z;
+          }
+        };
+        mark.addEventListener('pointerenter', () => lift(true));
+        mark.addEventListener('pointerleave', () => lift(false));
+        mark.addEventListener('focus', () => lift(true));
+        mark.addEventListener('blur', () => lift(false));
         mark.addEventListener('click', (event) => {
           event.stopPropagation();
           this.onMarkClick(spec.id);

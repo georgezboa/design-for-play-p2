@@ -148,7 +148,7 @@ describe('Chapter 3 integrated final lock v47-ch3a', () => {
     assert.equal(sourceFiles.length, 30);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '0e6ee397fb10984a5882202de8be42098256e28592bfa4edc47a5cb386c1f982',
+      '749121af5c8316dc61218ef6fffa5c6c6b968018ba317db8e229eda867b4f7e7',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

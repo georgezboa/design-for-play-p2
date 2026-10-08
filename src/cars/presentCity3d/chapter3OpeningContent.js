@@ -240,7 +240,7 @@ export const TICKET_BOARD_CARDS = Object.freeze([
     title: 'VELEZ, M.',
     lines: Object.freeze(['Issued Echo City terminal.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['City case.']) }),
-    at: Object.freeze([0.19, 0.31]),
+    at: Object.freeze([0.16, 0.31]),
   }),
   Object.freeze({
     id: 'ticket-venn',
@@ -249,7 +249,7 @@ export const TICKET_BOARD_CARDS = Object.freeze([
     title: 'M. VENN',
     lines: Object.freeze(['Reserved 15:38, cash.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['Orchard case.']) }),
-    at: Object.freeze([0.79, 0.33]),
+    at: Object.freeze([0.82, 0.33]),
   }),
   Object.freeze({
     id: 'terminal-note',
@@ -258,21 +258,21 @@ export const TICKET_BOARD_CARDS = Object.freeze([
     // Round 6 (item 8): the rule with a neutral example; the player applies
     // it to VELEZ (the card used to print the answer, VE · NN).
     lines: Object.freeze(['Long surnames are cut:', 'two letters, then NN.', '<b>ARDIN → AR · NN</b>']),
-    at: Object.freeze([0.48, 0.64]),
+    at: Object.freeze([0.49, 0.66]),
   }),
   Object.freeze({
     id: 'market-sale',
     stamp: 'MARKET WARD · EDA\'S STALL · 14:12',
     title: 'Lamp oil ×2',
     lines: Object.freeze(['Paid in cash, stamped SEAT 43.', 'Carried by the porter, Olek.']),
-    at: Object.freeze([0.17, 0.63]),
+    at: Object.freeze([0.17, 0.65]),
   }),
   Object.freeze({
     id: 'claim-card',
     stamp: 'NIGHT SERVICE · LOST PROPERTY',
     title: 'Claim 1978-0412',
     lines: Object.freeze(['VELEZ, MARA. Two claims.', 'City case collected. Orchard case on board.']),
-    at: Object.freeze([0.8, 0.63]),
+    at: Object.freeze([0.81, 0.65]),
   }),
 ]);
 
