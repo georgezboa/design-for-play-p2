@@ -27,7 +27,7 @@ export const PAINT_LESSON = Object.freeze({
   need: 4,
   // the first hole: FLOOR_SPANS[0].to .. FLOOR_SPANS[1].from, on the floor row
   gap: Object.freeze({ from: 20, to: 30, row: 22 }),
-  pastStepX: 380,
+  pastStepX: 365, // just past the step's end (x = 360): he is at the gap now
   gapNearX: 300,
   acrossX: 620,
   gapGhostAfter: 7,
