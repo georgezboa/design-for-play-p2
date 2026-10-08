@@ -17,6 +17,7 @@ import {
   INK, TRAIN_BOX, TRAIN_COLOURS, buildTrain, drawArt, drawRosaDrawing, drawTrainWheels, once, paintPaper, paintTrainBody, prebuild, rosaDrawing, rubberStamp,
 } from '../painters-c2.js';
 import { paintCountry } from '../../../chapters/paintedCountry/art/countryArt.js';
+import { FONT_SERIF, FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -233,7 +234,7 @@ function paintHall(c, w, h) {
   c.fillRect(dx + dw / 2 - 1, dt + 4, 2, HALL.floor - dt - 8);
   // the museum's name over the doors
   c.save();
-  c.font = '700 26px "Space Mono", monospace';
+  c.font = `700 26px ${FONT_UI}`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillStyle = PAL.brass;
   c.fillText('THE MUSEUM OF ONE ANSWER', dx + dw / 2, dt - 25, dw + 60);
@@ -295,12 +296,12 @@ function paintLetter(c, x, y) {
   c.strokeStyle = 'rgba(120, 100, 70, 0.25)'; c.lineWidth = 1;
   c.beginPath(); c.moveTo(-74, -32); c.lineTo(74, -32); c.moveTo(-74, 32); c.lineTo(74, 32); c.stroke();
   c.fillStyle = 'rgba(70, 44, 26, 0.85)';
-  c.font = 'italic 400 22px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 22px ${FONT_SERIF}`;
   c.fillText('Butch —', -58, -52);
-  c.font = 'italic 400 19px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 19px ${FONT_SERIF}`;
   c.fillText('… keep', -50, 0);
   c.fillText('moving.', -40, 24);
-  c.font = 'italic 400 22px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 22px ${FONT_SERIF}`;
   c.fillText('— M.', 10, 70);
   c.restore();
 }
@@ -331,7 +332,7 @@ function paintCases(lit) {
       c.fillStyle = brassFill(c, cx - 100, 570, 200, 34);
       roundRectPath(c, cx - 100, 570, 200, 34, 4); c.fill();
       c.fillStyle = 'rgba(40, 24, 10, 0.92)';
-      c.font = '700 12px "Space Mono", monospace';
+      c.font = `700 12px ${FONT_UI}`;
       c.textAlign = 'center'; c.textBaseline = 'middle';
       c.fillText(LABELS[i], cx, 587, 186);
       c.textAlign = 'left';

@@ -10,6 +10,7 @@ import {
 } from './painters.js';
 import { CONDUCTOR_PARTS } from '../../chapters/nightService/art/figures.js';
 import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART } from '../../chapters/finalBoss/conductorFigure.js';
+import { FONT_UI } from '../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -164,7 +165,7 @@ export function paintMuseumHall(c, w, h, { end = 'doors', seed = 7100 } = {}) {
       inkRect(c, x0 + k * dw / 2 + 10, y0 + dh * 0.5, dw / 2 - 20, dh * 0.42, { w: 1.2, alpha: 0.45, bleed: false, seed: seed + 62 + k });
     });
     c.fillStyle = 'rgba(0,0,0,0.5)'; c.fillRect(799, y0, 2, dh);
-    c.fillStyle = PAL.brassLight; c.font = '700 11px "Space Mono", monospace'; c.textAlign = 'center';
+    c.fillStyle = PAL.brassLight; c.font = `700 11px ${FONT_UI}`; c.textAlign = 'center';
     c.fillText('ACCESSIONS', 800, y0 - 16);
     c.textAlign = 'left';
   }
@@ -485,9 +486,9 @@ export function drawBlackTicket(c, x, y, { w = 300, angle = 0, turn = 1, glint =
     c.strokeRect(-w / 2 + w * 0.17, -h / 2 + h * 0.1, w * 0.79, h * 0.8);
     c.fillStyle = 'rgba(236, 206, 140, 0.92)';
     c.textBaseline = 'middle';
-    c.font = `700 ${h * 0.2}px "Space Mono", monospace`;
+    c.font = `700 ${h * 0.2}px ${FONT_UI}`;
     c.fillText('LAST CARRIAGE', -w / 2 + w * 0.22, -h * 0.14, w * 0.7);
-    c.font = `700 ${h * 0.12}px "Space Mono", monospace`;
+    c.font = `700 ${h * 0.12}px ${FONT_UI}`;
     c.fillStyle = 'rgba(236, 206, 140, 0.7)';
     c.fillText('ADMIT ONE · NO RETURN', -w / 2 + w * 0.22, h * 0.17, w * 0.7);
     // where a punch would go: a dashed ring, never punched

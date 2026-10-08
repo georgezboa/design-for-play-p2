@@ -17,6 +17,7 @@ import { drawTicket } from '../painters.js';
 import {
   drawLampPost, drawLitSign, drawPinchHand, drawStationClock, drawWaterTower, glassBeads, paintBrickFacade, paintCityFar,
 } from '../painters-c1.js';
+import { FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -108,7 +109,7 @@ function paintBellwetherNear(c, w, h) {
   c.strokeStyle = '#d8ccb0'; c.lineWidth = 3;
   roundRectPath(c, bx + 6, by + 6, bw - 12, 46, 4); c.stroke();
   c.fillStyle = '#efe6cf';
-  c.font = '700 34px "Space Mono", monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.font = `700 34px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('BELLWETHER', SIGN_AT, by + 31, bw - 30);
   c.textAlign = 'left';
   // past the station: the fence along the fields

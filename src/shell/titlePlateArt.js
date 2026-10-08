@@ -11,6 +11,7 @@ import {
   speckle, vgrad, wood,
 } from '../chapters/nightService/art/ink.js';
 import { GLASS_MARGIN, LAMP_EVERY, lampWorldX } from './titlePlate.js';
+import { FONT_UI } from '../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 /** The view outside is painted at this fraction of the room's resolution. */
@@ -865,10 +866,10 @@ function claimTag(c, x, y, angle, size) {
   c.beginPath(); c.moveTo(h * 0.62, -h * 0.5); c.lineTo(h * 0.62, h * 0.5); c.stroke();
   c.fillStyle = 'rgba(110, 34, 24, 0.95)';
   c.textBaseline = 'middle';
-  c.font = `700 ${Math.max(5, size * 0.23)}px "Space Mono", monospace`;
+  c.font = `700 ${Math.max(5, size * 0.23)}px ${FONT_UI}`;
   c.fillText('CLAIM', h * 0.74, -h * 0.2);
   c.fillStyle = 'rgba(42, 29, 20, 0.95)';
-  c.font = `700 ${Math.max(5, size * 0.255)}px "Space Mono", monospace`;
+  c.font = `700 ${Math.max(5, size * 0.255)}px ${FONT_UI}`;
   c.fillText('1978-0412', h * 0.74, h * 0.2, w - h * 0.84);
   c.restore();
   amberGlint(c, x + Math.cos(angle) * w * 0.98 - Math.sin(angle) * -h * 0.55, y + Math.sin(angle) * w * 0.98 + Math.cos(angle) * -h * 0.55, size * 0.28);

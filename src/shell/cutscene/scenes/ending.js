@@ -14,6 +14,7 @@ import trainUrl from '../../../chapters/nightService/art/train-night.png?url';
 import {
   PAL, amberGlint, brassFill, carriageCeiling, damaskWall, drawButch, drawButchBack, drawCeilingLamp, drawMaraSeatedBack, drawOilLamp, drawRain, drawViaductShot, drawWindowView, finishLayer, floorboards, glow, ink, inkRect, paintCountry, paintNightSky, paintWorld, ramp, rivet, rng, roundRectPath, seatBack, smooth, usePaintAssets, vgrad, wainscot, wood,
 } from '../painters.js';
+import { FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -68,7 +69,7 @@ function paintCarriageSide(c, w, h) {
   // a door, the number, the brass
   c.fillStyle = '#3a1812'; c.fillRect(1440, top + 190, 70, 200);
   ink(c, [[1440, top + 190], [1440, bottom], [1510, bottom], [1510, top + 190]], { w: 2, alpha: 0.6, bleed: false, seed: 9320 });
-  c.fillStyle = PAL.brassLight; c.font = '700 30px "Space Mono", monospace'; c.fillText('LOST PROPERTY', 120, top + 260);
+  c.fillStyle = PAL.brassLight; c.font = `700 30px ${FONT_UI}`; c.fillText('LOST PROPERTY', 120, top + 260);
   ink(c, [[x0 + 34, top], [x1 - 34, top], [x1, top + 34], [x1, bottom], [x0, bottom], [x0, top + 34]], { w: 3, closed: true, alpha: 0.75, seed: 9321 });
   // bogies, wheels and the rail
   [[200, 420], [1180, 1400]].forEach(([a, b]) => {

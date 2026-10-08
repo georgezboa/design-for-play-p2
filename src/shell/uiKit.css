@@ -1,74 +1,111 @@
 /*
- * NIGHTFALL shared UI kit (DOM chapters: Echo City, Museum, finales, true
- * ending). Mirrors the Phaser styling of Chapter 1 (night-service) and
- * Chapter 2 (borrowed-light) so every chapter speaks one visual language:
- *   walnut + brass frames, ivory ink, amber for "you can act on this",
- *   oxblood stamps, Georgia for voice, Space Mono for labels.
+ * NIGHTFALL shared UI kit (every page: the pause menu imports it, and the DOM
+ * chapters, finales and true ending use its parts directly).
+ *
+ * Round 6 (owner notes G4 "too plastic, make it heavier" and G7 "towards
+ * Kentucky Route Zero, the type too"): matte and dark, white on black, a lot
+ * of air. Two faces (src/fonts/fonts.css):
+ *   --nf-serif  EB Garamond: voice, narrative, documents
+ *   --nf-ui     Jost in letter-spaced capitals: labels, menus, titles, keys
+ * One accent, amber, still means "you can act on this"; oxblood marks a
+ * destructive choice. Hairlines instead of brass bevels, no gloss gradients.
+ * The older tokens (--nf-walnut, --nf-brass…) stay for chapter code.
  * Import once per page: `import './shell/uiKit.css'` (path relative).
- * Text scales with the global Text Size setting via --nf-text-scale
+ * Text scales with the global Text Size setting via --nf-scale
  * (--nightfall-text-scale, set on <html> by applySettings).
  */
+@import '../fonts/fonts.css';
+
 :root {
   --nf-walnut: #1c130d;
   --nf-walnut-2: #2a1d14;
   --nf-brass: #b08a4a;
   --nf-brass-hi: #d9b56e;
   --nf-ivory: #eadfc6;
-  --nf-paper: #efe4cc;
-  --nf-paper-ink: #2a1d14;
+  --nf-paper: #e8dfca;
+  --nf-paper-ink: #231a12;
   --nf-amber: #e0a24a;
   --nf-teal: #23434a;
   --nf-oxblood: #8a2a1e;
   --nf-rose: #c46a7a;
-  --nf-serif: Georgia, 'Times New Roman', 'DejaVu Serif', serif;
-  --nf-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
-  --nf-display: 'Anton', Impact, sans-serif;
+  /* round 6: the matte night palette */
+  --nf-night: #0b0a09;
+  --nf-night-2: #141210;
+  --nf-white: #f1ede4;
+  --nf-muted: #a9a194;
+  --nf-faint: #6f685e;
+  --nf-hair: rgba(241, 237, 228, 0.14);
+  --nf-hair-strong: rgba(241, 237, 228, 0.3);
+  --nf-danger: #d4836f;
+  /* the faces (src/shared/fonts.js names the same stacks for canvas text) */
+  --nf-serif: 'EB Garamond', Garamond, Georgia, 'Times New Roman', 'DejaVu Serif', serif;
+  --nf-ui: 'Jost', 'Futura', 'Century Gothic', 'Avenir Next', 'Helvetica Neue', Arial, sans-serif;
+  --nf-display: var(--nf-ui);
+  /* legacy name: labels used to be set in Space Mono; they are Jost now */
+  --nf-mono: var(--nf-ui);
+  --nf-track: 0.18em;
   --nf-scale: var(--nightfall-text-scale, 1);
+}
+
+/* key caps wherever the shell names a key (pause menu, entry card, hints) */
+.nf-keys__sep { padding: 0 0.42em; color: var(--nf-faint); font-style: normal; }
+:where(.nf-caption, .nf-card, .nf-controls-card, #nightfall-pause-menu, #nightfall-title) kbd {
+  display: inline-block;
+  min-width: 1.75em;
+  padding: 0.2em 0.45em 0.14em;
+  border: 1px solid var(--nf-hair-strong);
+  border-radius: 3px;
+  color: var(--nf-white);
+  background: rgba(241, 237, 228, 0.04);
+  font: 500 0.92em/1.15 var(--nf-ui);
+  letter-spacing: 0.06em;
+  text-align: center;
 }
 
 /* ---------- caption bar (dialogue) ---------- */
 .nf-caption {
   position: fixed; left: 50%; bottom: max(24px, 3vh); transform: translateX(-50%);
-  width: min(1180px, calc(100vw - 48px)); box-sizing: border-box;
-  padding: calc(14px * var(--nf-scale)) 28px calc(18px * var(--nf-scale));
-  background: linear-gradient(180deg, rgba(28, 19, 13, 0.94), rgba(20, 13, 9, 0.96));
-  border: 2px solid var(--nf-brass); border-radius: 10px;
-  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 14px 40px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(217, 181, 110, 0.25);
-  color: var(--nf-ivory); z-index: 9000; pointer-events: auto;
+  width: min(1120px, calc(100vw - 48px)); box-sizing: border-box;
+  padding: calc(16px * var(--nf-scale)) 34px calc(19px * var(--nf-scale));
+  background: rgba(9, 8, 7, 0.9);
+  border: 1px solid var(--nf-hair); border-radius: 2px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.55);
+  color: var(--nf-white); z-index: 9000; pointer-events: auto;
 }
 .nf-caption[hidden] { display: none; }
 .nf-caption__speaker {
-  font: 700 calc(15px * var(--nf-scale)) / 1.2 var(--nf-mono); letter-spacing: 0.14em;
-  color: var(--nf-amber); text-transform: uppercase; margin: 0 0 6px;
+  font: 500 calc(12px * var(--nf-scale)) / 1.2 var(--nf-ui); letter-spacing: 0.3em;
+  color: var(--nf-amber); text-transform: uppercase; margin: 0 0 8px;
 }
-.nf-caption__text { font: calc(24px * var(--nf-scale)) / 1.4 var(--nf-serif); margin: 0; }
-.nf-caption__next { position: absolute; right: 18px; bottom: 12px; color: var(--nf-amber); font: calc(22px * var(--nf-scale)) var(--nf-serif); animation: nf-bob 1.4s ease-in-out infinite; }
-.nf-caption__choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.nf-caption__text { font: calc(25px * var(--nf-scale)) / 1.42 var(--nf-serif); margin: 0; }
+.nf-caption__next { position: absolute; right: 20px; bottom: 14px; color: var(--nf-muted); font: calc(18px * var(--nf-scale)) var(--nf-ui); animation: nf-bob 1.4s ease-in-out infinite; }
+.nf-caption__choices { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
 .nf-caption__choice {
-  font: calc(16px * var(--nf-scale)) / 1.3 var(--nf-mono); letter-spacing: 0.04em;
-  color: var(--nf-ivory); background: rgba(234, 223, 198, 0.06);
-  border: 1px solid rgba(176, 138, 74, 0.7); border-radius: 6px; padding: 8px 14px; cursor: pointer;
+  font: 500 calc(13px * var(--nf-scale)) / 1.3 var(--nf-ui); letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--nf-white); background: transparent;
+  border: 1px solid var(--nf-hair-strong); border-radius: 2px; padding: 9px 16px; cursor: pointer;
 }
-.nf-caption__choice:hover, .nf-caption__choice:focus-visible { border-color: var(--nf-amber); background: rgba(224, 162, 74, 0.14); outline: none; }
+.nf-caption__choice:hover, .nf-caption__choice:focus-visible { border-color: var(--nf-amber); background: rgba(224, 162, 74, 0.1); outline: none; }
 
-/* ---------- archive card (records, letters, clues) ---------- */
-.nf-card-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(5, 4, 3, 0.62); z-index: 9500; }
+/* ---------- archive card (records, letters, clues): a matte paper document ---------- */
+.nf-card-backdrop { position: fixed; inset: 0; display: grid; place-items: center; background: rgba(4, 4, 3, 0.7); z-index: 9500; }
 .nf-card {
   position: relative; width: min(620px, calc(100vw - 48px)); box-sizing: border-box;
-  padding: 34px 40px 30px; color: var(--nf-paper-ink);
-  background: var(--nf-paper) radial-gradient(circle at 20% 10%, rgba(255, 255, 255, 0.35), transparent 60%);
-  border-radius: 4px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(42, 29, 20, 0.18);
-  transform: rotate(-0.6deg);
+  padding: 36px 42px 30px; color: var(--nf-paper-ink);
+  background: var(--nf-paper);
+  border-radius: 1px; box-shadow: 0 28px 70px rgba(0, 0, 0, 0.65), inset 0 0 0 1px rgba(35, 26, 18, 0.16);
+  transform: rotate(-0.4deg);
 }
 /* the ticket punch hole every archive card carries */
-.nf-card::before { content: ''; position: absolute; top: 18px; right: 22px; width: 26px; height: 26px; border-radius: 50%; background: rgba(5, 4, 3, 0.85); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(42, 29, 20, 0.15); }
-.nf-card__stamp { font: 700 calc(15px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.18em; color: var(--nf-oxblood); margin: 0 0 10px; text-transform: uppercase; }
-.nf-card__title { font: 700 calc(30px * var(--nf-scale)) / 1.15 var(--nf-serif); margin: 0 0 14px; }
-.nf-card__lines { font: calc(20px * var(--nf-scale)) / 1.5 var(--nf-serif); margin: 0; }
+.nf-card::before { content: ''; position: absolute; top: 20px; right: 24px; width: 22px; height: 22px; border-radius: 50%; background: rgba(5, 4, 3, 0.88); box-shadow: inset 0 2px 3px rgba(0, 0, 0, 0.7); }
+.nf-card__stamp { font: 500 calc(12px * var(--nf-scale)) / 1 var(--nf-ui); letter-spacing: 0.3em; color: var(--nf-oxblood); margin: 0 0 12px; text-transform: uppercase; }
+.nf-card__title { font: 600 calc(31px * var(--nf-scale)) / 1.15 var(--nf-serif); margin: 0 0 14px; }
+.nf-card__lines { font: calc(21px * var(--nf-scale)) / 1.5 var(--nf-serif); margin: 0; }
 .nf-card__lines p { margin: 0 0 8px; }
 .nf-card__lines s, .nf-card__lines del { text-decoration-color: #b02a1e; text-decoration-thickness: 3px; }
-.nf-card__close { margin-top: 18px; font: calc(13px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.14em; color: #6b5640; text-transform: uppercase; background: none; border: 0; cursor: pointer; padding: 0; }
+.nf-card__close { margin-top: 20px; font: 500 calc(11px * var(--nf-scale)) var(--nf-ui); letter-spacing: 0.26em; color: #6b5a47; text-transform: uppercase; background: none; border: 0; cursor: pointer; padding: 0; }
 .nf-card__close:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 4px; }
+.nf-card kbd { color: var(--nf-paper-ink); border-color: rgba(35, 26, 18, 0.35); background: transparent; }
 
 /* ---------- paper-tag prompt (interactable marker) ----------
  * The notched end is painted by the background (two corner triangles), not
@@ -80,8 +117,8 @@
 .nf-tag {
   --nf-tag-paper: var(--nf-paper);
   position: fixed; transform: translate(-50%, -100%); pointer-events: none; z-index: 8800;
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 22px;
-  font: 700 calc(13px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.12em; text-transform: uppercase;
+  display: inline-flex; align-items: center; gap: 8px; padding: 7px 13px 6px 22px;
+  font: 500 calc(12px * var(--nf-scale)) / 1 var(--nf-ui); letter-spacing: 0.2em; text-transform: uppercase;
   color: var(--nf-paper-ink);
   background:
     linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--nf-tag-paper) 50%) 0 0 / 12px 50.5% no-repeat,
@@ -91,21 +128,21 @@
      paint inside the box): it falls under the tag, as the drop-shadow did */
   box-shadow: 6px 5px 8px -4px rgba(0, 0, 0, 0.55);
 }
-.nf-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--nf-walnut); }
-.nf-tag::after { content: ''; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 0 0 0 5px; background: var(--nf-amber); box-shadow: 0 0 6px 2px rgba(224, 162, 74, 0.7); animation: nf-glint 2.2s ease-in-out infinite; }
+.nf-tag::before { content: ''; position: absolute; left: 9px; top: 50%; width: 6px; height: 6px; margin-top: -3px; border-radius: 50%; background: var(--nf-night); }
+.nf-tag::after { content: ''; position: absolute; right: 0; top: 0; width: 5px; height: 5px; border-radius: 0 0 0 5px; background: var(--nf-amber); box-shadow: 0 0 6px 2px rgba(224, 162, 74, 0.6); animation: nf-glint 2.2s ease-in-out infinite; }
 .nf-tag[hidden] { display: none; }
 .nf-tag kbd { font: inherit; color: var(--nf-oxblood); }
 
 /* ---------- chapter title card ---------- */
 .nf-title-card { position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 8900; text-align: center; animation: nf-title 4.6s ease both; }
-.nf-title-card__kicker { font: calc(16px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.4em; color: var(--nf-amber); margin: 0 0 10px; }
-.nf-title-card__main { font: calc(64px * var(--nf-scale)) / 1 var(--nf-display); letter-spacing: 0.08em; color: var(--nf-ivory); margin: 0; text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8); }
-.nf-title-card__rule { width: 360px; height: 2px; margin: 18px auto 0; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
+.nf-title-card__kicker { font: 500 calc(13px * var(--nf-scale)) var(--nf-ui); letter-spacing: 0.5em; padding-left: 0.5em; color: var(--nf-muted); margin: 0 0 18px; text-transform: uppercase; }
+.nf-title-card__main { font: 300 calc(58px * var(--nf-scale)) / 1.05 var(--nf-display); letter-spacing: 0.32em; padding-left: 0.32em; color: var(--nf-white); margin: 0; text-transform: uppercase; text-shadow: 0 4px 30px rgba(0, 0, 0, 0.85); }
+.nf-title-card__rule { width: 280px; height: 1px; margin: 22px auto 0; background: linear-gradient(90deg, transparent, var(--nf-hair-strong), transparent); }
 
 /* ---------- stone row (five sockets) ---------- */
 .nf-stones { display: inline-flex; gap: 10px; }
-.nf-stones i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--nf-brass); background: rgba(0, 0, 0, 0.4); }
-.nf-stones i.is-held { background: radial-gradient(circle at 35% 35%, #ffd79a, var(--nf-amber) 60%, #7a4a18); box-shadow: 0 0 10px rgba(224, 162, 74, 0.7); }
+.nf-stones i { width: 14px; height: 14px; border-radius: 50%; border: 1px solid var(--nf-hair-strong); background: rgba(0, 0, 0, 0.35); }
+.nf-stones i.is-held { border-color: var(--nf-amber); background: radial-gradient(circle at 38% 36%, #f3c27a, var(--nf-amber) 55%, #8a5a20); box-shadow: 0 0 8px rgba(224, 162, 74, 0.45); }
 
 @keyframes nf-bob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes nf-glint { 0%, 100% { opacity: 0.55; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1.1); } }
@@ -135,10 +172,10 @@
 /* ---------- leaving for the title (shell/titleReturn.js) ---------- */
 .nf-title-return {
   position: fixed; inset: 0; z-index: 2147483000; display: grid; place-content: center; justify-items: center; gap: 16px;
-  background: #050403; color: var(--nf-ivory); animation: nf-title-return 0.16s ease-out both; cursor: progress;
+  background: #050403; color: var(--nf-white); animation: nf-title-return 0.16s ease-out both; cursor: progress;
 }
-.nf-title-return__text { margin: 0; font: calc(16px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.4em; color: var(--nf-amber); text-transform: uppercase; }
-.nf-title-return__rule { width: 280px; height: 2px; background: linear-gradient(90deg, transparent, var(--nf-brass), transparent); }
+.nf-title-return__text { margin: 0; font: 400 calc(14px * var(--nf-scale)) var(--nf-ui); letter-spacing: 0.46em; color: var(--nf-amber); text-transform: uppercase; }
+.nf-title-return__rule { width: 240px; height: 1px; background: linear-gradient(90deg, transparent, var(--nf-hair-strong), transparent); }
 @keyframes nf-title-return { from { opacity: 0; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .nf-title-return { animation: none; } }
 :root[data-reduced-motion='true'] .nf-title-return { animation: none; }

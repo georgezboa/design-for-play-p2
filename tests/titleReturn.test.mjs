@@ -72,6 +72,6 @@ test('the audio registry remembers every context that made a sound and every ele
 test('the curtain uses the uiKit look', () => {
   const css = read('src/shell/uiKit.css');
   assert.match(css, /\.nf-title-return \{/);
-  assert.match(css, /\.nf-title-return__text \{[^}]*var\(--nf-mono\)[^}]*var\(--nf-amber\)/);
+  assert.match(css, /\.nf-title-return__text \{[^}]*var\(--nf-ui\)[^}]*var\(--nf-amber\)/);
   assert.equal(TITLE_RETURN_MESSAGE, 'RETURNING TO THE TERMINAL…');
 });

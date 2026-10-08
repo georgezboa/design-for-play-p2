@@ -16,6 +16,7 @@ import {
 import {
   drawLampPost, drawLitSign, drawPinchHand, drawStationClock, glassBeads, paintBrickFacade, paintCarriageSide, paintCityFar,
 } from '../painters-c1.js';
+import { FONT_SERIF, FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -72,7 +73,7 @@ function paintCarriage1(c, w, h) {
     seed: 10111,
     night: 0.42,
   });
-  c.fillStyle = PAL.brassLight; c.font = '700 26px "Space Mono", monospace';
+  c.fillStyle = PAL.brassLight; c.font = `700 26px ${FONT_UI}`;
   c.fillText('NIGHT SERVICE', DOOR1.x - CAR1.x0 + 180, CAR1.top + 250);
 }
 
@@ -202,19 +203,19 @@ function paintLetter(c, w, h) {
   // her hand, in brown ink
   c.fillStyle = 'rgba(70, 44, 26, 0.78)';
   c.textBaseline = 'alphabetic';
-  c.font = 'italic 400 40px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 40px ${FONT_SERIF}`;
   c.fillText('Butch —', x + 56, y + 78);
-  c.font = 'italic 400 30px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 30px ${FONT_SERIF}`;
   c.fillStyle = 'rgba(70, 44, 26, 0.6)';
   c.fillText('I made it through this city,', x + 70, y + 140);
   c.fillText('but I could not wait here.', x + 70, y + 184);
   c.fillText('If you are following me —', x + 70, y + 250);
   c.fillStyle = 'rgba(56, 32, 18, 0.92)';
-  c.font = 'italic 700 64px Georgia, "Times New Roman", serif';
+  c.font = `italic 700 64px ${FONT_SERIF}`;
   c.fillText('KEEP MOVING.', x + 90, y + 352);
   c.strokeStyle = 'rgba(56, 32, 18, 0.7)'; c.lineWidth = 3;
   c.beginPath(); c.moveTo(x + 94, y + 368); c.quadraticCurveTo(x + 300, y + 360, x + 540, y + 372); c.stroke();
-  c.font = 'italic 400 44px Georgia, "Times New Roman", serif';
+  c.font = `italic 400 44px ${FONT_SERIF}`;
   c.fillText('— M.', x + lw - 200, y + 440);
   ink(c, [[x, y], [x + lw, y + 4], [x + lw - 3, y + lh], [x + 2, y + lh - 3]], { w: 1.6, closed: true, alpha: 0.4, bleed: false, jitter: 0.5, color: '#6a5034', seed: 10213 });
 }
@@ -553,7 +554,7 @@ function paintBoardWall(c, w, h) {
   inkRect(c, x, y, bw, bh, { w: 2.4, alpha: 0.7, color: '#2a1a10', bleed: false, jitter: 0.3, seed: 10504 });
   c.fillStyle = brassFill(c, x + bw / 2 - 200, y - 26, 400, 44);
   roundRectPath(c, x + bw / 2 - 200, y - 24, 400, 40, 6); c.fill();
-  c.fillStyle = '#2a1a10'; c.font = '700 24px "Space Mono", monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+  c.fillStyle = '#2a1a10'; c.font = `700 24px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('ECHO CITY · TICKETS HELD', x + bw / 2, y - 3);
   c.textAlign = 'left';
   // other things pinned there, older, faded by the sun
@@ -568,9 +569,9 @@ function paintBoardWall(c, w, h) {
   });
   // a timetable sheet
   c.fillStyle = '#eee4cc'; c.fillRect(760, 130, 230, 150);
-  c.fillStyle = 'rgba(60, 40, 25, 0.75)'; c.font = '700 15px "Space Mono", monospace';
+  c.fillStyle = 'rgba(60, 40, 25, 0.75)'; c.font = `700 15px ${FONT_UI}`;
   c.fillText('DEPARTURES', 780, 156);
-  c.font = '400 13px "Space Mono", monospace';
+  c.font = `400 13px ${FONT_UI}`;
   ['07:10  NIGHT SERVICE', '09:40  CITY LINE', '14:20  —', '15:38  RESERVED'].forEach((line, i) => c.fillText(line, 780, 184 + i * 22));
   c.fillStyle = '#a8442a'; c.beginPath(); c.arc(875, 136, 5, 0, TAU); c.fill();
   finishLayer(c, w, h, { grain: 0.14, vig: 0 });
@@ -589,15 +590,15 @@ function paintSeatTicket(c, w, h, tk) {
   for (let k = 0; k < 6; k += 1) { c.beginPath(); c.arc(-tw / 2 + 40, -th / 2 + 12 + k * 25, 3, 0, TAU); c.fill(); }
   c.fillStyle = 'rgba(42, 29, 20, 0.85)';
   c.textBaseline = 'middle';
-  c.font = '700 15px "Space Mono", monospace';
+  c.font = `700 15px ${FONT_UI}`;
   c.fillText(tk.top, -tw / 2 + 56, -th / 2 + 24);
-  c.font = '700 44px "Space Mono", monospace';
+  c.font = `700 44px ${FONT_UI}`;
   c.fillText(tk.seat, -tw / 2 + 54, -2);
-  c.font = '700 20px "Space Mono", monospace';
+  c.font = `700 20px ${FONT_UI}`;
   c.fillText(tk.name, -tw / 2 + 56, th / 2 - 26);
   if (tk.stamp) {
     c.save(); c.translate(tw * 0.2, th * 0.26); c.rotate(-0.12);
-    c.font = '700 18px "Space Mono", monospace';
+    c.font = `700 18px ${FONT_UI}`;
     const sw = c.measureText(tk.stamp).width + 16;
     c.strokeStyle = 'rgba(160, 40, 30, 0.85)'; c.lineWidth = 2.4; c.strokeRect(-sw / 2, -14, sw, 28);
     c.fillStyle = 'rgba(160, 40, 30, 0.88)'; c.textAlign = 'center'; c.fillText(tk.stamp, 0, 1);

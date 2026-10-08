@@ -18,6 +18,7 @@ import {
 import {
   MAGIC_STONE_KINDS, drawBacklit, drawBlackTicket, drawButchStandingBack, drawMagicStone, hallLamps, paintMuseumHall,
 } from '../painters-c3.js';
+import { FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -189,7 +190,7 @@ function shotStones(c, t, w, h, env) {
   });
   c.save();
   c.textBaseline = 'middle';
-  c.font = '700 22px "Space Mono", monospace';
+  c.font = `700 22px ${FONT_UI}`;
   STONES.forEach((s, i) => {
     const y = NAMES.y + i * NAMES.step;
     const k = lit[i];
@@ -223,9 +224,9 @@ function paintEndWall(c, w, h) {
   c.fillStyle = PAL.walnutMid; c.fillRect(tx - 14, ty - 14, tw + 28, th + 28);
   c.fillStyle = '#b9ac8e'; c.fillRect(tx, ty, tw, th);
   c.fillStyle = 'rgba(42, 29, 20, 0.9)';
-  c.font = '700 17px "Space Mono", monospace';
+  c.font = `700 17px ${FONT_UI}`;
   c.fillText('NIGHT SERVICE', tx + 22, ty + 38);
-  c.font = '400 13px "Space Mono", monospace';
+  c.font = `400 13px ${FONT_UI}`;
   c.fillText('TIMETABLE · ALL STOPS', tx + 22, ty + 60);
   [['BELLWETHER', '23:10'], ['CITY TERMINAL', '23:40'], ['ECHO CITY', '14:20'], ['PAINTED COUNTRY', '—'], ['THE MUSEUM', '00:00']].forEach(([stop, time], i) => {
     const y = ty + 102 + i * 34;
@@ -244,7 +245,7 @@ function paintEndWall(c, w, h) {
   c.strokeStyle = brassFill(c, px, py, pw, ph); c.lineWidth = 8; c.strokeRect(px, py, pw, ph);
   c.strokeStyle = 'rgba(214, 226, 236, 0.35)'; c.lineWidth = 1.4;
   [[[px + 40, py], [px + 120, py + 90], [px + 90, py + 160]], [[px + 120, py + 90], [px + 220, py + 60], [px + pw, py + 110]], [[px + 220, py + 60], [px + 250, py]]].forEach((pts) => { c.beginPath(); pts.forEach(([x, y], k) => (k ? c.lineTo(x, y) : c.moveTo(x, y))); c.stroke(); });
-  c.fillStyle = PAL.brassLight; c.font = '700 12px "Space Mono", monospace';
+  c.fillStyle = PAL.brassLight; c.font = `700 12px ${FONT_UI}`;
   c.fillText('PENDING', px + 12, py + ph + 30);
   // the gangway's bellows round the door: a carriage coupled to the building
   c.fillStyle = '#0a0807'; c.fillRect(DOOR.x - 60, DOOR.y - 50, DOOR.w + 120, FLOOR2 - DOOR.y + 50);
@@ -277,7 +278,7 @@ function paintEndWall(c, w, h) {
   c.strokeStyle = 'rgba(60, 40, 18, 0.8)'; c.lineWidth = 2; roundRectPath(c, p.x + 6, p.y + 6, p.w - 12, p.h - 12, 5); c.stroke();
   [[p.x + 14, p.y + p.h / 2], [p.x + p.w - 14, p.y + p.h / 2]].forEach(([x, y]) => rivet(c, x, y, 4));
   c.fillStyle = '#2a1a0a';
-  c.font = '700 27px "Space Mono", monospace';
+  c.font = `700 27px ${FONT_UI}`;
   c.textAlign = 'center'; c.textBaseline = 'middle';
   c.fillText('LAST CARRIAGE', p.x + p.w / 2, p.y + p.h / 2 + 1, p.w - 44);
   c.textAlign = 'left'; c.textBaseline = 'alphabetic';

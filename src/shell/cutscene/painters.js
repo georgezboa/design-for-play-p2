@@ -18,6 +18,7 @@ import {
 } from '../../chapters/nightService/art/ink.js';
 import { BUTCH_PARTS, CONDUCTOR_PARTS } from '../../chapters/nightService/art/figures.js';
 import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART } from '../../chapters/finalBoss/conductorFigure.js';
+import { FONT_SERIF, FONT_UI } from '../../shared/fonts.js';
 
 export { PAL, amberGlint, brassFill, glow, hgrad, ink, inkEllipse, inkRect, lightCone, paperTag, parcel, rivet, rng, roundRectPath, speckle, vgrad, wood };
 
@@ -1349,9 +1350,9 @@ export function drawClaimTag(c, x, y, { w = 300, angle = 0, flip = 0, front = ['
     c.beginPath(); c.moveTo(h * 0.52, -h * 0.5); c.lineTo(h * 0.52, h * 0.5); c.stroke();
     const [first, second, third] = text;
     c.fillStyle = 'rgba(42, 29, 20, 0.95)';
-    c.font = `700 ${h * 0.2}px "Space Mono", monospace`;
+    c.font = `700 ${h * 0.2}px ${FONT_UI}`;
     c.fillText(first ?? '', left, -h * 0.24, room);
-    c.font = `700 ${h * 0.15}px "Space Mono", monospace`;
+    c.font = `700 ${h * 0.15}px ${FONT_UI}`;
     c.fillStyle = 'rgba(60, 42, 28, 0.9)';
     c.fillText(second ?? '', left, h * 0.02, room);
     if (third) {
@@ -1359,7 +1360,7 @@ export function drawClaimTag(c, x, y, { w = 300, angle = 0, flip = 0, front = ['
       c.save();
       c.translate(left + room * 0.5, h * 0.29);
       c.rotate(-0.05);
-      c.font = `700 ${h * 0.14}px "Space Mono", monospace`;
+      c.font = `700 ${h * 0.14}px ${FONT_UI}`;
       const tw = Math.min(room, c.measureText(third).width + h * 0.16);
       c.strokeStyle = 'rgba(138, 42, 30, 0.85)';
       c.lineWidth = Math.max(1, h * 0.022);
@@ -1373,9 +1374,9 @@ export function drawClaimTag(c, x, y, { w = 300, angle = 0, flip = 0, front = ['
     // the back: written by hand long ago, in faded brown ink
     const [first, second] = text;
     c.fillStyle = 'rgba(96, 66, 40, 0.78)';
-    c.font = `italic 400 ${h * 0.26}px Georgia, "Times New Roman", serif`;
+    c.font = `italic 400 ${h * 0.26}px ${FONT_SERIF}`;
     c.fillText(first ?? '', left, -h * 0.13, room);
-    c.font = `italic 400 ${h * 0.2}px Georgia, "Times New Roman", serif`;
+    c.font = `italic 400 ${h * 0.2}px ${FONT_SERIF}`;
     c.fillStyle = 'rgba(96, 66, 40, 0.66)';
     c.fillText(second ?? '', left + h * 0.1, h * 0.22, room);
     c.strokeStyle = 'rgba(96, 66, 40, 0.3)';
@@ -1401,9 +1402,9 @@ export function drawTicket(c, x, y, { w = 260, angle = 0, lines = ['CITY LINE', 
   c.fillRect(-w / 2, -h / 2, w * 0.14, h);
   c.fillStyle = 'rgba(42, 29, 20, 0.92)';
   c.textBaseline = 'middle';
-  c.font = `700 ${h * 0.22}px "Space Mono", monospace`;
+  c.font = `700 ${h * 0.22}px ${FONT_UI}`;
   c.fillText(lines[0] ?? '', -w / 2 + w * 0.2, -h * 0.16, w * 0.74);
-  c.font = `700 ${h * 0.15}px "Space Mono", monospace`;
+  c.font = `700 ${h * 0.15}px ${FONT_UI}`;
   c.fillText(lines[1] ?? '', -w / 2 + w * 0.2, h * 0.16, w * 0.74);
   ink(c, [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]], { w: Math.max(1.2, h * 0.02), closed: true, alpha: 0.7, bleed: false, jitter: 0.3, color: '#3a2a1a', seed: 8711 });
   if (punched) {
@@ -1431,13 +1432,13 @@ export function drawAccessionCard(c, x, y, { w = 420, angle = -0.02, lines = ['A
   for (let i = 0; i < 6; i += 1) { c.beginPath(); c.moveTo(-w / 2 + w * 0.06, -h * 0.2 + i * h * 0.12); c.lineTo(w / 2 - w * 0.06, -h * 0.2 + i * h * 0.12); c.stroke(); }
   c.fillStyle = 'rgba(42, 29, 20, 0.92)';
   c.textBaseline = 'alphabetic';
-  c.font = `700 ${h * 0.11}px "Space Mono", monospace`;
+  c.font = `700 ${h * 0.11}px ${FONT_UI}`;
   c.fillText(lines[0] ?? '', -w / 2 + w * 0.07, -h * 0.26, w * 0.86);
-  c.font = `400 ${h * 0.1}px "Space Mono", monospace`;
+  c.font = `400 ${h * 0.1}px ${FONT_UI}`;
   c.fillText(lines[1] ?? '', -w / 2 + w * 0.07, -h * 0.02, w * 0.86);
   if (lines[2]) {
     c.save(); c.translate(w * 0.18, h * 0.24); c.rotate(-0.08);
-    c.font = `700 ${h * 0.12}px "Space Mono", monospace`;
+    c.font = `700 ${h * 0.12}px ${FONT_UI}`;
     const tw = c.measureText(lines[2]).width + h * 0.1;
     c.strokeStyle = 'rgba(138, 42, 30, 0.85)'; c.lineWidth = Math.max(1, h * 0.012);
     c.strokeRect(-tw / 2, -h * 0.1, tw, h * 0.17);
@@ -1508,7 +1509,7 @@ export function paintWorld(c, kind, w, h, { seed = 8800 } = {}) {
     lightCone(c, w * 0.16, h * 0.5, w * 0.08, h * 0.08, 0.3);
     c.fillStyle = '#5a2019';
     roundRectPath(c, w * 0.6, h * 0.55, w * 0.3, h * 0.12, 6); c.fill();
-    c.fillStyle = '#efe4cc'; c.font = `700 ${h * 0.05}px "Space Mono", monospace`; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = '#efe4cc'; c.font = `700 ${h * 0.05}px ${FONT_UI}`; c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText('LOST PROPERTY', w * 0.75, h * 0.61, w * 0.27);
     c.textAlign = 'left';
     for (let i = 0; i < 5; i += 1) parcel(c, w * (0.08 + i * 0.06), h * 0.24 - (i % 2) * h * 0.04, w * 0.05, h * 0.06 + (i % 2) * h * 0.04, { seed: seed + 10 + i });
@@ -1578,7 +1579,7 @@ export function paintWorld(c, kind, w, h, { seed = 8800 } = {}) {
     // the hawthorn hedge in red gouache
     bloom(w * 0.3, h * 0.66, w * 0.08, '#b0342a', 0.55);
     bloom(w * 0.45, h * 0.67, w * 0.07, '#a02c24', 0.5);
-    c.fillStyle = 'rgba(80, 60, 40, 0.55)'; c.font = `italic ${h * 0.06}px Georgia, serif`;
+    c.fillStyle = 'rgba(80, 60, 40, 0.55)'; c.font = `italic ${h * 0.06}px ${FONT_SERIF}`;
     c.fillText('ROSA', w * 0.82, h * 0.9);
   } else if (kind === 'museum') {
     // Chapter 5: walnut and brass in the dark, a lit case

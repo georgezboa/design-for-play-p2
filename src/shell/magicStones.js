@@ -138,18 +138,18 @@ function installStyles() {
   // The offer is a punched archive card (`.nf-card`, src/shell/uiKit.css);
   // these rules only add the stone, the socket row and the two choices.
   style.textContent = `
-    .nf-stone-offer{z-index:10020;background:radial-gradient(circle at 50% 42%,rgba(40,27,16,.55),rgba(5,4,3,.9) 62%)}
+    .nf-stone-offer{z-index:10020;background:rgba(4,4,3,.82)}
     .nf-stone-offer .nf-card{display:grid;grid-template-columns:86px 1fr;column-gap:22px;align-items:start}
     .nf-stone-offer .nf-stone-gem{grid-row:1 / span 3;width:70px;height:70px;margin-top:6px;border-radius:44% 56% 52% 48% / 58% 44% 56% 42%;background:radial-gradient(circle at 36% 30%,#8c8378 0 6%,#3d3833 26%,#161311 72%);box-shadow:inset -6px -8px 14px rgba(0,0,0,.55),0 8px 18px rgba(0,0,0,.35)}
     .nf-stone-offer .nf-stone-gem.is-ember{background:radial-gradient(circle at 36% 30%,#ffd79a 0 6%,#e0a24a 30%,#6b2a22 80%)}
     .nf-stone-offer .nf-card__lines{grid-column:2}
-    .nf-stone-offer .nf-stone-row{grid-column:2;display:flex;align-items:center;gap:12px;margin:14px 0 4px;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;color:#6b5640}
-    .nf-stone-offer .nf-stones i{border-color:#8a6934;background:rgba(42,29,20,.18)}
-    .nf-stone-offer .nf-stones i.is-held{background:radial-gradient(circle at 35% 35%,#ffd79a,#e0a24a 60%,#7a4a18);box-shadow:0 0 8px rgba(224,162,74,.55)}
+    .nf-stone-offer .nf-stone-row{grid-column:2;display:flex;align-items:center;gap:12px;margin:14px 0 4px;font:500 calc(11px * var(--nf-scale,1)) var(--nf-ui,sans-serif);letter-spacing:.24em;color:#6b5a47}
+    .nf-stone-offer .nf-stones i{border-color:rgba(35,26,18,.45);background:rgba(35,26,18,.12)}
+    .nf-stone-offer .nf-stones i.is-held{border-color:#8a5a20;background:radial-gradient(circle at 38% 36%,#f3c27a,#e0a24a 55%,#8a5a20);box-shadow:0 0 8px rgba(224,162,74,.45)}
     .nf-stone-offer .nf-stones i.is-pending{border-style:dashed;border-color:#8a2a1e}
     .nf-stone-offer .nf-stone-actions{grid-column:2;display:flex;gap:10px;margin-top:18px;flex-wrap:wrap}
-    .nf-stone-offer .nf-stone-actions button{padding:10px 16px;border:1px solid #8a6934;border-radius:4px;background:#2a1d14;color:#eadfc6;font:700 calc(12px * var(--nf-scale,1)) var(--nf-mono,monospace);letter-spacing:.14em;cursor:pointer}
-    .nf-stone-offer .nf-stone-actions button[data-leave]{background:transparent;color:#6b5640}
+    .nf-stone-offer .nf-stone-actions button{padding:11px 18px 10px;border:1px solid #14110e;border-radius:2px;background:#14110e;color:#f1ede4;font:500 calc(11px * var(--nf-scale,1)) var(--nf-ui,sans-serif);letter-spacing:.24em;cursor:pointer}
+    .nf-stone-offer .nf-stone-actions button[data-leave]{background:transparent;border-color:rgba(35,26,18,.35);color:#5e4f3e}
     .nf-stone-offer .nf-stone-actions button:focus-visible,.nf-stone-offer .nf-stone-actions button:hover{outline:2px solid #e0a24a;outline-offset:2px}
   `;
   document.head.append(style);

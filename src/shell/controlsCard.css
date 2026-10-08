@@ -1,0 +1,101 @@
+/*
+ * The chapter-entry controls card (controlsCard.js): a small matte card at
+ * the left edge, the chapter's basic keys and what changed since the chapter
+ * before. It takes no pointer events and fades by itself; the hairline at its
+ * foot runs down with the time it has left.
+ */
+.nf-controls-card {
+  --nf-cc: var(--nightfall-text-scale, 1);
+  position: fixed;
+  left: max(20px, 3vw);
+  top: 50%;
+  z-index: 9200;
+  box-sizing: border-box;
+  width: min(calc(372px * var(--nf-cc)), calc(100vw - 40px));
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  padding: calc(20px * var(--nf-cc)) 26px calc(20px * var(--nf-cc));
+  border: 1px solid var(--nf-hair, rgba(241, 237, 228, .14));
+  border-radius: 2px;
+  color: var(--nf-white, #f1ede4);
+  background: rgba(9, 8, 7, .88);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, .5);
+  font-family: var(--nf-ui, sans-serif);
+  pointer-events: none;
+  user-select: none;
+  opacity: 0;
+  translate: -12px -50%;
+  transition: opacity 420ms ease, translate 640ms cubic-bezier(.2, .7, .2, 1);
+}
+.nf-controls-card.is-in { opacity: 1; translate: 0 -50%; }
+.nf-controls-card.is-out { opacity: 0; translate: -6px -50%; transition-duration: 460ms, 460ms; }
+.nf-controls-card__kicker {
+  margin: 0 0 calc(12px * var(--nf-cc));
+  color: var(--nf-muted, #a9a194);
+  font: 500 calc(10.5px * var(--nf-cc))/1.4 var(--nf-ui, sans-serif);
+  letter-spacing: .32em;
+}
+.nf-controls-card__rows { display: grid; margin: 0; }
+.nf-controls-card__rows div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1.2em;
+  align-items: baseline;
+  padding: .5em 0 .45em;
+  border-bottom: 1px solid rgba(241, 237, 228, .07);
+}
+.nf-controls-card__rows div:last-child { border-bottom: 0; }
+.nf-controls-card__rows dt {
+  color: var(--nf-muted, #a9a194);
+  font: 500 calc(10.5px * var(--nf-cc))/1.4 var(--nf-ui, sans-serif);
+  letter-spacing: .2em;
+}
+.nf-controls-card__rows dd {
+  margin: 0;
+  color: var(--nf-white, #f1ede4);
+  font: 500 calc(11.5px * var(--nf-cc))/1.9 var(--nf-ui, sans-serif);
+  letter-spacing: .1em;
+  text-align: right;
+}
+/* what changed since the chapter before */
+.nf-controls-card__changed {
+  display: grid;
+  gap: .55em;
+  margin: calc(14px * var(--nf-cc)) 0 0;
+  padding: calc(13px * var(--nf-cc)) 0 0;
+  border-top: 1px solid var(--nf-hair, rgba(241, 237, 228, .14));
+  list-style: none;
+}
+.nf-controls-card__changed li { display: grid; grid-template-columns: 3.6em minmax(0, 1fr); gap: .5em; align-items: baseline; }
+.nf-controls-card__changed b {
+  color: var(--nf-muted, #a9a194);
+  font: 500 calc(9.5px * var(--nf-cc))/1.2 var(--nf-ui, sans-serif);
+  letter-spacing: .26em;
+}
+.nf-controls-card__changed li:is([data-tag="new"], [data-tag="now"]) b { color: var(--nf-amber, #e0a24a); }
+.nf-controls-card__changed span {
+  color: #e6e0d5;
+  font: italic 400 calc(16.5px * var(--nf-cc))/1.32 var(--nf-serif, Georgia, serif);
+}
+.nf-controls-card__timer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--nf-hair-strong, rgba(241, 237, 228, .3));
+  transform-origin: left center;
+}
+.nf-controls-card.is-in .nf-controls-card__timer { animation: nf-controls-card-time var(--nf-card-ms, 7000ms) linear forwards; }
+@keyframes nf-controls-card-time { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+:root[data-low-graphics='true'] .nf-controls-card { box-shadow: none; background: rgba(9, 8, 7, .94); }
+:root[data-reduced-motion='true'] .nf-controls-card { translate: 0 -50%; transition: opacity 300ms linear; }
+@media (prefers-reduced-motion: reduce) { .nf-controls-card { translate: 0 -50%; transition: opacity 300ms linear; } }
+@media (min-width: 1600px) and (min-height: 1000px) {
+  .nf-controls-card { --nf-cc: calc(var(--nightfall-text-scale, 1) * 1.16); }
+}
+@media (max-width: 640px) {
+  .nf-controls-card { top: auto; bottom: 16px; left: 16px; translate: 0 8px; }
+  .nf-controls-card.is-in { translate: 0 0; }
+}

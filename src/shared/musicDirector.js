@@ -62,10 +62,10 @@ function setSoundTag(visible) {
     soundTag.setAttribute('aria-label', 'Click for sound');
     soundTag.style.cssText = [
       'position:fixed', 'left:50%', 'bottom:14px', 'transform:translateX(-50%)', 'z-index:40',
-      'padding:6px 12px', 'border-radius:5px', 'cursor:pointer', 'pointer-events:auto',
-      'font:700 11px/1.2 var(--nf-mono, ui-monospace, monospace)', 'letter-spacing:0.16em',
-      'color:#eadfc6', 'background:rgba(22, 15, 10, 0.82)', 'border:1px solid rgba(176, 138, 74, 0.75)',
-      'box-shadow:0 2px 10px rgba(0, 0, 0, 0.4)', 'transition:opacity 0.4s ease', 'opacity:0',
+      'padding:8px 16px 7px', 'border-radius:2px', 'cursor:pointer', 'pointer-events:auto', 'white-space:nowrap',
+      'font:500 calc(11px * var(--nightfall-text-scale, 1))/1.2 var(--nf-ui, "Jost", sans-serif)', 'letter-spacing:0.26em',
+      'color:#f1ede4', 'background:rgba(9, 8, 7, 0.86)', 'border:1px solid rgba(241, 237, 228, 0.22)',
+      'box-shadow:0 6px 20px rgba(0, 0, 0, 0.45)', 'transition:opacity 0.4s ease', 'opacity:0',
     ].join(';');
     document.body.append(soundTag);
   }

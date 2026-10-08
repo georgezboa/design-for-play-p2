@@ -19,6 +19,7 @@ import {
 } from '../painters-c2.js';
 import { appleTree, artLayers, hawthorn, house, paintCountry } from '../../../chapters/paintedCountry/art/countryArt.js';
 import { blob, hatch, pencil, rule, scribble, wash, washBlob } from '../../../chapters/paintedCountry/art/pencilKit.js';
+import { FONT_UI } from '../../../shared/fonts.js';
 
 const TAU = Math.PI * 2;
 
@@ -173,7 +174,7 @@ function paintSeats(c, w, h) {
     roundRectPath(c, x - 34, SEAT43.y - 15, 68, 30, 6); c.fill();
     c.restore();
     c.fillStyle = 'rgba(40, 24, 10, 0.92)';
-    c.font = '700 22px "Space Mono", monospace';
+    c.font = `700 22px ${FONT_UI}`;
     c.textAlign = 'center'; c.textBaseline = 'middle';
     c.fillText(n, x, SEAT43.y + 1);
     inkRect(c, x - 34, SEAT43.y - 15, 68, 30, { w: 1.4, alpha: 0.5, bleed: false, seed: 4644 + i });
