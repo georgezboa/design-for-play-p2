@@ -14,10 +14,13 @@ test('A4-5: every hit names its source, and a fatal fall no longer overwrites th
   for (const source of ["'case'", "'ghost-train' : 'train'", "'beam'", "'fall'", "'collapse'", "'sweep'"]) assert.ok(battle.includes(source), source);
   assert.match(battle, /takeHit\(\{ force = false, source = 'hit', from = null \} = \{\}\)/);
   assert.match(battle, /this\.showHitFeedback\(this\.lastHit, from\)/);
-  assert.match(battle, /this\.showDeathCard\(this\.lastHit \?\? \{ label: HIT_SOURCES\.hit \}\)/);
+  assert.match(battle, /this\.showDeathCard\(this\.lastHit \?\? \{ label: HIT_SOURCES\.hit \}, \{ echoWindow \}\)/);
   // The street-gap line only when the fall did not end the movement.
   assert.match(battle, /if \(p\.respawns === before\) \{[\s\S]{0,400}?this\.toast\(tutor\.gapIsRailing \? 'THE BRIDGE FOLDED · BACK ON THE NEAR ROOF' : 'THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE'\);\s*\}/);
-  assert.match(battle, /his ticket is back where this movement began/);
+  // Round 6 (item 16): the card says what is kept; nothing is rolled back.
+  assert.doesNotMatch(battle, /his ticket is back where this movement began/);
+  assert.match(battle, /LAYERS TORN · MOVEMENT \$\{phase\.number\} GOES ON/);
+  assert.match(battle, /keptAfterTornLayers\(this\.phase, \{ echoWindow \}\)/);
   assert.match(style, /\.nf-hit-flash\[data-side='left'\]/);
 });
 
@@ -43,11 +46,12 @@ test('A4-6: a stranded player gets a return plank, and the post-death grace resp
 });
 
 test('Movement IV plays from the keyboard: HOLD E absorbs the nearest colour, HOLD R returns it', () => {
-  assert.match(battle, /if \(event\.code === 'KeyE'\) this\.startKeyboardPaint\(2\);/);
+  // Round 6: E is the action key elsewhere; in Movement IV it still absorbs.
+  assert.match(battle, /if \(event\.code === 'KeyE'\) \{\s*if \(this\.mode === 'play' && this\.phase === 3\) this\.startKeyboardPaint\(2\);\s*else this\.actAction\(\);/);
   assert.match(battle, /if \(event\.code === 'KeyR'\) this\.startKeyboardPaint\(0\);/);
   assert.match(battle, /findNearestPaint\(reach = 4\.2\)/);
-  assert.match(battle, /HOLD E · ABSORB THE NEAREST COLOUR/);
-  assert.match(battle, /\['ABSORB \(MOVEMENT IV\)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'\]/);
+  assert.match(read('src/chapters/finalBoss/finaleControls.js'), /HOLD E · ABSORB THE NEAREST COLOUR/);
+  assert.match(read('src/chapters/finalBoss/finaleControls.js'), /\['ABSORB \(MOVEMENT IV\)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'\]/);
   // The start board lists every movement's keys, the mouse ones included.
   const page = read('final-boss.html');
   assert.match(page, /HOLD E absorbs the nearest colour · HOLD R returns it · or hold right \/ left mouse/);

@@ -77,11 +77,15 @@ test('R4-3: after a true answer the window stays open, with a lit front edge, a 
   assert.match(battle, /openEchoWindow\(reply = null\) \{[\s\S]{0,500}this\.showFrontEdge\(true\);\s*this\.updateEchoWindowCue\(\);/);
   // the HUD line is re-asserted every frame of the window
   assert.match(battle, /\} else if \(this\.echo\.stage === 'window'\) \{\s*this\.echo\.window \+= dt;\s*this\.boss\.exposed = 1;\s*this\.updateEchoWindowCue\(\);/);
-  assert.match(battle, /HE HAS NO ANSWER · <kbd>SPACE<\/kbd> · SAY IT TO HIS FACE/);
-  assert.match(battle, /HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>SPACE<\/kbd>/);
-  assert.match(battle, /'<kbd>SPACE<\/kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · COME HERE'/);
+  // Round 6 (item 18): E says it; Space only jumps.
+  assert.match(battle, /HE HAS NO ANSWER · <kbd>E<\/kbd> · SAY IT TO HIS FACE/);
+  assert.match(battle, /HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>E<\/kbd>/);
+  assert.match(battle, /'<kbd>E<\/kbd> · SAY IT TO HIS FACE' : '<kbd>E<\/kbd> · SAY IT'\) : \(full \? 'THE FRONT EDGE · COME HERE · THEN <kbd>E<\/kbd>'/);
+  assert.doesNotMatch(battle, /<kbd>SPACE<\/kbd> · SAY IT/);
   // it ends only with the hit (or a torn last layer / a new movement)
   assert.match(battle, /this\.hitBoss\(ECHO_WINDOW_DAMAGE, 'shame'\);\s*this\.toast\('SAID TO HIS FACE'\);\s*this\.endEchoWindow\(\);/);
+  // A torn last layer keeps the window open (round 6, item 16).
+  assert.match(battle, /if \(!echoWindow\) \{ this\.showFrontEdge\(false\);/);
   assert.match(battle, /endEchoWindow\(\) \{[\s\S]{0,300}this\.showFrontEdge\(false\);/);
 });
 
@@ -108,7 +112,8 @@ test('R4-4: a deflection explains itself in one short line before the volley', (
     }
   }
   assert.doesNotMatch(battle, /this\.toast\('DEFLECTED · HE WILL COME BACK TO IT'\)/);
-  assert.match(battle, /this\.showCaption\(\{ speaker: 'DEFLECTED', text: reply\.deflect \?\? ECHO_DEFLECT_FALLBACK \}/);
+  assert.match(battle, /this\.showDeflection\(reply\.deflect \?\? ECHO_DEFLECT_FALLBACK\)/);
+  assert.match(battle, /showDeflection\(text\) \{[\s\S]{0,300}this\.showCaption\(\{ speaker: 'DEFLECTED', text \}/);
   // nothing is thrown while it is read
   assert.match(battle, /\} else if \(this\.echo\.stage === 'deflected'\) \{\s*this\.echo\.deflectClock -= dt;\s*if \(this\.echo\.deflectClock <= 0\) this\.endEchoDeflection\(\);/);
   assert.match(battle, /\(this\.phase === 2 && this\.echo\.stage !== 'combat'\)/);
@@ -127,8 +132,8 @@ test('R4-5: one returned colour is worth much more: IV in ~6 single returns or 2
 
 // ---------------------------------------------------------- layout and flow
 
-test('Movement I: a case tag never covers the SPACE · RETURN prompt beside it', () => {
-  const prompt = { text: '<kbd>SPACE</kbd> · RETURN', x: 470, y: 560, priority: 2 };
+test('Movement I: a case tag never covers the E · RETURN prompt beside it', () => {
+  const prompt = { text: '<kbd>E</kbd> · RETURN', x: 470, y: 560, priority: 2 };
   const claim = { text: '1978-0402 · UMBRELLA', x: 330, y: 556, dim: true };
   const [placedPrompt, placedClaim] = spreadWorldTags([prompt, claim]);
   assert.equal(placedPrompt.y, prompt.y, 'the prompt keeps its place');

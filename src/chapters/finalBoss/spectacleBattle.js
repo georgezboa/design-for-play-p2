@@ -42,11 +42,12 @@ import {
 import { DEV_MODE, devParam } from '../../devMode.js';
 import * as bellAudio from '../borrowedLight/audio.js';
 import {
-  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, MACHINE_NAMES, PANEL_SEAMS, STRANDED_GRACE_S,
+  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_FACTS_TO_PICK, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, MACHINE_NAMES, PANEL_SEAMS, STRANDED_GRACE_S,
   createBellArena, createBellTutorial, createDeathLedger, createEchoDebate, difficultyPreset, ghostTrainRevealed, laneOf, orbitLens,
-  paintReturnDamage, punchCase, spreadWorldTags, trainHits, underLens,
+  keptAfterTornLayers, paintReturnDamage, punchCase, spreadWorldTags, tornLayerReset, trainHits, underLens,
 } from './finaleModel.js';
-import { ECHO_EXCHANGES } from './echoExchanges.js';
+import { ECHO_EXCHANGES, ECHO_FACTS_ASK } from './echoExchanges.js';
+import { FINALE_ALL_CONTROLS, MOVEMENT_KEY_LINES, PROGRESS_KEPT_LINES, announceControlsStage } from './finaleControls.js';
 import { completedEnding, recordEnding, showJourneyComplete } from './journeyComplete.js';
 import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference, frameSteps } from './finaleQuality.js';
 import {
@@ -98,6 +99,10 @@ const ECHO_FRONT_EDGE_Z = -3.4;
 // How long a deflection's one-line reason stays up before the volley.
 const ECHO_DEFLECT_READ_SECONDS = 2.8;
 const ECHO_DEFLECT_FALLBACK = 'He files that. Try the true thing.';
+// After a misreading: the fact stays struck when he comes back to it.
+const ECHO_MISREAD_DEFLECT = 'The record says otherwise. That card stays struck when he comes back to it.';
+// The E prompt at the lit front edge spells the whole move out this often.
+const ECHO_FULL_PROMPT_USES = 3;
 const PAINT_HOLD_SECONDS = 0.68;
 const CLAIMS = [
   '1978-0388 · A. KOVAC', '1978-0391 · HAT BOX', '1978-0397 · E. MARSH', '1978-0402 · UMBRELLA',
@@ -124,7 +129,7 @@ const BOSS_SCORE = {
 export const PHASES = Object.freeze([
   { id: 'lost', number: 'I', title: 'I · NIGHT SERVICE', world: 'LOST PROPERTY', rule: 'Read the tag through the lens. Punch the case back to him.', form: 'CLERK', music: BOSS_SCORE.threshold },
   { id: 'borrowed', number: 'II', title: 'II · BORROWED LIGHT', world: 'ON THE BELL', rule: 'Punch a lamp. It fires on the bell.', form: 'CLERK', music: BOSS_SCORE.grid },
-  { id: 'echo', number: 'III', title: 'III · ECHO CITY', world: 'TWO TRUE THINGS', rule: 'Answer him with both truths at once.', form: 'BUTCH', music: BOSS_SCORE.echoCity },
+  { id: 'echo', number: 'III', title: 'III · ECHO CITY', world: 'TWO TRUE THINGS', rule: 'Two true things: one he can grant, one that stays open.', form: 'BUTCH', music: BOSS_SCORE.echoCity },
   { id: 'painted', number: 'IV', title: 'IV · THE PAINTED COUNTRY', world: 'TAKE BACK THE COLOUR', rule: 'The fuller the brush, the deeper it cuts.', form: 'INK FIGURE', music: BOSS_SCORE.allLines },
 ]);
 
@@ -145,13 +150,9 @@ export const HIT_SOURCES = Object.freeze({
   hit: 'THE CONDUCTOR',
 });
 
-// The keys each movement adds, on its title card and the start board.
-const MOVEMENT_KEYS = Object.freeze([
-  'MOUSE · THE LENS (L: IT CIRCLES YOU)   ·   SPACE / CLICK · RETURN A CASE',
-  'SPACE · PUNCH A LAMP OR BRIDGE   ·   HOLD Q · LISTEN FOR THE NEXT BELL',
-  '1 / 2 · ANSWER HIM   ·   SPACE · AT THE FRONT EDGE, WHILE HE HAS NO ANSWER',
-  'HOLD E · ABSORB THE NEAREST COLOUR   ·   HOLD R · RETURN IT   ·   OR HOLD RIGHT / LEFT MOUSE',
-]);
+// The keys each movement adds, on its title card and the start board
+// (finaleControls.js: Space only jumps, E / Enter acts).
+const MOVEMENT_KEYS = MOVEMENT_KEY_LINES;
 
 let difficulty = DEFAULT_DIFFICULTY;
 const D = () => difficultyPreset(difficulty);
@@ -574,6 +575,12 @@ class SpectacleBattle {
     this.voiceState = { playing: false, speaker: null, tone: null, text: null };
     this.debate = createEchoDebate(ECHO_EXCHANGES);
     this.echo = { clock: ECHO_COMBAT_INTERVAL, window: 0, windowSpent: false, stage: 'combat', lastOutcome: null };
+    // How often "say it to his face" has landed (the E prompt's first uses).
+    this.echoSaid = 0;
+    // The pause menu's stage (finaleControls.js) and the KEPT flash on the
+    // ticket bar after a torn last layer.
+    this.controlsStage = null;
+    this.keptFlash = 0;
     this.paintTutorial = { stage: 'pending' };
     this.paintHold = { active: false, button: -1, elapsed: 0, point: null, target: null, completed: false };
     this.lost = { cases: [], trains: [], lens: { x: 0, z: 3 }, lensTarget: { x: 0, z: 3 }, lensMode: 'orbit', lastPointer: -Infinity, tutorial: 'pending', claimIndex: 0, returned: 0 };
@@ -1275,7 +1282,7 @@ class SpectacleBattle {
     this.deathCardEl = document.createElement('div');
     this.deathCardEl.className = 'nf-death-card';
     this.deathCardEl.setAttribute('role', 'status');
-    this.deathCardEl.innerHTML = '<p class="nf-death-card__stamp"></p><p class="nf-death-card__title">What tore it: <b class="nf-death-card__what"></b></p><p class="nf-death-card__lines"></p>';
+    this.deathCardEl.innerHTML = '<p class="nf-death-card__stamp"></p><p class="nf-death-card__title">What tore it: <b class="nf-death-card__what"></b></p><p class="nf-death-card__kept"></p><p class="nf-death-card__lines"></p>';
     this.hud.append(this.hitFlashEl, this.hitLabelEl, this.deathCardEl);
     this.tags = createTagLayer(this.hud);
     this.caption = document.createElement('section');
@@ -1285,8 +1292,13 @@ class SpectacleBattle {
     this.caption.style.pointerEvents = 'auto';
     this.hud.append(this.caption);
     this.caption.addEventListener('click', (event) => {
+      const factButton = event.target.closest('[data-fact]');
+      if (factButton) { this.pickFact(Number(factButton.dataset.fact)); return; }
+      if (event.target.closest('[data-confirm]')) { this.confirmFacts(); return; }
       const button = event.target.closest('[data-choice]');
-      if (button) this.chooseAnswer(Number(button.dataset.choice));
+      if (button) { this.chooseAnswer(Number(button.dataset.choice)); return; }
+      // A click on a line being read moves it on (as E / Enter do).
+      this.advanceDialogue();
     });
   }
 
@@ -1296,15 +1308,31 @@ class SpectacleBattle {
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     });
+    // The unified keys (round 6, item 18; finaleControls.js): Space only
+    // jumps, E or Enter is the movement's action (and confirms or moves a
+    // line on), 1–4 answer in Movement III. Movement IV keeps hold E / R.
     window.addEventListener('keydown', (event) => {
       if (globalThis.NIGHTFALL_PAUSED) return;
       this.keys.add(event.code);
       if (event.repeat) return;
-      if (event.code === 'Space') { event.preventDefault(); this.spaceAction(); }
+      if (event.code === 'Space') { event.preventDefault(); this.jumpKey(); }
       if (event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.code === 'KeyX') this.dash();
-      if (this.debate.isOpen && /^(Digit|Numpad)[12]$/.test(event.code)) this.chooseAnswer(Number(event.code.slice(-1)) - 1);
+      const digit = /^(Digit|Numpad)([1-4])$/.exec(event.code);
+      if (digit && this.phase === 2 && this.debate.isOpen) {
+        const index = Number(digit[2]) - 1;
+        if (this.echo.stage === 'facts') this.pickFact(index);
+        else if (this.echo.stage === 'framing' && index < 2) this.chooseAnswer(index);
+      }
       if (event.code === 'KeyL' && this.phase === 0) { this.lost.lensMode = 'orbit'; this.lost.lastPointer = -Infinity; this.lost.pointer = null; this.toast('LENS · CIRCLING BUTCH · MOVE THE MOUSE TO AIM IT AGAIN'); }
-      if (event.code === 'KeyE') this.startKeyboardPaint(2);
+      if (event.code === 'KeyE') {
+        if (this.mode === 'play' && this.phase === 3) this.startKeyboardPaint(2);
+        else this.actAction();
+      }
+      if (event.code === 'Enter' || event.code === 'NumpadEnter') {
+        // Enter answers through the board, never also through a focused button.
+        if (this.phase === 2 && this.dialoguePause) event.preventDefault();
+        this.actAction({ key: 'Enter' });
+      }
       if (event.code === 'KeyR') this.startKeyboardPaint(0);
       if (event.code === 'KeyF' && this.mode !== 'menu') {
         if (!document.fullscreenElement) document.querySelector('.stage-wrap')?.requestFullscreen?.(); else document.exitFullscreen?.();
@@ -1322,7 +1350,9 @@ class SpectacleBattle {
     });
     this.renderer.domElement.addEventListener('contextmenu', (event) => { if (this.mode === 'play') event.preventDefault(); });
     this.renderer.domElement.addEventListener('pointerdown', (event) => {
-      if (this.mode === 'play' && this.phase === 0 && event.button === 0) { this.aimLensAt(event); this.spaceAction(); return; }
+      if (this.mode === 'play' && this.phase === 0 && event.button === 0) { this.aimLensAt(event); this.actAction(); return; }
+      // Movement III: a click on the stage says it, once he has no answer.
+      if (this.mode === 'play' && this.phase === 2 && event.button === 0 && this.echo.stage === 'window') { this.actAction(); return; }
       this.handlePaintPointer(event);
     });
     this.renderer.domElement.addEventListener('pointermove', (event) => {
@@ -1358,6 +1388,16 @@ class SpectacleBattle {
     clearTimeout(this.toastTimer);
     this.toastTimer = setTimeout(() => { this.toastEl.classList.remove('show'); this.hud.classList.remove('has-toast'); }, hold * 1000);
     this.lastToast = text;
+  }
+
+  // The same gentle note at most once every few seconds (an action key
+  // pressed where it does nothing says why, without nagging).
+  toastOnce(key, text, hold = 2.2, everyS = 4) {
+    this.toastGate ||= new Map();
+    const now = performance.now();
+    if (now - (this.toastGate.get(key) ?? -Infinity) < everyS * 1000) return;
+    this.toastGate.set(key, now);
+    this.toast(text, hold);
   }
 
   // Hold the veil over the stage from now until a frame of the new world
@@ -1437,23 +1477,32 @@ class SpectacleBattle {
       const playFrom = (index) => this.playVoice(parts[index], index + 1 < parts.length ? () => playFrom(index + 1) : onEnded);
       return playFrom(0);
     }
-    if (!cue?.url || !this.voiceAudio || !soundEnabled) { setTimeout(() => onEnded?.(), Math.min(4200, 900 + (cue?.text?.length ?? 0) * 45)); return false; }
+    // E / Enter / a click can move a line on (advanceDialogue): voiceSkip
+    // ends this line now, exactly as its end would.
+    const readMs = Math.min(4200, 900 + (cue?.text?.length ?? 0) * 45);
+    clearTimeout(this.voiceTimer);
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearTimeout(this.voiceTimer);
+      if (this.voiceSkip === skip) this.voiceSkip = null;
+      this.voiceState.playing = false;
+      music.setDialogueActive(false);
+      onEnded?.();
+    };
+    const skip = () => { this.voiceAudio?.pause(); finish(); };
+    this.voiceSkip = skip;
+    this.voiceStartedAt = performance.now();
+    if (!cue?.url || !this.voiceAudio || !soundEnabled) { this.voiceTimer = setTimeout(finish, readMs); return false; }
     this.voiceAudio.pause();
     this.voiceAudio.src = cue.url;
     this.voiceAudio.currentTime = 0;
     this.voiceState = { playing: true, speaker: cue.speaker, tone: cue.tone, text: cue.text };
     music.setDialogueActive(true);
-    let done = false;
-    const finish = () => {
-      if (done) return;
-      done = true;
-      this.voiceState.playing = false;
-      music.setDialogueActive(false);
-      onEnded?.();
-    };
     this.voiceAudio.onended = finish;
     this.voiceAudio.onerror = finish;
-    this.voiceAudio.play().catch(() => setTimeout(finish, Math.min(4200, 900 + (cue.text?.length ?? 0) * 45)));
+    this.voiceAudio.play().catch(() => { if (!done) this.voiceTimer = setTimeout(finish, readMs); });
     return true;
   }
 
@@ -1643,6 +1692,11 @@ class SpectacleBattle {
     this.transition = null;
     this.tutorialShown = new Set();
     this.deaths.reset();
+    // A fresh argument for a fresh run (the old one kept its spent queue
+    // across PLAY THE CONDUCTOR AGAIN).
+    this.debate = createEchoDebate(ECHO_EXCHANGES);
+    this.echoSaid = 0;
+    this.keptFlash = 0;
     this.player.maxHp = D().layers;
     this.player.hp = this.player.maxHp;
     Object.assign(this.player, { x: 0, y: 0, z: 6.1, vy: 0, grounded: true, inv: 1, respawnInv: 0, respawns: 0, phaseHeals: 0, hitTimer: 0, dash: 0, dashCd: 0, attack: 0, attackCd: 0, color: 0 });
@@ -1667,10 +1721,20 @@ class SpectacleBattle {
     this.updateHud();
   }
 
-  // Everything a movement needs the moment the player lands in it.
+  // Everything a movement needs the moment the player lands in it. Its
+  // title card carries its keys (where the verbs change) and, once, the rule
+  // that a torn last layer never undoes progress (round 6, item 16).
   enterMovement(index, { first = false } = {}) {
     const phase = PHASES[index];
-    const card = () => showTitleCard({ kicker: `MOVEMENT ${phase.number}`, main: phase.world, sub: phase.rule, keys: MOVEMENT_KEYS[index], duration: index === 3 ? 5200 : 4400, parent: this.hud });
+    this.setControlsStage(phase.id);
+    const card = () => {
+      const shown = showTitleCard({ kicker: `MOVEMENT ${phase.number}`, main: phase.world, sub: phase.rule, keys: MOVEMENT_KEYS[index], duration: index === 3 ? 5600 : 5000, parent: this.hud });
+      const kept = document.createElement('p');
+      kept.className = 'nf-title-card__kept';
+      kept.textContent = PROGRESS_KEPT_LINES[index];
+      shown?.root?.firstElementChild?.append(kept);
+      return shown;
+    };
     clearTimeout(this.titleTimer);
     this.pendingTitleCard = null;
     // The card waits for the world it names to be on screen.
@@ -1680,6 +1744,13 @@ class SpectacleBattle {
     if (index === 1) this.startBellArena();
     if (index === 2) this.startEchoCity();
     if (index === 3) this.startPaintOnboarding();
+  }
+
+  // The pause menu's stage (finaleControls.js): the shell listens for it.
+  setControlsStage(stage) {
+    if (this.controlsStage === stage) return;
+    this.controlsStage = stage;
+    announceControlsStage(stage, typeof window === 'undefined' ? null : window);
   }
 
   clearCombat() {
@@ -1751,7 +1822,7 @@ class SpectacleBattle {
   // ------------------------------------------------------------ input verbs
 
   jump() {
-    if (!['play', 'departure'].includes(this.mode) || this.transition || !this.player.grounded) return;
+    if (!['play', 'departure'].includes(this.mode) || this.transition || this.dialoguePause || !this.player.grounded) return;
     this.player.vy = 8.7;
     this.player.grounded = false;
     this.tone(330, 0.08, 'triangle', 0.03);
@@ -1766,14 +1837,29 @@ class SpectacleBattle {
     this.tone(410, 0.09, 'sawtooth', 0.03);
   }
 
-  spaceAction() {
+  // Space: only ever a jump (round 6, item 18). Pressed on an answer step it
+  // says which key answers instead of doing nothing.
+  jumpKey() {
     if (this.mode === 'departure') { this.jumpAboardDepartureTrain(); return; }
-    if (this.mode !== 'play' || this.transition || this.dialoguePause) return;
+    if (this.mode === 'play' && this.phase === 2 && ['facts', 'framing'].includes(this.echo.stage)) {
+      this.toastOnce('space-answer', this.echo.stage === 'facts' ? 'SPACE JUMPS · 1–4 CHOOSE · E SAYS THEM' : 'SPACE JUMPS · 1 / 2 SAYS IT', 2.2, 3);
+      return;
+    }
+    this.jump();
+  }
+
+  // E / Enter (and a click in Movement I): the movement's action. In
+  // Movement III it also confirms an answer and moves a line on.
+  actAction({ key = 'E' } = {}) {
+    if (this.mode === 'departure') { this.jumpAboardDepartureTrain(); return; }
+    if (this.mode !== 'play' || this.transition || this.storyOffer) return;
+    if (this.phase === 2 && this.dialoguePause) { this.confirmEcho(); return; }
+    if (this.dialoguePause) return;
+    if (this.phase === 3) { if (key === 'Enter') this.toastOnce('enter-paint', 'HOLD E · ABSORB A COLOUR   ·   HOLD R · RETURN IT'); return; }
     this.player.attack = 0.26;
     if (this.phase === 0) { this.punchLostProperty(); return; }
     if (this.phase === 1) { this.punchBellArena(); return; }
-    if (this.phase === 2) { if (!this.punchEchoWindow()) this.jump(); return; }
-    this.jump();
+    if (this.phase === 2) this.punchEchoWindow();
   }
 
   // ======================================================== Movement I
@@ -1871,7 +1957,11 @@ class SpectacleBattle {
     const nearest = this.lost.cases.filter((item) => item.landed && !item.returned)
       .map((item) => ({ item, d: Math.hypot(item.x - p.x, item.z - p.z) }))
       .sort((a, b) => a.d - b.d)[0];
-    if (!nearest || nearest.d > CASE_REACH) { this.jump(); return; }
+    if (!nearest || nearest.d > CASE_REACH) {
+      this.player.attack = 0;
+      this.toastOnce('no-case', nearest ? 'TOO FAR · WALK UP TO THE CASE' : 'NO CASE TO RETURN YET · HE DROPS THEM', 1.6, 2.5);
+      return;
+    }
     const result = punchCase(nearest.item, this.lost.lens, p);
     if (result.result === 'unread') {
       bellAudio.refused();
@@ -1988,7 +2078,7 @@ class SpectacleBattle {
         const near = Math.hypot(p.x - first.x, p.z - first.z) <= CASE_REACH;
         this.hint(!read
           ? (this.lost.lensMode === 'mouse' ? 'MOVE THE LENS ONTO THE TAG · <kbd>MOUSE</kbd>' : 'THE LENS CIRCLES YOU · WALK UP TO THE CASE')
-          : near ? '<kbd>SPACE</kbd> / <kbd>CLICK</kbd> · RETURN THE CASE' : 'WALK UP TO THE CASE');
+          : near ? '<kbd>E</kbd> / <kbd>CLICK</kbd> · RETURN THE CASE' : 'WALK UP TO THE CASE');
       } else if (!first && L.returned > 0) {
         L.tutorial = 'done';
         this.hint('');
@@ -2053,11 +2143,11 @@ class SpectacleBattle {
         else this.toast('THE BORROWED LIGHT GOES BACK TO HIM');
       } else if (result.result === 'wrong-lane') { bellAudio.refused(); this.toast(`STAND IN THE LIT LANE · ${result.lane.toUpperCase()}`); }
       else if (result.result === 'not-lit') { bellAudio.refused(); this.toast('HE IS NOT LIT · LIGHT HIS LANE ON THE BELL'); }
-      else this.jump();
+      else if (result.result === 'spent') { bellAudio.refused(); this.toastOnce('spent', 'THAT LIGHT IS SPENT · LIGHT HIM AGAIN ON A BELL', 2); }
       return;
     }
     const node = arena.nearestNode(p.x, p.z);
-    if (!node) { this.jump(); return; }
+    if (!node) { this.player.attack = 0; this.toastOnce('no-lamp', 'NO LAMP IN REACH · WALK UP TO ONE', 1.6, 2.5); return; }
     const result = arena.punch(node.id);
     // While learning, the hint already says what a punch did: no second
     // banner on top of it.
@@ -2257,22 +2347,127 @@ class SpectacleBattle {
     this.boss.attackClock = 1.4;
   }
 
+  // He makes his claim (voiced); then Butch answers on the answer board in
+  // two steps (round 6, item 17): WHAT HE KNOWS (two of four facts from the
+  // journey's records), then HOW HE SAYS IT (one of two voiced answers).
+  // Stages: claim → facts → framing → reply → window, or → rebut / the
+  // voiced brush-off → deflected. A claim he comes back to is never heard
+  // twice: its text returns with the board, and whatever was worked out
+  // (struck facts, true facts found, a struck answer) is still there.
   openExchange() {
     const exchange = this.debate.open();
     this.clearHazards();
     this.dialoguePause = true;
+    if (exchange.returning) { this.showAnswerBoard(); return; }
     this.echo.stage = 'claim';
     this.showCaption(exchange.exchange.claim, { meta: `EXCHANGE ${this.debate.opened}` });
     this.playVoice(exchange.exchange.claim, () => {
-      if (!this.debate.isOpen) return;
-      this.echo.stage = 'answer';
-      this.showCaption({ speaker: 'BUTCH · ANSWER', text: exchange.exchange.claim.text }, { choices: exchange.replies, meta: 'TWO TRUE THINGS' });
+      if (!this.debate.isOpen || this.echo.stage !== 'claim') return;
+      this.showAnswerBoard();
     });
-    this.showTutorialOnce('echo-argument', 'ANSWER WITH <kbd>1</kbd> OR <kbd>2</kbd> · THE ANSWER THAT HOLDS BOTH TRUTHS LANDS');
   }
 
+  showAnswerBoard() {
+    const current = this.debate.current;
+    if (!current || current.resolved) return;
+    this.echo.stage = current.step;
+    this.renderAnswerBoard();
+  }
+
+  // The answer board, drawn into the caption box. Every size scales with
+  // TEXT SIZE (var(--nf-scale), style.css .nf-answer).
+  renderAnswerBoard({ nudge = null } = {}) {
+    const current = this.debate.current;
+    if (!current || current.resolved) return;
+    const { step, facts } = current;
+    const caption = this.caption;
+    caption.hidden = false;
+    caption.classList.add('has-choices', 'is-answer');
+    caption.classList.toggle('is-facts', step === 'facts');
+    caption.classList.toggle('is-framing', step === 'framing');
+    caption.querySelector('.nf-caption__speaker').textContent = step === 'facts'
+      ? (current.returning ? 'THE CONDUCTOR · HE COMES BACK TO IT' : 'THE CONDUCTOR')
+      : 'BUTCH · HOW DO YOU SAY IT?';
+    caption.querySelector('.nf-caption__text').textContent = current.exchange.claim.text;
+    caption.querySelector('.nf-caption__meta').textContent = step === 'facts' ? 'STEP 1 / 2 · WHAT DO YOU KNOW?' : 'STEP 2 / 2 · HOW DO YOU SAY IT?';
+    const box = caption.querySelector('.nf-caption__choices');
+    box.className = `nf-caption__choices nf-answer nf-answer--${step}`;
+    box.hidden = false;
+    if (step === 'facts') {
+      const picked = new Set(current.picked);
+      const struck = new Set(current.struck);
+      const cards = facts.map((entry, index) => {
+        const isStruck = struck.has(entry.id);
+        const isPicked = picked.has(entry.id);
+        const cls = ['nf-caption__choice', 'nf-answer__fact', isPicked && 'is-picked', isStruck && 'is-struck', nudge === entry.id && 'is-nudged'].filter(Boolean).join(' ');
+        return `<button class="${cls}" type="button" data-fact="${index}" aria-pressed="${isPicked}"${isStruck ? ' aria-disabled="true"' : ''}>`
+          + `<kbd>${index + 1}</kbd><span class="nf-answer__text">${escapeHtml(entry.text)}</span>`
+          + `<small class="nf-answer__source">${isStruck ? '<b>HE ANSWERED THIS</b> · ' : ''}${escapeHtml(entry.source)}</small></button>`;
+      }).join('');
+      const ready = picked.size === ECHO_FACTS_TO_PICK;
+      box.innerHTML = `<p class="nf-answer__ask">${escapeHtml(ECHO_FACTS_ASK)}</p><div class="nf-answer__grid">${cards}</div>`
+        + `<div class="nf-answer__foot"><span><kbd>1</kbd>–<kbd>${facts.length}</kbd> CHOOSE · ${picked.size} / ${ECHO_FACTS_TO_PICK}</span>`
+        + `<button class="nf-answer__confirm${ready ? ' is-ready' : ''}${nudge === 'confirm' ? ' is-nudged' : ''}" type="button" data-confirm="1"${ready ? '' : ' aria-disabled="true"'}><kbd>E</kbd> SAY THESE TWO</button></div>`;
+      return;
+    }
+    const known = current.picked.map((id) => facts.find((entry) => entry.id === id)).filter(Boolean);
+    const open = new Set(this.debate.openReplies());
+    const answers = current.replies.map((reply, index) => {
+      const isStruck = !open.has(index);
+      return `<button class="nf-caption__choice nf-answer__frame${isStruck ? ' is-struck' : ''}${nudge === 'frames' && !isStruck ? ' is-nudged' : ''}" type="button" data-choice="${index}"${isStruck ? ' disabled' : ''}>`
+        + `<small class="nf-answer__frame-label"><kbd>${index + 1}</kbd>${isStruck ? 'HE FILED THIS · ' : ''}${escapeHtml(reply.frame ?? '')}</small>`
+        + `<span class="nf-answer__text">${escapeHtml(reply.cue.text)}</span></button>`;
+    }).join('');
+    const single = open.size === 1;
+    box.innerHTML = `<p class="nf-answer__known"><b>YOU KNOW</b>${known.map((entry) => `<span>${escapeHtml(entry.text)}</span>`).join('')}</p>`
+      + `<div class="nf-answer__grid nf-answer__grid--two">${answers}</div>`
+      + `<div class="nf-answer__foot"><span>${single ? '<kbd>E</kbd> / <kbd>ENTER</kbd> · SAY IT' : '<kbd>1</kbd> / <kbd>2</kbd> · SAY IT THE WAY THAT KEEPS TO BOTH'}</span></div>`;
+  }
+
+  // 1–4 or a click: take a fact up, or put it down again.
+  pickFact(index) {
+    if (this.echo.stage !== 'facts') return;
+    const result = this.debate.pickFact(index);
+    if (result.result === 'ignored') return;
+    if (result.result === 'struck') {
+      bellAudio.refused();
+      this.toast('HE HAS ANSWERED THAT ONE FROM THE RECORD · CHOOSE ANOTHER');
+      this.renderAnswerBoard({ nudge: result.fact.id });
+      return;
+    }
+    bellAudio.paper?.();
+    this.renderAnswerBoard();
+  }
+
+  // E / Enter on the facts: say the two that are picked.
+  confirmFacts() {
+    if (this.echo.stage !== 'facts') return;
+    const outcome = this.debate.confirmFacts();
+    if (outcome.result === 'ignored') return;
+    if (outcome.result === 'need-two') {
+      bellAudio.refused();
+      this.toast(outcome.picked.length ? 'ONE MORE · HE HEARS TWO TRUE THINGS AT ONCE' : 'CHOOSE TWO FIRST · 1–4 OR CLICK');
+      this.renderAnswerBoard({ nudge: 'confirm' });
+      return;
+    }
+    if (outcome.result === 'hold') {
+      bellAudio.punchClack();
+      this.echo.stage = 'framing';
+      this.renderAnswerBoard();
+      return;
+    }
+    // A misreading: he answers it from the record, and it stays struck.
+    this.echo.stage = 'rebut';
+    this.echo.lastOutcome = { result: 'misread', exchangeId: outcome.exchangeId, fact: outcome.fact.id };
+    bellAudio.refused();
+    const rebut = { speaker: 'CONDUCTOR', text: outcome.rebut, tone: 'cold-correction' };
+    this.showCaption(rebut, { meta: `FROM THE RECORD · ${outcome.fact.source}` });
+    this.playVoice(rebut, () => this.showDeflection(ECHO_MISREAD_DEFLECT));
+  }
+
+  // 1 / 2 or a click on the framing step: how Butch says it.
   chooseAnswer(index) {
-    if (this.echo.stage !== 'answer') return;
+    if (this.echo.stage !== 'framing') return;
     const outcome = this.debate.choose(index);
     if (outcome.result === 'ignored') return;
     this.echo.stage = 'reply';
@@ -2287,25 +2482,60 @@ class SpectacleBattle {
         this.openEchoWindow(reply);
         return;
       }
+      this.echo.stage = 'rebut';
       this.showCaption(reply.rebut);
-      this.playVoice(reply.rebut, () => {
-        // Why it was deflected, in one line, before the square answers
-        // with a volley (alpha R4-4). The square stays frozen while it is
-        // read (alpha round 4: the box covers Butch, and a hit landed
-        // while reading); nothing is thrown until it closes.
-        this.dialoguePause = true;
-        this.echo.stage = 'deflected';
-        this.echo.deflectClock = ECHO_DEFLECT_READ_SECONDS;
-        this.showCaption({ speaker: 'DEFLECTED', text: reply.deflect ?? ECHO_DEFLECT_FALLBACK }, { meta: 'HE WILL COME BACK TO IT' });
-        this.voiceState = { playing: false, speaker: 'DEFLECTED', tone: null, text: reply.deflect ?? ECHO_DEFLECT_FALLBACK };
-      });
+      this.playVoice(reply.rebut, () => this.showDeflection(reply.deflect ?? ECHO_DEFLECT_FALLBACK));
     });
+  }
+
+  // Why it was deflected, in one line, before the square answers with a
+  // volley (alpha R4-4). The square stays frozen while it is read (alpha
+  // round 4: the box covers Butch, and a hit landed while reading); nothing
+  // is thrown until it closes. E / Enter / a click closes it early.
+  showDeflection(text) {
+    this.dialoguePause = true;
+    this.echo.stage = 'deflected';
+    this.echo.deflectClock = ECHO_DEFLECT_READ_SECONDS;
+    this.showCaption({ speaker: 'DEFLECTED', text }, { meta: 'HE WILL COME BACK TO IT' });
+    this.voiceState = { playing: false, speaker: 'DEFLECTED', tone: null, text };
+  }
+
+  // E / Enter while Movement III talks: confirm the facts, say the one
+  // answer left, or move a line being read on.
+  confirmEcho() {
+    const stage = this.echo.stage;
+    if (stage === 'facts') { this.confirmFacts(); return true; }
+    if (stage === 'framing') {
+      const open = this.debate.openReplies();
+      if (open.length === 1) { this.chooseAnswer(open[0]); return true; }
+      bellAudio.refused();
+      this.toast('HOW DO YOU SAY IT? · 1 OR 2 · OR CLICK ONE');
+      this.renderAnswerBoard({ nudge: 'frames' });
+      return true;
+    }
+    return this.advanceDialogue();
+  }
+
+  // E / Enter / a click on a line being read (never on an answer step):
+  // after a short beat, the line moves on.
+  advanceDialogue() {
+    if (this.phase !== 2 || this.mode !== 'play') return false;
+    const stage = this.echo.stage;
+    if (stage === 'deflected') {
+      if (ECHO_DEFLECT_READ_SECONDS - this.echo.deflectClock > 0.6) this.echo.deflectClock = 0;
+      return true;
+    }
+    if (['claim', 'reply', 'rebut'].includes(stage)) {
+      if (this.voiceSkip && performance.now() - (this.voiceStartedAt ?? 0) > 450) this.voiceSkip();
+      return true;
+    }
+    return false;
   }
 
   // The true answer landed: he has no answer until Butch says it to his
   // face. The window stays open, with a lit front edge, a tag on it and a
   // HUD line, until the hit is delivered (alpha R4-3: a 2.6 s toast during
-  // the volley was missed).
+  // the volley was missed), and a torn last layer does not close it.
   openEchoWindow(reply = null) {
     this.echo.stage = 'window';
     this.echo.window = 0;
@@ -2324,11 +2554,14 @@ class SpectacleBattle {
     return this.player.z <= ECHO_FRONT_EDGE_Z;
   }
 
+  // E says it (round 6, item 18: Space only jumps). The whole move is spelled
+  // out for the first few windows; after that the line is shorter.
   updateEchoWindowCue() {
     if (this.echo.stage !== 'window') return;
+    const full = this.echoSaid < ECHO_FULL_PROMPT_USES;
     this.hint(this.inEchoStrikeZone()
-      ? 'HE HAS NO ANSWER · <kbd>SPACE</kbd> · SAY IT TO HIS FACE'
-      : 'HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>SPACE</kbd>');
+      ? 'HE HAS NO ANSWER · <kbd>E</kbd> · SAY IT TO HIS FACE'
+      : full ? 'HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>E</kbd>' : 'HE HAS NO ANSWER · THE LIT FRONT EDGE · <kbd>E</kbd>');
   }
 
   showFrontEdge(visible) {
@@ -2351,9 +2584,14 @@ class SpectacleBattle {
   }
 
   punchEchoWindow() {
-    if (this.echo.stage !== 'window' || this.echo.windowSpent) return false;
-    if (!this.inEchoStrikeZone()) { this.toast('CLOSER · THE LIT FRONT EDGE'); return true; }
+    if (this.echo.stage !== 'window' || this.echo.windowSpent) {
+      // Nothing to say yet: say so, rather than nothing (round 6, item 18).
+      if (this.echo.stage === 'combat') this.toastOnce('echo-wait', 'E SPEAKS WHEN HE ASKS · KEEP CLEAR UNTIL THEN', 1.8);
+      return false;
+    }
+    if (!this.inEchoStrikeZone()) { bellAudio.refused(); this.toast('CLOSER · THE LIT FRONT EDGE'); return true; }
     this.echo.windowSpent = true;
+    this.echoSaid += 1;
     this.hitBoss(ECHO_WINDOW_DAMAGE, 'shame');
     this.toast('SAID TO HIS FACE');
     this.endEchoWindow();
@@ -2384,10 +2622,12 @@ class SpectacleBattle {
   showCaption(cue, { choices = null, meta = '' } = {}) {
     if (!cue) return;
     this.caption.hidden = false;
+    this.caption.classList.remove('is-answer', 'is-facts', 'is-framing');
     this.caption.querySelector('.nf-caption__speaker').textContent = cue.speaker;
     this.caption.querySelector('.nf-caption__text').textContent = cue.text;
     this.caption.querySelector('.nf-caption__meta').textContent = meta;
     const box = this.caption.querySelector('.nf-caption__choices');
+    box.className = 'nf-caption__choices nf-caption__choices--pair';
     box.innerHTML = choices ? choices.map((reply, index) => `<button class="nf-caption__choice" type="button" data-choice="${index}"><kbd>${index + 1}</kbd>${escapeHtml(reply.cue.text)}</button>`).join('') : '';
     box.hidden = !choices;
     this.caption.classList.toggle('has-choices', Boolean(choices));
@@ -2396,8 +2636,13 @@ class SpectacleBattle {
   closeCaption() {
     if (!this.caption) return;
     this.caption.hidden = true;
+    this.caption.classList.remove('is-answer', 'is-facts', 'is-framing', 'has-choices');
     this.caption.querySelector('.nf-caption__choices').innerHTML = '';
     this.voiceAudio?.pause();
+    // A line cut short never finishes later (a pending read timer would
+    // otherwise run the next step after a world change).
+    clearTimeout(this.voiceTimer);
+    this.voiceSkip = null;
     this.voiceState.playing = false;
     music.setDialogueActive(false);
   }
@@ -2405,7 +2650,8 @@ class SpectacleBattle {
   updateEchoCity(dt) {
     if (this.echo.stage === 'combat') {
       this.echo.clock = Math.max(0, this.echo.clock - dt);
-      if (this.echo.clock <= 0 && !this.transition) this.openExchange();
+      // He never asks over the movement's title card (it carries the keys).
+      if (this.echo.clock <= 0 && !this.transition && !this.hud.querySelector('.nf-title-card')) this.openExchange();
     } else if (this.echo.stage === 'window') {
       this.echo.window += dt;
       this.boss.exposed = 1;
@@ -2642,6 +2888,7 @@ class SpectacleBattle {
   startRescueSequence() {
     if (this.mode === 'departure' || this.mode === 'cinematic') return;
     this.mode = 'departure';
+    this.setControlsStage('departure');
     this.clearHazards();
     this.boss.hp = Math.max(1, this.boss.hp);
     this.boss.reaction = 'pain'; this.boss.gestureTime = 2;
@@ -2693,7 +2940,7 @@ class SpectacleBattle {
       this.departureBoardable = this.departureTrain.position.x >= -3.2;
       if (this.departureBoardable) {
         const closeEnough = Math.abs(this.player.x - (this.departureTrain.position.x + 1.1)) < 4.8 && Math.abs(this.player.z - this.departureTrain.position.z) < 3.5;
-        this.hint(closeEnough ? '<kbd>SPACE</kbd> · BOARD THE NIGHT SERVICE' : 'WALK TO THE TRAIN');
+        this.hint(closeEnough ? '<kbd>SPACE</kbd> / <kbd>E</kbd> · JUMP ABOARD THE NIGHT SERVICE' : 'WALK TO THE TRAIN');
         if (closeEnough && this.player.y > 0.52) this.boardDepartureTrain();
       }
       return;
@@ -2785,11 +3032,11 @@ class SpectacleBattle {
         </dl>
         <div class="nf-stamp">IDENTITY VERIFIED</div>
       </article>
-      <small>THE CONDUCTOR READS YOUR TICKET · ENTER TO CONTINUE ONCE STAMPED</small>`;
+      <small>THE CONDUCTOR READS YOUR TICKET · E / ENTER TO CONTINUE ONCE STAMPED</small>`;
     this.hud.append(scene);
     this.stampScene = scene;
     this.stampKey = (event) => {
-      if (!['Enter', 'NumpadEnter', 'Space'].includes(event.code) || !this.transition || this.transition.kind !== 'verified') return;
+      if (!['Enter', 'NumpadEnter', 'KeyE'].includes(event.code) || !this.transition || this.transition.kind !== 'verified') return;
       if (this.transition.time >= 3.6) { event.preventDefault(); this.transition.time = this.transition.duration; }
     };
     window.addEventListener('keydown', this.stampKey);
@@ -3117,18 +3364,20 @@ class SpectacleBattle {
     this.hitLabelTimer = setTimeout(() => this.hitLabelEl.classList.remove('show'), 2400);
   }
 
-  // A movement lost: what tore the last layer, and what the reset means.
-  showDeathCard({ label }) {
+  // The last layer torn: what tore it, what is kept, and what Butch lost,
+  // gently (round 6, item 16). The movement goes on.
+  showDeathCard({ label }, { echoWindow = false } = {}) {
     const phase = PHASES[this.phase];
     const card = this.deathCardEl;
-    card.querySelector('.nf-death-card__stamp').textContent = `A LAYER TORN · MOVEMENT ${phase.number} STARTS AGAIN`;
+    card.querySelector('.nf-death-card__stamp').textContent = `LAYERS TORN · MOVEMENT ${phase.number} GOES ON`;
     card.querySelector('.nf-death-card__what').textContent = label;
-    card.querySelector('.nf-death-card__lines').textContent = `Your paper layers are back to ${this.player.maxHp}, and his ticket is back where this movement began. Nothing can tear you for ${D().respawnInv.toFixed(1)} seconds.`;
+    card.querySelector('.nf-death-card__kept').textContent = keptAfterTornLayers(this.phase, { echoWindow });
+    card.querySelector('.nf-death-card__lines').textContent = `You are back on your feet with ${this.player.maxHp} layers. Nothing can tear you for ${D().respawnInv.toFixed(1)} seconds.`;
     card.classList.remove('show');
     void card.offsetWidth;
     card.classList.add('show');
     clearTimeout(this.deathCardTimer);
-    this.deathCardTimer = setTimeout(() => card.classList.remove('show'), Math.max(2600, D().respawnInv * 1000 + 600));
+    this.deathCardTimer = setTimeout(() => card.classList.remove('show'), Math.max(4500, D().respawnInv * 1000 + 600));
   }
 
   respawnClearance([x, z]) {
@@ -3154,6 +3403,13 @@ class SpectacleBattle {
     return search[0] || [0, ARENA.maxZ - 1];
   }
 
+  // The last layer torn (round 6, item 16: a hit in Movement III put his
+  // ticket back where the movement began). It costs Butch his place and the
+  // chance in hand, never what he has done: his ticket stays where it was,
+  // answers given and facts struck stand, Movement II's lessons stay
+  // learned. What goes: Butch's position, the cases on the floor, the
+  // queued lamps, the colour on the brush. A window he earned in Movement
+  // III stays open: he walks back to the front edge.
   respawnPlayer() {
     const p = this.player;
     const [x, z] = this.findSafeRespawn();
@@ -3166,27 +3422,32 @@ class SpectacleBattle {
     p.respawnInv = D().respawnInv;
     p.inv = Math.max(p.inv, p.respawnInv);
     this.playerRoot.position.set(x, 0, z);
-    this.closeCaption();
-    this.dialoguePause = false;
-    this.boss.hp = this.boss.phaseStartHp ?? PHASE_START_HP[this.phase];
-    this.boss.exposed = 0;
+    const reset = tornLayerReset({ movement: this.phase, bossHp: this.boss.hp, echoStage: this.echo.stage, echoClock: this.echo.clock, brush: p.color });
+    const echoWindow = reset.keepWindow;
+    this.boss.hp = reset.bossHp;
+    if (!echoWindow) { this.closeCaption(); this.dialoguePause = false; }
+    this.boss.exposed = echoWindow ? 1 : 0;
     this.boss.phaseRound = 0;
-    this.boss.paintCoverage = this.phase === 3 ? THREE.MathUtils.clamp((100 - this.boss.hp) / 88, 0, 1) : 0;
     this.updatePaintCreep();
     this.boss.attackClock = Math.max(this.boss.attackClock, p.respawnInv + 0.55);
-    if (this.phase === 0) { this.clearLostProperty(); this.lost.tutorial = 'done'; this.boss.attackClock = p.respawnInv + 0.4; }
-    if (this.phase === 1) {
+    this.keptFlash = 2.8;
+    if (reset.clearCases) { this.clearLostProperty(); this.lost.tutorial = 'done'; this.boss.attackClock = p.respawnInv + 0.4; }
+    if (reset.newArena) {
       // A new arena, but what was learned stays learned.
       this.bell.tutor.afterDeath();
       this.startBellArena({ keepTutorial: true });
     }
-    if (this.phase === 2) { this.echo.stage = 'combat'; this.echo.clock = 5; this.showFrontEdge(false); if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint(''); }
+    if (this.phase === 2) {
+      this.echo.stage = reset.echoStage;
+      this.echo.clock = reset.echoClock;
+      if (!echoWindow) { this.showFrontEdge(false); if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint(''); }
+    }
     this.hitStop = 0.1;
     this.trauma = 0.25;
     this.spawnImpact(x, 1.1, z, AMBER);
     this.tone(220, 0.28, 'triangle', 0.04);
-    this.lastDeath = { phase: this.phase, source: this.lastHit?.source ?? 'hit' };
-    this.showDeathCard(this.lastHit ?? { label: HIT_SOURCES.hit });
+    this.lastDeath = { phase: this.phase, source: this.lastHit?.source ?? 'hit', bossHp: this.boss.hp, echoWindow };
+    this.showDeathCard(this.lastHit ?? { label: HIT_SOURCES.hit }, { echoWindow });
     const record = this.deaths.record(this.phase, difficulty);
     if (record.offerStory) this.offerStory();
   }
@@ -3203,7 +3464,7 @@ class SpectacleBattle {
     const backdrop = document.createElement('div');
     backdrop.className = 'nf-card-backdrop nf-story-offer';
     backdrop.setAttribute('role', 'dialog');
-    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">A LAYER TORN · MOVEMENT ${PHASES[this.phase].number} STARTS AGAIN</p><p class="nf-story-offer__what">What tore it: <b>${what}</b></p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: more paper layers, slower trains, longer windows.</p><p>Nothing is lost. The movement starts again either way.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
+    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">LAYERS TORN · MOVEMENT ${PHASES[this.phase].number} GOES ON</p><p class="nf-story-offer__what">What tore it: <b>${what}</b></p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: more paper layers, slower trains, longer windows.</p><p>Nothing is lost either way. His ticket stays where you left it.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
     this.hud.append(backdrop);
     backdrop.style.pointerEvents = 'auto';
     const close = (toStory) => {
@@ -3220,6 +3481,8 @@ class SpectacleBattle {
       }
     };
     const onKey = (event) => {
+      // A held S (walking down) must not choose for the player.
+      if (event.repeat) { event.preventDefault(); event.stopImmediatePropagation(); return; }
       if (event.code === 'KeyS') { event.preventDefault(); event.stopImmediatePropagation(); close(true); }
       if (event.code === 'KeyN' || event.code === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close(false); }
     };
@@ -3475,7 +3738,10 @@ class SpectacleBattle {
     const exposed = this.phase === 1 ? Boolean(this.bell.arena?.exposure) : this.boss.exposed > 0 && this.boss.exposed < 900;
     this.ticketBar.set(this.boss.hp / this.boss.maxHp, { dt });
     this.ticketBar.setLabel(`MOVEMENT ${phase.number} · ${phase.world}`);
-    this.ticketBar.setState(exposed ? 'EXPOSED' : this.mode === 'departure' ? 'OUTLASTED' : '', exposed);
+    // After a torn last layer the ticket says it was kept (round 6, item 16).
+    this.keptFlash = Math.max(0, this.keptFlash - dt);
+    this.ticketBar.setState(exposed ? 'EXPOSED' : this.mode === 'departure' ? 'OUTLASTED' : this.keptFlash > 0 ? 'KEPT · NOTHING UNDONE' : '', exposed);
+    this.ticketBar.root.classList.toggle('is-kept', this.keptFlash > 0 && !exposed);
     const plaqueTitle = this.plaque.querySelector('b');
     const plaqueRule = this.plaque.querySelector('span');
     if (plaqueTitle.textContent !== phase.title) plaqueTitle.textContent = phase.title;
@@ -3534,7 +3800,7 @@ class SpectacleBattle {
           if (!near && !item.revealed) return;
           const pt = this.screenPoint(item.x, 2.2, item.z);
           if (!pt) return;
-          if (item.revealed && near) caseTags.push({ text: '<kbd>SPACE</kbd> · RETURN', x: pt.x, y: pt.y, priority: 2 });
+          if (item.revealed && near) caseTags.push({ text: '<kbd>E</kbd> · RETURN', x: pt.x, y: pt.y, priority: 2 });
           else if (item.revealed) caseTags.push({ text: escapeHtml(item.claim), x: pt.x, y: pt.y, dim: true });
           else caseTags.push({ text: 'LENS · READ THE TAG', x: pt.x, y: pt.y, dim: true, priority: near ? 1 : 0 });
         });
@@ -3550,12 +3816,12 @@ class SpectacleBattle {
           const pt = this.screenPoint(node.x, 2.5, node.z);
           if (!pt) return;
           // a queued lamp says so even up close: SPACE there adds nothing
-          this.tags.tag(isNear && !status.queued ? `<kbd>SPACE</kbd> · ${node.label}` : `${node.label} · QUEUED`, pt.x, pt.y, { color: LINE_CSS[node.line], queued: status.queued, dim: !isNear });
+          this.tags.tag(isNear && !status.queued ? `<kbd>E</kbd> · ${node.label}` : `${node.label} · QUEUED`, pt.x, pt.y, { color: LINE_CSS[node.line], queued: status.queued, dim: !isNear });
         });
         const exposure = arena.exposure;
         if (exposure && arena.onFrontPlatform(p.z)) {
           const pt = this.screenPoint(LANE_X[exposure.lane], 2.4, ARENA.minZ + 0.6);
-          if (pt) this.tags.tag(laneOf(p.x) === exposure.lane ? '<kbd>SPACE</kbd> · RETURN THE LIGHT' : `STEP INTO THE ${exposure.lane.toUpperCase()} LANE`, pt.x, pt.y);
+          if (pt) this.tags.tag(laneOf(p.x) === exposure.lane ? '<kbd>E</kbd> · RETURN THE LIGHT' : `STEP INTO THE ${exposure.lane.toUpperCase()} LANE`, pt.x, pt.y);
         }
         const nextPt = this.screenPoint(LANE_X[arena.plan.lane], 1.1, ARENA.minZ + 0.9);
         if (nextPt) this.tags.tag('NEXT STOP', nextPt.x, nextPt.y, { color: LINE_CSS.rose, dim: true });
@@ -3567,7 +3833,10 @@ class SpectacleBattle {
         }
       } else if (this.phase === 2 && this.echo.stage === 'window') {
         const pt = this.screenPoint(this.boss.x * 0.5, 1.8, ARENA.minZ + 1.2);
-        if (pt) this.tags.tag(this.inEchoStrikeZone() ? '<kbd>SPACE</kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · COME HERE', pt.x, pt.y);
+        // The E prompt stands at the lit front edge (round 6, item 18), the
+        // whole sentence for the first few windows.
+        const full = this.echoSaid < ECHO_FULL_PROMPT_USES;
+        if (pt) this.tags.tag(this.inEchoStrikeZone() ? (full ? '<kbd>E</kbd> · SAY IT TO HIS FACE' : '<kbd>E</kbd> · SAY IT') : (full ? 'THE FRONT EDGE · COME HERE · THEN <kbd>E</kbd>' : 'THE FRONT EDGE · <kbd>E</kbd>'), pt.x, pt.y);
       }
     }
     this.tags.end();
@@ -3679,20 +3948,12 @@ function setDifficulty(value) {
 }
 
 const game = new SpectacleBattle(document.querySelector('#game'));
+// Every control in the chapter (finaleControls.js, the unified keys). The
+// shell's per-stage list hears the current movement from the
+// 'nightfall:controls-stage' event (SpectacleBattle.setControlsStage).
 installPauseMenu({
   checkpointId: 'chapter-6-start',
-  controls: [
-    ['MOVE', 'WASD / ARROWS'],
-    ['PUNCH / ACT', 'SPACE (MOVEMENT I: ALSO LEFT CLICK)'],
-    ['DASH', 'SHIFT / X'],
-    ['LENS (MOVEMENT I)', 'MOUSE · L LETS IT CIRCLE YOU'],
-    ['LISTEN (MOVEMENT II)', 'HOLD Q'],
-    ['ANSWER (MOVEMENT III)', '1 / 2'],
-    ['ABSORB (MOVEMENT IV)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'],
-    ['RETURN (MOVEMENT IV)', 'HOLD R · OR HOLD LEFT MOUSE'],
-    ['FULLSCREEN', 'F'],
-    ['PAUSE', 'ESC'],
-  ],
+  controls: [...FINALE_ALL_CONTROLS.map((row) => [...row])],
 });
 createSaveStore().markCheckpoint('chapter-6-start');
 
@@ -3801,7 +4062,12 @@ if (DEV_MODE) {
       deaths: [0, 1, 2, 3].map((m) => game.deaths.deaths(m)), storyOffer: Boolean(game.storyOffer),
       lost: { lens: { x: +game.lost.lens.x.toFixed(2), z: +game.lost.lens.z.toFixed(2), mode: game.lost.lensMode }, tutorial: game.lost.tutorial, returned: game.lost.returned, cases: game.lost.cases.map((c) => ({ claim: c.claim, x: +c.x.toFixed(2), z: +c.z.toFixed(2), landed: c.landed, revealed: c.revealed, tutorial: c.tutorial })), trains: game.lost.trains.map((t) => ({ seam: t.seam, ghost: t.ghost, running: t.running, revealed: Boolean(t.revealed), progress: +t.progress.toFixed(2) })) },
       bell: arena ? { ...arena.snapshot(), tutorial: game.bell.tutor.stage, held: game.bell.held, listening: game.bell.listening, falls: game.bell.falls, returnPlanks: arena.returnPlanks(), stranded: arena.stranded(game.player.z) } : null,
-      echo: { stage: game.echo.stage, clock: +game.echo.clock.toFixed(2), window: +game.echo.window.toFixed(2), open: game.debate.isOpen, exchange: game.debate.current?.id ?? null, opened: game.debate.opened, history: game.debate.history(), lastOutcome: game.echo.lastOutcome },
+      echo: {
+        stage: game.echo.stage, clock: +game.echo.clock.toFixed(2), window: +game.echo.window.toFixed(2), open: game.debate.isOpen, exchange: game.debate.current?.id ?? null, opened: game.debate.opened, history: game.debate.history(), lastOutcome: game.echo.lastOutcome,
+        said: game.echoSaid, landed: game.debate.landed(),
+        answer: game.debate.isOpen ? { step: game.debate.step, picked: [...game.debate.current.picked], struck: [...game.debate.current.struck], struckReplies: [...game.debate.current.struckReplies], returning: game.debate.current.returning, facts: game.debate.current.facts.map((entry) => entry.id) } : null,
+      },
+      controlsStage: game.controlsStage,
       paint: { tutorial: game.paintTutorial?.stage, lastReturn: game.lastPaintReturn ?? null, hold: { active: game.paintHold.active, button: game.paintHold.button, completed: game.paintHold.completed } },
       transition: game.transition ? { kind: game.transition.kind, next: PHASES[game.transition.nextPhase].world, progress: +(game.transition.time / game.transition.duration).toFixed(2) } : null,
       ui: { veiled: game.worldVeiled, titleCard: Boolean(game.hud.querySelector('.nf-title-card')), storyOfferWhat: game.hud.querySelector('.nf-story-offer__what')?.textContent ?? null, toast: game.lastToast ?? null, hint: game.hintText ?? '', tags: game.tags.texts(), caption: game.caption.hidden ? null : game.caption.textContent.trim().slice(0, 200), voice: game.voiceState, lastHit: game.lastHit ?? null, lastDeath: game.lastDeath ?? null, deathCard: game.deathCardEl.classList.contains('show') ? game.deathCardEl.textContent : null },
@@ -3834,8 +4100,16 @@ if (DEV_MODE) {
   };
   window.damageFinalBoss = (amount = 25) => { if (game.mode === 'play') { game.hitBoss(amount); game.render(); } };
   window.setFinalBossLens = (x, z) => { game.lost.lensTarget = { x: Number(x), z: Number(z) }; game.lost.lensMode = 'mouse'; game.lost.lastPointer = game.elapsed; game.lost.lens = { x: Number(x), z: Number(z) }; game.render(); };
-  window.finalBossPunch = () => { game.spaceAction(); game.render(); };
+  // E / Enter (the action key) and Space (jump only).
+  window.finalBossPunch = () => { game.actAction(); game.render(); };
+  window.finalBossAct = () => { game.actAction(); game.render(); };
+  window.finalBossJump = () => { game.jumpKey(); game.render(); };
+  // Movement III's answer board: a fact (0-based), the confirm, the framing.
+  window.finalBossPickFact = (index) => { game.pickFact(Number(index)); game.render(); };
+  window.finalBossConfirm = () => { game.confirmEcho(); game.render(); };
   window.finalBossAnswer = (index) => { game.chooseAnswer(Number(index)); game.render(); };
+  // The right facts for the open exchange (QA only).
+  window.finalBossTrueFacts = () => (game.debate.current?.facts ?? []).map((entry, index) => (entry.holds ? index : -1)).filter((index) => index >= 0);
   window.finalBossHoldListen = (on = true) => { if (on) game.keys.add('KeyQ'); else game.keys.delete('KeyQ'); };
   window.finalBossKeyPaint = (button = 2, holdMs = 800) => { if (game.mode === 'play' && game.phase === 3) { game.startKeyboardPaint(Number(button)); game.advancePaintHold(Number(holdMs)); game.releasePaintPointer({ button: Number(button) }); game.render(); } };
   window.spawnFinalBossCase = (x, z) => { const item = game.spawnClaimCase({ x: Number(x), z: Number(z) }); game.render(); return Boolean(item); };

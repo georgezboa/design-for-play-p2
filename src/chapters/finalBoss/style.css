@@ -149,3 +149,87 @@
 .battle-hud .nf-layers, .battle-hud .nf-plaque, .battle-hud .nf-stone-row, .battle-hud .nf-ticket-bar, .battle-hud .nf-tag-layer { transition: opacity 0.6s ease; }
 .battle-hud.is-departing .nf-layers, .battle-hud.is-departing .nf-plaque, .battle-hud.is-departing .nf-stone-row { opacity: 0; }
 .battle-hud.is-cinematic .nf-ticket-bar, .battle-hud.is-cinematic .nf-tag-layer, .battle-hud.is-cinematic .nf-hint, .battle-hud.is-cinematic .nf-toast, .battle-hud.is-cinematic .nf-bell { opacity: 0; }
+
+/* ---------- a torn last layer undoes nothing (round 6, item 16) ----------
+   The title card states the rule once on entry; the death card says what is
+   kept, in the warm brass of the line rather than the oxblood of a loss; the
+   ticket bar reads KEPT while the card is up. */
+.nf-title-card__kept {
+  display: table; margin: 10px auto 0; padding: 5px 14px 4px; max-width: min(900px, calc(100vw - 60px)); box-sizing: border-box;
+  font: 700 calc(12px * var(--nf-scale)) / 1.45 var(--nf-mono); letter-spacing: 0.14em; color: #eadcb8;
+  background: rgba(14, 9, 6, 0.72); border-radius: 3px; box-shadow: 0 0 0 1px rgba(176, 138, 74, 0.35);
+}
+.nf-death-card.show { animation-duration: 4.4s; }
+.nf-death-card__stamp { color: #7a5524; }
+.nf-death-card__kept {
+  margin: 0 0 8px; padding: 2px 0 2px 12px; border-left: 4px solid var(--nf-brass);
+  font: 700 calc(16.5px * var(--nf-scale)) / 1.4 var(--nf-serif); color: var(--nf-paper-ink);
+}
+.nf-death-card__lines { font-size: calc(15px * var(--nf-scale)); }
+.nf-ticket-bar.is-kept .nf-ticket-bar__state { color: var(--nf-teal); }
+.nf-ticket-bar.is-kept .nf-ticket-bar__body { box-shadow: inset 0 0 0 2px rgba(35, 67, 74, 0.55); }
+
+/* ---------- Movement III · the answer board (round 6, item 17) ----------
+   Step 1: four facts, each over the record it rests on; two are picked.
+   Step 2: the two ways of saying it, under the two facts kept. Keyboard
+   (1–4, E / Enter) and mouse alike; every size follows TEXT SIZE. */
+.nf-finale .battle-hud .nf-caption.is-answer { width: min(1100px, calc(100vw - 48px)); padding-top: 12px; padding-bottom: 12px; }
+.nf-finale .battle-hud .nf-caption.is-answer .nf-caption__speaker { margin-bottom: 4px; }
+.nf-finale .battle-hud .nf-caption.is-answer .nf-caption__text { font-size: calc(17px * var(--nf-scale)); font-style: italic; color: #cdb892; margin: 0 0 4px; }
+.nf-caption__choices.nf-answer { display: block; margin-top: 6px; }
+.nf-answer__ask { margin: 0 0 8px; font: 700 calc(12px * var(--nf-scale)) / 1.3 var(--nf-mono); letter-spacing: 0.14em; color: var(--nf-amber); }
+.nf-answer__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 10px; }
+.nf-caption__choice.nf-answer__fact {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 10px; row-gap: 3px; align-items: start; align-content: start;
+  text-align: left; padding: 8px 12px 8px 10px; letter-spacing: 0;
+  transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+}
+.nf-answer__fact kbd { grid-row: 1 / span 2; margin: 1px 0 0 !important; }
+.nf-answer__text { font: calc(17px * var(--nf-scale)) / 1.35 var(--nf-serif); color: var(--nf-ivory); }
+.nf-answer__source { grid-column: 2; font: 700 calc(11px * var(--nf-scale)) / 1.3 var(--nf-mono); letter-spacing: 0.12em; color: #a8987c; }
+.nf-answer__source b { color: #e08a78; font-weight: 700; }
+.nf-answer__fact.is-picked { border-color: var(--nf-amber); background: rgba(224, 162, 74, 0.2); box-shadow: inset 4px 0 0 var(--nf-amber); }
+.nf-answer__fact.is-picked kbd { background: var(--nf-amber); }
+.nf-answer__fact.is-picked .nf-answer__source { color: #e6c88c; }
+.nf-answer__fact.is-struck { opacity: 0.55; cursor: not-allowed; border-style: dashed; background: transparent; }
+.nf-answer__fact.is-struck .nf-answer__text { text-decoration: line-through; text-decoration-color: rgba(200, 70, 50, 0.9); text-decoration-thickness: 2px; }
+.nf-answer .is-nudged { animation: nf-answer-nudge 0.34s ease; }
+@keyframes nf-answer-nudge { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.nf-answer__foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 8px;
+  font: 700 calc(11.5px * var(--nf-scale)) / 1.3 var(--nf-mono); letter-spacing: 0.14em; color: #a8987c;
+}
+.nf-answer__foot kbd, .nf-answer__confirm kbd, .nf-answer__frame-label kbd {
+  display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; margin: 0 6px 0 0; box-sizing: border-box;
+  border-radius: 3px; font: 700 calc(12px * var(--nf-scale)) var(--nf-mono); color: var(--nf-paper-ink); background: var(--nf-paper); vertical-align: 1px;
+}
+.nf-answer__foot span kbd { margin: 0 2px; }
+.nf-answer__confirm {
+  font: 700 calc(12.5px * var(--nf-scale)) / 1 var(--nf-mono); letter-spacing: 0.14em; color: #a8987c; cursor: pointer;
+  background: rgba(234, 223, 198, 0.04); border: 1px solid rgba(176, 138, 74, 0.45); border-radius: 6px; padding: 8px 14px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.nf-answer__confirm.is-ready { color: var(--nf-paper-ink); background: var(--nf-amber); border-color: var(--nf-amber); }
+.nf-answer__confirm.is-ready kbd { background: var(--nf-paper-ink); color: var(--nf-paper); }
+.nf-answer__confirm:focus-visible { outline: 2px solid var(--nf-amber); outline-offset: 2px; }
+.nf-answer__known { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: baseline; margin: 2px 0 8px; font: calc(16px * var(--nf-scale)) / 1.35 var(--nf-serif); color: var(--nf-ivory); }
+.nf-answer__known b { font: 700 calc(11.5px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.16em; color: var(--nf-amber); }
+.nf-answer__known span { padding: 2px 10px; border-left: 3px solid var(--nf-amber); background: rgba(224, 162, 74, 0.12); }
+.nf-caption__choice.nf-answer__frame { display: grid; row-gap: 5px; text-align: left; padding: 9px 12px; letter-spacing: 0; }
+.nf-answer__frame-label { font: 700 calc(11.5px * var(--nf-scale)) / 1.2 var(--nf-mono); letter-spacing: 0.14em; color: var(--nf-amber); }
+.nf-answer__frame.is-struck { opacity: 0.45; }
+.nf-answer__frame.is-struck .nf-answer__text { text-decoration: line-through; text-decoration-thickness: 2px; }
+@media (max-width: 1720px) and (max-height: 820px) {
+  .nf-finale .battle-hud .nf-caption.is-answer { padding: 9px 20px 10px; }
+  .nf-finale .battle-hud .nf-caption.is-answer .nf-caption__text { font-size: calc(15px * var(--nf-scale)); }
+  .nf-answer__ask { margin-bottom: 6px; font-size: calc(11px * var(--nf-scale)); }
+  .nf-answer__grid { gap: 6px 8px; }
+  .nf-caption__choice.nf-answer__fact { padding: 6px 10px 6px 8px; }
+  .nf-answer__text { font-size: calc(15.5px * var(--nf-scale)); }
+  .nf-answer__source { font-size: calc(10.5px * var(--nf-scale)); }
+  .nf-answer__known { font-size: calc(15px * var(--nf-scale)); margin-bottom: 6px; }
+  .nf-answer__foot { margin-top: 6px; }
+}
+@media (max-width: 760px) { .nf-answer__grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .nf-answer .is-nudged { animation: none; } }
+:root[data-reduced-motion='true'] .nf-answer .is-nudged { animation: none; }
