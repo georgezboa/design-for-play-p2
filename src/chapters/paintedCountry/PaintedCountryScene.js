@@ -61,14 +61,20 @@ import { PLATE_CELL, PLATE_TEX, buildPlateTexture, drawGreyCell, ensureMarkTextu
 import { drawMaraSilhouette } from './maraFigure.js';
 import { devParam } from '../../devMode.js';
 import { createFallGuard, placeBody } from './fallGuard.js';
+import { BrushNib } from './brushNib.js';
+import { nibState, reachExit, withinReach } from './brushReach.js';
+import { GhostStroke } from './ghostStroke.js';
+import { createPaintLesson } from './paintLesson.js';
+import { createStrokeBook } from './brushStrokes.js';
+import { StrokeLayer } from './strokeLayer.js';
 import { RESUME_REGISTRY_KEY, applyGalleryResume, galleryResumeData, recordChapter4Resume } from './chapter4Resume.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part I, "Under the gouache".
 //
 // The country is Rosa's childhood drawing of the orchard, painted over by the
-// archive in grey. PAINT (left mouse · SPACE · pad A) rebuilds what she
-// remembered; WASH (right mouse · SHIFT · pad B) strips the archive's grey and
+// archive in grey. PAINT (left mouse · F · pad RT) rebuilds what she
+// remembered; WASH (right mouse · SHIFT · pad LT) strips the archive's grey and
 // shows the pencil underneath. Three plates hang too high to reach from the
 // floor; washing each one reveals a large mark and, somewhere else on it,
 // Mara's small hawthorn. The door asks which mark she left in all three.
@@ -152,6 +158,15 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
     this.tutorialSeen = { move: false, bridge: false, wash: false, varnish: false, pigment: false };
+    // Round 6, item 11: the first lesson is on safe ground (paintLesson.js).
+    this.lesson = createPaintLesson();
+    // Round 6, item 13: which cells each press painted, so the paint can be
+    // drawn as strokes over the grid it still collides on (brushStrokes.js).
+    this.strokes = createStrokeBook({ cols: GRID.w });
+    // the press that closed a card is not also a stroke
+    this.brushHeldOff = false;
+    this.pressPainted = false;
+    this.lastStrokePt = null;
     this.hasJumped = false;
     this.activeTutorial = null;
     this.noteThrottle = {};
@@ -190,11 +205,16 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildDoor();
     this.buildSolids();
     this.buildPlayer();
-    this.paintLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.PAINT);
+    // Butch's paint is drawn as brush strokes (strokeLayer.js); the
+    // archive's grey stays a laid coat of cells.
+    this.strokeLayer = new StrokeLayer(this, { book: this.strokes, cell: CELL, worldW: WORLD.w, worldH: WORLD.h, depth: DEPTH.PAINT });
     this.blockLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.BLOCK);
     // the grey's pencil contour, redrawn with the stamps (alpha R3 · R6)
     this.blockEdges = this.add.graphics().setDepth(DEPTH.BLOCK + 0.5);
     this.brushCursor = this.graphics(DEPTH.CURSOR);
+    // the brush at the end of the pointer, its reach and where strokes stop
+    this.nib = new BrushNib(this, { depth: DEPTH.CURSOR, reach: REACH, cell: CELL });
+    this.ghost = new GhostStroke(this, { depth: DEPTH.CURSOR - 0.5, cell: CELL });
     this.doorLayer = this.graphics(DEPTH.DOOR);
     this.markerLayer = this.graphics(DEPTH.CURSOR - 1);
     this.maraLayer = this.graphics(DEPTH.MARA);
@@ -217,7 +237,10 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     this.car.state.blocks.forEach((key) => this.addCellBody(key % GRID.w, Math.floor(key / GRID.w)));
     this.car.state.painted.forEach((key) => this.addCellBody(key % GRID.w, Math.floor(key / GRID.w)));
+    this.strokes.adopt(this.car.state.painted);
     if (this.resumed) this.placeResumed(this.resumed);
+    // Back from a save, or on a dev route: the first lesson is behind him.
+    if (this.resumed || (this.qa && this.qa !== 'intro') || data.restarted) this.lesson.state.step = 'done';
     this.input.mouse?.disableContextMenu();
 
     this.time.addEvent({
@@ -250,6 +273,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.walker.body.reset(at.x, at.y);
     this.cameras.main.centerOn(at.x, VIEW.h / 2);
     this.tutorialSeen = { move: true, bridge: true, wash: true, varnish: true, pigment: this.car.state.pigment > 0 || at.x < PIGMENT_ZONE.fromCol * CELL };
+    this.lesson.state.step = 'done';
     this.lastResumeBay = this.bayId();
     this.paintDirty = true;
     this.varnishDirty = true;
@@ -324,10 +348,13 @@ export class PaintedCountryScene extends Phaser.Scene {
   // Dev only: lay the two floor gaps so a QA run can walk to the door.
   bridgeForQa() {
     for (let i = 0; i < FLOOR_SPANS.length - 1; i += 1) {
+      this.strokes.begin();
       for (let cx = FLOOR_SPANS[i].to; cx < FLOOR_SPANS[i + 1].from; cx += 1) {
         this.car.state.painted.add(idx(cx, FLOOR_ROW));
         this.addCellBody(cx, FLOOR_ROW);
+        this.strokes.add(cx, FLOOR_ROW);
       }
+      this.strokes.end();
     }
     this.paintDirty = true;
   }
@@ -414,7 +441,9 @@ export class PaintedCountryScene extends Phaser.Scene {
       floorY: FLOOR_Y,
       windows: WINDOWS,
       skip: [{ x0: 102 * CELL - 20, x1: 108 * CELL + 20 }, { x0: DOOR.x - 10, x1: WORLD.w }],
-      stoveX: 330,
+      // In the corner of the cold end (round 6): the first safe ground in
+      // front of Butch is kept clear for the first lesson's dotted step.
+      stoveX: 40,
       railFrom: 960,
       railTo: 1900,
     }), { depth: DEPTH.WALL + 2.5, washAlpha: 0 });
@@ -923,17 +952,11 @@ export class PaintedCountryScene extends Phaser.Scene {
     addFrames(this, 'ch4-cells', cellAtlasFrames());
   }
 
+  // Butch's own paint is the stroke layer (strokeLayer.js sync, every frame).
   redrawPaint() {
-    const g = this.paintLayer;
     const b = this.blockLayer;
-    g.clear();
     b.clear();
     const off = CELL_STAMP.bleed;
-    this.car.state.painted.forEach((key) => {
-      const cx = key % GRID.w;
-      const cy = Math.floor(key / GRID.w);
-      g.create(cx * CELL - off, cy * CELL - off, `paint-${(cx * 7 + cy * 3) % CELL_STAMP.variants}`);
-    });
     this.car.state.blocks.forEach((key) => {
       const cx = key % GRID.w;
       const cy = Math.floor(key / GRID.w);
@@ -946,52 +969,55 @@ export class PaintedCountryScene extends Phaser.Scene {
     drawPaintedPlayer(this.figure, this.walker, this.brush);
   }
 
-  // The cursor is the whole tutorial: it shows the cell you would fill, and
-  // whether the car will let you.
-  drawCursor() {
+  // The cursor is the whole tutorial (round 6, items 11-12): a brush nib
+  // that is loaded where a click will paint, wet where it will wash, hollow
+  // and struck through out of reach, a hand over a plate or a door sign; the
+  // cell the paint would land in; the brush's reach round Butch, named the
+  // first time it matters.
+  drawCursor(dt = 1 / 60) {
     const g = this.brushCursor;
     g.clear();
     const bx = this.brush.worldX;
     const by = this.brush.worldY;
     const cx = colOf(bx);
     const cy = rowOf(by);
-    if (!this.car.inBounds(cx, cy)) return;
-
     const inReach = this.pointerInReach();
     const panel = this.panelAt(bx, by);
-
-    g.lineStyle(1, PAPER.graphiteFaint, inReach ? 0.18 : 0.4);
-    g.strokeCircle(this.walker.x, this.walker.y, REACH);
-
+    const picture = this.pictureAt(bx, by);
     if (panel) {
       g.lineStyle(2.4, inReach ? UI.amberInk : PAPER.graphiteFaint, inReach ? 0.95 : 0.4);
       g.strokeRect(panel.x - 4, panel.y - 4, panel.w + 8, panel.h + 8);
-      return;
     }
-    if (this.pictureAt(bx, by)) return;
+    const onSheet = this.car.inBounds(cx, cy);
+    const state = nibState({
+      overObject: Boolean(panel || picture),
+      inReach,
+      canPaint: onSheet && this.car.canPaint(cx, cy) && !this.overlapsPlayer(cx, cy),
+      canWash: onSheet && this.car.canWash(cx, cy),
+    });
+    this.nibStateNow = state;
+    this.nib.draw({
+      anchor: { x: this.walker.x, y: this.walker.y },
+      x: bx,
+      y: by,
+      state,
+      cell: onSheet ? { cx, cy } : null,
+      pressing: this.brush.paintDown || this.brush.washDown,
+      virtual: this.brush.mode === 'virtual',
+      keyHint: this.keyHint(state),
+      avoid: this.tag.visible ? this.tag.rect : null,
+      dt,
+    });
+  }
 
-    const canPaint = this.car.canPaint(cx, cy);
-    const canWash = this.car.canWash(cx, cy);
-    const refusal = this.car.paintRefusal(cx, cy);
-
-    let color = PAPER.graphiteFaint;
-    let alpha = 0.3;
-    if (inReach && canWash) {
-      color = PAPER.bookCloth;
-      alpha = 0.85;
-    } else if (inReach && canPaint) {
-      color = UI.amberInk;
-      alpha = 0.95;
-    } else if (inReach && (refusal === 'no-pigment' || refusal === 'sealed')) {
-      color = PAPER.fault;
-      alpha = 0.6;
-    }
-    g.lineStyle(2.2, color, alpha);
-    g.strokeRect(cx * CELL, cy * CELL, CELL, CELL);
-    if (inReach && canPaint) {
-      g.fillStyle(UI.amberInk, 0.16);
-      g.fillRect(cx * CELL, cy * CELL, CELL, CELL);
-    }
+  // "LEFT CLICK · PAINT" beside the nib for the first strokes (and the
+  // wash key the first time a cell under it can be washed).
+  keyHint(state) {
+    const b = this.brush;
+    const click = (verb) => (b.device === 'mouse' ? `${verb === 'paint' ? 'LEFT' : 'RIGHT'} CLICK` : b.label(verb));
+    if (state === 'paint' && this.lesson.showKeyHint) return `${click('paint')} · PAINT`;
+    if (state === 'wash' && !this.tutorialSeen.wash) return `${click('wash')} · WASH`;
+    return null;
   }
 
   // An ink pot beside Butch in Bay C: the brush's pigment, next to the brush.
@@ -1057,7 +1083,9 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (!this.car.inBounds(cx, cy)) return;
     if (wash) {
       const wasBlock = this.car.isBlock(cx, cy) || this.car.isPainted(cx, cy);
+      const wasPaint = this.car.isPainted(cx, cy);
       if (this.car.wash(cx, cy)) {
+        if (wasPaint && !this.car.isPainted(cx, cy)) this.strokes.remove(cx, cy);
         if (wasBlock && !this.car.isBlock(cx, cy) && !this.car.isPainted(cx, cy)) this.removeCellBody(cx, cy);
         this.paintDirty = true;
         this.varnishDirty = true;
@@ -1068,8 +1096,15 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (this.overlapsPlayer(cx, cy)) return;
     if (this.car.paint(cx, cy)) {
       this.addCellBody(cx, cy);
+      this.strokes.add(cx, cy);
+      this.pressPainted = true;
       this.paintDirty = true;
       if (this.activeTutorial === 'bridge') this.dismissTutorial('bridge');
+      // The first paint off the dotted step is named, so a click on a
+      // drawing never silently becomes a block (round 6, item 11).
+      if (this.lesson.onPaint(cx, cy) === 'named-off-ghost') {
+        this.note(cx * CELL + CELL / 2, cy * CELL - 6, `YOU PAINTED PAPER · IT IS SOLID NOW\n${this.brush.label('wash')} WASHES IT OFF`, 'info', 'off-ghost', 3000);
+      }
     }
   }
 
@@ -1077,6 +1112,11 @@ export class PaintedCountryScene extends Phaser.Scene {
     const brush = this.brush;
     const bx = brush.worldX;
     const by = brush.worldY;
+    // The click that put a card away is held off until it is released.
+    if (this.brushHeldOff) {
+      if (brush.paintDown || brush.washDown) return;
+      this.brushHeldOff = false;
+    }
 
     // A press on a door sign is an answer; on a plate in reach, a look.
     const panel = this.panelAt(bx, by);
@@ -1098,22 +1138,60 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     const paint = brush.paintDown;
     const wash = brush.washDown;
+    if (!paint && !wash) {
+      this.endStroke();
+      return;
+    }
     const samples = brush.mode === 'mouse' ? brush.samples : [];
-    if (brush.paintPressed || brush.washPressed) this.lastBrushCell = null;
+    if (brush.paintPressed || brush.washPressed) {
+      this.endStroke();
+      this.lastBrushCell = null;
+      this.lastStrokePt = null;
+      if (paint) this.strokes.begin();
+      // A press out of reach: say so where the player is looking.
+      if (!this.pointerInReach()) this.refuseFar(bx, by);
+    }
     samples.forEach((sample) => this.strokeTo(sample.worldX, sample.worldY, sample.wash));
-    if (paint || wash) this.strokeTo(bx, by, wash);
-    else this.lastBrushCell = null;
+    this.strokeTo(bx, by, wash);
+  }
+
+  endStroke() {
+    if (this.pressPainted) this.lesson.onStroke();
+    this.pressPainted = false;
+    this.strokes.end();
+    this.lastBrushCell = null;
+    this.lastStrokePt = null;
+  }
+
+  refuseFar(x, y) {
+    this.nib.refuseFar();
+    this.note(x, y - 14, 'OUT OF REACH · GET CLOSER', 'warn', 'far', 1400);
   }
 
   // Walk the brush from the last cell to this point, so no stroke has gaps.
   // Holding still does not scrub: varnish takes two separate passes.
+  // Round 6, item 12: a drag that leaves the reach is painted up to the edge
+  // and stopped there visibly (an ink blot and a tick, a dry-brush scratch,
+  // GET CLOSER), instead of quietly ending halfway across a gap.
   strokeTo(wx, wy, wash) {
-    if (Phaser.Math.Distance.Between(this.walker.x, this.walker.y, wx, wy) > REACH) {
+    const anchor = { x: this.walker.x, y: this.walker.y };
+    const prev = this.lastStrokePt;
+    this.lastStrokePt = { x: wx, y: wy };
+    if (!withinReach(anchor.x, anchor.y, wx, wy, REACH)) {
+      const exit = prev && this.lastBrushCell ? reachExit(prev, { x: wx, y: wy }, anchor, REACH - 0.5) : null;
+      if (exit) {
+        this.strokeCells(colOf(exit.x - exit.dirX * 2), rowOf(exit.y - exit.dirY * 2), wash);
+        this.nib.stop(exit.x, exit.y, exit.dirX, exit.dirY);
+        this.note(exit.x, exit.y - 18, 'THE BRUSH REACHES THIS FAR · GET CLOSER', 'warn', 'far', 1400);
+      }
       this.lastBrushCell = null;
       return;
     }
-    const cx = colOf(wx);
-    const cy = rowOf(wy);
+    this.strokeCells(colOf(wx), rowOf(wy), wash);
+  }
+
+  // Walk the brush from the last cell to this one, so no stroke has gaps.
+  strokeCells(cx, cy, wash) {
     const from = this.lastBrushCell;
     if (!from) {
       this.applyBrush(cx, cy, wash);
@@ -1231,16 +1309,20 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.windowViews.forEach((view, i) => view.bloomAll({ duration: 1800, delay: 200 + i * 150, stagger: 120 }));
     this.cameras.main.stopFollow();
     this.cameras.main.pan(DOOR.x + DOOR.w / 2 - 60, VIEW.h / 2, 900, 'Sine.easeInOut');
-    this.mara = { x: DOOR.x + 30, alpha: 0, t: 0 };
-    this.tweens.add({ targets: this.mara, alpha: 1, duration: 700, delay: 1100 });
+    // She is already walking when she comes into view (no start from a
+    // standstill in the doorway), and walks out of it: her stride follows
+    // the ground she covers (maraFigure.js), so she never skates.
+    this.mara = { x: DOOR.x + 30, alpha: 0, t: 0, distance: 0, speed: 0, lastX: DOOR.x + 30 };
+    this.tweens.add({ targets: this.mara, alpha: 1, duration: 700, delay: 1100, ease: 'Sine.easeOut' });
     this.tweens.add({
       targets: this.mara,
       x: DOOR.x + DOOR.w - 40,
       duration: 3200,
-      delay: 1300,
-      ease: 'Sine.easeInOut',
+      delay: 1100,
+      // an even walking pace: the fade hides where she starts and stops
+      ease: 'Linear',
     });
-    this.tweens.add({ targets: this.mara, alpha: 0, duration: 900, delay: 3700 });
+    this.tweens.add({ targets: this.mara, alpha: 0, duration: 900, delay: 3500, ease: 'Sine.easeIn' });
     this.time.delayedCall(4700, () => this.goToStudio());
   }
 
@@ -1248,12 +1330,21 @@ export class PaintedCountryScene extends Phaser.Scene {
     const g = this.maraLayer;
     g.clear();
     if (!this.mara) return;
-    this.mara.t += dt;
+    const m = this.mara;
+    m.t += dt;
+    const moved = Math.abs(m.x - m.lastX);
+    m.lastX = m.x;
+    m.distance += moved;
+    // how much she is walking (0 standing .. 1 her pace, ~60 px/s)
+    const pace = dt > 0 ? Math.min(1, moved / dt / 60) : 0;
+    m.speed += (Math.max(pace, m.distance > 0 ? 0.35 : 0) - m.speed) * Math.min(1, dt * 8);
     drawMaraSilhouette(g, {
-      feetX: this.mara.x,
+      feetX: m.x,
       feetY: DOOR.y + DOOR.h - 4,
-      t: this.mara.t,
-      alpha: this.mara.alpha,
+      t: m.t,
+      distance: m.distance,
+      speed: m.speed,
+      alpha: m.alpha,
       scale: 1.05,
       dir: 1,
       thread: 70,
@@ -1295,31 +1386,61 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.tag.hide();
   }
 
-  // Spatial prompts, not global instructions: the gap, the grey block.
-  updateTutorials() {
+  // Spatial prompts, not global instructions: the dotted step, the gap,
+  // the grey block (round 6, item 11: the step comes before the first click).
+  updateTutorials(dt = 0) {
     const b = this.brush;
-    // The first tag of the chapter: walking and jumping (alpha A3-4: Space
-    // paints here, and testers reached for it to jump).
-    if (!this.tutorialSeen.move) {
-      const walked = this.walker.x >= 280 || (this.hasJumped && Math.abs(this.walker.x - 200) > 60);
-      if (walked) {
-        this.dismissTutorial('move');
-        this.tutorialSeen.move = true;
-      } else {
-        const text = b.device === 'pad' ? 'LEFT STICK · WALK   ·   Y · JUMP' : `A / D · WALK   ·   ${b.jumpKeysLabel()} · JUMP`;
-        if (this.showTutorial('move', text, this.walker.x, FLOOR_Y - 84)) return true;
+    const lesson = this.lesson;
+    if (!lesson.done) {
+      const feetCell = { c: colOf(this.walker.x), r: rowOf(this.walker.y + 31) };
+      const standingOnPaint = Boolean(this.walker.body.blocked.down) && this.car.isPainted(feetCell.c, feetCell.r);
+      lesson.update({ x: this.walker.x, standingOnPaint, dt, isPainted: (c, r) => this.car.isPainted(c, r) })
+        .forEach((event) => {
+          if (event === 'ghost-done') {
+            this.note(15.5 * CELL, 20 * CELL - 24, 'PAINT MAKES PAPER REAL · STAND ON IT', 'good', 'ghost-done', 2000);
+          } else if (event === 'across') {
+            this.tutorialSeen.move = true;
+            this.tutorialSeen.bridge = true;
+          }
+        });
+      const step = lesson.state.step;
+      if (step === 'ghost') {
+        this.tag.show(`${b.label('paint')} · PAINT ALONG THE DOTTED LINE`, 15.5 * CELL, 20 * CELL - 30);
+        this.activeTutorial = 'lesson';
+        return true;
       }
+      if (step === 'hop') {
+        this.tag.show(`${b.label('jump')} · JUMP ONTO YOUR PAPER   ·   ${b.label('walk')} · WALK`, 15.5 * CELL, 20 * CELL - 30);
+        this.activeTutorial = 'lesson';
+        return true;
+      }
+      if (step === 'gap' && this.walker.x < 700) {
+        // one instruction at a time: walk up to it, then paint across it
+        const text = this.walker.x < 260 ? `${b.label('walk')} · WALK TO THE GAP` : `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`;
+        this.tag.show(text, 25 * CELL, FLOOR_Y - 96);
+        this.activeTutorial = 'lesson';
+        return true;
+      }
+      this.activeTutorial = null;
+    } else if (this.activeTutorial === 'lesson') {
+      this.activeTutorial = null;
+      this.tag.hide();
     }
-    if (!this.tutorialSeen.bridge && this.walker.x >= 300 && this.walker.x < 700) {
-      if (this.showTutorial('bridge', `${b.label('paint')} · DRAW PAPER ACROSS THE GAP`, 25 * CELL, FLOOR_Y - 96)) return true;
-    } else if (this.activeTutorial === 'bridge' && this.walker.x >= 700) {
-      this.dismissTutorial('bridge');
-    }
-    if (this.tutorialSeen.bridge && !this.tutorialSeen.wash && this.walker.x >= 620 && this.walker.x < 900) {
+    if (lesson.done && !this.tutorialSeen.wash && this.walker.x >= 620 && this.walker.x < 900) {
       if (this.showTutorial('wash', `${b.label('wash')} · WASH THE ARCHIVE'S GREY AWAY`, 41.5 * CELL, 17 * CELL - 6)) return true;
     }
     if (this.activeTutorial === 'wash' && !this.car.isBlock(41, 20)) this.dismissTutorial('wash');
     return Boolean(this.activeTutorial);
+  }
+
+  // The dotted stroke the lesson asks for, and how much of it is painted.
+  updateGhost(dt) {
+    const cells = this.lesson.done ? [] : [...this.lesson.ghostCells(), ...this.lesson.gapCells()];
+    const hidden = this.viewer.open || this.card.open || this.bannerUp || this.advancingToStudio;
+    if (cells.length && !hidden) this.ghost.show(cells);
+    else this.ghost.hide();
+    this.ghost.markPainted((c, r) => this.car.isPainted(c, r));
+    this.ghost.update(dt);
   }
 
   nearDoor() {
@@ -1345,12 +1466,12 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   // The one tag on screen: whatever the brush or Butch is nearest to.
-  updateTag() {
+  updateTag(dt = 0) {
     if (this.viewer.open || this.advancingToStudio || this.locked || this.bannerUp || this.card.open) {
       this.tag.hide();
       return;
     }
-    if (this.updateTutorials()) return;
+    if (this.updateTutorials(dt)) return;
     const b = this.brush;
     const inRange = this.car.pictureInRange(this.walker.x, this.walker.y);
     if (inRange) {
@@ -1479,7 +1600,9 @@ export class PaintedCountryScene extends Phaser.Scene {
       const from = this.cardOpenedAtX ?? (this.cardOpenedAtX = this.walker.x);
       const walkedOn = Math.abs(this.walker.x - from) > 150;
       const timedOut = this.time.now - this.card.openedAt > 7000;
-      if (move.interactPressed || move.enterPressed || this.brush.paintPressed || walkedOn || timedOut) this.card.dismiss();
+      const clicked = this.brush.paintPressed || this.brush.washPressed;
+      if (move.interactPressed || move.enterPressed || clicked || walkedOn || timedOut) this.card.dismiss();
+      if (clicked) this.brushHeldOff = true;
       // the press that closed the card is not also a read or a stroke
       move.interactPressed = false;
       move.enterPressed = false;
@@ -1490,6 +1613,14 @@ export class PaintedCountryScene extends Phaser.Scene {
 
     if (this.viewer.open) {
       this.walker.body.setVelocityX(0);
+      this.nib.hide();
+      this.ghost.hide();
+      this.ghost.update(dt);
+      // In the plate viewer the brush only washes: a wet nib over the grey.
+      const v = this.viewer;
+      const overPlate = v.mode === 'plate' && v.picture && !this.car.plateState(v.picture.id).developed
+        && this.brush.x >= VIEWER.x && this.brush.x <= VIEWER.x + VIEWER.w && this.brush.y >= VIEWER.y && this.brush.y <= VIEWER.y + VIEWER.h;
+      this.nib.setCursor(overPlate ? 'wash' : 'none');
       if (this.viewer.mode === 'plate') this.stepViewerBrush();
       if (this.viewer.mode === 'notes') this.drawNotes();
       this.brush.drawCursor({ screenSpace: true });
@@ -1524,15 +1655,22 @@ export class PaintedCountryScene extends Phaser.Scene {
         this.lastResumeBay = bay;
       }
     }
-    if (!this.advancingToStudio) this.drawCursor();
-    else this.brushCursor.clear();
-    this.brush.drawCursor({ hidden: this.advancingToStudio || this.locked });
+    if (!this.advancingToStudio && !this.locked) this.drawCursor(dt);
+    else {
+      this.brushCursor.clear();
+      this.nib.hide();
+      this.nib.setCursor('none');
+    }
+    // The brush's own ring is not drawn: the nib (brushNib.js) is the cursor.
+    this.brush.drawCursor({ hidden: true });
+    this.strokeLayer.sync(!this.brush.paintDown);
+    this.updateGhost(dt);
     this.drawDoorSigns();
     this.drawMarkers();
     this.drawPigmentPot();
     this.drawMara(dt);
     this.processCarEvents();
-    this.updateTag();
+    this.updateTag(dt);
 
     this.motes.forEach((mote) => {
       mote.obj.x += mote.vx * dt;
@@ -1598,6 +1736,11 @@ export class PaintedCountryScene extends Phaser.Scene {
       advancingToStudio: this.advancingToStudio,
       maraVisible: Boolean(this.mara && this.mara.alpha > 0.05),
       tag: this.tag.visible ? this.tag.text : null,
+      lesson: { step: this.lesson.state.step, ghostPainted: this.lesson.state.ghostPainted, gapGhost: this.lesson.state.gapGhost, keyHint: this.lesson.showKeyHint },
+      ghostVisible: this.ghost.visible,
+      nib: this.nibStateNow ?? null,
+      strokes: this.strokes.runs().length,
+      reachNamed: this.nib.ringTaught,
       player: {
         x: Math.round(this.walker.x),
         y: Math.round(this.walker.y),

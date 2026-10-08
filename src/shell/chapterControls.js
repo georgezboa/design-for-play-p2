@@ -77,15 +77,16 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['RESET CAMERA', 'R'],
     ['PAUSE', 'ESC'],
   ),
-  // Chapter 4: the brush has three hands. The arrows and the right stick
-  // aim a virtual cursor; A / D and the left stick walk.
+  // Chapter 4: the unified keys (round 6, item 18) for walking, jumping and
+  // reading; the brush has three hands (mouse; I J K L with F / SHIFT; the
+  // right stick with RT / LT).
   paintedCountry: list(
-    ['MOVE', 'A / D · LEFT STICK'],
-    ['JUMP', 'W / ↑ · PAD Y / RB'],
-    ['AIM THE BRUSH', 'MOUSE · ARROW KEYS · RIGHT STICK'],
-    ['PAINT / APPLY', 'LEFT MOUSE · SPACE · PAD A'],
-    ['WASH / TAKE', 'RIGHT MOUSE · SHIFT · PAD B'],
-    ['READ / INTERACT', 'E · PAD X'],
+    ['MOVE', 'A / D · ← → · LEFT STICK'],
+    ['JUMP', 'SPACE · W / ↑ · PAD A'],
+    ['PAINT / APPLY', 'LEFT MOUSE · F · PAD RT'],
+    ['WASH / TAKE', 'RIGHT MOUSE · SHIFT · PAD LT'],
+    ['AIM THE BRUSH', 'MOUSE · I J K L · RIGHT STICK'],
+    ['READ / INTERACT', 'E / ENTER · PAD X'],
     ['RESTART ROOM', 'HOLD R · HOLD PAD BACK'],
     ['PAUSE', 'ESC · PAD START'],
   ),

@@ -2,11 +2,12 @@ import Phaser from 'phaser';
 import { FRAME_DT_CAP_MS } from './chapterConstants.js';
 import {
   BARRIERS,
-  BELL_MS,
+  FADED_SPANS,
   FINISH_FRONT,
   GROUND_SPANS,
   LINE,
   LINE_WORLD,
+  RIDE,
   TRAIN,
   TRAIN_COLOURS,
   coatAlpha,
@@ -23,36 +24,55 @@ import { TRAIN_WASH_ALPHA, paintTrain, trainTint } from './art/trainArt.js';
 import { RESIDENT, paintResident } from './art/figuresArt.js';
 import { CELL_STAMP, cellAtlasFrames, paintCellAtlas } from './art/cellArt.js';
 import { draftBlockEdges, shadePit } from './art/pencilEdges.js';
-import { buildPaperGrain, draftLine, draftRect, hatchRect, makeRandom, paintedFill } from './paperSurface.js';
+import { buildPaperGrain, draftLine, draftRect, hatchRect, makeRandom } from './paperSurface.js';
 import { BrushInput } from './brushInput.js';
 import { HOLD_SECONDS, MONO, PaperTag, RestartHold, UI, drawGlintMarker, hideUnderLowGraphics, noteAt } from './chapterUi.js';
-import { drawGreyCell } from './platePencil.js';
-import { bell as ringBell, installLineAudio, whistle } from './lineAudio.js';
+import { bell as ringBell, chuff, installLineAudio, whistle } from './lineAudio.js';
 import { reducedMotionActive } from '../../shell/motion.js';
 import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 import { devParam } from '../../devMode.js';
 import { RESUME_REGISTRY_KEY, recordChapter4Resume } from './chapter4Resume.js';
 import { createFallGuard, placeBody } from './fallGuard.js';
+import { BrushNib } from './brushNib.js';
+import { nibState, reachExit, withinReach } from './brushReach.js';
+import { GhostStroke } from './ghostStroke.js';
+import { createStrokeBook } from './brushStrokes.js';
+import { StrokeLayer } from './strokeLayer.js';
+import { stepFollower } from './residentMotion.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part III, "paint the line ahead".
 //
-// The painted train advances on Chapter 2's four-second bell (same bell, same
-// meter). The archive has broken the line ahead of it on a Part I paper grid:
-// gaps in the track and grey paper barriers across it. Butch runs ahead,
-// PAINTS track into the gaps and WASHES the barriers off. Nothing fails: a
-// train that meets a gap waits there with its whistle blowing until a bell
-// finds the way clear. At the platform he washes each borrowed colour off the
-// train and back to the resident who lent it, and the pencil train that is
-// left still runs — on to the Museum.
+// Round 6 (George, G2): the painted train used to run one stretch per bell
+// and stand still in between, which was not fun. Now it never waits for a
+// bell. Butch rides the engine, standing on the boiler in front of the
+// chimney with the brush out over the line, and the train rolls on
+// continuously (paintedLineModel.js):
+//
+//   · it runs at its pencil pace on Rosa's pencil rails, and faster on rails
+//     he has just painted, so laying wet paint ahead of it is what drives it;
+//   · it has weight: it gathers speed slowly and eases to a stop, whistling,
+//     in front of any break it cannot cross (a torn gap, rubbed-out rails,
+//     grey paper across the line), and rolls on the moment the way is clear;
+//   · nothing fails. Kept standing too long, the weather takes a coat of
+//     its borrowed paint, which only changes how the platform remembers it.
+//
+// The six residents who lent their colours run behind it. At the platform
+// Butch hops down and washes each borrowed colour back to whoever lent it,
+// and the pencil train that is left still runs, on to the Museum.
+//
+// A / D lean him along the boiler, SPACE hops; the brush is the mouse (or
+// I J K L with F / SHIFT, or the right stick with RT / LT).
 
 const VIEW = Object.freeze({ w: 960, h: 600 });
 const CELL = LINE.cell;
 const TRACK_Y = LINE.trackRow * CELL; // 440
-const REACH = 180;
+// Riding, the brush reaches a little further than on foot: he stands up on
+// the boiler, and the line he paints is below him.
+const REACH = 200;
+const WALK_REACH = 180;
 const MOVE_SPEED = 200;
 const JUMP_VELOCITY = -560;
-const TRAIN_ANIM_MS = 1500;
 const DEPTH = Object.freeze({ SKY: 0, HILLS: 4, GRID: 8, TRACK: 12, BLOCK: 16, PAINT: 18, TRAIN: 24, PEOPLE: 26, FIGURE: 30, CURSOR: 34, UI: 60, GRAIN: 80 });
 
 const PART_OF = Object.fromEntries(PIGMENTS.map((p) => [p.id, p]));
@@ -78,9 +98,16 @@ const LINE_TRAIN_SPEC = Object.freeze({
 });
 const LINE_TRAIN_ORDER = ['blue', 'violet', 'orange', 'red', 'yellow'];
 let lineTrainKeys = null;
+// Where Butch rides: on the boiler, in front of the chimney (relative to the
+// nose), and how far A / D lean him along it.
+const RIDE_SPOT = Object.freeze({ dx: -16, feetY: TRAIN_TOP + 30, lean: 9 });
 // The six residents, each drawn their own way (art/figuresArt.js).
 const RESIDENT_TYPE = Object.freeze({ red: 0, orange: 1, yellow: 2, green: 3, blue: 4, violet: 5 });
 const PALE = 0xd6d0c4;
+// The platform at the end of the line.
+const PLATFORM = Object.freeze({ x: (FINISH_FRONT + 1) * CELL - 40, w: 480, h: 16 });
+// The first gap: its cells get the lesson's dotted stroke.
+const FIRST_GAP = Object.freeze({ from: GROUND_SPANS[0].to, to: GROUND_SPANS[1].from });
 
 export class PaintedLineScene extends Phaser.Scene {
   constructor() {
@@ -100,15 +127,9 @@ export class PaintedLineScene extends Phaser.Scene {
     this.line = createPaintedLine();
     this.rnd = makeRandom(0x11ae);
     this.cellBodies = new Map();
-    this.bellClock = 0;
-    this.bellFlash = 0;
-    this.bellSwing = 0;
-    this.whistleClock = 0;
-    this.trainX = this.frontX(this.line.state.front);
-    this.trainFrom = this.trainX;
-    this.trainTo = this.trainX;
-    this.trainAnim = 1;
+    this.strokes = createStrokeBook({ cols: LINE.cols });
     this.lastBrushCell = null;
+    this.lastStrokePt = null;
     this.hold = { key: null, progress: 0 };
     this.hover = null;
     this.departing = false;
@@ -116,17 +137,16 @@ export class PaintedLineScene extends Phaser.Scene {
     this.finished = false;
     this.paintDirty = true;
     this.steam = [];
-    // Falls: see fallGuard.js (alpha A3-1). Section starts are the first
-    // solid ground of each span, which nothing can wash away.
-    this.fallGuard = createFallGuard({
-      start: { x: 460, y: TRACK_Y - 32 },
-      sections: GROUND_SPANS.slice(1).map(({ from }) => ({ x: from * CELL + 2 * CELL, y: TRACK_Y - 32 })),
-      bodyWidth: 16,
-      fallY: VIEW.h + 100,
-      isFloorAt: (x) => this.line.isGround(Math.floor(x / CELL), LINE.trackRow),
-    });
+    this.chuffDistance = 0;
+    this.puffDistance = 0;
+    this.whistleClock = 0;
+    this.gaugeNeedle = 0;
+    this.riding = true;
+    this.rider = { lean: 0, leanV: 0, hop: 0, hopV: 0, x: 0, y: 0 };
     this.startedAt = this.time.now;
-    this.tutorialSeen = { gap: false, barrier: false, return: false };
+    this.tutorialSeen = { gap: false, ink: false, barrier: false, faded: false, return: false };
+    this.inkTagUntil = 0;
+    this.taughtInkAt = null;
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
     this.cameras.main.setBounds(0, 0, LINE_WORLD.w, LINE_WORLD.h);
@@ -135,11 +155,11 @@ export class PaintedLineScene extends Phaser.Scene {
     this.buildCountry();
     this.buildTrackArt();
     this.buildSolids();
-    // Cells: the brush's gouache and the archive's grey are stamps from one
-    // atlas, laid with blitters (art/cellArt.js).
+    // The archive's grey is still a laid coat of cells; Butch's paint is
+    // drawn as brush strokes over the grid it collides on (strokeLayer.js).
     ensureCanvasTexture(this, 'ch4-cells', () => paintCellAtlas().canvas);
     addFrames(this, 'ch4-cells', cellAtlasFrames());
-    this.paintArt = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.PAINT);
+    this.strokeLayer = new StrokeLayer(this, { book: this.strokes, cell: CELL, worldW: LINE_WORLD.w, worldH: LINE_WORLD.h, depth: DEPTH.PAINT, seed: 0x11ae });
     this.railArt = this.add.graphics().setDepth(DEPTH.PAINT + 0.5);
     this.blockArt = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.BLOCK);
     // the grey's pencil contour, redrawn with the stamps (alpha R3 · R6)
@@ -148,18 +168,19 @@ export class PaintedLineScene extends Phaser.Scene {
     this.dripArt = this.add.graphics().setDepth(DEPTH.TRAIN + 0.5);
     this.steamArt = this.add.graphics().setDepth(DEPTH.TRAIN + 1);
     this.streamArt = this.add.graphics().setDepth(DEPTH.PEOPLE + 1);
-    this.cursorArt = this.add.graphics().setDepth(DEPTH.CURSOR);
     this.markerArt = this.add.graphics().setDepth(DEPTH.CURSOR - 1);
     this.buildPlayer();
     this.buildResidents();
-    this.buildMeter();
+    this.buildGauge();
     this.buildGrain();
 
     this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
     this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.brush = new BrushInput(this, { anchor: () => ({ x: this.walker.x, y: this.walker.y }), radius: REACH - 2 });
+    this.brush = new BrushInput(this, { anchor: () => this.brushHand(), radius: REACH - 2 });
     this.brush.cursor.setDepth(DEPTH.CURSOR + 1);
+    this.nib = new BrushNib(this, { depth: DEPTH.CURSOR, reach: REACH, cell: CELL });
+    this.ghost = new GhostStroke(this, { depth: DEPTH.CURSOR - 0.5, cell: CELL });
     this.tag = new PaperTag(this, { depth: DEPTH.UI + 4 });
     this.restart = new RestartHold(this, { onRestart: () => this.scene.restart({ skipIntro: true }) });
 
@@ -175,41 +196,55 @@ export class PaintedLineScene extends Phaser.Scene {
     }
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.music?.stop());
 
+    this.placeRider();
+    this.cameras.main.centerOn(this.line.state.x + 170, VIEW.h / 2);
     this.applyQa();
     // The line is this page's resume point from here on (it restarts whole:
-    // the chase is a few minutes long). Never on a dev route.
+    // the ride is about a minute). Never on a dev route.
     if (this.registry.get(RESUME_REGISTRY_KEY)?.room === 'line') this.registry.remove(RESUME_REGISTRY_KEY);
     if (!this.qa) {
       try { recordChapter4Resume(createSaveStore(), { room: 'line' }); } catch { /* storage unavailable */ }
     }
     this.cameras.main.fadeIn(520, 247, 244, 236);
-    noteAt(this, this.walker.x + 40, this.walker.y - 70, 'THE LINE AHEAD IS BROKEN.\nPAINT THE TRACK IN · WASH THE PAPER OFF.', { hold: 3200 });
+    if (!this.line.state.arrived) {
+      noteAt(this, this.rider.x + 60, TRAIN_TOP - 70, 'THE LINE AHEAD IS BROKEN.\nPAINT IT IN AS YOU RIDE.', { hold: 3200 });
+    }
   }
 
-  frontX(front) {
-    return (front + 1) * CELL;
+  frontX() {
+    return this.line.state.x;
+  }
+
+  // Butch's middle, where the brush's reach is measured from.
+  brushHand() {
+    if (this.riding) return { x: this.rider.x, y: this.rider.y };
+    return { x: this.walker.x, y: this.walker.y };
+  }
+
+  get reach() {
+    return this.riding ? REACH : WALK_REACH;
   }
 
   applyQa() {
     const qa = this.qa;
     if (qa === 'line-clear' || qa === 'line-end') {
       this.line.obstaclesAhead().forEach(({ col, reason }) => {
-        if (reason === 'gap') this.line.paint(col, LINE.trackRow);
+        if (reason === 'gap' || reason === 'faded') this.paintCell(col, LINE.trackRow, true);
         else for (let r = TRAIN.topRow; r < LINE.trackRow; r += 1) while (this.line.isSolid(col, r)) this.line.wash(col, r);
       });
+      this.strokes.end();
       this.syncBodies();
       this.paintDirty = true;
     }
     if (qa === 'line-end') {
-      while (!this.line.state.arrived) this.line.bell();
+      this.line.placeAt(FINISH_FRONT);
+      this.line.state.x = this.line.finishX;
+      this.line.state.arrived = true;
       this.line.drainEvents();
-      this.trainX = this.frontX(this.line.state.front);
-      this.trainFrom = this.trainX;
-      this.trainTo = this.trainX;
-      this.walker.setPosition(this.trainX - 120, TRACK_Y - 32);
-      this.cameras.main.centerOn(this.trainX - 120, VIEW.h / 2);
-      this.residents.forEach((p, i) => { p.x = this.frontX(this.line.state.front) - TRAIN.length * CELL - 30 - i * 26; });
-      this.onArrived();
+      this.residents.forEach((p, i) => { p.x = this.line.state.x - TRAIN_L - 30 - i * 26; });
+      this.placeRider();
+      this.cameras.main.centerOn(this.line.state.x - 120, VIEW.h / 2);
+      this.onArrived({ instant: true });
     }
   }
 
@@ -223,18 +258,19 @@ export class PaintedLineScene extends Phaser.Scene {
     // Rosa's country, drawn and waiting for its colours: one wash per colour
     // the residents lent. Each blooms back in as Butch washes that colour off
     // the train at the platform (the chapter's completion transformation).
-    // It drifts at half speed, so 2240 px covers the whole line.
-    this.country = addLayers(this, 'ch4-line-country', () => paintCountry({
-      w: 2240,
+    // It drifts at 0.35 of the camera, so 2760 px covers the whole line.
+    this.country = addLayers(this, 'ch4-line-country-r6', () => paintCountry({
+      w: 2760,
       h: 400,
       seed: 0x11ae,
       features: [
         { kind: 'farm', x: 120, s: 0.75 }, { kind: 'orchard', x: 330, s: 0.7, n: 5 }, { kind: 'hawthorn', x: 600, s: 0.8 },
         { kind: 'house', x: 760, s: 0.6, lit: true }, { kind: 'orchard', x: 900, s: 0.6, n: 4 }, { kind: 'tree', x: 1150, s: 0.8 },
         { kind: 'orchard', x: 1300, s: 0.75, n: 6 }, { kind: 'hawthorn', x: 1640, s: 0.7 }, { kind: 'farm', x: 1780, s: 0.8 },
-        { kind: 'orchard', x: 2000, s: 0.65, n: 4 },
+        { kind: 'orchard', x: 2000, s: 0.65, n: 4 }, { kind: 'tree', x: 2240, s: 0.7 }, { kind: 'house', x: 2420, s: 0.7, lit: true },
+        { kind: 'orchard', x: 2560, s: 0.6, n: 3 },
       ],
-    }), { x: 0, y: TRACK_Y - 372, depth: DEPTH.HILLS, scrollFactor: 0.5, washAlpha: 0 });
+    }), { x: 0, y: TRACK_Y - 372, depth: DEPTH.HILLS, scrollFactor: 0.35, washAlpha: 0 });
     // Part I's ruled grid, over the air the line runs through
     const grid = this.add.graphics().setDepth(DEPTH.GRID);
     grid.lineStyle(1, PAPER.graphiteFaint, 0.1);
@@ -244,21 +280,45 @@ export class PaintedLineScene extends Phaser.Scene {
     this.add.text(24, 26, 'THE LINE AHEAD', {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
     }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH.UI);
-    // On the ground under the platform, like the gallery's bay names: up in
-    // the air it sat on an orchard tree and under the return tag (A3-5).
-    this.add.text(this.frontX(FINISH_FRONT) - 40 + 240, TRACK_Y + 34, 'THE LAST PAINTED PLATFORM', {
+    // On the ground under the platform, like the gallery's bay names.
+    this.add.text(PLATFORM.x + PLATFORM.w / 2, TRACK_Y + 34, 'THE LAST PAINTED PLATFORM', {
       fontFamily: MONO, fontSize: '12px', color: '#5c574f', align: 'center', letterSpacing: 2,
     }).setOrigin(0.5).setDepth(DEPTH.TRACK + 1);
   }
 
   buildTrackArt() {
     const g = this.add.graphics().setDepth(DEPTH.TRACK);
+    const faded = (c) => FADED_SPANS.some(({ from, to }) => c >= from && c < to);
     GROUND_SPANS.forEach(({ from, to }) => {
       const x = from * CELL;
       const w = (to - from) * CELL;
       g.fillStyle(PAPER.sheetLow, 1).fillRect(x, TRACK_Y, w, LINE_WORLD.h - TRACK_Y);
       hatchRect(g, this.rnd, x, TRACK_Y, w, 50, { spacing: 17, alpha: 0.2, flip: true });
-      this.drawRails(g, x, w, 0.9);
+      // the rails, except where the archive rubbed them out
+      let runFrom = null;
+      for (let c = from; c <= to; c += 1) {
+        const rail = c < to && !faded(c);
+        if (rail && runFrom === null) runFrom = c;
+        if (!rail && runFrom !== null) {
+          this.drawRails(g, runFrom * CELL, (c - runFrom) * CELL, 0.9);
+          runFrom = null;
+        }
+      }
+    });
+    // rubbed out: ghosts of the rails, and the eraser's crumbs
+    FADED_SPANS.forEach(({ from, to }) => {
+      const x = from * CELL;
+      const w = (to - from) * CELL;
+      this.drawRails(g, x, w, 0.16);
+      const r = makeRandom(0xe7a5 + from);
+      g.lineStyle(1, PAPER.graphiteFaint, 0.55);
+      for (let i = 0; i < w / 9; i += 1) {
+        const cx = x + r() * w;
+        const cy = TRACK_Y + 2 + r() * 12;
+        g.lineBetween(cx, cy, cx + 3 + r() * 6, cy - 2 + r() * 4);
+      }
+      g.fillStyle(PAPER.deckle, 0.7);
+      for (let i = 0; i < w / 14; i += 1) g.fillCircle(x + r() * w, TRACK_Y - 1 - r() * 4, 0.8 + r() * 1.2);
     });
     // torn holes between
     for (let i = 0; i < GROUND_SPANS.length - 1; i += 1) {
@@ -269,10 +329,9 @@ export class PaintedLineScene extends Phaser.Scene {
       [x, x + w].forEach((xx) => draftLine(g, this.rnd, xx, TRACK_Y, xx, LINE_WORLD.h, { overshoot: 0, jitter: 2.6, segments: 10 }));
     }
     // the platform
-    const px = this.frontX(FINISH_FRONT) - 40;
-    g.fillStyle(PAPER.sheetMid, 1).fillRect(px, TRACK_Y - 16, 480, 16);
+    g.fillStyle(PAPER.sheetMid, 1).fillRect(PLATFORM.x, TRACK_Y - PLATFORM.h, PLATFORM.w, PLATFORM.h);
     g.lineStyle(1.6, PAPER.graphite, 0.8);
-    draftRect(g, this.rnd, px, TRACK_Y - 16, 480, 16, { overshoot: 4 });
+    draftRect(g, this.rnd, PLATFORM.x, TRACK_Y - PLATFORM.h, PLATFORM.w, PLATFORM.h, { overshoot: 4 });
   }
 
   drawRails(g, x, w, alpha) {
@@ -291,6 +350,8 @@ export class PaintedLineScene extends Phaser.Scene {
       this.solids.add(object);
     };
     GROUND_SPANS.forEach(({ from, to }) => solid(from * CELL, TRACK_Y, (to - from) * CELL, LINE_WORLD.h - TRACK_Y));
+    // the platform is a step up off the track, and he stands on it
+    solid(PLATFORM.x + 40, TRACK_Y - PLATFORM.h, PLATFORM.w - 40, PLATFORM.h);
     solid(-24, -300, 24, LINE_WORLD.h + 400);
     solid(LINE_WORLD.w, -300, 24, LINE_WORLD.h + 400);
   }
@@ -330,22 +391,58 @@ export class PaintedLineScene extends Phaser.Scene {
   }
 
   buildPlayer() {
-    this.walker = this.add.rectangle(460, TRACK_Y - 32, 16, 58, 0xffffff, 0);
+    // His body only takes over at the platform; riding, the engine carries him.
+    this.walker = this.add.rectangle(this.frontX() + RIDE_SPOT.dx, RIDE_SPOT.feetY - 29, 16, 58, 0xffffff, 0);
     this.physics.add.existing(this.walker);
+    this.walker.body.enable = false;
     this.physics.add.collider(this.walker, this.solids);
     this.figure = createPaintedPlayer(this, DEPTH.FIGURE);
-    this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
-    this.cameras.main.setDeadzone(200, 160);
-    this.cameras.main.setFollowOffset(-120, 0);
+    this.camTarget = this.add.zone(this.frontX() + 170, VIEW.h / 2, 2, 2);
+    this.cameras.main.startFollow(this.camTarget, true, 0.09, 0.09);
+    // Falls are only possible once he is off the train (fallGuard.js).
+    this.fallGuard = createFallGuard({
+      start: { x: PLATFORM.x + 80, y: TRACK_Y - PLATFORM.h - 32 },
+      sections: GROUND_SPANS.slice(1).map(({ from }) => ({ x: from * CELL + 2 * CELL, y: TRACK_Y - 32 })),
+      bodyWidth: 16,
+      fallY: VIEW.h + 100,
+      isFloorAt: (x) => this.line.isGround(Math.floor(x / CELL), LINE.trackRow) || this.line.isPainted(Math.floor(x / CELL), LINE.trackRow),
+    });
+  }
+
+  // On the boiler, carried by the train, leaning with A / D, hopping on SPACE.
+  placeRider() {
+    const r = this.rider;
+    r.x = this.frontX() + this.departOffset + RIDE_SPOT.dx + r.lean * RIDE_SPOT.lean;
+    r.y = RIDE_SPOT.feetY - 29 - r.hop;
+    if (this.riding) this.walker.setPosition(r.x, r.y);
+  }
+
+  stepRider(move, dt) {
+    const r = this.rider;
+    const target = move.left && !move.right ? -1 : move.right && !move.left ? 1 : 0;
+    // a soft spring along the boiler: he leans out and settles back
+    r.leanV += (-(r.lean - target) * 90 - r.leanV * 12) * dt;
+    r.lean = Phaser.Math.Clamp(r.lean + r.leanV * dt, -1.2, 1.2);
+    if (move.jumpPressed && r.hop <= 0.01) r.hopV = 260;
+    if (r.hop > 0 || r.hopV > 0) {
+      r.hopV -= 1500 * dt;
+      r.hop = Math.max(0, r.hop + r.hopV * dt);
+      if (r.hop === 0) r.hopV = 0;
+    }
+    this.placeRider();
   }
 
   // The six residents who lent their colours, running behind the train.
   buildResidents() {
+    const rear = this.frontX() - TRAIN_L;
     this.residents = TRAIN_COLOURS.map((id, i) => ({
       id,
       color: PART_OF[id].color,
       name: PART_OF[id].source,
-      x: this.trainX - TRAIN.length * CELL - 40 - i * 26,
+      x: rear - 40 - i * 26,
+      v: 0,
+      stride: 0,
+      facing: 1,
       seed: i * 0.8,
       restored: false,
     }));
@@ -356,23 +453,24 @@ export class PaintedLineScene extends Phaser.Scene {
       p.cloth = this.add.image(p.x, TRACK_Y, keys.wash, 'f0').setOrigin(0.5, 1).setDepth(DEPTH.PEOPLE).setTint(PALE);
       p.sprite = this.add.image(p.x, TRACK_Y, keys.pencil, 'f0').setOrigin(0.5, 1).setDepth(DEPTH.PEOPLE + 0.1);
     });
-    this.shouts = [];
-    this.time.delayedCall(1600, () => this.shout(0, 'WAIT FOR US!'));
-    this.time.delayedCall(2600, () => this.shout(3, 'OUR COLOURS!'));
+    this.time.delayedCall(2600, () => this.shout(0, 'WAIT FOR US!'));
+    this.time.delayedCall(5200, () => this.shout(3, 'OUR COLOURS!'));
   }
 
   shout(index, text) {
     const p = this.residents[index];
-    if (!p) return;
+    if (!p || this.line.state.arrived) return;
     const label = this.add.text(p.x, TRACK_Y - 96, text, {
       fontFamily: MONO, fontSize: '12px', color: UI.ink, fontStyle: 'bold', backgroundColor: '#fdfcf8ee', padding: { x: 8, y: 4 },
     }).setOrigin(0.5, 1).setDepth(DEPTH.UI);
-    this.shouts.push({ p, label });
-    this.tweens.add({ targets: label, alpha: 0, delay: 1800, duration: 500, onComplete: () => label.destroy() });
+    this.tweens.add({ targets: label, y: label.y - 8, alpha: 0, delay: 1800, duration: 500, ease: 'Sine.easeIn', onComplete: () => label.destroy() });
   }
 
-  buildMeter() {
-    this.meter = this.add.graphics().setScrollFactor(0).setDepth(DEPTH.UI + 2);
+  buildGauge() {
+    this.gauge = this.add.graphics().setScrollFactor(0).setDepth(DEPTH.UI + 2);
+    this.gaugeLabel = this.add.text(VIEW.w / 2 + 34, 27, '', {
+      fontFamily: MONO, fontSize: '11px', color: '#5c574f', fontStyle: 'bold', letterSpacing: 1.5,
+    }).setOrigin(0, 0.5).setScrollFactor(0).setDepth(DEPTH.UI + 2);
   }
 
   buildGrain() {
@@ -380,60 +478,57 @@ export class PaintedLineScene extends Phaser.Scene {
     hideUnderLowGraphics(this, [this.add.tileSprite(0, 0, VIEW.w, VIEW.h, key).setOrigin(0).setScrollFactor(0).setDepth(DEPTH.GRAIN).setAlpha(0.6)]);
   }
 
-  // Chapter 2's bell meter, at this chapter's scale: a brass bell in a ring
-  // that fills over the four seconds, four ticks, and a glow in the last half
-  // second. It sits in the title strip, where no tag can land.
-  drawMeter(dt) {
-    const g = this.meter;
+  // The engine's pace, as a brass steam gauge in the title strip: its needle
+  // sits in the pencil band on pencil rails and swings into the indigo band
+  // on wet paint. It is the whole speedometer; nothing else counts down.
+  drawGauge(dt) {
+    const g = this.gauge;
     g.clear();
     const cx = VIEW.w / 2;
-    const cy = 27;
-    const R = 17;
-    const phase = Phaser.Math.Clamp(this.bellClock / BELL_MS, 0, 1);
-    this.bellFlash = Math.max(0, this.bellFlash - dt / 0.9);
-    this.bellSwing *= Math.pow(0.02, dt);
+    const cy = 30;
+    const R = 19;
+    const a0 = Math.PI * 0.8;
+    const a1 = Math.PI * 2.2;
+    const angleOf = (v) => a0 + (a1 - a0) * Phaser.Math.Clamp(v / RIDE.painted, 0, 1);
+    const speed = this.line.state.arrived ? 0 : this.line.state.speed;
+    this.gaugeNeedle += (speed - this.gaugeNeedle) * Math.min(1, dt * 6);
     g.fillStyle(0x0b0907, 0.82).fillCircle(cx, cy, R + 7);
     g.lineStyle(1.5, 0xb08a4a, 0.9).strokeCircle(cx, cy, R + 7);
-    g.lineStyle(4, 0x2a1d14, 1).strokeCircle(cx, cy, R);
-    if (!this.line.state.arrived) {
-      g.lineStyle(4, 0xe0a24a, 0.95);
+    // bands: stopped, pencil pace, wet-paint pace
+    const band = (from, to, color, alpha) => {
+      g.lineStyle(4, color, alpha);
       g.beginPath();
-      g.arc(cx, cy, R, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.max(0.001, phase), false);
+      g.arc(cx, cy, R, angleOf(from), angleOf(to), false);
       g.strokePath();
-    }
-    for (let i = 0; i < 4; i += 1) {
-      const a = -Math.PI / 2 + (i * Math.PI) / 2;
-      g.lineStyle(1.4, 0xeadfc6, 0.6).lineBetween(cx + Math.cos(a) * (R - 3), cy + Math.sin(a) * (R - 3), cx + Math.cos(a) * (R + 3), cy + Math.sin(a) * (R + 3));
-    }
-    const msToBell = BELL_MS - this.bellClock;
-    if (!this.line.state.arrived && msToBell < 500) g.lineStyle(7, 0xf2c27a, 0.22 * (1 - msToBell / 500)).strokeCircle(cx, cy, R);
-    if (this.bellFlash > 0) g.lineStyle(2, 0xf2c27a, this.bellFlash).strokeCircle(cx, cy, R + 7 + (1 - this.bellFlash) * 22);
-    // the bell glyph
-    const swing = Math.sin(this.time.now / 60) * this.bellSwing * 0.4;
-    const bx = cx + Math.sin(swing) * 3;
-    g.fillStyle(0xb08a4a, 1);
-    g.fillTriangle(bx - 8, cy + 7, bx + 8, cy + 7, bx, cy - 9);
-    g.fillCircle(bx, cy - 3, 6);
-    g.fillStyle(0x6d5227, 1).fillRect(bx - 9, cy + 6, 18, 2.5);
-    g.fillStyle(0x3a2a14, 1).fillCircle(bx, cy + 10, 2.2);
+    };
+    band(0, RIDE.pencil, 0xeadfc6, 0.35);
+    band(RIDE.pencil, RIDE.painted, 0x6f8fc0, 0.95);
+    const na = angleOf(this.gaugeNeedle);
+    const shake = speed > 20 && !reducedMotionActive() ? Math.sin(this.time.now / 37) * 0.025 : 0;
+    g.lineStyle(2.4, 0xf2c27a, 1).lineBetween(cx, cy, cx + Math.cos(na + shake) * (R - 2), cy + Math.sin(na + shake) * (R - 2));
+    g.fillStyle(0xb08a4a, 1).fillCircle(cx, cy, 3.2);
+    const waiting = this.line.state.waiting;
+    const label = this.line.state.arrived ? 'PLATFORM'
+      : !this.line.state.started ? 'STEAM UP'
+        : waiting ? 'WAITING'
+          : this.line.state.pace > 0.5 ? 'WET PAINT · FAST' : 'PENCIL RAILS';
+    this.gaugeLabel.setText(label).setColor(waiting ? UI.oxblood : '#5c574f');
   }
 
   // ============================================================== drawing
 
-  // Stamps from the cell atlas: Butch's indigo gouache, the archive's grey,
-  // the official record's gloss over it.
+  // The archive's grey (stamps from the cell atlas) and the rails over
+  // Butch's paint. The paint itself is the stroke layer.
   redrawCells() {
-    const p = this.paintArt;
     const b = this.blockArt;
     const rails = this.railArt;
-    p.clear();
     b.clear();
     rails.clear();
     const off = CELL_STAMP.bleed;
-    this.line.state.painted.forEach((k) => {
+    const wet = new Set([...this.line.state.painted, ...this.line.state.inked]);
+    wet.forEach((k) => {
       const c = k % LINE.cols;
       const r = Math.floor(k / LINE.cols);
-      p.create(c * CELL - off, r * CELL - off, `paint-${(c * 7 + r * 3) % CELL_STAMP.variants}`);
       if (r === LINE.trackRow) this.drawRails(rails, c * CELL, CELL, 1);
     });
     this.line.state.blocks.forEach((k) => {
@@ -487,8 +582,10 @@ export class PaintedLineScene extends Phaser.Scene {
     }
     const keys = lineTrainKeys;
     this.trainArt = this.add.container(0, 0).setDepth(DEPTH.TRAIN);
-    this.trainArt.add(this.add.image(keys.paper.x, keys.paper.y, keys.paper.key).setOrigin(0));
-    this.trainArt.add(this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0));
+    this.trainBody = this.add.container(0, 0);
+    this.trainArt.add(this.trainBody);
+    this.trainBody.add(this.add.image(keys.paper.x, keys.paper.y, keys.paper.key).setOrigin(0));
+    this.trainBody.add(this.add.image(keys.chassis.x, keys.chassis.y, keys.chassis.pencil).setOrigin(0));
     // Each borrowed colour is a gouache body and its pooled edges (trainArt.js).
     this.trainWash = {};
     LINE_TRAIN_ORDER.forEach((id) => {
@@ -496,9 +593,10 @@ export class PaintedLineScene extends Phaser.Scene {
       const tint = trainTint(PART_OF[id].color);
       const wash = this.add.image(k.x, k.y, k.wash).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.body);
       const edge = this.add.image(k.x, k.y, k.edge).setOrigin(0).setTint(tint).setAlpha(TRAIN_WASH_ALPHA.edge);
-      this.trainArt.add([wash, edge, this.add.image(k.x, k.y, k.pencil).setOrigin(0)]);
+      this.trainBody.add([wash, edge, this.add.image(k.x, k.y, k.pencil).setOrigin(0)]);
       this.trainWash[id] = [wash, edge];
     });
+    // The wheels ride the rails; the body rides its springs above them.
     const wheelTint = trainTint(PART_OF.green.color);
     this.trainWheels = LINE_TRAIN_SPEC.wheels.map((w) => {
       const wash = this.add.image(w.x, w.y, keys.wheel.wash).setTint(wheelTint).setAlpha(TRAIN_WASH_ALPHA.body);
@@ -512,8 +610,13 @@ export class PaintedLineScene extends Phaser.Scene {
   }
 
   drawTrain() {
-    const fx = this.trainX + this.departOffset;
+    const fx = this.frontX() + this.departOffset;
     this.trainArt.setPosition(Math.round(fx - TRAIN_L), 0);
+    // secondary motion: the body rocks a little on its springs at speed
+    const speedK = Phaser.Math.Clamp(this.line.state.speed / RIDE.painted, 0, 1);
+    const still = reducedMotionActive();
+    this.trainBody.y = still ? 0 : Math.sin(this.line.state.distance / 11) * 0.8 * speedK;
+    this.trainBody.rotation = still ? 0 : Math.sin(this.line.state.distance / 23 + 1.1) * 0.0025 * speedK;
     const returned = new Set(this.line.state.returned);
     // Each coat the weather took leaves the borrowed paint thinner (P2).
     const coat = coatAlpha(this.line.state.coatsLost);
@@ -529,7 +632,7 @@ export class PaintedLineScene extends Phaser.Scene {
       }
       images.forEach((image, i) => image.setAlpha((i % 2 ? TRAIN_WASH_ALPHA.edge : TRAIN_WASH_ALPHA.body) * coat));
     });
-    const wheelSpin = -fx / 12;
+    const wheelSpin = (this.line.state.distance + this.departOffset) / 12;
     this.trainWheels.forEach(({ wash, edge, pencil }) => { wash.setRotation(wheelSpin); edge.setRotation(wheelSpin); pencil.setRotation(wheelSpin); });
     // Runs where a coat washed off: pale drips down the carriage and engine.
     const g = this.dripArt;
@@ -552,9 +655,10 @@ export class PaintedLineScene extends Phaser.Scene {
   drawSteam(dt) {
     const g = this.steamArt;
     g.clear();
+    const drift = this.line.state.speed * 0.8;
     this.steam = this.steam.filter((puff) => {
       puff.t += dt;
-      puff.x -= 26 * dt;
+      puff.x -= (26 + drift) * dt;
       puff.y -= 34 * dt;
       const k = puff.t / 1.6;
       if (k >= 1) return false;
@@ -566,28 +670,50 @@ export class PaintedLineScene extends Phaser.Scene {
 
   puff() {
     if (reducedMotionActive() && this.steam.length > 2) return;
-    const chimney = this.partRects(this.trainX + this.departOffset).yellow;
+    const chimney = this.partRects(this.frontX() + this.departOffset).yellow;
     this.steam.push({ x: chimney.x + 10, y: chimney.y - 4, t: 0 });
   }
 
-  drawResidents(time, dt) {
-    const trainRear = this.trainX - TRAIN.length * CELL;
+  // The engine's beat: a chuff and a puff every few metres, quicker and
+  // louder the faster it runs.
+  stepExhaust(moved) {
+    this.chuffDistance += moved;
+    this.puffDistance += moved;
+    if (this.chuffDistance >= 38) {
+      this.chuffDistance = 0;
+      chuff(Phaser.Math.Clamp(this.line.state.speed / RIDE.painted, 0, 1));
+    }
+    if (this.puffDistance >= 70) {
+      this.puffDistance = 0;
+      this.puff();
+    }
+  }
+
+  drawResidents(dt) {
+    const trainRear = this.frontX() - TRAIN_L;
     this.residents.forEach((p, i) => {
-      if (!this.line.state.arrived) {
-        const target = trainRear - 30 - i * 26;
-        p.x = Phaser.Math.Linear(p.x, target, 1 - Math.exp(-1.6 * dt));
+      if (!this.line.state.arrived || p.x < trainRear - 30 - i * 26 - 2) {
+        stepFollower(p, trainRear - 30 - i * 26, dt);
+      } else {
+        stepFollower(p, p.x, dt);
       }
-      const running = !this.line.state.arrived && Math.abs(p.x - (trainRear - 30 - i * 26)) > 2;
-      const frame = running ? `f${1 + (Math.floor(time / 110 + p.seed * 3) % 4)}` : 'f0';
+      const running = Math.abs(p.v) > 12;
+      // the run cycle follows the ground covered, so the feet never skate
+      const frame = running ? `f${1 + (Math.floor(p.stride / 11 + p.seed * 3) % 4)}` : 'f0';
+      // a lean into the run (the frames carry their own bob); a breath and
+      // a slow weight shift standing still
+      const t = this.time.now / 1000;
+      const bob = 0;
+      const breathe = running ? 1 : 1 + 0.012 * Math.sin(t * 1.9 + p.seed * 4);
+      const lean = running ? Phaser.Math.Clamp(p.v / 260, -1, 1) * 0.08 : Math.sin(t * 0.9 + p.seed * 2) * 0.012;
       const x = Math.round(p.x);
-      p.sprite.setPosition(x, TRACK_Y + 1).setFrame(frame);
-      p.cloth.setPosition(x, TRACK_Y + 1).setFrame(frame);
+      [p.sprite, p.cloth].forEach((img) => img.setPosition(x, TRACK_Y + 1 + bob).setFrame(frame).setScale(1, breathe).setRotation(lean).setFlipX(p.facing < 0));
       if (p.restored && !p.tinted) {
         // their own colour, back in their clothes
         p.tinted = true;
         p.cloth.setTint(p.color);
         p.cloth.setAlpha(0.2);
-        this.tweens.add({ targets: p.cloth, alpha: 0.95 * coatAlpha(this.line.state.coatsLost) + 0.05, duration: 600 });
+        this.tweens.add({ targets: p.cloth, alpha: 0.95 * coatAlpha(this.line.state.coatsLost) + 0.05, duration: 600, ease: 'Sine.easeOut' });
       }
     });
   }
@@ -601,24 +727,39 @@ export class PaintedLineScene extends Phaser.Scene {
     const ahead = this.line.obstaclesAhead();
     const byCol = new Map(ahead.map((o) => [o.col, o.reason]));
     ahead.filter(({ col, reason }) => byCol.get(col - 1) !== reason).slice(0, 6).forEach(({ col, reason }) => {
-      drawGlintMarker(g, t, col * CELL + CELL / 2 + 10, reason === 'gap' ? TRACK_Y - 8 : TRAIN.topRow * CELL - 8);
+      drawGlintMarker(g, t, col * CELL + CELL / 2 + 10, reason === 'barrier' ? TRAIN.topRow * CELL - 8 : TRACK_Y - 8);
     });
   }
 
   // ================================================================ input
 
-  inReach() {
-    return Phaser.Math.Distance.Between(this.walker.x, this.walker.y, this.brush.worldX, this.brush.worldY) <= REACH;
+  inReach(x = this.brush.worldX, y = this.brush.worldY) {
+    const hand = this.brushHand();
+    return withinReach(hand.x, hand.y, x, y, this.reach);
   }
 
   overlapsPlayer(c, r) {
+    if (this.riding) return false;
     return this.walker.x >= c * CELL && this.walker.x < c * CELL + CELL && this.walker.y >= r * CELL && this.walker.y < r * CELL + CELL;
+  }
+
+  // A cell of paint: the model's rule, the stroke book, and a body if it is
+  // new paper (a rail inked over the ground needs none).
+  paintCell(c, r, silent = false) {
+    if (!this.line.paint(c, r)) return false;
+    this.strokes.add(c, r);
+    if (this.line.isPainted(c, r)) this.addCellBody(c, r);
+    this.paintDirty = true;
+    if (!silent) this.pressPainted = true;
+    return true;
   }
 
   applyBrush(c, r, wash) {
     if (!this.line.inBounds(c, r)) return;
     if (wash) {
+      const wasWet = this.line.isPainted(c, r) || this.line.isInked(c, r);
       if (this.line.wash(c, r)) {
+        if (wasWet && !this.line.isPainted(c, r) && !this.line.isInked(c, r)) this.strokes.remove(c, r);
         // a barrier peels off a whole column at once (paintedLineModel.js)
         for (let row = TRAIN.topRow; row <= LINE.trackRow; row += 1) {
           if (!this.line.isPainted(c, row) && !this.line.isBlock(c, row)) this.removeCellBody(c, row);
@@ -628,27 +769,57 @@ export class PaintedLineScene extends Phaser.Scene {
       return;
     }
     if (this.overlapsPlayer(c, r)) return;
-    if (this.line.paint(c, r)) {
-      this.addCellBody(c, r);
-      this.paintDirty = true;
-    }
+    this.paintCell(c, r);
   }
 
   stepBrush() {
     const b = this.brush;
-    if (b.paintPressed || b.washPressed) this.lastBrushCell = null;
+    if (!b.paintDown && !b.washDown) {
+      this.endStroke();
+      return;
+    }
+    if (b.paintPressed || b.washPressed) {
+      this.endStroke();
+      if (b.paintDown) this.strokes.begin();
+      if (!this.inReach()) this.refuseFar(b.worldX, b.worldY);
+    }
     (b.mode === 'mouse' ? b.samples : []).forEach((p) => this.strokeTo(p.worldX, p.worldY, p.wash));
-    if (b.paintDown || b.washDown) this.strokeTo(b.worldX, b.worldY, b.washDown);
-    else this.lastBrushCell = null;
+    this.strokeTo(b.worldX, b.worldY, b.washDown);
   }
 
+  endStroke() {
+    this.pressPainted = false;
+    this.strokes.end();
+    this.lastBrushCell = null;
+    this.lastStrokePt = null;
+  }
+
+  refuseFar(x, y) {
+    this.nib.refuseFar();
+    noteAt(this, x, y - 14, this.riding ? 'OUT OF REACH · LET THE TRAIN BRING YOU CLOSER' : 'OUT OF REACH · GET CLOSER', { tone: 'warn', hold: 1300 });
+  }
+
+  // Round 6, item 12: a stroke that runs out of reach is painted to the edge
+  // and stopped there visibly. (Riding, the train carries the reach along:
+  // a brush held still over the line ahead keeps painting it.)
   strokeTo(wx, wy, wash) {
-    if (Phaser.Math.Distance.Between(this.walker.x, this.walker.y, wx, wy) > REACH) {
+    const hand = this.brushHand();
+    const prev = this.lastStrokePt;
+    this.lastStrokePt = { x: wx, y: wy };
+    if (!withinReach(hand.x, hand.y, wx, wy, this.reach)) {
+      const exit = prev && this.lastBrushCell ? reachExit(prev, { x: wx, y: wy }, hand, this.reach - 0.5) : null;
+      if (exit) {
+        this.strokeCells(Math.floor((exit.x - exit.dirX * 2) / CELL), Math.floor((exit.y - exit.dirY * 2) / CELL), wash);
+        this.nib.stop(exit.x, exit.y, exit.dirX, exit.dirY);
+        noteAt(this, exit.x, exit.y - 18, this.riding ? 'THE BRUSH REACHES THIS FAR · THE TRAIN WILL BRING YOU' : 'THE BRUSH REACHES THIS FAR · GET CLOSER', { tone: 'warn', hold: 1300 });
+      }
       this.lastBrushCell = null;
       return;
     }
-    const c = Math.floor(wx / CELL);
-    const r = Math.floor(wy / CELL);
+    this.strokeCells(Math.floor(wx / CELL), Math.floor(wy / CELL), wash);
+  }
+
+  strokeCells(c, r, wash) {
     const from = this.lastBrushCell;
     if (!from) {
       this.applyBrush(c, r, wash);
@@ -666,13 +837,13 @@ export class PaintedLineScene extends Phaser.Scene {
   // the wheels sit over the blue carriage, the cab and the engine, so their
   // whole circle is the green part (alpha A3-3: only the bottom 12 px were).
   partAt(x, y) {
-    const rects = this.partRects(this.trainX);
+    const rects = this.partRects(this.frontX());
     const inRect = (id) => {
       const r = rects[id];
       return x >= r.x - 4 && x <= r.x + r.w + 4 && y >= r.y - 4 && y <= r.y + r.h + 4;
     };
     if (inRect('yellow')) return 'yellow';
-    if (this.wheelCentres(this.trainX).some((c) => Math.hypot(x - c.x, y - c.y) <= 15)) return 'green';
+    if (this.wheelCentres(this.frontX()).some((c) => Math.hypot(x - c.x, y - c.y) <= 15)) return 'green';
     return ['orange', 'red', 'violet', 'blue', 'green'].find(inRect) ?? null;
   }
 
@@ -699,7 +870,7 @@ export class PaintedLineScene extends Phaser.Scene {
     const g = this.streamArt;
     g.clear();
     if (!this.hold.key) return;
-    const r = this.partRects(this.trainX)[this.hold.key];
+    const r = this.partRects(this.frontX())[this.hold.key];
     const person = this.residents.find((p) => p.id === this.hold.key);
     const from = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
     const to = { x: person.x, y: TRACK_Y - 40 };
@@ -711,33 +882,19 @@ export class PaintedLineScene extends Phaser.Scene {
 
   // ================================================================ flow
 
-  onBell() {
-    ringBell();
-    this.bellFlash = 1;
-    this.bellSwing = 1;
-    const before = this.line.state.front;
-    this.line.bell();
-    const after = this.line.state.front;
-    if (after !== before) {
-      this.trainFrom = this.trainX;
-      this.trainTo = this.frontX(after);
-      this.trainAnim = 0;
-      this.puff();
-    }
-    this.handleLineEvents();
-  }
-
   handleLineEvents() {
+    const b = this.brush;
     this.line.drainEvents().forEach((event) => {
-      if (event.type === 'train-waiting') {
+      if (event.type === 'train-rolling') {
+        // Chapter 2's bell, as a departure bell: rolling again, not a timer
+        ringBell({ departure: Boolean(event.first) });
+        if (!event.first) whistle();
+        for (let i = 0; i < 3; i += 1) this.puff();
+      } else if (event.type === 'train-waiting') {
         const x = event.at * CELL;
-        const first = event.reason === 'gap' ? !this.tutorialSeen.gap : !this.tutorialSeen.barrier;
-        if (event.reason === 'gap') this.tutorialSeen.gap = true;
-        else this.tutorialSeen.barrier = true;
-        const text = event.reason === 'gap'
-          ? (first ? `THE TRAIN WAITS AT THE GAP · ${this.brush.label('paint')} · PAINT THE TRACK IN` : 'THE TRAIN WAITS AT A GAP')
-          : (first ? `PAPER ON THE LINE · ${this.brush.label('wash')} · WASH IT AWAY` : 'THE TRAIN WAITS AT THE PAPER');
-        noteAt(this, x + 40, TRAIN.topRow * CELL - 84, text, { tone: 'warn', hold: 2400 });
+        // what stopped it; the tag over the break carries the verb
+        const what = event.reason === 'barrier' ? 'PAPER ON THE LINE' : event.reason === 'faded' ? 'THE RAILS ARE RUBBED OUT' : 'A GAP IN THE LINE';
+        noteAt(this, x + 40, TRAIN.topRow * CELL - 84, `THE TRAIN WAITS · ${what}`, { tone: 'warn', hold: 2400 });
         whistle({ long: true });
         this.whistleClock = 0;
       } else if (event.type === 'train-arrived') {
@@ -751,20 +908,63 @@ export class PaintedLineScene extends Phaser.Scene {
       } else if (event.type === 'colours-returned') {
         this.departPencilTrain();
       } else if (event.type === 'coat-lost') {
-        const at = this.frontX(this.line.state.front);
-        noteAt(this, at - 140, TRAIN.topRow * CELL - 60, platformLines(event.coatsLost).coatLost, { tone: 'warn', hold: 2200 });
+        noteAt(this, this.frontX() - 140, TRAIN.topRow * CELL - 60, platformLines(event.coatsLost).coatLost, { tone: 'warn', hold: 2200 });
         for (let i = 0; i < 4; i += 1) this.puff();
       } else if (event.type === 'wash-refused') {
         noteAt(this, event.c * CELL, event.r * CELL, 'THE TRAIN IS ON IT', { tone: 'warn', hold: 900 });
+      } else if (event.type === 'varnish-thinned' && event.coatsLeft > 0) {
+        noteAt(this, event.c * CELL + CELL / 2, TRAIN.topRow * CELL - 10, 'OFFICIAL RECORD · ONE MORE WASH', { tone: 'warn', hold: 1100 });
+      } else if (event.type === 'inked' && !this.tutorialSeen.ink && this.tutorialSeen.gap) {
+        this.inkedCount = (this.inkedCount ?? 0) + 1;
+        if (this.inkedCount >= 6) this.tutorialSeen.ink = true;
       }
     });
   }
 
-  onArrived() {
+  // He hops down off the boiler onto the platform, and has his legs again.
+  onArrived({ instant = false } = {}) {
+    if (!this.riding) return;
     whistle();
-    this.walker.body.setVelocity(0, 0);
-    // Well above the return tag, which sits just over the roof (A3-5).
-    noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 96, platformLines(this.line.state.coatsLost).arrival, { hold: 2600 });
+    this.tag.hide();
+    const fromX = this.rider.x;
+    const fromY = this.rider.y;
+    const toX = this.frontX() + 34;
+    const toY = TRACK_Y - PLATFORM.h - 30;
+    const land = () => {
+      this.riding = false;
+      this.walker.body.enable = true;
+      placeBody(this.walker.body, toX, toY);
+      this.walker.setPosition(toX, toY);
+      this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
+      this.cameras.main.setDeadzone(200, 160);
+      this.cameras.main.setFollowOffset(-120, 0);
+      // Well above the return tag, which sits just over the roof (A3-5).
+      noteAt(this, this.frontX() - 140, TRAIN.topRow * CELL - 96, platformLines(this.line.state.coatsLost).arrival, { hold: 2600 });
+    };
+    if (instant) {
+      land();
+      return;
+    }
+    // a little arc down, eased: anticipation in the knees is the figure's
+    const hop = { k: 0 };
+    this.hopping = true;
+    this.tweens.add({
+      targets: hop,
+      k: 1,
+      duration: 520,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        this.rider.x = Phaser.Math.Linear(fromX, toX, hop.k);
+        this.rider.y = Phaser.Math.Linear(fromY, toY, hop.k) - Math.sin(hop.k * Math.PI) * 46;
+        this.walker.setPosition(this.rider.x, this.rider.y);
+        this.hopVelocity = { x: (toX - fromX) / 0.52, y: hop.k < 0.5 ? -200 : 300 };
+      },
+      onComplete: () => {
+        this.hopping = false;
+        this.hopVelocity = null;
+        land();
+      },
+    });
   }
 
   // Every colour is home; what is left is pencil, and it still runs.
@@ -774,9 +974,8 @@ export class PaintedLineScene extends Phaser.Scene {
     this.tag.hide();
     this.time.delayedCall(900, () => {
       ringBell({ departure: true });
-      this.bellFlash = 1;
       whistle({ long: true });
-      noteAt(this, this.trainX - 140, TRAIN.topRow * CELL - 40, platformLines(this.line.state.coatsLost).departure, { tone: 'mara', hold: 2600 });
+      noteAt(this, this.frontX() - 140, TRAIN.topRow * CELL - 40, platformLines(this.line.state.coatsLost).departure, { tone: 'mara', hold: 2600 });
       this.tweens.add({ targets: this.walker, alpha: 0, duration: 400 });
       this.cameras.main.stopFollow();
       this.tweens.add({
@@ -787,7 +986,7 @@ export class PaintedLineScene extends Phaser.Scene {
         ease: 'Sine.easeIn',
         onUpdate: () => {
           if (Math.random() < 0.08) this.puff();
-          this.cameras.main.centerOn(this.trainX + this.departOffset - 200, VIEW.h / 2);
+          this.cameras.main.centerOn(this.frontX() + this.departOffset - 200, VIEW.h / 2);
         },
         onComplete: () => this.finishChapter(),
       });
@@ -818,38 +1017,114 @@ export class PaintedLineScene extends Phaser.Scene {
     if (move.jump && body.blocked.down) body.setVelocityY(JUMP_VELOCITY);
   }
 
-  // Runs every frame, whatever else is blocking input, so a fall is always
-  // caught (the physics keeps running under a card).
+  // Off the train only: a fall is always caught (the physics keeps running
+  // under a card).
   stepFall(dt) {
+    if (this.riding || this.hopping) return;
     const body = this.walker.body;
     const put = this.fallGuard.step({ x: this.walker.x, y: this.walker.y, grounded: body.blocked.down, dt });
     if (!put) return;
     placeBody(body, put.x, put.y - 10);
   }
 
+  // The lesson's dotted stroke over the first gap, until it is painted.
+  updateGhost(dt) {
+    const cells = [];
+    if (!this.tutorialSeen.gap && !this.line.state.arrived) {
+      for (let c = FIRST_GAP.from; c < FIRST_GAP.to; c += 1) cells.push({ c, r: LINE.trackRow });
+      if (cells.every(({ c, r }) => this.line.isPainted(c, r))) {
+        this.tutorialSeen.gap = true;
+        this.taughtInkAt = this.time.now;
+        cells.length = 0;
+      }
+    }
+    if (cells.length) this.ghost.show(cells);
+    else this.ghost.hide();
+    this.ghost.markPainted((c, r) => this.line.isPainted(c, r));
+    this.ghost.update(dt);
+  }
+
   updateTag() {
     const b = this.brush;
-    if (this.departing) return this.tag.hide();
+    if (this.departing || this.hopping) return this.tag.hide();
     if (this.line.state.arrived) {
       if (this.hover) {
-        const r = this.partRects(this.trainX)[this.hover];
+        const r = this.partRects(this.frontX())[this.hover];
         const person = PART_OF[this.hover];
         return this.tag.show(`${b.label('washHold')} · GIVE ${person.name} BACK TO THE ${person.source}`, r.x + r.w / 2, r.y - 4, {
           progress: this.hold.key ? this.hold.progress / HOLD_SECONDS : 0,
         });
       }
       if (!this.tutorialSeen.return) {
-        return this.tag.show(`${b.label('washHold')} ON EACH COLOUR · WASH IT BACK TO WHOEVER LENT IT`, this.trainX - 140, TRAIN.topRow * CELL - 10);
+        return this.tag.show(`${b.label('washHold')} ON EACH COLOUR · WASH IT BACK TO WHOEVER LENT IT`, this.frontX() - 140, TRAIN.topRow * CELL - 10);
       }
       return this.tag.hide();
     }
+    // the lesson, then each new kind of break the first time it comes close
+    if (!this.tutorialSeen.gap) {
+      return this.tag.show(`${b.label('paint')} · PAINT THE TRACK ACROSS THE GAP`, (FIRST_GAP.from + FIRST_GAP.to) / 2 * CELL, TRAIN.topRow * CELL - 30);
+    }
+    if (!this.tutorialSeen.ink && this.taughtInkAt !== null && this.time.now - this.taughtInkAt < 5200) {
+      return this.tag.show(`PAINT THE RAILS AHEAD · THE TRAIN RUNS FASTER ON WET PAINT`, this.frontX() + 150, TRAIN.topRow * CELL - 30);
+    }
+    const ahead = this.line.nextBreak();
+    if (ahead && ahead.distance < 300) {
+      if (ahead.reason === 'barrier' && !this.tutorialSeen.barrier) {
+        return this.tag.show(`${b.label('wash')} · WASH THE PAPER OFF THE LINE`, ahead.col * CELL + 20, TRAIN.topRow * CELL - 30);
+      }
+      if (ahead.reason === 'faded' && !this.tutorialSeen.faded) {
+        return this.tag.show(`${b.label('paint')} · PAINT THE RUBBED-OUT RAILS BACK`, ahead.col * CELL + 60, TRAIN.topRow * CELL - 30);
+      }
+    }
     const waiting = this.line.state.waiting;
-    if (waiting && Math.abs(this.walker.x - waiting.at * CELL) < 420) {
-      const verb = waiting.reason === 'gap' ? `${b.label('paint')} · PAINT THE TRACK` : `${b.label('wash')} · WASH THE PAPER`;
+    if (waiting) {
+      const verb = waiting.reason === 'barrier' ? `${b.label('wash')} · WASH THE PAPER` : `${b.label('paint')} · PAINT THE TRACK`;
       // Above the train's roof, so the tag never sits on the engine.
       return this.tag.show(verb, waiting.at * CELL + 40, TRAIN.topRow * CELL - 30);
     }
     return this.tag.hide();
+  }
+
+  // Each kind of break is taught until the first one is cleared.
+  noteCleared() {
+    const front = this.line.front();
+    BARRIERS.forEach(({ col }) => { if (front > col) this.tutorialSeen.barrier = true; });
+    FADED_SPANS.forEach(({ to }) => { if (front > to) this.tutorialSeen.faded = true; });
+  }
+
+  drawCursorNib(dt) {
+    const b = this.brush;
+    if (this.departing || this.hopping || this.line.state.arrived) {
+      // at the platform the brush only washes colours back: a wet nib over a part
+      this.nib.hide();
+      this.nib.setCursor(this.line.state.arrived && !this.departing && this.hover ? 'wash' : 'none');
+      return;
+    }
+    const c = Math.floor(b.worldX / CELL);
+    const r = Math.floor(b.worldY / CELL);
+    const inBounds = this.line.inBounds(c, r);
+    const state = nibState({
+      inReach: this.inReach(),
+      canPaint: inBounds && this.line.canPaint(c, r),
+      canWash: inBounds && this.line.canWash(c, r),
+    });
+    this.nibStateNow = state;
+    const firstStrokes = !this.tutorialSeen.gap;
+    const click = (verb) => (b.device === 'mouse' ? `${verb === 'paint' ? 'LEFT' : 'RIGHT'} CLICK` : b.label(verb));
+    const keyHint = state === 'paint' && firstStrokes ? `${click('paint')} · PAINT`
+      : state === 'wash' && !this.tutorialSeen.barrier ? `${click('wash')} · WASH` : null;
+    this.nib.draw({
+      anchor: this.brushHand(),
+      x: b.worldX,
+      y: b.worldY,
+      state,
+      cell: inBounds ? { cx: c, cy: r } : null,
+      pressing: b.paintDown || b.washDown,
+      virtual: b.mode === 'virtual',
+      keyHint,
+      avoid: this.tag.visible ? this.tag.rect : null,
+      dt,
+    });
   }
 
   update(time, delta) {
@@ -861,57 +1136,55 @@ export class PaintedLineScene extends Phaser.Scene {
     const move = this.brush.readMove(this.keys);
     if (!this.restart.blocking) {
       if (!this.line.state.arrived) {
-        this.bellClock += dt * 1000;
-        if (this.bellClock >= BELL_MS) {
-          this.bellClock -= BELL_MS;
-          this.onBell();
-        }
+        const before = this.line.state.distance;
+        this.line.step(dt);
+        this.stepExhaust(this.line.state.distance - before);
         if (this.line.state.waiting) {
           this.whistleClock += dt;
-          if (this.whistleClock > 1.6) {
+          if (this.whistleClock > 2.4) {
             this.whistleClock = 0;
             whistle();
             this.puff();
           }
         }
         this.stepBrush();
-      } else if (!this.departing) {
+        this.handleLineEvents();
+        this.noteCleared();
+      } else if (!this.departing && !this.riding) {
         this.stepReturn(dt);
       }
     }
-    this.stepPlayer(move);
+    if (this.riding && !this.hopping) this.stepRider(this.restart.blocking ? {} : move, dt);
+    else if (!this.riding) this.stepPlayer(move);
     this.stepFall(dt);
 
-    if (this.trainAnim < 1) {
-      this.trainAnim = Math.min(1, this.trainAnim + (dt * 1000) / TRAIN_ANIM_MS);
-      const k = Phaser.Math.Easing.Sine.InOut(this.trainAnim);
-      this.trainX = Phaser.Math.Linear(this.trainFrom, this.trainTo, k);
-    }
+    // the camera leads the train while he rides
+    if (this.riding) this.camTarget.setPosition(this.frontX() + 170, VIEW.h / 2);
+
     if (this.paintDirty) {
       this.redrawCells();
       this.paintDirty = false;
     }
+    this.strokeLayer.sync(!this.brush.paintDown);
     this.drawTrain();
     this.drawSteam(dt);
-    this.drawResidents(time, dt);
+    this.drawResidents(dt);
     this.drawStream();
     this.drawMarkers();
-    this.drawMeter(dt);
-    const g = this.cursorArt;
-    g.clear();
-    if (!this.line.state.arrived && !this.departing) {
-      const c = Math.floor(this.brush.worldX / CELL);
-      const r = Math.floor(this.brush.worldY / CELL);
-      const ok = this.inReach();
-      g.lineStyle(1, PAPER.graphiteFaint, ok ? 0.18 : 0.4).strokeCircle(this.walker.x, this.walker.y, REACH);
-      if (ok && this.line.inBounds(c, r)) {
-        const color = this.line.canWash(c, r) ? PAPER.bookCloth : this.line.canPaint(c, r) ? UI.amberInk : PAPER.graphiteFaint;
-        g.lineStyle(2.2, color, 0.9).strokeRect(c * CELL, r * CELL, CELL, CELL);
-      }
+    this.drawGauge(dt);
+    this.updateGhost(dt);
+    this.drawCursorNib(dt);
+    if (this.riding || this.hopping) {
+      drawPaintedPlayer(this.figure, this.walker, this.brush, PAPER.indigo, {
+        grounded: !this.hopping && this.rider.hop <= 0.01,
+        velocity: this.hopVelocity ?? { x: 0, y: -this.rider.hopV },
+        lean: this.rider.lean * 0.6,
+      });
+    } else {
+      drawPaintedPlayer(this.figure, this.walker, this.brush);
     }
-    drawPaintedPlayer(this.figure, this.walker, this.brush);
     this.figure.setAlpha(this.walker.alpha);
-    this.brush.drawCursor({ hidden: this.departing });
+    this.brush.drawCursor({ hidden: true });
     this.updateTag();
   }
 
@@ -920,21 +1193,25 @@ export class PaintedLineScene extends Phaser.Scene {
     return {
       scene: 'PaintedLine',
       camera: { x: Math.round(this.cameras.main.worldView.x), y: Math.round(this.cameras.main.worldView.y) },
-      bell: { ms: Math.round(this.bellClock), period: BELL_MS },
       seconds: Math.round((this.time.now - this.startedAt) / 100) / 10,
-      trainX: Math.round(this.trainX),
+      trainX: Math.round(this.frontX()),
+      riding: this.riding,
       departing: this.departing,
       finished: this.finished,
-      player: { x: Math.round(this.walker.x), y: Math.round(this.walker.y), onGround: this.walker.body.blocked.down },
+      player: { x: Math.round(this.walker.x), y: Math.round(this.walker.y), onGround: Boolean(this.walker.body?.blocked.down) },
       fall: this.fallGuard.snapshot(),
-      pointer: { mode: b.mode, x: Math.round(b.worldX), y: Math.round(b.worldY) },
+      pointer: { mode: b.mode, x: Math.round(b.worldX), y: Math.round(b.worldY), inReach: this.inReach() },
+      nib: this.nibStateNow ?? null,
+      reachNamed: this.nib.ringTaught,
+      ghostVisible: this.ghost.visible,
       hover: this.hover,
       tag: this.tag.visible ? this.tag.text : null,
       barriers: BARRIERS.length,
+      strokes: this.strokes.runs().length,
       // A point on each part that no other part covers (wheels: a wheel hub,
       // which sits over the carriage).
-      parts: Object.fromEntries(Object.entries(this.partRects(this.trainX)).map(([id, r]) => [id, id === 'green'
-        ? { x: Math.round(this.wheelCentres(this.trainX)[1].x), y: TRACK_Y - 18 }
+      parts: Object.fromEntries(Object.entries(this.partRects(this.frontX())).map(([id, r]) => [id, id === 'green'
+        ? { x: Math.round(this.wheelCentres(this.frontX())[1].x), y: TRACK_Y - 18 }
         : { x: Math.round(r.x + r.w / 2), y: Math.round(r.y + r.h / 2) }])),
       ...this.line.snapshot(),
     };
