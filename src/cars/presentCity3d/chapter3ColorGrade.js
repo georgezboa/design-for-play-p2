@@ -18,9 +18,10 @@
 // Every number below is an offset from the identity, in a gamma-2 display
 // space (sqrt of the tone-mapped linear colour):
 //   contrast    S-curve slope at mid grey (1 + contrast), ends pinned
+//               (0.5 at most)
 //   saturation  1 + saturation (luma preserving)
 //   lift        black level (negative crushes, positive milks)
-//   gamma       1 + gamma (positive brightens the mids)
+//   gamma       a mid-tone bow (positive brightens the mids, ends pinned)
 //   gain        per-channel white balance (1 + gain)
 //   shadowTint  added to the darks (weighted (1 - luma)^2)
 //   highlightTint added to the brights (weighted luma^2)
@@ -149,18 +150,19 @@ vec3 CustomToneMapping( vec3 color ) {
 	float chroma = max( c.r, max( c.g, c.b ) ) - min( c.r, min( c.g, c.b ) );
 	float keep = chapter3GradeB.w * smoothstep( 0.42, 0.78, luma ) * smoothstep( 0.08, 0.3, chroma );
 	float saturation = mix( 1.0 + chapter3GradeA.y, max( 1.0 + chapter3GradeA.y, 1.05 ), keep );
-	c = mix( vec3( luma ), c, saturation );
-	// An S-curve around mid grey that keeps black at black and white at
-	// white (a straight contrast line would crush the shadows to zero).
-	c = clamp( c, 0.0, 1.0 );
-	vec3 below = 0.5 * pow( c * 2.0, vec3( 1.0 + chapter3GradeA.x ) );
-	vec3 above = 1.0 - 0.5 * pow( ( 1.0 - c ) * 2.0, vec3( 1.0 + chapter3GradeA.x ) );
-	c = mix( below, above, step( 0.5, c ) );
+	c = clamp( mix( vec3( luma ), c, saturation ), 0.0, 1.0 );
+	// An S-curve that keeps black at black and white at white (a straight
+	// contrast line crushed the shadows to zero); slope 1 + contrast at mid
+	// grey. Polynomial only: no pow on software GPUs.
+	c = mix( c, c * c * ( 3.0 - 2.0 * c ), 2.0 * chapter3GradeA.x );
 	float l = clamp( luma, 0.0, 1.0 );
-	c += chapter3GradeC.rgb * ( 1.0 - l ) * ( 1.0 - l ) * ( 1.0 - keep ) + chapter3GradeD.rgb * l * l;
+	c += chapter3GradeC.rgb * ( ( 1.0 - l ) * ( 1.0 - l ) * ( 1.0 - keep ) ) + chapter3GradeD.rgb * ( l * l );
 	c += chapter3GradeA.z * ( 1.0 - c );
-	c = pow( clamp( c, 0.0, 1.0 ), vec3( 1.0 / ( 1.0 + chapter3GradeA.w ) ) );
-	float grain = fract( sin( dot( gl_FragCoord.xy + fract( chapter3GradeD.w ) * 61.0, vec2( 12.9898, 78.233 ) ) ) * 43758.5453 ) - 0.5;
+	// Gamma as a mid-tone bow, ends pinned.
+	c += chapter3GradeA.w * c * ( 1.0 - c );
+	// Film grain: interleaved gradient noise, a new offset every frame.
+	vec2 grainAt = gl_FragCoord.xy + 64.0 * fract( chapter3GradeD.w * 7.31 );
+	float grain = fract( 52.9829189 * fract( dot( grainAt, vec2( 0.06711056, 0.00583715 ) ) ) ) - 0.5;
 	c += grain * chapter3GradeC.w * ( 1.0 - 0.6 * l );
 	c = clamp( c, 0.0, 1.0 );
 	return c * c;

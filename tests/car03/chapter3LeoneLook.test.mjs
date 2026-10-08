@@ -5,6 +5,7 @@ import * as THREE from 'three';
 
 import {
   CHAPTER3_GRADES,
+  CHAPTER3_GRADE_GLSL,
   CHAPTER3_GRADE_UNIFORMS,
   CHAPTER3_IDENTITY_GRADE,
   applyChapter3Grade,
@@ -120,6 +121,7 @@ describe('Chapter 3 colour grade (round 6)', () => {
     assert.equal(installChapter3ColorGrade(THREE), true);
     assert.equal(installChapter3ColorGrade(THREE), true, 'idempotent');
     assert.match(THREE.ShaderChunk.tonemapping_pars_fragment, /vec3 CustomToneMapping\( vec3 color \) \{\n\tvec3 c = sqrt\( ACESFilmicToneMapping\( color \) \);/);
+    assert.doesNotMatch(CHAPTER3_GRADE_GLSL, /pow\(|sin\(|texture/, 'polynomial only: cheap on software GPUs');
     for (const id of ['standard', 'physical', 'basic', 'lambert', 'sprite']) {
       // The uniform values must survive UniformsUtils.clone by reference, or
       // the grade would freeze at its first value (a three.js upgrade guard).
