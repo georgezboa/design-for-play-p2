@@ -7,16 +7,30 @@
 export const CHAPTER_TITLE = 'BORROWED LIGHT';
 export const CHAPTER_NUMBER = 2;
 
-export const MECHANIC_LINES = Object.freeze([
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'That punch. You\'re off the night service.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She came through last night. Took the same roofs. Said you\'d be along.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'This city runs on borrowed light. Punch a box and it switches on at the next bell. Try the one with the paper tag, on the pole by the gap.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'One line, one moment. Punch two on the same colour and the first one forgets.' }),
-  Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'She left a letter at the platform. She said the person looking for her would know the name.' }),
-]);
+// Round 6 (playtest item 6): the first box is taught do-then-explain
+// (firstLesson.js). She points and says only "punch it"; the next bell's
+// bridge is the explanation; the same-colour limit comes after that first
+// success, and her story only after it, on E · TALK.
+const mech = (text) => Object.freeze({ speaker: 'ROOFTOP MECHANIC', text });
+export const LESSON_LINES = Object.freeze({
+  point: mech('You want across? Punch the box with the paper tag, on the pole by the gap.'),
+  wait: mech('Good. Now wait for the bell.'),
+  success: mech('There. This city runs on borrowed light: punch a box and it switches on at the next bell.'),
+  rule: mech('One line, one moment. Punch two boxes on the same colour and the first one forgets.'),
+  story: Object.freeze([
+    mech('That punch. You\'re off the night service.'),
+    mech('She came through last night. Took the same roofs. Said you\'d be along.'),
+    mech('She left a letter at the platform. She said the person looking for her would know the name.'),
+  ]),
+  // A repeat visit gets the one line that matters.
+  repeat: mech('Punch a box, then wait for the bell. One colour, one line. The city keeps its own time.'),
+});
 
-// A repeat visit gets the one line that matters.
-export const MECHANIC_REPEAT = Object.freeze({ speaker: 'ROOFTOP MECHANIC', text: 'Punch it, then wait for the bell. The city keeps its own time.' });
+// Everything she says, in the order a first visit hears it.
+export const MECHANIC_LINES = Object.freeze([
+  LESSON_LINES.point, LESSON_LINES.wait, LESSON_LINES.success, LESSON_LINES.rule, ...LESSON_LINES.story,
+]);
+export const MECHANIC_REPEAT = LESSON_LINES.repeat;
 
 export const MARA_LETTER = Object.freeze({
   speaker: 'MARA',
@@ -40,9 +54,13 @@ export const ARCHIVE_CARD_B1 = Object.freeze({
 });
 
 export const HINTS = Object.freeze({
-  punch: 'F · PUNCH',
+  // Round 6 (unified controls): E punches, talks and reads; F is a silent
+  // alias of the punch. Space only ever jumps.
+  punch: 'E · PUNCH',
   read: 'E · READ',
   talk: 'E · TALK',
+  // Beside the box, the mechanic shows she has more to say (E is on the box).
+  talkCloser: 'STEP CLOSER TO TALK',
   jump: 'SPACE · JUMP',
   listen: 'HOLD Q · LISTEN',
   // Alpha r4: one wording for a line the city holds, on the refused tag and
@@ -51,7 +69,7 @@ export const HINTS = Object.freeze({
   busyTimed: 'LINE BUSY · FREE WHEN ITS MACHINE GOES OFF',
   // The cut tells the truth about how long the bridge has (with a countdown
   // on the bridge itself).
-  cutPrompt: (line = 'THE') => `F · CUT · FREES THE ${line} LINE`,
+  cutPrompt: (line = 'THE') => `E · CUT · FREES THE ${line} LINE`,
   cutDone: (bells = 1) => (bells > 1
     ? 'CUT · THE BRIDGE HOLDS UNTIL THE BELL AFTER NEXT · CROSS NOW'
     : 'CUT · THE BRIDGE HOLDS UNTIL THE NEXT BELL · CROSS NOW'),
@@ -61,7 +79,7 @@ export const HINTS = Object.freeze({
   punched: (phase, inBells = 1) => (phase
     ? `PUNCHED · RINGS ON BELL ${phase === 'even' ? 'II' : 'I'}`
     : inBells > 1 ? 'PUNCHED · RINGS IN TWO BELLS' : 'PUNCHED · RINGS ON THE NEXT BELL'),
-  holdTakeBack: 'HOLD F · TAKE BACK',
+  holdTakeBack: 'HOLD E · TAKE BACK',
   takenBack: 'TAKEN BACK',
   // R3-2: never borrow the light out from under your own feet.
   stepOff: 'STEP OFF FIRST',
@@ -76,7 +94,7 @@ export const HINTS = Object.freeze({
   walk: 'A D  ·  ← →  WALK',
   jumpFirst: 'SPACE · JUMP · HOLD FOR HEIGHT',
   lastPoleEarly: 'BEST FROM CRADLE 1, AFTER ITS BELL',
-  renew: 'F · RENEW AT THE BELL',
+  renew: 'E · RENEW AT THE BELL',
   renewed: 'RENEWED · RUNS AGAIN FROM THIS BELL',
   already: 'PUNCHED · WAITING FOR THE BELL',
   caught: 'CAUGHT THE BELL',
@@ -97,16 +115,16 @@ export const HINTS = Object.freeze({
   borrowed: 'LIGHT BORROWED · CARRY IT TO A DEAD NODE',
   given: 'GIVEN · IT LIGHTS AT THE BELL',
   full: 'ONE LIGHT AT A TIME',
-  fixed: 'THE CITY\'S OWN LINE · PUNCH IT (F)',
-  live: 'A LIVE LINE · PUNCH IT (F)',
+  fixed: 'THE CITY\'S OWN LINE · PUNCH IT (E)',
+  live: 'A LIVE LINE · PUNCH IT (E)',
   lit: 'ALREADY LIT',
   nothing: 'NO LIGHT TO BORROW',
   lightHome: 'THE LIGHT WENT HOME',
   lightHomeFall: 'THE LIGHT WENT HOME TO ITS LANTERN',
   // The counterweight walkway (C3).
-  brake: 'F · RELEASE THE BRAKE',
+  brake: 'E · RELEASE THE BRAKE',
   // C4 · the ledge the city holds up drops when its brake lets go.
-  dropBrake: 'F · RELEASE · THE LEDGE DROPS',
+  dropBrake: 'E · RELEASE · THE LEDGE DROPS',
   cage: 'STAND IN THE CAGE · YOUR WEIGHT TAKES IT DOWN',
 });
 
@@ -137,25 +155,25 @@ export const BOARDING_LINES = Object.freeze({
 const hint = (nudge, full) => Object.freeze({ nudge, full });
 export const IDLE_HINTS = Object.freeze({
   'walk-drop': hint('THE WAY ON IS TO THE RIGHT · DROP TO THE ROOF BELOW', 'Nothing to punch up here. Down, and on.'),
-  a1: hint('F AT THE TAGGED POLE BY THE GAP · THE BRIDGE COMES OUT ON THE NEXT BELL', 'The mechanic\'s pole by the gap. Punch it, wait for the bell, and cross while the bridge is out.'),
-  'a1-cross': hint('THE BRIDGE IS OUT · CROSS BEFORE IT FLICKERS', 'It holds a few seconds. Go.'),
-  a2: hint('F AT THE TEAL POLE · THEN STAND IN THE LIFT CAGE FOR THE BELL', 'A lift. Punch its pole, stand in the cage, and let the bell take me up.'),
+  a1: hint('E AT THE TAGGED POLE BY THE GAP · THE BRIDGE COMES OUT ON THE NEXT BELL', 'The mechanic\'s pole by the gap. Punch it, wait for the bell, and cross while the bridge is out.'),
+  'a1-cross': hint('THE BRIDGE IS OUT · CROSS BEFORE ITS LAMPS GO OUT', 'It holds a few seconds. Go.'),
+  a2: hint('E AT THE TEAL POLE · THEN STAND IN THE LIFT CAGE FOR THE BELL', 'A lift. Punch its pole, stand in the cage, and let the bell take me up.'),
   a3: hint('PUNCH BOTH POLES · THE BELL RAISES THE LIFT AND SENDS THE BRIDGE OUT AT ITS TOP', 'Two colours, two lines: both can ring on the same bell. Punch them both and ride.'),
   a4: hint('ONE AMBER LINE · PUNCH THE BILLBOARD\'S POLE · CLIMB THE AC UNIT (SPACE) TO REACH IT', 'One line, one moment: the billboard or the bridge, not both. The billboard goes up and on.'),
   'a4-bridge': hint('THE BRIDGE ONLY LEADS TO A LOOKOUT · PUNCH THE BILLBOARD\'S POLE INSTEAD', 'That bridge goes nowhere but a view. The billboard is the way on.'),
   'a4-view': hint('A LOOKOUT · PUNCH THE AMBER POLE TO BRING THE BRIDGE BACK, THEN TAKE THE BILLBOARD', 'She\'s a roof ahead. Back across, and up by the billboard.'),
-  a5: hint('F AT THE ROSE POLE · STAND OVER THE VENT · THE UPDRAFT LIFTS YOU', 'The vent. Punch it and stand in the draught when it blows.'),
+  a5: hint('E AT THE ROSE POLE · STAND OVER THE VENT · THE UPDRAFT LIFTS YOU', 'The vent. Punch it and stand in the draught when it blows.'),
   a6: hint('THIS LINE RINGS ON BELL II · PUNCH IT AND WAIT · THE NUMBER BY THE BELL SAYS WHICH IS NEXT', 'The bell counts here: one, two. That pole waits for two.'),
   a7: hint('PUNCH BOTH WHILE THE NEXT BELL IS I · UP ON BELL I, ACROSS ON BELL II', 'The lift goes on one, the bridge on two. Punch both before a one, and ride.'),
   a8: hint('PUNCH THE AMBER AND TEAL CRADLE POLES · STEP ON EACH CRADLE AS IT LOWERS', 'Three cradles: one, two, one. The bell\'s quick here.'),
-  'a8-last': hint('FROM CRADLE 1, AT THE MARK · F PUNCHES THE LAST (ROSE) POLE FOR THE NEXT BELL I', 'The last cradle shares the first one\'s bell. Punch it from the first cradle, once that one has lowered.'),
-  b1: hint('F AT THE ROSE POLE · ITS LIGHT SHOWS THE DARK DECKS · JUMP ACROSS WHILE THEY GLOW', 'Dark decks. They only hold in borrowed light: punch the sign and jump while it glows.'),
-  b2: hint('F AT THE AMBER POLE · STAND IN THE LIFT FOR THE BELL', 'Up. Punch the lift, stand in it, wait for the bell.'),
-  'b-cut': hint('THE TEAL LINE HOLDS THE BRIDGE · F · CUT AT ITS POLE, THEN RUN ACROSS BEFORE THE BELL', 'The city holds that bridge on the teal line, and the hotel lift needs the same line. Cut it, run across before the bell, then punch the lift.'),
+  'a8-last': hint('FROM CRADLE 1, AT THE MARK · E PUNCHES THE LAST (ROSE) POLE FOR THE NEXT BELL I', 'The last cradle shares the first one\'s bell. Punch it from the first cradle, once that one has lowered.'),
+  b1: hint('E AT THE ROSE POLE · ITS LIGHT SHOWS THE DARK DECKS · JUMP ACROSS WHILE THEY GLOW', 'Dark decks. They only hold in borrowed light: punch the sign and jump while it glows.'),
+  b2: hint('E AT THE AMBER POLE · STAND IN THE LIFT FOR THE BELL', 'Up. Punch the lift, stand in it, wait for the bell.'),
+  'b-cut': hint('THE TEAL LINE HOLDS THE BRIDGE · E · CUT AT ITS POLE, THEN RUN ACROSS BEFORE THE BELL', 'The city holds that bridge on the teal line, and the hotel lift needs the same line. Cut it, run across before the bell, then punch the lift.'),
   'b-cut-far': hint('THE HOTEL LIFT SHARES THE TEAL LINE · CUT THE TEAL TAG WHERE THE BRIDGE STARTS', 'The bridge holds the line the lift needs. Back across, cut it there, and run.'),
   'b-cross': hint('CUT · RUN ACROSS NOW · THE BRIDGE GOES AT THE BELL', 'Run.'),
-  'b-rebridge': hint('THE BRIDGE IS GONE · F AT ITS TEAL POLE BRINGS IT BACK ON THE BELL', 'Bring the bridge back, then cut it again and run before the bell.'),
-  'b-lift': hint('THE TEAL LINE IS FREE · F AT THE POLE BY THE HOTEL · STAND IN THE LIFT', 'The line\'s free now. Punch the lift and stand in the cage.'),
+  'b-rebridge': hint('THE BRIDGE IS GONE · E AT ITS TEAL POLE BRINGS IT BACK ON THE BELL', 'Bring the bridge back, then cut it again and run before the bell.'),
+  'b-lift': hint('THE TEAL LINE IS FREE · E AT THE POLE BY THE HOTEL · STAND IN THE LIFT', 'The line\'s free now. Punch the lift and stand in the cage.'),
   'b-ride': hint('STAND IN THE LIFT CAGE · THE BELL TAKES IT UP', 'Wait for the bell.'),
   'b-window': hint('E AT THE HOTEL WINDOW · SOMETHING IS PINNED TO THE GLASS', 'She was at that window. Something\'s pinned to the glass.'),
   b5: hint('E AT THE LIT LANTERN · BORROW ITS LIGHT · THEN E AT THE DEAD NODE', 'That bridge has no line of its own. The lantern\'s light can carry over.'),
@@ -170,11 +188,11 @@ export const IDLE_HINTS = Object.freeze({
   'b7-give-bridge': hint('E AT THE BRIDGE\'S DEAD NODE · GIVE IT THE LIGHT', 'The bridge, now.'),
   'b7-cross': hint('THE BRIDGE IS LIT · CROSS', 'Across.'),
   'c-letter': hint('E AT THE BENCH · A LETTER WAITS', 'A letter on the bench.'),
-  c1: hint('F AT THE AMBER POLE · THE POINTS SWING ACROSS ON THE BELL', 'The points. Punch them and cross on the bell.'),
-  c2: hint('F AT THE TEAL POLE · STAND IN THE LIFT TO THE GANTRY', 'The lift to the gantry.'),
-  c3: hint('STAND IN CAGE A · F · RELEASE THE BRAKE · YOUR WEIGHT BRINGS THE WALKWAY UP', 'My weight on one side, the walkway on the other. Stand in the cage and let the brake go.'),
-  c4: hint('F · RELEASE THE LEDGE\'S BRAKE (IT RINGS ON BELL I) · IT DROPS INTO LINE', 'That ledge is heavier than its box. Let its brake go and it drops into line.'),
+  c1: hint('E AT THE AMBER POLE · THE POINTS SWING ACROSS ON THE BELL', 'The points. Punch them and cross on the bell.'),
+  c2: hint('E AT THE TEAL POLE · STAND IN THE LIFT TO THE GANTRY', 'The lift to the gantry.'),
+  c3: hint('STAND IN CAGE A · E · RELEASE THE BRAKE · YOUR WEIGHT BRINGS THE WALKWAY UP', 'My weight on one side, the walkway on the other. Stand in the cage and let the brake go.'),
+  c4: hint('E · RELEASE THE LEDGE\'S BRAKE (IT RINGS ON BELL I) · IT DROPS INTO LINE', 'That ledge is heavier than its box. Let its brake go and it drops into line.'),
   'c4-across': hint('THE LEDGE IS DOWN · CROSS TO THE LANDING', 'Across.'),
-  'c4-walk': hint('STAND IN CAGE A2 · F · RELEASE ITS BRAKE (BELL I) · RIDE THE WALKWAY UP', 'One more walkway. Into the cage, brake off, and up.'),
+  'c4-walk': hint('STAND IN CAGE A2 · E · RELEASE ITS BRAKE (BELL I) · RIDE THE WALKWAY UP', 'One more walkway. Into the cage, brake off, and up.'),
   'c-board': hint('RUN FOR THE TRAIN DOOR · →', 'The door\'s open. Go.'),
 });

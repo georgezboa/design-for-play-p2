@@ -5,22 +5,33 @@
 // body, whose own gravity is off. Keeping the numbers here means the level's
 // gaps can be designed (and tested) against the real jump arc.
 //
-// Tuned feel (spec §6): max run ≈ 420 px/s, jump apex ≈ 180 px,
-// coyote time 100 ms, jump buffer 120 ms, variable jump height.
+// Tuned feel (spec §6): max run ≈ 420 px/s, jump apex ≈ 180 px, coyote time,
+// a jump buffer, variable jump height.
+//
+// Round 6 (owner G3, "the controls have problems"), keeping the run speed and
+// the 180 px apex every gap is designed against:
+// - The arc was floaty: 0.39 s up and only 1.25× gravity on the way down.
+//   Now 0.37 s up and 1.55× down, so the top of the jump does not hang and
+//   the fall is decisive (air time 0.73 → 0.66 s; flat range 308 → 276 px,
+//   still well over every jump gap, which are ≤ 107 px).
+// - Letting go of a direction in the air drifted on: air decel 900 → 1700
+//   px/s², so a landing can be placed on a narrow deck.
+// - Air acceleration 2300 → 2400 for a slightly quicker mid-air turn.
+// - Forgiveness a touch wider: coyote 100 → 110 ms, buffer 120 → 140 ms.
 
 export const CONTROLLER = Object.freeze({
   maxRun: 420,
   groundAccel: 3400,      // 0 → max in ~0.12 s
   groundDecel: 4600,
-  airAccel: 2300,
-  airDecel: 900,
-  gravity: 2400,
-  fallGravityScale: 1.25, // a touch heavier on the way down
+  airAccel: 2400,
+  airDecel: 1700,
+  gravity: 2700,
+  fallGravityScale: 1.55, // heavier on the way down: no floaty hang
   maxFall: 1400,
-  jumpVelocity: 930,      // v²/2g = 180 px apex
+  jumpVelocity: 986,      // v²/2g = 180 px apex
   jumpCut: 0.45,          // releasing Space while rising keeps 45% of vy
-  coyoteMs: 100,
-  bufferMs: 120,
+  coyoteMs: 110,
+  bufferMs: 140,
   landMs: 140,
   hardLandingVy: 620,
   updraftVy: -620,

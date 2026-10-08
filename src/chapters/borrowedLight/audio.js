@@ -184,6 +184,15 @@ export function flickerTick() {
   for (let i = 0; i < 4; i += 1) noise(c, t + i * 0.13, 0.03, { peak: 0.06, freq: 7000, type: 'highpass' });
 }
 
+// Round 6 · a machine's last seconds: a soft wooden tick (higher and a
+// touch louder in the last half second).
+export function timerTick(urgent = false) {
+  const c = live(); if (!c) return;
+  const t = c.currentTime;
+  noise(c, t, 0.025, { peak: urgent ? 0.12 : 0.08, freq: urgent ? 3800 : 2600, q: 4 });
+  osc(c, 'triangle', urgent ? 1320 : 990, t, 0.05, { peak: urgent ? 0.05 : 0.035, to: urgent ? 900 : 700 });
+}
+
 export function lampLit() {
   const c = live(); if (!c) return;
   const t = c.currentTime;

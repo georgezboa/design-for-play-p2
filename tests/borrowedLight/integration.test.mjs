@@ -123,7 +123,7 @@ test('story text: the mechanic line from the spec and Mara\'s letter kept word f
 
 test('controls list the chapter\'s verbs, including Listen and the gamepad', () => {
   const rows = CHAPTER_CONTROLS.borrowedLight.map(([a, k]) => `${a} ${k}`).join(' | ');
-  for (const needle of ['MOVE', 'JUMP', 'PUNCH', 'F / LEFT CLICK', 'HOLD Q', 'E', 'ESC', 'RB', 'LB']) assert.match(rows, new RegExp(needle));
+  for (const needle of ['MOVE', 'JUMP', 'PUNCH', 'E / LEFT CLICK', 'HOLD Q', 'E / ENTER', 'ESC', 'RB', 'LB']) assert.match(rows, new RegExp(needle));
 });
 
 test('player-visible chapter name is BORROWED LIGHT in the router, credits and chapter select', () => {
@@ -160,7 +160,8 @@ test('alpha F2: jump and listen are taught in the world at first use', async () 
 
 test('alpha F2: the mechanic names one box, and E · TALK clears the awning', () => {
   const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
-  const pointing = MECHANIC_LINES[2].text;
+  // Round 6: the pointing line is the first thing she says (do-then-explain).
+  const pointing = MECHANIC_LINES[0].text;
   assert.doesNotMatch(pointing, /by the edge/);
   assert.match(pointing, /paper tag, on the pole by the gap/);
   assert.match(scene, /\[MECHANIC\.x, MECHANIC\.y - 208, HINTS\.talk\]/);
