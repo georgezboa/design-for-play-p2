@@ -1655,7 +1655,7 @@ export class PanelScene extends Phaser.Scene {
       const span = link.type === 'rail' || link.type === 'chute' || link.type === 'pipe' ? 64 : 50;
       [p, q].forEach((pt, i) => {
         pools[i].setVisible(true).setPosition(pt.x + (across ? (i ? 7 : -7) : 0), pt.y + (across ? 0 : i ? 7 : -7))
-          .setDisplaySize(across ? 30 : span, across ? span : 30).setAlpha(clamp(0.34 * k, 0, 0.8));
+          .setDisplaySize(across ? 36 : span * 1.15, across ? span * 1.15 : 36).setAlpha(clamp(0.5 * k, 0, 0.85));
       });
     });
     this.linkPools?.forEach((pools, key) => { if (!live.has(key)) pools.forEach((pool) => pool.setVisible(false)); });
