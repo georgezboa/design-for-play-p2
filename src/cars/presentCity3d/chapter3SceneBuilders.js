@@ -775,7 +775,7 @@ export function makeGroundMessage(scene, surfaceHeightAt = null) {
     sourceCanvas.width = 4096;
     sourceCanvas.height = 640;
     const context = sourceCanvas.getContext('2d');
-    // Release pass: the game's voice face (Georgia, bold capitals), sized to
+    // Release pass: the game's voice face (EB Garamond, Georgia, bold capitals), sized to
     // fill the groove so the whole sentence reads from the fixed camera. The
     // fire clings to the stroke bottoms found below.
     context.textAlign = 'left';
@@ -787,7 +787,7 @@ export function makeGroundMessage(scene, surfaceHeightAt = null) {
     const tracking = 34;
     let fontSize = 330;
     const measure = () => {
-      context.font = `700 ${fontSize}px Georgia, "Times New Roman", "DejaVu Serif", serif`;
+      context.font = `700 ${fontSize}px EB Garamond, Georgia, "Times New Roman", "DejaVu Serif", serif`;
       const widths = [...text].map((character) => context.measureText(character).width);
       return { widths, total: widths.reduce((sum, width) => sum + width, 0) + tracking * Math.max(0, widths.length - 1) };
     };

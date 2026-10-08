@@ -10,12 +10,17 @@ import { installQaHooks } from './qa/museum3dQaState.js';
 import { DEBUG_BEATS } from './config.js';
 import { installDevMenuReturnControl } from '../../devMenuReturn.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from '../../shell/controlsCard.js';
 import { CHAPTER_CONTROLS } from '../../shell/chapterControls.js';
 import { createCollapseState } from './state/collapseGauntlet.js';
 import { COLLAPSE_SCRIPT, COLLAPSE_WARNING_SECONDS } from './systems/CollapseGauntletDirector.js';
 import { preloadChapter } from '../../shell/chapterPreloader.js';
 import { resolveFinalBossDestination } from '../../shell/finalBossRoute.js';
 import { DEV_MODE, devParams } from '../../devMode.js';
+import { waitForFonts } from '../../shared/fonts.js';
+// Round 6 type: start fetching the house faces now, so text painted into
+// canvases and 3D labels a moment later is set in them, not the fallback.
+waitForFonts();
 
 let app = null;
 installDevMenuReturnControl();
@@ -25,6 +30,8 @@ installPauseMenu({
   // Escape first closes an open archive card.
   onEscape: () => (app?.cards?.isOpen ? app.cards.close() : false),
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter5', 4500);
 
 // Dev routes (museum-3d.html?beat=…): start at a beat with the minimum legal
 // preceding state already applied. devParams() is empty in production, so a

@@ -1,5 +1,5 @@
 // Short archive cards in the shared `.nf-card` style (src/shell/uiKit.css):
-// an ivory card with its ticket-punch hole, an oxblood stamp, a Georgia
+// an ivory card with its ticket-punch hole, an oxblood stamp, a EB Garamond, Georgia
 // title and two or three lines. Accession cases, filed claims, house rules
 // and the open register all read through this one view.
 //

@@ -34,13 +34,13 @@ export const CHAPTER_CONTROLS = Object.freeze({
   nightServicePanels: list(
     ['UNFOLD THE WALL', 'DRAG THE BRASS PULL · HOLD ITS ARROW · ENTER'],
     ['CHOOSE A WINDOW', 'ARROW KEYS'],
-    ['MOVE A WINDOW', 'DRAG IT · SPACE PICKS UP, ARROWS, SPACE PUTS DOWN'],
-    ['LOOK CLOSER / USE', 'CLICK A TAG · TAB NEXT TAG, ENTER USES IT'],
-    ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · ⤢ GLYPH · BACKSPACE'],
+    ['MOVE A WINDOW', 'DRAG ITS PICTURE OR ITS BEZEL · SPACE PICKS UP, ARROWS, SPACE PUTS DOWN'],
+    ['LOOK CLOSER / USE', 'CLICK A TAG · TAB NEXT TAG, E / ENTER USES IT'],
+    ['STEP BACK', 'ESC · RIGHT-CLICK · WHEEL DOWN · ⤢ GLYPH · BACKSPACE'],
     ['LIFT A FRAME', 'PRESS AND HOLD THE FRAME · F, ARROWS, SPACE DROPS'],
     ['PUNCH-HOLE LENS', 'DRAG IT · L, ARROWS MOVE IT, ENTER CLICKS THROUGH'],
     ['PUT BACK WHAT YOU HOLD', 'BACKSPACE · ESC'],
-    ['CONTINUE / READ', 'CLICK · ENTER · SPACE'],
+    ['CONTINUE / READ', 'CLICK · E · ENTER'],
     ['SHOW ME (A HINT)', 'PAUSE → SHOW ME · H'],
     ['PAUSE', 'ESC'],
   ),
@@ -104,11 +104,11 @@ export const CHAPTER_CONTROLS = Object.freeze({
   // Chapter 5 · the one-answer exhibit (one-answer.html): the Chapter 1
   // panel verbs, framed in the lobby's central case.
   oneAnswer: list(
-    ['MOVE A WINDOW', 'DRAG IT · ARROWS + SPACE'],
+    ['MOVE A WINDOW', 'DRAG ITS PICTURE OR BEZEL · ARROWS + SPACE'],
     ['LOOK CLOSER', 'CLICK A TAG · TAB + ENTER'],
     ['STEP BACK', 'RIGHT-CLICK · WHEEL DOWN · BACKSPACE'],
     ['PUNCH-HOLE LENS', 'DRAG IT · L + ARROWS'],
-    ['CONTINUE / READ', 'CLICK · ENTER'],
+    ['CONTINUE / READ', 'CLICK · E · ENTER'],
     ['BACK TO THE MUSEUM', 'ESC'],
   ),
   // Chapter 5 · Door 4, the Labyrinth.
@@ -124,7 +124,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
   // Chapter 6's keys (blackKnifeFinal/constants.js BT_KEYS, alpha round 4).
   blackKnife: list(
     ['MOVE', 'WASD / ARROWS'],
-    ['PUNCH', 'HOLD SPACE / Z / LEFT CLICK'],
+    ['PUNCH', 'HOLD LEFT CLICK / Z'],
     ['DASH', 'HOLD SHIFT / X'],
     ['SHIELD ×3 (ON THE BELL: KEEPS ITS CHARGE)', 'E / C / RIGHT CLICK'],
     ['PAUSE', 'ESC / P'],
@@ -185,10 +185,12 @@ const sceneStage = (byKey) => () => {
   const scene = phaserScenes().find((candidate) => byKey[candidate?.sys?.settings?.key]);
   return scene ? byKey[scene.sys.settings.key] : null;
 };
-const STEP_BACK = ['STEP BACK', 'RIGHT-CLICK · ⌫'];
+const STEP_BACK = ['STEP BACK', 'ESC · RIGHT-CLICK'];
+// In the exhibit Esc leaves the case, so stepping back is the mouse / ⌫ only.
+const EXHIBIT_STEP_BACK = ['STEP BACK', 'RIGHT-CLICK · ⌫'];
 const SHOW_ME = ['SHOW ME (A HINT)', 'H'];
-const DRAG_WINDOW = ['MOVE A WINDOW', 'DRAG ITS PICTURE'];
-const LOOK_CLOSER = ['LOOK CLOSER / USE', 'CLICK A TAG · TAB, ENTER'];
+const DRAG_WINDOW = ['MOVE A WINDOW', 'DRAG ITS PICTURE OR BEZEL'];
+const LOOK_CLOSER = ['LOOK CLOSER / USE', 'CLICK A TAG · TAB, E / ENTER'];
 const SIDE_MOVE = ['MOVE', 'A / D · ← →'];
 const SIDE_JUMP = ['JUMP', 'SPACE · W · ↑'];
 
@@ -240,9 +242,9 @@ export const CONTROL_SETS = Object.freeze({
     aliases: Object.freeze({ 0: 'act0', 0.5: 'act05', '0.5': 'act05', 1: 'act1', 2: 'act2', 3: 'act3' }),
     probe: () => globalThis.document?.documentElement?.dataset?.nightServiceAct ?? null,
     entry: entry('CHAPTER 1 · NIGHT SERVICE', [
-      ['MOVE A WINDOW', 'DRAG ITS PICTURE'],
+      ['MOVE A WINDOW', 'DRAG ITS PICTURE OR BEZEL'],
       ['LOOK CLOSER', 'CLICK A TAG'],
-      ['STEP BACK', 'RIGHT-CLICK'],
+      ['STEP BACK', 'ESC · RIGHT-CLICK'],
       ['A HINT', 'H'],
     ], [
       ['NOTE', 'The mouse does the work here. Every move has a key too.'],
@@ -253,12 +255,12 @@ export const CONTROL_SETS = Object.freeze({
     id: 'chapter2',
     title: 'BORROWED LIGHT',
     all: CHAPTER_CONTROLS.borrowedLight,
-    basics: list(SIDE_MOVE, SIDE_JUMP, ['PUNCH A NODE', 'F · CLICK THE MARKED NODE'], ['READ / INTERACT', 'E / ENTER'], ['LISTEN (NEXT BELL)', 'HOLD Q']),
+    basics: list(SIDE_MOVE, SIDE_JUMP, ['PUNCH A NODE', 'E · CLICK THE MARKED NODE'], ['READ / INTERACT', 'E / ENTER'], ['LISTEN (NEXT BELL)', 'HOLD Q']),
     stages: Object.freeze({
       A: stage('RAIN ROOFTOPS', [
         SIDE_MOVE,
         ['JUMP', 'SPACE · W · ↑ · HOLD FOR HEIGHT'],
-        ['PUNCH A NODE', 'F · CLICK IT · FIRES ON THE NEXT BELL'],
+        ['PUNCH A NODE', 'E · CLICK IT · FIRES ON THE NEXT BELL'],
         ['TAKE BACK A PUNCH', 'HOLD F ON IT'],
         ['LISTEN (NEXT BELL)', 'HOLD Q'],
       ]),
@@ -266,14 +268,14 @@ export const CONTROL_SETS = Object.freeze({
         SIDE_MOVE,
         SIDE_JUMP,
         ['BORROW / GIVE LIGHT', 'E AT A LIT / DEAD NODE'],
-        ['PUNCH A NODE', 'F · CLICK IT'],
+        ['PUNCH A NODE', 'E · CLICK IT'],
         ['LISTEN (NEXT BELL)', 'HOLD Q'],
       ]),
       C: stage('EVACUATION PLATFORM', [
         SIDE_MOVE,
         SIDE_JUMP,
-        ['RELEASE A BRAKE', 'F · STANDING IN THE CAGE'],
-        ['PUNCH A NODE', 'F · CLICK IT'],
+        ['RELEASE A BRAKE', 'E · STANDING IN THE CAGE'],
+        ['PUNCH A NODE', 'E · CLICK IT'],
         ['LISTEN (NEXT BELL)', 'HOLD Q'],
       ]),
     }),
@@ -283,11 +285,11 @@ export const CONTROL_SETS = Object.freeze({
     entry: entry('CHAPTER 2 · BORROWED LIGHT', [
       SIDE_MOVE,
       SIDE_JUMP,
-      ['PUNCH A NODE', 'F'],
-      ['READ', 'E / ENTER'],
+      ['PUNCH A NODE', 'E'],
+      ['READ / TALK', 'E / ENTER'],
     ], [
       ['NOW', 'You walk Butch yourself. The arrows move him; Space jumps.'],
-      ['NEW', 'F punches a lit node. It fires on the next bell.'],
+      ['NEW', 'E punches a lit node. It fires on the next bell.'],
     ]),
   }),
   // Chapter 3 · ECHO CITY. Stages: the streets, a scanner field, the wire
@@ -326,7 +328,7 @@ export const CONTROL_SETS = Object.freeze({
       board: stage('THE TICKET BOARD', [
         ['MOVE A CARD', 'DRAG IT · TAB, ARROWS'],
         ['THE 1978 LENS', 'DRAG IT OVER A CARD · L'],
-        ['PUNCH', 'CLICK · ENTER'],
+        ['PUNCH', 'CLICK · E / ENTER'],
         ['STEP AWAY', 'ESC'],
       ]),
       lens: stage('THE 1978 LENS', [
@@ -337,6 +339,8 @@ export const CONTROL_SETS = Object.freeze({
       ]),
     }),
     aliases: Object.freeze({ streets: 'city', walk: 'city', scanners: 'scanner', field: 'scanner', wire: 'clamp', ticket: 'board', tickets: 'board' }),
+    // Chapter3OpeningRuntime publishControlsStage
+    probe: () => globalThis.document?.documentElement?.dataset?.chapter3Stage ?? null,
     entry: entry('CHAPTER 3 · ECHO CITY', [
       ['WALK', 'WASD / ARROWS · CLICK THE GROUND'],
       ['TALK / INSPECT', 'E / ENTER'],
@@ -417,6 +421,12 @@ export const CONTROL_SETS = Object.freeze({
       ]),
     }),
     aliases: Object.freeze({ halls: 'walk', museum: 'walk', exhibits: 'exhibit', case: 'exhibit' }),
+    // the framed exhibit (EmbeddedDirectionExhibit) is open or not
+    probe: () => {
+      const exhibit = globalThis.document?.getElementById?.('direction-exhibit');
+      if (!exhibit) return null;
+      return exhibit.classList.contains('open') ? 'exhibit' : 'walk';
+    },
     entry: entry('CHAPTER 5 · THE MUSEUM OF ONE ANSWER', [
       ['WALK', 'WASD / ARROWS'],
       ['LOOK', 'MOUSE'],
@@ -432,12 +442,12 @@ export const CONTROL_SETS = Object.freeze({
     id: 'oneAnswer',
     title: 'THE ONE-ANSWER EXHIBIT',
     all: CHAPTER_CONTROLS.oneAnswer,
-    basics: list(DRAG_WINDOW, ['LOOK CLOSER', 'CLICK A TAG · TAB, ENTER'], STEP_BACK, ['PUNCH-HOLE LENS', 'DRAG IT · L'], ['BACK TO THE MUSEUM', 'ESC']),
+    basics: list(DRAG_WINDOW, ['LOOK CLOSER', 'CLICK A TAG · TAB, E / ENTER'], EXHIBIT_STEP_BACK, ['PUNCH-HOLE LENS', 'DRAG IT · L'], ['BACK TO THE MUSEUM', 'ESC']),
     stages: Object.freeze({
       exhibit: stage('THE ONE-ANSWER EXHIBIT', [
         DRAG_WINDOW,
-        ['LOOK CLOSER', 'CLICK A TAG · TAB, ENTER'],
-        STEP_BACK,
+        ['LOOK CLOSER', 'CLICK A TAG · TAB, E / ENTER'],
+        EXHIBIT_STEP_BACK,
         ['PUNCH-HOLE LENS', 'DRAG IT · L'],
         ['BACK TO THE MUSEUM', 'ESC'],
       ], { diagrams: ['swap'] }),
@@ -509,7 +519,7 @@ export const CONTROL_SETS = Object.freeze({
     stages: Object.freeze({}),
     entry: entry('CHAPTER 6 · THE BLACK TICKET', [
       ['MOVE', 'WASD / ARROWS'],
-      ['PUNCH', 'HOLD SPACE · LEFT CLICK'],
+      ['PUNCH', 'HOLD LEFT CLICK · Z'],
       ['DASH', 'HOLD SHIFT'],
       ['SHIELD', 'E · RIGHT CLICK'],
     ], [

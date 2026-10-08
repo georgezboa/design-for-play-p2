@@ -12,7 +12,7 @@ function stampTexture(scene, key, text, { w = 520, h = 120, color = '#8a2a1e' } 
   c.lineWidth = 3;
   c.strokeRect(24, 24, w - 48, h - 48);
   c.fillStyle = color;
-  c.font = '700 54px "Space Mono", monospace';
+  c.font = '700 54px "Jost", monospace';
   c.textAlign = 'center';
   c.textBaseline = 'middle';
   c.fillText(text, w / 2, h / 2 + 2);

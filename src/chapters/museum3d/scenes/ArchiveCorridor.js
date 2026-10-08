@@ -143,7 +143,7 @@ export class ArchiveCorridor {
     });
     label(g, `CLAIM 1978-0412\nFILED ${MUSEUM_DATE}`, {
       x: 10.6, y: 2.66, z: 1.81, w: 3.4, h: 0.62,
-      fg: '#d8caa5', bg: '#171a18', font: 'bold 30px Georgia, serif',
+      fg: '#d8caa5', bg: '#171a18', font: 'bold 30px EB Garamond, Georgia, serif',
       rotationY: Math.PI,
     });
 
@@ -234,7 +234,7 @@ export class ArchiveCorridor {
       x: x + 0.62, y: 1.02, z: -1.85, w: 0.09, h: 0.09, d: 0.05,
       material: this.materials.brass, name: `${id}-control-rail`,
     });
-    label(g, String(number), { x, y: 1.45, z: -1.84, w: 1.5, h: 0.44, fg: '#d8d4c9', bg: '#111416', font: 'bold 62px Georgia, serif' });
+    label(g, String(number), { x, y: 1.45, z: -1.84, w: 1.5, h: 0.44, fg: '#d8d4c9', bg: '#111416', font: 'bold 62px EB Garamond, Georgia, serif' });
     // Keep the target broad, but leave it as a thin plane behind the player's
     // nearest legal standing position. A deep box reaches into the collision
     // boundary and lets the camera end up *inside* the proxy; Three's default
@@ -281,7 +281,7 @@ export class ArchiveCorridor {
     addLightPool(group, { y: 1.74, z: 0.034, w: 1.6, h: 0.84, opacity: 0.6, name: `${claim.id}-light-pool` });
     const card = label(group, `${claim.title}\n${claim.stamp}`, {
       x: 0, y: 1.74, z: 0.06, w: 1.3, h: 0.46,
-      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 30px Georgia, serif',
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 30px EB Garamond, Georgia, serif',
     });
     card.rotation.x = -0.05;
     const punch = new THREE.Mesh(new THREE.CircleGeometry(0.03, 16), new THREE.MeshBasicMaterial({ color: 0x050403 }));
@@ -332,13 +332,13 @@ export class ArchiveCorridor {
     // corridor, fixed to the panelling under the case
     label(group, `${exhibit.chapter} · ${exhibit.title}\n${exhibit.object}`, {
       x: 0, y: 0.43, z: -0.062, w: 2.05, h: 0.3, rotationY: Math.PI,
-      fg: '#eadfc6', bg: '#1c130d', font: 'bold 25px Georgia, serif',
+      fg: '#eadfc6', bg: '#1c130d', font: 'bold 25px EB Garamond, Georgia, serif',
     });
     // the accession plate, brass, under the chapter plaque, leaving the
     // case's top edge to the interaction tag
     label(group, exhibit.accession, {
       x: 0, y: 0.215, z: -0.062, w: 1.12, h: 0.14, rotationY: Math.PI,
-      fg: '#1c130d', bg: '#b08a4a', font: 'bold 26px Georgia, serif',
+      fg: '#1c130d', bg: '#b08a4a', font: 'bold 26px EB Garamond, Georgia, serif',
     });
     proxy.userData.tagAnchor = 1; // on the case's top edge, clear of every label
     return { group, artifact, exhibit, light, glass, proxy, supportingElements, displayed: true, shattered: false };
@@ -371,8 +371,8 @@ export class ArchiveCorridor {
         leaf.add(panel);
       }
     }
-    const lockedPlaque = label(root, COLLAPSE_STRINGS.exitDoorPlaqueLocked, { x: 41.6, y: 2.32, z: 0, w: 2.55, h: 0.34, fg: '#d7c69c', bg: '#201b15', font: 'bold 15px Georgia, serif', rotationY: -Math.PI / 2 });
-    const openPlaque = label(root, COLLAPSE_STRINGS.exitDoorPlaqueOpen, { x: 41.59, y: 2.32, z: 0, w: 2.55, h: 0.34, fg: '#d7c69c', bg: '#201b15', font: 'bold 14px Georgia, serif', rotationY: -Math.PI / 2 });
+    const lockedPlaque = label(root, COLLAPSE_STRINGS.exitDoorPlaqueLocked, { x: 41.6, y: 2.32, z: 0, w: 2.55, h: 0.34, fg: '#d7c69c', bg: '#201b15', font: 'bold 15px EB Garamond, Georgia, serif', rotationY: -Math.PI / 2 });
+    const openPlaque = label(root, COLLAPSE_STRINGS.exitDoorPlaqueOpen, { x: 41.59, y: 2.32, z: 0, w: 2.55, h: 0.34, fg: '#d7c69c', bg: '#201b15', font: 'bold 14px EB Garamond, Georgia, serif', rotationY: -Math.PI / 2 });
     openPlaque.visible = false;
     const keyRoot = new THREE.Group();
     keyRoot.name = 'final-archive-eight-keyholes';

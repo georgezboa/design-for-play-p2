@@ -96,6 +96,7 @@ Sound effects, room tones and some ambience are synthesized in-engine by project
 - **Quaternius Downtown City MegaKit (Standard):** `T_Concrete_Asphalt_BaseColor.png`, source of the dark back-street paving `dark-city-cobbles.webp`; CC0 1.0. Record: `/assets/chapter03-3d/ASSET_MANIFEST.json`.
 - **Poly Haven:** `beige_wall_001`, `dirty_carpet`, `wood_table_001`, `rubber_tiles`, and `dark_wood`; CC0 1.0.
 - **ambientCG:** `Fingerprints001` (museum glass fingerprints); CC0 1.0.
+- **Typefaces:** EB Garamond (© 2017 The EB Garamond Project Authors) and Jost (© 2020 The Jost Project Authors), both SIL Open Font License 1.1. License texts: `/licenses/fonts/EBGaramond-OFL.txt` and `/licenses/fonts/Jost-OFL.txt`.
 
 ## Provenance rule
 

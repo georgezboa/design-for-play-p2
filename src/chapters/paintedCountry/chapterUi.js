@@ -4,7 +4,7 @@
 // speaks the same language as Chapters 1 and 2 (src/shell/uiKit.css): paper
 // tags with an amber glint mark what can be acted on, archive cards are
 // punched manilla with an oxblood stamp, title cards sit on a walnut band
-// with a brass rule, Georgia is the voice and Space Mono the label.
+// with a brass rule, EB Garamond, Georgia is the voice and Jost the label.
 //
 // Everything here is screen space and clamps itself inside SAFE, so no prompt
 // can be clipped by the canvas edge or sit on the room's title strip.
@@ -201,7 +201,7 @@ export function noteAt(scene, worldX, worldY, text, { tone = 'info', hold = 1500
 }
 
 // ---------------------------------------------------------------- title card
-// Chapter 1's act title (Space Mono amber kicker over a Georgia ivory line),
+// Chapter 1's act title (Jost amber kicker over a EB Garamond, Georgia ivory line),
 // laid on a walnut band because this chapter's ground is pale paper.
 export function showTitleCard(scene, { kicker, main, hold = 2200, depth = 300, onDone = null } = {}) {
   const { w, h } = VIEW_SIZE;
@@ -233,7 +233,7 @@ export function showTitleCard(scene, { kicker, main, hold = 2200, depth = 300, o
 
 // -------------------------------------------------------------- archive card
 // The Phaser twin of .nf-card: manilla, a real punch hole, an oxblood stamp,
-// a Georgia title and two or three short lines.
+// a EB Garamond, Georgia title and two or three short lines.
 export class ArchiveCard {
   constructor(scene, { depth = 320 } = {}) {
     this.scene = scene;

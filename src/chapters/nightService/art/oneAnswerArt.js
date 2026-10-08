@@ -40,14 +40,14 @@ const PAST = (env) => env.era === 'past';
 
 function mono(c, text, x, y, size, color = PAL.ink, weight = 700) {
   c.fillStyle = color;
-  c.font = `${weight} ${size}px "Space Mono", monospace`;
+  c.font = `${weight} ${size}px "Jost", monospace`;
   c.textBaseline = 'middle';
   c.fillText(text, x, y);
 }
 
 function serif(c, text, x, y, size, color = '#2a1d14', italic = false) {
   c.fillStyle = color;
-  c.font = `${italic ? 'italic ' : ''}700 ${size}px Georgia, serif`;
+  c.font = `${italic ? 'italic ' : ''}700 ${size}px EB Garamond, Georgia, serif`;
   c.textBaseline = 'middle';
   c.fillText(text, x, y);
 }
@@ -488,7 +488,7 @@ function rosaDrawing(c, w, h, { past = false, seed = 531 } = {}) {
     c.translate(w * 0.72, h * 0.93);
     c.rotate(-0.05);
     c.fillStyle = '#6b2a22';
-    c.font = 'italic 700 24px Georgia, serif';
+    c.font = 'italic 700 24px EB Garamond, Georgia, serif';
     c.fillText('Rosa, age 9', 0, 0);
     c.restore();
   }
@@ -562,7 +562,7 @@ export function drawPlateWall(ctx) {
     inkRect(c, x, y, fw, fh, { w: 1.2, alpha: 0.6 });
     // the nameplate
     const plateText = PAST(env) ? 'ROSA VELEZ · AGE 9' : 'PLATE IV · ARTIST UNKNOWN';
-    c.font = '700 11px "Space Mono", monospace';
+    c.font = '700 11px "Jost", monospace';
     const plateW = Math.ceil(c.measureText(plateText).width) + 32;
     c.fillStyle = brassFill(c, x + fw / 2 - plateW / 2, y + fh + 44, plateW, 22);
     roundRectPath(c, x + fw / 2 - plateW / 2, y + fh + 40, plateW, 24, 3); c.fill();

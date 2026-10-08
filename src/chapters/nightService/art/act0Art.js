@@ -286,16 +286,16 @@ export function drawTicketClose(ctx) {
     c.strokeStyle = 'rgba(150, 40, 30, 0.85)'; c.lineWidth = 3;
     c.strokeRect(sw * 0.27, sh * 0.16, sw * 0.2, sh * 0.16);
     c.fillStyle = 'rgba(150, 40, 30, 0.9)';
-    c.font = '700 26px "Space Mono", monospace';
+    c.font = '700 26px "Jost", monospace';
     c.fillText('CLAIM', sw * 0.285, sh * 0.285);
     c.fillStyle = '#2a1d14';
-    c.font = '700 58px "Space Mono", monospace';
+    c.font = '700 58px "Jost", monospace';
     c.fillText('1978-0412', sw * 0.27, sh * 0.62);
     c.fillStyle = 'rgba(60, 45, 30, 0.5)';
     [0.72, 0.8, 0.88].forEach((v, i) => c.fillRect(sw * 0.27, sh * v, sw * (i === 2 ? 0.2 : 0.36), 3));
     // the stub half: a printed night-service locomotive and the same number, small
     c.fillStyle = 'rgba(42, 29, 20, 0.8)';
-    c.font = '700 15px "Space Mono", monospace';
+    c.font = '700 15px "Jost", monospace';
     c.save(); c.translate(sw * 0.1, sh * 0.82); c.rotate(-Math.PI / 2); c.fillText('1978-0412', 0, 0); c.restore();
     ink(c, [[sw * 0.05, sh * 0.2], [sw * 0.15, sh * 0.2], [sw * 0.15, sh * 0.3], [sw * 0.05, sh * 0.3]], { w: 1.3, closed: true, color: '#3a2a1c', bleed: false });
     c.restore();
@@ -356,7 +356,7 @@ export function drawPorthole(ctx) {
     c.save();
     c.globalAlpha = 0.18;
     c.fillStyle = '#2a1d14';
-    c.font = '700 150px "Space Mono", monospace';
+    c.font = '700 150px "Jost", monospace';
     c.fillText('04', -40, h * 0.98);
     c.fillStyle = 'rgba(107, 42, 34, 1)';
     c.fillRect(-30, -30, w + 60, 46);

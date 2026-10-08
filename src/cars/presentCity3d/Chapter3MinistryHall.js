@@ -77,7 +77,7 @@ function makeLabel(text, width = 512, height = 128) {
   context.fillStyle = '#d5ceb8';
   context.fillRect(0, 0, width, height);
   context.fillStyle = '#253538';
-  context.font = '700 50px Georgia, serif';
+  context.font = '700 50px EB Garamond, Georgia, serif';
   context.textAlign = 'center';
   context.textBaseline = 'middle';
   context.fillText(text, width / 2, height / 2);

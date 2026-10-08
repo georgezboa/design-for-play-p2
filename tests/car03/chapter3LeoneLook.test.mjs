@@ -65,7 +65,8 @@ describe('Chapter 3 Leone light (round 6, G8)', () => {
     const toCamera = [CAMERA_HOME.position[0] - CAMERA_HOME.target[0], CAMERA_HOME.position[2] - CAMERA_HOME.target[2]];
     const toSun = [dusk.sunPosition[0] - SUN_TARGET[0], dusk.sunPosition[2] - SUN_TARGET[2]];
     assert.ok(toCamera[0] * toSun[0] + toCamera[1] * toSun[1] < 0, 'the camera looks into the sun: backlit');
-    assert.ok(dusk.hemiIntensity / dusk.sunIntensity < 0.15, 'dark shadow sides');
+    // round 6 merge: softened from < 0.15 so the shadowed street stays playable
+    assert.ok(dusk.hemiIntensity / dusk.sunIntensity < 0.22, 'dark shadow sides');
     assert.ok(dusk.cast.rimStrength > at('CHAPTER_START', 'AFTERNOON').cast.rimStrength, 'an orange edge on the silhouettes');
   });
 

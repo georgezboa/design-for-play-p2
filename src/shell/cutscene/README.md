@@ -84,7 +84,7 @@ export const chapter1To2 = {
   run on into the next shot's join.
 - The text is the script, word for word. No voice. No speaker unless a
   character speaks a line in the script (`speaker: 'THE CONDUCTOR'`, shown in
-  amber Space Mono over the line).
+  amber Jost over the line).
 - They render as DOM in the caption-bar look (uiKit.css `.nf-caption`),
   centred under the panel, and follow TEXT SIZE. Keep the bottom 6 % of the
   stage free of anything the eye must read.

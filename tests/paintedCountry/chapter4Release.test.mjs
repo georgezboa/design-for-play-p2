@@ -91,10 +91,10 @@ test('QA routes stay dev-only', () => {
   assert.match(main, /if \(DEV_MODE\) window\.render_game_to_text/);
 });
 
-test('the chapter speaks the shared UI language: Space Mono labels, Georgia voice, walnut page', () => {
+test('the chapter speaks the shared UI language: Jost labels, EB Garamond voice, walnut page (round 6 type)', () => {
   assert.match(main, /import '\.\/fonts\/fonts\.css'/);
-  assert.match(sources['chapterConstants.js'], /"Space Mono"/);
-  assert.match(sources['chapterConstants.js'], /Georgia/);
+  assert.match(sources['chapterConstants.js'], /"Jost"/);
+  assert.match(sources['chapterConstants.js'], /EB Garamond/);
   assert.match(html, /background: #1c130d/);
   assert.match(sources['PaintedCountryScene.js'], /kicker: 'CHAPTER 4 · THE PAINTED COUNTRY'/);
   assert.match(sources['PaintedCountryScene.js'], /stamp: 'CLAIM 1978-0412 · SECOND CLAIM'/);

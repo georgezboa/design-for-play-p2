@@ -34,6 +34,7 @@ import { audioFocus } from '../../shared/audioFocus.js';
 import { CINEMATICS, playCinematic } from '../../shell/gameFlow.js';
 import { showEndCredits } from '../../shell/endCredits.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from '../../shell/controlsCard.js';
 import { createSaveStore, readSettings, volumeForChannel } from '../../shell/saveSystem.js';
 import { reducedMotionActive } from '../../shell/motion.js';
 import {
@@ -59,6 +60,10 @@ import {
   ECHO_FLOOR, ECHO_SQUARE, PAINTED_FLOOR, echoTerraceSteps, paintEchoParapet, paintEchoProp, paintEchoSkyline, paintEchoSquare,
   paintPaintedCountryBackdrop, paintPaintedField, paintPaintedFold, paintPaintedProp, paintedSheetSteps,
 } from './finaleWorldArt.js';
+import { waitForFonts } from '../../shared/fonts.js';
+// Round 6 type: start fetching the house faces now, so text painted into
+// canvases and 3D labels a moment later is set in them, not the fallback.
+waitForFonts();
 
 // Runtime files under public/ are referenced by their served path rather than
 // imported with ?url (an import made Vite copy each GLB/MP3 a second time).
@@ -3955,6 +3960,8 @@ installPauseMenu({
   checkpointId: 'chapter-6-start',
   controls: [...FINALE_ALL_CONTROLS.map((row) => [...row])],
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter6', 4500);
 createSaveStore().markCheckpoint('chapter-6-start');
 
 const menu = document.querySelector('#menu');

@@ -14,6 +14,7 @@ import { PaintedLineScene } from './chapters/paintedCountry/PaintedLineScene.js'
 import { PAPER_CSS } from './chapters/paintedCountry/paperPalette.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from './shell/controlsCard.js';
 import { DEV_MODE, devRoutesEnabled } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { createSaveStore } from './shell/saveSystem.js';
@@ -21,11 +22,17 @@ import { RESUME_REGISTRY_KEY, chapter4ResumeOnLoad } from './chapters/paintedCou
 import { installPhaserMotionGuard } from './shell/motion.js';
 import { followLowGraphics } from './shared/phaserRenderScale.js';
 import { installWallClock } from './shared/phaserWallClock.js';
+import { waitForFonts } from './shared/fonts.js';
+// Round 6 type: start fetching the house faces now, so text painted into
+// canvases and 3D labels a moment later is set in them, not the fallback.
+waitForFonts();
 
 installPhaserMotionGuard(Phaser);
 
 installDevMenuReturnControl();
 installPauseMenu({ checkpointId: 'chapter-4-start', controls: CHAPTER_CONTROLS.paintedCountry });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter4', 8000);
 
 const qa = devRoutesEnabled() ? new URLSearchParams(window.location.search).get('qa') : null;
 const allScenes = [PaintedCountryScene, DrawingStudioScene, PigmentTrainScene, PaintedLineScene];
@@ -50,8 +57,8 @@ const sceneOrder = [firstScene, ...allScenes.filter((scene) => scene !== firstSc
 async function fontsReady() {
   if (!document.fonts?.load) return;
   const wait = Promise.all([
-    document.fonts.load('400 16px "Space Mono"'),
-    document.fonts.load('700 16px "Space Mono"'),
+    document.fonts.load('400 16px "Jost"'),
+    document.fonts.load('700 16px "Jost"'),
   ]).catch(() => {});
   await Promise.race([wait, new Promise((resolve) => setTimeout(resolve, 1500))]);
 }

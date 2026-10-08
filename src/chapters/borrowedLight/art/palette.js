@@ -70,9 +70,9 @@ export const DEPTH = Object.freeze({
 });
 
 export const FONTS = Object.freeze({
-  mono: '"Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace',
-  display: 'Anton, "Arial Narrow", Impact, sans-serif',
-  serif: 'Georgia, "Times New Roman", serif',
+  mono: '"Jost", ui-monospace, SFMono-Regular, Menlo, monospace',
+  display: 'Jost, "Futura", "Century Gothic", sans-serif',
+  serif: '"EB Garamond", Georgia, "Times New Roman", serif',
 });
 
 // Small seeded RNG so every facade is hand-placed but stable run to run.

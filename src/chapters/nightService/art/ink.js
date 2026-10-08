@@ -264,7 +264,7 @@ export function paperTag(c, x, y, { angle = -0.18, scale = 1, glint = true, punc
   });
   if (text) {
     c.fillStyle = 'rgba(70, 40, 25, 0.9)';
-    c.font = '700 6px "Space Mono", monospace';
+    c.font = '700 6px "Jost", monospace';
     c.fillText(text, 9, 2);
   }
   if (punched) {

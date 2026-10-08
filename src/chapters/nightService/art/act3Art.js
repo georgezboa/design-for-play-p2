@@ -654,7 +654,7 @@ function platformBase(c, env, w, h) {
   c.fillStyle = past ? '#6b2a22' : '#23434a';
   roundRectPath(c, nx, ny - 8, 160, 32, 5); c.fill();
   c.fillStyle = '#eadfc6';
-  c.font = '700 19px "Space Mono", monospace';
+  c.font = '700 19px "Jost", monospace';
   c.fillText('BELLWETHER', nx + 20, ny + 15);
   c.save();
   c.lineWidth = 2;
@@ -663,7 +663,7 @@ function platformBase(c, env, w, h) {
   c.restore();
   if (past) {
     c.fillStyle = '#e8d4a0'; roundRectPath(c, nx + 30, ny + 28, 100, 16, 3); c.fill();
-    c.fillStyle = '#6b2a22'; c.font = '700 10px "Space Mono", monospace'; c.fillText('REQUEST STOP', nx + 38, ny + 40);
+    c.fillStyle = '#6b2a22'; c.font = '700 10px "Jost", monospace'; c.fillText('REQUEST STOP', nx + 38, ny + 40);
   }
   // near track: our rail enters from the left edge at RAIL_AT, buffer at the end
   const y = RAIL_AT * h;

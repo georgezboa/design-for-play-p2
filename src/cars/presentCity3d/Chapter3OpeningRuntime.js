@@ -703,7 +703,7 @@ export class Chapter3OpeningRuntime {
     context.lineWidth = 8;
     context.strokeRect(4, 4, canvas.width - 8, canvas.height - 8);
     context.fillStyle = '#f0e4ca';
-    context.font = '700 42px Georgia, serif';
+    context.font = '700 42px EB Garamond, Georgia, serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     context.fillText(text, canvas.width / 2, canvas.height / 2);
@@ -761,7 +761,7 @@ export class Chapter3OpeningRuntime {
       position: 'fixed', left: '50%', bottom: '24px', transform: 'translateX(-50%)', zIndex: '500',
       display: 'grid', gap: '7px', minWidth: '620px', padding: '14px 18px', color: '#eee1c7',
       background: 'rgba(18, 24, 24, 0.94)', border: '1px solid #9d7246', boxShadow: '0 10px 34px rgba(0,0,0,.38)',
-      fontFamily: 'Georgia, serif', textAlign: 'center', letterSpacing: '0.05em',
+      fontFamily: '"EB Garamond", Georgia, serif', textAlign: 'center', letterSpacing: '0.05em',
     });
     const buttonRow = overlay.querySelector('div');
     Object.assign(buttonRow.style, { display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '8px' });
@@ -3549,8 +3549,23 @@ export class Chapter3OpeningRuntime {
   }
 
   // ------------------------------------------------------------------ frame
+  // Round 6 (item 19): the pause menu lists the controls of what Butch is
+  // doing now. It reads <html data-chapter3-stage> (shell/chapterControls.js
+  // chapter3 probe); written only when the stage changes.
+  publishControlsStage() {
+    const board = this.ticketBoard?.active;
+    const stage = board
+      ? (this.ticketBoard.drag?.id === 'lens' ? 'lens' : 'board')
+      : this.bellClamp?.active ? 'clamp'
+        : this.activeField() ? 'scanner' : 'city';
+    if (stage === this.controlsStage) return;
+    this.controlsStage = stage;
+    if (typeof document !== 'undefined') document.documentElement.dataset.chapter3Stage = stage;
+  }
+
   update(dt, { final = true } = {}) {
     if (!this.initialized) return;
+    this.publishControlsStage();
     if (this.scannerFreezeRemaining > 0) this.scannerFreezeRemaining = Math.max(0, this.scannerFreezeRemaining - dt);
     if (this.blockedFlashRemaining > 0) {
       this.blockedFlashRemaining -= dt;

@@ -188,10 +188,10 @@ export class ServiceLobby {
     // label says what it is open at, on both faces the player approaches.
     const deskLabel = 'SERVICE DESK · ACC. 1978-0412 · 5\nREGISTER — LAST ENTRY: BUTCH';
     label(this.reclassifiedGroup, deskLabel, {
-      x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5, font: 'bold 25px Georgia, serif',
+      x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5, font: 'bold 25px EB Garamond, Georgia, serif',
     });
     label(this.reclassifiedGroup, deskLabel, {
-      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2, font: 'bold 25px Georgia, serif',
+      x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2, font: 'bold 25px EB Garamond, Georgia, serif',
     });
     // the desk's worn footprint on the carpet where it stood
     plane(this.reclassifiedGroup, {
@@ -262,12 +262,12 @@ export class ServiceLobby {
     const rulesCase = displayCase(g, { x: -5.5, z: -5.2, w: 1.6, d: 1.0, name: 'house-rules-case', collisionWorld: this.ctx.collisionWorld });
     const plaque = label(rulesCase, 'HOUSE RULES\nONE OBJECT · ONE ANSWER', {
       x: 0, y: 1.32, z: 0, w: 1.2, h: 0.5,
-      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 34px Georgia, serif',
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 34px EB Garamond, Georgia, serif',
     });
     plaque.rotation.x = -0.5;
     label(rulesCase, 'THE MUSEUM OF ONE ANSWER', {
       x: 0, y: 0.88, z: 0.515, w: 1.34, h: 0.2,
-      fg: '#e6ddc5', bg: '#17140f', font: 'bold 25px Georgia, serif',
+      fg: '#e6ddc5', bg: '#17140f', font: 'bold 25px EB Garamond, Georgia, serif',
     });
     this.houseRulesProxy = hitProxy(rulesCase, { x: 0, y: 1.35, z: 0.5, w: 1.5, h: 1.5, d: 0.2, name: 'house-rules-proxy' });
   }
@@ -295,16 +295,16 @@ export class ServiceLobby {
     box(this.pendingExhibit, { x: 0.95, y: 1.13, z: 0, w: 1.1, h: 0.12, d: 0.8, material: walnut, name: 'pending-plinth' });
     const tent = label(this.pendingExhibit, 'OBJECT PENDING\nCLASSIFICATION', {
       x: 0.95, y: 1.34, z: 0.18, w: 0.78, h: 0.3,
-      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 44px Georgia, serif',
+      fg: '#2a1d14', bg: '#efe4cc', font: 'bold 44px EB Garamond, Georgia, serif',
     });
     tent.rotation.x = -0.45;
     this.pendingLabel = label(g, `OBJECT PENDING CLASSIFICATION\n${MUSEUM_ACCESSION}`, {
       x: -1.23, y: 0.55, z: 0, w: 2.25, h: 0.5, rotationY: -Math.PI / 2,
-      font: 'bold 25px Georgia, serif',
+      font: 'bold 25px EB Garamond, Georgia, serif',
     });
     this.pendingLabelSouth = label(g, `OBJECT PENDING CLASSIFICATION\n${MUSEUM_ACCESSION}`, {
       x: 1.5, y: 0.55, z: 1.415, w: 2.25, h: 0.5,
-      font: 'bold 25px Georgia, serif',
+      font: 'bold 25px EB Garamond, Georgia, serif',
     });
     // The case answers E, plinth and glass alike — all but its south-east
     // corner, where the pigment vials (and what hides behind them) keep

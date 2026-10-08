@@ -215,7 +215,7 @@ test('every chapter has an entry card: 3–4 basics and what changed', () => {
   assert.equal(chapterCardSpec('nope'), null);
   const html = controlsCardHtml(chapterCardSpec('chapter2'));
   assert.match(html, /^<p class="nf-controls-card__kicker">CHAPTER 2 · BORROWED LIGHT<\/p><dl class="nf-controls-card__rows">/);
-  assert.match(html, /<li data-tag="new"><b>NEW<\/b><span>F punches a lit node\. It fires on the next bell\.<\/span><\/li>/);
+  assert.match(html, /<li data-tag="new"><b>NEW<\/b><span>E punches a lit node\. It fires on the next bell\.<\/span><\/li>/);
   assert.match(html, /<span class="nf-controls-card__timer" aria-hidden="true"><\/span>$/);
 });
 

@@ -23,6 +23,7 @@ import { SECTION_CHECKPOINTS, resolveResumeLamp, resolveStartLamp, resolveStartS
 import { MAX_FRAME_MS, QA_MAX_FRAME_MS, installWallClock } from './chapters/borrowedLight/frameClock.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from './shell/controlsCard.js';
 import { DEV_MODE, devParam } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { installPhaserMotionGuard } from './shell/motion.js';
@@ -35,6 +36,8 @@ installPauseMenu({
   // SHOW ME: the current room's hint at once (the scene's idle hints).
   extraActions: [{ label: 'SHOW ME', onSelect: () => window.dispatchEvent(new CustomEvent('nightfall:hint')) }],
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter2', 8500);
 
 const store = createSaveStore();
 const activeSave = store.readAll()[store.getActiveSlot()];
@@ -66,9 +69,9 @@ playSectionMusic(section);
 async function fontsReady() {
   if (!document.fonts?.load) return;
   const wait = Promise.all([
-    document.fonts.load('400 16px "Space Mono"'),
-    document.fonts.load('700 16px "Space Mono"'),
-    document.fonts.load('400 32px Anton'),
+    document.fonts.load('400 16px "Jost"'),
+    document.fonts.load('700 16px "Jost"'),
+    document.fonts.load('500 32px Jost'),
   ]).catch(() => {});
   await Promise.race([wait, new Promise((resolve) => setTimeout(resolve, 1500))]);
 }

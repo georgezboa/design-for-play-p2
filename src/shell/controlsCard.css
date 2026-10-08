@@ -75,7 +75,7 @@
 .nf-controls-card__changed li:is([data-tag="new"], [data-tag="now"]) b { color: var(--nf-amber, #e0a24a); }
 .nf-controls-card__changed span {
   color: #e6e0d5;
-  font: italic 400 calc(16.5px * var(--nf-cc))/1.32 var(--nf-serif, Georgia, serif);
+  font: italic 400 calc(16.5px * var(--nf-cc))/1.32 var(--nf-serif, EB Garamond, Georgia, serif);
 }
 .nf-controls-card__timer {
   position: absolute;

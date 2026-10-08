@@ -226,7 +226,7 @@ export function createPaintContext(scene, { target, w, h, era = 'present', model
     },
     /** Text in the painting (placeholders only: panels carry no labels). */
     text(x, y, value, style = {}) {
-      return add(scene.add.text(x, y, value, { fontFamily: 'Georgia, serif', fontSize: '24px', color: PAL.ink, ...style }));
+      return add(scene.add.text(x, y, value, { fontFamily: '"EB Garamond", Georgia, serif', fontSize: '24px', color: PAL.ink, ...style }));
     },
   };
   return ctx;

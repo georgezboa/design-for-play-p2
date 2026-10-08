@@ -78,7 +78,7 @@ function luggageTag(c, x, y, { text, leaf = false, lit = true, scale = 1, angle 
   c.translate(x, y);
   c.rotate(angle);
   c.scale(scale, scale);
-  c.font = '700 11px "Space Mono", monospace';
+  c.font = '700 11px "Jost", monospace';
   const textW = c.measureText(text).width;
   // the tag grows to fit its word, plus room for the hawthorn leaf
   const tw = Math.max(58, 6 + textW + (leaf ? 22 : 8));
@@ -293,7 +293,7 @@ export function drawCaseTag(ctx) {
     c.beginPath(); c.arc(-8, 0, 11, 0, Math.PI * 2); c.stroke();
     ink(c, [[0, -120], [w * 0.5, -130], [w * 0.52, 140], [0, 130], [-30, 0]], { w: 2.2, closed: true, color: '#5a4630' });
     c.fillStyle = 'rgba(70, 40, 25, 0.55)';
-    c.font = '700 20px "Space Mono", monospace';
+    c.font = '700 20px "Jost", monospace';
     c.fillText('0412', 30, -80);
     c.restore();
     // the string runs from the eyelet up and away
@@ -313,10 +313,10 @@ export function drawCaseTag(ctx) {
     inkRect(c, X - 12, Y - 12, W + 24, H + 44, { w: 1.6, color: '#6a5238' });
     inkRect(c, X, Y, W, H, { w: 1.2, alpha: 0.6, color: '#4b3a2a' });
     c.fillStyle = '#6b2a22';
-    c.font = 'italic 17px Georgia, serif';
+    c.font = 'italic 17px EB Garamond, Georgia, serif';
     c.fillText('Bellwether', X + 4, Y + H + 24);
     c.fillStyle = 'rgba(60,40,25,0.6)';
-    c.font = '11px "Space Mono", monospace';
+    c.font = '11px "Jost", monospace';
     c.fillText('PACKING CO-OP', X + W - 100, Y + H + 24);
     ink(c, [[w * 0.36, h * 0.12], [X + W * 0.3, Y - 12]], { w: 2.4, color: '#e6dcc2', alpha: 0.9 });
     finish(c, env, { vig: 0.55 });
@@ -581,7 +581,7 @@ export function drawLetter(ctx) {
     c.fillRect(-w * 0.36, -h * 0.42, w * 0.72, h * 0.84);
     c.shadowColor = 'transparent';
     c.fillStyle = 'rgba(30, 30, 70, 0.8)';
-    c.font = 'italic 26px Georgia, serif';
+    c.font = 'italic 26px EB Garamond, Georgia, serif';
     c.fillText('Dear Rosa,', -w * 0.31, -h * 0.28);
     c.strokeStyle = 'rgba(30, 30, 70, 0.55)'; c.lineWidth = 1.6;
     for (let i = 0; i < 7; i += 1) {
@@ -592,7 +592,7 @@ export function drawLetter(ctx) {
       c.stroke();
     }
     c.fillStyle = 'rgba(30, 30, 70, 0.7)';
-    c.font = 'italic 20px Georgia, serif';
+    c.font = 'italic 20px EB Garamond, Georgia, serif';
     c.fillText('…home Saturday.', -w * 0.31, h * 0.34);
     // the bottom-right corner curls up — something glows beneath
     c.fillStyle = '#d8ccb0';
@@ -694,7 +694,7 @@ function boardBase(c, env, w, h, { past = false, requested = false, arrived = fa
     const text = past ? (last ? '#8e2b1f' : '#2b2118') : last ? (arrived ? PAL.amberHot : requested ? '#b08a5a' : '#4f4a44') : '#d8ccb0';
     c.fillStyle = past ? text : last && (arrived || requested) ? PAL.amberHot : lit ? '#d8ccb0' : '#4a4640';
     c.beginPath(); c.arc(bx + 40, y, last ? 9 : 7, 0, Math.PI * 2); c.fill();
-    c.font = `700 ${last ? 30 : 26}px "Space Mono", monospace`;
+    c.font = `700 ${last ? 30 : 26}px "Jost", monospace`;
     c.fillStyle = text;
     c.fillText(stop, bx + 70, y + 9);
     if (last) { nameEnd = bx + 70 + c.measureText(stop).width; lastY = y; }
@@ -704,7 +704,7 @@ function boardBase(c, env, w, h, { past = false, requested = false, arrived = fa
   if (past) {
     // a pencilled tick and "Sat." beside BELLWETHER: someone got off here every week
     ink(c, [[nameEnd + 12, lastY - 6], [nameEnd + 20, lastY + 4], [nameEnd + 36, lastY - 20]], { w: 2.4, color: '#2b2118', bleed: false });
-    c.font = 'italic 16px Georgia, serif';
+    c.font = 'italic 16px EB Garamond, Georgia, serif';
     c.fillStyle = '#2b2118';
     c.fillText('Sat.', nameEnd + 8, lastY + 24);
   }
@@ -736,8 +736,8 @@ function boardBase(c, env, w, h, { past = false, requested = false, arrived = fa
   const textX = knobX + 21 + 14;
   const room = rx + rw - 16 - textX;
   let size = 20;
-  c.font = `700 ${size}px "Space Mono", monospace`;
-  while (size > 12 && c.measureText('REQUEST').width > room) { size -= 1; c.font = `700 ${size}px "Space Mono", monospace`; }
+  c.font = `700 ${size}px "Jost", monospace`;
+  while (size > 12 && c.measureText('REQUEST').width > room) { size -= 1; c.font = `700 ${size}px "Jost", monospace`; }
   const lineGap = Math.round(size * 1.25);
   c.textBaseline = 'middle';
   c.fillText('REQUEST', textX, knobY - lineGap / 2);

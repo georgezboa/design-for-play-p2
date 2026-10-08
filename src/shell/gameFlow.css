@@ -149,7 +149,7 @@
 }
 .nf-cinematic-caption__speaker[hidden] { display: none; }
 .nf-cinematic-caption__text {
-  font: calc(25px * var(--nf-cs)) / 1.42 var(--nf-serif, Georgia, serif);
+  font: calc(25px * var(--nf-cs)) / 1.42 var(--nf-serif, EB Garamond, Georgia, serif);
   white-space: pre-line;
   text-wrap: balance;
 }

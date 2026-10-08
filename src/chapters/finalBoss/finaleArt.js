@@ -472,10 +472,10 @@ export function paintClaimCase({ era = 'present', claim = '', seed = 1, tone = '
     c.translate(tx, ty);
     c.rotate(-0.35);
     c.fillStyle = 'rgba(60, 30, 18, 0.95)';
-    c.font = '700 4.4px "Space Mono", monospace';
+    c.font = '700 4.4px "Jost", monospace';
     const [first, second] = claim.split('·').map((part) => part.trim());
     c.fillText(first ?? '', 10.5, -1.2);
-    c.font = 'italic 700 4.2px Georgia, serif';
+    c.font = 'italic 700 4.2px EB Garamond, Georgia, serif';
     c.fillText(second ?? '', 10.5, 3.8);
     c.restore();
   }
@@ -849,7 +849,7 @@ function orchardCaseOnStep(c, x, y, s = 1, { tagText = '' } = {}) {
   paperTag(c, 48, 18, { angle: 0.35, scale: 1.3, glint: true, string: [34, 2], seed: 7 });
   if (tagText) {
     c.save(); c.translate(48, 18); c.rotate(0.35);
-    c.fillStyle = 'rgba(60, 30, 18, 0.95)'; c.font = '700 4.2px "Space Mono", monospace';
+    c.fillStyle = 'rgba(60, 30, 18, 0.95)'; c.font = '700 4.2px "Jost", monospace';
     c.fillText(tagText, 11, 1.8);
     c.restore();
   }

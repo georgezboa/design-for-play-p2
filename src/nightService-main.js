@@ -21,6 +21,7 @@ import { ACTS, CHECKPOINT_ACTS, FIRST_ACT, resolveActParam, resolveResume, start
 import { createNightServiceAudio } from './chapters/nightService/audio.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from './shell/controlsCard.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { installPhaserMotionGuard } from './shell/motion.js';
 import { DEV_MODE, devParams } from './devMode.js';
@@ -66,6 +67,8 @@ const pause = installPauseMenu({
   // Escape first backs out of whatever is in the player's hands.
   onEscape: () => (scene?.sys?.isActive() ? scene.escape() : false),
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter1', 6500);
 void pause;
 
 const audio = createNightServiceAudio();
@@ -136,9 +139,9 @@ game.canvas.addEventListener('contextmenu', (event) => event.preventDefault());
 window.game = game;
 
 const boot = async () => {
-  // captions use the bundled Space Mono; wait briefly so the first line never
+  // captions use the bundled Jost; wait briefly so the first line never
   // renders in a fallback face
-  try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
+  try { await Promise.race([document.fonts?.load('700 22px "Jost"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
   // dev only: `?from=act0` opens the act as if the previous one just ended
   // (so the carriage wall grows in place) — params are empty in production
   const fromAct = ACTS[params.get('from')] ? params.get('from') : null;

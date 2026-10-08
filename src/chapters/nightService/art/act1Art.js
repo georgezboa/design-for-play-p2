@@ -244,10 +244,10 @@ function lostPropertySign(c, x, y, sw, sh) {
   c.textBaseline = 'middle';
   c.fillStyle = '#efe4cc';
   let size = Math.round(sh * 0.4);
-  c.font = `700 ${size}px "Space Mono", monospace`;
-  while (size > 10 && c.measureText(OFFICE_SIGN[0]).width > sw - 40) { size -= 1; c.font = `700 ${size}px "Space Mono", monospace`; }
+  c.font = `700 ${size}px "Jost", monospace`;
+  while (size > 10 && c.measureText(OFFICE_SIGN[0]).width > sw - 40) { size -= 1; c.font = `700 ${size}px "Jost", monospace`; }
   c.fillText(OFFICE_SIGN[0], x + sw / 2, y + sh * 0.4);
-  c.font = `700 ${Math.max(8, Math.round(size * 0.46))}px "Space Mono", monospace`;
+  c.font = `700 ${Math.max(8, Math.round(size * 0.46))}px "Jost", monospace`;
   c.fillStyle = PAL.brassLight;
   c.fillText(OFFICE_SIGN[1], x + sw / 2, y + sh * 0.76);
   c.restore();
@@ -613,7 +613,7 @@ export function drawCubby(ctx) {
     c.strokeStyle = 'rgba(140, 40, 30, 0.8)'; c.lineWidth = 3;
     c.strokeRect(24, -56, 76, 36);
     c.fillStyle = 'rgba(140, 40, 30, 0.8)';
-    c.font = '700 20px "Space Mono", monospace';
+    c.font = '700 20px "Jost", monospace';
     c.fillText('0412', 30, -31);
     c.fillStyle = '#8a6a40'; c.beginPath(); c.arc(115, -80, 7, 0, Math.PI * 2); c.fill();
     c.strokeStyle = 'rgba(234,223,198,0.7)'; c.lineWidth = 1.2;

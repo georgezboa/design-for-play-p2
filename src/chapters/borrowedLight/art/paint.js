@@ -1261,7 +1261,7 @@ export function paintSplash() {
 }
 
 // Neon sign on a dark board. Low saturation, one of the three line colours.
-export function paintSign(text, color, { w = 220, h = 64, lit = true, font = '"Space Mono", monospace' } = {}) {
+export function paintSign(text, color, { w = 220, h = 64, lit = true, font = '"Jost", monospace' } = {}) {
   const pad = 30;
   const canvas = makeCanvas(w + pad * 2, h + pad * 2);
   const ctx = canvas.getContext('2d');
@@ -1403,12 +1403,12 @@ export function paintBillboard(w, h, text, lit) {
   ctx.strokeStyle = lit ? 'rgba(90,50,20,0.35)' : 'rgba(0,0,0,0.3)';
   ctx.lineWidth = 1;
   for (let px = 90; px < w; px += 96 + r() * 20) { ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px + (r() - 0.5) * 6, h); ctx.stroke(); }
-  ctx.font = `700 ${Math.round(h * 0.34)}px "Space Mono", monospace`;
+  ctx.font = `700 ${Math.round(h * 0.34)}px "Jost", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = lit ? 'rgba(70,32,16,0.9)' : 'rgba(120,110,96,0.35)';
   ctx.fillText(text, w / 2, h * 0.46, w - 40);
-  ctx.font = `400 ${Math.round(h * 0.15)}px "Space Mono", monospace`;
+  ctx.font = `400 ${Math.round(h * 0.15)}px "Jost", monospace`;
   ctx.fillText('THE LAST ARCHIVE LINE · EVERY STOP BY NIGHT', w / 2, h * 0.8, w - 60);
   return canvas;
 }

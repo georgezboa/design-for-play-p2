@@ -1,8 +1,8 @@
 // Chapter 4 // THE PAINTED COUNTRY — shared UI constants (no Phaser, so the
 // node tests can read them). chapterUi.js re-exports all of these.
 
-export const SERIF = 'Georgia, "Times New Roman", "DejaVu Serif", serif';
-export const MONO = '"Space Mono", ui-monospace, SFMono-Regular, Menlo, monospace';
+export const SERIF = '"EB Garamond", Georgia, "Times New Roman", "DejaVu Serif", serif';
+export const MONO = '"Jost", ui-monospace, SFMono-Regular, Menlo, monospace';
 
 // One hold time for every hold in the chapter (take, apply, board, exit).
 export const HOLD_SECONDS = 0.25;

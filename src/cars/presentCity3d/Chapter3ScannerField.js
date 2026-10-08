@@ -43,10 +43,10 @@ function drawWord({ canvas, texture }, word, color) {
   // "RKET WARD CROSSI").
   const room = canvas.width - 56;
   let size = 54;
-  context.font = `700 ${size}px "Space Mono", ui-monospace, monospace`;
+  context.font = `700 ${size}px "Jost", ui-monospace, monospace`;
   while (size > 22 && context.measureText(word).width > room) {
     size -= 2;
-    context.font = `700 ${size}px "Space Mono", ui-monospace, monospace`;
+    context.font = `700 ${size}px "Jost", ui-monospace, monospace`;
   }
   context.textAlign = 'center';
   context.textBaseline = 'middle';

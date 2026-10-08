@@ -200,7 +200,7 @@ export function paintUnfoldTag(c, paper = null, text = 'DRAG · UNFOLD', size = 
   c.lineWidth = 1;
   c.beginPath(); c.moveTo(40, h - 15); c.lineTo(w - 18, h - 15); c.stroke();
   c.fillStyle = '#3a2216';
-  c.font = '700 25px "Space Mono", ui-monospace, monospace';
+  c.font = '700 25px "Jost", ui-monospace, monospace';
   c.textBaseline = 'middle';
   c.textAlign = 'center';
   c.fillText(text, (36 + w - 10) / 2, h / 2 - 2);

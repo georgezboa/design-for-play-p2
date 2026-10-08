@@ -60,7 +60,7 @@ function waxSeal(c, x, y, r, broken) {
     c.lineWidth = 3;
     c.beginPath(); c.arc(x, y, r * 0.64, 0, Math.PI * 2); c.stroke();
     c.fillStyle = '#f0c7b0';
-    c.font = `700 ${Math.round(r * 0.36)}px "Space Mono", monospace`;
+    c.font = `700 ${Math.round(r * 0.36)}px "Jost", monospace`;
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     c.fillText('FILED', x, y + 1);

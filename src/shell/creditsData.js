@@ -167,6 +167,11 @@ export const CREDIT_EXTERNAL = Object.freeze([
     source: 'https://ambientcg.com/',
   },
   {
+    label: 'EB GARAMOND · JOST',
+    detail: 'Typefaces · © The EB Garamond Project Authors, © The Jost Project Authors · SIL Open Font License 1.1',
+    source: 'https://openfontlicense.org/',
+  },
+  {
     label: 'QUATERNIUS DOWNTOWN CITY MEGAKIT',
     detail: 'Concrete asphalt texture behind the Echo City back-street paving · CC0 1.0',
     source: 'https://quaternius.com/',

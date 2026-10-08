@@ -9,9 +9,14 @@ import { btDifficulty } from './constants.js';
 import { completedEnding, showJourneyComplete } from '../finalBoss/journeyComplete.js';
 import { lowGraphicsRequested } from '../finalBoss/finaleQuality.js';
 import { installPauseMenu } from '../../shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from '../../shell/controlsCard.js';
 import { CHAPTER_CONTROLS } from '../../shell/chapterControls.js';
 import { createSaveStore, readSettings } from '../../shell/saveSystem.js';
 import { installPhaserMotionGuard, reducedMotionActive } from '../../shell/motion.js';
+import { waitForFonts } from '../../shared/fonts.js';
+// Round 6 type: start fetching the house faces now, so text painted into
+// canvases and 3D labels a moment later is set in them, not the fallback.
+waitForFonts();
 
 installPhaserMotionGuard(Phaser);
 
@@ -45,6 +50,8 @@ const pauseMenu = installPauseMenu({
   controls: CHAPTER_CONTROLS.blackKnife,
   extraActions: [{ label: 'RESTART THE FIGHT', onSelect: restartFight }],
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('blackTicket', 4500);
 
 // Fight-local shake / flash toggles start from the global settings, and
 // REDUCE MOTION (in-game or OS) switches both off. The difficulty is chosen

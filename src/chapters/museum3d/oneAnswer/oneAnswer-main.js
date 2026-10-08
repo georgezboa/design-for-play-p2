@@ -105,7 +105,7 @@ followLowGraphics(game, { low: 0.5 });
 installWallClock(game);
 
 const boot = async () => {
-  try { await Promise.race([document.fonts?.load('700 22px "Space Mono"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
+  try { await Promise.race([document.fonts?.load('700 22px "Jost"'), new Promise((r) => setTimeout(r, 1200))]); } catch { /* fonts optional */ }
   game.scene.add(PANEL_SCENE, PanelScene, true, { act: ONE_ANSWER_ACT, actId: ONE_ANSWER_ACT.id, step: startStep, services });
   scene = game.scene.getScene(PANEL_SCENE);
   game.canvas.focus();

@@ -13,8 +13,8 @@
 import { READING_INK, paintReadingPaper, readingInsets } from './art/readingArt.js';
 import { NoticeChip } from './chips.js';
 
-const SERIF = 'Georgia, "Times New Roman", "DejaVu Serif", serif';
-const MONO = '"Space Mono", ui-monospace, monospace';
+const SERIF = '"EB Garamond", Georgia, "Times New Roman", "DejaVu Serif", serif';
+const MONO = '"Jost", ui-monospace, monospace';
 const PAD = 44;
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 

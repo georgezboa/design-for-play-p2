@@ -1,7 +1,7 @@
 import { Chapter3VoicePlayback } from './Chapter3VoicePlayback.js';
 
 // Chapter 3 dialogue in the shared caption bar (src/shell/uiKit.css
-// .nf-caption): speaker in amber Space Mono, the line in Georgia, choices as
+// .nf-caption): speaker in amber Jost, the line in EB Garamond, Georgia, choices as
 // brass-edged buttons. It replaces the old 470 px right-hand panel so the
 // speaker stays visible in the frame above it.
 //

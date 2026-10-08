@@ -6,11 +6,16 @@ import { Chapter3OpeningRuntime } from './cars/presentCity3d/Chapter3OpeningRunt
 import { chapter3ResumeStart, createChapter3OpeningModel } from './cars/presentCity3d/chapter3OpeningModel.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
+import { scheduleChapterControlsCard } from './shell/controlsCard.js';
 import { CINEMATICS, navigateAfterCinematic } from './shell/gameFlow.js';
 import { createSaveStore } from './shell/saveSystem.js';
 import { DEV_MODE, devParams } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
 import { reducedMotionActive } from './shell/motion.js';
+import { waitForFonts } from './shared/fonts.js';
+// Round 6 type: start fetching the house faces now, so text painted into
+// canvases and 3D labels a moment later is set in them, not the fallback.
+waitForFonts();
 
 installDevMenuReturnControl();
 // Escape opens the shared pause menu like every other chapter; leaving for
@@ -34,6 +39,8 @@ installPauseMenu({
     return false;
   },
 });
+// Round 6 (item 18): name this chapter's keys once, as play begins.
+scheduleChapterControlsCard('chapter3', 7000);
 
 window.addEventListener('nightfall:chapter3-complete', () => {
   createSaveStore().markCheckpoint('chapter-4-start');

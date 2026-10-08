@@ -93,7 +93,7 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
     this.cameras.main.setDeadzone(260, 160);
 
     this.number = this.add.text(34, 28, '4', {
-      fontFamily: 'Georgia, serif', fontSize: '32px', color: '#4a4640',
+      fontFamily: '"EB Garamond", Georgia, serif', fontSize: '32px', color: '#4a4640',
     }).setScrollFactor(0).setDepth(90).setAlpha(0.55);
     this.controls = this.add.text(PAINTED_COUNTRY_INHABITANT_VIEW.w - 22, PAINTED_COUNTRY_INHABITANT_VIEW.h - 18, 'A/D · SPACE · LEFT PAINT · RIGHT WASH', {
       fontFamily: 'ui-monospace, monospace', fontSize: '9px', color: '#8d8579', letterSpacing: 1.4,
@@ -104,7 +104,7 @@ export class PaintedCountryInhabitantScene extends Phaser.Scene {
       wordWrap: { width: 720 },
     }).setOrigin(0.5, 0).setScrollFactor(0).setDepth(92).setAlpha(0);
     this.endingText = this.add.text(PAINTED_COUNTRY_INHABITANT_VIEW.w / 2, PAINTED_COUNTRY_INHABITANT_VIEW.h / 2, '', {
-      fontFamily: 'Georgia, serif', fontSize: '29px', color: '#3d524a', align: 'center', letterSpacing: 2,
+      fontFamily: '"EB Garamond", Georgia, serif', fontSize: '29px', color: '#3d524a', align: 'center', letterSpacing: 2,
     }).setOrigin(0.5).setScrollFactor(0).setDepth(95).setAlpha(0);
     this.artifactView = this.add.container(2860, GROUND_Y - 112).setDepth(96).setAlpha(0);
     const fold = this.graphics(0);

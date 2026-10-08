@@ -52,8 +52,8 @@ const GRADES = {
   night: [0x101a33, 0.2],
   'deep-night': [0x070b18, 0.32],
 };
-const SERIF = 'Georgia, "Times New Roman", "DejaVu Serif", serif';
-const MONO = '"Space Mono", ui-monospace, monospace';
+const SERIF = '"EB Garamond", Georgia, "Times New Roman", "DejaVu Serif", serif';
+const MONO = '"Jost", ui-monospace, monospace';
 const ROMAN = ['0', 'I', 'II', 'III', 'IV', 'V'];
 /**
  * Press-and-hold on a frame this long (still) and it lifts (spec §3). A press

@@ -370,7 +370,7 @@ export function paintEchoProp(kind) {
     c.fillStyle = '#e8dcc0';
     c.fillRect(W / 2 - 0.45 * S, 1.05 * S, 0.9 * S, 0.5 * S);
     c.fillStyle = ECHO.wine;
-    c.font = `700 ${Math.round(0.3 * S)}px "Space Mono", monospace`;
+    c.font = `700 ${Math.round(0.3 * S)}px "Jost", monospace`;
     c.textAlign = 'center';
     c.fillText('17', W / 2, 1.43 * S);
     ink(c, [[0, 0.8 * S], [0.3 * S, 0.3 * S], [W - 0.3 * S, 0.3 * S], [W, 0.8 * S], [0, 0.8 * S]], { w: 2.6, color: ECHO.ink, alpha: 0.85, bleed: false });

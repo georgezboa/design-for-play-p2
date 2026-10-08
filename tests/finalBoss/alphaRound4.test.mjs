@@ -211,7 +211,9 @@ describe('the Black Ticket: STORY, Chapter 6 keys, the shared pause menu', () =>
 
   it('uses the Conductor\'s keys: SPACE punches, SHIFT / X dash, E / C shield', async () => {
     const { BT_KEYS } = await import('../../src/chapters/blackKnifeFinal/constants.js');
-    assert.match(BT_KEYS.punch, /SPACE/);
+    assert.match(BT_KEYS.punch, /LEFT CLICK \/ Z/);
+    // round 6 (item 18): no jump here, so Space is a silent alias, never shown
+    assert.doesNotMatch(BT_KEYS.punch, /SPACE/);
     assert.match(BT_KEYS.dash, /SHIFT \/ X/);
     assert.doesNotMatch(BT_KEYS.shield, /X/);
     const scene = await source('src/chapters/blackKnifeFinal/scenes/BossScene.js');

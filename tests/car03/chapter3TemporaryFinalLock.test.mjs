@@ -160,12 +160,15 @@ describe('Chapter 3 integrated final lock v48', () => {
     // extras muted. Files: +2 (chapter3ColorGrade, chapter3CastLook):
     // 29 -> 31. Toma's composition unchanged. Assets unchanged.
     // v48 (round 6 merge, lead, 2026-10-07): v47-ch3a and v47-ch3b
-    // together. Files: 29 + 1 (chapter3Entrance) + 2 (chapter3ColorGrade,
-    // chapter3CastLook) -> 32. Toma's composition unchanged. Assets unchanged.
+    // together, plus the lead's integration: the house type (EB Garamond /
+    // Jost in place of Georgia / Space Mono), the controls-stage probe
+    // (publishControlsStage) and a softer dusk fill. Files: 29 + 1
+    // (chapter3Entrance) + 2 (chapter3ColorGrade, chapter3CastLook) -> 32.
+    // Toma's composition unchanged. Assets unchanged.
     assert.equal(sourceFiles.length, 32);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'cfc715cbed221df273e4b01395ceac2b1e3d3394737d85f400e81da3a32d7acd',
+      '108093d4c3351d1ac9f839971fd1235de26654157336683e4a13a8eecd6991f7',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

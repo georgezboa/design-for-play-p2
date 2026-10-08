@@ -113,13 +113,15 @@ export const ASSIST = Object.freeze({
   offerAfterFailures: STORY_OFFER_AFTER_FAILURES,
 });
 
-// The keys, as Chapter 6 has them (alpha round 4: X was dash there and
-// shield here, Shift dash there and boost here): SPACE punches, SHIFT / X
+// The keys (alpha round 4: X was dash there and shield here, Shift dash
+// there and boost here). Round 6 (item 18): this fight has no jump, so Space
+// is no longer the shown punch key; it stays a silent alias. A left click /
+// Z punches, SHIFT / X
 // dashes, and the shield — this fight's own verb — is E / C or a right
 // click. One table for the start board, the HUD and the pause menu.
 export const BT_KEYS = Object.freeze({
   move: 'WASD / ARROWS',
-  punch: 'HOLD SPACE / Z / LEFT CLICK',
+  punch: 'HOLD LEFT CLICK / Z',
   dash: 'HOLD SHIFT / X',
   shield: 'E / C / RIGHT CLICK',
   pause: 'ESC / P',

@@ -192,7 +192,7 @@ export function paintLastCarriage(c, w = 1100, h = 560) {
 
   // ---- lettering on the waist panel ----
   c.save();
-  c.font = `700 ${Math.round(h * 0.03)}px Georgia, "Times New Roman", serif`;
+  c.font = `700 ${Math.round(h * 0.03)}px EB Garamond, Georgia, "Times New Roman", serif`;
   c.textBaseline = 'middle';
   c.fillStyle = 'rgba(217, 181, 110, 0.5)';
   const lineY = L.bodyBottom - 34;
@@ -200,7 +200,7 @@ export function paintLastCarriage(c, w = 1100, h = 560) {
   c.fillText(text, L.endX + 150, lineY);
   // kept left of the Black Ticket board, which hangs over the far bays
   const after = L.endX + 150 + c.measureText(text).width + 28;
-  c.font = `700 ${Math.round(h * 0.02)}px "Space Mono", ui-monospace, monospace`;
+  c.font = `700 ${Math.round(h * 0.02)}px "Jost", ui-monospace, monospace`;
   c.fillStyle = 'rgba(217, 181, 110, 0.42)';
   c.fillText('LAST CARRIAGE · No. 6', after, lineY + 1);
   c.restore();

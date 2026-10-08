@@ -124,3 +124,13 @@ export function installControlsCardListener(win = globalThis.window) {
     showChapterControlsCard(chapter, options);
   });
 }
+
+/**
+ * Show the chapter-entry card `delayMs` after the page starts, by which time
+ * the chapter's own opening title has cleared (the card itself also waits out
+ * films and the pause menu). One call per chapter page.
+ */
+export function scheduleChapterControlsCard(chapterId, delayMs = 3500, options = {}) {
+  if (typeof window === 'undefined') return;
+  window.setTimeout(() => showChapterControlsCard(chapterId, options), delayMs);
+}

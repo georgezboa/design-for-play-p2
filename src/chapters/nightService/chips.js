@@ -10,7 +10,7 @@
 // Chips live on the scene's top layer in screen space (1920×1080) and take
 // no input themselves: the scene asks `contains(x, y)` (NEED A HINT? is clickable).
 
-const MONO = '"Space Mono", ui-monospace, monospace';
+const MONO = '"Jost", ui-monospace, monospace';
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
 /**

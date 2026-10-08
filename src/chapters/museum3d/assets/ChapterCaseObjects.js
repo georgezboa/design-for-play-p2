@@ -61,7 +61,7 @@ function grain(c, w, h, seed = 3) {
 
 function mono(c, text, x, y, size, { color = INK, align = 'left', weight = 700 } = {}) {
   c.fillStyle = color;
-  c.font = `${weight} ${size}px "Space Mono", "Courier New", monospace`;
+  c.font = `${weight} ${size}px "Jost", "Courier New", monospace`;
   c.textAlign = align;
   c.textBaseline = 'middle';
   c.fillText(text, x, y);
@@ -69,7 +69,7 @@ function mono(c, text, x, y, size, { color = INK, align = 'left', weight = 700 }
 
 function serif(c, text, x, y, size, { color = INK, align = 'left', italic = false } = {}) {
   c.fillStyle = color;
-  c.font = `${italic ? 'italic ' : ''}700 ${size}px Georgia, serif`;
+  c.font = `${italic ? 'italic ' : ''}700 ${size}px EB Garamond, Georgia, serif`;
   c.textAlign = align;
   c.textBaseline = 'middle';
   c.fillText(text, x, y);

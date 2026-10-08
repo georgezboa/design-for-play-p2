@@ -2,7 +2,7 @@ import { chapter05VoiceAssetFor } from '../generated/chapter05VoiceAssets.js';
 import { VoicePlayback } from './VoicePlayback.js';
 
 // Subtitle dialogue queue, drawn in the shared `.nf-caption` bar
-// (src/shell/uiKit.css): speaker in amber Space Mono, the line in Georgia.
+// (src/shell/uiKit.css): speaker in amber Jost, the line in EB Garamond, Georgia.
 // Lines stay on screen long enough to read at normal speaking speed; E/Enter
 // advances early while Space jumps.
 
