@@ -7,18 +7,25 @@ every file here, `atlas.json` and `src/chapters/nightService/spriteAtlas.js`).
 Sources are the 1536x1024 sheets in the art drop (`C-*.png`), each on a flat grey ground.
 Crop box: the figure in source pixels (x0 y0 x1 y1) after keying; scale: output px per source px.
 Every file also has `@2` and `@4` copies at 1/2 and 1/4 size (for figures drawn small).
-Frames edited beyond keying (see the script's FRAMES for the polygons): butch/desk, butch/sit-chair, butch/ticket, conductor/offer, conductor/offer-empty, conductor/stand-empty.
+Frames edited beyond keying (see the script's FRAMES for the polygons): butch/carry, butch/desk, butch/sit-chair, butch/ticket, butch/walk-5, butch/walk-6, conductor/offer, conductor/offer-empty, conductor/stand-empty.
+Graded to the first sheet's Butch (coat light and colour; highlights kept): `C-butch-walk.png` gain 0.874 offset -1.77 chroma x1.231; `C-butch-carry.png` gain 0.854 offset 5.73 chroma x0.713.
 
 | Output | Rig / kind | Source | Crop box (source px) | Scale | Size | Notes |
 | --- | --- | --- | --- | --- | --- | --- |
-| `butch/walk-1.webp` | butch | `C-butch-poses.png` | 17 81 218 447 | 1.1663 | 246x439 |  |
-| `butch/walk-2.webp` | butch | `C-butch-poses.png` | 219 82 420 447 | 1.1631 | 246x437 |  |
-| `butch/walk-3.webp` | butch | `C-butch-poses.png` | 440 81 554 447 | 1.1567 | 144x435 |  |
-| `butch/walk-4.webp` | butch | `C-butch-poses.png` | 590 80 730 448 | 1.1536 | 173x437 |  |
-| `butch/walk-5.webp` | butch | `C-butch-poses.png` | 770 82 968 444 | 1.1695 | 244x435 |  |
-| `butch/walk-6.webp` | butch | `C-butch-poses.png` | 968 81 1154 448 | 1.1695 | 230x441 |  |
-| `butch/walk-7.webp` | butch | `C-butch-poses.png` | 1163 78 1278 447 | 1.1473 | 144x435 |  |
-| `butch/walk-8.webp` | butch | `C-butch-poses.png` | 1326 82 1497 446 | 1.1631 | 211x435 |  |
+| `butch/walk-1.webp` | butch | `C-butch-walk.png` | 25 337 234 708 | 1.1291 | 248x431 |  |
+| `butch/walk-2.webp` | butch | `C-butch-walk.png` | 233 338 416 708 | 1.1321 | 219x431 |  |
+| `butch/walk-3.webp` | butch | `C-butch-walk.png` | 416 335 558 709 | 1.123 | 171x432 |  |
+| `butch/walk-4.webp` | butch | `C-butch-walk.png` | 591 331 759 710 | 1.1111 | 199x433 |  |
+| `butch/walk-5.webp` | butch | `C-butch-walk.png` | 765 338 986 709 | 1.1321 | 262x432 |  |
+| `butch/walk-6.webp` | butch | `C-butch-walk.png` | 967 337 1154 708 | 1.1291 | 223x431 |  |
+| `butch/walk-7.webp` | butch | `C-butch-walk.png` | 1158 334 1290 708 | 1.12 | 160x431 |  |
+| `butch/walk-8.webp` | butch | `C-butch-walk.png` | 1336 334 1509 708 | 1.12 | 206x431 |  |
+| `butch/carry-1.webp` | butch | `C-butch-carry.png` | 25 244 320 768 | 0.8037 | 249x433 |  |
+| `butch/carry-2.webp` | butch | `C-butch-carry.png` | 298 255 543 769 | 0.8209 | 213x434 |  |
+| `butch/carry-3.webp` | butch | `C-butch-carry.png` | 544 245 771 770 | 0.8052 | 195x435 |  |
+| `butch/carry-4.webp` | butch | `C-butch-carry.png` | 762 248 1070 769 | 0.8083 | 261x433 |  |
+| `butch/carry-5.webp` | butch | `C-butch-carry.png` | 1050 256 1301 768 | 0.8225 | 218x433 |  |
+| `butch/carry-6.webp` | butch | `C-butch-carry.png` | 1297 246 1523 768 | 0.8083 | 195x434 |  |
 | `butch/stand.webp` | butch | `C-butch-poses.png` | 32 517 157 937 | 1.0667 | 145x460 |  |
 | `butch/stand-large.webp` | butch | `C-butch-poses-2.png` | 118 15 256 471 | 0.9825 | 148x460 |  |
 | `butch/sleep.webp` | butch | `C-butch-poses-2.png` | 436 160 740 463 | 0.9825 | 311x310 |  |
@@ -29,7 +36,6 @@ Frames edited beyond keying (see the script's FRAMES for the polygons): butch/de
 | `butch/reach.webp` | butch | `C-butch-poses-2.png` | 151 471 459 963 | 0.9825 | 315x495 |  |
 | `butch/receive.webp` | butch | `C-butch-poses-2.png` | 631 500 903 964 | 0.9825 | 279x468 |  |
 | `butch/carry.webp` | butch | `C-butch-poses.png` | 1357 556 1520 944 | 1.1258 | 196x449 |  |
-| `butch/carry-walk.webp` | butch | `C-butch-poses-2.png` | 1047 500 1335 961 | 0.9825 | 295x465 |  |
 | `butch/ticket.webp` | butch | `C-butch-poses.png` | 1143 564 1291 940 | 1.1796 | 187x456 |  |
 | `conductor/lantern.webp` | conductor | `C-conductor.png` | 1124 124 1507 876 | 0.6358 | 255x490 | mirrored to face right |
 | `conductor/offer.webp` | conductor | `C-conductor.png` | 23 124 393 875 | 0.6358 | 247x489 | mirrored to face right |

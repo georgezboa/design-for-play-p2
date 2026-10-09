@@ -90,13 +90,13 @@ test('sprites: every pose, carried thing and gesture the acts use has a painted 
     if (u.pose) {
       const f = spec.poses[u.pose];
       assert.ok(f, `${u.act}: ${u.kind} pose '${u.pose}' is mapped explicitly`);
-      if (f === '@walk') assert.ok(sheet.cycles?.walk?.frames.every((n) => sheet.frames[n]), `${u.kind} walk cycle frames exist`);
+      if (f.startsWith('@')) assert.ok(sheet.cycles?.[f.slice(1)]?.frames.every((n) => sheet.frames[n]), `${u.kind} ${f} cycle frames exist`);
       else assert.ok(sheet.frames[f], `${u.kind} pose ${u.pose} → frame ${f} exists`);
     }
     if (u.carrying) {
-      const pair = spec.carry?.[u.carrying];
+      const pair = spec.carry?.[u.carrying === true ? 'case' : u.carrying];
       assert.ok(pair || PROP_SIZES[u.carrying], `${u.act}: ${u.kind} carrying ${u.carrying} has a painted frame or a prop`);
-      (pair ?? []).forEach((n) => assert.ok(sheet.frames[n], `${n} exists`));
+      (pair ?? []).forEach((n) => assert.ok(n.startsWith('@') ? sheet.cycles[n.slice(1)] : sheet.frames[n], `${n} exists`));
     }
   });
 });
@@ -107,7 +107,8 @@ test('sprites: the pose → frame table (round 7 report)', () => {
     idle: 'stand', stand: 'stand', walk: '@walk', sleep: 'sleep', sit: 'sit', 'sit-chair': 'sit-chair',
     ticket: 'ticket', lantern: 'lantern', reach: 'reach', receive: 'receive', carry: 'carry',
   });
-  assert.deepEqual([...SPRITE_RIGS.butch.carry.case], ['carry', 'carry-walk']);
+  // round 8: walking with the case plays George's six-frame carry walk
+  assert.deepEqual([...SPRITE_RIGS.butch.carry.case], ['carry', '@carry']);
   assert.equal(SPRITE_RIGS.conductor.idle, 'lantern');
   assert.equal(SPRITE_RIGS.conductor.gestures.offer.frame, 'offer');
   assert.equal(SPRITE_RIGS.mara.idle, 'turn');
@@ -157,7 +158,7 @@ test('sprites: every frame of a character shares one scale, one feet baseline, a
     Object.entries(c.frames).forEach(([frame, f]) => {
       if (f.overlay) return; // a piece drawn over another frame, placed by that frame's pivot
       assert.ok(f.pivot[0] > 0 && f.pivot[0] < f.w, `${name}/${frame}: pivot x inside`);
-      if (/^walk-/.test(frame)) {
+      if (/^(walk|carry)-/.test(frame)) {
         // a walk frame stands on its planted foot; a nearer swinging foot may dip below the line
         assert.ok(f.pivot[1] <= f.h - ATLAS.pad + 0.01 && f.pivot[1] > f.h - ATLAS.pad - 0.04 * f.h, `${name}/${frame}: floor line at the planted foot`);
       } else {
@@ -168,13 +169,12 @@ test('sprites: every frame of a character shares one scale, one feet baseline, a
     // a standing frame is the character's full height
     const stand = c.frames.stand ?? c.frames.turn;
     assert.ok(Math.abs(stand.h - 2 * ATLAS.pad - c.frameHeight) <= 1, `${name}: standing frame is ${c.frameHeight} px`);
-    // a walk cycle's frames are one height (no bobbing from frame to frame)
-    const cycle = c.cycles?.walk;
-    if (cycle) {
+    // a cycle's frames are one height (no bobbing from frame to frame)
+    Object.entries(c.cycles ?? {}).forEach(([cname, cycle]) => {
       // cap (or crown) to the planted foot: one height
       const hs = cycle.frames.map((n) => c.frames[n].pivot[1] - ATLAS.pad);
-      assert.ok(Math.max(...hs) - Math.min(...hs) <= 1, `${name}: walk frames share a height (${hs})`);
-    }
+      assert.ok(Math.max(...hs) - Math.min(...hs) <= 1, `${name}: ${cname} frames share a height (${hs})`);
+    });
   });
   // 2x the largest on-screen size, roughly: Butch's standing frame is 400-500 px tall
   assert.ok(ATLAS.characters.butch.frameHeight >= 400 && ATLAS.characters.butch.frameHeight <= 500);
@@ -186,6 +186,62 @@ test('sprites: Mara keeps her face hidden (only back and side frames exist for h
   framesOf('mara').forEach((n) => assert.ok(names.includes(n)));
 });
 
+test('round 8: the batch-2 walk and the carry walk match the standing frame (no pop), and are graded to it', () => {
+  const b = ATLAS.characters.butch;
+  // the cap's brim is the same width in every upright frame: one figure scale
+  const stand = b.frames.stand.cap;
+  ['walk', 'carry'].forEach((cname) => b.cycles[cname].frames.forEach((n) => {
+    assert.ok(Math.abs(b.frames[n].cap / stand - 1) < 0.04, `${n}: cap ${b.frames[n].cap} vs stand ${stand}`);
+    assert.match(b.frames[n].source.file, /^C-butch-(walk|carry)\.png$/, `${n} is from batch 2`);
+  }));
+  // walking, he stoops a little (93-95% of his standing height); the carry walk likewise
+  const h = (n) => b.frames[n].pivot[1] - ATLAS.pad;
+  const walkH = h('walk-1') / h('stand');
+  const carryH = h('carry-1') / h('stand');
+  assert.ok(walkH > 0.92 && walkH < 0.96, `walk ${walkH.toFixed(3)}`);
+  assert.ok(carryH > 0.92 && carryH < 0.96, `carry ${carryH.toFixed(3)}`);
+  // the later sheets were graded to the first (their fits are in the atlas)
+  assert.deepEqual(Object.keys(ATLAS.grades).sort(), ['C-butch-carry.png', 'C-butch-walk.png']);
+  // every carry-walk frame shows the case, and its lantern
+  b.cycles.carry.frames.forEach((n) => {
+    assert.ok(b.frames[n].anchors.case, `${n}: the case`);
+    assert.ok(b.frames[n].anchors.glow, `${n}: the lantern below it`);
+  });
+  // the old single carry-walk frame is gone (the cycle replaces it)
+  assert.equal(b.frames['carry-walk'], undefined);
+});
+
+test('round 8: walking with the case plays the carry cycle by distance; the case prop stays hidden', () => {
+  const cyc = ATLAS.characters.butch.cycles.carry;
+  assert.equal(cyc.frames.length, 6);
+  assert.equal(cyc.steps, 2);
+  const a = createAnimator('butch');
+  a.update(16, { pose: 'idle', time: 0, carrying: 'case' });
+  const seq = walk(a, cyc.stride - 0.01, { per: 0.2, carrying: 'case' }).filter((f, i, all) => f !== all[i - 1]);
+  assert.deepEqual(seq, cyc.frames, 'one stride shows every carry frame, in order');
+  // `carrying: true` is the case
+  const t = createAnimator('butch');
+  const v = t.update(16, { pose: 'walk', moving: true, time: 16, carrying: true, travelled: 0.5 });
+  assert.equal(v.frame, 'carry-1');
+  assert.equal(v.prop, null, 'no case sprite in hand: the painted frames show the case');
+  assert.ok(v.glow, 'the lantern under the case glows');
+  for (let i = 0; i < 60; i++) {
+    const w = t.update(16, { pose: 'walk', moving: true, time: 32 + i * 16, carrying: true, travelled: 0.5 });
+    assert.equal(w.prop, null);
+    assert.match(w.frame, /^carry-\d$/);
+  }
+  // he stops in the carry sheet's passing pose (the same case); a case received standing is the standing frame
+  assert.match(t.update(16, { pose: 'idle', time: 2000, carrying: true }).frame, /^carry-[36]$/);
+  assert.equal(createAnimator('butch').update(16, { pose: 'idle', time: 0, carrying: 'case' }).frame, 'carry');
+  // putting the case down mid-stride: the walk starts again from its contact frame
+  t.update(16, { pose: 'walk', moving: true, time: 2016, carrying: true, travelled: 9 });
+  assert.equal(t.update(16, { pose: 'walk', moving: true, time: 2032, carrying: null, travelled: 0.2 }).frame, 'walk-1');
+  // the set-down fx (rigPoint 8, -34) takes the case from the frame he shows
+  const s = createAnimator('butch');
+  s.update(16, { pose: 'walk', moving: true, time: 0, carrying: 'case', travelled: 20 });
+  assert.deepEqual(s.mapPoint(8, -34), anchorPoint('butch', s.frame, 'case'));
+});
+
 test('sprites: the walk cycles cover a plausible stride with little foot slide', () => {
   const butch = ATLAS.characters.butch.cycles.walk;
   assert.equal(butch.frames.length, 8);
@@ -195,13 +251,18 @@ test('sprites: the walk cycles cover a plausible stride with little foot slide',
   const mara = ATLAS.characters.mara.cycles.walk;
   assert.equal(mara.steps, 1);
   assert.ok(mara.stride > 0.25 * 66 && mara.stride < 0.55 * 66, `step ${mara.stride}`);
-  [butch, mara].forEach((cyc) => {
+  const carry = ATLAS.characters.butch.cycles.carry;
+  assert.ok(carry.stride > 0.5 * 70 && carry.stride < 0.9 * 70, `carry stride ${carry.stride}`);
+  // round 8: the batch-2 walk slides less than round 7's (3.87 tile px)
+  assert.ok(butch.maxSlide < 3.6, `walk slide ${butch.maxSlide}`);
+  // (the carry sheet has three frames a step, two of them nearly one moment: a little more slide)
+  [[butch, 70, 0.07], [mara, 66, 0.07], [carry, 70, 0.075]].forEach(([cyc, height, slideShare]) => {
     assert.equal(cyc.at[0], 0);
     cyc.at.forEach((a, i) => { if (i) assert.ok(a > cyc.at[i - 1], 'windows in order'); });
     const windows = cyc.at.map((a, i) => (cyc.at[i + 1] ?? 1) - a);
     assert.ok(Math.max(...windows) < 0.25, 'no pose is held for more than a quarter of the cycle');
     // the solver's worst planted-foot slide: under 7% of the figure's height
-    assert.ok(cyc.maxSlide < 0.07 * (cyc === butch ? 70 : 66), `slide ${cyc.maxSlide}`);
+    assert.ok(cyc.maxSlide < slideShare * height, `slide ${cyc.maxSlide}`);
   });
 });
 
@@ -261,7 +322,7 @@ test('sprites: poses, the carried case, the gestures, the punch handed over', ()
   const fresh = createAnimator('butch');
   assert.equal(fresh.update(16, { pose: 'sit', time: 0 }).overlay, null, 'a sit that never slept at the desk has only its stool');
   assert.equal(b.update(16, { pose: 'idle', time: 716, carrying: 'case' }).frame, 'carry');
-  assert.equal(b.update(16, { pose: 'idle', moving: true, time: 732, carrying: 'case', travelled: 2 }).frame, 'carry-walk');
+  assert.equal(b.update(16, { pose: 'idle', moving: true, time: 732, carrying: 'case', travelled: 2 }).frame, 'carry-1');
   // receive: the open hand for a moment, then back
   b.update(16, { pose: 'idle', time: 1000 });
   b.gesture('receive', 1000);

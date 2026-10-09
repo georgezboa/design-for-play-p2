@@ -11,331 +11,615 @@
    "frames": {
     "walk-1": {
      "file": "butch/walk-1.webp",
-     "w": 246,
-     "h": 439,
+     "w": 248,
+     "h": 431,
      "pivot": [
-      115.4,
-      429.5
+      115.5,
+      425.0
      ],
      "anchors": {
       "glow": [
-       134.1,
-       297.6
+       146.9,
+       293.2
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       17,
-       81,
-       218,
-       447
+       25,
+       337,
+       234,
+       708
       ],
-      "scale": 1.1663,
+      "scale": 1.1291,
       "flipped": false
      },
+     "cap": 66.6,
      "mips": [
       {
        "file": "butch/walk-1@2.webp",
-       "w": 123,
-       "h": 220,
-       "v": "cd1f546c45"
+       "w": 124,
+       "h": 216,
+       "v": "fce0391fa8"
       },
       {
        "file": "butch/walk-1@4.webp",
        "w": 62,
-       "h": 110,
-       "v": "61438aea82"
+       "h": 108,
+       "v": "9055db7b69"
       }
      ],
-     "v": "59eaa626b5"
+     "v": "c73ac6a2da"
     },
     "walk-2": {
      "file": "butch/walk-2.webp",
-     "w": 246,
-     "h": 437,
+     "w": 219,
+     "h": 431,
      "pivot": [
-      129.3,
-      429.8
+      104.5,
+      425.0
      ],
      "anchors": {
       "glow": [
-       135.0,
-       297.8
+       124.7,
+       288.7
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       219,
-       82,
-       420,
-       447
+       233,
+       338,
+       416,
+       708
       ],
-      "scale": 1.1631,
+      "scale": 1.1321,
       "flipped": false
      },
+     "cap": 66.8,
      "mips": [
       {
        "file": "butch/walk-2@2.webp",
-       "w": 123,
-       "h": 218,
-       "v": "019825269a"
+       "w": 110,
+       "h": 216,
+       "v": "aefaa25a2d"
       },
       {
        "file": "butch/walk-2@4.webp",
-       "w": 62,
-       "h": 109,
-       "v": "6315c77c1a"
+       "w": 55,
+       "h": 108,
+       "v": "b7648477b9"
       }
      ],
-     "v": "12878e0bee"
+     "v": "ebeb83780d"
     },
     "walk-3": {
      "file": "butch/walk-3.webp",
-     "w": 144,
-     "h": 435,
+     "w": 171,
+     "h": 432,
      "pivot": [
-      63.6,
-      429.0
+      92.4,
+      424.9
      ],
      "anchors": {
       "glow": [
-       92.0,
-       296.0
+       122.5,
+       292.6
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       440,
-       81,
-       554,
-       447
+       416,
+       335,
+       558,
+       709
       ],
-      "scale": 1.1567,
+      "scale": 1.123,
       "flipped": false
      },
+     "cap": 66.3,
      "mips": [
       {
        "file": "butch/walk-3@2.webp",
-       "w": 72,
-       "h": 218,
-       "v": "6bbe8a458c"
+       "w": 86,
+       "h": 216,
+       "v": "5120c5fab7"
       },
       {
        "file": "butch/walk-3@4.webp",
-       "w": 36,
-       "h": 109,
-       "v": "b9b4789606"
+       "w": 43,
+       "h": 108,
+       "v": "2fbccc1e64"
       }
      ],
-     "v": "f66e3aa64d"
+     "v": "a506c63f1e"
     },
     "walk-4": {
      "file": "butch/walk-4.webp",
-     "w": 173,
-     "h": 437,
+     "w": 199,
+     "h": 433,
      "pivot": [
-      90.4,
-      429.8
+      87.7,
+      424.8
      ],
      "anchors": {
       "glow": [
-       147.8,
-       276.3
+       124.1,
+       295.3
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       590,
-       80,
-       730,
-       448
+       591,
+       331,
+       759,
+       710
       ],
-      "scale": 1.1536,
+      "scale": 1.1111,
       "flipped": false
      },
+     "cap": 65.6,
      "mips": [
       {
        "file": "butch/walk-4@2.webp",
-       "w": 86,
-       "h": 218,
-       "v": "af13b351ef"
+       "w": 100,
+       "h": 216,
+       "v": "baff23829a"
       },
       {
        "file": "butch/walk-4@4.webp",
-       "w": 43,
-       "h": 109,
-       "v": "253631abbf"
+       "w": 50,
+       "h": 108,
+       "v": "be3d9aa6be"
       }
      ],
-     "v": "ae913b3375"
+     "v": "7e170f2175"
     },
     "walk-5": {
      "file": "butch/walk-5.webp",
-     "w": 244,
-     "h": 435,
+     "w": 262,
+     "h": 432,
      "pivot": [
-      112.5,
-      429.0
+      115.1,
+      424.9
      ],
      "anchors": {
       "glow": [
-       133.4,
-       296.1
+       144.9,
+       296.3
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       770,
-       82,
-       968,
-       444
+       765,
+       338,
+       986,
+       709
       ],
-      "scale": 1.1695,
+      "scale": 1.1321,
       "flipped": false
      },
+     "cap": 66.8,
      "mips": [
       {
        "file": "butch/walk-5@2.webp",
-       "w": 122,
-       "h": 218,
-       "v": "42a5a2da10"
+       "w": 131,
+       "h": 216,
+       "v": "e3c1cab8fe"
       },
       {
        "file": "butch/walk-5@4.webp",
-       "w": 61,
-       "h": 109,
-       "v": "9dda46b1af"
+       "w": 66,
+       "h": 108,
+       "v": "a751bb3fbe"
       }
      ],
-     "v": "ab03e26448"
+     "v": "d257be4f56"
     },
     "walk-6": {
      "file": "butch/walk-6.webp",
-     "w": 230,
-     "h": 441,
+     "w": 223,
+     "h": 431,
      "pivot": [
-      113.0,
-      429.2
+      105.3,
+      425.0
      ],
      "anchors": {
       "glow": [
-       121.9,
-       298.0
+       132.9,
+       288.5
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       968,
-       81,
+       967,
+       337,
        1154,
-       448
+       708
       ],
-      "scale": 1.1695,
+      "scale": 1.1291,
       "flipped": false
      },
+     "cap": 66.6,
      "mips": [
       {
        "file": "butch/walk-6@2.webp",
-       "w": 115,
-       "h": 220,
-       "v": "b13dccd30b"
+       "w": 112,
+       "h": 216,
+       "v": "880efba724"
       },
       {
        "file": "butch/walk-6@4.webp",
-       "w": 58,
-       "h": 110,
-       "v": "5a2c1b9c94"
+       "w": 56,
+       "h": 108,
+       "v": "4613beda16"
       }
      ],
-     "v": "3cd0a63ced"
+     "v": "a6fb91ae8b"
     },
     "walk-7": {
      "file": "butch/walk-7.webp",
-     "w": 144,
-     "h": 435,
+     "w": 160,
+     "h": 431,
      "pivot": [
-      68.7,
-      429.0
+      79.4,
+      425.0
      ],
      "anchors": {
       "glow": [
-       88.0,
-       297.1
+       122.2,
+       295.6
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       1163,
-       78,
-       1278,
-       447
+       1158,
+       334,
+       1290,
+       708
       ],
-      "scale": 1.1473,
+      "scale": 1.12,
       "flipped": false
      },
+     "cap": 66.1,
      "mips": [
       {
        "file": "butch/walk-7@2.webp",
-       "w": 72,
-       "h": 218,
-       "v": "e2a88e9f21"
+       "w": 80,
+       "h": 216,
+       "v": "1ba8208486"
       },
       {
        "file": "butch/walk-7@4.webp",
-       "w": 36,
-       "h": 109,
-       "v": "0e0d5b808e"
+       "w": 40,
+       "h": 108,
+       "v": "09f2e420c0"
       }
      ],
-     "v": "36f8988bac"
+     "v": "d985ea4526"
     },
     "walk-8": {
      "file": "butch/walk-8.webp",
-     "w": 211,
-     "h": 435,
+     "w": 206,
+     "h": 431,
      "pivot": [
-      91.5,
-      429.0
+      85.1,
+      425.0
      ],
      "anchors": {
       "glow": [
-       174.5,
-       277.0
+       133.2,
+       290.4
       ]
      },
      "source": {
-      "file": "C-butch-poses.png",
+      "file": "C-butch-walk.png",
       "box": [
-       1326,
-       82,
-       1497,
-       446
+       1336,
+       334,
+       1509,
+       708
       ],
-      "scale": 1.1631,
+      "scale": 1.12,
       "flipped": false
      },
+     "cap": 65.0,
      "mips": [
       {
        "file": "butch/walk-8@2.webp",
-       "w": 106,
-       "h": 218,
-       "v": "f632a76c0c"
+       "w": 103,
+       "h": 216,
+       "v": "714b375102"
       },
       {
        "file": "butch/walk-8@4.webp",
-       "w": 53,
-       "h": 109,
-       "v": "6bf55ab431"
+       "w": 52,
+       "h": 108,
+       "v": "67adb6c8ee"
       }
      ],
-     "v": "510b4c8a92"
+     "v": "8793a5b386"
+    },
+    "carry-1": {
+     "file": "butch/carry-1.webp",
+     "w": 249,
+     "h": 433,
+     "pivot": [
+      107.7,
+      427.0
+     ],
+     "anchors": {
+      "glow": [
+       166.7,
+       243.6
+      ],
+      "case": [
+       168.5,
+       144.8
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       25,
+       244,
+       320,
+       768
+      ],
+      "scale": 0.8037,
+      "flipped": false
+     },
+     "cap": 65.9,
+     "mips": [
+      {
+       "file": "butch/carry-1@2.webp",
+       "w": 124,
+       "h": 216,
+       "v": "26225b6ba5"
+      },
+      {
+       "file": "butch/carry-1@4.webp",
+       "w": 62,
+       "h": 108,
+       "v": "96ef289eb2"
+      }
+     ],
+     "v": "d3bd1fd0fc"
+    },
+    "carry-2": {
+     "file": "butch/carry-2.webp",
+     "w": 213,
+     "h": 434,
+     "pivot": [
+      82.5,
+      427.2
+     ],
+     "anchors": {
+      "glow": [
+       142.0,
+       253.0
+      ],
+      "case": [
+       152.1,
+       156.0
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       298,
+       255,
+       543,
+       769
+      ],
+      "scale": 0.8209,
+      "flipped": false
+     },
+     "cap": 65.7,
+     "mips": [
+      {
+       "file": "butch/carry-2@2.webp",
+       "w": 106,
+       "h": 217,
+       "v": "a43a173ec2"
+      },
+      {
+       "file": "butch/carry-2@4.webp",
+       "w": 53,
+       "h": 108,
+       "v": "f6b4592b0a"
+      }
+     ],
+     "v": "3e7d79042d"
+    },
+    "carry-3": {
+     "file": "butch/carry-3.webp",
+     "w": 195,
+     "h": 435,
+     "pivot": [
+      102.6,
+      427.4
+     ],
+     "anchors": {
+      "glow": [
+       124.0,
+       244.9
+      ],
+      "case": [
+       137.2,
+       146.6
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       544,
+       245,
+       771,
+       770
+      ],
+      "scale": 0.8052,
+      "flipped": false
+     },
+     "cap": 66.0,
+     "mips": [
+      {
+       "file": "butch/carry-3@2.webp",
+       "w": 98,
+       "h": 218,
+       "v": "909fbbf13b"
+      },
+      {
+       "file": "butch/carry-3@4.webp",
+       "w": 49,
+       "h": 109,
+       "v": "ad69b24c1c"
+      }
+     ],
+     "v": "08c69275ae"
+    },
+    "carry-4": {
+     "file": "butch/carry-4.webp",
+     "w": 261,
+     "h": 433,
+     "pivot": [
+      117.0,
+      427.0
+     ],
+     "anchors": {
+      "glow": [
+       170.4,
+       248.4
+      ],
+      "case": [
+       190.4,
+       132.0
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       762,
+       248,
+       1070,
+       769
+      ],
+      "scale": 0.8083,
+      "flipped": false
+     },
+     "cap": 64.7,
+     "mips": [
+      {
+       "file": "butch/carry-4@2.webp",
+       "w": 130,
+       "h": 216,
+       "v": "2bb5bba3c3"
+      },
+      {
+       "file": "butch/carry-4@4.webp",
+       "w": 65,
+       "h": 108,
+       "v": "725dfedcad"
+      }
+     ],
+     "v": "2dad6964be"
+    },
+    "carry-5": {
+     "file": "butch/carry-5.webp",
+     "w": 218,
+     "h": 433,
+     "pivot": [
+      83.9,
+      427.0
+     ],
+     "anchors": {
+      "glow": [
+       145.1,
+       252.8
+      ],
+      "case": [
+       163.1,
+       157.9
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       1050,
+       256,
+       1301,
+       768
+      ],
+      "scale": 0.8225,
+      "flipped": false
+     },
+     "cap": 66.6,
+     "mips": [
+      {
+       "file": "butch/carry-5@2.webp",
+       "w": 109,
+       "h": 216,
+       "v": "3849a64c43"
+      },
+      {
+       "file": "butch/carry-5@4.webp",
+       "w": 54,
+       "h": 108,
+       "v": "d65e819882"
+      }
+     ],
+     "v": "19e0cecfb6"
+    },
+    "carry-6": {
+     "file": "butch/carry-6.webp",
+     "w": 195,
+     "h": 434,
+     "pivot": [
+      107.6,
+      427.2
+     ],
+     "anchors": {
+      "glow": [
+       122.7,
+       245.2
+      ],
+      "case": [
+       147.6,
+       148.5
+      ]
+     },
+     "source": {
+      "file": "C-butch-carry.png",
+      "box": [
+       1297,
+       246,
+       1523,
+       768
+      ],
+      "scale": 0.8083,
+      "flipped": false
+     },
+     "cap": 66.3,
+     "mips": [
+      {
+       "file": "butch/carry-6@2.webp",
+       "w": 98,
+       "h": 217,
+       "v": "ab366e1d7f"
+      },
+      {
+       "file": "butch/carry-6@4.webp",
+       "w": 49,
+       "h": 108,
+       "v": "c92bed4ca4"
+      }
+     ],
+     "v": "f7c473eb1d"
     },
     "stand": {
      "file": "butch/stand.webp",
@@ -362,6 +646,7 @@
       "scale": 1.0667,
       "flipped": false
      },
+     "cap": 66.1,
      "mips": [
       {
        "file": "butch/stand@2.webp",
@@ -403,6 +688,7 @@
       "scale": 0.9825,
       "flipped": false
      },
+     "cap": 67.8,
      "mips": [
       {
        "file": "butch/stand-large@2.webp",
@@ -710,6 +996,10 @@
       443.0
      ],
      "anchors": {
+      "glow": [
+       119.3,
+       273.7
+      ],
       "case": [
        131.3,
        162.6
@@ -726,62 +1016,22 @@
       "scale": 1.1258,
       "flipped": false
      },
+     "cap": 64.2,
      "mips": [
       {
        "file": "butch/carry@2.webp",
        "w": 98,
        "h": 224,
-       "v": "5159701753"
+       "v": "5d0e4edbb1"
       },
       {
        "file": "butch/carry@4.webp",
        "w": 49,
        "h": 112,
-       "v": "c3311d5653"
+       "v": "fb675a2d7b"
       }
      ],
-     "v": "7eec1b3ae3"
-    },
-    "carry-walk": {
-     "file": "butch/carry-walk.webp",
-     "w": 295,
-     "h": 465,
-     "pivot": [
-      175.3,
-      459.0
-     ],
-     "anchors": {
-      "case": [
-       210.4,
-       138.7
-      ]
-     },
-     "source": {
-      "file": "C-butch-poses-2.png",
-      "box": [
-       1047,
-       500,
-       1335,
-       961
-      ],
-      "scale": 0.9825,
-      "flipped": false
-     },
-     "mips": [
-      {
-       "file": "butch/carry-walk@2.webp",
-       "w": 148,
-       "h": 232,
-       "v": "1633a2f906"
-      },
-      {
-       "file": "butch/carry-walk@4.webp",
-       "w": 74,
-       "h": 116,
-       "v": "333a0803ec"
-      }
-     ],
-     "v": "310772e271"
+     "v": "6434b385f8"
     },
     "ticket": {
      "file": "butch/ticket.webp",
@@ -816,6 +1066,7 @@
       "scale": 1.1796,
       "flipped": false
      },
+     "cap": 69.6,
      "mips": [
       {
        "file": "butch/ticket@2.webp",
@@ -847,19 +1098,42 @@
      ],
      "at": [
       0.0,
-      0.1074,
-      0.2138,
-      0.3536,
-      0.4834,
-      0.6034,
-      0.7274,
-      0.8864
+      0.0904,
+      0.1807,
+      0.3604,
+      0.4829,
+      0.587,
+      0.7184,
+      0.8897
      ],
-     "stride": 46.179,
+     "stride": 47.955,
      "steps": 2,
      "lock": 0.5,
-     "maxSlide": 3.87,
-     "maxSurge": 4.76
+     "maxSlide": 3.19,
+     "maxSurge": 4.8
+    },
+    "carry": {
+     "frames": [
+      "carry-1",
+      "carry-2",
+      "carry-3",
+      "carry-4",
+      "carry-5",
+      "carry-6"
+     ],
+     "at": [
+      0.0,
+      0.1992,
+      0.3559,
+      0.5136,
+      0.7098,
+      0.8571
+     ],
+     "stride": 51.592,
+     "steps": 2,
+     "lock": 0.5,
+     "maxSlide": 4.51,
+     "maxSurge": 5.23
     }
    }
   },
@@ -1133,7 +1407,7 @@
      "w": 304,
      "h": 452,
      "pivot": [
-      145.9,
+      146.0,
       446.0
      ],
      "anchors": {},
@@ -1169,7 +1443,7 @@
      "w": 245,
      "h": 461,
      "pivot": [
-      137.6,
+      136.2,
       445.6
      ],
      "anchors": {},
@@ -1205,7 +1479,7 @@
      "w": 201,
      "h": 460,
      "pivot": [
-      99.5,
+      98.2,
       446.3
      ],
      "anchors": {},
@@ -1277,7 +1551,7 @@
      "w": 254,
      "h": 452,
      "pivot": [
-      92.8,
+      93.3,
       446.0
      ],
      "anchors": {},
@@ -1313,7 +1587,7 @@
      "w": 315,
      "h": 453,
      "pivot": [
-      148.5,
+      149.1,
       446.0
      ],
      "anchors": {},
@@ -1429,17 +1703,17 @@
      ],
      "at": [
       0.0,
-      0.1492,
-      0.3038,
-      0.4888,
-      0.6778,
-      0.8365
+      0.1337,
+      0.2761,
+      0.4712,
+      0.6771,
+      0.8313
      ],
      "stride": 27.302,
      "steps": 1,
      "lock": 0.5,
-     "maxSlide": 4.05,
-     "maxSurge": 4.26
+     "maxSlide": 3.94,
+     "maxSurge": 4.29
     }
    }
   }
@@ -1736,6 +2010,18 @@
     }
    ],
    "v": "cb82e3b763"
+  }
+ },
+ "grades": {
+  "C-butch-walk.png": {
+   "gain": 0.874,
+   "offset": -1.77,
+   "chroma": 1.231
+  },
+  "C-butch-carry.png": {
+   "gain": 0.854,
+   "offset": 5.73,
+   "chroma": 0.713
   }
  }
 }

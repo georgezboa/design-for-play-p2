@@ -78,6 +78,19 @@ SHEETS = {
     'mara': 'C-mara.png',
     'train': 'C-train.png',
     'props': 'C-props.png',
+    # batch 2 (round 8): the even walk, and the walk carrying the orchard case
+    'walk2': 'C-butch-walk.png',
+    'carry2': 'C-butch-carry.png',
+}
+
+# Sheets painted in a later batch are graded to the first sheet's Butch: his
+# coat's light (median, spread) and its colour (chroma) are matched to the
+# standing frame's, highlights above `protect` (the lit lantern, the paper
+# tag) are left as painted. The walk sheet came out lighter and greyer, the
+# carry sheet bluer and a touch more contrasty.
+GRADES = {
+    'walk2': {'ref': ('butch1', (24, 500, 164, 950)), 'protect': (120, 190)},
+    'carry2': {'ref': ('butch1', (24, 500, 164, 950)), 'protect': (120, 190)},
 }
 
 # ---------------------------------------------------------------------------
@@ -104,23 +117,40 @@ def frame(char, name, sheet, box, **opts):
     return {'char': char, 'name': name, 'sheet': sheet, 'box': box, **opts}
 
 
-WALK_H = 0.945  # the walking figure stoops and dips: 94.5% of standing height
+# The walking figure stoops and dips: 93.5% of standing height, measured on
+# the batch-2 walk with its cap the size of the standing frame's cap.
+WALK_H = 0.935
+CARRY_H = 0.94
 
 # Walk frames name the feet that are planted (on the floor, holding still)
 # so the cycle can be solved for no skating (see solve_cycle):
 #   (group, end, foot, weight): group 'front' / 'back' / 'only' (the feet in
-#   the lowest rows, by x), end 'heel' / 'toe', foot 'A' / 'B' ('B-' is foot B
-#   still planted from the previous lap, 'A-' likewise).
+#   the lowest rows, by x; 'only' is the lowest), end 'heel' / 'toe', foot
+#   'A' / 'B' ('B-' is foot B still planted from the previous lap).
+# Batch 2's walk (C-butch-walk.png), 8 frames: contact, down, passing, up;
+# then the other foot. Frames 5 and 6 overlap on the sheet: each has the
+# other's boot painted out.
 BUTCH_WALK = [
-    # contact, down, passing, swing; then the same on the other foot
-    ((10, 60, 219, 462), [('front', 'heel', 'A', 1.0), ('back', 'toe', 'B-', 0.6)]),
-    ((219, 60, 432, 462), [('front', 'heel', 'A', 1.0), ('back', 'toe', 'B-', 0.4)]),
-    ((434, 60, 570, 462), [('only', 'toe', 'A', 1.0)]),
-    ((580, 60, 742, 462), [('only', 'toe', 'A', 1.0)]),
-    ((760, 60, 968, 462), [('front', 'heel', 'B', 1.0), ('back', 'toe', 'A', 0.6)]),
-    ((968, 60, 1158, 462), [('front', 'heel', 'B', 1.0)]),
-    ((1158, 60, 1300, 462), [('only', 'toe', 'B', 1.0)]),
-    ((1318, 60, 1520, 462), [('only', 'toe', 'B', 1.0)]),
+    ((18, 320, 234, 720), [('front', 'heel', 'A', 1.0), ('back', 'toe', 'B-', 0.6)], []),
+    ((233, 320, 416, 720), [('front', 'heel', 'A', 1.0), ('back', 'toe', 'B-', 0.4)], []),
+    ((413, 320, 566, 720), [('only', 'toe', 'A', 1.0)], []),
+    ((585, 320, 765, 720), [('only', 'toe', 'A', 1.0)], []),
+    ((760, 320, 990, 720), [('front', 'heel', 'B', 1.0), ('back', 'toe', 'A', 0.6)],
+     [('erase', [(966, 600), (995, 600), (995, 722), (990, 722), (986, 688), (985, 666), (966, 663)])]),
+    ((962, 320, 1157, 720), [('front', 'heel', 'B', 1.0)],
+     [('erase', [(955, 664), (986, 664), (987, 692), (955, 702)])]),
+    ((1152, 320, 1298, 720), [('only', 'toe', 'B', 1.0)], []),
+    ((1330, 320, 1518, 720), [('only', 'toe', 'B', 1.0)], []),
+]
+# Batch 2's walk with the orchard case (C-butch-carry.png), 6 frames, three a
+# step: contact, loading (the back heel up), passing.
+BUTCH_CARRY = [
+    ((16, 235, 326, 780), [('front', 'heel', 'A', 1.0), ('back', 'toe', 'B-', 0.6)]),
+    ((290, 235, 548, 780), [('only', 'toe', 'A', 1.0)]),
+    ((538, 235, 776, 780), [('only', 'toe', 'A', 1.0)]),
+    ((754, 235, 1077, 780), [('front', 'heel', 'B', 1.0), ('back', 'toe', 'A', 0.6)]),
+    ((1044, 235, 1306, 780), [('only', 'toe', 'B', 1.0)]),
+    ((1290, 235, 1528, 780), [('only', 'toe', 'B', 1.0)]),
 ]
 # Mara's six walk frames are one step (the coat hides which leg leads), in
 # step order: landing, loading, mid-stance, toe-off swing, then the next
@@ -135,13 +165,28 @@ MARA_WALK = [
     ((776, 0, 1116, 492), [('back', 'toe', 'A', 1.0)]),
 ]
 
+# Butch's lantern below his fist in the standing frame (C-butch-poses.png),
+# lifted off his coat by its warm brass and glass.
+BUTCH_LANTERN = [(63, 757), (105, 757), (105, 837), (63, 837)]
+
+
+def WARM_PAINT(rgb):
+    y = rgb.mean(-1)
+    return (rgb[..., 0] - rgb[..., 2] > 14) | (y > 120)
+
+
 # The Conductor's lit lantern, cut from his lantern-up frame below his
 # fingers (not his sleeve): hung from his free hand where a frame has none.
 CONDUCTOR_LANTERN = [(1116, 179), (1186, 179), (1186, 236), (1197, 236), (1197, 314), (1116, 314)]
 
 FRAMES = [
-    *[frame('butch', f'walk-{i + 1}', 'butch1', box, scale=('height', WALK_H), plant=plant, baseline='plant', lantern=True)
-      for i, (box, plant) in enumerate(BUTCH_WALK)],
+    *[frame('butch', f'walk-{i + 1}', 'walk2', box, scale=('height', WALK_H), plant=plant, baseline='plant', lantern=True,
+            edits=edits)
+      for i, (box, plant, edits) in enumerate(BUTCH_WALK)],
+    # (pivoted on the hips: his arms and the case move in the chest band)
+    *[frame('butch', f'carry-{i + 1}', 'carry2', box, scale=('height', CARRY_H), plant=plant, baseline='plant', lantern=True,
+            caseAnchor=True, pivot=('torso', (0.45, 0.62)))
+      for i, (box, plant) in enumerate(BUTCH_CARRY)],
     # --- Butch: standing and actions
     frame('butch', 'stand', 'butch1', (24, 500, 164, 950), scale=('height', 1.0), lantern=True),
     frame('butch', 'stand-large', 'butch2', (110, 0, 262, 480), scale=('height', 1.0), lantern=True),
@@ -169,8 +214,11 @@ FRAMES = [
     frame('butch', 'reach', 'butch2', (144, 470, 466, 972), scale=('ref', 'butch2'), anchors={'hand': (430, 492)}),
     frame('butch', 'receive', 'butch2', (624, 490, 910, 972), scale=('ref', 'butch2'), lantern=True,
           anchors={'hand': (872, 645)}),
-    frame('butch', 'carry', 'butch1', (1352, 540, 1528, 950), scale=('height', 0.975), anchors={'case': (1468, 695)}),
-    frame('butch', 'carry-walk', 'butch2', (1040, 490, 1342, 970), scale=('ref', 'butch2'), anchors={'case': (1255, 635)}),
+    # standing with the case; round 8: his lantern (lifted from the standing
+    # frame, same sheet) hangs from the hand under the case, as in the
+    # carry walk, so it does not vanish when he stops
+    frame('butch', 'carry', 'butch1', (1352, 540, 1528, 950), scale=('height', 0.975), anchors={'case': (1468, 695)},
+          lantern=True, edits=[('overlay', BUTCH_LANTERN, (1432, 742), WARM_PAINT, 2)]),
     # holding a ticket out: the other person's hand that gives it is painted out
     frame('butch', 'ticket', 'butch1', (1136, 550, 1340, 950), scale=('height', 0.99), lantern=True,
           edits=[('erase', [(1290.5, 640), (1345, 640), (1345, 720), (1290.5, 720)])],
@@ -202,7 +250,10 @@ FRAMES = [
 
 # Walk cycles: frames in order, and how many steps one pass of them covers.
 CYCLES = {
-    'butch': {'walk': {'frames': [f'walk-{i + 1}' for i in range(8)], 'steps': 2}},
+    'butch': {
+        'walk': {'frames': [f'walk-{i + 1}' for i in range(8)], 'steps': 2},
+        'carry': {'frames': [f'carry-{i + 1}' for i in range(6)], 'steps': 2},
+    },
     'mara': {'walk': {'frames': [f'walk-{i + 1}' for i in range(6)], 'steps': 1}},
 }
 # Trade-off when the painted frames are unevenly spaced in time: weight of
@@ -213,7 +264,7 @@ SURGE_WEIGHT = 1.0
 # moves in small surges instead. 0 = a plain glide.
 WALK_LOCK = 0.5
 # Pull towards even frame windows: a frame held long glides in one pose.
-EVEN_WEIGHT = 1.0
+EVEN_WEIGHT = 0.3
 
 # The night carriage (rig 'train'): `length` output px wide; the rig keeps its
 # 150 tile px length (act3.js TRAIN_LENGTH), wheels on the rail.
@@ -300,12 +351,47 @@ def sheet(name, src_dir):
             cached = Path(MATTE_CACHE) / f'{name}-{stamp}-{T_HI}-{BAND}-{HOLE}.npy'
             if cached.exists():
                 _SHEET_CACHE[name] = np.load(cached)
-                return _SHEET_CACHE[name]
-        _SHEET_CACHE[name] = matte(path)
+                cached = None
+        if name not in _SHEET_CACHE:
+            _SHEET_CACHE[name] = matte(path)
         if cached:
             cached.parent.mkdir(parents=True, exist_ok=True)
             np.save(cached, _SHEET_CACHE[name])
+    if name in GRADES and not _SHEET_CACHE.get(('graded', name)):
+        _SHEET_CACHE[name] = grade(_SHEET_CACHE[name], GRADES[name], src_dir)
+        _SHEET_CACHE[('graded', name)] = True
     return _SHEET_CACHE[name]
+
+
+def coat_stats(rgb):
+    """Butch's coat in a set of opaque pixels: the dark, blue-leaning ones.
+    Returns (luminance quantiles 10..90, mean chroma)."""
+    v = rgb.mean(1)
+    coat = rgb[(rgb[:, 2] >= rgb[:, 0]) & (v < 110)]
+    y = coat.mean(1)
+    return np.percentile(y, [10, 25, 50, 75, 90]), float(np.abs(coat - y[:, None]).sum(1).mean())
+
+
+def grade(rgba, spec, src_dir):
+    """Match a later sheet's Butch to the reference frame (see GRADES):
+    luminance mapped by a line through the coat's quantiles, chroma scaled
+    to the reference's, highlights faded out of the grade."""
+    ref_sheet, ref_box = spec['ref']
+    ref = isolate(sheet(ref_sheet, src_dir), ref_box)
+    ref_px = ref[ref[..., 3] > 0.95][:, :3]
+    own_px = rgba[rgba[..., 3] > 0.95][:, :3]
+    (rq, rc), (oq, oc) = coat_stats(ref_px), coat_stats(own_px)
+    gain, offset = np.polyfit(oq, rq, 1)
+    k = rc / oc
+    out = rgba.copy()
+    rgb = out[..., :3]
+    y = rgb.mean(2, keepdims=True)
+    graded = np.clip(gain * y + offset + k * (rgb - y), 0, 255)
+    lo, hi = spec['protect']
+    w = np.clip((hi - y) / (hi - lo), 0, 1)
+    out[..., :3] = w * graded + (1 - w) * rgb
+    spec['_fit'] = {'gain': round(float(gain), 3), 'offset': round(float(offset), 2), 'chroma': round(float(k), 3)}
+    return out
 
 
 def isolate(rgba, box):
@@ -386,6 +472,12 @@ def apply_edits(sub, fr, full=None):
             px0, py0, px1, py1 = int(min(xs)), int(min(ys)), int(max(xs)) + 1, int(max(ys)) + 1
             piece = src_rgba[py0:py1, px0:px1].copy()
             m = polygon_mask(piece.shape, poly, (px0, py0))
+            if len(edit) > 3:
+                # only the paint matching the rule (and its ink outline): a
+                # lantern lifted off the coat it hung in front of
+                rule = edit[3](piece[..., :3]) & (piece[..., 3] > 0.5)
+                rule = ndi.binary_opening(rule, iterations=1)
+                m &= ndi.binary_dilation(rule, iterations=edit[4] if len(edit) > 4 else 2)
             piece[..., 3] *= ndi.gaussian_filter(m.astype(np.float32), 0.6)
             ox, oy = int(at[0]) - x0, int(at[1]) - y0
             h, w = piece.shape[:2]
@@ -436,6 +528,25 @@ def warm_centroid(rgba):
     areas = ndi.sum(m, lab, range(1, n + 1))
     i = int(np.argmax(areas)) + 1
     ys, xs = np.nonzero(lab == i)
+    return float(xs.mean()), float(ys.mean())
+
+
+def case_centroid(rgba, top, base):
+    """The carried case: the centre of its dark brown leather, in the band
+    of the figure where his arms hold it (not the lantern below it, not his
+    hands or the paper tag)."""
+    h = base - top
+    r, g, b, a = (rgba[..., i] for i in range(4))
+    y = (r + g + b) / 3
+    m = (r - b > 18) & (y > 30) & (y < 110) & (a > 0.9)
+    m[:int(top + 0.22 * h)] = False
+    m[int(top + 0.46 * h):] = False
+    m = ndi.binary_opening(m, iterations=2)
+    lab, n = ndi.label(m)
+    if n == 0:
+        raise ValueError('no case found')
+    areas = ndi.sum(m, lab, range(1, n + 1))
+    ys, xs = np.nonzero(lab == int(np.argmax(areas)) + 1)
     return float(xs.mean()), float(ys.mean())
 
 
@@ -535,6 +646,15 @@ def cut_character_frame(fr, src_dir, refs):
         anchors['glow'] = glow
     for k, (ax, ay) in fr.get('anchors', {}).items():
         anchors[k] = (ax - fr['box'][0], ay - fr['box'][1])
+    if fr.get('caseAnchor'):
+        anchors['case'] = case_centroid(sub, head_top, base)
+    # the cap's brim, the one rigid thing every upright frame shows at the
+    # top: the same width in every frame means the same figure scale
+    cap = None
+    if fr['char'] == 'butch' and fr.get('capCheck', fr['name'].startswith(('walk-', 'carry', 'stand', 'ticket'))):
+        solid = sub[..., 3] > 0.5
+        rows = [np.nonzero(solid[r])[0] for r in range(top, top + int(0.075 * (base - top)))]
+        cap = max((r[-1] - r[0] + 1) for r in rows if len(r))
     flip = ch.get('flip', False)
     crop = sub[top:bottom, bx0:bx1]
     img = to_image(crop)
@@ -566,6 +686,7 @@ def cut_character_frame(fr, src_dir, refs):
         'anchors': out_anchors,
         'source': {'file': SHEETS[fr['sheet']], 'box': [int(fr['box'][0] + bx0), int(fr['box'][1] + top), int(fr['box'][0] + bx1), int(fr['box'][1] + bottom)], 'scale': round(s, 4), 'flipped': flip},
         **({'overlay': True} if fr.get('overlay') else {}),
+        **({'cap': round(cap * s, 1)} if cap else {}),
         '_feet': feet,
     }
 
@@ -797,6 +918,10 @@ def main():
         mips = save_levels(img, rel)
         atlas['props'][name] = {'file': rel, **meta, 'mips': mips}
         previews.setdefault('props', []).append((name, img, meta))
+    for name, spec in GRADES.items():
+        if spec.get('_fit'):
+            print(f"graded {SHEETS[name]}: {spec['_fit']}")
+            atlas.setdefault('grades', {})[SHEETS[name]] = spec['_fit']
     if args.only:
         print('--only: atlas not written (partial run)')
     else:
@@ -870,6 +995,9 @@ def write_manifest(atlas):
         'Crop box: the figure in source pixels (x0 y0 x1 y1) after keying; scale: output px per source px.',
         'Every file also has `@2` and `@4` copies at 1/2 and 1/4 size (for figures drawn small).',
         f"Frames edited beyond keying (see the script's FRAMES for the polygons): {', '.join(edited)}.",
+        *([f"Graded to the first sheet's Butch (coat light and colour; highlights kept): "
+           + '; '.join(f"`{k}` gain {v['gain']} offset {v['offset']} chroma x{v['chroma']}" for k, v in atlas['grades'].items()) + '.']
+          if atlas.get('grades') else []),
         '',
         '| Output | Rig / kind | Source | Crop box (source px) | Scale | Size | Notes |',
         '| --- | --- | --- | --- | --- | --- | --- |',
