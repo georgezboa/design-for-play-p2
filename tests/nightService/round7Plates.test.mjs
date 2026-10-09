@@ -8,7 +8,7 @@ import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { ANCHOR, PLATE, PROP, SOLVED, ZOOM } from '../../src/chapters/nightService/art/ch1Plates.js';
 import { A05_BUTCH_SCALE, LEAF } from '../../src/chapters/nightService/art/act05Plates.js';
-import { A1_BUTCH_SCALE, CAR_ACTOR_SCALE, CAR_DEPTH, CONDUCTOR_SCALE, TAG_AT, TAG_HIT } from '../../src/chapters/nightService/art/act1Plates.js';
+import { A1_BUTCH_SCALE, BUTCH_IN_CAR, CAR_ACTOR_SCALE, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, TAG_AT, TAG_HIT } from '../../src/chapters/nightService/art/act1Plates.js';
 import { actPlates, createPanelModel, pickPlate, plateKey, tagRect } from '../../src/chapters/nightService/panelModel.js';
 import { settle } from './helpers.mjs';
 
@@ -205,12 +205,21 @@ test('round 7: Butch stands 1.75 m beside the painted 2 m doors, feet on the pai
   // Act 1: the carriage door leaf; in the next carriage, by its far door
   assert.equal(ACTS.act1.actors.butch.scale, A1_BUTCH_SCALE);
   assert.ok(Math.abs(tall(A1_BUTCH_SCALE) / ANCHOR['act1/door-locked'].leaf[3] - 0.875) < 0.02);
-  // in the next carriage Butch stands a few steps nearer than its far door (larger, by CAR_DEPTH),
-  // and the Conductor (about 1.95 m) waits at that door
-  assert.ok(CAR_DEPTH > 1 && CAR_DEPTH < 1.4);
-  assert.ok(Math.abs((tall(A1_BUTCH_SCALE) * CAR_ACTOR_SCALE) / (ANCHOR['act1/conductor'].door[3] * CAR_DEPTH) - 0.875) < 0.02);
-  assert.ok(Math.abs(((110 * CONDUCTOR_SCALE * CAR_ACTOR_SCALE) / TILE_H) / ANCHOR['act1/conductor'].door[3] - 0.975) < 0.02);
+  // round 8 · in the Conductor's car (A1-conductor) both stand on the corridor's runner at the
+  // height its perspective gives them there (anchors: feet and head of 1.75 m / 1.95 m figures)
+  const car = ANCHOR['act1/conductor'];
   assert.equal(ACTS.act1.tiles.door.states.conductor.actorScale, CAR_ACTOR_SCALE);
+  assert.ok(Math.abs(tall(A1_BUTCH_SCALE) * CAR_ACTOR_SCALE - (car.butchFeet[1] - car.butchHead[1])) < 0.004);
+  assert.ok(Math.abs((110 * CONDUCTOR_SCALE * CAR_ACTOR_SCALE) / TILE_H - (car.conductorFeet[1] - car.conductorHead[1])) < 0.004);
+  assert.deepEqual([BUTCH_IN_CAR.x, BUTCH_IN_CAR.y], car.butchFeet);
+  assert.deepEqual([CONDUCTOR_IN_CAR.x, CONDUCTOR_IN_CAR.y], car.conductorFeet);
+  assert.equal(ACTS.act1.actors.conductor.x, CONDUCTOR_IN_CAR.x);
+  assert.equal(ACTS.act1.actors.conductor.y, CONDUCTOR_IN_CAR.y);
+  // they meet in the doorway's corridor, facing each other: Butch left, the Conductor deeper, right
+  const [dx, , dw] = car.doorway;
+  for (const p of [car.butchFeet, car.conductorFeet]) assert.ok(p[0] > dx && p[0] < dx + dw, 'inside the doorway');
+  assert.ok(CONDUCTOR_IN_CAR.x > BUTCH_IN_CAR.x && CONDUCTOR_IN_CAR.y < BUTCH_IN_CAR.y);
+  assert.equal(ACTS.act1.actors.conductor.facing, -1);
   // he walks on the boards: a step in front of the painted wall line, never above it
   const floors = { act05: ANCHOR['act05/desk'].floorRight, act1: ANCHOR['act1/desk'].floorRight };
   for (const id of ['act05', 'act1']) {
@@ -221,8 +230,10 @@ test('round 7: Butch stands 1.75 m beside the painted 2 m doors, feet on the pai
       if (walk?.id !== 'meetConductor') (walk?.path ?? []).forEach((p) => ys.push(p.y));
       if (e.placeActor?.y !== undefined && e.placeActor.state !== 'conductor') ys.push(e.placeActor.y);
     }));
+    // in his desk chair (sit-chair) his feet rest on the boards in front of the desk, nearer the viewer
+    const chair = ANCHOR[id === 'act05' ? 'act05/desk' : 'act1/desk'].chairSit;
     for (const y of ys) {
-      if (y === undefined) continue;
+      if (y === undefined || y === chair[1]) continue;
       const d = y - floors[id];
       // (the walk through the open door steps into the doorway, a little above)
       assert.ok(d >= -0.012 && d <= 0.06, `${id}: Butch's y ${y} on the painted floor ${floors[id]}`);
