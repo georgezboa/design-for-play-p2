@@ -77,7 +77,8 @@ test('Act 0: the zoom rect of each picture is an even square (panel aspect)', ()
     office.office.hotspots.find((h) => h.id === 'bell').zoomRect,
     office.office.hotspots.find((h) => h.id === 'ticket').zoomRect,
     office.ticket.hotspots[0].zoomRect,
-    office.porthole.hotspots[0].rect,
+    // round 7: a click anywhere on the painted glass flies into the lit train
+    office.porthole.hotspots[0].zoomRect ?? office.porthole.hotspots[0].rect,
   ];
   rects.forEach((r) => assert.ok(Math.abs(r[2] - r[3]) < 1e-9, JSON.stringify(r)));
 });

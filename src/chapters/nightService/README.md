@@ -127,6 +127,26 @@ and add only overlays (glows, dust, rain, live sprites). Linked panels
 should share their edge rows so the picture continues across the gutter.
 Act logic never changes: swap a PNG in, keep the edges and hotspots.
 
+A state can also name other pictures of itself chosen by a condition:
+`plates: [{ when: { flag: 'butchAwake' }, url }]` (the first whose `when`
+holds wins, else `plate`; `pickPlate` in panelModel.js). When the choice
+changes the window cross-fades to the other painting in place (Act 0: the
+bell wakes the Butch painted at the desk). An act's `props: [urls]` are
+loaded like plates (cut-out sprites its overlays draw, e.g. the office key).
+
+**Chapter 1's paintings (round 7).** Acts 0, 0.5 and 1 are drawn with
+George's painted plates (`public/assets/ch1-painted/`, regenerated from the
+read-only sources by `scripts/ch1-art/build_ch1_plates.py`, which measures
+the painted floors, wires and chutes, solves the crops so linked rooms meet,
+and writes `art/ch1Plates.js`: the plate URLs, the painted anchors and the
+zoom boxes, all tile-normalised). `art/act0Plates.js`, `act05Plates.js` and
+`act1Plates.js` turn those into the acts' edges, hotspots and overlays;
+`art/plateKit.js` holds the overlay kit (a lamp breathing, words inked onto
+painted paper in the house type, rain on glass, a door off its latch, a
+cut-out prop). The procedural `draw` functions stay as the fallback when a
+plate is missing. Replace a painting: re-measure it in the script, run it,
+and `tests/nightService/round7Plates.test.mjs` checks the edges still agree.
+
 **Readables.** Papers whose words carry the story (the exhibit's ticket
 stub, reservation slip, torn ledger page, Plate IV's label, the case tag)
 are `readables`, not hotspots: a click on one (the magnifier and READ on

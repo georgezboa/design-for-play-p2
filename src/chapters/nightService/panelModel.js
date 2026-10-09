@@ -207,10 +207,26 @@ export function actPlates(act) {
   const out = new Map();
   const add = (url) => { if (typeof url === 'string' && url) out.set(plateKey(url), url); };
   Object.values(act?.tiles ?? {}).forEach((tile) => {
-    Object.values(tile.states ?? {}).forEach((sceneDef) => { add(sceneDef.plate); add(sceneDef.platePast); });
+    Object.values(tile.states ?? {}).forEach((sceneDef) => {
+      add(sceneDef.plate);
+      add(sceneDef.platePast);
+      (sceneDef.plates ?? []).forEach((alt) => add(alt?.url));
+    });
     add(tile.frame?.plate);
   });
+  // painted props the act's overlays draw (cut-out sprites, loaded like plates)
+  (act?.props ?? []).forEach(add);
   return [...out].map(([key, url]) => ({ key, url }));
+}
+
+/**
+ * The plate a state shows now: the first `plates: [{ when, url }]` entry
+ * whose condition holds (a flag-chosen picture, e.g. Butch awake), else its
+ * `plate`. `evaluate` is the model's condition test.
+ */
+export function pickPlate(sceneDef, evaluate) {
+  const alt = (sceneDef?.plates ?? []).find((entry) => entry?.url && (!entry.when || evaluate?.(entry.when)));
+  return alt?.url ?? sceneDef?.plate ?? null;
 }
 
 // ---------------------------------------------------------------------------

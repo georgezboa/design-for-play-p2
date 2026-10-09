@@ -1,7 +1,7 @@
 // Act 0 / Act 0.5 presentation effects (see README.md → Custom fx).
 
 import { DESK_BELL } from './act1Art.js';
-import { LIT_WINDOW } from './act0Art.js';
+import { LIT_WINDOW_GLASS, PLUNGER } from './act0Plates.js';
 
 /** Find a live image in a tile by its texture key (sprites painted by ctx.sprite). */
 export function findSprite(view, key) {
@@ -34,7 +34,7 @@ export function soundRings(api, tile, u, v, { count = 3, size = 260, color = 0xf
       ease: 'Sine.easeOut',
       onUpdate: () => {
         g.clear();
-        g.lineStyle(reduce ? 2 : 3.5, color, state.a);
+        g.lineStyle(reduce ? 1.5 : 2.2, color, state.a * 0.7);
         g.strokeEllipse(u * view.w, v * view.h, state.r * 2, state.r * 1.6);
       },
       onComplete: () => g.destroy(),
@@ -59,24 +59,26 @@ function wobble(api, sprite, amount = 0.14) {
 export const ACT0_FX = {
   /** The close-up bell is struck: its sound rings out across the picture. */
   bellRing(api, { tile = 'office' } = {}) {
-    api.flash(tile, 0.5, 0.16, { color: 0xfff0c0, size: 260, duration: 600 });
-    soundRings(api, tile, 0.5, 0.45, { count: 4, size: 420 });
-    const p = api.screen(tile, 0.5, 0.16);
+    // the painted plunger, struck; the ring runs out over the dome
+    api.flash(tile, PLUNGER[0], PLUNGER[1] + 0.03, { color: 0xfff0c0, size: 220, duration: 600 });
+    soundRings(api, tile, PLUNGER[0], 0.42, { count: 4, size: 420, color: 0xf2d6a0 });
+    const p = api.screen(tile, PLUNGER[0], PLUNGER[1] + 0.03);
     api.sparkle(p.x, p.y, 8);
   },
 
-  /** The desk bell on the office desk rings (on its own, or struck). */
-  deskBell(api, { tile = 'desk' } = {}) {
+  /** The desk bell on the office desk rings (on its own, or struck); `at` is where it stands. */
+  deskBell(api, { tile = 'desk', at = null } = {}) {
     const view = api.view(tile);
     wobble(api, findSprite(view, 'nsv-sprite-office-bell-present'));
-    api.flash(tile, DESK_BELL.x, DESK_BELL.y - 0.03, { color: 0xffe0a0, size: 110, duration: 700 });
-    soundRings(api, tile, DESK_BELL.x, DESK_BELL.y - 0.03, { count: 3, size: 90 });
+    const [u, v] = at ?? [DESK_BELL.x, DESK_BELL.y - 0.03];
+    api.flash(tile, u, v, { color: 0xffe0a0, size: 110, duration: 700 });
+    soundRings(api, tile, u, v, { count: 3, size: 90 });
     api.audio.play('deskBell');
   },
 
   /** Seen from outside, the office window glows: that is where we were. */
   litWindow(api, { tile = 'office' } = {}) {
-    const [x, y, w, h] = LIT_WINDOW;
-    api.flash(tile, x + w / 2, y + h / 2, { color: 0xffc46a, size: 240, duration: 900, repeat: 1 });
+    const [x, y, w, h] = LIT_WINDOW_GLASS;
+    api.flash(tile, x + w / 2, y + h / 2, { color: 0xffc46a, size: 170, duration: 900, repeat: 1 });
   },
 };

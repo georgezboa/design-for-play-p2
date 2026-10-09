@@ -474,9 +474,10 @@ test('item G: a tile state may declare a painted plate (cover-fit, under its dra
     steps: [],
   });
   assert.deepEqual(actPlates(act).map((p) => p.url).sort(), ['/one-1978.png', '/one.png']);
-  assert.deepEqual(actPlates(ACTS.act1), [], 'no act ships plates yet');
+  // round 7: Act 1 ships George's painted plates (round7Plates.test.mjs checks every state)
+  assert.ok(actPlates(ACTS.act1).length >= 7, 'Act 1 ships its plates');
   assert.match(scene, /actPlates\(act\)\.forEach\(\(\{ key, url \}\) => \{ if \(!this\.textures\.exists\(key\)\) this\.load\.image\(key, url\); \}\);/);
-  assert.match(scene, /pctx\.plate = this\.drawPlate\(view, present, sceneDef\?\.plate\);\s*sceneDef\?\.draw\?\.\(pctx\);/);
+  assert.match(scene, /const plateUrl = pickPlate\(sceneDef, \(cond\) => this\.model\.evaluate\(cond\)\);\s*pctx\.plate = this\.drawPlate\(view, present, plateUrl\);\s*sceneDef\?\.draw\?\.\(pctx\);/);
   assert.match(read('src/chapters/nightService/README.md'), /plate: '/);
 });
 

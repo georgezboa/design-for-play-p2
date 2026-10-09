@@ -17,7 +17,7 @@
 
 import Phaser from 'phaser';
 import {
-  TAG_ART, TEXT_TAG, actPlates, bezelSlotAt, coverFit, edgePoint, framePoints, hotspotAffordance, planGrowth, plateKey,
+  TAG_ART, TEXT_TAG, actPlates, bezelSlotAt, coverFit, edgePoint, framePoints, hotspotAffordance, pickPlate, planGrowth, plateKey,
   textTagWidth, tilePoint,
 } from './panelModel.js';
 import { createPanelModel } from './panelModel.js';
@@ -721,8 +721,10 @@ export class PanelScene extends Phaser.Scene {
     const present = this.add.container(0, 0);
     root.add(present);
     const pctx = this.paintCtx(view, present, 'present', stateId);
-    // a painted plate (round 6) goes under the state's own drawing, which then only adds overlays
-    pctx.plate = this.drawPlate(view, present, sceneDef?.plate);
+    // a painted plate (round 6) goes under the state's own drawing, which then only adds overlays;
+    // `plates: [{ when, url }]` picks another picture of the same state by a condition (round 7)
+    const plateUrl = pickPlate(sceneDef, (cond) => this.model.evaluate(cond));
+    pctx.plate = this.drawPlate(view, present, plateUrl);
     sceneDef?.draw?.(pctx);
     let past = null;
     let animators = [...pctx.animators];
@@ -785,7 +787,7 @@ export class PanelScene extends Phaser.Scene {
         rings.push({ kind: 'edge', edge, u, v, g });
       }));
     }
-    return { stateId, root, present, past, animators, tags, rings };
+    return { stateId, root, present, past, animators, tags, rings, plateUrl };
   }
 
   /**
@@ -802,14 +804,27 @@ export class PanelScene extends Phaser.Scene {
     return true;
   }
 
-  rebuildState(view, { instant = false } = {}) {
+  /**
+   * Round 7: when a state's flag-chosen plate changes (Act 0: the bell wakes
+   * Butch), the picture cross-fades to the other painting in place.
+   */
+  refreshPlate(view) {
+    const current = view.current;
+    if (!current || view.zooming || view.fadingOut?.root?.active) return;
+    const sceneDef = this.model.sceneOf(view.id, current.stateId);
+    if (!sceneDef?.plates?.length || current.stateId !== this.model.state.tiles[view.id].state) return;
+    const want = pickPlate(sceneDef, (cond) => this.model.evaluate(cond));
+    if (want !== current.plateUrl) this.rebuildState(view, { duration: reducedMotionActive() ? 260 : 900 });
+  }
+
+  rebuildState(view, { instant = false, duration = 420 } = {}) {
     const stateId = this.model.state.tiles[view.id].state;
     const next = this.buildState(view, stateId);
     const old = view.current;
     view.current = next;
     if (old && !instant) {
       next.root.setAlpha(0);
-      this.tweens.add({ targets: next.root, alpha: 1, duration: 420, ease: 'Sine.easeInOut', onComplete: () => view.destroyState(old) });
+      this.tweens.add({ targets: next.root, alpha: 1, duration, ease: 'Sine.easeInOut', onComplete: () => view.destroyState(old) });
       view.fadingOut = old;
     } else {
       view.destroyState(old);
@@ -3790,6 +3805,7 @@ export class PanelScene extends Phaser.Scene {
       run(view.current?.animators);
       run(view.fadingOut?.animators);
       run(view.frameAnimators);
+      this.refreshPlate(view);
       // past layer through the lens
       const past = view.current?.past;
       if (past) {

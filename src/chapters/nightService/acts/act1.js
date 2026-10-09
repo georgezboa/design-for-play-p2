@@ -9,18 +9,16 @@
 //   step 2: zoom into the tagged pigeonhole above the door; its chute meets the
 //   door's chute, the ticket drops into the slot, the door unlocks.
 //   step 3: Butch goes through; the Conductor hands over the punch; bell #1.
+//   Round 7: George's painted plates (art/act1Plates.js).
 
 import { BUTCH_PACE, defineAct } from '../panelModel.js';
+import { drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers, drawWindow } from '../art/act1Art.js';
 import {
-  CHUTE_AT, DOOR, DOOR_WAIT_X, FLOOR, SLOT_Y, drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers,
-  drawWindow, taggedCubbyZoomRect, cubbyRect, TAGGED_CUBBY,
-} from '../art/act1Art.js';
+  A1_BUTCH_SCALE, A1_FLOOR as FLOOR, A1_WALK as WALK, BUTCH_HOME1, BUTCH_IN_CAR, CAR_ACTOR_SCALE, CHUTE_AT, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, DOOR, DOOR_WAIT_X,
+  DOORWAY_ZOOM, HANDLE_HIT, LOCKERS_CHUTE_AT, PLATES1, PROPS1, SLOT_Y, TAG_DROP_Y, TAG_HIT, TAG_AT, TAGGED_HIT, TAGGED_ZOOM, WINDOW_FLOOR,
+  drawConductorPlate, drawCubbyPlate, drawDeskPlate1, drawDoorPlate1, drawLockersPlate, drawWindowPlate,
+} from '../art/act1Plates.js';
 import { ACT1_FX } from '../art/act1Fx.js';
-import { BUTCH_HOME } from './act05.js';
-
-const cubby = cubbyRect(756, 420, TAGGED_CUBBY.col, TAGGED_CUBBY.row);
-const cubbyTag = { x: (cubby.x + cubby.w * 0.56) / 756, y: (cubby.y + cubby.h * 0.5) / 420 };
-const doorway = [0.52, 0.16, 0.48, 0.48];
 
 export const ACT1 = defineAct({
   id: 'act1',
@@ -35,6 +33,8 @@ export const ACT1 = defineAct({
   slots: ['desk', 'lockers', 'window', 'door'],
   start: { bell: 0, items: [] },
   assets: ['fields'],
+  // round 7: the claim tag, cut from George's prop sheet (it drops down the chute)
+  props: PROPS1,
   fx: ACT1_FX,
   cards: {
     A1: {
@@ -49,7 +49,8 @@ export const ACT1 = defineAct({
     desk: {
       states: {
         default: {
-          draw: drawDesk,
+          plate: PLATES1.desk,
+          draw: (ctx) => (ctx.plate ? drawDeskPlate1(ctx) : drawDesk(ctx)),
           edges: { right: [{ type: 'floor', at: FLOOR }] },
         },
       },
@@ -57,26 +58,37 @@ export const ACT1 = defineAct({
     lockers: {
       states: {
         wall: {
-          draw: drawLockers,
+          plate: PLATES1.lockers,
+          draw: (ctx) => (ctx.plate ? drawLockersPlate(ctx) : drawLockers(ctx)),
+          // the wall's own chute drops out of the bottom edge left of the door's: it does not meet
+          edges: { bottom: [{ type: 'chute', at: LOCKERS_CHUTE_AT }] },
           hotspots: [{
             id: 'tagged',
             kind: 'zoom',
             to: 'cubby',
-            rect: taggedCubbyZoomRect(),
+            // the pigeonhole with the tagged envelope, above its brass chute
+            rect: TAGGED_HIT,
+            zoomRect: TAGGED_ZOOM,
             requires: { flag: 'butchAtDoor' },
-            tag: { x: cubbyTag.x, y: cubbyTag.y, angle: 0.3, scale: 1.2 },
+            tag: { x: TAGGED_HIT[0] + TAGGED_HIT[2] * 0.9, y: TAGGED_HIT[1] + 0.03, angle: 0.3, scale: 1.2 },
           }],
         },
         cubby: {
-          draw: drawCubby,
+          plate: PLATES1.cubby,
+          draw: (ctx) => (ctx.plate ? drawCubbyPlate(ctx) : drawCubby(ctx)),
+          // up close, its chute leaves the bottom edge right above the door's
           edges: { bottom: [{ type: 'chute', at: CHUTE_AT }] },
           hotspots: [{
+            // the claim tag on the chute's lip (read it: card A1)
             id: 'envelope',
             kind: 'read',
             card: 'A1',
-            rect: [0.2, 0.36, 0.33, 0.38],
+            rect: TAG_HIT,
+            // gone down the chute: the card has been shown by then
+            requires: { notFlag: 'ticketDropped' },
             pulseOnce: true,
-            tag: { x: 0.46, y: 0.44, angle: 0.45, scale: 1.7 },
+            // hangs off the claim tag's string, out over the pigeonhole's floor
+            tag: { x: TAG_HIT[0] + 0.03, y: TAG_HIT[1] + 0.06, angle: 2.6, scale: 1.4 },
           }],
         },
       },
@@ -84,10 +96,11 @@ export const ACT1 = defineAct({
     window: {
       states: {
         default: {
-          draw: drawWindow,
-          // The window table sits lower than the corridor: a floor that can
+          plate: PLATES1.window,
+          draw: (ctx) => (ctx.plate ? drawWindowPlate(ctx) : drawWindow(ctx)),
+          // The window bay's floor sits lower than the corridor: a floor that can
           // never meet the door's threshold, so the mismatch reads at a glance.
-          edges: { left: [{ type: 'floor', at: 0.93 }], right: [{ type: 'floor', at: 0.93 }] },
+          edges: { left: [{ type: 'floor', at: WINDOW_FLOOR }], right: [{ type: 'floor', at: WINDOW_FLOOR }] },
         },
       },
     },
@@ -95,37 +108,44 @@ export const ACT1 = defineAct({
       state: 'locked',
       states: {
         locked: {
-          draw: (ctx) => drawDoor(ctx, 'locked'),
+          plate: PLATES1.doorLocked,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate1(ctx, 'locked') : drawDoor(ctx, 'locked')),
           edges: { left: [{ type: 'floor', at: FLOOR }], top: [{ type: 'chute', at: CHUTE_AT }] },
           hotspots: [{
             id: 'handle',
             kind: 'use',
-            rect: [DOOR.x, 0.4, 0.07, 0.24],
+            rect: HANDLE_HIT,
             requires: { all: [{ flag: 'butchAtDoor' }, { notFlag: 'ticketDropped' }] },
             verb: 'TRY',
             do: [{ sfx: 'rattle' }, { fx: { name: 'slotFlash' } }],
           }],
         },
         unlocked: {
-          draw: (ctx) => drawDoor(ctx, 'unlocked'),
+          plate: PLATES1.doorLocked,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate1(ctx, 'unlocked') : drawDoor(ctx, 'unlocked')),
           edges: { left: [{ type: 'floor', at: FLOOR }], top: [{ type: 'chute', at: CHUTE_AT }] },
         },
         open: {
-          draw: (ctx) => drawDoor(ctx, 'open'),
+          plate: PLATES1.doorOpen,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate1(ctx, 'open') : drawDoor(ctx, 'open')),
           edges: { left: [{ type: 'floor', at: FLOOR }], top: [{ type: 'chute', at: CHUTE_AT, silent: true }] },
         },
+        // through the open door: the next carriage (round 7: George's aisle of
+        // the car Act 2 opens in), where the Conductor waits by the far door
         conductor: {
-          draw: drawConductorCar,
+          plate: PLATES1.conductor,
+          draw: (ctx) => (ctx.plate ? drawConductorPlate(ctx) : drawConductorCar(ctx)),
           zoomOut: false,
-          actorScale: 1.9,
+          actorScale: CAR_ACTOR_SCALE,
         },
       },
     },
   },
   actors: {
     // awake, home at the desk (where Act 0.5 left him)
-    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y, pose: 'idle', facing: -1 },
-    conductor: { rig: 'conductor', tile: 'door', state: 'conductor', x: 0.6, y: 0.84, facing: -1, pose: 'idle' },
+    // 1.75 m beside the painted 2 m door (round 7)
+    butch: { rig: 'butch', pace: BUTCH_PACE, scale: A1_BUTCH_SCALE, tile: 'desk', x: BUTCH_HOME1.x, y: BUTCH_HOME1.y, pose: 'idle', facing: -1 },
+    conductor: { rig: 'conductor', scale: CONDUCTOR_SCALE, tile: 'door', state: 'conductor', x: CONDUCTOR_IN_CAR.x, y: CONDUCTOR_IN_CAR.y, facing: -1, pose: 'idle' },
   },
   steps: [
     {
@@ -139,10 +159,10 @@ export const ACT1 = defineAct({
           walkButch: {
             id: 'toDoor',
             path: [
-              { tile: 'desk', x: 0.7, y: FLOOR },
-              { tile: 'desk', x: 1, y: FLOOR },
-              { tile: 'door', x: 0, y: FLOOR, via: 'floor' },
-              { tile: 'door', x: DOOR_WAIT_X, y: FLOOR },
+              { tile: 'desk', x: 0.7, y: WALK },
+              { tile: 'desk', x: 1, y: WALK },
+              { tile: 'door', x: 0, y: WALK, via: 'floor' },
+              { tile: 'door', x: DOOR_WAIT_X, y: WALK },
             ],
           },
         },
@@ -152,7 +172,7 @@ export const ACT1 = defineAct({
       ],
       skip: [
         { setFlag: 'butchAtDoor' },
-        { placeActor: { actor: 'butch', tile: 'door', x: DOOR_WAIT_X, y: FLOOR, pose: 'idle', facing: 1 } },
+        { placeActor: { actor: 'butch', tile: 'door', x: DOOR_WAIT_X, y: WALK, pose: 'idle', facing: 1 } },
       ],
     },
     {
@@ -169,7 +189,7 @@ export const ACT1 = defineAct({
       do: [
         // a beat to see the ticket at the chute mouth (and the envelope's tag)
         { wait: 1300 },
-        { fx: { name: 'ticketDrop', from: { tile: 'lockers', x: CHUTE_AT, y: 0.72 }, to: { tile: 'door', x: CHUTE_AT, y: SLOT_Y }, ms: 1500 } },
+        { fx: { name: 'ticketDrop', from: { tile: 'lockers', x: TAG_AT.x, y: TAG_AT.y, mouth: TAG_DROP_Y, chute: CHUTE_AT }, to: { tile: 'door', x: CHUTE_AT, y: SLOT_Y }, ms: 1500 } },
         { setFlag: 'ticketDropped' },
         { sfx: 'clack' },
         { setState: { tile: 'door', state: 'unlocked' } },
@@ -194,10 +214,11 @@ export const ACT1 = defineAct({
         { lockInput: true },
         { placeActor: { actor: 'butch', visible: false } },
         { wait: 250 },
-        { zoomTo: { tile: 'door', to: 'conductor', rect: doorway } },
+        { zoomTo: { tile: 'door', to: 'conductor', rect: DOORWAY_ZOOM } },
         { wait: 750 },
-        { placeActor: { actor: 'butch', tile: 'door', state: 'conductor', x: -0.04, y: 0.84, visible: true, pose: 'walk', facing: 1 } },
-        { walkButch: { id: 'meetConductor', speed: 150, path: [{ tile: 'door', x: 0.3, y: 0.84 }] } },
+        // he comes up the aisle towards the Conductor, who waits at the far door
+        { placeActor: { actor: 'butch', tile: 'door', state: 'conductor', x: BUTCH_IN_CAR.x - 0.012, y: BUTCH_IN_CAR.y + 0.05, visible: true, pose: 'walk', facing: 1 } },
+        { walkButch: { id: 'meetConductor', speed: 60, path: [{ tile: 'door', x: BUTCH_IN_CAR.x, y: BUTCH_IN_CAR.y }] } },
         { actorPose: { actor: 'butch', pose: 'idle', facing: 1 } },
         { wait: 300 },
         {
