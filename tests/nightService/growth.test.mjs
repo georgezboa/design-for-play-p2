@@ -69,7 +69,7 @@ test('growth follows the real end state of the previous act (its carried slots)'
   // the carry still opens Act 1 cleanly (slots is informational only)
   const next = createPanelModel(act1, { carry });
   assert.deepEqual(next.state.slots, act1.slots);
-  assert.equal(next.state.actors.butch.pose, 'idle');
+  assert.equal(next.state.actors.butch.pose, 'sit-chair', 'in his desk chair');
 });
 
 test('acts that do not grow keep the plain title-card intro', () => {

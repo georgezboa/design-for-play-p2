@@ -26,7 +26,7 @@ export const PLATE = Object.freeze({
   'act1/lockers': Object.freeze({ url: '/assets/ch1-painted/act1/lockers.webp', src: 'A1-lockers.png', crop: [0.0, 85.0, 1536.0, 853.33] }),
   'act1/cubby': Object.freeze({ url: '/assets/ch1-painted/act1/cubby.webp', src: 'A1-cubby.png', crop: [0.0, 180.0, 1266.0, 703.33] }),
   'act1/window': Object.freeze({ url: '/assets/ch1-painted/act1/window.webp', src: 'A1-window.png', crop: [0.0, 70.0, 1536.0, 853.33] }),
-  'act1/conductor': Object.freeze({ url: '/assets/ch1-painted/act1/conductor.webp', src: 'A2-aisle.png', crop: [0.0, 85.0, 1536.0, 853.33] }),
+  'act1/conductor': Object.freeze({ url: '/assets/ch1-painted/act1/conductor.webp', src: 'A1-conductor.png', crop: [0.0, 190.0, 1290.0, 716.67] }),
 });
 
 /** Painted lines and objects, tile-normalised. */
@@ -37,19 +37,19 @@ export const ANCHOR = Object.freeze({
   'act0/ticket': Object.freeze({ card: [0.4323, 0.2906, 0.6973, 0.3539, 0.6686, 0.6129, 0.401, 0.5285], hole: [0.6589, 0.4723], holeR: 0.0098, lamp: [0.151, 0.0] }),
   'act0/porthole': Object.freeze({ glass: [0.498, 0.5016], glassR: 0.2311, train: [0.4818, 0.4465, 0.1432, 0.0504] }),
   'act0/carriage': Object.freeze({ litWindow: [0.446, 0.3398, 0.1107, 0.1816], litLamp: [0.526, 0.4898] }),
-  'act05/desk': Object.freeze({ floorRight: 0.7834, wireLeft: 0.491, clip: [0.3348, 0.4764, 0.0289, 0.0406], clipHang: [0.3489, 0.5145], lamp: [0.2368, 0.4333], deskTop: [0.2925, 0.5487], deskEnd: 0.3066 }),
+  'act05/desk': Object.freeze({ floorRight: 0.7834, wireLeft: 0.491, clip: [0.3348, 0.4764, 0.0289, 0.0406], clipHang: [0.3489, 0.5145], lamp: [0.2368, 0.4333], deskTop: [0.2925, 0.5487], deskEnd: 0.3066, chair: [0.0, 0.5158, 0.117, 0.4224], chairSit: [0.0324, 0.9229] }),
   'act05/door-locked': Object.freeze({ floorLeft: 0.7834, wireRight: [0.957, 0.1934], leaf: [0.791, 0.0938, 0.1302, 0.682], frame: [0.7617, 0.0328, 0.1855, 0.75], lock: [0.8965, 0.4605, 0.0163, 0.0797], knob: [0.9049, 0.4781], keyhole: [0.9049, 0.5156], sconces: [0.0521, 0.1113, 0.5794, 0.0] }),
   'act05/door-open': Object.freeze({ opening: [0.7715, 0.0234, 0.1042, 0.7559], storesLamp: [0.791, 0.0844] }),
   'act05/keys': Object.freeze({ wireLeft: 0.4098, clip: [0.3874, 0.3471, 0.1172, 0.1488], clipHang: [0.446, 0.4807] }),
   'act05/lock': Object.freeze({ wireRight: 0.4098, hook: [0.4688, 0.442], hookEnd: [0.4961, 0.4069], keyhole: [0.4473, 0.5276], knob: [0.4505, 0.258], plate: [0.39, 0.1139, 0.1204, 0.6152], leafEdge: 0.5208 }),
   'act05/stores': Object.freeze({ lamp: [0.4232, 0.0645] }),
-  'act1/desk': Object.freeze({ floorRight: 0.8238, lamp: [0.4085, 0.4548], bell: [0.4391, 0.5073], deskEnd: 0.4779 }),
+  'act1/desk': Object.freeze({ floorRight: 0.8238, lamp: [0.4085, 0.4548], bell: [0.4391, 0.5073], deskEnd: 0.4779, chair: [0.2084, 0.5395, 0.1822, 0.4597], chairSit: [0.2278, 0.9562] }),
   'act1/door-locked': Object.freeze({ floorLeft: 0.8238, chute: 0.7796, slot: [0.752, 0.3082, 0.0651, 0.0188], leaf: [0.7161, 0.082, 0.1367, 0.7324], knob: [0.8398, 0.4922] }),
   'act1/door-open': Object.freeze({ doorway: [0.6901, 0.0059, 0.1855, 0.8145], lantern: [0.8509, 0.2074], chute: 0.7796 }),
   'act1/lockers': Object.freeze({ chute: 0.7002, tagged: [0.6771, 0.252, 0.0553, 0.1898], envelope: [0.6836, 0.259, 0.0404, 0.1395], sconce: [0.1302, 0.0762] }),
   'act1/cubby': Object.freeze({ chute: 0.7796, funnel: [0.5924, 0.519, 0.3476, 0.1635], shelf: 0.5829, glow: [0.2133, 0.1706] }),
   'act1/window': Object.freeze({ floor: 0.9434, lantern: [0.1953, 0.1898], glass: [0.2734, 0.1289, 0.3711, 0.2695] }),
-  'act1/conductor': Object.freeze({ floor: 0.7617, door: [0.4427, 0.2168, 0.1367, 0.5449], lamps: [0.1009, 0.1793, 0.5111, 0.0] }),
+  'act1/conductor': Object.freeze({ butchFeet: [0.4961, 0.6586], butchHead: [0.4961, 0.172], conductorFeet: [0.6031, 0.6167], conductorHead: [0.6031, 0.1343], doorway: [0.4124, 0.0, 0.3163, 0.946], threshold: 0.946, lamp: [0.5798, 0.1479], ceilingLamps: [0.5163, -0.1005, 0.0, 0.0977], slot: [0.324, 0.1284, 0.062, 0.0977] }),
 });
 
 /** Zoom rects: each close-up's box in its parent painting (parent → child). */
@@ -63,7 +63,7 @@ export const ZOOM = Object.freeze({
   'act05/lock': Object.freeze([0.8457, 0.4451, 0.1314, 0.1314]), // in act05/door-locked
   'act05/stores': Object.freeze([0.7083, 0.0715, 0.1953, 0.1953]), // in act05/door-open
   'act1/cubby': Object.freeze([0.5547, 0.3059, 0.1953, 0.1953]), // in act1/lockers
-  'act1/conductor': Object.freeze([0.6771, 0.252, 0.2604, 0.2604]), // in act1/door-open
+  'act1/conductor': Object.freeze([0.5279, 0.2833, 0.4721, 0.4721]), // in act1/door-open
 });
 
 /** Cut-out props (WebP with alpha): url and size in px. */

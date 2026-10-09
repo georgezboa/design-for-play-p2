@@ -103,7 +103,7 @@ test('Act 0.5: the full solve — swap, zoom + swap, swap home; the wall grows i
   settle(model);
   const butch = model.state.actors.butch;
   assert.equal(butch.tile, 'desk');
-  assert.equal(butch.pose, 'idle', 'home at the desk, awake');
+  assert.equal(butch.pose, 'sit-chair', 'home at the desk, awake, back in his chair');
   assert.equal(model.state.tiles.door.state, 'stores', 'through the open door: the pigeonholes');
   assert.deepEqual(model.state.ended, { kind: 'nextAct', next: 'act1' });
   assert.deepEqual(log.filter(([n]) => n === 'checkpoint').map(([, p]) => p.id), ['chapter-1-act-1']);

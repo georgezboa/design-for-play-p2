@@ -41,8 +41,8 @@ test('Act 1 definition is valid and registered', () => {
 test('Act 1: scripted solution reaches the Conductor, bell #1 and the act-2 checkpoint', () => {
   const model = createPanelModel(ACT1);
   assert.equal(model.textState().step, 'floor-link');
-  // awake and standing at the desk: Act 0.5 brought him home
-  assert.equal(model.state.actors.butch.pose, 'idle');
+  // awake, in his desk chair: Act 0.5 brought him home (round 8: the painted sit-chair frame)
+  assert.equal(model.state.actors.butch.pose, 'sit-chair');
   const log = solveAct1(model);
   assert.ok(model.hasFlag('ticketDropped'));
   assert.equal(model.state.tiles.door.state, 'conductor');

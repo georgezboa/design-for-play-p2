@@ -110,6 +110,34 @@ _chute_u = _d['chute_top'] / SRC_W
 _w = MEASURED['A1-cubby']['chute_bottom'] / _chute_u
 A1_CUBBY_CROP = (0.0, 180.0, _w, _w / ASPECT)
 
+# --- Act 1, the Conductor's car (A1-conductor, round 8): George painted the
+# open carriage door from a step closer, the next car's lamp-lit corridor
+# beyond it. Its doorway is wider in the picture than A1-door-open's, so the
+# plate is a 1290 px box (shown 1.19x, dropping the vestibule window at the
+# right) and the zoom box is pinned to A1-door-open's right edge: the
+# opening's jambs (532 and 940 here) land on 1104 and 1336 there (the leaf's
+# edge is at 1352: 16 px), the vestibule's plate on its plate.
+A1_CAR_CROP = (0.0, 190.0, 1290.0, 1290.0 / ASPECT)
+# the corridor in perspective: the eye level (its vanishing point) at y 390;
+# at the threshold (y 868) the ceiling is 2.25 m up, at y 80. A figure of h m
+# standing at floor row fy is h * px_per_m(fy) tall.
+A1_CAR_HORIZON = 390.0
+
+
+def a1_car_px_per_m(fy):
+    return (868.0 - 80.0) / 2.25 * (fy - A1_CAR_HORIZON) / (868.0 - A1_CAR_HORIZON)
+
+
+def a1_car_head(x, fy, metres):
+    """The top of a figure of `metres` standing with its feet at (x, fy)."""
+    return ('pt', x, fy - metres * a1_car_px_per_m(fy))
+
+
+# where the two meet: Butch on the runner's left, a step inside; the
+# Conductor half a metre deeper on its right, under the corridor's lamp
+A1_CAR_BUTCH = (640.0, 662.0)
+A1_CAR_CONDUCTOR = (778.0, 632.0)
+
 # ---------------------------------------------------------------------------
 # The plates. Anchors (source px): ('y', v) a height, ('x', u) a position
 # across, ('pt', x, y), ('rect', x0, y0, x1, y1), ('r', px) a radius (as a
@@ -161,6 +189,10 @@ PLATES = [
         'lamp': ('pt', 453, 406),
         'deskTop': ('pt', 532, 497),
         'deskEnd': ('x', 552),
+        # the desk chair, and where Butch sits on it (the seated frame's
+        # pivot: the back of the seat, his feet's row on the boards)
+        'chair': ('rect', 117, 471, 283, 804),
+        'chairSit': ('pt', 163, 792),
     }),
     dict(id='act05/door-locked', src='A05-door-locked.png', crop=full(A05_DOOR_TOP), anchors={
         'floorLeft': ('y', MEASURED['A05-door-locked']['floor_left']),
@@ -199,6 +231,8 @@ PLATES = [
         'lamp': ('pt', 547, 413),
         'bell': ('pt', 588, 452),
         'deskEnd': ('x', 640),
+        'chair': ('rect', 279, 476, 523, 818),
+        'chairSit': ('pt', 305, 786),
     }),
     dict(id='act1/door-locked', src='A1-door-locked.png', crop=full(A1_DOOR_TOP), anchors={
         'floorLeft': ('y', MEASURED['A1-door-locked']['floor_left']),
@@ -229,12 +263,17 @@ PLATES = [
         'lantern': ('pt', 300, 232),
         'glass': ('rect', 420, 180, 990, 410),
     }),
-    # the Conductor's car: no Act 1 painting of it, so the next carriage's
-    # aisle (A2-aisle, which Act 2 opens in) is seen through the open door
-    dict(id='act1/conductor', src='A2-aisle.png', crop=full(85), note='through the open door: the next carriage (A2-aisle)', anchors={
-        'floor': ('y', 735),
-        'door': ('rect', 680, 270, 890, 735),
-        'lamps': ('rect', 155, 238, 940, 238),
+    # the Conductor's car (round 8): through the open door, the next car's corridor
+    dict(id='act1/conductor', src='A1-conductor.png', crop=A1_CAR_CROP, note='through the open door: the next car\'s corridor (batch 2, 2026-10-09)', anchors={
+        'butchFeet': ('pt', *A1_CAR_BUTCH),
+        'butchHead': a1_car_head(*A1_CAR_BUTCH, 1.75),
+        'conductorFeet': ('pt', *A1_CAR_CONDUCTOR),
+        'conductorHead': a1_car_head(*A1_CAR_CONDUCTOR, 1.95),
+        'doorway': ('rect', 532, 190, 940, 868),
+        'threshold': ('y', 868),
+        'lamp': ('pt', 748, 296),
+        'ceilingLamps': ('rect', 666, 118, 666, 188),
+        'slot': ('rect', 418, 282, 498, 352),
     }),
 ]
 
@@ -254,7 +293,9 @@ ZOOMS = {
     'act05/lock': dict(parent='act05/door-locked', pairs=[((1390, 488), (692, 305)), ((1390, 520), (687, 535)), ((1377, 473), (599, 182)), ((1402, 541), (784, 707))]),
     'act05/stores': dict(parent='act05/door-open', box=(1088, 141, 300)),
     'act1/cubby': dict(parent='act1/lockers', box=(852, 346, 300)),
-    'act1/conductor': dict(parent='act1/door-open', box=(1040, 290, 400)),
+    # pinned to the door painting's right edge (the corridor painting is the wider view):
+    # the jambs on the jambs (x) and the vestibule's plate on its plate (y)
+    'act1/conductor': dict(parent='act1/door-open', pin='right', xpairs=[(1104, 532), (1352, 940)], ypairs=[(700, 868), (770, 1000)]),
 }
 
 # Props cut out of C-props.png (grey ground, hatched shadows dropped).
@@ -318,12 +359,26 @@ def solve_box(pairs, child_crop):
     return x
 
 
+def solve_pinned_right(xpairs, ypairs, child_crop, parent_crop):
+    """Least squares for a box whose right edge is the parent's: x pairs fix its width, y pairs its top."""
+    cx0, cy0, cw, ch = child_crop
+    right = parent_crop[0] + parent_crop[2]
+    # px = right - (1 - u) * bw  ->  (right - px) = (1 - u) * bw
+    num = sum((1 - (sx - cx0) / cw) * (right - px) for px, sx in xpairs)
+    den = sum((1 - (sx - cx0) / cw) ** 2 for px, sx in xpairs)
+    bw = num / den
+    by = sum(py - ((sy - cy0) / ch) * bw / ASPECT for py, sy in ypairs) / len(ypairs)
+    return right - bw, by, bw
+
+
 def zoom_rect(child_id):
     z = ZOOMS[child_id]
     parent = PLATE_BY_ID[z['parent']]
     child = PLATE_BY_ID[child_id]
     if 'box' in z:
         bx, by, bw = z['box']
+    elif z.get('pin') == 'right':
+        bx, by, bw = solve_pinned_right(z['xpairs'], z['ypairs'], child['crop'], parent['crop'])
     elif 'lamp' in z:
         # one point held still (parent px <-> child px) at a chosen box width
         (px, py), (sx, sy) = z['lamp']

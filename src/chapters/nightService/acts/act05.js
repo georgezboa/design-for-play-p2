@@ -22,7 +22,7 @@ import { BUTCH_PACE, CARRIAGE_TILE, defineAct } from '../panelModel.js';
 import { drawDesk } from '../art/act1Art.js';
 import { drawKeyLine, drawLockClose, drawStores, drawStoresDoor } from '../art/act05Art.js';
 import {
-  A05_BUTCH_SCALE, A05_FLOOR as FLOOR, A05_WALK as WALK, BUTCH_AT_DESK, DESK_RING, DOOR_WIRE_OUT, DOORWAY_ZOOM, KEY_ZOOM, KEYS_HIT, LOCK_HIT,
+  A05_BUTCH_SCALE, A05_FLOOR as FLOOR, A05_WALK as WALK, BUTCH_AT_DESK, BUTCH_IN_CHAIR, DESK_RING, DOOR_WIRE_OUT, DOORWAY_ZOOM, KEY_ZOOM, KEYS_HIT, LOCK_HIT,
   LOCK_ZOOM, PLATES05, PROPS05, STORES_ASIDE_X, STORES_WAIT_X, WIRE_CLOSE, WIRE_OUT,
   drawDeskPlate, drawDoorPlate, drawKeysPlate, drawLockPlate, drawStoresPlate,
 } from '../art/act05Plates.js';
@@ -31,6 +31,8 @@ import { ACT05_FX } from '../art/act05Fx.js';
 const wireLive = { all: [{ flag: 'butchAtStores' }, { notFlag: 'keySent' }] };
 /** Where Butch stands at the desk once he is home (Act 1 opens at its own desk painting). */
 export const BUTCH_HOME = Object.freeze({ x: BUTCH_AT_DESK.x + 0.02, y: WALK });
+/** Seated, his feet are this far right of the seat's back (the sit-chair frame at his scale). */
+const CHAIR_FEET_DX = 0.075;
 
 export const ACT05 = defineAct({
   id: 'act05',
@@ -119,8 +121,9 @@ export const ACT05 = defineAct({
     },
   },
   actors: {
-    // awake, standing by his desk; 1.75 m beside the painted 2 m door (round 7)
-    butch: { rig: 'butch', pace: BUTCH_PACE, scale: A05_BUTCH_SCALE, tile: 'desk', state: 'office', x: BUTCH_AT_DESK.x, y: BUTCH_AT_DESK.y, pose: 'idle', facing: -1 },
+    // awake, in his desk chair (round 8: the painted sit-chair frame); 1.75 m
+    // beside the painted 2 m door when he stands (round 7)
+    butch: { rig: 'butch', pace: BUTCH_PACE, scale: A05_BUTCH_SCALE, tile: 'desk', state: 'office', x: BUTCH_IN_CHAIR.x, y: BUTCH_IN_CHAIR.y, pose: 'sit-chair', facing: 1 },
   },
   steps: [
     {
@@ -128,12 +131,15 @@ export const ACT05 = defineAct({
       when: { link: { a: 'desk', b: 'door', type: 'floor' } },
       hint: { tile: 'desk', edge: { side: 'right', at: FLOOR }, ghost: { drag: { tile: 'desk', leftOf: 'door' } } },
       do: [
-        { actorPose: { actor: 'butch', pose: 'stand', facing: 1 } },
-        { wait: 350 },
+        // he gets up from his chair (standing where his feet were) and crosses in front of the desk
+        { placeActor: { actor: 'butch', x: BUTCH_IN_CHAIR.x + CHAIR_FEET_DX, pose: 'stand', facing: 1 } },
+        { sfx: 'stool' },
+        { wait: 450 },
         {
           walkButch: {
             id: 'toStores',
             path: [
+              { tile: 'desk', x: BUTCH_AT_DESK.x, y: WALK },
               { tile: 'desk', x: 0.66, y: WALK },
               { tile: 'desk', x: 1, y: WALK },
               { tile: 'door', x: 0, y: WALK, via: 'floor', state: 'locked' },
@@ -224,12 +230,15 @@ export const ACT05 = defineAct({
               { tile: 'door', x: 0, y: WALK },
               { tile: 'desk', x: 1, y: WALK, via: 'floor', state: 'office' },
               { tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y },
+              // back to his chair: Act 1 opens with him in it
+              { tile: 'desk', x: BUTCH_IN_CHAIR.x + CHAIR_FEET_DX, y: BUTCH_IN_CHAIR.y },
             ],
           },
         },
-        { actorPose: { actor: 'butch', pose: 'idle', facing: -1 } },
         { lockInput: true },
-        { wait: 700 },
+        { placeActor: { actor: 'butch', x: BUTCH_IN_CHAIR.x, y: BUTCH_IN_CHAIR.y, pose: 'sit-chair', facing: 1 } },
+        { sfx: 'stool' },
+        { wait: 900 },
         // through the open door: the stores, and its wall of pigeonholes
         { zoomTo: { tile: 'door', to: 'stores', rect: DOORWAY_ZOOM } },
         { wait: 1200 },

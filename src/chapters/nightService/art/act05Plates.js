@@ -60,8 +60,14 @@ export const DESK_RING = Object.freeze([...DESK.deskTop]);
  * floor line is where the wall meets the boards, and the link height).
  */
 export const A05_WALK = Math.round((A05_FLOOR + 0.03) * 10000) / 10000;
-/** Where Butch stands by his desk (Act 0.5 opens here), waits at the locked door, steps aside, comes home. */
+/** Where Butch stands by his desk, waits at the locked door, steps aside, comes home. */
 export const BUTCH_AT_DESK = Object.freeze({ x: 0.4, y: A05_WALK });
+/**
+ * Round 8: in his desk chair (the painted figure's `sit-chair` frame: the
+ * seat without the stool). The pose's pivot is the back of the seat, its
+ * feet on the boards in front of the desk.
+ */
+export const BUTCH_IN_CHAIR = Object.freeze({ x: DESK.chairSit[0], y: DESK.chairSit[1] });
 export const STORES_WAIT_X = 0.695;
 export const STORES_ASIDE_X = 0.52;
 /** Butch in this corridor: 1.75 m beside the painted 2 m door leaf (rig height 70 tile px at scale 1). */

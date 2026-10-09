@@ -1,7 +1,7 @@
 // Act 1 · LOST PROPERTY on George's painted plates (round 7): the desk at the
 // end of the corridor, the wall of pigeonholes and the one pigeonhole up
 // close, the window bay, the carriage door (locked, off its latch, open), and
-// through it the next carriage, where the Conductor waits. Positions come
+// through it the next car's corridor (round 8), where the Conductor waits. Positions come
 // from art/ch1Plates.js (generated from the measured paintings).
 //
 // As painted: the desk's floor runs out of its right edge at the door's
@@ -69,23 +69,25 @@ export const TAG_DROP_Y = FUNNEL[1] + FUNNEL[3] * 0.5;
 export const A1_WALK = Math.round((A1_FLOOR + 0.03) * 10000) / 10000;
 /** Butch: home at the desk, waiting at the door, and his scale (1.75 m beside the painted 2 m leaf). */
 export const BUTCH_HOME1 = Object.freeze({ x: DESK.deskEnd + 0.085, y: A1_WALK });
+/** Round 8: in his desk chair (`sit-chair`), where Act 1 opens. */
+export const BUTCH_IN_CHAIR1 = Object.freeze({ x: DESK.chairSit[0], y: DESK.chairSit[1] });
 export const DOOR_WAIT_X = 0.62;
 export const A1_BUTCH_SCALE = Math.round(((DOOR_A.leaf[3] * 414 * 1.75) / 2 / 70) * 100) / 100;
 /**
- * The next carriage, in perspective: the Conductor waits at its far door
- * (on the aisle's floor there, CAR_FLOOR), Butch comes up the aisle a few
- * steps nearer (BUTCH_IN_CAR), so he stands larger. The eye is at about
- * 1.6 m: the horizon is 0.8 of the far door's 2 m above its threshold, and
- * a figure's height grows with its feet's distance below the horizon.
+ * The Conductor's car (round 8: George's A1-conductor, the next car's
+ * corridor through the open door). They meet on its runner a step inside:
+ * Butch on the left, the Conductor half a metre deeper on the right, under
+ * the corridor's lamp. Their heights come from the painting's perspective
+ * (the script's a1_car_head: 1.75 m and 1.95 m at their floor rows), so
+ * the state's actorScale makes Butch 1.75 m there, and the Conductor's own
+ * scale makes him 1.95 m.
  */
-export const CAR_FLOOR = Math.round((CAR.floor + 0.004) * 10000) / 10000;
-const CAR_HORIZON = CAR.floor - CAR.door[3] * 0.8;
-export const BUTCH_IN_CAR = Object.freeze({ x: 0.44, y: 0.83 });
-export const CONDUCTOR_IN_CAR = Object.freeze({ x: 0.556, y: CAR_FLOOR });
-/** How much nearer Butch stands than the far door (1 = at the door). */
-export const CAR_DEPTH = Math.round(((BUTCH_IN_CAR.y - CAR_HORIZON) / (CAR.floor - CAR_HORIZON)) * 1000) / 1000;
-export const CAR_ACTOR_SCALE = Math.round(((CAR.door[3] * 414 * 1.75 * CAR_DEPTH) / 2 / 70 / A1_BUTCH_SCALE) * 1000) / 1000;
-export const CONDUCTOR_SCALE = Math.round(((CAR.door[3] * 414 * 1.95) / 2 / 110 / CAR_ACTOR_SCALE) * 100) / 100;
+export const BUTCH_IN_CAR = Object.freeze({ x: CAR.butchFeet[0], y: CAR.butchFeet[1] });
+export const CONDUCTOR_IN_CAR = Object.freeze({ x: CAR.conductorFeet[0], y: CAR.conductorFeet[1] });
+const BUTCH_CAR_PX = (CAR.butchFeet[1] - CAR.butchHead[1]) * 414;
+const CONDUCTOR_CAR_PX = (CAR.conductorFeet[1] - CAR.conductorHead[1]) * 414;
+export const CAR_ACTOR_SCALE = Math.round((BUTCH_CAR_PX / 70 / A1_BUTCH_SCALE) * 1000) / 1000;
+export const CONDUCTOR_SCALE = Math.round((CONDUCTOR_CAR_PX / 110 / CAR_ACTOR_SCALE) * 100) / 100;
 
 // ---------------------------------------------------------------------------
 
@@ -177,9 +179,10 @@ export function drawDoorPlate1(ctx, variant = 'locked') {
   }
 }
 
-/** The next carriage, through the open door: its two lamps breathe. */
+/** The Conductor's car: the corridor's wall lamp and the ceiling lamps beyond it breathe. */
 export function drawConductorPlate(ctx) {
-  const [x0, y, span] = CAR.lamps;
-  [x0, x0 + span].forEach((x) => lampGlow(ctx, [x, y + 0.02], 80, { alpha: 0.1, flicker: 0.05 }));
-  ctx.dust(ctx.w * 0.3, ctx.h * 0.15, ctx.w * 0.4, ctx.h * 0.5, { count: 10, size: 2 });
+  lampGlow(ctx, [CAR.lamp[0], CAR.lamp[1] + 0.02], 90, { alpha: 0.12, flicker: 0.06 });
+  const [x, y0, , h] = CAR.ceilingLamps;
+  [y0, y0 + h].forEach((y, i) => lampGlow(ctx, [x, y + 0.01], 34 - i * 10, { alpha: 0.07, flicker: 0.05, color: 0xffd8a0 }));
+  ctx.dust(ctx.w * 0.42, ctx.h * 0.1, ctx.w * 0.3, ctx.h * 0.5, { count: 10, size: 2 });
 }
