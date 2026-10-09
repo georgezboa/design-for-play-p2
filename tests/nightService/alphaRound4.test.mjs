@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { ONE_ANSWER_ACT } from '../../src/chapters/nightService/acts/oneAnswer.js';
-import { BELL_HIT } from '../../src/chapters/nightService/art/act0Art.js';
+import { BELL_HIT } from '../../src/chapters/nightService/art/act0Plates.js';
 import { TEXT_TAG, createPanelModel, tagRect, textTagWidth } from '../../src/chapters/nightService/panelModel.js';
 import { HINT_TIERS, createHintDirector, pickGesture, unmetSeam } from '../../src/chapters/nightService/hints.js';
 import { settle } from './helpers.mjs';

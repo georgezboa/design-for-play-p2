@@ -10,6 +10,8 @@
 //     and the lock — and each close-up carries the wire at the same height.
 //     The door must stand LEFT of the office (the order puzzle 1 undid):
 //     the carrier runs, the key turns, the door opens on the stores.
+//   Round 7: George's painted plates (art/act05Plates.js); the key line is the
+//   brass rod along the corridor wall, its carrier clip by the desk.
 //   3 the desk bell rings by itself: someone is at the counter. Swap back so
 //     Butch can walk home to the desk. Through the open door: the stores'
 //     pigeonholes — the wall opens two more windows below (Act 1).
@@ -17,17 +19,18 @@
 // Every step is reversible (swaps, zooms); nothing can strand Butch.
 
 import { BUTCH_PACE, CARRIAGE_TILE, defineAct } from '../panelModel.js';
-import { FLOOR, WIRE_OUT, drawDesk } from '../art/act1Art.js';
+import { drawDesk } from '../art/act1Art.js';
+import { drawKeyLine, drawLockClose, drawStores, drawStoresDoor } from '../art/act05Art.js';
 import {
-  DOOR_WIRE_OUT, DOORWAY_ZOOM, KEY_ZOOM, LOCK, LOCK_ZOOM, STORES_ASIDE_X, STORES_WAIT_X, WIRE_CLOSE,
-  drawKeyLine, drawLockClose, drawStores, drawStoresDoor,
-} from '../art/act05Art.js';
+  A05_BUTCH_SCALE, A05_FLOOR as FLOOR, A05_WALK as WALK, BUTCH_AT_DESK, DESK_RING, DOOR_WIRE_OUT, DOORWAY_ZOOM, KEY_ZOOM, KEYS_HIT, LOCK_HIT,
+  LOCK_ZOOM, PLATES05, PROPS05, STORES_ASIDE_X, STORES_WAIT_X, WIRE_CLOSE, WIRE_OUT,
+  drawDeskPlate, drawDoorPlate, drawKeysPlate, drawLockPlate, drawStoresPlate,
+} from '../art/act05Plates.js';
 import { ACT05_FX } from '../art/act05Fx.js';
-import { BUTCH_DESK } from './act0.js';
 
 const wireLive = { all: [{ flag: 'butchAtStores' }, { notFlag: 'keySent' }] };
-/** Where Butch stands at the desk once he is home (Act 1 opens here). */
-export const BUTCH_HOME = Object.freeze({ x: 0.62, y: FLOOR });
+/** Where Butch stands at the desk once he is home (Act 1 opens at its own desk painting). */
+export const BUTCH_HOME = Object.freeze({ x: BUTCH_AT_DESK.x + 0.02, y: WALK });
 
 export const ACT05 = defineAct({
   id: 'act05',
@@ -42,6 +45,8 @@ export const ACT05 = defineAct({
   slots: ['door', 'desk'],
   start: { bell: 0, items: [] },
   assets: ['fields'],
+  // round 7: George's office key, cut from his prop sheet (it rides the carrier)
+  props: PROPS05,
   fx: ACT05_FX,
   // the wall grows from Act 0's one window: the office carries on as the desk
   growFrom: { act: 'act0', keep: { desk: 'office' } },
@@ -53,59 +58,69 @@ export const ACT05 = defineAct({
       state: 'locked',
       states: {
         locked: {
-          draw: (ctx) => drawStoresDoor(ctx, 'locked'),
+          plate: PLATES05.doorLocked,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate(ctx, 'locked') : drawStoresDoor(ctx, 'locked')),
           edges: {
             left: [{ type: 'floor', at: FLOOR }],
+            // the door's key line comes down from the ceiling at the right edge, high up
             right: [{ type: 'wire', at: DOOR_WIRE_OUT, when: wireLive }],
           },
           hotspots: [{
-            id: 'lock', kind: 'zoom', to: 'lock', rect: [LOCK.x - 0.035, LOCK.y - 0.07, 0.07, 0.13], zoomRect: LOCK_ZOOM,
+            id: 'lock', kind: 'zoom', to: 'lock', rect: LOCK_HIT, zoomRect: LOCK_ZOOM,
             requires: wireLive,
-            tag: { x: LOCK.x + 0.03, y: LOCK.y - 0.07, angle: 0.4, scale: 1.1 },
+            // tied to the knob, hanging down over the leaf (the frame is on its right)
+            tag: { x: LOCK_HIT[0] + LOCK_HIT[2] * 0.4, y: LOCK_HIT[1] + 0.035, angle: 2.6, scale: 1.1 },
           }],
         },
         lock: {
-          draw: drawLockClose,
+          plate: PLATES05.lock,
+          draw: (ctx) => (ctx.plate ? drawLockPlate(ctx) : drawLockClose(ctx)),
           edges: { right: [{ type: 'wire', at: WIRE_CLOSE, when: { notFlag: 'keySent' } }] },
         },
         // round 6 · item 4: the wide view the key leaves behind — the lock
         // lit, the leaf off its latch with lamplight in the crack
         unlocked: {
-          draw: (ctx) => drawStoresDoor(ctx, 'unlocked'),
+          plate: PLATES05.doorLocked,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate(ctx, 'unlocked') : drawStoresDoor(ctx, 'unlocked')),
           edges: { left: [{ type: 'floor', at: FLOOR }] },
         },
         open: {
-          draw: (ctx) => drawStoresDoor(ctx, 'open'),
+          plate: PLATES05.doorOpen,
+          draw: (ctx) => (ctx.plate ? drawDoorPlate(ctx, 'open') : drawStoresDoor(ctx, 'open')),
           edges: { left: [{ type: 'floor', at: FLOOR }] },
         },
-        stores: { draw: drawStores, zoomOut: false },
+        stores: { plate: PLATES05.stores, draw: (ctx) => (ctx.plate ? drawStoresPlate(ctx) : drawStores(ctx)), zoomOut: false },
       },
     },
     desk: {
       state: 'office',
       states: {
         office: {
-          draw: (ctx) => drawDesk(ctx, { key: true }),
+          plate: PLATES05.desk,
+          draw: (ctx) => (ctx.plate ? drawDeskPlate(ctx) : drawDesk(ctx, { key: true })),
           edges: {
             right: [{ type: 'floor', at: FLOOR }],
+            // the key line runs along the wall and out behind the shelf, at rail height
             left: [{ type: 'wire', at: WIRE_OUT, when: wireLive }],
           },
           hotspots: [{
-            id: 'keys', kind: 'zoom', to: 'keys', rect: [0.27, 0.34, 0.08, 0.14], zoomRect: KEY_ZOOM,
+            id: 'keys', kind: 'zoom', to: 'keys', rect: KEYS_HIT, zoomRect: KEY_ZOOM,
             requires: wireLive,
-            // hangs to the left of the key, clear of the desk bell below
-            tag: { x: 0.296, y: 0.425, angle: 2.75, scale: 1.1 },
+            // hangs to the right of the key, over the bare wall (the lamp is on its left)
+            tag: { x: KEYS_HIT[0] + KEYS_HIT[2] * 0.75, y: KEYS_HIT[1] + 0.03, angle: 0.5, scale: 1.1 },
           }],
         },
         keys: {
-          draw: drawKeyLine,
+          plate: PLATES05.keys,
+          draw: (ctx) => (ctx.plate ? drawKeysPlate(ctx) : drawKeyLine(ctx)),
           edges: { left: [{ type: 'wire', at: WIRE_CLOSE, when: { notFlag: 'keySent' } }] },
         },
       },
     },
   },
   actors: {
-    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'desk', state: 'office', x: BUTCH_DESK.x, y: BUTCH_DESK.y, pose: 'sit', facing: -1 },
+    // awake, standing by his desk; 1.75 m beside the painted 2 m door (round 7)
+    butch: { rig: 'butch', pace: BUTCH_PACE, scale: A05_BUTCH_SCALE, tile: 'desk', state: 'office', x: BUTCH_AT_DESK.x, y: BUTCH_AT_DESK.y, pose: 'idle', facing: -1 },
   },
   steps: [
     {
@@ -114,16 +129,15 @@ export const ACT05 = defineAct({
       hint: { tile: 'desk', edge: { side: 'right', at: FLOOR }, ghost: { drag: { tile: 'desk', leftOf: 'door' } } },
       do: [
         { actorPose: { actor: 'butch', pose: 'stand', facing: 1 } },
-        { sfx: 'stool' },
-        { wait: 450 },
+        { wait: 350 },
         {
           walkButch: {
             id: 'toStores',
             path: [
-              { tile: 'desk', x: 0.66, y: FLOOR },
-              { tile: 'desk', x: 1, y: FLOOR },
-              { tile: 'door', x: 0, y: FLOOR, via: 'floor', state: 'locked' },
-              { tile: 'door', x: STORES_WAIT_X, y: FLOOR },
+              { tile: 'desk', x: 0.66, y: WALK },
+              { tile: 'desk', x: 1, y: WALK },
+              { tile: 'door', x: 0, y: WALK, via: 'floor', state: 'locked' },
+              { tile: 'door', x: STORES_WAIT_X, y: WALK },
             ],
           },
         },
@@ -139,7 +153,7 @@ export const ACT05 = defineAct({
       skip: [
         { setSlots: ['desk', 'door'] },
         { setFlag: 'butchAtStores' },
-        { placeActor: { actor: 'butch', tile: 'door', state: 'locked', x: STORES_WAIT_X, y: FLOOR, pose: 'idle', facing: 1 } },
+        { placeActor: { actor: 'butch', tile: 'door', state: 'locked', x: STORES_WAIT_X, y: WALK, pose: 'idle', facing: 1 } },
       ],
     },
     {
@@ -178,11 +192,11 @@ export const ACT05 = defineAct({
         { setState: { tile: 'door', state: 'open' } },
         { sfx: 'door' },
         { wait: 400 },
-        { walkButch: { id: 'aside', speed: 110, path: [{ tile: 'door', x: STORES_ASIDE_X, y: FLOOR }] } },
+        { walkButch: { id: 'aside', speed: 110, path: [{ tile: 'door', x: STORES_ASIDE_X, y: WALK }] } },
         { actorPose: { actor: 'butch', pose: 'idle', facing: 1 } },
         { wait: 700 },
         // the desk bell rings on its own: someone is at the counter
-        { fx: { name: 'deskBell', tile: 'desk' } },
+        { fx: { name: 'deskBell', tile: 'desk', at: DESK_RING } },
         { wait: 500 },
         { actorPose: { actor: 'butch', pose: 'idle', facing: -1 } },
         { wait: 400 },
@@ -194,7 +208,7 @@ export const ACT05 = defineAct({
         { setSlots: ['door', 'desk'] },
         { setFlag: ['keySent', 'unlocked'] },
         { setState: { tile: 'door', state: 'open' } },
-        { placeActor: { actor: 'butch', tile: 'door', state: 'open', x: STORES_ASIDE_X, y: FLOOR, pose: 'idle', facing: -1 } },
+        { placeActor: { actor: 'butch', tile: 'door', state: 'open', x: STORES_ASIDE_X, y: WALK, pose: 'idle', facing: -1 } },
       ],
     },
     {
@@ -207,8 +221,8 @@ export const ACT05 = defineAct({
           walkButch: {
             id: 'home',
             path: [
-              { tile: 'door', x: 0, y: FLOOR },
-              { tile: 'desk', x: 1, y: FLOOR, via: 'floor', state: 'office' },
+              { tile: 'door', x: 0, y: WALK },
+              { tile: 'desk', x: 1, y: WALK, via: 'floor', state: 'office' },
               { tile: 'desk', x: BUTCH_HOME.x, y: BUTCH_HOME.y },
             ],
           },
