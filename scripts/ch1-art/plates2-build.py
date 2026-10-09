@@ -1240,7 +1240,7 @@ def needed_art():
                 f'a railway carriage would be about 30% of the picture\'s width and a standing person about 5% of its height. '
                 f'In front, our railway line runs on the same stone deck as A3-gap.png (same dressed ochre stone, same thin iron railing on posts) and enters from the '
                 f'LEFT edge with its deck top at exactly {round(rail * 100)}% of the image height, ending at a small timber buffer stop about {full_x(0.92)}% across. '
-                f'Behind it a long low stone platform: its near edge at about 71% of the height, just behind the deck's railing, its far edge at about 58%, its walking surface between. '
+                f'Behind it a long low stone platform: its near edge at about 71% of the height, just behind the deck\'s railing, its far edge at about 58%, its walking surface between. '
                 f'Behind the platform a second track at about 56% of the height, where another train will stand. A narrow, steep timber stair comes down from the TOP '
                 f'edge at {full_x(stair)}% across and lands on the far side of the platform at about {full_x(0.6)}% across (it comes down from the hill of A3-overlook). '
                 f'On the platform: a short wooden bench from about {full_x(0.196)}% to {full_x(0.264)}% across; one lamp post at about {full_x(0.82)}% across with the '
