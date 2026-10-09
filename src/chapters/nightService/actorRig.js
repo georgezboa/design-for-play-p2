@@ -1,10 +1,16 @@
-// Jointed figures for the panel actors (Butch, the Conductor, Mara's
-// silhouette, the train). Parts are canvases from art/figures.js; this file
-// turns them into Phaser containers and animates idle breathing, the walk
-// cycle, sitting, and small gestures. The rig never moves itself across the
-// screen: PanelScene places it from the model's tile-local coordinates.
+// The panel actors (Butch, the Conductor, Mara, the train). Since round 7
+// they are George's painted figures (spriteRig.js, frames preloaded by
+// PanelScene); the jointed figures below, built from art/figures.js, are the
+// fallback when those frames fail to load (or with ?figures=procedural).
+// Both kinds share one interface: { root, height, update(dt, { pose, moving,
+// time, carrying, speed }), gesture(name) } (+ `punch` on the Conductor).
+// Parts are canvases from art/figures.js; this file turns them into Phaser
+// containers and animates idle breathing, the walk cycle, sitting, and small
+// gestures. The rig never moves itself across the screen: PanelScene places
+// it from the model's tile-local coordinates.
 
 import { BUTCH_PARTS, CONDUCTOR_PARTS, MARA_PARTS, RES, TRAIN_PARTS } from './art/figures.js';
+import { buildSpriteRig } from './spriteRig.js';
 
 function ensurePartTextures(scene, prefix, parts) {
   Object.entries(parts).forEach(([name, part]) => {
@@ -266,8 +272,14 @@ function buildTrain(scene) {
   };
 }
 
-const BUILDERS = { butch: buildButch, conductor: buildConductor, mara: buildMara, train: buildTrain };
+const BUILDERS = { butch: buildButch, conductor: buildConductor, mara: buildMara, train: buildTrain, trainDark: buildTrain };
 
-export function buildRig(scene, kind) {
+/** The jointed figure for a kind (the painted rig's fallback). */
+export function buildProceduralRig(scene, kind) {
   return (BUILDERS[kind] ?? buildButch)(scene);
+}
+
+/** The painted figure when its frames have loaded, else the jointed one. */
+export function buildRig(scene, kind) {
+  return buildSpriteRig(scene, kind) ?? buildProceduralRig(scene, kind);
 }

@@ -34,6 +34,7 @@ import { NoticeChip } from './chips.js';
 import { ReadingView } from './readingView.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
+import { queueSpriteTextures } from './spriteRig.js';
 import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
 import { PAL, brassFill, ink, roundRectPath, paperGrain } from './art/ink.js';
 import { PAPER_URL, TRAIN_KEY, TRAIN_URL, WORLDS } from './worldAssets.js';
@@ -304,6 +305,10 @@ export class PanelScene extends Phaser.Scene {
     }));
     // painted plates (round 6): illustrated PNGs a tile state draws full-tile
     actPlates(act).forEach(({ key, url }) => { if (!this.textures.exists(key)) this.load.image(key, url); });
+    // painted figures (round 7, sprites): every frame of this act's actors
+    // loads before the first draw; a kind whose frames fail falls back to
+    // the jointed figure (actorRig.buildRig)
+    queueSpriteTextures(this, act);
   }
 
   create() {
@@ -2012,8 +2017,10 @@ export class PanelScene extends Phaser.Scene {
       view: (tile) => this.views[tile],
       rig: (id) => this.rigs[id]?.rig ?? null,
       rigScale: (id) => Math.abs(this.rigs[id]?.rig.root.scaleX ?? 1),
-      rigPoint: (id, lx, ly) => {
+      rigPoint: (id, lx0, ly0) => {
         const entry = this.rigs[id];
+        // painted rigs move a jointed-figure point onto the painted hand (spriteRig mapPoint)
+        const [lx, ly] = entry.rig.mapPoint?.(lx0, ly0) ?? [lx0, ly0];
         const actor = this.model.state.actors[id];
         const view = this.views[actor.tile];
         const scale = Math.abs(entry.rig.root.scaleX);

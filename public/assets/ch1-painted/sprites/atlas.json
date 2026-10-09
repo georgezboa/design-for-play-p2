@@ -1,0 +1,1153 @@
+{
+ "version": 1,
+ "generator": "scripts/ch1-art/sprites.py",
+ "urlBase": "/assets/ch1-painted/sprites",
+ "pad": 6,
+ "characters": {
+  "butch": {
+   "rigHeight": 70,
+   "frameHeight": 448,
+   "unit": 0.15625,
+   "frames": {
+    "walk-1": {
+     "file": "butch/walk-1.webp",
+     "w": 246,
+     "h": 439,
+     "pivot": [
+      115.4,
+      429.5
+     ],
+     "anchors": {
+      "glow": [
+       134.1,
+       297.6
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       17,
+       81,
+       218,
+       447
+      ],
+      "scale": 1.1663,
+      "flipped": false
+     },
+     "v": "59eaa626b5"
+    },
+    "walk-2": {
+     "file": "butch/walk-2.webp",
+     "w": 246,
+     "h": 437,
+     "pivot": [
+      129.3,
+      429.8
+     ],
+     "anchors": {
+      "glow": [
+       135.0,
+       297.8
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       219,
+       82,
+       420,
+       447
+      ],
+      "scale": 1.1631,
+      "flipped": false
+     },
+     "v": "12878e0bee"
+    },
+    "walk-3": {
+     "file": "butch/walk-3.webp",
+     "w": 144,
+     "h": 435,
+     "pivot": [
+      63.6,
+      429.0
+     ],
+     "anchors": {
+      "glow": [
+       92.0,
+       296.0
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       440,
+       81,
+       554,
+       447
+      ],
+      "scale": 1.1567,
+      "flipped": false
+     },
+     "v": "f66e3aa64d"
+    },
+    "walk-4": {
+     "file": "butch/walk-4.webp",
+     "w": 173,
+     "h": 437,
+     "pivot": [
+      90.4,
+      429.8
+     ],
+     "anchors": {
+      "glow": [
+       147.8,
+       276.3
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       590,
+       80,
+       730,
+       448
+      ],
+      "scale": 1.1536,
+      "flipped": false
+     },
+     "v": "ae913b3375"
+    },
+    "walk-5": {
+     "file": "butch/walk-5.webp",
+     "w": 244,
+     "h": 435,
+     "pivot": [
+      112.5,
+      429.0
+     ],
+     "anchors": {
+      "glow": [
+       133.4,
+       296.1
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       770,
+       82,
+       968,
+       444
+      ],
+      "scale": 1.1695,
+      "flipped": false
+     },
+     "v": "ab03e26448"
+    },
+    "walk-6": {
+     "file": "butch/walk-6.webp",
+     "w": 230,
+     "h": 441,
+     "pivot": [
+      113.0,
+      429.2
+     ],
+     "anchors": {
+      "glow": [
+       121.9,
+       298.0
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       968,
+       81,
+       1154,
+       448
+      ],
+      "scale": 1.1695,
+      "flipped": false
+     },
+     "v": "3cd0a63ced"
+    },
+    "walk-7": {
+     "file": "butch/walk-7.webp",
+     "w": 144,
+     "h": 435,
+     "pivot": [
+      68.7,
+      429.0
+     ],
+     "anchors": {
+      "glow": [
+       88.0,
+       297.1
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       1163,
+       78,
+       1278,
+       447
+      ],
+      "scale": 1.1473,
+      "flipped": false
+     },
+     "v": "36f8988bac"
+    },
+    "walk-8": {
+     "file": "butch/walk-8.webp",
+     "w": 211,
+     "h": 435,
+     "pivot": [
+      91.5,
+      429.0
+     ],
+     "anchors": {
+      "glow": [
+       174.5,
+       277.0
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       1326,
+       82,
+       1497,
+       446
+      ],
+      "scale": 1.1631,
+      "flipped": false
+     },
+     "v": "510b4c8a92"
+    },
+    "stand": {
+     "file": "butch/stand.webp",
+     "w": 145,
+     "h": 460,
+     "pivot": [
+      70.5,
+      454.0
+     ],
+     "anchors": {
+      "glow": [
+       65.9,
+       317.2
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       32,
+       517,
+       157,
+       937
+      ],
+      "scale": 1.0667,
+      "flipped": false
+     },
+     "v": "2b9110f419"
+    },
+    "stand-large": {
+     "file": "butch/stand-large.webp",
+     "w": 148,
+     "h": 460,
+     "pivot": [
+      75.5,
+      454.0
+     ],
+     "anchors": {
+      "glow": [
+       73.7,
+       325.9
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       118,
+       15,
+       256,
+       471
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "34ba3bc6c0"
+    },
+    "sleep": {
+     "file": "butch/sleep.webp",
+     "w": 311,
+     "h": 310,
+     "pivot": [
+      78.8,
+      304.0
+     ],
+     "anchors": {
+      "glow": [
+       273.9,
+       73.5
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       436,
+       160,
+       740,
+       463
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "8bf4a4986d"
+    },
+    "desk": {
+     "file": "butch/desk.webp",
+     "w": 162,
+     "h": 299,
+     "pivot": [
+      -69.5,
+      295.0
+     ],
+     "anchors": {
+      "glow": [
+       125.0,
+       64.6
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       587,
+       169,
+       740,
+       461
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "overlay": true,
+     "v": "2b8e86b6a7"
+    },
+    "sit": {
+     "file": "butch/sit.webp",
+     "w": 218,
+     "h": 391,
+     "pivot": [
+      60.9,
+      385.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       849,
+       76,
+       1059,
+       462
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "c41e2b13a7"
+    },
+    "sit-chair": {
+     "file": "butch/sit-chair.webp",
+     "w": 205,
+     "h": 391,
+     "pivot": [
+      47.4,
+      385.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       863,
+       76,
+       1059,
+       462
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "fd4ad8fe14"
+    },
+    "lantern": {
+     "file": "butch/lantern.webp",
+     "w": 246,
+     "h": 465,
+     "pivot": [
+      97.2,
+      459.0
+     ],
+     "anchors": {
+      "glow": [
+       217.9,
+       86.2
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       1204,
+       9,
+       1442,
+       470
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "8410cc608b"
+    },
+    "reach": {
+     "file": "butch/reach.webp",
+     "w": 315,
+     "h": 495,
+     "pivot": [
+      151.9,
+      489.0
+     ],
+     "anchors": {
+      "hand": [
+       280.5,
+       26.6
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       151,
+       471,
+       459,
+       963
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "84c676f9b9"
+    },
+    "receive": {
+     "file": "butch/receive.webp",
+     "w": 279,
+     "h": 468,
+     "pivot": [
+      113.4,
+      462.0
+     ],
+     "anchors": {
+      "glow": [
+       76.6,
+       319.5
+      ],
+      "hand": [
+       242.6,
+       148.5
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       631,
+       500,
+       903,
+       964
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "06f1175db9"
+    },
+    "carry": {
+     "file": "butch/carry.webp",
+     "w": 196,
+     "h": 449,
+     "pivot": [
+      98.3,
+      443.0
+     ],
+     "anchors": {
+      "case": [
+       131.3,
+       162.6
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       1357,
+       556,
+       1520,
+       944
+      ],
+      "scale": 1.1258,
+      "flipped": false
+     },
+     "v": "7eec1b3ae3"
+    },
+    "carry-walk": {
+     "file": "butch/carry-walk.webp",
+     "w": 295,
+     "h": 465,
+     "pivot": [
+      175.3,
+      459.0
+     ],
+     "anchors": {
+      "case": [
+       210.4,
+       138.7
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses-2.png",
+      "box": [
+       1047,
+       500,
+       1335,
+       961
+      ],
+      "scale": 0.9825,
+      "flipped": false
+     },
+     "v": "310772e271"
+    },
+    "ticket": {
+     "file": "butch/ticket.webp",
+     "w": 187,
+     "h": 456,
+     "pivot": [
+      80.2,
+      450.0
+     ],
+     "anchors": {
+      "glow": [
+       95.6,
+       314.6
+      ],
+      "ticket": [
+       170.4,
+       143.0
+      ],
+      "hand": [
+       158.5,
+       154.8
+      ]
+     },
+     "source": {
+      "file": "C-butch-poses.png",
+      "box": [
+       1143,
+       564,
+       1291,
+       940
+      ],
+      "scale": 1.1796,
+      "flipped": false
+     },
+     "v": "c424e8f1cc"
+    }
+   },
+   "cycles": {
+    "walk": {
+     "frames": [
+      "walk-1",
+      "walk-2",
+      "walk-3",
+      "walk-4",
+      "walk-5",
+      "walk-6",
+      "walk-7",
+      "walk-8"
+     ],
+     "at": [
+      0.0,
+      0.1074,
+      0.2138,
+      0.3536,
+      0.4834,
+      0.6034,
+      0.7274,
+      0.8864
+     ],
+     "stride": 46.179,
+     "steps": 2,
+     "lock": 0.5,
+     "maxSlide": 3.87,
+     "maxSurge": 4.76
+    }
+   }
+  },
+  "conductor": {
+   "rigHeight": 110,
+   "frameHeight": 480,
+   "unit": 0.229167,
+   "frames": {
+    "lantern": {
+     "file": "conductor/lantern.webp",
+     "w": 255,
+     "h": 490,
+     "pivot": [
+      104.0,
+      484.0
+     ],
+     "anchors": {
+      "glow": [
+       226.7,
+       92.1
+      ]
+     },
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       1124,
+       124,
+       1507,
+       876
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "daed4851ac"
+    },
+    "offer": {
+     "file": "conductor/offer.webp",
+     "w": 247,
+     "h": 489,
+     "pivot": [
+      106.6,
+      483.0
+     ],
+     "anchors": {
+      "glow": [
+       88.4,
+       331.5
+      ],
+      "punch": [
+       228.9,
+       129.2
+      ],
+      "hand": [
+       211.1,
+       140.0
+      ]
+     },
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       23,
+       124,
+       393,
+       875
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "2d5cffb028"
+    },
+    "offer-empty": {
+     "file": "conductor/offer-empty.webp",
+     "w": 231,
+     "h": 489,
+     "pivot": [
+      104.1,
+      483.0
+     ],
+     "anchors": {
+      "glow": [
+       88.4,
+       331.5
+      ],
+      "hand": [
+       211.0,
+       140.0
+      ]
+     },
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       48,
+       124,
+       393,
+       875
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "271a648a7a"
+    },
+    "stand": {
+     "file": "conductor/stand.webp",
+     "w": 193,
+     "h": 492,
+     "pivot": [
+      87.0,
+      486.0
+     ],
+     "anchors": {
+      "punch": [
+       99.4,
+       300.4
+      ]
+     },
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       413,
+       122,
+       698,
+       877
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "ba48cc3653"
+    },
+    "stand-empty": {
+     "file": "conductor/stand-empty.webp",
+     "w": 193,
+     "h": 492,
+     "pivot": [
+      87.0,
+      486.0
+     ],
+     "anchors": {
+      "glow": [
+       90.2,
+       339.7
+      ]
+     },
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       413,
+       122,
+       698,
+       877
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "9f8ff83d8c"
+    },
+    "walk": {
+     "file": "conductor/walk.webp",
+     "w": 277,
+     "h": 475,
+     "pivot": [
+      127.8,
+      469.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-conductor.png",
+      "box": [
+       701,
+       138,
+       1118,
+       866
+      ],
+      "scale": 0.6358,
+      "flipped": true
+     },
+     "v": "447ceb5056"
+    }
+   }
+  },
+  "mara": {
+   "rigHeight": 66,
+   "frameHeight": 440,
+   "unit": 0.15,
+   "frames": {
+    "walk-1": {
+     "file": "mara/walk-1.webp",
+     "w": 304,
+     "h": 452,
+     "pivot": [
+      145.9,
+      446.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       1193,
+       18,
+       1499,
+       479
+      ],
+      "scale": 0.9544,
+      "flipped": false
+     },
+     "v": "275c509c69"
+    },
+    "walk-2": {
+     "file": "mara/walk-2.webp",
+     "w": 245,
+     "h": 461,
+     "pivot": [
+      137.6,
+      445.6
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       68,
+       506,
+       315,
+       982
+      ],
+      "scale": 0.9442,
+      "flipped": false
+     },
+     "v": "ed6c544c16"
+    },
+    "walk-3": {
+     "file": "mara/walk-3.webp",
+     "w": 201,
+     "h": 460,
+     "pivot": [
+      99.5,
+      446.3
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       114,
+       15,
+       311,
+       482
+      ],
+      "scale": 0.9586,
+      "flipped": false
+     },
+     "v": "7096c81b0b"
+    },
+    "walk-4": {
+     "file": "mara/walk-4.webp",
+     "w": 234,
+     "h": 462,
+     "pivot": [
+      149.7,
+      445.5
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       445,
+       509,
+       678,
+       982
+      ],
+      "scale": 0.9524,
+      "flipped": false
+     },
+     "v": "40299a9933"
+    },
+    "walk-5": {
+     "file": "mara/walk-5.webp",
+     "w": 254,
+     "h": 452,
+     "pivot": [
+      92.8,
+      446.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       441,
+       16,
+       697,
+       481
+      ],
+      "scale": 0.9462,
+      "flipped": false
+     },
+     "v": "7678310f18"
+    },
+    "walk-6": {
+     "file": "mara/walk-6.webp",
+     "w": 315,
+     "h": 453,
+     "pivot": [
+      148.5,
+      446.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       786,
+       17,
+       1105,
+       481
+      ],
+      "scale": 0.9503,
+      "flipped": false
+     },
+     "v": "423d45e9f5"
+    },
+    "back": {
+     "file": "mara/back.webp",
+     "w": 165,
+     "h": 452,
+     "pivot": [
+      83.4,
+      446.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       867,
+       505,
+       1034,
+       984
+      ],
+      "scale": 0.9186,
+      "flipped": false
+     },
+     "v": "2871dfa313"
+    },
+    "turn": {
+     "file": "mara/turn.webp",
+     "w": 173,
+     "h": 452,
+     "pivot": [
+      86.4,
+      446.0
+     ],
+     "anchors": {},
+     "source": {
+      "file": "C-mara.png",
+      "box": [
+       1254,
+       506,
+       1428,
+       982
+      ],
+      "scale": 0.9244,
+      "flipped": false
+     },
+     "v": "d888fad201"
+    }
+   },
+   "cycles": {
+    "walk": {
+     "frames": [
+      "walk-1",
+      "walk-2",
+      "walk-3",
+      "walk-4",
+      "walk-5",
+      "walk-6"
+     ],
+     "at": [
+      0.0,
+      0.1492,
+      0.3038,
+      0.4888,
+      0.6778,
+      0.8365
+     ],
+     "stride": 27.302,
+     "steps": 1,
+     "lock": 0.5,
+     "maxSlide": 4.05,
+     "maxSurge": 4.26
+    }
+   }
+  }
+ },
+ "train": {
+  "rigLength": 150,
+  "length": 960,
+  "unit": 0.15625,
+  "frames": {
+   "dark": {
+    "file": "train/dark.webp",
+    "w": 972,
+    "h": 265,
+    "pivot": [
+     486.0,
+     259
+    ],
+    "anchors": {},
+    "source": {
+     "file": "C-train.png",
+     "box": [
+      21,
+      61,
+      1515,
+      455
+     ],
+     "scale": 0.6426,
+     "flipped": false
+    },
+    "v": "e07a45fc67"
+   },
+   "lit": {
+    "file": "train/lit.webp",
+    "w": 972,
+    "h": 265,
+    "pivot": [
+     486.0,
+     259
+    ],
+    "anchors": {
+     "lamp": [
+      900.6,
+      102.4
+     ],
+     "tail": [
+      69.6,
+      102.9
+     ]
+    },
+    "source": {
+     "file": "C-train.png",
+     "box": [
+      21,
+      547,
+      1515,
+      941
+     ],
+     "scale": 0.6426,
+     "flipped": false
+    },
+    "v": "4bdfb01f07"
+   }
+  }
+ },
+ "props": {
+  "key": {
+   "file": "props/key.webp",
+   "w": 396,
+   "h": 171,
+   "pivot": [
+    198.0,
+    85.5
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     62,
+     162,
+     536,
+     358
+    ],
+    "scale": 0.8101
+   },
+   "v": "6e641c2117"
+  },
+  "tag": {
+   "file": "props/tag.webp",
+   "w": 332,
+   "h": 396,
+   "pivot": [
+    166.0,
+    198.0
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     599,
+     57,
+     938,
+     464
+    ],
+    "scale": 0.9435
+   },
+   "v": "2b89388128"
+  },
+  "punch": {
+   "file": "props/punch.webp",
+   "w": 396,
+   "h": 265,
+   "pivot": [
+    198.0,
+    132.5
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     1022,
+     95,
+     1504,
+     412
+    ],
+    "scale": 0.7967
+   },
+   "v": "2f472eae9b"
+  },
+  "case": {
+   "file": "props/case.webp",
+   "w": 524,
+   "h": 373,
+   "pivot": [
+    262.0,
+    186.5
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     31,
+     505,
+     630,
+     927
+    ],
+    "scale": 0.8548
+   },
+   "v": "76d8949837"
+  },
+  "letter": {
+   "file": "props/letter.webp",
+   "w": 396,
+   "h": 297,
+   "pivot": [
+    198.0,
+    148.5
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     655,
+     570,
+     1133,
+     925
+    ],
+    "scale": 0.8033
+   },
+   "v": "cb7432a806"
+  },
+  "ember": {
+   "file": "props/ember.webp",
+   "w": 268,
+   "h": 204,
+   "pivot": [
+    134.0,
+    102.0
+   ],
+   "source": {
+    "file": "C-props.png",
+    "box": [
+     1202,
+     639,
+     1504,
+     865
+    ],
+    "scale": 0.8477
+   },
+   "v": "cb82e3b763"
+  }
+ }
+}
