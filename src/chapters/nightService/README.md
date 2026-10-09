@@ -8,7 +8,8 @@ Chapter 1 is a Gorogoa-style panel puzzle on its own page (`night-service.html`
 | `panelModel.js` | **All rules.** Grid, swaps, zoom stacks, frames/overlays, lens, links, actors, bell, script. No Phaser. |
 | `PanelScene.js` | Renderer + input. Each tile has its own camera (clipping, zoom, drag). Never decides puzzle state. |
 | `painter.js` | The `ctx` handed to `draw(ctx)` functions. |
-| `actorRig.js`, `art/figures.js` | Jointed Butch / Conductor / Mara / train. |
+| `spriteRig.js`, `spriteAnimator.js`, `spriteAtlas.js` | George's painted Butch / Conductor / Mara / train (round 7): the Phaser rig, the pose → frame choice and walk timing (pure, tested in `tests/nightService/spriteRig.test.mjs`), and the generated atlas of `public/assets/ch1-painted/sprites/` (`scripts/ch1-art/sprites.py`). See **Actors** below. |
+| `actorRig.js`, `art/figures.js` | `buildRig(scene, kind)`: the painted rig when its frames loaded, else the jointed figures (the fallback; `?figures=procedural` forces them). |
 | `art/ink.js`, `art/wallArt.js` | Canvas kit: jittered ink, wood, brass, paper tags, sepia, the carriage wall. |
 | `acts/*.js` | Act 0 (1×1, zoom), Act 0.5 (1×2, swap; zoom + swap), Act 1 (2×2), Act 2 (2×2 lens + frame lift), Act 3 (3×2, everything). `acts/index.js` is the registry. |
 | `hints.js`, `hintLines.js`, `art/hintArt.js` | The wordless hint tiers (when, and which gesture), the Conductor's tier-3 lines, the ghost hand, the unfold's brass pull and tag. |
@@ -326,6 +327,46 @@ itself a short way open the right way once and springs back (`demoNudge`).
 
 **Tier-3 speaker.** The Conductor speaks the hint lines; an act can name its
 own `hintSpeaker` (the Museum exhibit: Butch).
+
+### Actors: the painted figures (round 7)
+
+`buildRig(scene, kind)` returns `{ root, height, update(dt, { pose, moving, time, carrying, speed }), gesture(name) }`
+(the Conductor adds `punch`). Kinds: `butch`, `conductor`, `mara`, `train`, `trainDark` (the unlit carriage).
+`height` is tile px at scale 1, as the jointed rigs had it (Butch 70, Conductor 110, Mara 66), so an actor's
+`scale` and a state's `actorScale` keep their meaning. The train keeps its **length** (150 tile px, act3's
+`TRAIN_LENGTH`), so its painted rail-to-roof height is 39.5. At one scale the Conductor stands 1.57x Butch,
+as before: give him about 0.66x Butch's scale for a natural pair.
+
+PanelScene's `preload()` queues every frame the act's actors draw (`queueSpriteTextures`); a kind with a frame
+that failed to load gets the jointed figure instead.
+
+| Kind | Pose / state | Painted frame |
+| --- | --- | --- |
+| butch | `idle`, `stand` | `stand` (the walk sheet's standing figure, so walk ↔ stand matches) |
+| butch | moving | the 8-frame walk, played by distance walked |
+| butch | `sleep` | `sleep`: asleep at a small desk, on a stool, his lantern on the desk |
+| butch | `sit` | `sit` on a stool; after `sleep` he sits up **at** that desk (the `desk` overlay stays) |
+| butch | `sit-chair` | `sit` with the stool painted out, for a chair the plate already has |
+| butch | `ticket` | holding a ticket out at chest height (the other hand painted out) |
+| butch | `lantern`, `reach`, `receive` | lantern raised; reaching up; the open hand (also gesture `receive`) |
+| butch | `carrying: 'case'` | `carry` standing, `carry-walk` moving (one frame, a stepped dip: no painted carry cycle) |
+| butch | carrying anything else | the prop sprite (`props/*.webp`) at the frame's `hand` anchor |
+| conductor | `idle` | `lantern`: the lantern raised at the door |
+| conductor | gesture `offer` / punch hidden / gesture `rest` | `offer` (punch held out, lantern at his side) → `offer-empty` → `stand-empty` |
+| conductor | moving | `walk` (one frame) |
+| mara | `idle` | `turn`: three-quarter back view (her face is never shown) |
+| mara | `back` | `back`: from behind |
+| mara | moving | the 6-frame walk (one step, side-back view), by distance |
+| train / trainDark | — | `lit` / `dark` carriage, wheels on the rail |
+
+Anchors (local units from the feet, facing right): `rig.point('glow' | 'hand' | 'ticket' | 'case' | 'punch')` on
+the current frame. fx points written for the jointed figures (`rigPoint('conductor', 30, -48)` and the like) are
+moved onto the painted hands by `rig.mapPoint`. Lantern glows follow the painted lantern frame by frame.
+
+The walk: each walk cycle's stride, frame windows and per-frame pivot shifts are solved by the cutting script so
+the planted foot stays planted (the painted frames are unevenly spaced in time); within a frame the image is held
+back by half the distance walked (`lock`). Breathing is a < 1% scale at the feet; a pose change is a 240 ms
+crossfade. Regenerate the sprites with `python3 -I scripts/ch1-art/sprites.py [--preview DIR]`.
 
 ## Testing
 
