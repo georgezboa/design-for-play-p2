@@ -25,6 +25,7 @@
 
 import { audioFocus } from './audioFocus.js';
 import { SOUND_TAG_TEXT, createAutoplayGate } from './autoplayGate.js';
+import { assetUrl } from './assetUrl.js';
 
 const DEFAULTS = {
   volume: 0.55,
@@ -199,7 +200,7 @@ function play(id, options = {}) {
   pending = null;
 
   const prev = current;
-  const el = new Audio(opts.src);
+  const el = new Audio(assetUrl(opts.src));
   el.dataset.nightfallAudioChannel = 'music';
   el.loop = opts.loop;
   el.volume = 0;

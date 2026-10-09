@@ -19,6 +19,7 @@ import { createCutsceneSfx } from './sfx.js';
 import { isSoftwareRenderer, nativeRequestAnimationFrame, setPageCovered } from '../framePacing.js';
 import { useSoftwareCanvas } from './painters.js';
 import { waitForFonts } from '../../shared/fonts.js';
+import { assetUrl } from '../../shared/assetUrl.js';
 
 /** The largest backing store for the window canvas (device px). */
 export const MAX_PIXELS = 2560 * 1440;
@@ -152,7 +153,7 @@ function loadChrome() {
     image.decoding = 'async';
     image.onload = () => { chromeImages[key] = image; resolve(); };
     image.onerror = () => resolve();
-    image.src = CHROME_TEXTURES[key].url;
+    image.src = assetUrl(CHROME_TEXTURES[key].url);
   });
   chromeImages.promise = Promise.all([load('bezel'), load('walnut')]);
   return chromeImages.promise;

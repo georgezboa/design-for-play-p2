@@ -14,6 +14,7 @@ import SPRITE_ATLAS from '../../../chapters/nightService/spriteAtlas.js';
 import { drawRain as inkRain } from '../painters.js';
 import { rng } from '../../../chapters/nightService/art/ink.js';
 import { FONT_SERIF, FONT_UI } from '../../../shared/fonts.js';
+import { assetUrl } from '../../../shared/assetUrl.js';
 import { BEZEL, CHROME_TEXTURES, RADIUS, brassFrame } from '../../../chapters/nightService/art/wallArt.js';
 
 export const STAGE_W = 1600;
@@ -42,7 +43,7 @@ function load(url) {
       Promise.resolve(image.decode?.()).catch(() => {}).then(() => resolve(image));
     };
     image.onerror = () => resolve(null);
-    image.src = url;
+    image.src = assetUrl(url);
   });
   images.set(url, entry);
   return entry.promise;
