@@ -52,7 +52,8 @@ const THROUGH_HEDGE = [
   { tile: 'hawthorn', x: 1, y: PATH_AT, requires: lensOverHedge, retreat: { x: HEDGE.wait } },
   { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
   { tile: 'orchard', x: 0.44, y: PATH_AT },
-  { tile: 'orchard', x: 0.5, y: 0.68, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
+  // the stair head, at the lane's end (painted on the hill: plates2-build.py)
+  { tile: 'orchard', x: 0.48, y: 0.74, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
   { tile: 'orchard', x: STAIR_AT, y: 0.97 },
 ];
 const TRAIN_Y = RAIL_AT - 0.004;
@@ -70,7 +71,7 @@ export const FAR_TRAIN_SCALE = Math.round(TRAIN_SCALE * 0.55 * 100) / 100;
  * tile px). On the bottom row they stand beside the train; each top-row
  * state scales them to its own painting (actorScale × PEOPLE_SCALE).
  */
-export const PEOPLE_SCALE = 0.42;
+export const PEOPLE_SCALE = 0.3;
 const MARA_RIG = 66;
 const maraIn = (tilePx) => Math.round((tilePx / MARA_RIG / PEOPLE_SCALE) * 100) / 100;
 /** Mara in the city room (in front of the desk), on the lane (the hedge beside her), on the hill. */

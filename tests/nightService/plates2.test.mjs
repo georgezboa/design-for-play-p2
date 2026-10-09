@@ -17,6 +17,7 @@ import { GEO3 } from '../../src/chapters/nightService/art/act3Plates.js';
 import { actPlates, createPanelModel, layoutGrid } from '../../src/chapters/nightService/panelModel.js';
 import { startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { settle } from './helpers.mjs';
+import sharp from 'sharp';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const manifest = JSON.parse(readFileSync(resolve(ROOT, 'scripts/ch1-art/plates2-manifest.json'), 'utf8'));
@@ -207,4 +208,45 @@ test('plates2: actors are at the painted scale (Butch in the aisle, Mara on the 
   model.moveLens(r.x + r.w * 0.5, r.y + r.h * RAIL_AT);
   settle(model, { maxMs: 120000 });
   assert.equal(model.state.ended?.kind, 'endChapter');
+});
+
+/** Mean luminance of each pixel row over a vertical strip [x0, x1) of a plate. */
+async function rowProfile(path, x0, x1) {
+  const { data, info } = await sharp(path).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const { width, height } = info;
+  const a = Math.round(x0 * width);
+  const b = Math.round(x1 * width);
+  const rows = [];
+  for (let y = 0; y < height; y += 1) {
+    let sum = 0;
+    for (let x = a; x < b; x += 1) {
+      const i = (y * width + x) * 3;
+      sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2];
+    }
+    rows.push(sum / (b - a));
+  }
+  return { rows, height };
+}
+
+/** Where the strongest dark-to-light step (a deck's moonlit coping) is, between v0 and v1. */
+function strongestStep({ rows, height }, v0, v1) {
+  let best = -Infinity;
+  let at = 0;
+  for (let y = Math.round(height * v0); y < Math.round(height * v1); y += 1) {
+    const d = rows[y + 3] - rows[y - 3];
+    if (d > best) { best = d; at = y; }
+  }
+  return at / height;
+}
+
+test('plates2: the painted viaduct deck meets at RAIL_AT on both sides of both gutters (pixels)', async () => {
+  const plate = (name) => file(ACT3.tiles[name].states.default.plate);
+  const edges = [
+    ['carriage', 0.93, 1], ['gap', 0, 0.07], ['gap', 0.93, 1], ['platform', 0, 0.07],
+  ];
+  for (const [tile, x0, x1] of edges) {
+    const v = strongestStep(await rowProfile(plate(tile), x0, x1), 0.7, 0.8);
+    // within 4 screen px at 1920×1080 (the tile is 414 px tall there)
+    assert.ok(Math.abs(v - RAIL_AT) * 414 <= 4, `${tile} @${x0}: deck at ${v.toFixed(4)} vs ${RAIL_AT}`);
+  }
 });

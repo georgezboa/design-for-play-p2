@@ -529,7 +529,7 @@
    "file": "public/assets/ch1-painted/act3/overlook.webp",
    "w": 1072,
    "h": 828,
-   "bytes": 55642,
+   "bytes": 113924,
    "sources": [
     "src/assets/generated/worlds/world-07-memory/chunk-00.jpg",
     "A3-orchard.png"
@@ -587,9 +587,10 @@
    "file": "public/assets/ch1-painted/act3/carriage.webp",
    "w": 1072,
    "h": 828,
-   "bytes": 22970,
+   "bytes": 61864,
    "sources": [
-    "src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg"
+    "src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg",
+    "A3-gap.png"
    ],
    "crop": [
     2300,
@@ -599,16 +600,17 @@
    ],
    "alpha": false,
    "kind": "interim",
-   "note": "INTERIM: night fields panorama (world 01) graded to the plates; see NEEDED-ART.md"
+   "note": "INTERIM: night fields (world 01) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md)"
   },
   "act3/platform": {
    "url": "/assets/ch1-painted/act3/platform.webp",
    "file": "public/assets/ch1-painted/act3/platform.webp",
    "w": 1072,
    "h": 828,
-   "bytes": 33692,
+   "bytes": 67530,
    "sources": [
-    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg"
+    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg",
+    "A3-gap.png"
    ],
    "crop": [
     20,
@@ -618,16 +620,17 @@
    ],
    "alpha": false,
    "kind": "interim",
-   "note": "INTERIM: Bellwether by the water (world 07) graded to the plates; see NEEDED-ART.md"
+   "note": "INTERIM: Bellwether by the water (world 07) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md)"
   },
   "act3/platform-1978": {
    "url": "/assets/ch1-painted/act3/platform-1978.webp",
    "file": "public/assets/ch1-painted/act3/platform-1978.webp",
    "w": 1072,
    "h": 828,
-   "bytes": 36654,
+   "bytes": 90920,
    "sources": [
-    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg"
+    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg",
+    "A3-gap-1978.png"
    ],
    "crop": [
     20,
@@ -637,7 +640,7 @@
    ],
    "alpha": false,
    "kind": "interim",
-   "note": "INTERIM: the same, in George's 1978 grade"
+   "note": "INTERIM: the same, in George's 1978 grade, over A3-gap-1978's deck"
   }
  },
  "registration": {

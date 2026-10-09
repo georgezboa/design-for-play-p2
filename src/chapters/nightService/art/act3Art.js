@@ -39,11 +39,24 @@ export const OVERLOOK_CROP = Object.freeze([1000.4, 352, 1072, 828]);
 /** The orchard house in the hill view: the house plate is set into the overlook here (zoom rect, w == h). */
 export const OVERLOOK_HOUSE = Object.freeze([...GEO3.overlook.house]);
 export const WINDOW_CENTRE = Object.freeze({ x: CITY_GLASS[0] + CITY_GLASS[2] / 2, y: CITY_GLASS[1] + CITY_GLASS[3] / 2 });
+/**
+ * The procedural fallback's own layout (round 6), drawn only where a plate is
+ * missing, and by the finale's panels (finalBoss/finaleArt.js paints these
+ * scenes for the ending film), whose compositions must not move.
+ */
+const F = Object.freeze({
+  PATH_AT: 0.62,
+  CITY_WINDOW: Object.freeze([0.44, 0.1, 0.34, 0.42]),
+  CITY_GLASS: Object.freeze([0.47, 0.14, 0.28, 0.34]),
+  WINDOW_CENTRE: Object.freeze({ x: 0.61, y: 0.31 }),
+  HEDGE_X: 0.8,
+  GAP_SPAN: Object.freeze([0.36, 0.64]),
+});
 
 const PAST = (env) => env.era === 'past';
 
 function lane(c, w, h, { tone = '#2a3222', past = false, seed = 1 } = {}) {
-  const y = PATH_AT * h;
+  const y = F.PATH_AT * h;
   c.fillStyle = vgrad(c, y - 8, h + 20, [[0, past ? '#6a5236' : '#2c3524'], [1, past ? '#3a2a18' : '#121710']]);
   c.beginPath();
   c.moveTo(-20, y - 4);
@@ -71,10 +84,10 @@ function lane(c, w, h, { tone = '#2a3222', past = false, seed = 1 } = {}) {
 // TOP "city room": Mara's rented room — a window (liftable), bed, hot plate.
 
 function cityRoomBase(c, env, w, h) {
-  const floorY = PATH_AT * h;
+  const floorY = F.PATH_AT * h;
   backWall(c, w, h, floorY, { seed: 301, tone: PAST(env) ? ['#6a5a3a', '#7a6848'] : ['#2b3a36', '#34463f'] });
   // the wall around the window, cut through to the view
-  const [gx, gy, gw, gh] = CITY_GLASS;
+  const [gx, gy, gw, gh] = F.CITY_GLASS;
   // the view: misty rooftops by the terminal at dusk (world 07; the old
   // daytime-city view did not belong to a night chapter)
   crop(c, env, 'nsv-w07-1', [3200, 60, 700, 650], gx * w, gy * h, gw * w, gh * h);
@@ -152,8 +165,8 @@ export function drawCityFrame(ctx) {
   // (and as its own shadow) it is drawn here
   if (ctx.plate) return;
   if (paintedFrame(ctx, PLATE['city-window'])) return;
-  const [fx, fy, fw, fh] = CITY_WINDOW;
-  const [gx, gy, gw, gh] = CITY_GLASS;
+  const [fx, fy, fw, fh] = F.CITY_WINDOW;
+  const [gx, gy, gw, gh] = F.CITY_GLASS;
   ctx.paint('act3-city-frame', (c) => {
     c.save();
     c.shadowColor = 'rgba(0,0,0,0.55)'; c.shadowBlur = 14; c.shadowOffsetY = 5;
@@ -249,8 +262,8 @@ function matte(c, w, h, { tone = 'rgba(10, 13, 18, 0.5)', warm = false } = {}) {
 function hedge(c, w, h, seed) {
   // today the lane's far end is a hawthorn hedge grown right across it
   const random = rng(seed);
-  const x0 = w * HEDGE.x;
-  const y = h * PATH_AT;
+  const x0 = w * F.HEDGE_X;
+  const y = h * F.PATH_AT;
   c.fillStyle = '#10180f';
   c.beginPath();
   c.moveTo(x0, y + 22);
@@ -285,7 +298,7 @@ function hedge(c, w, h, seed) {
 function openGate(c, w, h) {
   // 1978: the lane runs on through an open five-bar gate
   const gx = w * 0.86;
-  const y = h * PATH_AT;
+  const y = h * F.PATH_AT;
   ink(c, [[gx, y + 6], [gx, y - 58]], { w: 4, color: '#3a2a18', bleed: false });
   ink(c, [[gx, y + 6], [gx, y - 58]], { w: 1.6 });
   c.save();
@@ -307,12 +320,12 @@ function hawthornBase(c, env, w, h) {
   c.fillRect(-30, -30, w + 60, h + 60);
   c.restore();
   lane(c, w, h, { seed: 311, past: PAST(env) });
-  hawthornTree(c, w * 0.2, h * PATH_AT + 4, 1.25, 312);
+  hawthornTree(c, w * 0.2, h * F.PATH_AT + 4, 1.25, 312);
   // a low dry-stone wall behind the lane: rounded stones in two courses,
   // moss on the coping (painted, no outline over the picture)
   const stones = rng(314);
   const tones = PAST(env) ? ['#7a6a4c', '#6a5c42', '#8a7856'] : ['#4a4436', '#3c382e', '#57513f'];
-  const wallTop = h * PATH_AT - 24;
+  const wallTop = h * F.PATH_AT - 24;
   c.fillStyle = 'rgba(0,0,0,0.35)';
   c.fillRect(w * 0.36 - 2, wallTop + 2, w * 0.66, 22);
   [0, 1].forEach((row) => {
@@ -348,7 +361,7 @@ export function drawHawthornPast(ctx) {
     hawthornBase(c, env, w, h);
     finish(c, env, { vig: 0.45 });
   });
-  ctx.glow(w * 0.87, h * PATH_AT - h * 0.15, 120, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
+  ctx.glow(w * 0.87, h * F.PATH_AT - h * 0.15, 120, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
 }
 
 // ---------------------------------------------------------------------------
@@ -371,56 +384,18 @@ export function drawHouse(ctx) {
     c.restore();
     finish(c, env, { vig: 0.45, grain: 0.12 });
   });
-  ctx.glow(w * WINDOW_CENTRE.x, h * WINDOW_CENTRE.y, 110, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
+  ctx.glow(w * F.WINDOW_CENTRE.x, h * F.WINDOW_CENTRE.y, 110, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
 }
 
 /** The hill under the orchard: the lane in from the left at PATH_AT, the stair down to STAIR_AT. */
-function overlookHill(c, w, h, { plate = false } = {}) {
-  const y = PATH_AT * h;
-  const ridge = () => {
-    c.beginPath();
-    c.moveTo(-20, y - 6); c.lineTo(w * 0.3, y - 10); c.quadraticCurveTo(w * 0.6, h * 0.53, w + 20, h * 0.56);
-    c.lineTo(w + 20, h + 20); c.lineTo(-20, h + 20); c.closePath();
-  };
-  if (!plate) {
-    c.fillStyle = vgrad(c, h * 0.55, h, [[0, '#2c3524'], [1, '#101410']]);
-    ridge(); c.fill();
-    lane(c, w * 0.46, h, { seed: 321 });
-  } else {
-    // the near hill in ink: near-black, hatched, a thin rim of dusk on its crest
-    c.fillStyle = vgrad(c, h * 0.53, h, [[0, '#141a14'], [0.4, '#0d110d'], [1, '#070807']]);
-    ridge(); c.fill();
-    c.save();
-    ridge(); c.clip();
-    const random = rng(331);
-    c.strokeStyle = 'rgba(0, 0, 0, 0.55)';
-    c.lineWidth = 0.8;
-    for (let i = 0; i < 260; i += 1) {
-      const hx = random() * w;
-      const hy = h * (0.55 + random() * 0.45);
-      c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx + 7 + random() * 5, hy - 7 - random() * 4); c.stroke();
-    }
-    // grass tufts against the crest
-    c.strokeStyle = 'rgba(70, 86, 60, 0.55)';
-    for (let i = 0; i < 120; i += 1) {
-      const gx = random() * w;
-      const gy = h * (0.56 + random() * 0.2) + (gx < w * 0.3 ? h * 0.15 : 0);
-      c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + (random() - 0.5) * 4, gy - 4 - random() * 5); c.stroke();
-    }
-    c.restore();
-    c.save();
-    c.beginPath();
-    c.moveTo(-20, y - 6); c.lineTo(w * 0.3, y - 10); c.quadraticCurveTo(w * 0.6, h * 0.53, w + 20, h * 0.56);
-    c.strokeStyle = 'rgba(200, 150, 90, 0.35)'; c.lineWidth = 1.2; c.stroke();
-    c.restore();
-    // the lane: packed earth, the dusk on it, running in from the left edge at PATH_AT
-    c.fillStyle = 'rgba(92, 72, 50, 0.85)';
-    c.beginPath();
-    c.moveTo(-20, y - 9); c.lineTo(w * 0.44, y - 7); c.lineTo(w * 0.5, y + 6); c.lineTo(-20, y + 12); c.closePath();
-    c.fill();
-    c.fillStyle = 'rgba(190, 140, 80, 0.22)';
-    c.fillRect(-20, y - 8, w * 0.46, 3);
-  }
+function overlookHill(c, w, h) {
+  const y = F.PATH_AT * h;
+  c.fillStyle = vgrad(c, h * 0.55, h, [[0, '#2c3524'], [1, '#101410']]);
+  c.beginPath();
+  c.moveTo(-20, y - 6); c.lineTo(w * 0.3, y - 10); c.quadraticCurveTo(w * 0.6, h * 0.53, w + 20, h * 0.56);
+  c.lineTo(w + 20, h + 20); c.lineTo(-20, h + 20); c.closePath();
+  c.fill();
+  lane(c, w * 0.46, h, { seed: 321 });
   // the stair: from the end of the lane down to the bottom edge at STAIR_AT
   const sx0 = w * 0.47;
   const sx1 = w * STAIR_AT;
@@ -428,26 +403,21 @@ function overlookHill(c, w, h, { plate = false } = {}) {
     const t = i / 12;
     const x = sx0 + (sx1 - sx0) * t;
     const yy = y + 8 + (h - y - 4) * t;
-    const sw = 22 + t * 6;
-    c.fillStyle = plate ? '#2e241a' : '#6d5a44';
-    c.fillRect(x - sw, yy, sw * 2, 5 + t * 2);
-    if (plate) { c.fillStyle = 'rgba(214, 170, 110, 0.32)'; c.fillRect(x - sw, yy, sw * 2, 1.2); }
-    else ink(c, [[x - 22, yy], [x + 22, yy]], { w: 1.2, alpha: 0.7, bleed: false });
+    c.fillStyle = '#6d5a44';
+    c.fillRect(x - 22, yy, 44, 5);
+    ink(c, [[x - 22, yy], [x + 22, yy]], { w: 1.2, alpha: 0.7, bleed: false });
   }
-  ink(c, [[sx0 - 24, y + 6], [sx1 - 28, h + 4]], { w: plate ? 1.6 : 2.2, alpha: plate ? 0.7 : 1 });
-  ink(c, [[sx0 + 24, y + 6], [sx1 + 28, h + 4]], { w: plate ? 1.6 : 2.2, alpha: plate ? 0.7 : 1 });
+  ink(c, [[sx0 - 24, y + 6], [sx1 - 24, h + 4]], { w: 2.2 });
+  ink(c, [[sx0 + 24, y + 6], [sx1 + 24, h + 4]], { w: 2.2 });
   // far below: a platform lamp and rails catch the light
-  glow(c, w * 0.8, h * 0.93, 80, 'rgba(255, 200, 120, 0.9)', plate ? 0.3 : 0.5);
-  ink(c, [[w * 0.62, h * 0.97], [w + 10, h * 0.95]], { w: 2, color: PAL.brassLight, alpha: plate ? 0.5 : 0.8 });
+  glow(c, w * 0.8, h * 0.93, 80, 'rgba(255, 200, 120, 0.9)', 0.5);
+  ink(c, [[w * 0.62, h * 0.97], [w + 10, h * 0.95]], { w: 2, color: PAL.brassLight, alpha: 0.8 });
 }
 
 export function drawOverlook(ctx) {
   const { w, h } = ctx;
   if (ctx.plate) {
-    ctx.paint('act3-overlook-hill', (c) => {
-      overlookHill(c, w, h, { plate: true });
-      matte(c, w, h);
-    });
+    // the interim plate has the lane and the stair painted in (plates2-build.py)
     const [hx, hy, hw, hh] = OVERLOOK_HOUSE;
     const [lx, ly, lw, lh] = ORCHARD_LIT;
     ctx.glow((hx + (lx + lw / 2) * hw) * w, (hy + (ly + lh / 2) * hh) * h, 36, { color: 0xffc070, alpha: 0.3, flicker: 0.1 });
@@ -483,11 +453,8 @@ function rails(c, w, h, from, to, { past = false } = {}) {
 export function drawCarriageScene(ctx) {
   const { w, h } = ctx;
   if (ctx.plate) {
-    ctx.paint('act3-carriage-line', (c) => {
-      carriageLine(c, w, h);
-      matte(c, w, h);
-    });
-    ctx.glow(w * 0.9, h * 0.5, 70, { color: 0xffcf7a, alpha: 0.3, flicker: 0.08 });
+    // the interim plate carries George's viaduct on under the rail (plates2-build.py)
+    ctx.dust(w * 0.1, h * 0.3, w * 0.8, h * 0.35, { count: 5, color: 0xd8e0f0 });
     return;
   }
   ctx.fields(-20, -20, w + 40, h * (RAIL_AT - 0.05), { speed: 0, crop: 0.55, zoom: 1.2, offset: 2200 });
@@ -640,7 +607,7 @@ function gorge(c, w, h, y, { past }) {
 
 function viaduct(c, w, h, { broken, past }) {
   const y = RAIL_AT * h;
-  const [b0, b1] = GAP_SPAN;
+  const [b0, b1] = F.GAP_SPAN;
   gorge(c, w, h, y, { past });
   if (broken) {
     [0.04, 0.76].forEach((u, i) => trestle(c, w * u, y, h, { past, seed: 360 + i * 5 }));
@@ -696,7 +663,7 @@ export function drawGap(ctx) {
     finish(c, env, { vig: 0.38 });
   });
   // the red lanterns breathe a little
-  const [b0, b1] = GAP_SPAN;
+  const [b0, b1] = F.GAP_SPAN;
   ctx.glow(w * (b0 - 0.035), h * RAIL_AT - 7, 70, { color: 0xff6a48, alpha: 0.32, flicker: 0.18 });
   ctx.glow(w * (b1 + 0.035), h * RAIL_AT - 7, 70, { color: 0xff6a48, alpha: 0.32, flicker: 0.18 });
 }
@@ -711,9 +678,102 @@ export function drawGapPast(ctx) {
   });
 }
 
+/**
+ * Bellwether's platform over the graded panorama, until A3-platform exists:
+ * laid out at the train's scale (about 11 tile px a metre, people at
+ * PEOPLE_SCALE), in the plate's dark stone and walnut. Our rails come in on
+ * the viaduct's stone deck at RAIL_AT; the stair from the hill lands from the
+ * top edge at STAIR_AT; the bench is where Butch sets the case down.
+ */
+export const PLATFORM = Object.freeze({
+  far: 0.565 + PLATFORM_DY + 0.1,   // the far track (the other train)
+  back: 0.578 + PLATFORM_DY + 0.1,  // the platform's far coping
+  front: 0.716,                     // its near coping, behind the viaduct's railing
+  walk: 0.8 + PLATFORM_DY,          // where Butch walks
+  bench: Object.freeze([0.196, 0.66, 0.068, 0.03]),
+  lamp: 0.82,
+  board: Object.freeze([0.3, 0.588, 0.13, 0.034]),
+});
+
+function platformInterim(c, w, h, { past }) {
+  const P = PLATFORM;
+  const ink0 = '#0e0c0b';
+  // the far track, a line of sleepers and one rail catching the lamp
+  const far = P.far * h;
+  c.fillStyle = past ? '#3a2c1c' : '#0f1012';
+  c.fillRect(-20, far - 4, w + 40, 8);
+  ink(c, [[-4, far - 1], [w + 4, far - 1]], { w: 1.2, color: past ? '#c8a070' : '#8a6a3c', alpha: 0.8, bleed: false });
+  // the platform: stone flags between the copings, the lamp's pool on them
+  const top = P.back * h;
+  const bottom = P.front * h;
+  c.fillStyle = vgrad(c, top, bottom, [[0, past ? '#5a4630' : '#1d1a17'], [1, past ? '#463624' : '#141210']]);
+  c.fillRect(-20, top, w * 0.95 + 20, bottom - top);
+  c.save();
+  c.beginPath(); c.rect(-20, top, w * 0.95 + 20, bottom - top); c.clip();
+  c.strokeStyle = 'rgba(0, 0, 0, 0.5)'; c.lineWidth = 0.8;
+  for (let x = 6; x < w; x += 23) { c.beginPath(); c.moveTo(x, top); c.lineTo(x - 5, bottom); c.stroke(); }
+  c.beginPath(); c.moveTo(-20, (top + bottom) / 2); c.lineTo(w, (top + bottom) / 2); c.stroke();
+  const pool = c.createRadialGradient(w * P.lamp, top + 10, 2, w * P.lamp, top + 10, w * 0.2);
+  pool.addColorStop(0, 'rgba(227, 163, 78, 0.34)');
+  pool.addColorStop(1, 'rgba(227, 163, 78, 0)');
+  c.fillStyle = pool;
+  c.fillRect(-20, top, w + 40, bottom - top);
+  c.restore();
+  c.fillStyle = past ? 'rgba(220, 190, 140, 0.55)' : 'rgba(138, 106, 60, 0.45)';
+  c.fillRect(-20, top, w * 0.95 + 20, 1.5);
+  c.fillRect(-20, bottom - 2, w * 0.95 + 20, 2);
+  c.fillStyle = 'rgba(0, 0, 0, 0.6)';
+  c.fillRect(w * 0.95 - 2, top, 2, bottom - top);
+  // our line runs on the viaduct's deck (painted into the plate) to a buffer stop
+  wood(c, w * 0.92, RAIL_AT * h - 14, 10, 14, { base: '#4a2a1c', seed: 347 });
+  c.fillStyle = 'rgba(160, 120, 70, 0.6)'; c.fillRect(w * 0.92 - 1, RAIL_AT * h - 14, 12, 1.5);
+  // the stair from the hill: a narrow timber flight between two stringers
+  const sx = w * STAIR_AT;
+  const land = { x: w * 0.6, y: top + 6 };
+  for (let i = 0; i <= 10; i += 1) {
+    const t = i / 10;
+    const x = sx + (land.x - sx) * t;
+    const yy = -4 + (land.y + 4) * t;
+    c.fillStyle = past ? '#6a4c2e' : '#2a2016';
+    c.fillRect(x - 11, yy, 22, 3.5);
+    c.fillStyle = past ? 'rgba(255, 220, 170, 0.35)' : 'rgba(214, 170, 110, 0.25)';
+    c.fillRect(x - 11, yy, 22, 1);
+  }
+  ink(c, [[sx - 13, -6], [land.x - 13, land.y]], { w: 1.4, color: ink0, alpha: 0.9, bleed: false });
+  ink(c, [[sx + 13, -6], [land.x + 13, land.y]], { w: 1.4, color: ink0, alpha: 0.9, bleed: false });
+  // the bench: a walnut seat on two iron legs, its back rail
+  const [bx, by, bw, bh] = P.bench;
+  c.fillStyle = past ? '#6a4628' : '#3a2616';
+  c.fillRect(bx * w, by * h, bw * w, 3);
+  c.fillRect(bx * w, (by - bh * 0.9) * h, bw * w, 2.5);
+  c.fillStyle = ink0;
+  [bx + 0.006, bx + bw - 0.008].forEach((u) => c.fillRect(u * w, by * h, 1.6, (P.walk - by) * h));
+  // the lamp on its post, the one warm light
+  const lx = w * P.lamp;
+  ink(c, [[lx, P.walk * h], [lx, (P.walk - 0.12) * h]], { w: 1.8, color: ink0, bleed: false });
+  c.fillStyle = ink0; c.fillRect(lx - 3, (P.walk - 0.128) * h, 6, 5);
+  c.fillStyle = '#e3a34e'; c.beginPath(); c.arc(lx, (P.walk - 0.118) * h, 2.6, 0, Math.PI * 2); c.fill();
+  // the station nameboard on two posts: enamel, lettered
+  const [nx, ny, nw, nh] = P.board;
+  ink(c, [[(nx + 0.01) * w, (ny + nh) * h], [(nx + 0.01) * w, P.back * h + 1]], { w: 1.4, color: ink0, bleed: false });
+  ink(c, [[(nx + nw - 0.01) * w, (ny + nh) * h], [(nx + nw - 0.01) * w, P.back * h + 1]], { w: 1.4, color: ink0, bleed: false });
+  c.fillStyle = past ? '#5a2219' : '#1b2a3a';
+  roundRectPath(c, nx * w, ny * h, nw * w, nh * h, 2); c.fill();
+  c.strokeStyle = 'rgba(138, 106, 60, 0.85)'; c.lineWidth = 1;
+  roundRectPath(c, nx * w + 1, ny * h + 1, nw * w - 2, nh * h - 2, 2); c.stroke();
+  c.fillStyle = past ? 'rgba(233, 223, 200, 0.92)' : 'rgba(233, 223, 200, 0.78)';
+  c.font = '600 9px "Jost", sans-serif';
+  c.textAlign = 'center'; c.textBaseline = 'middle';
+  if (c.letterSpacing !== undefined) c.letterSpacing = '1.5px';
+  c.fillText('BELLWETHER', (nx + nw / 2) * w, (ny + nh / 2) * h + 0.5);
+  if (c.letterSpacing !== undefined) c.letterSpacing = '0px';
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+}
+
 function platformBase(c, env, w, h, { plate = false } = {}) {
   const past = PAST(env);
-  if (!plate) cropFull(c, env, 'nsv-w07-1', [20, 412, 536, 414], w, h);
+  if (plate) { platformInterim(c, w, h, { past }); return; }
+  cropFull(c, env, 'nsv-w07-1', [20, 412, 536, 414], w, h);
   // far track (the other train stands on it)
   const far = (0.66 + PLATFORM_DY) * h;
   c.fillStyle = past ? '#6a5236' : '#1d2226';
@@ -810,10 +870,11 @@ export function drawPlatform(ctx) {
       platformBase(c, env, w, h, { plate: true });
       matte(c, w, h);
     });
-    // the orchard case (George's, from the rack), set down on the bench at the end
-    const bench = paintedSprite(ctx, PLATE2.case, [0.165, 0.745 + PLATFORM_DY - 0.075, 0.11, 0.075], { origin: [0.5, 1] });
+    // the orchard case (George's, from the rack), set down on the bench
+    const [bx, by] = PLATFORM.bench;
+    const bench = paintedSprite(ctx, PLATE2.case, [bx + 0.02, by - 0.025, 0.034, 0.025], { origin: [0.5, 1] });
     ctx.animate(() => bench.setVisible(ctx.flag('caseOnBench')));
-    ctx.glow(w * 0.82, h * 0.34, 150, { color: 0xffc070, alpha: 0.16, flicker: 0.08 });
+    ctx.glow(w * PLATFORM.lamp, h * (PLATFORM.walk - 0.118), 60, { color: 0xffc070, alpha: 0.24, flicker: 0.08 });
     return;
   }
   ctx.paint('act3-platform', (c, env) => {

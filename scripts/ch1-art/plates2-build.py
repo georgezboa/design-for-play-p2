@@ -985,7 +985,7 @@ def act3():
     save('act3/orchard', crop(orch, cb), note='the orchard house; its upstairs window lit', sources=['A3-orchard.png'], crop_box=cb)
     geo['orchard'] = {'lit': tbox(O['lit'], cb), 'litCentre': tpt((O['lit'][0] + O['lit'][2] / 2, O['lit'][1] + O['lit'][3] / 2), cb),
                       'lane': round((O['lane'] - cb[1]) / cb[3], 4)}
-    overlook(orch, refs, geo)
+    overlook(orch, refs, geo, crop(haw, CROPS['a3/hawthorn']))
 
     # --- the viaduct (present / 1978) ------------------------------------------
     G = FEATURES['gap']
@@ -1003,23 +1003,81 @@ def act3():
     }
 
     # --- the carriage and the platform: no paintings yet (NEEDED-ART.md) -------
+    # The old panoramas, graded to the plates, above the deck line; below it
+    # George's own viaduct carried on (the painted arches either side of the
+    # gap's crop, then repeated), so the rail runs on the same stone at RAIL_AT.
     fields = world_chunk('world-01-tutorial', 1)
-    reg = fields[0:941, 2300:2300 + 1218]
-    plate = grade_like(resize(reg, 1072, 828), refs)
-    save('act3/carriage', plate, note='INTERIM: night fields panorama (world 01) graded to the plates; see NEEDED-ART.md', sources=['src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg'], crop_box=(2300, 0, 1218, 941), kind='interim')
+    sky = grade_like(resize(fields[0:941, 2300:2300 + 1218], 1072, 828), refs)
+    carriage = viaduct_band(sky, gap, cb, side='left')
+    save('act3/carriage', carriage, note='INTERIM: night fields (world 01) graded to the plates; below the deck, A3-gap\'s viaduct carried on (see NEEDED-ART.md)',
+         sources=['src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg', 'A3-gap.png'], crop_box=(2300, 0, 1218, 941), kind='interim')
     memory = world_chunk('world-07-memory', 1)
-    reg = memory[412:826, 20:556]
-    plate = grade_like(resize(reg, 1072, 828), refs)
-    save('act3/platform', plate, note='INTERIM: Bellwether by the water (world 07) graded to the plates; see NEEDED-ART.md', sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg'], crop_box=(20, 412, 536, 414), kind='interim')
-    save('act3/platform-1978', paper_grain(era_1978(plate), 0.03), note='INTERIM: the same, in George\'s 1978 grade', sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg'], crop_box=(20, 412, 536, 414), kind='interim')
+    station = grade_like(resize(memory[412:826, 20:556], 1072, 828), refs)
+    platform = viaduct_band(station, gap, cb, side='right')
+    save('act3/platform', platform, note='INTERIM: Bellwether by the water (world 07) graded to the plates; below the deck, A3-gap\'s viaduct carried on (see NEEDED-ART.md)',
+         sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg', 'A3-gap.png'], crop_box=(20, 412, 536, 414), kind='interim')
+    platform78 = viaduct_band(paper_grain(era_1978(station), 0.03), gap78, cb, side='right')
+    save('act3/platform-1978', platform78, note='INTERIM: the same, in George\'s 1978 grade, over A3-gap-1978\'s deck', sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg', 'A3-gap-1978.png'],
+         crop_box=(20, 412, 536, 414), kind='interim')
     return geo
+
+
+# George's viaduct, A3-gap source px: the deck's top, the railing's top, and one
+# pier-to-pier arch to repeat (a pier's middle at each end)
+DECK_SRC = 787
+RAILING_SRC = 748
+ARCH_PERIOD = (138, 382)
+
+
+def viaduct_band(sky, gap_src, gap_crop, *, side):
+    """`sky` (W×H, the tile's own picture) with A3-gap's viaduct run on beneath its
+    deck line, at the gap plate's scale, continuing from the gap crop's `side` edge."""
+    H, W = sky.shape[:2]
+    k = (H / gap_crop[3])                      # tile scale: both plates are 414 tile px tall
+    cx0, cy0, cw, ch = gap_crop
+    a, b = ARCH_PERIOD
+    period = b - a
+    src_x = np.empty(W, np.float32)
+    for x in range(W):
+        if side == 'left':
+            sx = cx0 - (W - x) / k            # the carriage ends where the gap crop begins
+        else:
+            sx = cx0 + cw + x / k             # the platform begins where the gap crop ends
+        if side == 'left' and sx < a:
+            sx = a + ((sx - a) % period)
+        if side == 'right' and sx > gap_src.shape[1] - 1 - 20:
+            # past the painting's right edge: the same arch, phase-matched to the last pier
+            sx = a + ((sx - (gap_src.shape[1] - 21)) % period)
+        src_x[x] = sx
+    band = np.zeros_like(sky)
+    alpha = np.zeros((H, W), np.float32)
+    y_top = int((RAILING_SRC - 8 - cy0) * k)
+    ys = np.arange(H, dtype=np.float32)
+    src_y = cy0 + ys / k
+    mx, my = np.meshgrid(src_x, src_y)
+    band = cv2.remap(gap_src.astype(np.float32), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
+    deck = (DECK_SRC - cy0) * k
+    # below the deck: all viaduct; between the railing and the deck: only the railing itself
+    hsv = cv2.cvtColor(to_u8(band), cv2.COLOR_RGB2HSV).astype(np.float32)
+    rail = ((hsv[..., 0] >= 8) & (hsv[..., 0] <= 32) & (hsv[..., 1] > 60) & (hsv[..., 2] > 55)).astype(np.float32)
+    rail = cv2.GaussianBlur(cv2.dilate(rail, np.ones((2, 2), np.uint8)), (0, 0), 0.7)
+    yy = ys[:, None]
+    below = np.clip((yy - (deck - 4)) / 4, 0, 1)
+    between = ((yy >= y_top) & (yy < deck)).astype(np.float32)
+    alpha = np.maximum(below, rail * between)
+    alpha = np.broadcast_to(alpha, (H, W)).copy()
+    out = over(sky, band, alpha)
+    # the panorama's lower part sits behind and below the deck: darken it into the valley
+    fog = np.clip((yy - deck * 0.92) / (H * 0.25), 0, 1)
+    out = out * (1 - 0.5 * fog * (1 - alpha))[..., None]
+    return out
 
 
 # the orchard house's box in the hill view, and the hill view's panorama crop (world 07)
 OVERLOOK_SRC = (1000, 330, 1218, 941 - 330)
 
 
-def overlook(orch, refs, geo):
+def overlook(orch, refs, geo, lane_plate):
     """INTERIM until A3-overlook exists: the old Bellwether panorama graded to
     the plates, with the orchard house plate set into it where the house
     stands, so zooming out of the house reads as one picture."""
@@ -1053,9 +1111,59 @@ def overlook(orch, refs, geo):
     # the house sits in the plates' own night: no regrade, only a touch of haze to set it back
     haze = house * 0.86 + np.array([0.02, 0.025, 0.04], np.float32)
     plate[hy:hy + hh, hx:hx + hw] = over(plate[hy:hy + hh, hx:hx + hw], haze, a)
+    plate = hill(plate, lane_plate)
     plate = paper_grain(plate, 0.03)
     save('act3/overlook', plate, note='INTERIM: world-07 panorama graded, the orchard house plate set in; see NEEDED-ART.md', sources=['src/assets/generated/worlds/world-07-memory/chunk-00.jpg', 'A3-orchard.png'], crop_box=OVERLOOK_SRC, kind='interim')
     geo['overlook'] = {'house': list(OVERLOOK_HOUSE_BOX)}
+
+
+def hill(plate, lane_plate):
+    """The hill under the orchard, from George's hawthorn lane: its lane (at
+    PATH_AT, so it continues from the hawthorn window) runs in from the left
+    and ends at the top of a stone stair that goes down the dark slope and
+    leaves the bottom edge at STAIR_AT."""
+    H, W = plate.shape[:2]
+    path, stair = A3_EDGES['path'], A3_EDGES['stair']
+    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
+    # the lane and its verges: the hawthorn plate's own, up to where its lane
+    # starts to wash out (0.6 across); the rest is the stretch before it, mirrored
+    cut = int(W * 0.6)
+    span = W - cut
+    ground = lane_plate.copy()
+    ground[:, cut:] = lane_plate[:, cut - span:cut][:, ::-1]
+    seam = smooth((np.abs(xx - cut)) / (W * 0.03))
+    ground = over(cv2.GaussianBlur(ground, (0, 0), 3), ground, seam)
+    top = smooth((yy - H * (path - 0.125)) / (H * 0.05))
+    out = over(plate, ground, top)
+    # the stair: stone slabs from the lane's end down to the bottom edge at STAIR_AT
+    canvas = Image.fromarray(to_u8(out))
+    S = 3
+    big = canvas.resize((W * S, H * S), Image.LANCZOS)
+    d = ImageDraw.Draw(big)
+    x0, y0 = W * 0.475, H * (path + 0.012)
+    x1, y1 = W * stair, H * 1.01
+    n = 15
+    rng = np.random.default_rng(55)
+    for i in range(n):
+        t0, t1 = i / n, (i + 1) / n
+        cx0, cy0_ = x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0
+        cx1, cy1 = x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1
+        hw0 = W * (0.024 + 0.014 * t0)
+        hw1 = W * (0.024 + 0.014 * t1)
+        tread = [(cx0 - hw0, cy0_), (cx0 + hw0, cy0_), (cx1 + hw1, cy1 - (cy1 - cy0_) * 0.45), (cx1 - hw1, cy1 - (cy1 - cy0_) * 0.45)]
+        riser = [tread[3], tread[2], (cx1 + hw1, cy1), (cx1 - hw1, cy1)]
+        tone = 0.75 + rng.random() * 0.3
+        d.polygon([(x * S, y * S) for x, y in tread], fill=tuple(int(c * tone) for c in (70, 58, 44)))
+        d.polygon([(x * S, y * S) for x, y in riser], fill=(18, 14, 11))
+        d.line([(tread[0][0] * S, tread[0][1] * S), (tread[1][0] * S, tread[1][1] * S)], fill=(150, 118, 80), width=S)
+    # the two stringers, inked
+    for sgn in (-1, 1):
+        d.line([((x0 + sgn * W * 0.026) * S, y0 * S), ((x1 + sgn * W * 0.04) * S, y1 * S)], fill=(14, 12, 11), width=2 * S)
+    out = np.asarray(big.resize((W, H), Image.LANCZOS), dtype=np.float32) / 255
+    # a little grass over the stair's edges, and the lamp far below on the right
+    out = out * (1 - 0.25 * smooth((yy - H * 0.9) / (H * 0.1)))[..., None]
+    glow = radial(out.shape, W * 0.82, H * 0.95, W * 0.06, 2.0)[..., None] * np.array([0.89, 0.64, 0.31], np.float32)
+    return np.clip(out + glow * 0.35, 0, 1)
 
 
 # where the house plate sits in the overlook (tile units, w == h: a zoom rect)
@@ -1113,7 +1221,8 @@ def needed_art():
             'size': '1536x1024', 'reference_images': ['ST1-a.png', 'A3-gap.png'],
             'parent': None, 'continues': {'from': 'A3-gap', 'edge': 'its rails run on into the left edge of A3-gap'},
             'prompt': (
-                f'A single railway line on a raised stone embankment at night under the same moonlit, rain-streaked sky as A3-gap.png; the line runs from a '
+                f'A single railway line on the high stone approach to the viaduct at night, under the same moonlit, rain-streaked sky as A3-gap.png and at the same scale '
+                f'(a railway carriage is about 30% of the picture\'s width); the line runs from a '
                 f'timber buffer stop near the LEFT edge to the RIGHT edge, where it becomes the stone viaduct deck of A3-gap.png (same stone, same iron railing along '
                 f'the near side, same height): the rails reach the RIGHT edge at exactly {round(rail * 100)}% of the image height, and the deck top is level all the way across. '
                 f'A tall signal post with one small warm lamp stands beside the line near the right; dark forested hills behind, the valley opening to the right. '
@@ -1127,17 +1236,22 @@ def needed_art():
             'size': '1536x1024', 'reference_images': ['ST1-a.png', 'A3-gap.png', 'A3-orchard.png'],
             'parent': None, 'continues': {'from': 'A3-gap', 'edge': 'the rails continue from the right edge of A3-gap'},
             'prompt': (
-                f'A small country station at night, side on. In front, our railway line enters from the LEFT edge at exactly {round(rail * 100)}% of the image height '
-                f'(continuing the viaduct deck of A3-gap.png) and ends at a buffer stop about {full_x(0.92)}% across. Behind it a long low stone platform whose walking '
-                f'surface is at about {round((0.8 + rail - 0.85) * 100)}% of the height, then a far track at about {round((0.665 + rail - 0.85) * 100)}% of the height '
-                f'where another train will stand. A steep timber stair comes down from the TOP edge at {full_x(stair)}% across onto the platform (it comes down from the '
-                f'hill of A3-overlook). On the platform: a wooden bench from about {full_x(0.12)}% to {full_x(0.32)}% across, a lamp post with the one warm light at about '
-                f'{full_x(0.82)}% across, and a station nameboard on two posts with a blank enamel plate at about {full_x(0.3)}–{full_x(0.6)}% across and half way up '
-                f'(the game letters the name). {NOBODY} {A3_FRAME} {STYLE}'
+                f'A small country station at night, seen side on from across the line, at the same distance and scale as the viaduct in A3-gap.png: '
+                f'a railway carriage would be about 30% of the picture\'s width and a standing person about 5% of its height. '
+                f'In front, our railway line runs on the same stone deck as A3-gap.png (same dressed ochre stone, same thin iron railing on posts) and enters from the '
+                f'LEFT edge with its deck top at exactly {round(rail * 100)}% of the image height, ending at a small timber buffer stop about {full_x(0.92)}% across. '
+                f'Behind it a long low stone platform: its near edge at about 73% of the height, its far edge at about 58%, its walking surface between. '
+                f'Behind the platform a second track at about 56% of the height, where another train will stand. A narrow, steep timber stair comes down from the TOP '
+                f'edge at {full_x(stair)}% across and lands on the far side of the platform at about {full_x(0.6)}% across (it comes down from the hill of A3-overlook). '
+                f'On the platform: a short wooden bench from about {full_x(0.196)}% to {full_x(0.264)}% across; one lamp post at about {full_x(0.82)}% across with the '
+                f'one warm amber light in the picture, about 12% of the height tall; a station nameboard on two short posts with a blank dark enamel plate from about '
+                f'{full_x(0.3)}% to {full_x(0.43)}% across at about 59% of the height (the game letters the name). Above, the dark roofs and chimneys of Bellwether '
+                f'and the night sky. Leave the platform and both tracks empty. {NOBODY} {A3_FRAME} {STYLE}'
             ),
             'notes': (f'Edges the game links: rail LEFT edge at {rail} of the height (from A3-gap); stair TOP edge at {stair} across the cropped frame (from A3-overlook). '
-                      f'Butch walks the platform at {round(0.8 + rail - 0.85, 3)} of the height between {0.24} and {0.44} across; the far train stands at '
-                      f'{round(0.665 + rail - 0.85, 3)}. A 1978 version (A3-platform-1978, same composition, "the same place in 1978") would let the lens show it.'),
+                      f'Butch walks the platform at {round(0.8 + rail - 0.85, 3)} of the height from 0.44 to the bench at 0.24 across; Mara comes down the stair and '
+                      f'boards the far train at 0.71 across, 0.57 down; our train docks centred at 0.42. A 1978 version (A3-platform-1978, "the same place in 1978", '
+                      'same composition) would let the lens show it.'),
         },
     ]
     lines = [

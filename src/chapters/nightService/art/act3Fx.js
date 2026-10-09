@@ -1,6 +1,6 @@
 // Act 3 presentation effects (see README.md → Custom fx).
 
-import { CITY_GLASS, ORCHARD_LIT } from './act3Art.js';
+import { CITY_GLASS, ORCHARD_LIT, PATH_AT } from './act3Art.js';
 
 export const ACT3_FX = {
   /** The city window closes around the orchard window: light floods one picture. */
@@ -74,7 +74,7 @@ export const ACT3_FX = {
       .map((l) => ({ ...joint(l), rank: rank[l.type] ?? 3 }))
       .sort((a, b) => a.rank - b.rank || a.x - b.x);
     if (!points.length) return;
-    const route = [api.screen('city', 0.6, 0.62), ...points];
+    const route = [api.screen('city', 0.6, PATH_AT), ...points];
     let total = 0;
     const at = [0];
     for (let i = 1; i < route.length; i += 1) {

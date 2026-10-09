@@ -15,14 +15,14 @@ read-only 1536×1024 sources; do not edit them by hand. Crop boxes are source pi
 | `hawthorn.webp` | 1072×828 | 177 | A3-hawthorn.png | 60, 0, 1072, 828 | the lane, washed out at the right edge |
 | `hawthorn-1978.webp` | 1072×828 | 258 | A3-hawthorn-1978.png | 60, 0, 1072, 828 | 1978: the lane whole to the edge |
 | `orchard.webp` | 1259×972 | 300 | A3-orchard.png | 267, 0, 1259, 972 | the orchard house; its upstairs window lit |
-| `overlook.webp` | 1072×828 | 54 | src/assets/generated/worlds/world-07-memory/chunk-00.jpg, A3-orchard.png | 1000, 330, 1218, 611 | INTERIM: world-07 panorama graded, the orchard house plate set in; see NEEDED-ART.md |
+| `overlook.webp` | 1072×828 | 111 | src/assets/generated/worlds/world-07-memory/chunk-00.jpg, A3-orchard.png | 1000, 330, 1218, 611 | INTERIM: world-07 panorama graded, the orchard house plate set in; see NEEDED-ART.md |
 | `gap.webp` | 1227×948 | 157 | A3-gap.png | 154, 76, 1227, 948 | the viaduct, its middle span fallen |
 | `gap-1978.webp` | 1227×948 | 250 | A3-gap-1978.png | 154, 76, 1227, 948 | 1978: the viaduct whole |
-| `carriage.webp` | 1072×828 | 22 | src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg | 2300, 0, 1218, 941 | INTERIM: night fields panorama (world 01) graded to the plates; see NEEDED-ART.md |
-| `platform.webp` | 1072×828 | 33 | src/assets/generated/worlds/world-07-memory/chunk-01.jpg | 20, 412, 536, 414 | INTERIM: Bellwether by the water (world 07) graded to the plates; see NEEDED-ART.md |
-| `platform-1978.webp` | 1072×828 | 36 | src/assets/generated/worlds/world-07-memory/chunk-01.jpg | 20, 412, 536, 414 | INTERIM: the same, in George's 1978 grade |
+| `carriage.webp` | 1072×828 | 60 | src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg, A3-gap.png | 2300, 0, 1218, 941 | INTERIM: night fields (world 01) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md) |
+| `platform.webp` | 1072×828 | 66 | src/assets/generated/worlds/world-07-memory/chunk-01.jpg, A3-gap.png | 20, 412, 536, 414 | INTERIM: Bellwether by the water (world 07) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md) |
+| `platform-1978.webp` | 1072×828 | 89 | src/assets/generated/worlds/world-07-memory/chunk-01.jpg, A3-gap-1978.png | 20, 412, 536, 414 | INTERIM: the same, in George's 1978 grade, over A3-gap-1978's deck |
 
-Total: 1.75 MB.
+Total: 1.92 MB.
 
 ## 1978 registration
 
