@@ -18,15 +18,22 @@
 
 import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
-  AISLE_FLOOR, BENEATH_ZOOM, BUTCH_SCALE, BUTCH_X, CASE_ZOOM, DROP_AT, LETTER_ZOOM, ORCHARD_TAG,
-  POSTCARD, REQUEST_STOP, TAG_ZOOM, TICKET_AT, drawAisle, drawAislePast, drawBeneath, drawBoard, drawBoardPast,
-  drawBrassFrame, drawCarriageView, drawCaseTag, drawLetter, drawOpenCase, drawOrchard, drawRack,
-  drawRackPast,
+  AISLE_FLOOR, BENEATH_ZOOM, BUTCH_SCALE, BUTCH_X, CASE_HELD, CASE_LABEL, CASE_TAG, CASE_ZOOM, DROP_AT, EMBER,
+  LETTER_BUNDLE, LETTER_PAPER, LETTER_ZOOM, PLATE, POSTCARD, REQUEST_STOP, SHAWL, TAG_ZOOM, TICKET_AT,
+  WINDOW_FRAME, WINDOW_GLASS, drawAisle, drawAislePast, drawBeneath, drawBoard, drawBoardPast, drawBrassFrame,
+  drawCarriageView, drawCaseTag, drawLetter, drawOpenCase, drawOrchard, drawRack, drawRackPast,
 } from '../art/act2Art.js';
+import { GEO2 } from '../art/act2Plates.js';
+import { padBox } from '../art/act2PlateKit.js';
 import { ACT2_FX } from '../art/act2Fx.js';
 
 // the lens appears over the aisle, clear of the rack, so moving it is the lesson
-const LENS_START = { x: 0.62, y: 0.4 };
+// (over the right-hand seats, off Butch)
+const LENS_START = { x: 0.74, y: 0.42 };
+/** The 1978 label on the orchard case, with room round it: the lens click's target. */
+const LABEL_RECT = padBox(CASE_LABEL, 0.025, 0.04);
+/** The claim tag hanging off its handle (present: zoom into it). */
+const TAG_RECT = padBox(CASE_TAG, 0.012, 0.02);
 
 export const ACT2 = defineAct({
   id: 'act2',
@@ -54,23 +61,25 @@ export const ACT2 = defineAct({
       state: 'rack',
       states: {
         rack: {
+          plate: PLATE.rack,
+          platePast: PLATE['rack-1978'],
           draw: (ctx) => drawRack(ctx, 'rack'),
           drawPast: drawRackPast,
           hotspots: [
             {
               id: 'bellwether', kind: 'use', era: 'past', once: true, verb: 'MARK',
-              rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
+              rect: LABEL_RECT,
               // the second use of the lens click (REQUEST STOP is the first)
               // (once marked it steps aside: a click there reaches the case tag)
               requires: { all: [{ item: 'lens' }, { flag: 'stopRequested' }, { notFlag: 'orchardMarked' }] },
-              tag: { x: ORCHARD_TAG.x + 0.07, y: ORCHARD_TAG.y - 0.03, glintOnly: true, ring: true },
+              tag: { x: CASE_LABEL[0] + CASE_LABEL[2] - 0.005, y: CASE_LABEL[1] + 0.01, glintOnly: true, ring: true },
               do: [{ setFlag: 'orchardMarked' }],
             },
             {
               // the same tag through the lens before the stop is requested: it
               // answers (alpha R4 · P1), so the player does not rule it out
               id: 'bellwetherEarly', kind: 'use', era: 'past', quiet: true, verb: 'MARK',
-              rect: [ORCHARD_TAG.x - 0.06, ORCHARD_TAG.y - 0.08, 0.14, 0.16],
+              rect: LABEL_RECT,
               requires: { all: [{ item: 'lens' }, { notFlag: 'stopRequested' }] },
               do: [
                 { sfx: 'mismatch' },
@@ -79,21 +88,24 @@ export const ACT2 = defineAct({
               ],
             },
             {
-              id: 'caseTag', kind: 'zoom', to: 'tag', rect: TAG_ZOOM,
+              id: 'caseTag', kind: 'zoom', to: 'tag', rect: TAG_RECT, zoomRect: TAG_ZOOM,
               requires: { flag: 'orchardMarked' },
-              tag: { x: ORCHARD_TAG.x - 0.005, y: ORCHARD_TAG.y - 0.02, angle: 0.3, scale: 1.1 },
+              tag: { x: CASE_TAG[0] + CASE_TAG[2] * 0.6, y: CASE_TAG[1] + CASE_TAG[3] * 0.85, angle: 0.5, scale: 1.1 },
             },
           ],
         },
         tag: {
+          plate: PLATE.tag,
           draw: drawCaseTag,
           hotspots: [{
             id: 'postcard', kind: 'zoom', to: 'orchard', rect: POSTCARD,
-            tag: { x: POSTCARD[0] + POSTCARD[2] + 0.02, y: POSTCARD[1] + 0.02, angle: 0.5, scale: 1.4 },
+            tag: { x: POSTCARD[0] + POSTCARD[2] + 0.015, y: POSTCARD[1] + 0.03, angle: 0.5, scale: 1.4 },
           }],
         },
-        orchard: { draw: drawOrchard },
+        orchard: { plate: PLATE.orchard, draw: drawOrchard },
         tilting: {
+          plate: PLATE.rack,
+          platePast: PLATE['rack-1978'],
           draw: (ctx) => drawRack(ctx, 'tilting'),
           drawPast: drawRackPast,
           edges: { bottom: [{ type: 'drop', at: DROP_AT, when: { all: [{ flag: 'caseAtEdge' }, { notFlag: 'caseInArms' }] } }] },
@@ -103,23 +115,26 @@ export const ACT2 = defineAct({
     window: {
       frame: {
         id: 'windowFrame',
+        plate: PLATE['window-frame'],
         draw: drawBrassFrame,
-        // press-and-hold anywhere on the brass (and a little past it), or
-        // drag from the brass; a drag from the picture inside moves the window
-        grip: { rect: [0, 0, 1, 1], hole: [0.09, 0.15, 0.82, 0.7] },
+        // press-and-hold on the painted brass (and a little past it), or drag
+        // from the brass; a drag from the picture inside moves the window
+        grip: { rect: padBox(WINDOW_FRAME, 0.025, 0.04), hole: [...WINDOW_GLASS] },
         // HOLD · LIFT THE FRAME hangs on the top bar until a frame is lifted
-        tag: { u: 0.1, v: 0.075 },
+        tag: { u: GEO2.window.tag[0], v: GEO2.window.tag[1] },
         // the frame lifts once the orchard has been seen (taught when it is the
         // only move), and rests again once the train has arrived: from then on
         // a drag anywhere on the window moves the window
         requires: { all: [{ flag: 'orchardSeen' }, { notFlag: 'caseAtEdge' }] },
       },
-      states: { default: { draw: drawCarriageView } },
+      states: { default: { plate: PLATE.window, draw: drawCarriageView } },
     },
     aisle: {
       state: 'aisle',
       states: {
         aisle: {
+          plate: PLATE.aisle,
+          platePast: PLATE['aisle-1978'],
           draw: drawAisle,
           drawPast: drawAislePast,
           actorScale: BUTCH_SCALE,
@@ -132,31 +147,34 @@ export const ACT2 = defineAct({
               tag: { x: TICKET_AT.x + 0.02, y: TICKET_AT.y - 0.05, angle: -0.4, glintOnly: true, ring: true },
             },
             {
-              id: 'case', kind: 'zoom', to: 'openCase', rect: CASE_ZOOM,
+              id: 'case', kind: 'zoom', to: 'openCase', rect: padBox(CASE_HELD, 0.01), zoomRect: CASE_ZOOM,
               requires: { flag: 'caseInArms' },
-              tag: { x: CASE_ZOOM[0] + CASE_ZOOM[2] * 0.82, y: CASE_ZOOM[1] + CASE_ZOOM[3] * 0.45, angle: 0.4 },
+              tag: { x: CASE_HELD[0] + CASE_HELD[2] * 0.95, y: CASE_HELD[1] + CASE_HELD[3] * 0.3, angle: 0.4 },
             },
           ],
         },
         openCase: {
+          plate: PLATE['case-open'],
           draw: drawOpenCase,
           hotspots: [{
-            id: 'letter', kind: 'zoom', to: 'letter', rect: LETTER_ZOOM,
-            tag: { x: LETTER_ZOOM[0] + LETTER_ZOOM[2] * 0.9, y: LETTER_ZOOM[1] + 0.02, angle: 0.5, scale: 1.3 },
+            id: 'letter', kind: 'zoom', to: 'letter', rect: LETTER_BUNDLE, zoomRect: LETTER_ZOOM,
+            tag: { x: LETTER_BUNDLE[0] + LETTER_BUNDLE[2] * 0.92, y: LETTER_BUNDLE[1] + 0.03, angle: 0.5, scale: 1.3 },
           }],
         },
         letter: {
+          plate: PLATE.letter,
           draw: drawLetter,
           hotspots: [
-            { id: 'read', kind: 'read', card: 'A2', rect: [0.16, 0.12, 0.5, 0.6], tag: { x: 0.64, y: 0.2, angle: 0.4, scale: 1.6 } },
-            // optional and hidden on purpose (the Ember Stone): a glint, no ring
-            { id: 'beneath', kind: 'zoom', to: 'stone', rect: BENEATH_ZOOM, tag: { x: 0.82, y: 0.78, glintOnly: true, ring: false } },
+            { id: 'read', kind: 'read', card: 'A2', rect: [...LETTER_PAPER], tag: { x: LETTER_PAPER[0] + LETTER_PAPER[2] * 0.82, y: LETTER_PAPER[1] + 0.06, angle: 0.4, scale: 1.6 } },
+            // optional and hidden on purpose (the Ember Stone): a glint in the shawl, no ring
+            { id: 'beneath', kind: 'zoom', to: 'stone', rect: [...SHAWL], zoomRect: BENEATH_ZOOM, tag: { x: SHAWL[0] + SHAWL[2] * 0.45, y: SHAWL[1] + SHAWL[3] * 0.42, glintOnly: true, ring: false } },
           ],
         },
         stone: {
+          plate: PLATE.stone,
           draw: drawBeneath,
           hotspots: [{
-            id: 'ember', kind: 'use', once: true, rect: [0.38, 0.32, 0.24, 0.46], verb: 'TAKE',
+            id: 'ember', kind: 'use', once: true, rect: padBox(EMBER, 0.03, 0.05), verb: 'TAKE',
             requires: { notFlag: 'stone:chapter-1' },
             do: [{ grantStone: 'chapter-1' }, { fx: { name: 'emberTaken' } }],
           }],
@@ -167,6 +185,8 @@ export const ACT2 = defineAct({
       state: 'default',
       states: {
         default: {
+          plate: PLATE.board,
+          platePast: PLATE['board-1978'],
           draw: (ctx) => drawBoard(ctx, 'default'),
           drawPast: (ctx) => drawBoardPast(ctx, 'default'),
           hotspots: [{
@@ -186,7 +206,7 @@ export const ACT2 = defineAct({
             id: 'request', kind: 'use', era: 'past', once: true, verb: 'PRESS',
             rect: [...REQUEST_STOP],
             requires: { item: 'lens' },
-            tag: { x: REQUEST_STOP[0] + REQUEST_STOP[2] - 0.01, y: REQUEST_STOP[1] + 0.02, angle: 0.45, scale: 1.3 },
+            tag: { x: REQUEST_STOP[0] + REQUEST_STOP[2] - 0.012, y: REQUEST_STOP[1] + 0.03, angle: 0.45, scale: 1.2 },
             do: [
               { sfx: 'clack' },
               { setFlag: 'stopRequested' },
@@ -195,8 +215,8 @@ export const ACT2 = defineAct({
             ],
           }],
         },
-        requested: { draw: (ctx) => drawBoard(ctx, 'requested'), drawPast: (ctx) => drawBoardPast(ctx, 'requested') },
-        arrived: { draw: (ctx) => drawBoard(ctx, 'arrived'), drawPast: (ctx) => drawBoardPast(ctx, 'requested') },
+        requested: { plate: PLATE['board-lit'], platePast: PLATE['board-1978'], draw: (ctx) => drawBoard(ctx, 'requested'), drawPast: (ctx) => drawBoardPast(ctx, 'requested') },
+        arrived: { plate: PLATE['board-lit'], platePast: PLATE['board-1978'], draw: (ctx) => drawBoard(ctx, 'arrived'), drawPast: (ctx) => drawBoardPast(ctx, 'requested') },
       },
     },
   },

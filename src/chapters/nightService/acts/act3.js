@@ -19,10 +19,11 @@
 
 import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
-  CITY_WINDOW, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATFORM_DY, RAIL_AT, STAIR_AT, drawCarriageScene, drawCityFrame, drawCityRoom,
-  drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook, drawPlatform,
-  drawPlatformPast,
+  CITY_WINDOW, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATE, PLATFORM_DY, RAIL_AT, STAIR_AT, drawCarriageScene,
+  drawCityFrame, drawCityRoom, drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook,
+  drawPlatform, drawPlatformPast,
 } from '../art/act3Art.js';
+import { GEO3 } from '../art/act3Plates.js';
 import { ACT3_FX } from '../art/act3Fx.js';
 
 const lensOverGap = { lensOver: { tile: 'gap', x: 0.5, y: RAIL_AT } };
@@ -51,12 +52,32 @@ const THROUGH_HEDGE = [
   { tile: 'hawthorn', x: 1, y: PATH_AT, requires: lensOverHedge, retreat: { x: HEDGE.wait } },
   { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
   { tile: 'orchard', x: 0.44, y: PATH_AT },
-  { tile: 'orchard', x: 0.5, y: 0.68, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
+  // the stair head, at the lane's end (painted on the hill: plates2-build.py)
+  { tile: 'orchard', x: 0.48, y: 0.74, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
   { tile: 'orchard', x: STAIR_AT, y: 0.97 },
 ];
 const TRAIN_Y = RAIL_AT - 0.004;
-/** Our train is drawn larger than the far one, so the finale reads at a glance (alpha R3 · R5). */
-export const TRAIN_SCALE = 1.35;
+/**
+ * Our train at the painted viaduct's scale: a 20 m carriage beside its 15 m
+ * arches (the rig is 150 tile px long at scale 1; C-train's proportions).
+ * It stays well larger than the far train, so the finale reads at a glance
+ * (alpha R3 · R5).
+ */
+export const TRAIN_SCALE = Math.round((GEO3.gap.trainTilePx / 150) * 100) / 100;
+/** The far train, on the far track behind the platform. */
+export const FAR_TRAIN_SCALE = Math.round(TRAIN_SCALE * 0.55 * 100) / 100;
+/**
+ * People at the scale of the painted places (rig heights: Mara 66, Butch 70
+ * tile px). On the bottom row they stand beside the train; each top-row
+ * state scales them to its own painting (actorScale × PEOPLE_SCALE).
+ */
+export const PEOPLE_SCALE = 0.3;
+const MARA_RIG = 66;
+const maraIn = (tilePx) => Math.round((tilePx / MARA_RIG / PEOPLE_SCALE) * 100) / 100;
+/** Mara in the city room (in front of the desk), on the lane (the hedge beside her), on the hill. */
+export const MARA_CITY = maraIn(GEO3.city.maraTilePx);
+export const MARA_LANE = maraIn(GEO3.hawthorn.maraTilePx);
+export const MARA_HILL = maraIn(36);
 /** Its length on a tile (the rig is 150 tile px at scale 1; tiles are 536 wide on the 3×2 wall). */
 export const TRAIN_LENGTH = (150 * TRAIN_SCALE) / 536;
 // the present viaduct is missing over GAP_SPAN (rails end 0.02 short of each
@@ -96,16 +117,20 @@ export const ACT3 = defineAct({
       // anywhere on the room moves the room (the lane needs it moved)
       frame: {
         id: 'cityWindow',
+        plate: PLATE['city-window'],
         draw: drawCityFrame,
-        grip: { rect: [CITY_WINDOW[0] - 0.02, CITY_WINDOW[1] - 0.02, CITY_WINDOW[2] + 0.04, CITY_WINDOW[3] + 0.06] },
+        grip: { rect: [CITY_WINDOW[0] - 0.02, CITY_WINDOW[1] - 0.02, CITY_WINDOW[2] + 0.04, CITY_WINDOW[3] + 0.05] },
         // HOLD · LIFT THE FRAME (if no frame was lifted in Act 2), under the sill
-        tag: { u: 0.36, v: 0.74 },
+        tag: { u: GEO3.city.sill[0] - 0.06, v: GEO3.city.sill[1] + 0.03 },
         requires: { notFlag: 'windowsJoined' },
       },
       states: {
         default: {
+          plate: PLATE.city,
+          platePast: PLATE['city-1978'],
           draw: drawCityRoom,
           drawPast: drawCityRoomPast,
+          actorScale: MARA_CITY,
           edges: { right: [{ type: 'path', at: PATH_AT }] },
         },
       },
@@ -113,11 +138,14 @@ export const ACT3 = defineAct({
     hawthorn: {
       states: {
         default: {
+          plate: PLATE.hawthorn,
+          platePast: PLATE['hawthorn-1978'],
           draw: drawHawthorn,
           drawPast: drawHawthornPast,
+          actorScale: MARA_LANE,
           edges: {
             left: [{ type: 'path', at: PATH_AT }],
-            // today a hedge; in 1978 the lane ran on through an open gate
+            // today the lane is washed out at the edge; in 1978 it ran on whole
             right: [{ type: 'path', at: PATH_AT, era: 'past', lensAt: [...HEDGE.lens] }],
           },
         },
@@ -127,9 +155,11 @@ export const ACT3 = defineAct({
       state: 'house',
       zoomStack: [{ state: 'overlook', rect: OVERLOOK_HOUSE }],
       states: {
-        house: { draw: drawHouse },
+        house: { plate: PLATE.orchard, draw: drawHouse },
         overlook: {
+          plate: PLATE.overlook,
           draw: drawOverlook,
+          actorScale: MARA_HILL,
           edges: { left: [{ type: 'path', at: PATH_AT }], bottom: [{ type: 'stair', at: STAIR_AT }] },
           hotspots: [{
             // only while the city window still has to meet the house: once
@@ -143,11 +173,13 @@ export const ACT3 = defineAct({
       },
     },
     carriage: {
-      states: { default: { draw: drawCarriageScene, edges: { right: [{ type: 'rail', at: RAIL_AT }] } } },
+      states: { default: { plate: PLATE.carriage, draw: drawCarriageScene, edges: { right: [{ type: 'rail', at: RAIL_AT }] } } },
     },
     gap: {
       states: {
         default: {
+          plate: PLATE.gap,
+          platePast: PLATE['gap-1978'],
           draw: drawGap,
           drawPast: drawGapPast,
           edges: {
@@ -160,6 +192,8 @@ export const ACT3 = defineAct({
     platform: {
       states: {
         default: {
+          plate: PLATE.platform,
+          platePast: PLATE['platform-1978'],
           draw: drawPlatform,
           drawPast: drawPlatformPast,
           edges: { left: [{ type: 'rail', at: RAIL_AT }], top: [{ type: 'stair', at: STAIR_AT, silent: true }] },
@@ -168,10 +202,10 @@ export const ACT3 = defineAct({
     },
   },
   actors: {
-    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false },
+    butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false, scale: PEOPLE_SCALE },
     train: { rig: 'train', tile: 'carriage', x: 0.36, y: TRAIN_Y, facing: 1, scale: TRAIN_SCALE },
-    mara: { rig: 'mara', tile: 'city', x: 0.62, y: PATH_AT, visible: false, facing: 1 },
-    farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: FAR_Y, facing: 1, scale: 0.72, tint: 0x9a9aae },
+    mara: { rig: 'mara', tile: 'city', x: 0.62, y: PATH_AT, visible: false, facing: 1, scale: PEOPLE_SCALE },
+    farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: FAR_Y, facing: 1, scale: FAR_TRAIN_SCALE, tint: 0x9a9aae },
   },
   steps: [
     {
