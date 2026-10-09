@@ -35,7 +35,7 @@ import { ReadingView } from './readingView.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
 import { buildRig } from './actorRig.js';
 import { queueSpriteTextures } from './spriteRig.js';
-import { BEZEL, paintBezel, paintLensRim, paintVignette, paintWall } from './art/wallArt.js';
+import { BEZEL, CHROME_TEXTURES, paintBezel, paintLensRim, paintVignette, paintWall, wallGeometry } from './art/wallArt.js';
 import { PAL, brassFill, ink, roundRectPath, paperGrain } from './art/ink.js';
 import { PAPER_URL, TRAIN_KEY, TRAIN_URL, WORLDS } from './worldAssets.js';
 import { reducedMotionActive } from '../../shell/motion.js';
@@ -104,6 +104,9 @@ const FOLD_CAPS = Object.freeze({ left: '←', right: '→', top: '↑', bottom:
 /** The brass pull is shown a little larger than it is painted (×2 canvas). */
 const PULL_SCALE = 1.25;
 
+/** The lamps' live glow over the wall (round 7: matte chrome, so low and warm). */
+const LAMP_GLOW = 0.11;
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const wallKey = (layout) => `nsv-wall-${layout.cols}x${layout.rows}-${layout.slots[0]?.w ?? layout.tileW}`;
 const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
@@ -152,16 +155,20 @@ class TileView {
   buildBezel() {
     const s = this.scene;
     const { w, h } = this;
-    const key = `nsv-bezel-${w}x${h}`;
+    // round 7: the painted bezel (wallArt.js), painted at the window's own
+    // display scale so a window shown larger (Act 0's 1.7) stays crisp
+    const chrome = s.chromeImages();
+    const res = Math.max(1, Math.round(this.base * 100) / 100);
+    const key = `nsv-bezel-${w}x${h}@${res}${chrome.bezel ? '' : '-flat'}`;
     if (!s.textures.exists(key)) {
-      const tex = s.textures.createCanvas(key, w + BEZEL * 2, h + BEZEL * 2);
-      paintBezel(tex.getContext(), w, h);
+      const tex = s.textures.createCanvas(key, Math.ceil((w + BEZEL * 2) * res), Math.ceil((h + BEZEL * 2) * res));
+      paintBezel(tex.getContext(), w, h, { chrome, res });
       tex.refresh();
     }
-    const vkey = `nsv-vignette-${w}x${h}`;
+    const vkey = `nsv-vignette-painted-${w}x${h}`;
     if (!s.textures.exists(vkey)) {
       const tex = s.textures.createCanvas(vkey, w, h);
-      paintVignette(tex.getContext(), w, h);
+      paintVignette(tex.getContext(), w, h, { painted: true });
       tex.refresh();
     }
     this.bezel = s.add.container(0, 0);
@@ -169,7 +176,7 @@ class TileView {
     this.cover = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
     // round 6 · item 15: while a line is spoken the windows step back (dimmed)
     this.dim = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
-    this.ring = s.add.image(-w / 2 - BEZEL, -h / 2 - BEZEL, key).setOrigin(0, 0);
+    this.ring = s.add.image(-w / 2 - BEZEL, -h / 2 - BEZEL, key).setOrigin(0, 0).setScale(1 / res);
     // the keyboard's selected window: ivory on a dark outline, so it reads
     // against the brass bezel and the gold wall alike
     this.select = s.add.graphics();
@@ -295,6 +302,7 @@ export class PanelScene extends Phaser.Scene {
   }
 
   preload() {
+    this.preloadChrome();
     if (!this.textures.exists('nsv-paper')) this.load.image('nsv-paper', PAPER_URL);
     const act = this.resolveAct();
     const hasTrain = Object.values(act.actors ?? {}).some((actor) => actor.rig === 'train');
@@ -507,6 +515,22 @@ export class PanelScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // setup helpers
 
+  /** Round 7: George's painted bezel and walnut (public/assets/ch1-painted/chrome). */
+  preloadChrome() {
+    Object.values(CHROME_TEXTURES).forEach(({ key, url }) => { if (!this.textures.exists(key)) this.load.image(key, url); });
+  }
+
+  /** The painted chrome's images; either is null if it did not load (the wall then paints flat matte stand-ins). */
+  chromeImages() {
+    const img = ({ key }) => (this.textures.exists(key) ? this.textures.get(key).getSourceImage() : null);
+    return { bezel: img(CHROME_TEXTURES.bezel), walnut: img(CHROME_TEXTURES.walnut) };
+  }
+
+  /** LOW GRAPHICS: the wall's lamplight is painted in, and the link seams draw no pooled light. */
+  lowGraphics() {
+    return globalThis.NIGHTFALL_SETTINGS?.lowGraphics === true;
+  }
+
   ensureUiTextures() {
     const make = (key, w, h, fn) => {
       if (this.textures.exists(key)) return;
@@ -515,7 +539,10 @@ export class PanelScene extends Phaser.Scene {
       tex.refresh();
     };
     make('nsv-zoomout', 72, 72, (c) => {
-      c.fillStyle = brassFill(c, 4, 4, 64, 64);
+      // worn brass like the painted bezel it sits against (round 7)
+      const ring = c.createLinearGradient(0, 4, 0, 68);
+      [[0, '#a5874f'], [0.45, '#86683a'], [1, '#4a3720']].forEach(([at, color]) => ring.addColorStop(at, color));
+      c.fillStyle = ring;
       c.beginPath(); c.arc(36, 36, 30, 0, Math.PI * 2); c.fill();
       c.fillStyle = '#1c130d';
       c.beginPath(); c.arc(36, 36, 24, 0, Math.PI * 2); c.fill();
@@ -596,11 +623,13 @@ export class PanelScene extends Phaser.Scene {
 
   /** The painted carriage wall for a layout (cached across acts); returns its key. */
   ensureWallTexture(layout) {
-    const key = wallKey(layout);
+    const chrome = this.chromeImages();
+    const low = this.lowGraphics();
+    const key = `${wallKey(layout)}-painted${chrome.bezel && chrome.walnut ? '' : '-flat'}${low ? '-low' : ''}`;
     if (!this.textures.exists(key)) {
       const tex = this.textures.createCanvas(key, layout.view.w, layout.view.h);
       const paper = this.textures.exists('nsv-paper') ? this.textures.get('nsv-paper').getSourceImage() : null;
-      const info = paintWall(tex.getContext(), layout, { paper });
+      const info = paintWall(tex.getContext(), layout, { paper, chrome, low });
       tex.refresh();
       this.textures.get(key).customData = info;
     }
@@ -608,24 +637,25 @@ export class PanelScene extends Phaser.Scene {
   }
 
   buildWall() {
-    const { cols, rows } = this.layout;
+    const { cols } = this.layout;
     const key = this.ensureWallTexture(this.layout);
     this.wallInfo = this.textures.get(key).customData ?? { sillY: this.layout.y + this.layout.h + 56 };
     this.wallLayer.add(this.add.image(0, 0, key).setOrigin(0, 0));
-    // live lamp flicker between the windows
+    // live lamp flicker between the windows: low, warm, and soft (round 7);
+    // under LOW GRAPHICS the light is painted into the wall and holds still
     this.lampGlows = [];
-    for (let col = 0; col <= cols; col += 1) {
-      const x = col === 0 ? this.layout.x - 17 : col === cols ? this.layout.x + this.layout.w + 17 : this.layout.slots[col].x - this.layout.gutter / 2;
-      const glow = this.add.image(x, this.layout.y - 18, 'nsv-radial').setDisplaySize(260, 200).setTint(0xffb060).setBlendMode('ADD').setAlpha(0.22);
+    if (this.lowGraphics()) return;
+    wallGeometry(this.layout).lamps.forEach(({ x, y }) => {
+      const glow = this.add.image(x, y + 22, 'nsv-radial').setDisplaySize(230, 170).setTint(0xffb060).setBlendMode('ADD').setAlpha(LAMP_GLOW);
       glow.seed = Math.random() * 100;
       this.lampGlows.push(glow);
       this.wallLayer.add(glow);
-    }
-    // warm spill down every gutter
+    });
+    // a faint warm spill down every gutter
     this.layout.slots.forEach((slot) => {
       if (slot.col < cols - 1 && slot.row === 0) {
         const g = this.add.image(slot.x + slot.w + this.layout.gutter / 2, this.layout.y + this.layout.h / 2, 'nsv-radial');
-        g.setDisplaySize(90, this.layout.h * 1.1).setTint(0xff9a40).setBlendMode('ADD').setAlpha(0.08);
+        g.setDisplaySize(70, this.layout.h * 1.05).setTint(0xff9a40).setBlendMode('ADD').setAlpha(0.045);
         this.wallLayer.add(g);
       }
     });
@@ -1076,7 +1106,8 @@ export class PanelScene extends Phaser.Scene {
       .setAlpha(0.75 * light);
     ui.line.clear();
     const [a0, a1] = k ? [k0.y + 10, k0.y + k0.h - 10] : [k0.x + 10, k0.x + k0.w - 10];
-    [[16, 0xffa850, 0.22], [7, 0xffd08a, 0.6], [2.4, 0xfff2d4, 1]].forEach(([w, color, alpha]) => {
+    // (round 7: warm through and through, no white core, like the link seams)
+    [[14, 0xffa850, 0.18], [6, 0xffc274, 0.5], [2, 0xffe0b0, 0.9]].forEach(([w, color, alpha]) => {
       ui.line.lineStyle(w, color, alpha * light);
       if (k) ui.line.lineBetween(at, a0, at, a1);
       else ui.line.lineBetween(a0, at, a1, at);
@@ -1635,16 +1666,22 @@ export class PanelScene extends Phaser.Scene {
   /**
    * Links (round 6 · item G): no more flat bars across the gutter. Where two
    * windows meet, a thin warm seam of light runs across the gap at the link
-   * height (a rail is two), and light pools softly on both bezel lips. The
-   * pictures themselves are what connect (the art is being redrawn so they
-   * continue across panels); this only says "joined". A new link flares and
-   * a short light-run crosses it (onLinkOn).
+   * height (a rail is two). The pictures themselves are what connect (the
+   * painted plates continue across panels); this only says "joined". A new
+   * link flares and a short light-run crosses it (onLinkOn).
+   *
+   * Round 7: it reads as lamplight spilling through the gap onto the matte
+   * brass — a soft amber thread with no white core, a small glow in the gap
+   * where the light comes through, and a soft pool along each bezel lip it
+   * falls on. LOW GRAPHICS: the thread only.
    */
   drawLinks(dt = 16) {
     const g = this.linkG;
     g.clear();
     void dt;
     const reduce = reducedMotionActive();
+    const low = this.lowGraphics();
+    const lip = BEZEL * (this.layout.scale ?? 1);
     const live = new Set();
     this.model.links().forEach((link) => {
       const a = this.views[link.a];
@@ -1657,37 +1694,48 @@ export class PanelScene extends Phaser.Scene {
       const k = 0.62 + breathe * 0.16 + flash * 0.5;
       live.add(link.key);
       const across = link.dir === 'h';
-      // a few px past each picture edge, so the seam starts under the bezel lip
-      const ext = 3;
+      // from the inner edge of one bezel to the other's (it stops at the
+      // painting, never runs over it)
+      const ext = 1;
       const ends = across
         ? [{ x: p.x - ext, y: p.y }, { x: q.x + ext, y: q.y }]
         : [{ x: p.x, y: p.y - ext }, { x: q.x, y: q.y + ext }];
       const lanes = link.type === 'rail' ? [-3, 3] : link.type === 'chute' || link.type === 'pipe' ? [-5, 5] : [0];
       lanes.forEach((off) => {
         const [s0, s1] = ends.map((e) => (across ? { x: e.x, y: e.y + off } : { x: e.x + off, y: e.y }));
-        [[8, 0xff9a40, 0.09], [3.4, 0xffc46a, 0.3], [1.4, 0xfff2d4, 0.82]].forEach(([w, color, alpha]) => {
-          g.lineStyle(w, color, clamp(alpha * k, 0, 1));
+        // brightest in the gap, where it comes through; softer where it lies on the brass
+        const m0 = { x: s0.x + (across ? lip * 0.6 : 0), y: s0.y + (across ? 0 : lip * 0.6) };
+        const m1 = { x: s1.x - (across ? lip * 0.6 : 0), y: s1.y - (across ? 0 : lip * 0.6) };
+        [[6, 0xff9a40, 0.06], [2.6, 0xffb360, 0.2], [1.1, 0xffd6a0, 0.5]].forEach(([w, color, alpha]) => {
+          g.lineStyle(w, color, clamp(alpha * k * 0.42, 0, 1));
           g.lineBetween(s0.x, s0.y, s1.x, s1.y);
+          g.lineStyle(w, color, clamp(alpha * k * 0.55, 0, 1));
+          g.lineBetween(m0.x, m0.y, m1.x, m1.y);
         });
       });
-      // the light pooling on both bezel lips
       const pools = this.linkPool(link.key);
-      const span = link.type === 'rail' || link.type === 'chute' || link.type === 'pipe' ? 64 : 50;
+      if (low) { pools.forEach((pool) => pool.setVisible(false)); return; }
+      // the light falling on both bezel lips (long along the lip), and the glow in the gap itself
+      const span = (link.type === 'rail' || link.type === 'chute' || link.type === 'pipe' ? 64 : 50) * 1.2;
       [p, q].forEach((pt, i) => {
-        pools[i].setVisible(true).setPosition(pt.x + (across ? (i ? 7 : -7) : 0), pt.y + (across ? 0 : i ? 7 : -7))
-          .setDisplaySize(across ? 36 : span * 1.15, across ? span * 1.15 : 36).setAlpha(clamp(0.5 * k, 0, 0.85));
+        const out = (i ? -1 : 1) * lip * 0.55;
+        pools[i].setVisible(true).setPosition(pt.x + (across ? out : 0), pt.y + (across ? 0 : out))
+          .setDisplaySize(across ? lip * 1.6 : span, across ? span : lip * 1.6).setAlpha(clamp(0.36 * k, 0, 0.66));
       });
+      const gap = Math.max(8, across ? q.x - p.x : q.y - p.y);
+      pools[2].setVisible(true).setPosition((p.x + q.x) / 2, (p.y + q.y) / 2)
+        .setDisplaySize(across ? gap * 1.3 : gap * 1.6, across ? gap * 1.6 : gap * 1.3).setAlpha(clamp(0.2 * k, 0, 0.45));
     });
     this.linkPools?.forEach((pools, key) => { if (!live.has(key)) pools.forEach((pool) => pool.setVisible(false)); });
   }
 
-  /** The two pooled-light sprites of a link (kept between frames). */
+  /** The pooled-light sprites of a link: one on each bezel lip, one in the gap (kept between frames). */
   linkPool(key) {
     if (!this.linkPools) this.linkPools = new Map();
     let pools = this.linkPools.get(key);
     if (!pools) {
-      pools = [0, 1].map(() => {
-        const img = this.add.image(0, 0, 'nsv-radial').setBlendMode('ADD').setTint(0xffb860).setVisible(false);
+      pools = [0xffb060, 0xffb060, 0xffa850].map((tint) => {
+        const img = this.add.image(0, 0, 'nsv-radial').setBlendMode('ADD').setTint(tint).setVisible(false);
         this.linkPoolLayer.add(img);
         return img;
       });
@@ -3793,10 +3841,10 @@ export class PanelScene extends Phaser.Scene {
     else stepModel(this.model, dt);
     const reduce = reducedMotionActive();
 
-    // lamps between the windows flicker
+    // lamps between the windows flicker, a little
     this.lampGlows.forEach((glow) => {
       const t = this.clock / 1000 + glow.seed;
-      glow.setAlpha(0.2 + Math.sin(t * 5.3) * 0.02 + Math.sin(t * 11.7) * 0.015 + (Math.sin(t * 0.6) > 0.992 ? -0.1 : 0));
+      glow.setAlpha(LAMP_GLOW + Math.sin(t * 5.3) * 0.012 + Math.sin(t * 11.7) * 0.008 + (Math.sin(t * 0.6) > 0.992 ? -0.05 : 0));
     });
 
     const lens = this.model.state.lens;
