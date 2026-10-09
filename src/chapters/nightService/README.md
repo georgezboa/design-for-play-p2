@@ -355,13 +355,13 @@ that failed to load gets the jointed figure instead.
 | Kind | Pose / state | Painted frame |
 | --- | --- | --- |
 | butch | `idle`, `stand` | `stand` (the walk sheet's standing figure, so walk ↔ stand matches) |
-| butch | moving | the 8-frame walk, played by distance walked |
+| butch | moving | the 8-frame walk (batch 2, `C-butch-walk.png`), played by distance walked |
 | butch | `sleep` | `sleep`: asleep at a small desk, on a stool, his lantern on the desk |
 | butch | `sit` | `sit` on a stool; after `sleep` he sits up **at** that desk (the `desk` overlay stays) |
 | butch | `sit-chair` | `sit` with the stool painted out, for a chair the plate already has |
 | butch | `ticket` | holding a ticket out at chest height (the other hand painted out) |
 | butch | `lantern`, `reach`, `receive` | lantern raised; reaching up; the open hand (also gesture `receive`) |
-| butch | `carrying: 'case'` | `carry` standing, `carry-walk` moving (one frame, a stepped dip: no painted carry cycle) |
+| butch | `carrying: 'case'` (or `true`) | `carry` standing; moving, the 6-frame carry walk (`C-butch-carry.png`, by distance); stopping from it, its passing pose (`carry-3` / `carry-6`), so the case keeps its shape |
 | butch | carrying anything else | the prop sprite (`props/*.webp`) at the frame's `hand` anchor |
 | conductor | `idle` | `lantern`: the lantern raised at the door |
 | conductor | gesture `offer` / punch hidden / gesture `rest` | `offer` (punch held out, lantern at his side) → `offer-empty` → `stand-empty` |
@@ -375,7 +375,8 @@ Anchors (local units from the feet, facing right): `rig.point('glow' | 'hand' | 
 the current frame. fx points written for the jointed figures (`rigPoint('conductor', 30, -48)` and the like) are
 moved onto the painted hands by `rig.mapPoint`. Lantern glows follow the painted lantern frame by frame.
 
-The walk: each walk cycle's stride, frame windows and per-frame pivot shifts are solved by the cutting script so
+The batch-2 sheets are graded to the first sheet's Butch (coat light and colour) and scaled by his cap's brim, so walk ↔
+stand does not pop. The walk: each walk cycle's stride, frame windows and per-frame pivot shifts are solved by the cutting script so
 the planted foot stays planted (the painted frames are unevenly spaced in time); within a frame the image is held
 back by half the distance walked (`lock`). Breathing is a < 1% scale at the feet; a pose change is a 240 ms
 crossfade. Regenerate the sprites with `python3 -I scripts/ch1-art/sprites.py [--preview DIR]`.

@@ -15,8 +15,9 @@ export const ATLAS = SPRITE_ATLAS;
 export const SPRITE_KEY_PREFIX = 'nsv-paint-';
 
 /**
- * Rig kinds with painted frames, and what each pose shows. `@walk` is the
- * character's walk cycle, played by distance walked. A pose not listed shows
+ * Rig kinds with painted frames, and what each pose shows. `@walk` (and
+ * `@carry`) is the character's walk cycle (with the case), played by
+ * distance walked. A pose not listed shows
  * the kind's `idle`. Poses the acts use today: sleep, sit, stand, idle, walk,
  * ticket (Butch); idle (the Conductor, with the gestures offer / rest);
  * idle, walk (Mara); the train has no poses.
@@ -40,7 +41,13 @@ export const SPRITE_RIGS = Object.freeze({
       carry: 'carry',
     }),
     // a carried thing with its own painted frames: [standing, walking]
-    carry: Object.freeze({ case: Object.freeze(['carry', 'carry-walk']) }),
+    // (`@carry`: the six-frame walk with the case, played by distance;
+    // `carrying: true` means the case)
+    carry: Object.freeze({ case: Object.freeze(['carry', '@carry']) }),
+    // stopping after a walk with the case, he stops in that sheet's passing
+    // pose (the step he is in), so the case does not change shape; a case
+    // received standing (Act 2) shows the standing carry frame
+    carryRest: Object.freeze({ case: Object.freeze(['carry-3', 'carry-6']) }),
     gestures: Object.freeze({ receive: Object.freeze({ frame: 'receive', ms: 1300 }) }),
     // drawn over 'sit' once he has slept at the desk (see atDesk)
     desk: 'desk',
@@ -51,7 +58,9 @@ export const SPRITE_RIGS = Object.freeze({
     legacyPoints: Object.freeze({
       '22,-63': Object.freeze(['ticket', 'ticket']), // act2 punchPop: the ticket held up
       '14,-40': Object.freeze(['receive', 'hand']), // act1 punchHandover: the open hand
-      '8,-34': Object.freeze(['carry', 'case']), // act2 caseDrop: into his arms
+      // act2 caseDrop: into his arms; act3 setCase: out of them (the case on
+      // the frame he shows, when it has one: a carry-walk frame)
+      '8,-34': Object.freeze(['carry', 'case', 'current']),
     }),
   }),
   conductor: Object.freeze({
@@ -98,8 +107,13 @@ export function framesOf(kind) {
   if (!spec) return [];
   const sheet = sheetOf(kind);
   const names = new Set([spec.idle]);
-  Object.values(spec.poses).forEach((f) => { if (f !== '@walk') names.add(f); else (sheet.cycles?.walk?.frames ?? []).forEach((n) => names.add(n)); });
-  Object.values(spec.carry ?? {}).forEach((pair) => pair.forEach((n) => names.add(n)));
+  const add = (f) => {
+    if (f.startsWith('@')) (sheet.cycles?.[f.slice(1)]?.frames ?? []).forEach((n) => names.add(n));
+    else names.add(f);
+  };
+  Object.values(spec.poses).forEach(add);
+  Object.values(spec.carry ?? {}).forEach((pair) => pair.forEach(add));
+  Object.values(spec.carryRest ?? {}).forEach((pair) => pair.forEach(add));
   Object.values(spec.gestures ?? {}).forEach((g) => names.add(g.frame));
   if (spec.desk) names.add(spec.desk);
   if (kind === 'conductor') ['offer-empty', 'stand-empty'].forEach((n) => names.add(n));
@@ -218,6 +232,11 @@ export function rigHeight(kind) {
   return sheet.rigHeight;
 }
 
+/** What is carried: `carrying: true` (as plates2's acts may say) is the case. */
+function carryName(carrying) {
+  return carrying === true ? 'case' : carrying;
+}
+
 const smooth = (t) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
 /**
@@ -231,14 +250,15 @@ export function createAnimator(kind) {
   const spec = SPRITE_RIGS[kind];
   const sheet = sheetOf(kind);
   if (!spec || !sheet) throw new Error(`no painted frames for rig kind ${kind}`);
-  const cycle = sheet.cycles?.walk ?? null;
+  const cycles = sheet.cycles ?? {};
   const st = {
     frame: spec.idle,
     prev: null,
     fade: 1,
     fadeMs: FADE_MS.pose,
     phase: 0, // distance into the walk cycle, local units
-    walking: false,
+    walking: null, // the cycle being played ('walk', 'carry'), or null
+    carryRest: null, // the frame he stopped in after a walk with the case
     gesture: null, // { frame, until }
     rest: null, // the Conductor's frame after the handover
     punchHidden: false,
@@ -253,8 +273,8 @@ export function createAnimator(kind) {
 
   function poseFrame(pose, moving, carrying) {
     if (pose === 'sleep') return spec.poses.sleep;
-    const carried = carrying ? spec.carry?.[carrying] : null;
-    if (carried) return moving ? carried[1] : carried[0];
+    const carried = carrying ? spec.carry?.[carryName(carrying)] : null;
+    if (carried) return moving ? carried[1] : (st.carryRest ?? carried[0]);
     if (moving) return spec.poses.walk ?? spec.idle;
     // a walker held at an edge keeps the pose 'walk' but stands
     if (pose === 'walk' || pose == null) return st.rest ?? spec.idle;
@@ -262,7 +282,7 @@ export function createAnimator(kind) {
     return spec.poses[pose] ?? spec.idle;
   }
 
-  function cycleFrame() {
+  function cycleFrame(cycle) {
     const L = cycle.stride;
     const p = ((st.phase % L) + L) % L;
     const at = cycle.at;
@@ -309,8 +329,11 @@ export function createAnimator(kind) {
     update(dt, { pose = 'idle', moving = false, time = st.clock + dt, carrying = null, travelled = 0 } = {}) {
       st.clock = time;
       const t = time / 1000;
+      carrying = carrying ? carryName(carrying) : null;
       const holding = Boolean(carrying && spec.carry?.[carrying]);
-      if (holding && !st.wasCarrying) st.stagger = 1;
+      // the first weight: a stagger when the case lands in his arms (not when
+      // he is placed already walking with it)
+      if (holding && !st.wasCarrying && !moving) st.stagger = 1;
       st.wasCarrying = holding;
       st.stagger = Math.max(0, st.stagger - dt / 1400);
       if (st.gesture && time >= st.gesture.until) st.gesture = null;
@@ -319,19 +342,31 @@ export function createAnimator(kind) {
       if (kind === 'conductor' && st.punchHidden && want === 'offer') want = 'offer-empty';
       let lock = 0;
       let bob = 0;
-      const startWalk = want === '@walk' && !st.walking;
-      if (want === '@walk' && cycle) {
-        if (startWalk) st.phase = 0; // every walk sets off from a contact frame
+      const wasWalking = st.walking;
+      const name = want.startsWith('@') ? want.slice(1) : null;
+      const cycle = name && moving ? cycles[name] : null;
+      if (cycle) {
+        // every walk sets off from a contact frame (and so does picking up
+        // or putting down the case mid-walk: a new cycle)
+        if (wasWalking !== name) st.phase = 0;
         st.phase += Math.max(0, travelled);
-        const c = cycleFrame();
+        const c = cycleFrame(cycle);
         lock = c.lock;
         want = c.frame;
-      } else if (want === '@walk') {
+      } else if (name) {
         want = spec.idle;
       }
-      const wasWalking = st.walking;
-      st.walking = Boolean(cycle) && cycle.frames.includes(want) && moving;
-      if (st.walking && wasWalking) setFrame(want, 0); // walk frames cut, never blend
+      // stopping a walk with the case: the passing pose of the step he is in
+      const rests = carrying ? spec.carryRest?.[carrying] : null;
+      if (wasWalking && !cycle && rests && cycles[wasWalking]) {
+        const L = cycles[wasWalking].stride;
+        const half = (((st.phase % L) + L) % L) / L < 0.5 ? 0 : 1;
+        st.carryRest = rests[half];
+        want = poseFrame(pose, moving, carrying);
+      }
+      if (cycle || !carrying) st.carryRest = null;
+      st.walking = cycle ? name : null;
+      if (st.walking && wasWalking === st.walking) setFrame(want, 0); // walk frames cut, never blend
       else setFrame(want, st.walking || wasWalking ? FADE_MS.walk : FADE_MS.pose);
       if (st.fade < 1) st.fade = Math.min(1, st.fade + dt / Math.max(1, st.fadeMs));
 
@@ -405,7 +440,8 @@ export function createAnimator(kind) {
     mapPoint(lx, ly) {
       const hit = spec.legacyPoints?.[`${lx},${ly}`];
       if (!hit) return [lx, ly];
-      return anchorPoint(kind, hit[0], hit[1]) ?? [lx, ly];
+      const now = hit[2] === 'current' ? anchorPoint(kind, st.frame, hit[1]) : null;
+      return now ?? anchorPoint(kind, hit[0], hit[1]) ?? [lx, ly];
     },
   };
   return api;
