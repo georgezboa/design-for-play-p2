@@ -1,0 +1,1544 @@
+{
+  "project": "NIGHTFALL",
+  "phase": "cutscenes (round 9)",
+  "output_folder": "NIGHTFALL art/cutscenes/",
+  "size": "1536x1024 landscape for every item",
+  "style_by_destination": {
+    "ch1": "inside the night service, the opening, the finale and the ending: ST1-a",
+    "ch2": "the rain city (Chapter 2): ST3-b",
+    "ch3": "Echo City (Chapter 3), Leone's West: ST4-b",
+    "ch4": "the painted country (Chapter 4): pencil on cream paper with gouache, refs/ref-ch4-*.jpg",
+    "ch5": "the museum (Chapter 5): ST1-a ink, walnut and brass, refs/ref-ch5-museum.jpg",
+    "sheet": "a cut-out object on grey"
+  },
+  "rules": [
+    "Generate the items in the order listed: a parent (zoom source), a pair source or a \"continues\" source always comes before the item that refers to it.",
+    "Pass every file in reference_images to the image tool (style-tests/ for ST*.png, ch1/ for A0-*/C-*, cutscenes/refs/ for refs/*, cutscenes/ for the rest).",
+    "Items with \"pair_of\" are the same picture with one change: make them with the image tool's edit mode from the pair_of image, so everything else stays put.",
+    "Items with \"chroma_window\": the window glass must be flat pure green #00FF00, nothing else green in the picture.",
+    "Name each output exactly as \"file\". If you make several variants, add -a, -b, -c before .png.",
+    "People only where the prompt says so. No text anywhere: the game writes every word (tags, tickets, signs, the letter, the card, the plate, ROSA, FILED).",
+    "Record each generation (file, prompt, source) in cutscenes/generation-prompts.json as before."
+  ],
+  "reused_from_ch1": {
+    "A0-office": "ch1/A0-office.png (Butch asleep)",
+    "A0-office-awake": "ch1/A0-office-awake.png",
+    "C-train": "ch1/C-train.png (lit carriage)",
+    "C-butch-poses": "ch1/C-butch-poses.png (walk)",
+    "C-mara": "ch1/C-mara.png (turning away)",
+    "panels": "Chapter 1 bezels around plates from the other cutscenes"
+  },
+  "storyboard": [
+    {
+      "id": "opening",
+      "length": "≈36 s",
+      "music": "1.1 Train Undertow",
+      "shots": [
+        {
+          "id": "viaduct",
+          "seconds": 8.5,
+          "plates": [
+            "OP-viaduct",
+            "C-train"
+          ],
+          "motion": "the lit train crosses; the camera follows it and closes on one lit window",
+          "join": "into the window: the window opens into the office",
+          "captions": [
+            {
+              "text": "The night service runs between stored places.\nThe archive calls it the last line."
+            }
+          ],
+          "sound": "rail, rain"
+        },
+        {
+          "id": "lost-property",
+          "seconds": 7,
+          "plates": [
+            "A0-office-awake"
+          ],
+          "motion": "down the shelves of tagged things to the desk; the lamp sways with the carriage",
+          "join": "fly into the case on the top shelf",
+          "captions": [
+            {
+              "text": "Everything left on board comes here, to Lost Property."
+            }
+          ],
+          "sound": "rain"
+        },
+        {
+          "id": "orchard-case",
+          "seconds": 5.5,
+          "plates": [
+            "OP-case"
+          ],
+          "motion": "slow push onto the tag; the claim number is on it",
+          "join": "tilt down to his hands",
+          "captions": [],
+          "sound": "paper"
+        },
+        {
+          "id": "the-tag",
+          "seconds": 8,
+          "plates": [
+            "OP-tag-front",
+            "OP-tag-back"
+          ],
+          "motion": "he turns the tag over: M. VELEZ · BELLWETHER",
+          "join": "pull back out to the desk",
+          "captions": [
+            {
+              "text": "The clerk, Butch, had filed it a hundred times.\nHe could not leave it alone."
+            }
+          ],
+          "sound": "paper"
+        },
+        {
+          "id": "asleep",
+          "seconds": 7.5,
+          "plates": [
+            "A0-office-awake",
+            "A0-office"
+          ],
+          "motion": "his head drops onto his arms; the lamp burns low; the carriage rocks",
+          "join": "to black, into Act 0",
+          "captions": [
+            {
+              "text": "The line keeps running while someone rides it."
+            }
+          ],
+          "sound": "rail; music out"
+        }
+      ]
+    },
+    {
+      "id": "chapter1To2",
+      "length": "≈34 s",
+      "music": "1.2 Train Resonance",
+      "shots": [
+        {
+          "id": "pulls-away",
+          "seconds": 9,
+          "plates": [
+            "C12-rack",
+            "C12-halt-out"
+          ],
+          "motion": "Bellwether slides away behind the glass; the case stays on the rack",
+          "join": "down to the ticket in his hand",
+          "captions": [
+            {
+              "text": "The orchard case stayed on the rack.\nHer other ticket did not."
+            }
+          ],
+          "sound": "rail, rain, whistle"
+        },
+        {
+          "id": "city-ticket",
+          "seconds": 6.5,
+          "plates": [
+            "C12-ticket"
+          ],
+          "motion": "CITY LINE · ONE WAY · 1978; a small tremor of the train",
+          "join": "pull back to the window",
+          "captions": [],
+          "sound": "paper"
+        },
+        {
+          "id": "city-ahead",
+          "seconds": 9.5,
+          "plates": [
+            "C12-window",
+            "C12-fields",
+            "C12-city"
+          ],
+          "motion": "fields scroll into the city; its five signs light one after another like a bell",
+          "join": "through the glass into the city",
+          "captions": [
+            {
+              "text": "The city ahead ran on light\nit had borrowed from the train."
+            }
+          ],
+          "sound": "rain, five soft bells"
+        },
+        {
+          "id": "city-terminal",
+          "seconds": 9.5,
+          "plates": [
+            "C12-terminal",
+            "C-butch-poses",
+            "C-mara"
+          ],
+          "motion": "CITY TERMINAL lights; Butch steps down; on the far roof a rose scarf turns away and is gone",
+          "join": "end",
+          "captions": [
+            {
+              "text": "One roof ahead.\nAlways one roof ahead."
+            }
+          ],
+          "sound": "brake, rain"
+        }
+      ]
+    },
+    {
+      "id": "chapter2To3",
+      "length": "≈37 s",
+      "music": "3.1 Satie, Gnossienne no. 1",
+      "shots": [
+        {
+          "id": "just-made-it",
+          "seconds": 7,
+          "plates": [
+            "C23-door"
+          ],
+          "motion": "the train pulls out; the coat corner flaps; the platform lamp slides away",
+          "join": "through the door window into the carriage",
+          "captions": [],
+          "sound": "rain, thud, whistle"
+        },
+        {
+          "id": "the-letter",
+          "seconds": 7.8,
+          "plates": [
+            "C23-letter"
+          ],
+          "motion": "the letter is legible: \"Butch — … KEEP MOVING. — M.\"; the lantern flickers",
+          "join": "up to the window",
+          "captions": [
+            {
+              "text": "The letter was a day old.\nIt read as if she had written it a minute ago."
+            }
+          ],
+          "sound": "paper"
+        },
+        {
+          "id": "filed-records",
+          "seconds": 6.4,
+          "plates": [
+            "C12-window",
+            "C23-records"
+          ],
+          "motion": "drawers and pages stream past; light grows at the end of the tunnel",
+          "join": "white-out into the sun",
+          "captions": [],
+          "sound": "rail, paper"
+        },
+        {
+          "id": "echo-city",
+          "seconds": 8.4,
+          "plates": [
+            "C23-echo"
+          ],
+          "motion": "hard sun, dust; the clock reads 14:20; drift right to the ticket board",
+          "join": "fly into the board",
+          "captions": [
+            {
+              "text": "Echo City keeps the afternoon\nits people remember."
+            }
+          ],
+          "sound": "brake, soft bell"
+        },
+        {
+          "id": "seat-43",
+          "seconds": 7.6,
+          "plates": [
+            "C23-board"
+          ],
+          "motion": "SEAT 43 on both tickets",
+          "join": "end",
+          "captions": [
+            {
+              "text": "Today it was keeping two tickets\nfor seat forty-three."
+            }
+          ],
+          "sound": "paper"
+        }
+      ]
+    },
+    {
+      "id": "chapter3To4",
+      "length": "≈37 s",
+      "music": "3.6 Chopin, Prelude op. 28 no. 4",
+      "shots": [
+        {
+          "id": "seat-43",
+          "seconds": 7.4,
+          "plates": [
+            "C34-seat",
+            "C34-dusk"
+          ],
+          "motion": "dusk country slides by; sun stripes flicker over the empty seat 43",
+          "join": "into the window",
+          "captions": [],
+          "sound": "rail, whistle"
+        },
+        {
+          "id": "colour-drains",
+          "seconds": 7.2,
+          "plates": [
+            "C34-dusk",
+            "C34-dusk-pencil"
+          ],
+          "motion": "the colour drains out of the country, leaving pencil lines",
+          "join": "the paper becomes a sheet on a table",
+          "captions": [],
+          "sound": "rail"
+        },
+        {
+          "id": "rosas-drawing",
+          "seconds": 6.6,
+          "plates": [
+            "C34-rosa"
+          ],
+          "motion": "ROSA signed in the corner",
+          "join": "hold",
+          "captions": [
+            {
+              "text": "Rosa Velez drew the orchard every summer."
+            }
+          ],
+          "sound": "paper"
+        },
+        {
+          "id": "filed",
+          "seconds": 7.6,
+          "plates": [
+            "C34-rosa",
+            "C34-rosa-grey"
+          ],
+          "motion": "a grey wash sweeps across; FILED stamps down",
+          "join": "into the grey",
+          "captions": [
+            {
+              "text": "The archive kept her drawings, and painted the colour out.\nColour is hard to file."
+            }
+          ],
+          "sound": "paper, thud"
+        },
+        {
+          "id": "still-red",
+          "seconds": 8.6,
+          "plates": [
+            "C34-arrive"
+          ],
+          "motion": "the train slows into the drawing; one fleck of red blooms at the hedge",
+          "join": "end",
+          "captions": [
+            {
+              "text": "Under the grey, a hawthorn was still red."
+            }
+          ],
+          "sound": "brake, soft bell"
+        }
+      ]
+    },
+    {
+      "id": "chapter4To5",
+      "length": "≈38 s",
+      "music": "3.5 Beethoven, Moonlight Sonata, mvt 1",
+      "shots": [
+        {
+          "id": "dries-to-ink",
+          "seconds": 7.6,
+          "plates": [
+            "C45-wet",
+            "C45-ink"
+          ],
+          "motion": "following the train into the dark, the wet colour dries into ink",
+          "join": "ink wipe",
+          "captions": [],
+          "sound": "rail"
+        },
+        {
+          "id": "walnut-hall",
+          "seconds": 7.2,
+          "plates": [
+            "C45-hall"
+          ],
+          "motion": "slow move in; the train stops; smoke hangs",
+          "join": "slide",
+          "captions": [],
+          "sound": "brake"
+        },
+        {
+          "id": "cases-light",
+          "seconds": 8.8,
+          "plates": [
+            "C45-cases",
+            "C45-cases-lit"
+          ],
+          "motion": "the four cases light one at a time",
+          "join": "fly into the fourth case",
+          "captions": [
+            {
+              "text": "The archive had filed his journey already."
+            }
+          ],
+          "sound": "four punches"
+        },
+        {
+          "id": "pending",
+          "seconds": 6.8,
+          "plates": [
+            "C45-card"
+          ],
+          "motion": "ACC. 1978-0412 · VELEZ, M. · PENDING types itself",
+          "join": "slide",
+          "captions": [
+            {
+              "text": "One object was still pending."
+            }
+          ],
+          "sound": "soft bell"
+        },
+        {
+          "id": "one-answer",
+          "seconds": 7.6,
+          "plates": [
+            "C45-archivist"
+          ],
+          "motion": "the lamp flickers; the shadow does not move",
+          "join": "end",
+          "captions": [
+            {
+              "speaker": "THE ARCHIVIST",
+              "text": "The museum will need one clean answer."
+            }
+          ],
+          "sound": "paper"
+        }
+      ]
+    },
+    {
+      "id": "chapter5-to-conductor",
+      "length": "≈37 s",
+      "music": "1.2 Train Resonance",
+      "shots": [
+        {
+          "id": "lamps-out",
+          "seconds": 7.6,
+          "plates": [
+            "C5C-gallery",
+            "C5C-rails"
+          ],
+          "motion": "the six lamps go out one by one; the inlay surfaces as rails",
+          "join": "ink",
+          "captions": [],
+          "sound": "five punches, rail"
+        },
+        {
+          "id": "worlds-stack",
+          "seconds": 7.4,
+          "plates": [
+            "panels"
+          ],
+          "motion": "the worlds slide in around Butch as Chapter 1 windows: the office, the rooftops, the square, the painted country",
+          "join": "fade",
+          "captions": [],
+          "sound": "paper ×4"
+        },
+        {
+          "id": "the-conductor",
+          "seconds": 6.6,
+          "plates": [
+            "C5C-conductor"
+          ],
+          "motion": "slow push down the carriage",
+          "join": "fly into his face",
+          "captions": [
+            {
+              "speaker": "THE CONDUCTOR",
+              "text": "Tickets, please."
+            }
+          ],
+          "sound": "punch"
+        },
+        {
+          "id": "close",
+          "seconds": 8.4,
+          "plates": [
+            "C5C-face"
+          ],
+          "motion": "the punch rises",
+          "join": "cut",
+          "captions": [
+            {
+              "speaker": "THE CONDUCTOR",
+              "text": "The line runs while someone rides it."
+            },
+            {
+              "speaker": "THE CONDUCTOR",
+              "text": "You are the someone."
+            }
+          ],
+          "sound": "soft bell"
+        },
+        {
+          "id": "raises-lamp",
+          "seconds": 5.4,
+          "plates": [
+            "C5C-raise"
+          ],
+          "motion": "Butch lifts his lantern; it flares",
+          "join": "to black, into Movement I",
+          "captions": [],
+          "sound": "whistle"
+        }
+      ]
+    },
+    {
+      "id": "chapter5-to-black-knife",
+      "length": "≈35 s",
+      "music": "1.1 Train Undertow",
+      "shots": [
+        {
+          "id": "five-stones",
+          "seconds": 8.6,
+          "plates": [
+            "CBK-palm"
+          ],
+          "motion": "each stone glows in turn",
+          "join": "ink",
+          "captions": [
+            {
+              "text": "Five things the archive could not file."
+            }
+          ],
+          "sound": "four soft bells, a bell"
+        },
+        {
+          "id": "last-carriage",
+          "seconds": 8,
+          "plates": [
+            "CBK-door"
+          ],
+          "motion": "LAST CARRIAGE on the plate; the little window flickers; move in",
+          "join": "through the window",
+          "captions": [],
+          "sound": "rail"
+        },
+        {
+          "id": "one-seat",
+          "seconds": 8.4,
+          "plates": [
+            "CBK-seat",
+            "CBK-ticket"
+          ],
+          "motion": "the black ticket floats above the seat, turning slowly",
+          "join": "back out to the door",
+          "captions": [
+            {
+              "text": "A ticket that is never punched…"
+            }
+          ],
+          "sound": "paper"
+        },
+        {
+          "id": "door-closes",
+          "seconds": 7.6,
+          "plates": [
+            "CBK-door-open",
+            "CBK-door-shut"
+          ],
+          "motion": "he steps in; the door shuts",
+          "join": "to black, into the fight",
+          "captions": [
+            {
+              "text": "…never ends its journey."
+            }
+          ],
+          "sound": "thud; music out"
+        }
+      ]
+    },
+    {
+      "id": "ending",
+      "length": "≈47 s",
+      "music": "6.5 Night Train Departure",
+      "shots": [
+        {
+          "id": "worlds-fold",
+          "seconds": 8.6,
+          "plates": [
+            "panels",
+            "END-walk-a"
+          ],
+          "motion": "the stacked worlds fold back, window by window, into one carriage",
+          "join": "slide",
+          "captions": [
+            {
+              "text": "The Conductor did not stop the train. Nobody could."
+            }
+          ],
+          "sound": "rail, paper ×4"
+        },
+        {
+          "id": "the-walk",
+          "seconds": 9,
+          "plates": [
+            "END-walk-a",
+            "END-walk-b",
+            "C-butch-poses"
+          ],
+          "motion": "Butch walks the length of the train, lamp in hand; the camera walks with him",
+          "join": "through the far door",
+          "captions": [],
+          "sound": "rail"
+        },
+        {
+          "id": "next-carriage",
+          "seconds": 8,
+          "plates": [
+            "END-mara"
+          ],
+          "motion": "slow push on the empty seat",
+          "join": "hold",
+          "captions": [
+            {
+              "text": "One carriage ahead, the seat beside her was empty at last."
+            }
+          ],
+          "sound": "rail"
+        },
+        {
+          "id": "beside-her",
+          "seconds": 11,
+          "plates": [
+            "END-mara",
+            "END-beside"
+          ],
+          "motion": "he sits down beside her; two lamps pass outside and sweep light across them",
+          "join": "slide",
+          "captions": [
+            {
+              "text": "He did not look for her reflection."
+            }
+          ],
+          "sound": "thud, rain"
+        },
+        {
+          "id": "viaduct",
+          "seconds": 10,
+          "plates": [
+            "OP-viaduct",
+            "C-train"
+          ],
+          "motion": "the night service crosses the viaduct from the opening and runs on into the dark",
+          "join": "end, then the STATUS: OPEN card",
+          "captions": [
+            {
+              "text": "The night service kept running."
+            }
+          ],
+          "sound": "rain, rail"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "OP-viaduct",
+      "file": "OP-viaduct.png",
+      "cutscene": "opening",
+      "title": "The empty viaduct in the rain (wide)",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A very long stone railway viaduct of many tall arches crossing a dark wooded valley at night in heavy rain, seen side-on from far away like a theatre backdrop; its top runs level from the LEFT edge to the RIGHT edge at about 40% of the image height, with a low parapet and a pair of rails; a deep black sky with heavy low cloud and a faint glow where the moon is hidden; the valley floor near-black with one thin glint of river under the arches; a few dark pines in the foreground at the bottom corners. The viaduct is EMPTY: no train on it. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the lit night train (C-train) crossing from left to right, rain, the wet shine of its windows on the parapet",
+      "notes": "Also the last shot of the ending.",
+      "zh": "空高架桥。游戏让 C-train 的亮窗火车从左开到右；结尾的最后一镜也用这张。"
+    },
+    {
+      "id": "OP-case",
+      "file": "OP-case.png",
+      "cutscene": "opening",
+      "title": "Close-up: the orchard case on the top shelf",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "A0-office-awake.png"
+      ],
+      "parent": "A0-office-awake",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up of the top shelf of the lost-property office from the reference A0-office-awake.png: the battered wooden orchard case with brass corners, a leather handle and a paper luggage tag tied to the handle with string, between a hat box and a bundle of letters; lit from below by the desk lamp; the tag hangs straight down facing us in the middle of the picture, an ivory card about the size of a hand with a printed border, blank. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "CLAIM 1978-0412 · ORCHARD CASE · UNCLAIMED on the tag",
+      "notes": "The camera flies into this from the case on the top shelf of A0-office-awake, so match that case.",
+      "zh": "从 A0-office-awake 顶层架子上的箱子推进来，箱子要和那张图里的一致；标签空白，字由游戏写。"
+    },
+    {
+      "id": "OP-tag-front",
+      "file": "OP-tag-front.png",
+      "cutscene": "opening",
+      "title": "Close-up: the tag in his hands, front",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up at the clerk's desk under the green-shaded lamp: two hands hold a paper luggage tag up towards the lamp by its two edges; the tag faces us, an ivory card with a printed border and a string through a brass eyelet at its left end, blank; behind, soft and dark, the walnut desk and the lamp's pool of light. BUTCH'S HANDS: weathered, older man's hands coming out of deep-navy greatcoat cuffs with a small aged-brass button; no face in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the front of the tag (CLAIM 1978-0412) and the flip to its back",
+      "notes": "",
+      "zh": "手持标签正面，空白。"
+    },
+    {
+      "id": "OP-tag-back",
+      "file": "OP-tag-back.png",
+      "cutscene": "opening",
+      "title": "Close-up: the tag turned over",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png",
+        "OP-tag-front.png"
+      ],
+      "parent": null,
+      "pair_of": "OP-tag-front",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference OP-tag-front.png, unchanged in every detail, except that the tag is turned over: we see its back, older and more yellowed, with a faded brown ink smudge across the middle where a name was written long ago (no readable letters). BUTCH'S HANDS: weathered, older man's hands coming out of deep-navy greatcoat cuffs with a small aged-brass button; no face in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "M. VELEZ · BELLWETHER in faded ink",
+      "notes": "Make it with the edit tool from OP-tag-front so the hands do not move.",
+      "zh": "同一张图，只把标签翻到背面。用编辑模式在 OP-tag-front 上改，手不要动。"
+    },
+    {
+      "id": "C12-rack",
+      "file": "C12-rack.png",
+      "cutscene": "chapter1To2",
+      "title": "In the carriage, leaving Bellwether: the rack and the window",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": true,
+      "prompt": "Inside a night-train carriage, seen straight on: a long window in the middle of the picture with a dark-wood frame and brass fittings, a red seat below it, and above it a brass luggage rack whose netting holds the battered wooden orchard case with a paper tag hanging from its handle, at the upper left, clearly visible; one wall lamp at the right; the rest in shadow. The window glass is filled with flat, perfectly even pure green (#00FF00): no reflections, no texture, no rain, no light on it, so the game can put a moving view behind it. Keep the green inside the glass only. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the moving view of Bellwether halt (C12-halt-out) behind the glass, rain on the glass, the lamp swaying",
+      "notes": "",
+      "zh": "车厢内，行李架上是果园箱。窗玻璃涂纯绿 #00FF00，游戏在后面放移动的窗外景。"
+    },
+    {
+      "id": "C12-halt-out",
+      "file": "C12-halt-out.png",
+      "cutscene": "chapter1To2",
+      "title": "Out of the window: Bellwether halt, night",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "The view out of a train window at night, side-on: a tiny country halt — a short wooden platform with one lamp post, a small blank station name board, a bench — running out of the LEFT edge; behind it a hawthorn hedge, apple trees and, far off, one lit house window; the right half of the picture is open dark fields under rain; the horizon at about 55% of the image height. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "slides left behind the C12-rack window as the train pulls away",
+      "notes": "",
+      "zh": "窗外的贝尔韦瑟小站，从左边出画，右半边是黑田野。"
+    },
+    {
+      "id": "C12-ticket",
+      "file": "C12-ticket.png",
+      "cutscene": "chapter1To2",
+      "title": "Close-up: the city-line ticket",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up: one hand holds a small stiff railway ticket by its edge in warm lamplight; the ticket is an ivory card with a printed border, blank, with one round punched hole near its right end; behind it, soft and dark, the carriage window and the brass rack. BUTCH'S HANDS: weathered, older man's hands coming out of deep-navy greatcoat cuffs with a small aged-brass button; no face in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "CITY LINE · ONE WAY · 1978 on the ticket",
+      "notes": "",
+      "zh": "手里的车票，空白。"
+    },
+    {
+      "id": "C12-window",
+      "file": "C12-window.png",
+      "cutscene": "chapter1To2",
+      "title": "The carriage window (frame for moving views)",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": true,
+      "prompt": "A night-train carriage window seen straight on from inside, filling most of the picture: a heavy dark-wood frame with brass fittings, short dark-teal velvet curtains tied back at both sides, a narrow sill with a small brass ashtray; one warm lamp from the left lights the frame and the curtain folds. The window glass is filled with flat, perfectly even pure green (#00FF00): no reflections, no texture, no rain, no light on it, so the game can put a moving view behind it. Keep the green inside the glass only. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the fields-to-city view (C12-fields, C12-city) scrolling behind the glass; reused in 2→3 (the records) and 3→4",
+      "notes": "",
+      "zh": "一扇车窗（窗玻璃纯绿），三段过场都用它看窗外。"
+    },
+    {
+      "id": "C12-fields",
+      "file": "C12-fields.png",
+      "cutscene": "chapter1To2",
+      "title": "Out of the window: night fields giving way to the city",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Night fields seen side-on from a moving train: dark ploughed fields and hedgerows under a black sky with a thin moon, a row of telegraph poles; the horizon at about 55% of the image height; towards the RIGHT edge the first dark city buildings start to rise, and at the right edge itself a row of tenement roofs begins at the same horizon. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "Its right edge leads into C12-city: same horizon height.",
+      "zh": "夜里的田野，右边开始出现城市，地平线和 C12-city 对齐。"
+    },
+    {
+      "id": "C12-city",
+      "file": "C12-city.png",
+      "cutscene": "chapter1To2",
+      "title": "Out of the window: the rain city",
+      "size": "1536x1024",
+      "style": "ch2",
+      "reference_images": [
+        "ST3-b.png",
+        "ST1-a.png",
+        "C12-fields.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": {
+        "from": "C12-fields",
+        "edge": "the left edge continues the right edge of C12-fields"
+      },
+      "chroma_window": false,
+      "prompt": "Continue the reference C12-fields.png beyond its right edge, with the same horizon height: a city of rooftops in heavy rain at night seen side-on from a train — water towers, chimneys, tenement roofs, iron footbridges between roofs, rows of small lit windows — and five large blank signboards standing on roofs at different heights across the picture, their faces flat dark with no words. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The rain city at night: cold teal signs and amber lamps are the only colour; rain streaks are lit only inside a lamp's cone. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette and lighting of the reference image ST3-b.png exactly.",
+      "game_adds": "the five signs light one after another, like a bell (teal and amber)",
+      "notes": "",
+      "zh": "雨夜城市，五块空白招牌，游戏让它们像钟声一样依次亮起。"
+    },
+    {
+      "id": "C12-terminal",
+      "file": "C12-terminal.png",
+      "cutscene": "chapter1To2",
+      "title": "CITY TERMINAL: the rooftop platform",
+      "size": "1536x1024",
+      "style": "ch2",
+      "reference_images": [
+        "ST3-b.png",
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A rooftop railway platform at night in heavy rain, seen side-on like a theatre backdrop: a long plank platform on a tenement roof with a low parapet, an iron canopy on thin posts, one hanging lamp with rain lit in its cone, a station clock on a post, and a big blank signboard hanging over the platform (its face plain dark, no words); the night train stands along the LEFT third, one door open with warm light; across a street-gap behind, a lower roof, and beyond it a far roof with a water tower and one small lamp. The platform is empty. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The rain city at night: cold teal signs and amber lamps are the only colour; rain streaks are lit only inside a lamp's cone. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette and lighting of the reference image ST3-b.png exactly.",
+      "game_adds": "CITY TERMINAL lit on the board; Butch steps down from the train (sprite); on the far roof a small figure in a rose scarf turns away and is gone (C-mara)",
+      "notes": "Leave the far roof clear and lit by its lamp: that is where Mara stands.",
+      "zh": "屋顶站台，空无一人。招牌字、Butch 下车、远处屋顶上的 Mara 都由游戏加。"
+    },
+    {
+      "id": "C23-door",
+      "file": "C23-door.png",
+      "cutscene": "chapter2To3",
+      "title": "Just made it: the coat caught in the door",
+      "size": "1536x1024",
+      "style": "ch2",
+      "reference_images": [
+        "ST3-b.png",
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close and side-on, at night in heavy rain: the side of the night train pulling out of a rooftop station, one carriage door just slammed shut, and a corner of a long deep-navy greatcoat caught in the door, sticking out and flapping in the wind; through the door's small window a warm lamp and the shoulder and cap of a man inside, his back to us; rain streaks lit by a platform lamp; wet planks sliding by at the bottom. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The rain city at night: cold teal signs and amber lamps are the only colour; rain streaks are lit only inside a lamp's cone. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette and lighting of the reference image ST3-b.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "刚赶上车，大衣角夹在门缝里。"
+    },
+    {
+      "id": "C23-letter",
+      "file": "C23-letter.png",
+      "cutscene": "chapter2To3",
+      "title": "The letter by lamplight",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up in a dim night-train carriage, lit by a small oil lantern on the seat: two hands hold open a short letter on ivory notepaper; the writing area is blank, only faint ruled lines, so the words can be written in; the lantern's amber light falls across the paper and the cuffs, the rest dark teal shadow. BUTCH'S HANDS: weathered, older man's hands coming out of deep-navy greatcoat cuffs with a small aged-brass button; no face in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the letter: \"Butch — … KEEP MOVING. — M.\"",
+      "notes": "",
+      "zh": "灯下的信，纸面空白，字由游戏写。"
+    },
+    {
+      "id": "C23-records",
+      "file": "C23-records.png",
+      "cutscene": "chapter2To3",
+      "title": "Out of the window: the tunnel of filed records",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A tunnel made of an archive, seen side-on as if from a train window: endless walls of small wooden filing drawers with brass handles and blank label frames, stacked from the bottom edge to the top edge, running straight across the whole picture; a few loose pages caught in the air; dim, warm light far off. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "seen through C12-window, scrolling fast with motion blur, pages fluttering past, sunlight growing at the end",
+      "notes": "",
+      "zh": "档案隧道，横向连续，游戏让它在窗外快速滚过。"
+    },
+    {
+      "id": "C23-echo",
+      "file": "C23-echo.png",
+      "cutscene": "chapter2To3",
+      "title": "Echo City, 14:20: arriving",
+      "size": "1536x1024",
+      "style": "ch3",
+      "reference_images": [
+        "ST4-b.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Echo City at two in the afternoon, seen from a train arriving at its station, wide: a stone platform in the foreground under a long iron-and-glass canopy that throws a hard black shadow; beyond it a sun-baked town square of ochre and terracotta stone, arcades with near-black shadows, a stone clock tower centre-right with a big round clock face left blank (no hands, no numerals); on the platform at the right, a tall wooden ticket board with notices pinned to it. Nobody about. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: a painted cinematic illustration lit and coloured like a 1960s Italian western shot in wide anamorphic Techniscope: bleached, almost white pale-blue sky; sun-baked ochre, sienna and terracotta stone; deep, hard, near-black shadows under arcades and doorways; dust in the air; high contrast, warm saturated earth tones against a cool sky; slight film grain; crisp, hot, harsh light. Not sepia, not hazy, not golden hour unless the prompt says dusk. Painterly, grounded, consistent scale. No 3D render look, no anime, no text, no letters, no numbers, no watermark. Match the colour, light and grain of the reference image ST4-b.png exactly.",
+      "game_adds": "the clock hands at 14:20, dust in the light, the camera drifting right to the board",
+      "notes": "",
+      "zh": "回声城下午两点二十。钟面空白，指针由游戏画。"
+    },
+    {
+      "id": "C23-board",
+      "file": "C23-board.png",
+      "cutscene": "chapter2To3",
+      "title": "Close-up: two tickets for seat 43",
+      "size": "1536x1024",
+      "style": "ch3",
+      "reference_images": [
+        "ST4-b.png",
+        "C23-echo.png"
+      ],
+      "parent": "C23-echo",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up of the wooden ticket board on the station platform from the reference C23-echo.png, in hard afternoon sun with a sharp diagonal shadow across it: sun-faded green paint, pinned paper notices, and in the middle two small ivory railway tickets pinned side by side, both blank. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: a painted cinematic illustration lit and coloured like a 1960s Italian western shot in wide anamorphic Techniscope: bleached, almost white pale-blue sky; sun-baked ochre, sienna and terracotta stone; deep, hard, near-black shadows under arcades and doorways; dust in the air; high contrast, warm saturated earth tones against a cool sky; slight film grain; crisp, hot, harsh light. Not sepia, not hazy, not golden hour unless the prompt says dusk. Painterly, grounded, consistent scale. No 3D render look, no anime, no text, no letters, no numbers, no watermark. Match the colour, light and grain of the reference image ST4-b.png exactly.",
+      "game_adds": "SEAT 43 on both tickets",
+      "notes": "The camera flies into this from the board in C23-echo, so match that board.",
+      "zh": "站台告示板特写，两张空白车票，字由游戏写。要和 C23-echo 里的告示板一致。"
+    },
+    {
+      "id": "C34-seat",
+      "file": "C34-seat.png",
+      "cutscene": "chapter3To4",
+      "title": "Leaving Echo City at dusk: seat 43 empty",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png",
+        "C-butch-poses.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": true,
+      "prompt": "Inside the night train at dusk, seen straight on: two red seats side by side under a window; Butch sits on the LEFT seat, seen side-on, looking at the RIGHT seat, which is empty, with a small blank brass number plate on its back; low burnt-orange sunlight lays long hard stripes across the seats and the floor, everything outside the stripes in deep shadow. The window glass is filled with flat, perfectly even pure green (#00FF00): no reflections, no texture, no rain, no light on it, so the game can put a moving view behind it. Keep the green inside the glass only. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "43 on the plate; the dusk country (C34-dusk) moving behind the glass; the sun stripes flicker past poles",
+      "notes": "",
+      "zh": "黄昏车厢，Butch 坐左边，右边 43 号座空着。窗玻璃纯绿。"
+    },
+    {
+      "id": "C34-dusk",
+      "file": "C34-dusk.png",
+      "cutscene": "chapter3To4",
+      "title": "Out of the window: the West at dusk",
+      "size": "1536x1024",
+      "style": "ch3",
+      "reference_images": [
+        "ST4-b.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "The country outside Echo City at dusk, seen side-on from a moving train: a low burnt-orange sun near the horizon, long hard shadows, sun-baked hills, a few dark cypresses, a white farmhouse, telegraph poles; the horizon at about 55% of the image height. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: a painted cinematic illustration lit and coloured like a 1960s Italian western shot in wide anamorphic Techniscope: bleached, almost white pale-blue sky; sun-baked ochre, sienna and terracotta stone; deep, hard, near-black shadows under arcades and doorways; dust in the air; high contrast, warm saturated earth tones against a cool sky; slight film grain; crisp, hot, harsh light. Not sepia, not hazy, not golden hour unless the prompt says dusk. Painterly, grounded, consistent scale. No 3D render look, no anime, no text, no letters, no numbers, no watermark. Match the colour, light and grain of the reference image ST4-b.png exactly.",
+      "game_adds": "",
+      "notes": "Its pencil twin C34-dusk-pencil must match it line for line.",
+      "zh": "黄昏的西部原野。"
+    },
+    {
+      "id": "C34-dusk-pencil",
+      "file": "C34-dusk-pencil.png",
+      "cutscene": "chapter3To4",
+      "title": "The same country, drained to pencil",
+      "size": "1536x1024",
+      "style": "ch4",
+      "reference_images": [
+        "refs/ref-ch4-yard.jpg",
+        "refs/ref-ch4-line.jpg",
+        "refs/ref-ch4-studio.jpg",
+        "C34-dusk.png"
+      ],
+      "parent": null,
+      "pair_of": "C34-dusk",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference C34-dusk.png, the same composition line for line, but redrawn as a soft graphite pencil line drawing on warm cream paper with no colour at all. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: a soft graphite pencil line drawing on warm cream drawing paper (#EFE6D2) with visible paper tooth and light hatching, the lines a little wobbly like a careful hand; colour only where the prompt asks for it, as loose transparent gouache blooms that pool and stop short of the pencil lines, in a few clean pigments (hawthorn red #B0342A, leaf green, sky blue, ochre); lots of bare paper; flat, side-on composition like a picture book or a theatre backdrop. No 3D, no photorealism, no anime, no text, no letters, no numbers, no watermark. Match the look of the Chapter 4 references (ref-ch4-*.jpg): pencil on cream paper with gouache colour.",
+      "game_adds": "the colour drains out across the window, leaving these lines",
+      "notes": "Make it with the edit tool from C34-dusk.",
+      "zh": "同一张图改成纯铅笔线稿（用编辑模式），游戏让颜色从画面里褪掉。"
+    },
+    {
+      "id": "C34-rosa",
+      "file": "C34-rosa.png",
+      "cutscene": "chapter3To4",
+      "title": "Rosa's drawing",
+      "size": "1536x1024",
+      "style": "ch4",
+      "reference_images": [
+        "refs/ref-ch4-yard.jpg",
+        "refs/ref-ch4-line.jpg",
+        "refs/ref-ch4-studio.jpg"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Seen from straight above, a child's drawing on a sheet of cream drawing paper lying on a dark walnut table under warm lamplight, the paper filling most of the frame: drawn in wax crayon and gouache by a child of about eight — an orchard of round apple trees, a white house with a red roof and one yellow window, a big round sun, and a long red hawthorn hedge across the bottom; bright, happy and simple; an empty space in the lower right corner of the paper where a name would be signed. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: a soft graphite pencil line drawing on warm cream drawing paper (#EFE6D2) with visible paper tooth and light hatching, the lines a little wobbly like a careful hand; colour only where the prompt asks for it, as loose transparent gouache blooms that pool and stop short of the pencil lines, in a few clean pigments (hawthorn red #B0342A, leaf green, sky blue, ochre); lots of bare paper; flat, side-on composition like a picture book or a theatre backdrop. No 3D, no photorealism, no anime, no text, no letters, no numbers, no watermark. Match the look of the Chapter 4 references (ref-ch4-*.jpg): pencil on cream paper with gouache colour.",
+      "game_adds": "ROSA signed in a child's hand in the corner",
+      "notes": "",
+      "zh": "罗莎的儿童画（蜡笔加水粉），右下角留空给签名。"
+    },
+    {
+      "id": "C34-rosa-grey",
+      "file": "C34-rosa-grey.png",
+      "cutscene": "chapter3To4",
+      "title": "Rosa's drawing, filed",
+      "size": "1536x1024",
+      "style": "ch4",
+      "reference_images": [
+        "refs/ref-ch4-yard.jpg",
+        "refs/ref-ch4-line.jpg",
+        "refs/ref-ch4-studio.jpg",
+        "C34-rosa.png"
+      ],
+      "parent": null,
+      "pair_of": "C34-rosa",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference C34-rosa.png, the same drawing line for line, but painted over with a flat, even grey archive wash so every colour is gone and only grey pencil and crayon marks show through; one small patch of the red hedge near the lower right still shows faintly through the grey. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: a soft graphite pencil line drawing on warm cream drawing paper (#EFE6D2) with visible paper tooth and light hatching, the lines a little wobbly like a careful hand; colour only where the prompt asks for it, as loose transparent gouache blooms that pool and stop short of the pencil lines, in a few clean pigments (hawthorn red #B0342A, leaf green, sky blue, ochre); lots of bare paper; flat, side-on composition like a picture book or a theatre backdrop. No 3D, no photorealism, no anime, no text, no letters, no numbers, no watermark. Match the look of the Chapter 4 references (ref-ch4-*.jpg): pencil on cream paper with gouache colour.",
+      "game_adds": "the grey wash sweeps across; a red FILED stamp lands",
+      "notes": "Make it with the edit tool from C34-rosa.",
+      "zh": "同一张画被灰色档案颜料刷过（用编辑模式），只剩右下一点红。"
+    },
+    {
+      "id": "C34-arrive",
+      "file": "C34-arrive.png",
+      "cutscene": "chapter3To4",
+      "title": "Into the unfinished drawing",
+      "size": "1536x1024",
+      "style": "ch4",
+      "reference_images": [
+        "refs/ref-ch4-yard.jpg",
+        "refs/ref-ch4-line.jpg",
+        "refs/ref-ch4-studio.jpg"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "The Chapter 4 world: a pencil-drawn railway on cream paper running from the LEFT edge into an unfinished drawing of an orchard country — a few hills and apple trees half sketched, a house in outline only, and a long hedge drawn in grey pencil along a lane in the lower right; an old steam locomotive with two carriages, drawn in pencil, arrives from the left, slowing; most of the paper bare. All graphite, no colour. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: a soft graphite pencil line drawing on warm cream drawing paper (#EFE6D2) with visible paper tooth and light hatching, the lines a little wobbly like a careful hand; colour only where the prompt asks for it, as loose transparent gouache blooms that pool and stop short of the pencil lines, in a few clean pigments (hawthorn red #B0342A, leaf green, sky blue, ochre); lots of bare paper; flat, side-on composition like a picture book or a theatre backdrop. No 3D, no photorealism, no anime, no text, no letters, no numbers, no watermark. Match the look of the Chapter 4 references (ref-ch4-*.jpg): pencil on cream paper with gouache colour.",
+      "game_adds": "one fleck of red gouache blooms through the grey at the hedge",
+      "notes": "",
+      "zh": "火车开进没画完的铅笔世界。红色由游戏在树篱上晕开。"
+    },
+    {
+      "id": "C45-wet",
+      "file": "C45-wet.png",
+      "cutscene": "chapter4To5",
+      "title": "The painted train runs into the dark",
+      "size": "1536x1024",
+      "style": "ch4",
+      "reference_images": [
+        "refs/ref-ch4-yard.jpg",
+        "refs/ref-ch4-line.jpg",
+        "refs/ref-ch4-studio.jpg"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Side-on: a small steam locomotive and two carriages freshly painted in bright gouache — hawthorn red, ochre, sky blue and leaf green — the paint still wet and dripping, running to the right along pencil rails on cream paper, towards a solid wall of black ink darkness that fills the right half of the picture. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: a soft graphite pencil line drawing on warm cream drawing paper (#EFE6D2) with visible paper tooth and light hatching, the lines a little wobbly like a careful hand; colour only where the prompt asks for it, as loose transparent gouache blooms that pool and stop short of the pencil lines, in a few clean pigments (hawthorn red #B0342A, leaf green, sky blue, ochre); lots of bare paper; flat, side-on composition like a picture book or a theatre backdrop. No 3D, no photorealism, no anime, no text, no letters, no numbers, no watermark. Match the look of the Chapter 4 references (ref-ch4-*.jpg): pencil on cream paper with gouache colour.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "刚涂好颜色的火车（水粉未干）开向右边的一片黑。"
+    },
+    {
+      "id": "C45-ink",
+      "file": "C45-ink.png",
+      "cutscene": "chapter4To5",
+      "title": "The same train, dried into ink",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "C45-wet.png"
+      ],
+      "parent": null,
+      "pair_of": "C45-wet",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference C45-wet.png, line for line, but the train's paint has dried into dark brown-black ink with thin brass-coloured lines like an engraving, and the cream paper around it has darkened to walnut brown. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the wet colour dries into ink from front to back as the camera follows",
+      "notes": "Make it with the edit tool from C45-wet.",
+      "zh": "同一张图，颜色干成墨（用编辑模式）。"
+    },
+    {
+      "id": "C45-hall",
+      "file": "C45-hall.png",
+      "cutscene": "chapter4To5",
+      "title": "The walnut hall",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A vast dark museum hall of walnut panelling, seen straight on like a theatre set: tall brass double doors at the back centre, a parquet floor with iron rails set into it running from the LEFT edge to the doors, and the night train (dark carriages, one warm lamp at the front) standing on the rails at the left, a little smoke hanging under the ceiling; small warm lamps on brass brackets along the walls; cream plaster high above lost in darkness. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the train lamp, the smoke drifting, the camera moving slowly in",
+      "notes": "",
+      "zh": "胡桃木大厅，火车停在里面。"
+    },
+    {
+      "id": "C45-cases",
+      "file": "C45-cases.png",
+      "cutscene": "chapter4To5",
+      "title": "Four display cases, dark",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "C45-hall.png"
+      ],
+      "parent": "C45-hall",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A row of four glass display cases on walnut stands down a dark museum gallery (the same museum as C45-hall.png), seen side-on, evenly spaced across the picture, each case dark, its glass catching only faint light, a small blank brass label plate on each stand; parquet floor; deep shadow. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "四个陈列柜，暗着。"
+    },
+    {
+      "id": "C45-cases-lit",
+      "file": "C45-cases-lit.png",
+      "cutscene": "chapter4To5",
+      "title": "Four display cases, lit, holding his journey",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "C45-cases.png"
+      ],
+      "parent": null,
+      "pair_of": "C45-cases",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference C45-cases.png, unchanged, except every case is now lit warmly from inside, and each holds one object: case 1 (left) a small punched railway ticket stub; case 2 a folded handwritten letter; case 3 two small railway tickets side by side; case 4 (right) a child's crayon drawing of an orchard with a red hedge. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the cases light one at a time with a punch sound each",
+      "notes": "Make it with the edit tool from C45-cases.",
+      "zh": "同一张图，四个柜子亮起来，里面是这一路的东西（用编辑模式）。游戏一个一个点亮。"
+    },
+    {
+      "id": "C45-card",
+      "file": "C45-card.png",
+      "cutscene": "chapter4To5",
+      "title": "Close-up: the accession card",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "C45-cases-lit.png"
+      ],
+      "parent": "C45-cases-lit",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up inside the fourth lit glass case from the reference C45-cases-lit.png: a typed museum accession card standing in a small brass holder — an ivory card with a printed border, blank — beside the corner of the child's crayon drawing; warm light from above, the edge of the glass catching a thin line of light. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "ACC. 1978-0412 · VELEZ, M. · PENDING typed onto the card",
+      "notes": "",
+      "zh": "第四个柜子里的登记卡特写，卡片空白，字由游戏打出来。"
+    },
+    {
+      "id": "C45-archivist",
+      "file": "C45-archivist.png",
+      "cutscene": "chapter4To5",
+      "title": "The Archivist",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A dark archive desk at the far end of the museum: a brass desk lamp with a green shade lights an open ledger and a stack of index cards; behind it a tall figure stands in deep shadow, only the outline of shoulders and a high collar visible, the face entirely lost in darkness; the wall behind is all small card drawers with brass handles. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "Never a face.",
+      "zh": "档案员：灯后的一个黑影，看不到脸。"
+    },
+    {
+      "id": "C5C-gallery",
+      "file": "C5C-gallery.png",
+      "cutscene": "chapter5-to-conductor",
+      "title": "The gallery, lamps lit",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "ST5-a.png",
+        "C-butch-poses.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "A long museum gallery seen straight down its length in one-point perspective: walnut walls hung with dark picture frames, a row of six brass lamps hanging down the middle, all lit, receding to a far dark doorway; the parquet floor has two long brass inlay lines running straight to the vanishing point; Butch stands small in the middle distance, his back to us, holding up his lantern. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "长廊，六盏灯亮着，地板上两道铜线。"
+    },
+    {
+      "id": "C5C-rails",
+      "file": "C5C-rails.png",
+      "cutscene": "chapter5-to-conductor",
+      "title": "The gallery, lamps out, inlay become rails",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "ST5-a.png",
+        "C-butch-poses.png",
+        "C5C-gallery.png"
+      ],
+      "parent": null,
+      "pair_of": "C5C-gallery",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference C5C-gallery.png, unchanged, except every hanging lamp is dark, the only light is Butch's lantern, and the two brass inlay lines in the floor are now real iron railway rails on wooden sleepers, running to the far doorway. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "the lamps go out one at a time; the rails surface",
+      "notes": "Make it with the edit tool from C5C-gallery.",
+      "zh": "同一张图，灯全灭，铜线变成铁轨（用编辑模式）。游戏一盏一盏关灯。"
+    },
+    {
+      "id": "C5C-conductor",
+      "file": "C5C-conductor.png",
+      "cutscene": "chapter5-to-conductor",
+      "title": "The Conductor at the far end",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "C-conductor.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Straight down the length of a dark railway carriage: at the far end the Conductor stands in a single pool of lamplight from above, facing us, holding out a ticket punch in his right hand; the carriage walls on both sides are lined with small framed windows, each showing a different dim lit world — a lost-property office, a rainy rooftop city, a sunny stone square, a pencil-drawn orchard; the near floor in darkness. THE CONDUCTOR: tall, heavy-set railway conductor, the same man as C-conductor.png: peaked cap with a brass badge, deep shadow over the eyes with two small lamp-lit glints, grey moustache and short grey beard, long dark uniform greatcoat, a watch chain; holds a ticket punch. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "车厢尽头的列车长，两侧小窗里是四个世界。"
+    },
+    {
+      "id": "C5C-face",
+      "file": "C5C-face.png",
+      "cutscene": "chapter5-to-conductor",
+      "title": "Close-up: the Conductor",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "C-conductor.png",
+        "C5C-conductor.png"
+      ],
+      "parent": "C5C-conductor",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up of the Conductor's face and shoulders, front view, lit from below by a lantern: the cap with its brass badge, deep shadow over the eyes with two small lamp-lit glints, grey moustache and beard, the heavy dark uniform collar and watch chain; he raises the ticket punch beside his face; the background black. THE CONDUCTOR: tall, heavy-set railway conductor, the same man as C-conductor.png: peaked cap with a brass badge, deep shadow over the eyes with two small lamp-lit glints, grey moustache and short grey beard, long dark uniform greatcoat, a watch chain; holds a ticket punch. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "列车长特写。"
+    },
+    {
+      "id": "C5C-raise",
+      "file": "C5C-raise.png",
+      "cutscene": "chapter5-to-conductor",
+      "title": "Butch raises his lamp",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png",
+        "C-butch-poses.png",
+        "C-conductor.png",
+        "C5C-conductor.png"
+      ],
+      "parent": "C5C-conductor",
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "The same carriage as the reference C5C-conductor.png, seen from just behind Butch: Butch in the near foreground on the LEFT, seen from behind (cap, turned-up greatcoat collar), raising his lantern high; far down the carriage the Conductor stands small in his pool of light. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. THE CONDUCTOR: tall, heavy-set railway conductor, the same man as C-conductor.png: peaked cap with a brass badge, deep shadow over the eyes with two small lamp-lit glints, grey moustache and short grey beard, long dark uniform greatcoat, a watch chain; holds a ticket punch. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "从 Butch 背后看：他举灯，远处是列车长。"
+    },
+    {
+      "id": "CBK-palm",
+      "file": "CBK-palm.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "Five stones in his palm",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Close-up of an open right hand, palm up, held out in the dark; in the palm five small stones glowing softly from inside: an ember-red one, a sage-green one with fine lines like a grid, a pale sky-blue translucent one, an ochre-gold one flecked with spots of paint colour, and a black one shaped like the torn corner of a ticket with a violet glint on its edge; their glow lights the fingers; everything else black. BUTCH'S HANDS: weathered, older man's hands coming out of deep-navy greatcoat cuffs with a small aged-brass button; no face in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "each stone glows in turn with a soft bell",
+      "notes": "",
+      "zh": "掌心五颗石头：红、带网格的灰绿、浅蓝、带颜料点的金、像车票一角的黑石。"
+    },
+    {
+      "id": "CBK-door",
+      "file": "CBK-door.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "LAST CARRIAGE: the door",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "ST5-a.png",
+        "C-butch-poses.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "The far end of a dark walnut museum gallery: set into the end wall, an old railway carriage door that does not belong there — dark oxblood lacquer, a small window with a faint cold light behind it, a polished brass name plate on the door (blank) and a brass handle; Butch stands before it, small, on the LEFT, seen from behind with his lantern; parquet floor. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "LAST CARRIAGE on the brass plate",
+      "notes": "",
+      "zh": "走廊尽头一扇不该在这里的车厢门，铜牌空白。"
+    },
+    {
+      "id": "CBK-door-open",
+      "file": "CBK-door-open.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "He steps in",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "ST5-a.png",
+        "C-butch-poses.png",
+        "CBK-door.png"
+      ],
+      "parent": null,
+      "pair_of": "CBK-door",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference CBK-door.png, unchanged, except the door stands open onto darkness and Butch, seen from behind, is stepping through it, his lantern going in first. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "Make it with the edit tool from CBK-door.",
+      "zh": "同一张图，门开了，Butch 走进去（用编辑模式）。"
+    },
+    {
+      "id": "CBK-door-shut",
+      "file": "CBK-door-shut.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "The door closes",
+      "size": "1536x1024",
+      "style": "ch5",
+      "reference_images": [
+        "ST1-a.png",
+        "refs/ref-ch5-museum.jpg",
+        "CBK-door.png"
+      ],
+      "parent": null,
+      "pair_of": "CBK-door",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference CBK-door.png, unchanged, except Butch is gone and the door is shut, its little window dark. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. The museum: dark walnut panelling, aged brass fittings and glass vitrines, cream plaster high up lost in darkness, lit only by small warm lamps (its layout is the museum in ref-ch5-museum.jpg). No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "Make it with the edit tool from CBK-door.",
+      "zh": "同一张图，人不见了，门关上，小窗黑了（用编辑模式）。"
+    },
+    {
+      "id": "CBK-seat",
+      "file": "CBK-seat.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "Inside: one seat",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Inside an empty, dark railway carriage: one single red seat in the centre lit from directly above by a thin cold light, nothing else; the walls and windows dark; the air above the seat empty. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "a black ticket floats above the seat (CBK-ticket)",
+      "notes": "",
+      "zh": "车厢里只有一个座位，上方留空，游戏放漂浮的黑车票。"
+    },
+    {
+      "id": "CBK-ticket",
+      "file": "CBK-ticket.png",
+      "cutscene": "chapter5-to-black-knife",
+      "title": "The black ticket (cut-out)",
+      "size": "1536x1024",
+      "style": "sheet",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "One black railway ticket, never punched, with a thin worn gold border and rounded corners, blank, seen straight on. Plain flat mid-grey (#7F7F7F) background, nothing else, the object fully visible with space around it. STYLE: hand-inked editorial illustration; fine dip-pen linework; flat matte gouache colour; realistic proportions; subtle paper grain. Even soft light so every part reads clearly. No glossy highlights, no 3D render look, no photorealism, no text, no watermark. Match the style and line quality of ST1-a.png.",
+      "game_adds": "cut out and floated above the seat",
+      "notes": "",
+      "zh": "一张黑车票，灰底，游戏抠出来。"
+    },
+    {
+      "id": "END-walk-a",
+      "file": "END-walk-a.png",
+      "cutscene": "ending",
+      "title": "The length of the train (left half)",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Inside the night train, a long carriage interior seen side-on like a theatre set: a row of windows on the far wall with the night outside, red seats, two hanging lamps, a corridor floor running straight from the LEFT edge to the RIGHT edge at about 74% of the image height; at the right a connecting door standing open into the next carriage. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "Butch walks the corridor (walk sprite), the lamps sway",
+      "notes": "",
+      "zh": "长车厢侧视（左半），地板线 74%。"
+    },
+    {
+      "id": "END-walk-b",
+      "file": "END-walk-b.png",
+      "cutscene": "ending",
+      "title": "The length of the train (right half)",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "END-walk-a.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": {
+        "from": "END-walk-a",
+        "edge": "the left edge continues the right edge of END-walk-a"
+      },
+      "chroma_window": false,
+      "prompt": "Continue the reference END-walk-a.png beyond its right edge: through the open connecting door into the next carriage, the same floor line at 74% of the image height, the same wall, windows and seats, two more hanging lamps, a second connecting door at the right edge. No people and no animals in the picture (the game adds the characters). FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame and pans across the whole width, so keep everything important inside the middle 76% of the height and spread the interest across the width. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "接 END-walk-a 的右边继续（右半）。"
+    },
+    {
+      "id": "END-mara",
+      "file": "END-mara.png",
+      "cutscene": "ending",
+      "title": "One carriage ahead: the empty seat beside her",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "C-mara.png"
+      ],
+      "parent": null,
+      "pair_of": null,
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Inside a quiet night-train carriage, seen from just behind a row of two seats: a woman sits by the window on the RIGHT seat, seen from behind; the LEFT seat beside her is empty; the black window in front of her shows only a soft blur of lamplight in its reflection, no face; one lamp above. MARA: a woman seen only from behind, never her face, the same woman as C-mara.png: dark hair in a low bun, a long dark coat and a rose-red (#C8506A) scarf, the only rose colour in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "",
+      "notes": "",
+      "zh": "Mara 坐在右边靠窗，背对我们；左边的座位空着；窗里的倒影只是一团灯光，没有脸。"
+    },
+    {
+      "id": "END-beside",
+      "file": "END-beside.png",
+      "cutscene": "ending",
+      "title": "He sits down beside her",
+      "size": "1536x1024",
+      "style": "ch1",
+      "reference_images": [
+        "ST1-a.png",
+        "ST5-a.png",
+        "C-butch-poses.png",
+        "C-mara.png",
+        "END-mara.png"
+      ],
+      "parent": null,
+      "pair_of": "END-mara",
+      "continues": null,
+      "chroma_window": false,
+      "prompt": "Exactly the same picture as the reference END-mara.png, unchanged, except Butch now sits in the empty LEFT seat beside her, seen from behind (cap, turned-up collar), his lantern on the floor by his boots; in the black window their reflections are only soft blurs of lamplight, no faces. BUTCH: a lean, tired railway lost-property clerk in his fifties, about 1.75 m tall; peaked railway cap with a short black brim and a small brass badge; long deep-navy greatcoat to the knee with a row of small aged-brass buttons; dark trousers, worn boots; carries a small oil lantern with a warm amber flame. Same face and costume as ST5-a.png and the C-butch-poses.png sheet. MARA: a woman seen only from behind, never her face, the same woman as C-mara.png: dark hair in a low bun, a long dark coat and a rose-red (#C8506A) scarf, the only rose colour in the picture. FRAMING: landscape 3:2. The game crops the top 12% and the bottom 12% to a 2:1 frame, so keep everything important inside the middle 76% of the height; keep the main subject inside the middle third of the width, because narrow screens crop the sides. STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.",
+      "game_adds": "two lamps pass outside and sweep light across them",
+      "notes": "Make it with the edit tool from END-mara.",
+      "zh": "同一张图，Butch 坐到她旁边（用编辑模式）。"
+    }
+  ]
+}

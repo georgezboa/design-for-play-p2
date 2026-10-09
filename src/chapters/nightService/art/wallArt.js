@@ -206,7 +206,7 @@ export function brassBar(c, atlas, x, y, w, h, { seed = 3, radius = h / 2, shade
 }
 
 /** A walnut fill over a rect: the seamless tile, optionally turned (horizontal grain). */
-function walnutFill(c, img, x, y, w, h, { turn = false, dx = 0, dy = 0, scale = 1 } = {}) {
+export function walnutFill(c, img, x, y, w, h, { turn = false, dx = 0, dy = 0, scale = 1 } = {}) {
   const pattern = c.createPattern(img, 'repeat');
   if (pattern?.setTransform && typeof DOMMatrix !== 'undefined') {
     let m = new DOMMatrix().translate(dx, dy);

@@ -1,5 +1,12 @@
 # Cutscenes — authoring guide
 
+> **Round 9: the painted cutscenes.** Each of the eight now has a painted
+> twin in `painted/` (George's paintings; docs/CUTSCENES_PAINTED.md). It
+> plays once all of its paintings are in, and the drawn one described below
+> plays until then. The painted ones are built with `painted/kit.js` and
+> `painted/scene.js`, and add the joins `zoom`, `pull` and `white`. Every
+> cutscene now hangs in Chapter 1's painted window.
+
 The eight transitions are in-engine cutscenes drawn in Chapter 1's ink
 language (docs/CUTSCENES_SPEC.md is the script; docs/STORY_BIBLE.md wins
 where they disagree). All eight are authored; the films they replaced

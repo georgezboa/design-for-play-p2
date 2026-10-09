@@ -12,8 +12,9 @@ import { music } from '../../shared/musicDirector.js';
 import { devRoutesEnabled } from '../../devMode.js';
 import { brassFill, rivet, rng, roundRectPath, vgrad, wood } from '../../chapters/nightService/art/ink.js';
 import {
-  STAGE, buildTimeline, cameraAt, createSession, panelLayout, parallaxOffset, stageView,
+  EASE, STAGE, buildTimeline, cameraAt, createSession, flightView, mapIntoRect, panelLayout, parallaxOffset, stageView, viewTransform,
 } from './timeline.js';
+import { BEZEL, BEZEL_LIP, CHROME_TEXTURES, RADIUS, brassFrame, walnutFill } from '../../chapters/nightService/art/wallArt.js';
 import { createCutsceneSfx } from './sfx.js';
 import { isSoftwareRenderer, nativeRequestAnimationFrame, setPageCovered } from '../framePacing.js';
 import { useSoftwareCanvas } from './painters.js';
@@ -139,6 +140,103 @@ function paintFrame(L, k) {
 }
 
 // ---------------------------------------------------------------------------
+// round 9 · the painted chrome: the painted cutscenes hang in Chapter 1's own
+// window (George's matte bezel and walnut, public/assets/ch1-painted/chrome),
+// not the round-6 procedural brass.
+
+const chromeImages = { bezel: null, walnut: null, promise: null };
+function loadChrome() {
+  if (chromeImages.promise || typeof Image === 'undefined') return chromeImages.promise ?? Promise.resolve();
+  const load = (key) => new Promise((resolve) => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.onload = () => { chromeImages[key] = image; resolve(); };
+    image.onerror = () => resolve();
+    image.src = CHROME_TEXTURES[key].url;
+  });
+  chromeImages.promise = Promise.all([load('bezel'), load('walnut')]);
+  return chromeImages.promise;
+}
+
+/** Bezel thickness (screen px) for a layout: Chapter 1's 13 tile px band, scaled to this window. */
+export function paintedBezelScale(L) {
+  return Math.max(1.2, (L.frame * 2) / BEZEL);
+}
+
+function paintPaintedWall(L, k) {
+  const canvas = makeCanvas(L.W * k, L.H * k);
+  const c = ctx2d(canvas);
+  c.setTransform(k, 0, 0, k, 0, 0);
+  if (chromeImages.walnut) walnutFill(c, chromeImages.walnut, 0, 0, L.W, L.H, { dx: -137, dy: -41, scale: Math.max(0.6, L.H / 1080) });
+  else wood(c, 0, 0, L.W, L.H, { base: '#1a110b', vertical: true, seed: 7101, grain: 'rgba(0,0,0,0.3)' });
+  c.fillStyle = 'rgba(6, 4, 2, 0.34)';
+  c.fillRect(0, 0, L.W, L.H);
+  const p = L.panel;
+  [0.18, 0.82].forEach((at) => {
+    const g = c.createRadialGradient(p.x + p.w * at, p.y - 6, 0, p.x + p.w * at, p.y - 6, p.h * 0.45);
+    g.addColorStop(0, 'rgba(255, 190, 110, 0.10)');
+    g.addColorStop(1, 'rgba(255, 190, 110, 0)');
+    c.fillStyle = g;
+    c.fillRect(0, 0, L.W, L.H);
+  });
+  const vg = c.createRadialGradient(L.W / 2, L.H * 0.46, L.H * 0.3, L.W / 2, L.H * 0.46, L.W * 0.7);
+  vg.addColorStop(0, 'rgba(0,0,0,0)');
+  vg.addColorStop(1, 'rgba(0,0,0,0.62)');
+  c.fillStyle = vg;
+  c.fillRect(0, 0, L.W, L.H);
+  return canvas;
+}
+
+function paintPaintedFrame(L, k) {
+  const { w, h } = L.panel;
+  const s = paintedBezelScale(L);
+  const t = (BEZEL + BEZEL_LIP) * s;
+  const pad = BEZEL * s + 24;
+  const canvas = makeCanvas((w + pad * 2) * k, (h + pad * 2) * k);
+  const c = ctx2d(canvas);
+  c.setTransform(k, 0, 0, k, 0, 0);
+  c.translate(pad, pad);
+  const B = BEZEL * s;
+  // the bezel's shadow on the wall, then the hole cut back out
+  c.save();
+  c.shadowColor = 'rgba(0, 0, 0, 0.7)';
+  c.shadowBlur = 24;
+  c.shadowOffsetY = 8;
+  c.fillStyle = '#20160c';
+  roundRectPath(c, -B, -B, w + B * 2, h + B * 2, L.panel.r + B);
+  c.fill();
+  c.restore();
+  c.save();
+  c.globalCompositeOperation = 'destination-out';
+  roundRectPath(c, 0, 0, w, h, L.panel.r);
+  c.fill();
+  c.restore();
+  // the picture sits back from the bezel: a soft shadow round its edge
+  c.save();
+  roundRectPath(c, 0, 0, w, h, L.panel.r);
+  c.clip();
+  c.shadowColor = 'rgba(0, 0, 0, 0.78)';
+  c.shadowBlur = 14 * s;
+  c.lineWidth = 14 * s;
+  c.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+  roundRectPath(c, -7 * s, -7 * s, w + 14 * s, h + 14 * s, L.panel.r + 7 * s);
+  c.stroke();
+  c.restore();
+  if (chromeImages.bezel) brassFrame(c, chromeImages.bezel, -B, -B, w + B * 2, h + B * 2, t, { rivets: 'mid', seed: 5 });
+  else {
+    c.save();
+    c.fillStyle = '#6e5532';
+    roundRectPath(c, -B, -B, w + B * 2, h + B * 2, L.panel.r + B);
+    c.fill();
+    c.globalCompositeOperation = 'destination-out';
+    roundRectPath(c, 0, 0, w, h, L.panel.r);
+    c.fill();
+    c.restore();
+  }
+  return { canvas, pad };
+}
+
+// ---------------------------------------------------------------------------
 
 /**
  * Mount a cutscene definition into `root`. Returns the controller gameFlow.js
@@ -187,6 +285,8 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   let shownCaption = null;
   let musicStarted = false;
   const stats = { frames: 0, samples: [], ticks: 0, longTicks: 0, maxStep: 0 };
+  // every cutscene hangs in Chapter 1's painted window now; 'drawn' keeps the round-6 brass
+  const paintedChrome = def.chrome !== 'drawn';
 
   const layout = () => {
     L = panelLayout(window.innerWidth, window.innerHeight, { textScale: options.textScale });
@@ -196,8 +296,15 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     canvas.height = Math.round(L.H * k);
     canvas.style.width = `${L.W}px`;
     canvas.style.height = `${L.H}px`;
-    wall = paintWall(L, k);
-    frame = paintFrame(L, k);
+    if (paintedChrome) {
+      // the hole takes the painted ring's own inner curve
+      L.panel.r = Math.round(RADIUS * paintedBezelScale(L));
+      wall = paintPaintedWall(L, k);
+      frame = paintPaintedFrame(L, k);
+    } else {
+      wall = paintWall(L, k);
+      frame = paintFrame(L, k);
+    }
     buffer.canvas = makeCanvas(L.panel.w * k, L.panel.h * k);
     buffer.ctx = ctx2d(buffer.canvas);
     root.style.setProperty('--nf-cap-top', `${L.captionTop + Math.min((L.H - L.captionTop) / 2, 70)}px`);
@@ -261,11 +368,15 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     };
   };
 
-  /** Paint one shot into `c`, in panel space (0, 0 is the panel's corner). */
-  const drawShot = (c, layer) => {
+  /** Paint one shot into `c`, in panel space (0, 0 is the panel's corner); `viewRect` (stage units) overrides its camera (a zoom join). */
+  const drawShot = (c, layer, viewRect = null) => {
     const shot = def.shots[layer.index];
-    const cam = cameraAt(shot.camera, layer.local, { reducedMotion: options.reducedMotion });
-    const view = stageView(L.panel.w, L.panel.h, cam);
+    let cam = cameraAt(shot.camera, layer.local, { reducedMotion: options.reducedMotion });
+    let view = stageView(L.panel.w, L.panel.h, cam);
+    if (viewRect) {
+      view = viewTransform(viewRect, L.panel.w);
+      cam = { x: (viewRect.x + viewRect.w / 2) / STAGE.w, y: (viewRect.y + viewRect.h / 2) / STAGE.h, zoom: (STAGE.w / viewRect.w) * (Math.max(L.panel.w / STAGE.w, L.panel.h / STAGE.h) / (L.panel.w / STAGE.w)) };
+    }
     c.save();
     c.translate(view.tx, view.ty);
     c.scale(view.scale, view.scale);
@@ -325,6 +436,96 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     return { xAt, band };
   };
 
+  /**
+   * Gorogoa's join. `zoom`: the camera flies into `rect` of the outgoing
+   * picture, where the next one is its close-up, and the close-up fades up
+   * over it on the way in; `pull`: the camera flies back out of the outgoing
+   * close-up into the next picture, where it sits at `rect`. Either way the
+   * last frame of the join is exactly the inner picture's own framing.
+   */
+  const drawRectJoin = (c, a, b, tr) => {
+    const p = L.panel;
+    const zoom = tr.type === 'zoom';
+    const outer = zoom ? a : b;
+    const inner = zoom ? b : a;
+    const rect = typeof tr.rect === 'function' ? tr.rect(a.local) : tr.rect;
+    const e = (EASE[tr.ease] ?? EASE.inOut)(tr.progress);
+    const camOf = (layer) => cameraAt(def.shots[layer.index].camera, layer.local, { reducedMotion: options.reducedMotion });
+    const vOuter = stageView(p.w, p.h, camOf(outer)).view;
+    const vInner = stageView(p.w, p.h, camOf(inner)).view;
+    const vInnerInOuter = mapIntoRect(vInner, rect);
+    const view = zoom ? flightView(vOuter, vInnerInOuter, e) : flightView(vInnerInOuter, vOuter, e);
+    const [r0, r1] = tr.reveal ?? [0.3, 0.8];
+    const k01 = Math.max(0, Math.min(1, (tr.progress - r0) / Math.max(0.01, r1 - r0)));
+    const reveal = k01 * k01 * (3 - 2 * k01);
+    const innerAlpha = zoom ? reveal : 1 - reveal;
+    c.save();
+    c.translate(p.x, p.y);
+    c.fillStyle = '#05070b';
+    c.fillRect(0, 0, p.w, p.h);
+    clipPanel(c, 0, 0);
+    drawShot(c, outer, view);
+    c.restore();
+    if (innerAlpha > 0.002) {
+      // the inner picture, in the outer one's rect, through the buffer so its layers fade as one
+      const bc = buffer.ctx;
+      bc.setTransform(1, 0, 0, 1, 0, 0);
+      bc.clearRect(0, 0, buffer.canvas.width, buffer.canvas.height);
+      const T = viewTransform(view, p.w);
+      bc.save();
+      bc.setTransform(k, 0, 0, k, 0, 0);
+      bc.translate(T.tx, T.ty);
+      bc.scale(T.scale, T.scale);
+      bc.translate(rect[0], rect[1]);
+      bc.scale(rect[2] / STAGE.w, rect[3] / STAGE.h);
+      bc.beginPath();
+      bc.rect(0, 0, STAGE.w, STAGE.h);
+      bc.clip();
+      bc.fillStyle = '#05070b';
+      bc.fillRect(0, 0, STAGE.w, STAGE.h);
+      const shot = def.shots[inner.index];
+      const camI = camOf(inner);
+      const viewI = stageView(p.w, p.h, camI);
+      try { shot.draw(bc, inner.local, STAGE.w, STAGE.h, envFor(inner.index, inner, camI, viewI)); } catch (error) {
+        if (!drawRectJoin.warned) console.warn('[cutscene] join failed', shot.id, error);
+        drawRectJoin.warned = true;
+      }
+      bc.restore();
+      // soft edges while the inner picture is still a picture inside the other one
+      const feather = (tr.feather ?? 0.1) * (1 - e);
+      if (feather > 0.002) {
+        const X = T.tx + rect[0] * T.scale;
+        const Y = T.ty + rect[1] * T.scale;
+        const W = rect[2] * T.scale;
+        const H = rect[3] * T.scale;
+        const fx = Math.min(0.49, feather);
+        const fy = Math.min(0.49, feather * 2);
+        bc.save();
+        bc.setTransform(k, 0, 0, k, 0, 0);
+        bc.globalCompositeOperation = 'destination-in';
+        const gx = bc.createLinearGradient(X, 0, X + W, 0);
+        gx.addColorStop(0, 'rgba(0,0,0,0)'); gx.addColorStop(fx, '#000'); gx.addColorStop(1 - fx, '#000'); gx.addColorStop(1, 'rgba(0,0,0,0)');
+        bc.fillStyle = gx;
+        bc.fillRect(0, 0, p.w, p.h);
+        const gy = bc.createLinearGradient(0, Y, 0, Y + H);
+        gy.addColorStop(0, 'rgba(0,0,0,0)'); gy.addColorStop(fy, '#000'); gy.addColorStop(1 - fy, '#000'); gy.addColorStop(1, 'rgba(0,0,0,0)');
+        bc.fillStyle = gy;
+        bc.fillRect(0, 0, p.w, p.h);
+        bc.restore();
+      }
+      c.save();
+      clipPanel(c, p.x, p.y);
+      c.globalAlpha = innerAlpha;
+      c.setTransform(1, 0, 0, 1, 0, 0);
+      c.drawImage(buffer.canvas, Math.round(p.x * k), Math.round(p.y * k));
+      c.restore();
+    }
+    c.save();
+    c.translate(p.x, p.y);
+    c.drawImage(frame.canvas, -frame.pad, -frame.pad, p.w + frame.pad * 2, p.h + frame.pad * 2);
+    c.restore();
+  };
+
   const render = () => {
     if (!L) return;
     const start = performance.now();
@@ -353,6 +554,16 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       ctx.fillStyle = `rgba(3, 4, 7, ${first ? tr.progress * 2 : (1 - tr.progress) * 2})`;
       ctx.fillRect(p.x, p.y, p.w, p.h);
       ctx.restore();
+    } else if (tr.type === 'white') {
+      const first = tr.progress < 0.5;
+      panelAt(ctx, first ? a : b);
+      ctx.save();
+      clipPanel(ctx, p.x, p.y);
+      ctx.fillStyle = `rgba(252, 244, 226, ${first ? tr.progress * 2 : (1 - tr.progress) * 2})`;
+      ctx.fillRect(p.x, p.y, p.w, p.h);
+      ctx.restore();
+    } else if (tr.type === 'zoom' || tr.type === 'pull') {
+      drawRectJoin(ctx, a, b, tr);
     } else if (tr.type === 'cut') {
       panelAt(ctx, b);
     } else {
@@ -545,6 +756,8 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     async start() {
       if (started || destroyed) return;
       started = true;
+      if (paintedChrome) await Promise.race([loadChrome(), new Promise((resolve) => setTimeout(resolve, 1200))]);
+      if (destroyed) return;
       layout();
       // the plates, tags and letters are lettered in the house faces (Jost,
       // EB Garamond): canvas text keeps whatever face is loaded when it is
@@ -555,7 +768,7 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       if (typeof def.prepare === 'function') {
         await Promise.race([
           Promise.resolve().then(() => def.prepare()).catch(() => {}),
-          new Promise((resolve) => setTimeout(resolve, 1500)),
+          new Promise((resolve) => setTimeout(resolve, def.prepareTimeoutMs ?? 1500)),
         ]);
       }
       if (destroyed) return;

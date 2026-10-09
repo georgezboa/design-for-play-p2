@@ -11,6 +11,9 @@
 // Adding a cutscene: write src/shell/cutscene/scenes/<name>.js (README.md)
 // and add one line to CUTSCENE_LOADERS.
 
+import { COMPLETE } from './painted/plates.generated.js';
+import { devParam } from '../../devMode.js';
+
 export const CUTSCENE_IDS = Object.freeze([
   'opening',
   'chapter1To2',
@@ -34,8 +37,8 @@ export const FILM_NAMES = Object.freeze({
   ending: 'end',
 });
 
-/** Authored cutscenes, each its own chunk. */
-export const CUTSCENE_LOADERS = Object.freeze({
+/** The round-6 drawn cutscenes, each its own chunk. */
+export const DRAWN_LOADERS = Object.freeze({
   opening: () => import('./scenes/opening.js'),
   chapter1To2: () => import('./scenes/chapter1To2.js'),
   chapter2To3: () => import('./scenes/chapter2To3.js'),
@@ -45,6 +48,39 @@ export const CUTSCENE_LOADERS = Object.freeze({
   'chapter5-to-conductor': () => import('./scenes/chapter5-to-conductor.js'),
   'chapter5-to-black-knife': () => import('./scenes/chapter5-to-black-knife.js'),
 });
+
+/**
+ * Round 9 · the painted cutscenes (painted/, docs/CUTSCENES_PAINTED.md):
+ * George's paintings. One plays instead of its drawn twin once every one of
+ * its paintings is in (plates.generated.js COMPLETE, written by
+ * scripts/cutscene-art/build.py); until then the drawn one plays. Dev
+ * builds: `?cutscenes=painted` plays the painted ones with stand-ins,
+ * `?cutscenes=drawn` the drawn ones.
+ */
+export const PAINTED_LOADERS = Object.freeze({
+  opening: () => import('./painted/opening.js'),
+  chapter1To2: () => import('./painted/chapter1To2.js'),
+  chapter2To3: () => import('./painted/chapter2To3.js'),
+  chapter3To4: () => import('./painted/chapter3To4.js'),
+  chapter4To5: () => import('./painted/chapter4To5.js'),
+  'chapter5-to-conductor': () => import('./painted/chapter5-to-conductor.js'),
+  'chapter5-to-black-knife': () => import('./painted/chapter5-to-black-knife.js'),
+  ending: () => import('./painted/ending.js'),
+});
+
+/** Which version of a cutscene plays: 'painted' or 'drawn'. Pure: `complete` and `flag` are passed in by the caller in tests. */
+export function cutsceneVersion(name, { complete = COMPLETE, flag = devParam('cutscenes') ?? null, painted = PAINTED_LOADERS } = {}) {
+  if (!painted[name]) return 'drawn';
+  if (flag === 'drawn') return 'drawn';
+  if (flag === 'painted') return 'painted';
+  return complete[name] === true ? 'painted' : 'drawn';
+}
+
+/** Authored cutscenes: the painted version where it is ready, else the drawn one. */
+export const CUTSCENE_LOADERS = Object.freeze(Object.fromEntries(Object.keys(DRAWN_LOADERS).map((name) => [
+  name,
+  () => (cutsceneVersion(name) === 'painted' ? PAINTED_LOADERS[name]() : DRAWN_LOADERS[name]()),
+])));
 
 const fold = (value) => String(value ?? '').trim().toLowerCase().replace(/[^a-z0-9]/g, '');
 

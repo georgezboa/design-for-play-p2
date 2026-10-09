@@ -15,9 +15,18 @@ export const STAGE = Object.freeze({ w: 1600, h: 800 });
 export const CAPTION_MIN_S = 2.5;
 /** The longest single clock step: a hitch never skips content. */
 export const MAX_STEP_S = 0.25;
-/** Join types, best first (docs/CUTSCENES_SPEC.md: slide, ink, crossfade). */
-export const TRANSITIONS = Object.freeze(['slide', 'ink', 'fade', 'black', 'cut']);
-const MOVING_TRANSITIONS = new Set(['slide', 'ink']);
+/**
+ * Join types, best first (docs/CUTSCENES_SPEC.md: slide, ink, crossfade).
+ * The painted cutscenes (round 9) add Gorogoa's joins: `zoom` flies the
+ * camera into a rect of the outgoing picture where the next one lives (its
+ * close-up), `pull` flies back out of the outgoing picture into the rect of
+ * the next one that holds it, and `white` goes through a hot white (out of
+ * a tunnel into the sun).
+ */
+export const TRANSITIONS = Object.freeze(['slide', 'ink', 'zoom', 'pull', 'fade', 'black', 'white', 'cut']);
+const MOVING_TRANSITIONS = new Set(['slide', 'ink', 'zoom', 'pull']);
+/** The joins that carry a rect: [x, y, w, h] in stage units (or a function of the outgoing shot's progress returning one). */
+export const RECT_TRANSITIONS = new Set(['zoom', 'pull']);
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const round = (v) => Math.round(v * 1000) / 1000;
@@ -42,6 +51,10 @@ export function effectiveTransition(transition, { reducedMotion = false } = {}) 
   const type = TRANSITIONS.includes(transition?.type) ? transition.type : 'fade';
   const duration = type === 'cut' ? 0 : Math.max(0, Number(transition?.duration ?? 0.9));
   if (reducedMotion && MOVING_TRANSITIONS.has(type)) return { type: 'fade', duration };
+  if (RECT_TRANSITIONS.has(type)) {
+    if (!transition?.rect) return { type: 'fade', duration };
+    return { type, duration, rect: transition.rect, ease: transition.ease ?? 'inOut', reveal: transition.reveal ?? [0.3, 0.8], feather: transition.feather ?? 0.1 };
+  }
   return { type, duration };
 }
 
@@ -93,6 +106,7 @@ export function frameAt(timeline, time) {
     const progress = span > 0 ? clamp((t - to.start) / span, 0, 1) : 1;
     layers = [layer(from), layer(to)];
     transition = { type: from.transition.type, progress: round(progress), from: from.index, to: to.index };
+    if (RECT_TRANSITIONS.has(from.transition.type)) Object.assign(transition, { rect: from.transition.rect, ease: from.transition.ease, reveal: from.transition.reveal, feather: from.transition.feather });
   } else if (!layers.length && timeline.shots.length) {
     layers = [layer(timeline.shots[timeline.shots.length - 1])];
   }
@@ -170,6 +184,38 @@ export function panelLayout(width, height, { textScale = 1 } = {}) {
   return { W, H, margin: round(margin), frame: round(frame), panel, captionTop: round(panel.y + panel.h + frame), captionWidth: round(Math.min(1180, Math.max(panel.w, Math.min(W - 24, 560)))) };
 }
 
+/** A shot's view rect (stage units) mapped into `rect` of another picture's stage: where it sits in that picture. */
+export function mapIntoRect(view, rect, stage = STAGE) {
+  const [rx, ry, rw, rh] = rect;
+  const sx = rw / stage.w;
+  const sy = rh / stage.h;
+  return { x: round(rx + view.x * sx), y: round(ry + view.y * sy), w: round(view.w * sx), h: round(view.h * sy) };
+}
+
+/**
+ * The camera's flight from view rect `a` to view rect `b` (same aspect) at
+ * eased progress `e`: the width changes geometrically (a steady push-in at
+ * any depth) and the centre travels so the shrinking view closes on `b`
+ * along a straight line, as a dolly into a picture does.
+ */
+export function flightView(a, b, e) {
+  const k = clamp(e, 0, 1);
+  const w = a.w ** (1 - k) * b.w ** k;
+  const ac = { x: a.x + a.w / 2, y: a.y + a.h / 2 };
+  const bc = { x: b.x + b.w / 2, y: b.y + b.h / 2 };
+  const f = Math.abs(a.w - b.w) > 1e-6 ? (w - b.w) / (a.w - b.w) : 1 - k;
+  const cx = bc.x + (ac.x - bc.x) * f;
+  const cy = bc.y + (ac.y - bc.y) * f;
+  const h = w * (a.h / a.w);
+  return { x: round(cx - w / 2), y: round(cy - h / 2), w: round(w), h: round(h) };
+}
+
+/** The transform that shows view rect `view` (stage units) in a panel `pw` px wide. */
+export function viewTransform(view, pw) {
+  const scale = pw / view.w;
+  return { scale: round(scale * 1e3) / 1e3, tx: round(-view.x * scale), ty: round(-view.y * scale), view };
+}
+
 /** How far a layer at `depth` (1 = the stage plane, 0 = infinitely far) moves with the camera. */
 export function parallaxOffset(camera, depth, stage = STAGE) {
   const k = 1 - clamp(depth, 0, 1);
@@ -202,6 +248,7 @@ export function validateCutscene(def) {
     if (typeof shot.draw !== 'function') problems.push(`${def.id}: shot ${i + 1} has no painter`);
     const type = shot.transition?.type;
     if (i < n - 1 && type && !TRANSITIONS.includes(type)) problems.push(`${def.id}: shot ${i + 1} has an unknown join "${type}"`);
+    if (i < n - 1 && RECT_TRANSITIONS.has(type) && !shot.transition.rect) problems.push(`${def.id}: shot ${i + 1}'s ${type} join has no rect`);
   });
   return problems;
 }
