@@ -136,7 +136,7 @@ export const CREDIT_GENERATIVE = Object.freeze([
   },
   {
     label: 'OPENAI IMAGE GENERATION',
-    detail: 'Title and visual-direction imagery, world panoramas, painterly textures, Chapter 3 surface sources and selected production reference art.',
+    detail: 'Title and visual-direction imagery, world panoramas, painterly textures, Chapter 3 surface sources, selected production reference art, and the painted Chapter 1 windows, characters and frames (directed by George Zhong).',
     source: 'https://openai.com/index/image-generation-api/',
   },
   {
