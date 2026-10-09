@@ -46,7 +46,8 @@ let pausedForMenu = false;
 const dbToGain = (db) => 10 ** (db / 20);
 
 // "♪ CLICK FOR SOUND": shown only while the browser refused autoplay and a
-// track waits for the first gesture. Small, bottom centre, in the finale
+// track waits for the first gesture. Small, bottom left (bottom centre sat on
+// Chapter 1's dialogue box, top centre on Chapter 2's bell), in the finale
 // palette; any key or click anywhere unlocks (the tag itself included).
 let soundTag = null;
 let soundTagWanted = false;
@@ -61,7 +62,7 @@ function setSoundTag(visible) {
     soundTag.textContent = SOUND_TAG_TEXT;
     soundTag.setAttribute('aria-label', 'Click for sound');
     soundTag.style.cssText = [
-      'position:fixed', 'left:50%', 'bottom:14px', 'transform:translateX(-50%)', 'z-index:40',
+      'position:fixed', 'left:16px', 'bottom:16px', 'z-index:40',
       'padding:8px 16px 7px', 'border-radius:2px', 'cursor:pointer', 'pointer-events:auto', 'white-space:nowrap',
       'font:500 calc(11px * var(--nightfall-text-scale, 1))/1.2 var(--nf-ui, "Jost", sans-serif)', 'letter-spacing:0.26em',
       'color:#f1ede4', 'background:rgba(9, 8, 7, 0.86)', 'border:1px solid rgba(241, 237, 228, 0.22)',
