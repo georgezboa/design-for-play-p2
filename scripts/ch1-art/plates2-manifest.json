@@ -74,6 +74,30 @@
    76,
    1227,
    948
+  ],
+  "a3/platform-close": [
+   85,
+   0,
+   1326,
+   1024
+  ],
+  "a3/overlook": [
+   214,
+   22,
+   1204,
+   930
+  ],
+  "a3/carriage": [
+   0,
+   0,
+   1296,
+   1001
+  ],
+  "a3/platform": [
+   216,
+   48,
+   1264,
+   976
   ]
  },
  "outputs": {
@@ -527,22 +551,21 @@
   "act3/overlook": {
    "url": "/assets/ch1-painted/act3/overlook.webp",
    "file": "public/assets/ch1-painted/act3/overlook.webp",
-   "w": 1072,
-   "h": 828,
-   "bytes": 113924,
+   "w": 1204,
+   "h": 930,
+   "bytes": 203484,
    "sources": [
-    "src/assets/generated/worlds/world-07-memory/chunk-00.jpg",
-    "A3-orchard.png"
+    "A3-overlook.png"
    ],
    "crop": [
-    1000,
-    330,
-    1218,
-    611
+    214,
+    22,
+    1204,
+    930
    ],
    "alpha": false,
-   "kind": "interim",
-   "note": "INTERIM: world-07 panorama graded, the orchard house plate set in; see NEEDED-ART.md"
+   "kind": "plate",
+   "note": "the orchard house from the hill; the lane in from the left, the stair down to the platform"
   },
   "act3/gap": {
    "url": "/assets/ch1-painted/act3/gap.webp",
@@ -585,62 +608,106 @@
   "act3/carriage": {
    "url": "/assets/ch1-painted/act3/carriage.webp",
    "file": "public/assets/ch1-painted/act3/carriage.webp",
-   "w": 1072,
-   "h": 828,
-   "bytes": 61864,
+   "w": 1296,
+   "h": 1001,
+   "bytes": 161550,
    "sources": [
-    "src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg",
-    "A3-gap.png"
+    "A3-carriage.png"
    ],
    "crop": [
-    2300,
     0,
-    1218,
-    941
+    0,
+    1296,
+    1001
    ],
    "alpha": false,
-   "kind": "interim",
-   "note": "INTERIM: night fields (world 01) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md)"
+   "kind": "plate",
+   "note": "our line on the stone approach; the buffer stop at the left, the signal lamp"
   },
   "act3/platform": {
    "url": "/assets/ch1-painted/act3/platform.webp",
    "file": "public/assets/ch1-painted/act3/platform.webp",
-   "w": 1072,
-   "h": 828,
-   "bytes": 67530,
+   "w": 1264,
+   "h": 976,
+   "bytes": 234652,
    "sources": [
-    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg",
-    "A3-gap.png"
+    "A3-platform.png"
    ],
    "crop": [
-    20,
-    412,
-    536,
-    414
+    216,
+    48,
+    1264,
+    976
    ],
    "alpha": false,
-   "kind": "interim",
-   "note": "INTERIM: Bellwether by the water (world 07) graded to the plates; below the deck, A3-gap's viaduct carried on (see NEEDED-ART.md)"
+   "kind": "plate",
+   "note": "Bellwether: the platform, the stair down from the hill, the bench and the lamp"
   },
   "act3/platform-1978": {
    "url": "/assets/ch1-painted/act3/platform-1978.webp",
    "file": "public/assets/ch1-painted/act3/platform-1978.webp",
-   "w": 1072,
-   "h": 828,
-   "bytes": 90920,
+   "w": 1264,
+   "h": 976,
+   "bytes": 272888,
    "sources": [
-    "src/assets/generated/worlds/world-07-memory/chunk-01.jpg",
-    "A3-gap-1978.png"
+    "A3-platform.png"
    ],
    "crop": [
-    20,
-    412,
-    536,
-    414
+    216,
+    48,
+    1264,
+    976
    ],
    "alpha": false,
-   "kind": "interim",
-   "note": "INTERIM: the same, in George's 1978 grade, over A3-gap-1978's deck"
+   "kind": "plate",
+   "note": "1978 grade of the platform (fitted to George's pairs)"
+  },
+  "act3/platform-close": {
+   "url": "/assets/ch1-painted/act3/platform-close.webp",
+   "file": "public/assets/ch1-painted/act3/platform-close.webp",
+   "w": 1326,
+   "h": 1024,
+   "bytes": 234720,
+   "sources": [
+    "A3-platform-close.png"
+   ],
+   "crop": [
+    85,
+    0,
+    1326,
+    1024
+   ],
+   "alpha": false,
+   "kind": "plate",
+   "note": "the platform close-up (the farewell): the bench empty until Butch leaves the case"
+  },
+  "act3/close-case": {
+   "url": "/assets/ch1-painted/act3/close-case.webp",
+   "file": "public/assets/ch1-painted/act3/close-case.webp",
+   "w": 213,
+   "h": 118,
+   "bytes": 8584,
+   "sources": [
+    "A3-platform-close.png"
+   ],
+   "crop": null,
+   "alpha": true,
+   "kind": "sprite",
+   "note": "the orchard case on the bench (cut from A3-platform-close)"
+  },
+  "act3/close-door-dark": {
+   "url": "/assets/ch1-painted/act3/close-door-dark.webp",
+   "file": "public/assets/ch1-painted/act3/close-door-dark.webp",
+   "w": 115,
+   "h": 320,
+   "bytes": 3302,
+   "sources": [
+    "A3-platform-close.png"
+   ],
+   "crop": null,
+   "alpha": true,
+   "kind": "sprite",
+   "note": "the doorway, its light out (drawn over the close-up once Mara is aboard)"
   }
  },
  "registration": {
@@ -679,6 +746,15 @@
    ],
    "maxCornerOffsetPx": 0.65,
    "warped": true
+  },
+  "A3-orchard\u2192A3-overlook": {
+   "matches": 604,
+   "inliers": 316,
+   "scale": 0.4169,
+   "origin": [
+    488.9,
+    154.3
+   ]
   },
   "A3-gap": {
    "matches": 427,
@@ -749,12 +825,21 @@
     "orchard": 0.7202
    },
    "rail": {
-    "gap": 0.75
+    "gap": 0.75,
+    "carriage": 0.7502,
+    "platform": 0.75
+   },
+   "stair": {
+    "overlook": 0.5003,
+    "platform": 0.5
+   },
+   "lane": {
+    "overlook": 0.7204
    },
    "declared": {
     "path": 0.72,
     "rail": 0.75,
-    "stair": 0.55
+    "stair": 0.5
    }
   }
  }

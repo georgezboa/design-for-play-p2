@@ -1,22 +1,24 @@
-// Round 7 · George's painted plates for Acts 2 and 3: every state is a
+// Rounds 7–8 · George's painted plates for Acts 2 and 3: every state is a
 // painting, the 1978 paintings register on today's, linked edges meet on the
 // painted lines, and the hotspots and zoom rects sit on the painted objects.
+// Round 8: the overlook, carriage and platform are George's too, and the
+// farewell plays in the platform close-up.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { ACT2 } from '../../src/chapters/nightService/acts/act2.js';
-import { ACT3, TRAIN_SCALE } from '../../src/chapters/nightService/acts/act3.js';
+import { ACT3, BENCH_STAND, CLOSE_SCALE, MARA_CLOSE_SCALE, PEOPLE_SCALE, TRAIN_SCALE } from '../../src/chapters/nightService/acts/act3.js';
 import {
   CASE_BOX, CASE_HELD, CASE_LABEL, CASE_TAG, CASE_ZOOM, DROP_AT, EMBER, LETTER_BUNDLE, LETTER_ZOOM, POSTCARD, REQUEST_PUSH,
   REQUEST_STOP, SHAWL, BENEATH_ZOOM, TAG_ZOOM, TICKET_AT, BUTCH_SCALE, WINDOW_FRAME, WINDOW_GLASS,
 } from '../../src/chapters/nightService/art/act2Art.js';
-import { CITY_GLASS, CITY_WINDOW, HEDGE, ORCHARD_LIT, OVERLOOK_HOUSE, PATH_AT, RAIL_AT, STAIR_AT, GAP_SPAN } from '../../src/chapters/nightService/art/act3Art.js';
+import { CITY_GLASS, CITY_WINDOW, CLOSE, CLOSE_ZOOM, HEDGE, ORCHARD_LIT, OVERLOOK_HOUSE, PATH_AT, PLATE as PLATE3, RAIL_AT, STAIR_AT, GAP_SPAN } from '../../src/chapters/nightService/art/act3Art.js';
 import { GEO2 } from '../../src/chapters/nightService/art/act2Plates.js';
 import { GEO3 } from '../../src/chapters/nightService/art/act3Plates.js';
 import { actPlates, createPanelModel, layoutGrid } from '../../src/chapters/nightService/panelModel.js';
 import { startCarry } from '../../src/chapters/nightService/acts/index.js';
-import { settle } from './helpers.mjs';
+import { record, settle } from './helpers.mjs';
 import sharp from 'sharp';
 
 const ROOT = resolve(import.meta.dirname, '../..');
@@ -79,7 +81,7 @@ test('plates2: a 1978 plate and its present share one crop and one size, and reg
     assert.deepEqual(sa, sb, `${a} / ${b}: the files agree`);
   }
   // George's pairs were feature-matched: under a pixel apart after registration
-  for (const [name, r] of Object.entries(manifest.registration)) {
+  for (const [name, r] of Object.entries(manifest.registration).filter(([, r]) => 'residualPx' in r)) {
     assert.ok(r.inliers > 200, `${name}: ${r.inliers} inliers`);
     assert.ok(r.residualPx < 1, `${name}: residual ${r.residualPx}px`);
     assert.ok(r.warped || r.maxCornerOffsetPx <= 0.5, `${name}: in register (${r.maxCornerOffsetPx}px)`);
@@ -113,11 +115,15 @@ test('plates2: Act 2 · the torn net drops the case straight down onto the aisle
 });
 
 test('plates2: Act 3 · the lane, the rails and the stair meet on the painted lines', () => {
-  const { path, rail, declared } = manifest.edges.act3;
+  const { path, rail, stair, lane, declared } = manifest.edges.act3;
   // the plates were cut so the painted lane sits at PATH_AT on every top-row tile
-  Object.entries(path).forEach(([tile, v]) => assert.ok(Math.abs(v - PATH_AT) < 0.005, `${tile} lane ${v} vs ${PATH_AT}`));
-  assert.ok(Math.abs(rail.gap - RAIL_AT) < 0.005, `viaduct deck ${rail.gap} vs ${RAIL_AT}`);
-  assert.deepEqual(declared, { path: PATH_AT, rail: RAIL_AT, stair: STAIR_AT }, 'NEEDED-ART.md asks for the same edges');
+  Object.entries({ ...path, ...lane }).forEach(([tile, v]) => assert.ok(Math.abs(v - PATH_AT) < 0.005, `${tile} lane ${v} vs ${PATH_AT}`));
+  // the deck at RAIL_AT on the carriage, the viaduct and the platform (round 8: all George's)
+  assert.deepEqual(Object.keys(rail).sort(), ['carriage', 'gap', 'platform']);
+  Object.entries(rail).forEach(([tile, v]) => assert.ok(Math.abs(v - RAIL_AT) < 0.005, `${tile} deck ${v} vs ${RAIL_AT}`));
+  // the painted stair leaves the hill's bottom edge and reaches the platform's top edge at STAIR_AT
+  Object.entries(stair).forEach(([tile, v]) => assert.ok(Math.abs(v - STAIR_AT) < 0.005, `${tile} stair ${v} vs ${STAIR_AT}`));
+  assert.deepEqual(declared, { path: PATH_AT, rail: RAIL_AT, stair: STAIR_AT }, 'the script cut the plates to the same edges');
   // every linked edge of a type carries the one value
   const want = { path: PATH_AT, rail: RAIL_AT, stair: STAIR_AT };
   let count = 0;
@@ -178,9 +184,16 @@ test('plates2: Act 3 · the city window lands round the orchard house\'s lit win
   assert.ok(inside(CITY_WINDOW, CITY_GLASS));
   const grip = ACT3.tiles.city.frame.grip.rect;
   assert.ok(inside(grip, CITY_WINDOW));
-  // the zoom from the hill lands on the house (the overlook has the house plate set in there)
+  // the zoom from the hill lands on the house painted in A3-overlook: the
+  // orchard plate's lit window, carried through the zoom rect, is the
+  // overlook's lit window (round 8: matched, AKAZE + RANSAC)
   assert.ok(isSquareZoom(OVERLOOK_HOUSE));
   assert.deepEqual(ACT3.tiles.orchard.zoomStack[0].rect, OVERLOOK_HOUSE);
+  const match = manifest.registration['A3-orchard→A3-overlook'];
+  assert.ok(match.inliers >= 30, `${match.inliers} inliers`);
+  const [hx, hy, hw] = OVERLOOK_HOUSE;
+  const lit = [hx + (ORCHARD_LIT[0] + ORCHARD_LIT[2] / 2) * hw, hy + (ORCHARD_LIT[1] + ORCHARD_LIT[3] / 2) * hw];
+  assert.ok(Math.abs(lit[0] - GEO3.overlook.lit[0]) < 0.01 && Math.abs(lit[1] - GEO3.overlook.lit[1]) < 0.012, `${lit} vs ${GEO3.overlook.lit}`);
   // the hawthorn lane's painted break: Mara waits short of it, the lens goes on it
   const [bx, by, , bh] = GEO3.hawthorn.break;
   assert.ok(HEDGE.wait < bx, 'Mara waits before the break');
@@ -199,7 +212,16 @@ test('plates2: actors are at the painted scale (Butch in the aisle, Mara on the 
   assert.ok(Math.abs(mara(ACT3.tiles.hawthorn.states.default) - GEO3.hawthorn.maraTilePx) < 1.5, 'on the lane');
   // further off on the hill, smaller on the platform beside the train
   assert.ok(mara(ACT3.tiles.orchard.states.overlook) < mara(ACT3.tiles.hawthorn.states.default));
+  assert.ok(Math.abs(mara(ACT3.tiles.orchard.states.overlook) - GEO3.overlook.maraTilePx) < 1.5, 'on the hill');
   assert.ok(ACT3.actors.mara.scale * 66 < TRAIN_SCALE * 44, 'on the platform she is shorter than the carriage');
+  // the farewell's close-up: Butch 45% of the tile's height by the bench, Mara beside the painted doorway
+  const close = ACT3.tiles.platform.states.close;
+  const butchPx = 70 * PEOPLE_SCALE * close.actorScale;
+  assert.ok(Math.abs(butchPx / 414 - 0.45) < 0.01, `Butch ${butchPx} px of 414`);
+  assert.equal(close.actorScale, CLOSE_SCALE);
+  const maraPx = 66 * MARA_CLOSE_SCALE * close.actorScale;
+  assert.ok(Math.abs(maraPx - CLOSE.maraTilePx) < 1.5, `Mara ${maraPx} px`);
+  assert.ok(maraPx < CLOSE.door[3] * 414 && maraPx > CLOSE.door[3] * 414 * 0.75, 'she fits the doorway she boards by');
   // the act still plays through at these scales
   const model = createPanelModel(ACT3, { carry: startCarry('act3'), step: 'bridge' });
   const target = ['city', 'hawthorn', 'orchard', 'carriage', 'gap', 'platform'];
@@ -228,7 +250,7 @@ async function rowProfile(path, x0, x1) {
   return { rows, height };
 }
 
-/** Where the strongest dark-to-light step (a deck's moonlit coping) is, between v0 and v1. */
+/** Where the strongest dark-to-light step (a deck's moonlit coping, or a railing) is, between v0 and v1. */
 function strongestStep({ rows, height }, v0, v1) {
   let best = -Infinity;
   let at = 0;
@@ -244,9 +266,73 @@ test('plates2: the painted viaduct deck meets at RAIL_AT on both sides of both g
   const edges = [
     ['carriage', 0.93, 1], ['gap', 0, 0.07], ['gap', 0.93, 1], ['platform', 0, 0.07],
   ];
+  const railing = {};
   for (const [tile, x0, x1] of edges) {
-    const v = strongestStep(await rowProfile(plate(tile), x0, x1), 0.7, 0.8);
+    const profile = await rowProfile(plate(tile), x0, x1);
+    // the deck's top: the moonlit coping just at RAIL_AT (the railing stands above it)
+    const v = strongestStep(profile, RAIL_AT - 0.02, RAIL_AT + 0.02);
     // within 4 screen px at 1920×1080 (the tile is 414 px tall there)
     assert.ok(Math.abs(v - RAIL_AT) * 414 <= 4, `${tile} @${x0}: deck at ${v.toFixed(4)} vs ${RAIL_AT}`);
+    railing[`${tile}@${x0}`] = strongestStep(profile, RAIL_AT - 0.045, RAIL_AT - 0.015);
   }
+  // the iron railing on the approach runs on into the viaduct's (the station's own is taller)
+  assert.ok(Math.abs(railing['carriage@0.93'] - railing['gap@0']) * 414 <= 4, JSON.stringify(railing));
+});
+
+test('plates2: the farewell plays in the platform close-up, every beat kept and in order', () => {
+  const model = createPanelModel(ACT3, { carry: startCarry('act3'), step: 'bridge' });
+  const target = ['city', 'hawthorn', 'orchard', 'carriage', 'gap', 'platform'];
+  for (let i = 0; i < target.length; i += 1) if (model.state.slots[i] !== target[i]) model.swap(i, model.state.slots.indexOf(target[i]));
+  const r = model.slotRect('gap');
+  model.moveLens(r.x + r.w * 0.5, r.y + r.h * RAIL_AT);
+  const log = record(model);
+  const flagsAt = [];
+  model.on('change', () => { const f = model.state.flags.join(','); if (flagsAt.at(-1) !== f) flagsAt.push(f); });
+  settle(model, { maxMs: 160000 });
+  assert.equal(model.state.ended?.kind, 'endChapter');
+  const names = log.map(([n, p]) => (n === 'fx' ? `fx:${p.name}` : n === 'sfx' ? `sfx:${p.name}` : n === 'zoom' ? `zoom:${p.to}` : n === 'dialogue' ? 'line' : n));
+  const order = ['fx:memoryLights', 'fx:holdActors', 'zoom:close', 'fx:leaveCase', 'sfx:thud', 'fx:boardTrain', 'sfx:door', 'sfx:whistle', 'line', 'fx:fadeAll', 'chapter:end'];
+  let at = -1;
+  order.forEach((name) => { const i = names.indexOf(name, at + 1); assert.ok(i > at, `${name} after ${order[order.indexOf(name) - 1]}`); at = i; });
+  // the camera's move is deliberate, and flies into the painted bench
+  const zoom = log.find(([n, p]) => n === 'zoom' && p.to === 'close')[1];
+  assert.ok(zoom.ms >= 2000, `${zoom.ms} ms`);
+  assert.deepEqual(zoom.rect, CLOSE_ZOOM);
+  // the case is left on the bench before she boards
+  const caseAt = flagsAt.findIndex((f) => f.includes('caseOnBench'));
+  const aboardAt = flagsAt.findIndex((f) => f.includes('maraAboard'));
+  assert.ok(caseAt >= 0 && aboardAt > caseAt);
+  // the two lines, the beat of her train leaving, and who is where at the end
+  assert.deepEqual(log.filter(([n]) => n === 'dialogue').map(([, p]) => p.line.text), ['She\'s always one stop ahead.', 'The line keeps going.']);
+  const a = model.state.actors;
+  assert.ok(a.farTrain.x > 1, 'her train pulled away');
+  assert.equal(a.farTrain.state, 'default', 'it is painted into the close-up: its actor stays off it');
+  assert.equal(a.train.state, 'default', 'our train stays on the wide picture');
+  assert.equal(model.state.tiles.platform.state, 'close');
+  assert.equal(a.butch.state, 'close');
+  assert.ok(Math.abs(a.butch.x - BENCH_STAND) < 1e-9 && Math.abs(a.butch.y - CLOSE.floor) < 1e-9);
+  assert.equal(a.butch.carrying, null, 'he left it');
+  assert.equal(a.maraClose.visible, false, 'she is aboard');
+  assert.equal(a.mara.visible, false);
+});
+
+test('plates2: the close-up\'s pieces sit on the painting (the case on the seat, the dark doorway on the door, the zoom on the bench)', () => {
+  const [bx, by, bw, bh] = CLOSE.bench;
+  const [cx, cy, cw, ch] = CLOSE.case;
+  assert.ok(cx > bx && cx + cw < bx + bw, 'the case lies along the bench');
+  assert.ok(Math.abs(cy + ch - CLOSE.seat) < 0.01, 'on the seat');
+  assert.ok(BENCH_STAND > cx + cw && BENCH_STAND < bx + bw + 0.1, 'Butch stands just past it');
+  assert.ok(inside(CLOSE.doorSprite, CLOSE.door));
+  // the zoom rect, carried onto the close-up, puts the wide bench on the painted bench
+  const wide = GEO3.platform.bench;
+  const [zx, zy, zs] = CLOSE_ZOOM;
+  assert.ok(isSquareZoom(CLOSE_ZOOM));
+  const mapped = [(wide[0] - zx) / zs, (wide[1] - zy) / zs, wide[2] / zs, wide[3] / zs];
+  // (its place and width; George's two benches differ a little in height, which the dissolve covers)
+  mapped.slice(0, 3).forEach((v, i) => assert.ok(Math.abs(v - CLOSE.bench[i]) < 0.03, `bench ${mapped} vs ${CLOSE.bench}`));
+  assert.ok(Math.abs(mapped[3] / CLOSE.bench[3] - 1) < 0.25, `bench height ${mapped[3]} vs ${CLOSE.bench[3]}`);
+  // every piece the farewell draws is a loaded plate or prop
+  const urls = actPlates(ACT3).map((p) => p.url);
+  [PLATE3['platform-close'], PLATE3['close-case']].forEach((url) => assert.ok(urls.includes(url), url));
+  ['close-case', 'close-door-dark'].forEach((k) => assert.ok(existsSync(file(PLATE3[k])), k));
 });

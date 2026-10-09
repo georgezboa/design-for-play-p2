@@ -14,14 +14,17 @@
 //   3 the finale escalates the idea: order the bottom row carriage → gap →
 //     platform and hold the lens on the broken viaduct: in 1978 it is whole;
 //     the train crosses (and backs off if the lens moves). Bell #5
-//   4 Mara boards the other train as ours arrives; the case on the bench;
-//     the Conductor's last line; chapter-2-start and the 1-2 film
+//   4 the farewell: ours docks at Bellwether and Mara comes down the stair; the
+//     camera moves into the platform close-up (A3-platform-close), where
+//     Butch steps down and leaves the case on the bench, Mara looks back once
+//     and boards the other train through its lit door, and it pulls away; the
+//     Conductor's last line; chapter-2-start and the 1-2 film
 
 import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import {
-  CITY_WINDOW, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATE, PLATFORM_DY, RAIL_AT, STAIR_AT, drawCarriageScene,
+  CITY_WINDOW, CLOSE, CLOSE_ZOOM, GAP_SPAN, HEDGE, OVERLOOK_HOUSE, PATH_AT, PLATE, RAIL_AT, STAIR_AT, drawCarriageScene,
   drawCityFrame, drawCityRoom, drawCityRoomPast, drawGap, drawGapPast, drawHawthorn, drawHawthornPast, drawHouse, drawOverlook,
-  drawPlatform, drawPlatformPast,
+  drawPlatform, drawPlatformClose, drawPlatformPast,
 } from '../art/act3Art.js';
 import { GEO3 } from '../art/act3Plates.js';
 import { ACT3_FX } from '../art/act3Fx.js';
@@ -47,13 +50,15 @@ const TO_HEDGE = [
   { tile: 'hawthorn', x: 0, y: PATH_AT, via: 'path' },
   { tile: 'hawthorn', x: HEDGE.wait, y: PATH_AT },
 ];
+/** The stair on the hill (A3-overlook): its head at the lane's end, its foot at the bottom edge. */
+const STAIR_HEAD = GEO3.overlook.stairHead;
 /** Through the hedge (1978 only), to the hill and the stair above the platform. */
 const THROUGH_HEDGE = [
   { tile: 'hawthorn', x: 1, y: PATH_AT, requires: lensOverHedge, retreat: { x: HEDGE.wait } },
   { tile: 'orchard', x: 0, y: PATH_AT, via: 'path', state: 'overlook' },
-  { tile: 'orchard', x: 0.44, y: PATH_AT },
-  // the stair head, at the lane's end (painted on the hill: plates2-build.py)
-  { tile: 'orchard', x: 0.48, y: 0.74, requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
+  { tile: 'orchard', x: STAIR_HEAD[0] - 0.04, y: PATH_AT },
+  // down the painted stair, once it meets the platform's below
+  { tile: 'orchard', x: STAIR_HEAD[0], y: STAIR_HEAD[1], requires: { link: { a: 'orchard', b: 'platform', type: 'stair' } } },
   { tile: 'orchard', x: STAIR_AT, y: 0.97 },
 ];
 const TRAIN_Y = RAIL_AT - 0.004;
@@ -64,7 +69,7 @@ const TRAIN_Y = RAIL_AT - 0.004;
  * (alpha R3 · R5).
  */
 export const TRAIN_SCALE = Math.round((GEO3.gap.trainTilePx / 150) * 100) / 100;
-/** The far train, on the far track behind the platform. */
+/** The other train (it waits behind the platform: painted in the close-up, so unseen on the wide tile). */
 export const FAR_TRAIN_SCALE = Math.round(TRAIN_SCALE * 0.55 * 100) / 100;
 /**
  * People at the scale of the painted places (rig heights: Mara 66, Butch 70
@@ -77,16 +82,32 @@ const maraIn = (tilePx) => Math.round((tilePx / MARA_RIG / PEOPLE_SCALE) * 100) 
 /** Mara in the city room (in front of the desk), on the lane (the hedge beside her), on the hill. */
 export const MARA_CITY = maraIn(GEO3.city.maraTilePx);
 export const MARA_LANE = maraIn(GEO3.hawthorn.maraTilePx);
-export const MARA_HILL = maraIn(36);
+export const MARA_HILL = maraIn(GEO3.overlook.maraTilePx);
 /** Its length on a tile (the rig is 150 tile px at scale 1; tiles are 536 wide on the 3×2 wall). */
 export const TRAIN_LENGTH = (150 * TRAIN_SCALE) / 536;
 // the present viaduct is missing over GAP_SPAN (rails end 0.02 short of each
 // side): where the train waits, its whole length stays on good track
 export const SAFE_NEAR = Math.floor((GAP_SPAN[0] - 0.02 - TRAIN_LENGTH / 2) * 100) / 100;
 export const SAFE_FAR = Math.ceil((GAP_SPAN[1] + 0.02 + TRAIN_LENGTH / 2) * 100) / 100;
-/** The platform's walking line and the far track, raised with the rail. */
-const WALK_Y = 0.8 + PLATFORM_DY;
-const FAR_Y = 0.665 + PLATFORM_DY;
+/** The far track (the other train, unseen on the wide tile). */
+const FAR_Y = GEO3.platform.back;
+/** Our train docks clear of the bench, its nose short of the buffer stop. */
+export const DOCK_X = Math.round((GEO3.platform.buffer[0] - TRAIN_LENGTH / 2 - 0.02) * 100) / 100;
+/** Mara down the platform's stair, onto its far side. */
+const STAIR_FOOT = GEO3.platform.stairFoot;
+
+/**
+ * The farewell's close-up (A3-platform-close): Butch at 45% of the tile's
+ * height by the bench, the size the painted bench gives a 1.75 m man; Mara at
+ * the other train's door, beside the painted doorway (the same scale, further
+ * off), as a figure of her own (maraClose) so each keeps its painted size.
+ */
+export const CLOSE_SCALE = Math.round((CLOSE.butchTilePx / (70 * PEOPLE_SCALE)) * 100) / 100;
+export const MARA_CLOSE_SCALE = Math.round((CLOSE.maraTilePx / (MARA_RIG * CLOSE_SCALE)) * 1000) / 1000;
+/** Where Butch stands to leave the case: just right of the bench's end, facing it. */
+export const BENCH_STAND = Math.round((CLOSE.case[0] + CLOSE.case[2] + 0.06) * 1000) / 1000;
+const CLOSE_FLOOR = CLOSE.floor;
+const [DOOR_FOOT, ...DOOR_TREADS] = CLOSE.steps;
 
 export const ACT3 = defineAct({
   id: 'act3',
@@ -198,14 +219,23 @@ export const ACT3 = defineAct({
           drawPast: drawPlatformPast,
           edges: { left: [{ type: 'rail', at: RAIL_AT }], top: [{ type: 'stair', at: STAIR_AT, silent: true }] },
         },
+        // the farewell plays here, close (the finale zooms in; no way back out)
+        close: { plate: PLATE['platform-close'], draw: drawPlatformClose, actorScale: CLOSE_SCALE, zoomOut: false },
       },
     },
   },
+  // the painted pieces the farewell's effects draw (preloaded with the plates)
+  props: [PLATE['close-case']],
   actors: {
+    // first: she stands at the far side, so Butch passes in front of her
+    maraClose: { rig: 'mara', tile: 'platform', state: 'close', x: CLOSE.stepsX, y: DOOR_FOOT, visible: false, facing: 1, scale: MARA_CLOSE_SCALE },
     butch: { rig: 'butch', pace: BUTCH_PACE, tile: 'carriage', x: 0.35, y: RAIL_AT, visible: false, scale: PEOPLE_SCALE },
     train: { rig: 'train', tile: 'carriage', x: 0.36, y: TRAIN_Y, facing: 1, scale: TRAIN_SCALE },
     mara: { rig: 'mara', tile: 'city', x: 0.62, y: PATH_AT, visible: false, facing: 1, scale: PEOPLE_SCALE },
-    farTrain: { rig: 'train', tile: 'platform', x: 0.74, y: FAR_Y, facing: 1, scale: FAR_TRAIN_SCALE, tint: 0x9a9aae },
+    // the other train is painted into the close-up (it waits behind the
+    // platform, where the wide painting has its back wall): this actor only
+    // keeps the beat of its leaving, out of sight
+    farTrain: { rig: 'train', tile: 'platform', state: 'default', x: 0.74, y: FAR_Y, facing: 1, scale: FAR_TRAIN_SCALE, tint: 0x9a9aae, visible: false },
   },
   steps: [
     {
@@ -308,13 +338,13 @@ export const ACT3 = defineAct({
               { tile: 'gap', x: SAFE_NEAR, y: TRAIN_Y },
               { tile: 'gap', x: SAFE_FAR, y: TRAIN_Y, requires: lensOverGap, retreat: { x: SAFE_NEAR } },
               { tile: 'gap', x: 1, y: TRAIN_Y },
-              { tile: 'platform', x: 0, y: TRAIN_Y, via: 'rail' },
+              { tile: 'platform', x: 0, y: TRAIN_Y, via: 'rail', state: 'default' },
               { tile: 'platform', x: 0.06, y: TRAIN_Y },
             ],
           },
         },
       ],
-      skip: [{ placeActor: { actor: 'train', tile: 'platform', x: 0.06, y: TRAIN_Y } }],
+      skip: [{ placeActor: { actor: 'train', tile: 'platform', state: 'default', x: 0.06, y: TRAIN_Y } }],
     },
     {
       id: 'farewell',
@@ -324,34 +354,73 @@ export const ACT3 = defineAct({
         { ringBell: true },
         // every link of the night lights again along the line
         { fx: { name: 'memoryLights' } },
-        { playTrain: { id: 'dock', speed: 110, await: false, path: [{ tile: 'platform', x: 0.42, y: TRAIN_Y }] } },
-        { wait: 3600 },
-        // Mara comes down the stair onto the platform and crosses to the other train
+        { playTrain: { id: 'dock', speed: 110, await: false, path: [{ tile: 'platform', x: DOCK_X, y: TRAIN_Y }] } },
+        { wait: 1400 },
+        // Mara comes down the stair from the hill onto the platform's far side
         // (placed at the stair head: the player may have moved the hill since)
-        { placeActor: { actor: 'mara', tile: 'platform', state: null, x: STAIR_AT, y: 0.03, visible: true, pose: 'walk', facing: 1 } },
+        { placeActor: { actor: 'mara', tile: 'platform', state: 'default', x: STAIR_AT, y: 0.01, visible: true, pose: 'walk', facing: 1 } },
         {
           walk: {
-            actor: 'mara', id: 'board', speed: 70,
+            actor: 'mara', id: 'down', speed: 46,
             path: [
-              { tile: 'platform', x: 0.6, y: 0.69 + PLATFORM_DY },
-              { tile: 'platform', x: 0.71, y: 0.67 + PLATFORM_DY },
+              { tile: 'platform', x: STAIR_FOOT[0], y: STAIR_FOOT[1] },
+              { tile: 'platform', x: STAIR_FOOT[0] - 0.01, y: FAR_Y + 0.008 },
             ],
           },
         },
         { actorPose: { actor: 'mara', pose: 'idle', facing: -1 } },
-        // she looks back once
-        { wait: 1100 },
+        { wait: 700 },
+        // the camera moves into the painting: the platform close-up, where the
+        // rest of the farewell plays large (the wide tile's figures go with
+        // the picture they stood in)
+        { fx: { name: 'holdActors', tile: 'platform', actors: ['train', 'mara'], over: 2600 } },
         { placeActor: { actor: 'mara', visible: false } },
-        { sfx: 'whistle' },
-        { wait: 500 },
-        { walk: { actor: 'farTrain', id: 'away', speed: 70, await: false, path: [{ tile: 'platform', x: 1.5, y: FAR_Y }] } },
+        { placeActor: { actor: 'maraClose', tile: 'platform', state: 'close', x: CLOSE.stepsX - 0.004, y: DOOR_FOOT, visible: true, pose: 'back', facing: 1 } },
+        { zoomTo: { tile: 'platform', to: 'close', rect: CLOSE_ZOOM, ms: 2600 } },
         { wait: 3000 },
-        { placeActor: { actor: 'butch', tile: 'platform', x: 0.44, y: WALK_Y, visible: true, pose: 'idle', facing: -1, carrying: 'case' } },
-        { walkButch: { id: 'bench', speed: 90, path: [{ tile: 'platform', x: 0.24, y: WALK_Y }] } },
-        { actorPose: { actor: 'butch', pose: 'idle', carrying: null, facing: 1 } },
+        // Butch steps down from our train with the orchard case and carries it to the bench
+        { placeActor: { actor: 'butch', tile: 'platform', state: 'close', x: 1.07, y: CLOSE_FLOOR - 0.035, visible: true, pose: 'walk', facing: -1, carrying: 'case' } },
+        {
+          walkButch: {
+            id: 'bench', speed: 80,
+            path: [
+              { tile: 'platform', x: 0.93, y: CLOSE_FLOOR },
+              { tile: 'platform', x: BENCH_STAND, y: CLOSE_FLOOR },
+            ],
+          },
+        },
+        { actorPose: { actor: 'butch', pose: 'idle', facing: -1 } },
+        { wait: 500 },
+        // he sets it down and leaves it there
+        { actorPose: { actor: 'butch', carrying: null } },
+        { fx: { name: 'leaveCase' } },
+        { wait: 560 },
         { setFlag: 'caseOnBench' },
         { sfx: 'thud' },
         { wait: 1100 },
+        // she looks back once, and boards the other train through its lit door
+        { actorPose: { actor: 'maraClose', pose: 'idle', facing: -1 } },
+        { wait: 1500 },
+        { actorPose: { actor: 'maraClose', pose: 'back', facing: 1 } },
+        { wait: 450 },
+        { placeActor: { actor: 'maraClose', y: DOOR_TREADS[0], pose: 'back' } },
+        { wait: 300 },
+        { placeActor: { actor: 'maraClose', y: DOOR_TREADS[1], pose: 'back' } },
+        { wait: 300 },
+        { placeActor: { actor: 'maraClose', y: DOOR_TREADS[2], pose: 'back' } },
+        { wait: 300 },
+        { placeActor: { actor: 'maraClose', y: DOOR_TREADS[3], pose: 'back' } },
+        { fx: { name: 'boardTrain', actor: 'maraClose', over: 650 } },
+        { wait: 700 },
+        { placeActor: { actor: 'maraClose', visible: false } },
+        { setFlag: 'maraAboard' },
+        { sfx: 'door' },
+        { wait: 900 },
+        { sfx: 'whistle' },
+        { wait: 500 },
+        // and her train pulls away
+        { walk: { actor: 'farTrain', id: 'away', speed: 70, await: false, path: [{ tile: 'platform', x: 1.5, y: FAR_Y }] } },
+        { wait: 1800 },
         {
           dialogue: [
             { speaker: 'THE CONDUCTOR', text: 'She\'s always one stop ahead.' },
