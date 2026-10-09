@@ -53,7 +53,7 @@ export function effectiveTransition(transition, { reducedMotion = false } = {}) 
   if (reducedMotion && MOVING_TRANSITIONS.has(type)) return { type: 'fade', duration };
   if (RECT_TRANSITIONS.has(type)) {
     if (!transition?.rect) return { type: 'fade', duration };
-    return { type, duration, rect: transition.rect, ease: transition.ease ?? 'inOut', reveal: transition.reveal ?? [0.3, 0.8], feather: transition.feather ?? 0.1 };
+    return { type, duration, rect: transition.rect, ease: transition.ease ?? 'inOut', reveal: transition.reveal ?? [0.3, 0.8], feather: transition.feather ?? 0.1, clip: transition.clip ?? null, clipRadius: transition.clipRadius ?? 0 };
   }
   return { type, duration };
 }
@@ -106,7 +106,7 @@ export function frameAt(timeline, time) {
     const progress = span > 0 ? clamp((t - to.start) / span, 0, 1) : 1;
     layers = [layer(from), layer(to)];
     transition = { type: from.transition.type, progress: round(progress), from: from.index, to: to.index };
-    if (RECT_TRANSITIONS.has(from.transition.type)) Object.assign(transition, { rect: from.transition.rect, ease: from.transition.ease, reveal: from.transition.reveal, feather: from.transition.feather });
+    if (RECT_TRANSITIONS.has(from.transition.type)) Object.assign(transition, { rect: from.transition.rect, ease: from.transition.ease, reveal: from.transition.reveal, feather: from.transition.feather, clip: from.transition.clip, clipRadius: from.transition.clipRadius });
   } else if (!layers.length && timeline.shots.length) {
     layers = [layer(timeline.shots[timeline.shots.length - 1])];
   }

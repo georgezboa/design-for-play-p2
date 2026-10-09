@@ -34,16 +34,20 @@ const OFFICE = { lamp: [1062, 428], case: linkRect('OP-case', [319, 16, 300, 150
 const CARS = 4;
 /** The train's head (stage x) at the viaduct shot's progress. */
 const headAt = (t) => lerp(160, 1360, t);
-/** The 2 : 1 rect round the middle window of the second carriage: where the office is. */
-function windowRect(t) {
+/** The middle window of the second carriage (its glass), and a 2 : 1 rect round it: the office seen through it. */
+function windowGlass(t) {
   const g = geom('OP-viaduct');
   const L = g.carriage;
-  const cx = headAt(t) - 1.5 * L;
   const s = L / 960;
-  const cy = g.deckY - 157 * s;
-  // a 2 : 1 rect inside the glass: the office is what the window shows
-  const w = 74 * s * 0.92;
-  return [cx - w / 2, cy - w / 4, w, w / 2];
+  // C-train's lit carriage: its middle window's glass is about 64 × 76 frame px, centred 162 px above the rails
+  const cx = headAt(t) - 1.5 * L - 5 * s;
+  const cy = g.deckY - 162 * s;
+  return [cx - 32 * s, cy - 38 * s, 64 * s, 76 * s];
+}
+function windowRect(t) {
+  const [x, y, w, h] = windowGlass(t);
+  const wd = h * 2;
+  return [x + w / 2 - wd / 2, y, wd, h];
 }
 
 function shotViaduct(c, t, w, h, env) {
@@ -133,7 +137,7 @@ export const opening = {
       duration: 8.5,
       draw: shotViaduct,
       camera: { from: { x: 0.32, y: 0.5, zoom: 1.12 }, to: { x: 0.6, y: (geom('OP-viaduct').deckY - geom('OP-viaduct').carriage * 0.2) / 800, zoom: 1.7 }, still: { x: 0.5, y: 0.45, zoom: 1.2 } },
-      transition: { type: 'zoom', duration: 1.7, rect: (t) => windowRect(t), reveal: [0.15, 0.7], feather: 0.22 },
+      transition: { type: 'zoom', duration: 1.7, rect: (t) => windowRect(t), clip: (t) => windowGlass(t), clipRadius: 6 * (geom('OP-viaduct').carriage / 960), reveal: [0.1, 0.5], feather: 0 },
       captions: [{ text: 'The night service runs between stored places.\nThe archive calls it the last line.', at: 0.9, end: 6.2 }],
       cues: [{ at: 0, sfx: 'rail', level: 1 }, { at: 0, sfx: 'rain', level: 0.9 }],
     },

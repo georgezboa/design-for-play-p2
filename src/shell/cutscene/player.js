@@ -515,6 +515,24 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       }
       c.save();
       clipPanel(c, p.x, p.y);
+      // a window the inner picture is seen through (zoom only): its glass in
+      // the outer picture's stage, opening out to the whole panel at the end
+      const glass = zoom && tr.clip ? (typeof tr.clip === 'function' ? tr.clip(a.local) : tr.clip) : null;
+      if (glass) {
+        const T2 = viewTransform(view, p.w);
+        const gx = T2.tx + glass[0] * T2.scale;
+        const gy = T2.ty + glass[1] * T2.scale;
+        const gw = glass[2] * T2.scale;
+        const gh = glass[3] * T2.scale;
+        const o = Math.max(0, Math.min(1, (e - 0.62) / 0.38));
+        const oe = o * o * (3 - 2 * o);
+        const cx0 = gx + (0 - gx) * oe;
+        const cy0 = gy + (0 - gy) * oe;
+        const cw = gw + (p.w - gw) * oe;
+        const ch = gh + (p.h - gh) * oe;
+        roundRectPath(c, p.x + cx0, p.y + cy0, cw, ch, (tr.clipRadius ?? 0) * T2.scale * (1 - oe) + L.panel.r * oe);
+        c.clip();
+      }
       c.globalAlpha = innerAlpha;
       c.setTransform(1, 0, 0, 1, 0, 0);
       c.drawImage(buffer.canvas, Math.round(p.x * k), Math.round(p.y * k));
