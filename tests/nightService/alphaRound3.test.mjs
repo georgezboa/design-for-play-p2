@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { ACT2 } from '../../src/chapters/nightService/acts/act2.js';
 import { ACT3, SAFE_FAR, SAFE_NEAR, TRAIN_LENGTH, TRAIN_SCALE } from '../../src/chapters/nightService/acts/act3.js';
-import { GAP_SPAN, HEDGE, PLATFORM_DY, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
+import { CITY_WINDOW, GAP_SPAN, HEDGE, PLATFORM_DY, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
 import { FRAME_TAG_SEEN, frameTagFor, waitingWalkers } from '../../src/chapters/nightService/hints.js';
 import { createPanelModel, layoutGrid } from '../../src/chapters/nightService/panelModel.js';
 import { UNFOLD, createUnfold, planUnfold } from '../../src/chapters/nightService/unfold.js';
@@ -51,7 +51,8 @@ test('R1: in Act 3 the tag hangs under the city window (when Act 2 did not retir
   const tag = frameTagFor(model, new Set());
   assert.equal(tag?.tile, 'city');
   assert.equal(tag.frame, 'cityWindow');
-  assert.ok(tag.v > 0.56, 'below the sill, clear of the glass');
+  // (round 7: the painted window's sill is CITY_WINDOW's bottom edge)
+  assert.ok(tag.v > CITY_WINDOW[1] + CITY_WINDOW[3], 'below the sill, clear of the glass');
 });
 
 test('R1: once its job is done the frame rests, so a drag on the window moves the window', () => {
@@ -189,7 +190,9 @@ test('R5: the viaduct stands higher and the bottom row still lines up at the rai
 });
 
 test('R5: our train is larger, and where it waits its whole length is on good track', () => {
-  assert.ok(TRAIN_SCALE >= 1.3);
+  // round 7: it is sized to the painted viaduct, and still well larger than the far train
+  assert.ok(TRAIN_SCALE >= ACT3.actors.farTrain.scale * 1.6, `${TRAIN_SCALE} vs far ${ACT3.actors.farTrain.scale}`);
+  assert.ok(TRAIN_SCALE * 150 >= 150, 'at least 150 tile px long on the 536 px tile');
   const { tileW } = layoutGrid(ACT3.grid);
   assert.ok(Math.abs(TRAIN_LENGTH - (150 * TRAIN_SCALE) / tileW) < 1e-9, 'TRAIN_LENGTH matches the 3×2 tile width');
   assert.equal(ACT3.actors.train.scale, TRAIN_SCALE);

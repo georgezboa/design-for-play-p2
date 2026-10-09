@@ -1,6 +1,8 @@
 // Act 2 presentation effects (see README.md → Custom fx).
 
-import { DROP_AT, ORCHARD_CASE, ORCHARD_TAG, RACK_Y, CASE_TOP, REQUEST_KNOB, UPSTAIRS } from './act2Art.js';
+import { BELLWETHER_LAMP, CASE_HELD, EMBER_GLOW, CASE_TEETER, DROP_AT, ORCHARD_TAG, PLATE, REQUEST_KNOB, UPSTAIRS } from './act2Art.js';
+import { plateKey } from '../panelModel.js';
+import { ensurePainted } from './act2PlateKit.js';
 
 export const ACT2_FX = {
   /** The punched hole pops out of the ticket and floats up to become the lens. */
@@ -33,7 +35,8 @@ export const ACT2_FX = {
     const p = api.screen('board', knob.u, knob.v);
     api.sparkle(p.x, p.y, 10);
     api.scene.time.delayedCall(450, () => {
-      api.flash('board', 0.194, 0.697, { color: 0xffb060, size: 150, duration: 900, repeat: 1 });
+      // BELLWETHER's lamp lights today
+      api.flash('board', BELLWETHER_LAMP.u, BELLWETHER_LAMP.v, { color: 0xffb060, size: 150, duration: 900, repeat: 1 });
       api.audio.play('chime');
     });
   },
@@ -57,23 +60,29 @@ export const ACT2_FX = {
     api.scene.time.delayedCall(700, () => api.audio.play('brake'));
   },
 
-  /** The orchard case falls through the gutter into Butch's arms. */
+  /** The orchard case falls through the torn net, across the gutter, into Butch's arms. */
   caseDrop(api) {
-    const startU = DROP_AT;
-    const startV = CASE_TOP + (RACK_Y - CASE_TOP) / 2;
-    const a = api.screen('rack', startU, startV);
-    const edge = api.screen('rack', startU, 1);
-    const top = api.screen('aisle', startU, 0);
+    const [tx, ty, tw, th] = CASE_TEETER;
+    const a = api.screen('rack', tx + tw / 2, ty + th / 2);
+    const edge = api.screen('rack', DROP_AT, 1);
+    const top = api.screen('aisle', DROP_AT, 0);
     const arms = api.rigPoint('butch', 8, -34);
-    const sprite = api.topSprite('nsv-sprite-act2-orchard-case-present', a.x, a.y);
+    const rackView = api.view('rack');
+    const aisleView = api.view('aisle');
+    // the painted case as it sits on the rack, then the size it is in his arms
+    const key = ensurePainted(api.scene, PLATE.case) ?? plateKey(PLATE.case);
+    const sprite = api.scene.textures.exists(key) ? api.topSprite(key, a.x, a.y) : api.topSprite('nsv-sprite-act2-orchard-case-present', a.x, a.y);
+    const w0 = tw * rackView.w * rackView.base;
+    const w1 = CASE_HELD[2] * aisleView.w * aisleView.base;
+    sprite.setDisplaySize(w0, (w0 * sprite.height) / sprite.width);
     const s0 = sprite.scaleX;
-    const s1 = s0 * 0.68;
+    const s1 = s0 * (w1 / w0);
     api.audio.play('whoosh');
     api.scene.tweens.chain({
       targets: sprite,
       tweens: [
-        { x: edge.x, y: edge.y, rotation: -0.4, duration: 320, ease: 'Sine.easeIn' },
-        { x: top.x, y: top.y, rotation: -0.2, scale: (s0 + s1) / 2, duration: 120, ease: 'Linear' },
+        { x: edge.x, y: edge.y, rotation: 0.25, duration: 320, ease: 'Sine.easeIn' },
+        { x: top.x, y: top.y, rotation: 0.12, scale: (s0 + s1) / 2, duration: 120, ease: 'Linear' },
         { x: arms.x, y: arms.y, rotation: 0, scale: s1, duration: 360, ease: 'Quad.easeIn' },
         { alpha: 0, duration: 80, onComplete: () => sprite.destroy() },
       ],
@@ -83,13 +92,12 @@ export const ACT2_FX = {
       if (!api.reduceMotion()) api.scene.cameras.main.shake(220, 0.004);
       api.sparkle(arms.x, arms.y + 20, 6);
     });
-    void ORCHARD_CASE;
   },
 
   /** The Ember Stone leaves the lining; sockets appear on the carriage trim. */
   emberTaken(api) {
-    api.flash('aisle', 0.5, 0.55, { color: 0xff8a3a, size: 420, duration: 1200 });
-    const p = api.screen('aisle', 0.5, 0.55);
+    api.flash('aisle', EMBER_GLOW.x, EMBER_GLOW.y, { color: 0xff8a3a, size: 420, duration: 1200 });
+    const p = api.screen('aisle', EMBER_GLOW.x, EMBER_GLOW.y);
     api.sparkle(p.x, p.y, 12);
   },
 };

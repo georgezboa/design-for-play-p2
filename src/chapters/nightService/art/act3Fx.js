@@ -1,6 +1,6 @@
 // Act 3 presentation effects (see README.md → Custom fx).
 
-import { CITY_GLASS, WINDOW_CENTRE } from './act3Art.js';
+import { CITY_GLASS, ORCHARD_LIT } from './act3Art.js';
 
 export const ACT3_FX = {
   /** The city window closes around the orchard window: light floods one picture. */
@@ -10,7 +10,7 @@ export const ACT3_FX = {
     const pane = api.scene.add.rectangle(gx * view.w, gy * view.h, gw * view.w, gh * view.h, 0xffd9a0, 0).setOrigin(0, 0).setBlendMode('ADD');
     view.fxLayer.add(pane);
     api.scene.tweens.add({ targets: pane, alpha: 0.35, duration: 700, yoyo: true, hold: 300, ease: 'Sine.easeInOut', onComplete: () => pane.destroy() });
-    api.flash('orchard', WINDOW_CENTRE.x, WINDOW_CENTRE.y, { color: 0xffd28a, size: 300, duration: 1400 });
+    api.flash('orchard', ORCHARD_LIT[0] + ORCHARD_LIT[2] / 2, ORCHARD_LIT[1] + ORCHARD_LIT[3] / 2, { color: 0xffd28a, size: 220, duration: 1400 });
     const a = api.screen('orchard', gx, gy);
     const b = api.screen('orchard', gx + gw, gy + gh);
     api.lightRun([a, { x: b.x, y: a.y }, b, { x: a.x, y: b.y }, a], { duration: 1200, color: 0xffe0a8 });
@@ -20,8 +20,11 @@ export const ACT3_FX = {
   /** Mara's silhouette in the lit window: she turns, and leaves the frame. */
   maraWindow(api) {
     const view = api.view('orchard');
-    const x = WINDOW_CENTRE.x * view.w;
-    const y = (WINDOW_CENTRE.y + 0.06) * view.h;
+    // in the orchard house's lit upstairs window (the painted one), at its size
+    const [lx, ly, lw, lh] = ORCHARD_LIT;
+    const x = (lx + lw / 2) * view.w;
+    const y = (ly + lh * 0.62) * view.h;
+    const k = ((lh * view.h) / 90) * 0.95;
     const key = 'nsv-mara-bust';
     if (!api.scene.textures.exists(key)) {
       const tex = api.scene.textures.createCanvas(key, 90, 90);
@@ -33,16 +36,16 @@ export const ACT3_FX = {
       c.beginPath(); c.ellipse(57, 38, 5, 4, 0.4, 0, Math.PI * 2); c.fill();
       tex.refresh();
     }
-    const bust = api.scene.add.image(x, y, key).setAlpha(0).setScale(0.95);
+    const bust = api.scene.add.image(x, y, key).setAlpha(0).setScale(k);
     view.fxLayer.add(bust);
     api.scene.tweens.chain({
       targets: bust,
       tweens: [
         { alpha: 1, duration: 700, ease: 'Sine.easeOut' },
         { alpha: 1, duration: 600 },
-        { scaleX: -0.95, duration: 380, ease: 'Sine.easeInOut' },
+        { scaleX: -k, duration: 380, ease: 'Sine.easeInOut' },
         { alpha: 1, duration: 500 },
-        { x: x + 34, alpha: 0, duration: 900, ease: 'Sine.easeIn', onComplete: () => bust.destroy() },
+        { x: x + lw * view.w * 0.9, alpha: 0, duration: 900, ease: 'Sine.easeIn', onComplete: () => bust.destroy() },
       ],
     });
     api.audio.play('paper');
