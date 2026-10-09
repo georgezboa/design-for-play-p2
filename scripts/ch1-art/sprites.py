@@ -9,6 +9,7 @@ only, never edited). Override with --src or NIGHTFALL_CH1_ART.
 
 Outputs (all regenerated from scratch on every run; stale sprites removed):
   public/assets/ch1-painted/sprites/<character>/<frame>.webp   WebP + alpha
+  public/assets/ch1-painted/sprites/<character>/<frame>@2.webp and @4: 1/2 and 1/4 size copies
   public/assets/ch1-painted/sprites/atlas.json                 the atlas
   public/assets/ch1-painted/sprites/ASSET_MANIFEST.md          provenance
   src/chapters/nightService/spriteAtlas.js                     the same atlas
@@ -462,6 +463,25 @@ def save_webp(img, path):
     bleed(img).save(path, 'WEBP', quality=WEBP_QUALITY, alpha_quality=100, method=4, exact=False)
 
 
+# Smaller copies of every frame (1/2, 1/4): WebGL1 cannot mipmap a texture
+# that is not a power of two, so a figure drawn small would sparkle; the rig
+# picks the copy closest to its size on screen.
+MIP_LEVELS = (2, 4)
+
+
+def save_levels(img, rel):
+    """The frame and its smaller copies; returns the atlas `mips` list."""
+    save_webp(img, OUT_DIR / rel)
+    mips = []
+    for d in MIP_LEVELS:
+        w, h = max(1, round(img.width / d)), max(1, round(img.height / d))
+        small = img.resize((w, h), Image.LANCZOS)
+        mrel = rel.replace('.webp', f'@{d}.webp')
+        save_webp(small, OUT_DIR / mrel)
+        mips.append({'file': mrel, 'w': w, 'h': h})
+    return mips
+
+
 # ---------------------------------------------------------------------------
 
 
@@ -761,21 +781,21 @@ def main():
     for (char, name), (fr, img, meta) in cut.items():
         meta.pop('_feet', None)
         rel = f'{char}/{name}.webp'
-        save_webp(img, OUT_DIR / rel)
-        atlas['characters'][char]['frames'][name] = {'file': rel, **meta}
+        mips = save_levels(img, rel)
+        atlas['characters'][char]['frames'][name] = {'file': rel, **meta, 'mips': mips}
         previews.setdefault(char, []).append((name, img, meta))
     atlas['train'] = {'rigLength': TRAIN['rigLength'], 'length': TRAIN['length'], 'unit': round(TRAIN['rigLength'] / TRAIN['length'], 6), 'frames': {}}
     for name, box in TRAIN['frames'].items():
         img, meta = cut_train(name, box, src_dir)
         rel = f'train/{name}.webp'
-        save_webp(img, OUT_DIR / rel)
-        atlas['train']['frames'][name] = {'file': rel, **meta}
+        mips = save_levels(img, rel)
+        atlas['train']['frames'][name] = {'file': rel, **meta, 'mips': mips}
         previews.setdefault('train', []).append((name, img, meta))
     for name, spec in PROPS.items():
         img, meta = cut_prop(name, spec, src_dir)
         rel = f'props/{name}.webp'
-        save_webp(img, OUT_DIR / rel)
-        atlas['props'][name] = {'file': rel, **meta}
+        mips = save_levels(img, rel)
+        atlas['props'][name] = {'file': rel, **meta, 'mips': mips}
         previews.setdefault('props', []).append((name, img, meta))
     if args.only:
         print('--only: atlas not written (partial run)')
@@ -793,6 +813,8 @@ def stamp_versions(atlas):
     re-cut sprite is never served stale from a cache)."""
     def visit(entry):
         entry['v'] = hashlib.sha256((OUT_DIR / entry['file']).read_bytes()).hexdigest()[:10]
+        for m in entry.get('mips', []):
+            m['v'] = hashlib.sha256((OUT_DIR / m['file']).read_bytes()).hexdigest()[:10]
     for char in atlas['characters'].values():
         for f in char['frames'].values():
             visit(f)
@@ -846,6 +868,7 @@ def write_manifest(atlas):
         '',
         'Sources are the 1536x1024 sheets in the art drop (`C-*.png`), each on a flat grey ground.',
         'Crop box: the figure in source pixels (x0 y0 x1 y1) after keying; scale: output px per source px.',
+        'Every file also has `@2` and `@4` copies at 1/2 and 1/4 size (for figures drawn small).',
         f"Frames edited beyond keying (see the script's FRAMES for the polygons): {', '.join(edited)}.",
         '',
         '| Output | Rig / kind | Source | Crop box (source px) | Scale | Size | Notes |',

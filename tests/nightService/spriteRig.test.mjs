@@ -10,7 +10,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import SPRITE_ATLAS from '../../src/chapters/nightService/spriteAtlas.js';
 import {
-  ATLAS, PROP_SIZES, PUNCH_TEXTURE, SPRITE_RIGS, anchorPoint, createAnimator, framesOf, rigHeight, spriteFiles, spriteFilesForAct,
+  ATLAS, PROP_SIZES, PUNCH_TEXTURE, SPRITE_RIGS, anchorPoint, createAnimator, frameGeometry, framesOf, pickLevel, rigHeight, spriteFiles,
+  spriteFilesForAct,
 } from '../../src/chapters/nightService/spriteAnimator.js';
 import { buildSpriteRig, paintedFiguresEnabled, spriteTexturesReady } from '../../src/chapters/nightService/spriteRig.js';
 import { buildProceduralRig, buildRig } from '../../src/chapters/nightService/actorRig.js';
@@ -21,11 +22,13 @@ const ROOT = new URL('../../', import.meta.url).pathname;
 const read = (path) => readFileSync(join(ROOT, path), 'utf8');
 const PUBLIC = join(ROOT, 'public');
 const fileOf = (entry) => join(PUBLIC, ATLAS.urlBase, entry.file);
-const allEntries = () => [
+const mainEntries = () => [
   ...Object.values(ATLAS.characters).flatMap((c) => Object.values(c.frames)),
   ...Object.values(ATLAS.train.frames),
   ...Object.values(ATLAS.props),
 ];
+// with their 1/2 and 1/4 copies
+const allEntries = () => mainEntries().flatMap((e) => [e, ...(e.mips ?? [])]);
 
 // ---------------------------------------------------------------------------
 // what the acts ask of the figures
@@ -134,6 +137,14 @@ test('sprites: the atlas module and atlas.json agree, and every file is there, a
     assert.equal(createHash('sha256').update(buf).digest('hex').slice(0, 10), e.v, `${e.file} version stamp`);
   });
   assert.ok(bytes < 2.5e6, `sprites stay small (${(bytes / 1e6).toFixed(2)} MB)`);
+  // the copies are half and a quarter of each frame
+  mainEntries().forEach((e) => {
+    assert.equal(e.mips.length, 2, `${e.file} has two smaller copies`);
+    e.mips.forEach((m, i) => {
+      const d = 2 ** (i + 1);
+      assert.ok(Math.abs(m.w - e.w / d) <= 0.5 && Math.abs(m.h - e.h / d) <= 0.5, `${m.file} is 1/${d}`);
+    });
+  });
   // nothing stray in the folder
   const listed = new Set(allEntries().map((e) => e.file));
   const walk = (dir, rel = '') => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f), `${rel}${f}/`) : [`${rel}${f}`]));
@@ -308,6 +319,24 @@ test('sprites: fx points written for the jointed figures land on the painted han
   assert.ok(px > 20 && px < 70 && py < -60 && py > -100, `the punch at ${px}, ${py}`);
 });
 
+test('sprites: a figure drawn small uses the 1/2 or 1/4 copy (no sparkle), with hysteresis', () => {
+  assert.equal(pickLevel(1.2), 0);
+  assert.equal(pickLevel(0.8), 0);
+  assert.equal(pickLevel(0.45), 1);
+  assert.equal(pickLevel(0.2), 2);
+  // near an edge it stays on the copy it has
+  assert.equal(pickLevel(0.58, 0), 0);
+  assert.equal(pickLevel(0.58, 1), 1);
+  assert.equal(pickLevel(0.62, 1), 1);
+  assert.equal(pickLevel(0.7, 1), 0);
+  // geometry of a copy: the same feet, the same size in tile px
+  const full = frameGeometry('butch', 'walk-1', 0);
+  const quarter = frameGeometry('butch', 'walk-1', 2);
+  assert.deepEqual(quarter.origin, full.origin);
+  const f = ATLAS.characters.butch.frames['walk-1'];
+  assert.ok(Math.abs(quarter.scaleX * f.mips[1].w - full.scaleX * f.w) < 1e-9, 'same width on screen');
+});
+
 // ---------------------------------------------------------------------------
 // the Phaser rig, on a stand-in scene
 
@@ -401,6 +430,11 @@ test('sprites: the walk reads distance from the figure’s movement on screen', 
   }
   assert.deepEqual(seen, ATLAS.characters.butch.cycles.walk.frames, 'one stride on screen = one cycle');
   // a jump (re-parented, zoomed) is not taken as a stride
+  // at scale 3 in a 1.5x layer Butch's frames are shown near full size; zoomed far out, the 1/4 copy
+  assert.ok(!/@/.test(rig.root.list.find((o) => o.type === 'Container').list[1].texture.key), 'full copy up close');
+  rig.update(16, { pose: 'idle', moving: false, time: 1200, zoom: 0.25 });
+  assert.match(rig.root.list.find((o) => o.type === 'Container').list[1].texture.key, /@4$/, 'the 1/4 copy far out');
+  rig.update(16, { pose: 'walk', moving: true, time: 1216, speed: 200 });
   const before = rig.animator.state.phase;
   rig.root.setPosition(99999, 0);
   rig.update(16, { pose: 'walk', moving: true, time: 2000, speed: 200 });
@@ -415,16 +449,11 @@ test('sprites: the jointed figures stay as the fallback; PanelScene preloads the
   assert.equal(buildSpriteRig(fakeScene(keys), 'butch'), null);
   assert.ok(!buildRig(fakeScene(keys), 'butch').painted, 'buildRig falls back');
   assert.ok(buildRig(fakeScene(keys), 'conductor').painted, 'other kinds are unaffected');
-  // ?figures=procedural shows the jointed figures (QA)
-  const saved = globalThis.location;
-  globalThis.location = { search: '?act=1&figures=procedural' };
-  try {
-    assert.equal(paintedFiguresEnabled(), false);
-    assert.ok(!buildRig(fakeScene(allKeys()), 'butch').painted);
-  } finally {
-    if (saved === undefined) delete globalThis.location; else globalThis.location = saved;
-  }
-  assert.equal(paintedFiguresEnabled(), true);
+  // ?figures=procedural shows the jointed figures (a dev route: production reads no params)
+  assert.equal(paintedFiguresEnabled(new URLSearchParams('?act=1&figures=procedural')), false);
+  assert.equal(paintedFiguresEnabled(new URLSearchParams('?act=1')), true);
+  assert.equal(paintedFiguresEnabled(), true, 'outside dev mode the painted figures always show');
+  assert.match(read('src/chapters/nightService/spriteRig.js'), /paintedFiguresEnabled\(params = devParams\(\)\)/);
   // every act queues what its actors draw
   Object.values(ACTS).forEach((act) => {
     const files = spriteFilesForAct(act);

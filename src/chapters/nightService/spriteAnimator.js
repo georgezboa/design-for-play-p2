@@ -106,27 +106,65 @@ export function framesOf(kind) {
   return [...names];
 }
 
-export function textureKey(kind, frame) {
-  return `${SPRITE_KEY_PREFIX}${SPRITE_RIGS[kind].sheet}-${frame}`;
+/** Mip levels: 0 the full frame, 1 and 2 its 1/2 and 1/4 copies (atlas `mips`). */
+export const LEVELS = Object.freeze([0, 1, 2]);
+const levelSuffix = (level) => (level ? `@${2 ** level}` : '');
+
+export function textureKey(kind, frame, level = 0) {
+  return `${SPRITE_KEY_PREFIX}${SPRITE_RIGS[kind].sheet}-${frame}${levelSuffix(level)}`;
 }
 
-export function propKey(name) {
-  return `${SPRITE_KEY_PREFIX}prop-${name}`;
+export function propKey(name, level = 0) {
+  return `${SPRITE_KEY_PREFIX}prop-${name}${levelSuffix(level)}`;
 }
 
 function url(entry) {
   return `${ATLAS.urlBase}/${entry.file}${entry.v ? `?v=${entry.v}` : ''}`;
 }
 
-/** [{ key, url }] for a rig kind: its frames (and, for Butch and the Conductor, the props they can hold). */
+/** An atlas entry at a mip level: { file, w, h, v } (level 0 is the entry itself). */
+function levelEntry(entry, level) {
+  return level ? entry.mips[level - 1] : entry;
+}
+
+/**
+ * The mip level for a figure drawn at `density` screen px per frame px
+ * (1: full size). WebGL1 cannot mipmap these (not powers of two), so a
+ * frame shown much smaller than its pixels would sparkle; each copy is used
+ * from about 0.6x of its own size up. A little hysteresis keeps a figure on
+ * the edge from flickering between copies.
+ */
+export function pickLevel(density, current = 0) {
+  const edges = [0.6, 0.3]; // full above 0.6, half above 0.3, else quarter
+  let want = density >= edges[0] ? 0 : density >= edges[1] ? 1 : 2;
+  if (want !== current) {
+    const margin = 0.08;
+    // stay on the current copy until the density is clearly past its edge
+    if (want > current && density >= edges[want - 1] * (1 - margin)) want = current;
+    if (want < current && density < edges[want] * (1 + margin)) want = current;
+  }
+  return want;
+}
+
+/** [{ key, url }] for a rig kind: its frames at every level (and, for Butch and the Conductor, the props they can hold). */
 export function spriteFiles(kind) {
   const spec = SPRITE_RIGS[kind];
   if (!spec) return [];
   const sheet = sheetOf(kind);
-  const out = framesOf(kind).map((frame) => ({ key: textureKey(kind, frame), url: url(sheet.frames[frame]) }));
+  const out = [];
+  framesOf(kind).forEach((frame) => LEVELS.forEach((level) => {
+    out.push({ key: textureKey(kind, frame, level), url: url(levelEntry(sheet.frames[frame], level)) });
+  }));
   const props = kind === 'butch' ? Object.keys(PROP_SIZES) : kind === 'conductor' ? ['punch'] : [];
-  props.forEach((name) => out.push({ key: propKey(name), url: url(ATLAS.props[name]) }));
+  props.forEach((name) => LEVELS.forEach((level) => {
+    out.push({ key: propKey(name, level), url: url(levelEntry(ATLAS.props[name], level)) });
+  }));
   return out;
+}
+
+/** A prop's size in frame px at a level (for its display scale). */
+export function propWidth(name, level = 0) {
+  return levelEntry(ATLAS.props[name], level).w;
 }
 
 /** Everything an act's actors need, deduplicated by key. */
@@ -147,11 +185,27 @@ export function anchorPoint(kind, frame, name) {
   return [(a[0] - f.pivot[0]) * sheet.unit, (a[1] - f.pivot[1]) * sheet.unit];
 }
 
-/** A frame's image geometry: origin (0..1) at the feet, and its scale (local units per frame px). */
-export function frameGeometry(kind, frame) {
+/**
+ * A frame's image geometry at a mip level: origin (0..1) at the feet, and its
+ * x / y scale (local units per texture px; a copy's px are bigger).
+ */
+export function frameGeometry(kind, frame, level = 0) {
   const sheet = sheetOf(kind);
   const f = sheet.frames[frame];
-  return { origin: [f.pivot[0] / f.w, f.pivot[1] / f.h], scale: sheet.unit, w: f.w * sheet.unit, h: f.h * sheet.unit };
+  const e = levelEntry(f, level);
+  return {
+    origin: [f.pivot[0] / f.w, f.pivot[1] / f.h],
+    scale: sheet.unit,
+    scaleX: (sheet.unit * f.w) / e.w,
+    scaleY: (sheet.unit * f.h) / e.h,
+    w: f.w * sheet.unit,
+    h: f.h * sheet.unit,
+  };
+}
+
+/** Local units per full-size frame px for a kind. */
+export function unitOf(kind) {
+  return sheetOf(kind).unit;
 }
 
 /** The rig's height in tile px at scale 1 (the train: its rail-to-roof height; its length stays 150). */

@@ -5,20 +5,18 @@
 // spriteAnimator.js; this file only draws them. PanelScene places `root` (at
 // the feet, facing by its x scale); the rig never moves itself.
 
+import { devParams } from '../../devMode.js';
 import {
-  PUNCH_TEXTURE, SPRITE_RIGS, anchorPoint, createAnimator, frameGeometry, propKey, rigHeight, spriteFiles, spriteFilesForAct, textureKey,
+  PUNCH_TEXTURE, SPRITE_RIGS, anchorPoint, createAnimator, frameGeometry, pickLevel, propKey, propWidth, rigHeight, spriteFiles,
+  spriteFilesForAct, textureKey, unitOf,
 } from './spriteAnimator.js';
 
 /**
- * `?figures=procedural` (dev, QA): skip the painted frames and show the
- * jointed figures, e.g. to compare the two.
+ * `?figures=procedural` (a dev route, so never in a shipped build): skip the
+ * painted frames and show the jointed figures, e.g. to compare the two.
  */
-export function paintedFiguresEnabled() {
-  try {
-    return new URLSearchParams(globalThis.location?.search ?? '').get('figures') !== 'procedural';
-  } catch {
-    return true;
-  }
+export function paintedFiguresEnabled(params = devParams()) {
+  return params.get('figures') !== 'procedural';
 }
 
 /** Queue an act's painted figures on a scene's loader (PanelScene.preload). */
@@ -47,12 +45,14 @@ function softImage(scene, tint, blend) {
 
 /** The punch act1Fx flies from hand to hand, painted, at the jointed figure's texture size. */
 function ensurePunchTexture(scene) {
-  if (scene.textures.exists(PUNCH_TEXTURE.key) || !scene.textures.exists(propKey('punch'))) return;
+  // drawn from the 1/4 copy: a single canvas downscale of the full one would alias
+  if (scene.textures.exists(PUNCH_TEXTURE.key) || !scene.textures.exists(propKey('punch', 2))) return;
   const { w, h, res } = PUNCH_TEXTURE;
   const tex = scene.textures.createCanvas(PUNCH_TEXTURE.key, w * res, h * res);
-  const src = scene.textures.get(propKey('punch')).getSourceImage();
+  const src = scene.textures.get(propKey('punch', 2)).getSourceImage();
   const k = Math.min((w * res) / src.width, (h * res) / src.height);
   const c = tex.getContext();
+  c.imageSmoothingQuality = 'high';
   c.drawImage(src, (w * res - src.width * k) / 2, (h * res - src.height * k) / 2, src.width * k, src.height * k);
   tex.refresh();
 }
@@ -86,11 +86,13 @@ export function buildSpriteRig(scene, kind) {
   if (prop) body.add(prop);
   if (glow) body.add(glow);
 
+  // which copy of the frames (full, 1/2, 1/4) suits the figure's size on screen
+  let level = 0;
   const show = (image, frame) => {
-    const key = textureKey(kind, frame);
+    const key = textureKey(kind, frame, level);
     if (image.texture.key !== key) image.setTexture(key);
-    const g = frameGeometry(kind, frame);
-    image.setOrigin(g.origin[0], g.origin[1]).setScale(g.scale);
+    const g = frameGeometry(kind, frame, level);
+    image.setOrigin(g.origin[0], g.origin[1]).setScale(g.scaleX, g.scaleY);
   };
   show(front, spec.idle);
 
@@ -103,6 +105,7 @@ export function buildSpriteRig(scene, kind) {
     if (!matrix.tm && m?.constructor) { matrix.tm = m; matrix.pm = new m.constructor(); }
     const sx = Math.hypot(m.a, m.b) || 1;
     const here = { x: m.tx, y: m.ty, s: sx };
+    matrix.scale = sx;
     const prev = matrix.last;
     const sameParent = matrix.parent === root.parentContainer;
     matrix.last = here;
@@ -129,8 +132,10 @@ export function buildSpriteRig(scene, kind) {
       visible: true,
       setVisible(v) { this.visible = v; anim.hidePunch(!v); return this; },
     } : undefined,
-    update(dt, { pose, moving, time, carrying, speed = null } = {}) {
+    update(dt, { pose, moving, time, carrying, speed = null, zoom = 1 } = {}) {
       const walked = moving ? travelled(dt, speed) : (travelled(dt, 0), 0);
+      // screen px per frame px: the figure's world scale x its camera's zoom
+      level = pickLevel((matrix.scale ?? 1) * zoom * unitOf(kind), level);
       const view = anim.update(dt, { pose, moving, time, carrying, travelled: walked });
       show(front, view.frame);
       front.setAlpha(view.prev ? view.fade : 1);
@@ -161,9 +166,10 @@ export function buildSpriteRig(scene, kind) {
       if (!prop) {
         // no props on this figure
       } else if (view.prop && scene.textures.exists(propKey(view.prop.name))) {
-        if (prop.texture.key !== propKey(view.prop.name)) prop.setTexture(propKey(view.prop.name));
+        const pl = pickLevel(((matrix.scale ?? 1) * zoom * view.prop.size) / propWidth(view.prop.name), 0);
+        if (prop.texture.key !== propKey(view.prop.name, pl)) prop.setTexture(propKey(view.prop.name, pl));
         prop.setVisible(true).setPosition(view.prop.x - view.x, view.prop.y - view.y);
-        prop.setScale(view.prop.size / prop.width);
+        prop.setScale(view.prop.size / propWidth(view.prop.name, pl));
       } else {
         prop.setVisible(false);
       }

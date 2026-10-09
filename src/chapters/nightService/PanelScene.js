@@ -4000,7 +4000,8 @@ export class PanelScene extends Phaser.Scene {
         const facing = this.waitLook?.[id] ? -actor.facing : actor.facing;
         rig.root.setScale(facing * scale, scale);
       }
-      rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying, speed: actor.walk?.speed ?? null });
+      // zoom: the tile camera's (the crossing layer's camera is 1); the painted rigs pick their frame copy by size on screen
+      rig.update(dt, { pose: actor.pose, moving, time: this.clock, carrying: actor.carrying, speed: actor.walk?.speed ?? null, zoom: actor.crossing ? 1 : view.cam.zoom });
       if (moving && id === 'butch') {
         entry.stepClock += dt;
         if (entry.stepClock > 300) { entry.stepClock = 0; this.audio.play('step'); }

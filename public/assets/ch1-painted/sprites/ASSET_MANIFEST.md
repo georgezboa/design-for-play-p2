@@ -6,6 +6,7 @@ every file here, `atlas.json` and `src/chapters/nightService/spriteAtlas.js`).
 
 Sources are the 1536x1024 sheets in the art drop (`C-*.png`), each on a flat grey ground.
 Crop box: the figure in source pixels (x0 y0 x1 y1) after keying; scale: output px per source px.
+Every file also has `@2` and `@4` copies at 1/2 and 1/4 size (for figures drawn small).
 Frames edited beyond keying (see the script's FRAMES for the polygons): butch/desk, butch/sit-chair, butch/ticket, conductor/offer, conductor/offer-empty, conductor/stand-empty.
 
 | Output | Rig / kind | Source | Crop box (source px) | Scale | Size | Notes |
