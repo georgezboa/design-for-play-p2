@@ -259,7 +259,7 @@ the line index the Archivist's red pencil crosses out) · `dialogue [{speaker,te
 `caption {text,ms}` · `wait ms` · `fx {name,…,ms?}` · `sfx name` · `ringBell` ·
 `walkButch {id,path,speed,await}` / `walk {actor,…}` / `playTrain {id,path}` ·
 `placeActor {actor,tile,state,x,y,visible,pose,facing,carrying}` · `actorPose` ·
-`zoomTo {tile,to,rect}` · `zoomOut tile` or `{tile,to}` (step back into a different wide state: the door the key just opened) · `zoomOutAll {tile,gap}` (back out of every level, one at a time) · `read 'tile.id'` (a readable's reading view) ·
+`zoomTo {tile,to,rect,ms?}` (`ms`: a slower, deliberate camera move) · `zoomOut tile` or `{tile,to}` (step back into a different wide state: the door the key just opened) · `zoomOutAll {tile,gap}` (back out of every level, one at a time) · `read 'tile.id'` (a readable's reading view) ·
 `enableLens {x,y,r}` or `{tile,u,v}` / `disableLens` ·
 `returnFrame id` · `unlockDrag` / `lockTile` · `lockInput` / `unlockInput` ·
 `grantStone id` · `checkpoint id` · `nextAct id` · `endChapter` · `setSlots [..]` (dev `skip` only).

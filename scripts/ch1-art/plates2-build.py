@@ -75,6 +75,10 @@ CROPS = {
     'a3/hawthorn': (60, 0, 1072, 828),
     'a3/orchard': (267, 0, 1259, 972),
     'a3/gap': (154, 76, 1227, 948),
+    # round 8: George's overlook, carriage, platform and the platform close-up.
+    # The overlook, carriage and platform crops are solved from the painted
+    # lines (a3_crops below) so the lane, the stair and the deck meet.
+    'a3/platform-close': (85, 0, 1326, 1024),
 }
 
 # Painted objects, in source px of their own image (x, y, w, h) or points.
@@ -122,6 +126,33 @@ FEATURES = {
     'hawthorn': {'lane': 596, 'break': (870, 535, 480, 160)},
     'orchardHouse': {'lit': (1000, 285, 45, 85), 'lane': 700},
     'gap': {'deck': 787, 'break': (510, 1030)},
+    # round 8 (source px of each painting)
+    'overlook': {
+        'lane': 692,                         # the lane's middle at the left edge
+        'stair': ((640, 700), (850, 1000)),  # the stair's centre line, its head and lower down
+        'lamp': (1352, 768),                 # the station lamp far below
+        'lit': (804, 290),                   # the house's lit upstairs window (also found by matching)
+    },
+    'carriage': {'deck': 751, 'railing': 719, 'signal': (1131, 566), 'buffer': (95, 680, 120, 72)},
+    'platform': {
+        'deck': 780, 'railing': 726,
+        'stair': ((840, 0), (935, 570)),     # the stair's centre line, top edge to its foot
+        'bench': (405, 572, 105, 60),        # backrest top to the feet
+        'lamp': (1178, 485), 'buffer': (1320, 650, 70, 75),
+        'back': 592,                         # the platform's far side (Mara walks here)
+    },
+    'close': {
+        'bench': (79, 441, 501, 240),        # backrest top to the feet
+        'seat': 565,                         # the seat's top line
+        'case': (277, 450, 213, 118),        # the painted case on the bench, handle and tag
+        'door': (955, 195, 95, 300),         # the lit open doorway of the other train
+        'steps': [605, 590, 558, 525, 495],  # the platform at the steps' foot, the three treads, the threshold
+        'stepsX': 1005,
+        'floor': 702,                        # Butch's feet, in front of the bench legs
+        'lamp': (1355, 160),                 # the lantern
+        'person': 460,                       # a standing figure's height at the bench (the seat is 0.45 m: 115 px)
+        'doorPerson': 254,                   # a 1.65 m figure beside the 1.95 m doorway
+    },
 }
 
 STATIONS = ['CITY TERMINAL', 'RIVER JUNCTION', 'MILL ROAD', 'HALFWAY HOUSE', 'BELLWETHER']
@@ -460,61 +491,6 @@ def era_1978(img):
     p = img.reshape(-1, 3)
     out = _ERA['feats'](p) @ _ERA['coef']
     return np.clip(out.reshape(img.shape), 0, 1)
-
-
-# The brief's palette: ink black, deep navy, dark teal, walnut, aged brass, ivory, one amber.
-PALETTE = {
-    'ink': (0x0E, 0x0C, 0x0B), 'navy': (0x1B, 0x2A, 0x3A), 'teal': (0x23, 0x41, 0x3F), 'walnut': (0x4A, 0x32, 0x22),
-    'brass': (0x8A, 0x6A, 0x3C), 'ivory': (0xE9, 0xDF, 0xC8), 'amber': (0xE3, 0xA3, 0x4E),
-}
-
-
-def grade_like(img, refs, *, strength=1.0, cool=0.75):
-    """Tone-map a borrowed painting into the plates' look: their black point and
-    tonal spread (histogram-matched to George's plates), the brief's palette
-    (a gradient map: ink → navy → teal → brass → ivory, the warm lights kept
-    amber), flattened colour fields, an inked line, hatching in the shadows and
-    paper grain."""
-    L = luma(img)
-    refL = np.concatenate([luma(r).ravel() for r in refs])
-    qs = np.linspace(0, 100, 257)
-    L2 = np.interp(L, np.percentile(L, qs), np.percentile(refL, qs))
-    # gradient map, cool for the night
-    P = {k: np.array(v, np.float32) / 255 for k, v in PALETTE.items()}
-    stops = [(0.0, P['ink']), (0.05, P['navy'] * 0.72), (0.12, P['navy'] * (1 - cool) + P['teal'] * cool * 0.9 + P['navy'] * cool * 0.1),
-             (0.24, P['teal'] * 0.6 + P['brass'] * 0.4), (0.45, P['brass']), (0.75, P['ivory'] * 0.85 + P['amber'] * 0.15), (1.0, P['ivory'])]
-    xs = np.array([t for t, _ in stops], np.float32)
-    mapped = np.stack([np.interp(L2, xs, [c[i] for _, c in stops]) for i in range(3)], 2)
-    # keep each mapped colour's luminance at the matched value
-    mapped = mapped * (L2 / np.maximum(luma(mapped), 1e-4))[..., None]
-    # warm practical lights (windows, lamps) stay amber; their hue is the story
-    hsv = cv2.cvtColor(to_u8(img), cv2.COLOR_RGB2HSV).astype(np.float32)
-    warm = ((hsv[..., 0] >= 5) & (hsv[..., 0] <= 32)).astype(np.float32) * np.clip((hsv[..., 1] - 70) / 80, 0, 1) * np.clip((L - 0.35) / 0.25, 0, 1)
-    warm = cv2.GaussianBlur(warm, (0, 0), 1.2)
-    lit = P['amber'][None, None, :] * np.clip(L2 / 0.45, 0.3, 1.6)[..., None]
-    out = over(mapped, lit, warm * 0.85)
-    # a little of the source's own hue, so it is not a duotone
-    srcc = img * (L2 / np.maximum(L, 1e-4))[..., None]
-    out = np.clip(out * 0.82 + np.clip(srcc, 0, 1) * 0.18, 0, 1)
-    # gouache: flatten soft gradients into fields
-    flat = cv2.pyrMeanShiftFiltering(to_u8(out), 5, 9).astype(np.float32) / 255
-    out = out * 0.4 + flat * 0.6
-    # ink: a thin dark line on every edge, cross-hatching in the shadows
-    g = cv2.GaussianBlur(luma(out), (0, 0), 0.9)
-    dog = cv2.GaussianBlur(g, (0, 0), 0.7) - cv2.GaussianBlur(g, (0, 0), 2.2)
-    line = np.clip(-dog * 30, 0, 1) ** 1.1
-    out = out * (1 - 0.7 * line[..., None])
-    h, w = g.shape
-    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
-    wob = cv2.GaussianBlur(np.random.default_rng(7).random((h, w)).astype(np.float32), (0, 0), 9) * 6
-    hatch1 = np.clip((np.sin((xx + yy + wob) * (2 * math.pi / 4.5)) - 0.35) * 3, 0, 1)
-    hatch2 = np.clip((np.sin((xx - yy + wob) * (2 * math.pi / 5.5)) - 0.55) * 3, 0, 1)
-    dark = np.clip((0.16 - g) / 0.14, 0, 1)
-    jitter = cv2.GaussianBlur(np.random.default_rng(8).random((h, w)).astype(np.float32), (0, 0), 5)
-    hatch = np.clip(hatch1 * dark * 0.6 + hatch2 * np.clip(dark - 0.35, 0, 1) * 0.7, 0, 1) * (0.5 + jitter)
-    out = out * (1 - 0.35 * hatch[..., None])
-    out = paper_grain(out, 0.09)
-    return np.clip(img * (1 - strength) + out * strength, 0, 1)
 
 
 def paper_grain(img, k):
@@ -909,22 +885,11 @@ def board_plates(board, board78, geo):
 # ---------------------------------------------------------------------------
 # ACT 3
 
-def world_chunk(world, i):
-    """A panorama chunk, its 1-px light border (from the generator) cleaned off."""
-    with Image.open(WORLDS / world / f'chunk-{i:02d}.jpg') as im:
-        a = np.asarray(im.convert('RGB'), dtype=np.float32) / 255
-    a = a.copy()
-    a[:3] = a[3:4]
-    a[-3:] = a[-4:-3]
-    return a
-
-
 def act3():
     print('Act 3 · TWO TRUE THINGS')
     geo = {}
     if 'coef' not in _ERA:
         fit_era([(load('A2-rack'), load('A2-rack-1978')), (load('A2-board'), load('A2-board-1978'))])
-    refs = [load('A3-hawthorn'), load('A3-orchard'), load('A3-city')]
     # --- the city room and its liftable window -------------------------------
     C = FEATURES['city']
     cb = CROPS['a3/city']
@@ -985,7 +950,7 @@ def act3():
     save('act3/orchard', crop(orch, cb), note='the orchard house; its upstairs window lit', sources=['A3-orchard.png'], crop_box=cb)
     geo['orchard'] = {'lit': tbox(O['lit'], cb), 'litCentre': tpt((O['lit'][0] + O['lit'][2] / 2, O['lit'][1] + O['lit'][3] / 2), cb),
                       'lane': round((O['lane'] - cb[1]) / cb[3], 4)}
-    overlook(orch, refs, geo, crop(haw, CROPS['a3/hawthorn']))
+    overlook_plate(orch, geo)
 
     # --- the viaduct (present / 1978) ------------------------------------------
     G = FEATURES['gap']
@@ -1002,173 +967,219 @@ def act3():
         'trainTilePx': round(20 * 18.3 / cb[2] * 536, 1),
     }
 
-    # --- the carriage and the platform: no paintings yet (NEEDED-ART.md) -------
-    # The old panoramas, graded to the plates, above the deck line; below it
-    # George's own viaduct carried on (the painted arches either side of the
-    # gap's crop, then repeated), so the rail runs on the same stone at RAIL_AT.
-    fields = world_chunk('world-01-tutorial', 1)
-    sky = grade_like(resize(fields[0:941, 2300:2300 + 1218], 1072, 828), refs)
-    carriage = viaduct_band(sky, gap, cb, side='left')
-    save('act3/carriage', carriage, note='INTERIM: night fields (world 01) graded to the plates; below the deck, A3-gap\'s viaduct carried on (see NEEDED-ART.md)',
-         sources=['src/assets/generated/worlds/world-01-tutorial/chunk-01.jpg', 'A3-gap.png'], crop_box=(2300, 0, 1218, 941), kind='interim')
-    memory = world_chunk('world-07-memory', 1)
-    station = grade_like(resize(memory[412:826, 20:556], 1072, 828), refs)
-    platform = viaduct_band(station, gap, cb, side='right')
-    save('act3/platform', platform, note='INTERIM: Bellwether by the water (world 07) graded to the plates; below the deck, A3-gap\'s viaduct carried on (see NEEDED-ART.md)',
-         sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg', 'A3-gap.png'], crop_box=(20, 412, 536, 414), kind='interim')
-    platform78 = viaduct_band(paper_grain(era_1978(station), 0.03), gap78, cb, side='right')
-    save('act3/platform-1978', platform78, note='INTERIM: the same, in George\'s 1978 grade, over A3-gap-1978\'s deck', sources=['src/assets/generated/worlds/world-07-memory/chunk-01.jpg', 'A3-gap-1978.png'],
-         crop_box=(20, 412, 536, 414), kind='interim')
+    # --- the carriage, the platform and its close-up (round 8) -----------------
+    carriage_plate(geo)
+    platform_plates(geo)
+    close_plates(geo)
     return geo
 
 
-# George's viaduct, A3-gap source px: the deck's top, the railing's top, and one
-# pier-to-pier arch to repeat (a pier's middle at each end)
-DECK_SRC = 787
-RAILING_SRC = 748
-ARCH_PERIOD = (138, 382)
+# ---------------------------------------------------------------------------
+# Act 3 · round 8: George's overlook, carriage, platform and platform close-up
 
-
-def viaduct_band(sky, gap_src, gap_crop, *, side):
-    """`sky` (W×H, the tile's own picture) with A3-gap's viaduct run on beneath its
-    deck line, at the gap plate's scale, continuing from the gap crop's `side` edge."""
-    H, W = sky.shape[:2]
-    k = (H / gap_crop[3])                      # tile scale: both plates are 414 tile px tall
-    cx0, cy0, cw, ch = gap_crop
-    a, b = ARCH_PERIOD
-    period = b - a
-    src_x = np.empty(W, np.float32)
-    for x in range(W):
-        if side == 'left':
-            sx = cx0 - (W - x) / k            # the carriage ends where the gap crop begins
-        else:
-            sx = cx0 + cw + x / k             # the platform begins where the gap crop ends
-        if side == 'left' and sx < a:
-            sx = a + ((sx - a) % period)
-        if side == 'right' and sx > gap_src.shape[1] - 1 - 20:
-            # past the painting's right edge: the same arch, phase-matched to the last pier
-            sx = a + ((sx - (gap_src.shape[1] - 21)) % period)
-        src_x[x] = sx
-    band = np.zeros_like(sky)
-    alpha = np.zeros((H, W), np.float32)
-    y_top = int((RAILING_SRC - 8 - cy0) * k)
-    ys = np.arange(H, dtype=np.float32)
-    src_y = cy0 + ys / k
-    mx, my = np.meshgrid(src_x, src_y)
-    band = cv2.remap(gap_src.astype(np.float32), mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REFLECT)
-    deck = (DECK_SRC - cy0) * k
-    # below the deck: all viaduct; between the railing and the deck: only the railing itself
-    hsv = cv2.cvtColor(to_u8(band), cv2.COLOR_RGB2HSV).astype(np.float32)
-    rail = ((hsv[..., 0] >= 8) & (hsv[..., 0] <= 32) & (hsv[..., 1] > 60) & (hsv[..., 2] > 55)).astype(np.float32)
-    rail = cv2.GaussianBlur(cv2.dilate(rail, np.ones((2, 2), np.uint8)), (0, 0), 0.7)
-    yy = ys[:, None]
-    below = np.clip((yy - (deck - 4)) / 4, 0, 1)
-    between = ((yy >= y_top) & (yy < deck)).astype(np.float32)
-    alpha = np.maximum(below, rail * between)
-    alpha = np.broadcast_to(alpha, (H, W)).copy()
-    out = over(sky, band, alpha)
-    # the panorama's lower part sits behind and below the deck: darken it into the valley
-    fog = np.clip((yy - deck * 0.92) / (H * 0.25), 0, 1)
-    out = out * (1 - 0.5 * fog * (1 - alpha))[..., None]
-    return out
-
-
-# the orchard house's box in the hill view, and the hill view's panorama crop (world 07)
-OVERLOOK_SRC = (1000, 330, 1218, 941 - 330)
-
-
-def overlook(orch, refs, geo, lane_plate):
-    """INTERIM until A3-overlook exists: the old Bellwether panorama graded to
-    the plates, with the orchard house plate set into it where the house
-    stands, so zooming out of the house reads as one picture."""
-    W, H = 1072, 828
-    chunk = world_chunk('world-07-memory', 0)
-    x, y, w, h = OVERLOOK_SRC
-    reg = chunk[y:y + h, x:x + w]
-    # the panorama is shorter than the tile: pad the foreground (the hill is drawn there)
-    scale = W / w
-    body = resize(reg, W, int(h * scale))
-    base = np.zeros((H, W, 3), np.float32)
-    bh0 = min(H, body.shape[0])
-    base[:bh0] = body[:bh0]
-    if bh0 < H:
-        # run the water on down, mirrored and darkening (the hill is painted over it)
-        rest = H - bh0
-        mirror = body[::-1][:rest]
-        if mirror.shape[0] < rest:
-            mirror = np.concatenate([mirror, np.repeat(mirror[-1:], rest - mirror.shape[0], 0)])
-        fade = np.linspace(0.85, 0.35, rest, dtype=np.float32)[:, None, None]
-        base[bh0:] = cv2.GaussianBlur(mirror, (0, 0), 3) * fade
-    plate = grade_like(base, refs)
-    # the house picture, small, where the panorama's house stood
-    hb = OVERLOOK_HOUSE_BOX
-    hx, hy, hw, hh = int(hb[0] * W), int(hb[1] * H), int(hb[2] * W), int(hb[3] * H)
-    house = resize(crop(orch, CROPS['a3/orchard']), hw, hh)
-    yy, xx = np.mgrid[0:hh, 0:hw].astype(np.float32)
-    # a soft oval: the house and its trees, the sky and the town around run into the panorama
-    d = np.hypot((xx - hw * 0.55) / (hw * 0.55), (yy - hh * 0.55) / (hh * 0.62))
-    a = smooth(np.clip((1.0 - d) / 0.42, 0, 1))
-    # the house sits in the plates' own night: no regrade, only a touch of haze to set it back
-    haze = house * 0.86 + np.array([0.02, 0.025, 0.04], np.float32)
-    plate[hy:hy + hh, hx:hx + hw] = over(plate[hy:hy + hh, hx:hx + hw], haze, a)
-    plate = hill(plate, lane_plate)
-    plate = paper_grain(plate, 0.03)
-    save('act3/overlook', plate, note='INTERIM: world-07 panorama graded, the orchard house plate set in; see NEEDED-ART.md', sources=['src/assets/generated/worlds/world-07-memory/chunk-00.jpg', 'A3-orchard.png'], crop_box=OVERLOOK_SRC, kind='interim')
-    geo['overlook'] = {'house': list(OVERLOOK_HOUSE_BOX)}
-
-
-def hill(plate, lane_plate):
-    """The hill under the orchard, from George's hawthorn lane: its lane (at
-    PATH_AT, so it continues from the hawthorn window) runs in from the left
-    and ends at the top of a stone stair that goes down the dark slope and
-    leaves the bottom edge at STAIR_AT."""
-    H, W = plate.shape[:2]
+def overlook_crop(h=930):
+    """The hill view's crop: the lane's middle at PATH_AT on the left edge, the
+    stair's centre at STAIR_AT on the bottom edge; `h` keeps the station lamp
+    far below on the right inside the frame."""
+    O = FEATURES['overlook']
     path, stair = A3_EDGES['path'], A3_EDGES['stair']
-    yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
-    # the lane and its verges: the hawthorn plate's own, up to where its lane
-    # starts to wash out (0.6 across); the rest is the stretch before it, mirrored
-    cut = int(W * 0.6)
-    span = W - cut
-    ground = lane_plate.copy()
-    ground[:, cut:] = lane_plate[:, cut - span:cut][:, ::-1]
-    seam = smooth((np.abs(xx - cut)) / (W * 0.03))
-    ground = over(cv2.GaussianBlur(ground, (0, 0), 3), ground, seam)
-    top = smooth((yy - H * (path - 0.125)) / (H * 0.05))
-    out = over(plate, ground, top)
-    # the stair: stone slabs from the lane's end down to the bottom edge at STAIR_AT
-    canvas = Image.fromarray(to_u8(out))
-    S = 3
-    big = canvas.resize((W * S, H * S), Image.LANCZOS)
-    d = ImageDraw.Draw(big)
-    x0, y0 = W * 0.475, H * (path + 0.012)
-    x1, y1 = W * stair, H * 1.01
-    n = 15
-    rng = np.random.default_rng(55)
-    for i in range(n):
-        t0, t1 = i / n, (i + 1) / n
-        cx0, cy0_ = x0 + (x1 - x0) * t0, y0 + (y1 - y0) * t0
-        cx1, cy1 = x0 + (x1 - x0) * t1, y0 + (y1 - y0) * t1
-        hw0 = W * (0.024 + 0.014 * t0)
-        hw1 = W * (0.024 + 0.014 * t1)
-        tread = [(cx0 - hw0, cy0_), (cx0 + hw0, cy0_), (cx1 + hw1, cy1 - (cy1 - cy0_) * 0.45), (cx1 - hw1, cy1 - (cy1 - cy0_) * 0.45)]
-        riser = [tread[3], tread[2], (cx1 + hw1, cy1), (cx1 - hw1, cy1)]
-        tone = 0.75 + rng.random() * 0.3
-        d.polygon([(x * S, y * S) for x, y in tread], fill=tuple(int(c * tone) for c in (70, 58, 44)))
-        d.polygon([(x * S, y * S) for x, y in riser], fill=(18, 14, 11))
-        d.line([(tread[0][0] * S, tread[0][1] * S), (tread[1][0] * S, tread[1][1] * S)], fill=(150, 118, 80), width=S)
-    # the two stringers, inked
-    for sgn in (-1, 1):
-        d.line([((x0 + sgn * W * 0.026) * S, y0 * S), ((x1 + sgn * W * 0.04) * S, y1 * S)], fill=(14, 12, 11), width=2 * S)
-    out = np.asarray(big.resize((W, H), Image.LANCZOS), dtype=np.float32) / 255
-    # a little grass over the stair's edges, and the lamp far below on the right
-    out = out * (1 - 0.25 * smooth((yy - H * 0.9) / (H * 0.1)))[..., None]
-    glow = radial(out.shape, W * 0.82, H * 0.95, W * 0.06, 2.0)[..., None] * np.array([0.89, 0.64, 0.31], np.float32)
-    return np.clip(out + glow * 0.35, 0, 1)
+    y0 = round(O['lane'] - path * h)
+    w = round(h * A3)
+    (ax, ay), (bx, by) = O['stair']
+    xb = ax + (bx - ax) * (y0 + h - ay) / (by - ay)
+    x0 = round(xb - stair * w)
+    box = (x0, y0, w, h)
+    assert x0 >= 0 and y0 >= 0 and x0 + w <= 1536 and y0 + h <= 1024, box
+    assert x0 + w > O['lamp'][0] + 20, 'the station lamp stays in the picture'
+    return box
 
 
-# where the house plate sits in the overlook (tile units, w == h: a zoom rect)
-OVERLOOK_HOUSE_BOX = (0.3, 0.1, 0.46, 0.46)
+def deck_crop(deck, *, x0=None, xs=None, stair_y=None):
+    """A bottom-row crop with the painted deck top at RAIL_AT: as large as the
+    painting allows (the viaduct keeps its scale), anchored at x0, or with the
+    stair (centre line xs(y)) at STAIR_AT on the top edge."""
+    rail = A3_EDGES['rail']
+    if deck / rail <= 1024 and deck + (1 - rail) * (deck / rail) <= 1024:
+        y0, h = 0, round(deck / rail)
+    else:
+        h = int((1024 - deck) / (1 - rail))
+        y0 = round(deck - rail * h)
+    w = round(h * A3)
+    if xs is not None:
+        x0 = round(xs(y0) - A3_EDGES['stair'] * w)
+    box = (x0, y0, w, h)
+    assert x0 >= 0 and y0 >= 0 and x0 + w <= 1536 and y0 + h <= 1024, box
+    return box
 
+
+def match_house(orch, over_img):
+    """Where A3-orchard's crop sits in A3-overlook (AKAZE + RANSAC similarity)."""
+    ga = cv2.cvtColor(to_u8(orch), cv2.COLOR_RGB2GRAY)
+    gb = cv2.cvtColor(to_u8(over_img), cv2.COLOR_RGB2GRAY)
+    clahe = cv2.createCLAHE(3.0, (8, 8))
+    ga, gb = clahe.apply(ga), clahe.apply(gb)
+    # the overlook's house region, upsampled to the orchard plate's scale
+    rx0, ry0, rx1, ry1 = 520, 120, 1120, 460
+    k = 2.2
+    sub = cv2.resize(gb[ry0:ry1, rx0:rx1], None, fx=k, fy=k, interpolation=cv2.INTER_CUBIC)
+    det = cv2.AKAZE_create()
+    ka, da = det.detectAndCompute(ga, None)
+    kb, db = det.detectAndCompute(sub, None)
+    good = [m for m, n in cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(da, db, k=2) if m.distance < 0.8 * n.distance]
+    pa = np.float32([ka[m.queryIdx].pt for m in good])
+    pb = np.float32([kb[m.trainIdx].pt for m in good]) / k + np.float32([rx0, ry0])
+    M, mask = cv2.estimateAffinePartial2D(pa, pb, ransacReprojThreshold=3.0)
+    inl = int(mask.sum())
+    scale = math.hypot(M[0, 0], M[1, 0])
+    cb = CROPS['a3/orchard']
+    x, y = np.float32([cb[0], cb[1]]) @ M[:, :2].T + M[:, 2]
+    REGISTRATION['A3-orchard→A3-overlook'] = {'matches': len(good), 'inliers': inl, 'scale': round(scale, 4), 'origin': [round(float(x), 1), round(float(y), 1)]}
+    print(f'  house in the overlook: {len(good)} matches, {inl} inliers, scale {scale:.4f} at ({x:.0f}, {y:.0f})')
+    assert inl >= 30
+    return (float(x), float(y), cb[2] * scale, cb[3] * scale)
+
+
+def overlook_plate(orch, geo):
+    """The hill above the orchard: the zoom out of the house lands on the house
+    painted here (matched), the lane comes in from the hawthorn window, the
+    stair goes down to the platform."""
+    O = FEATURES['overlook']
+    img = load('A3-overlook')
+    cb = overlook_crop()
+    CROPS['a3/overlook'] = cb
+    save('act3/overlook', crop(img, cb), note='the orchard house from the hill; the lane in from the left, the stair down to the platform',
+         sources=['A3-overlook.png'], crop_box=cb)
+    house = tbox(match_house(orch, img), cb)
+    # a zoom rect: square in tile units (the orchard plate has the tile's aspect)
+    side = round((house[2] + house[3]) / 2, 4)
+    house = [house[0], house[1], side, side]
+    (ax, ay), (bx, by) = O['stair']
+    xb = ax + (bx - ax) * (cb[1] + cb[3] - ay) / (by - ay)
+    geo['overlook'] = {
+        'house': house,
+        'lane': round((O['lane'] - cb[1]) / cb[3], 4),
+        'stairHead': tpt((ax, ay), cb), 'stairFoot': round((xb - cb[0]) / cb[2], 4),
+        'lamp': tpt(O['lamp'], cb), 'lit': tpt(O['lit'], cb),
+        # Mara on the lane: the lane here is half as broad as the hawthorn's at the
+        # joint (55 vs 97 px of its painting), its stone steps make her larger; between
+        'maraTilePx': 58.0,
+    }
+
+
+def carriage_plate(geo):
+    """Our line on the viaduct's approach: the deck at RAIL_AT on the right edge (into A3-gap)."""
+    C = FEATURES['carriage']
+    img = load('A3-carriage')
+    cb = deck_crop(C['deck'], x0=0)
+    CROPS['a3/carriage'] = cb
+    save('act3/carriage', crop(img, cb), note='our line on the stone approach; the buffer stop at the left, the signal lamp', sources=['A3-carriage.png'], crop_box=cb)
+    geo['carriage'] = {
+        'rail': round((C['deck'] - cb[1]) / cb[3], 4), 'railing': round((C['railing'] - cb[1]) / cb[3], 4),
+        'signal': tpt(C['signal'], cb), 'buffer': tbox(C['buffer'], cb),
+    }
+
+
+def platform_plates(geo):
+    """Bellwether station: the deck at RAIL_AT on the left edge (from A3-gap), the
+    stair from the hill at STAIR_AT on the top edge. No 1978 painting: the lens
+    shows George's 1978 grade of it."""
+    P = FEATURES['platform']
+    img = load('A3-platform')
+    (ax, ay), (bx, by) = P['stair']
+    xs = lambda y: ax + (bx - ax) * (y - ay) / (by - ay)
+    cb = deck_crop(P['deck'], xs=xs)
+    CROPS['a3/platform'] = cb
+    save('act3/platform', crop(img, cb), note='Bellwether: the platform, the stair down from the hill, the bench and the lamp', sources=['A3-platform.png'], crop_box=cb)
+    save('act3/platform-1978', crop(paper_grain(era_1978(img), 0.03), cb), note='1978 grade of the platform (fitted to George\'s pairs)', sources=['A3-platform.png'], crop_box=cb)
+    geo['platform'] = {
+        'rail': round((P['deck'] - cb[1]) / cb[3], 4), 'railing': round((P['railing'] - cb[1]) / cb[3], 4),
+        'stairTop': round((xs(cb[1]) - cb[0]) / cb[2], 4), 'stairFoot': tpt((bx, by), cb),
+        'bench': tbox(P['bench'], cb), 'lamp': tpt(P['lamp'], cb), 'buffer': tbox(P['buffer'], cb),
+        'back': round((P['back'] - cb[1]) / cb[3], 4),
+    }
+
+
+def close_plates(geo):
+    """The platform close-up the farewell plays in: the bench emptied (the case
+    is a sprite Butch sets down), the case, and the doorway with its light out."""
+    K = FEATURES['close']
+    img = load('A3-platform-close')
+    cb = CROPS['a3/platform-close']
+    # --- the empty bench: the painted case taken off, the slats run on behind it
+    x, y, w, h = K['case']
+    empty = img.copy()
+    top, bottom = K['bench'][1], K['seat'] + 4
+    # left part from the bench left of the case (inside its end at x 110), the
+    # rest from the clean slats right of it (inside its end at x 568)
+    split = x + 160
+    empty[top:bottom, x:split] = img[top:bottom, x - 160:x]
+    right = x + w + 6 - split
+    empty[top:bottom, split:x + w + 6] = img[top:bottom, x + w + 6:x + w + 6 + right]
+    # feather the seams and the patch's edges into the painting
+    mask = np.zeros(img.shape[:2], np.float32)
+    mask[top:bottom, x - 2:x + w + 8] = 1
+    mask = cv2.GaussianBlur(mask, (0, 0), 2.5)
+    seam = np.zeros(img.shape[:2], np.float32)
+    seam[top:bottom, split - 4:split + 4] = 1
+    seam[top:bottom, x - 3:x + 3] = 1
+    seam = cv2.GaussianBlur(seam, (0, 0), 2)
+    blurred = cv2.GaussianBlur(empty, (0, 0), 2.5)
+    empty = over(empty, blurred, seam * 0.8)
+    empty = over(img, empty, mask)
+    save('act3/platform-close', crop(empty, cb), note='the platform close-up (the farewell): the bench empty until Butch leaves the case', sources=['A3-platform-close.png'], crop_box=cb)
+    # --- the case, cut from the painting (it lies on the bench at the end)
+    reg = img[y:y + h, x:x + w]
+    a = np.zeros((h, w), np.float32)
+    body = (0, 31, w - 2, h - 33)                     # the box: brass corners to the seat
+    a[body[1]:body[1] + body[3], body[0]:body[0] + body[2]] = 1
+    # the handle: a leather loop over the lid
+    hand = Image.new('L', (w * 4, h * 4), 0)
+    ImageDraw.Draw(hand).rounded_rectangle([(100 * 4, 4 * 4), (153 * 4, 40 * 4)], radius=14 * 4, outline=255, width=7 * 4)
+    a = np.maximum(a, np.asarray(hand.resize((w, h), Image.LANCZOS), dtype=np.float32) / 255)
+    # the manila tag and its string: light paper over the dark slats
+    L = luma(reg)
+    tag = ((L > 0.3) & (np.arange(w)[None, :] > 150) & (np.arange(w)[None, :] < 200)).astype(np.float32)
+    tag = cv2.morphologyEx(tag, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
+    a = np.maximum(a, cv2.GaussianBlur(tag, (0, 0), 0.6))
+    a = cv2.GaussianBlur(a, (0, 0), 0.7)
+    save('act3/close-case', reg, alpha=a, note='the orchard case on the bench (cut from A3-platform-close)', sources=['A3-platform-close.png'], kind='sprite')
+    # --- the doorway with its light out (she is aboard; the door shuts behind her)
+    dx, dy, dw, dh = K['door']
+    pad = 10
+    dreg = img[dy - pad:dy + dh + pad, dx - pad:dx + dw + pad]
+    L = luma(dreg)
+    navy = np.array([0.075, 0.09, 0.12], np.float32)
+    dark = dreg * 0.18 + navy * L[..., None] * 1.2
+    da = np.zeros(dark.shape[:2], np.float32)
+    da[pad:-pad, pad:-pad] = 1
+    da = cv2.GaussianBlur(da, (0, 0), 3)
+    save('act3/close-door-dark', dark, alpha=da, note='the doorway, its light out (drawn over the close-up once Mara is aboard)', sources=['A3-platform-close.png'], kind='sprite')
+    # --- where things are, on the close-up (tile-normalised)
+    bx, by, bw, bh = K['bench']
+    person = K['person']
+    case_w = w * CASE_SHRINK
+    case_h = h * CASE_SHRINK
+    seat_x = x + w - case_w * 0.75                     # the case is set down at the bench's right half
+    geo['close'] = {
+        'bench': tbox(K['bench'], cb), 'seat': round(K['seat'] / cb[3], 4),
+        'case': tbox((seat_x, K['seat'] + 2 - case_h, case_w, case_h), cb),
+        'door': tbox(K['door'], cb), 'doorSprite': tbox((dx - pad, dy - pad, dw + 2 * pad, dh + 2 * pad), cb),
+        'steps': [round(v / cb[3], 4) for v in K['steps']], 'stepsX': round((K['stepsX'] - cb[0]) / cb[2], 4),
+        'floor': round(K['floor'] / cb[3], 4), 'lamp': tpt(K['lamp'], cb),
+        'butchTilePx': round(person / cb[3] * 414, 1), 'maraTilePx': round(K['doorPerson'] / cb[3] * 414, 1),
+    }
+    # the camera's move into the painting: the zoom rect is the wide plate's bench
+    # region scaled so the bench grows onto the close-up's bench
+    wide = geo['platform']['bench']
+    near = geo['close']['bench']
+    k = wide[2] / near[2]
+    zx = wide[0] - near[0] * k
+    zy = wide[1] - near[1] * k
+    geo['close']['zoom'] = [round(zx, 4), round(zy, 4), round(k, 4), round(k, 4)]
+
+
+# the case on the bench at the size it has in Butch's arms (sprites: 0.276 of his height)
+CASE_SHRINK = 0.6
 
 # ---------------------------------------------------------------------------
 
@@ -1177,120 +1188,49 @@ OVERLOOK_HOUSE_BOX = (0.3, 0.1, 0.46, 0.46)
 
 # Act 3's linked edges (tile-normalised). act3Art.js derives the same values
 # from the plates (tests/nightService/plates2.test.mjs keeps them in step).
-A3_EDGES = {'path': 0.72, 'rail': 0.75, 'stair': 0.55}
-A3_FRAME = 'FRAMING: landscape 3:2. The left 7% and right 7% will be cropped to a 1.3:1 frame, so keep everything important inside the middle 86% of the width.'
-STYLE = ('STYLE: hand-inked editorial illustration; fine dip-pen linework with delicate cross-hatching in the shadows; flat matte gouache colour fields; '
-         'limited palette of ink black (#0E0C0B), deep navy (#1B2A3A), dark teal (#23413F), walnut brown (#4A3222), aged matte brass (#8A6A3C), ivory paper (#E9DFC8) '
-         'and one warm amber (#E3A34E) practical light; theatrical stage-set composition with large areas of near-black negative space; one warm light source makes a '
-         'sharp-edged pool of light and everything outside it falls quickly into shadow; realistic proportions and consistent scale; subtle paper grain, slightly uneven ink. '
-         'No glossy highlights, no airbrushed gradients, no 3D render look, no photorealism, no anime, no text, no letters, no numbers, no signage words, no watermark. '
-         'Match the style, palette, line quality and lighting of the reference image ST1-a.png exactly.')
-NOBODY = 'No people and no animals in the picture (characters are added separately).'
+A3_EDGES = {'path': 0.72, 'rail': 0.75, 'stair': 0.5}
 
 
-def full_x(u):
-    """A tile fraction across Act 3's default crop (x 105–1431 of 1536) as a % of the full 3:2 image width."""
-    return round((105 + u * 1326) / 1536 * 100)
-
-
-def needed_art():
+def needed_art(geo3):
+    """public/assets/ch1-painted/NEEDED-ART.md: what Acts 2 and 3 still need (round 8: nothing)."""
+    o, c, pl, k = geo3['overlook'], geo3['carriage'], geo3['platform'], geo3['close']
     path, rail, stair = A3_EDGES['path'], A3_EDGES['rail'], A3_EDGES['stair']
-    hx, hy, hw, hh = OVERLOOK_HOUSE_BOX
-    items = [
-        {
-            'id': 'A3-overlook', 'file': 'A3-overlook.png', 'act': 'act3',
-            'title': 'The orchard house from the hill above it (the orchard window zoomed out)',
-            'size': '1536x1024', 'reference_images': ['ST1-a.png', 'A3-orchard.png', 'A3-hawthorn.png'],
-            'parent': None, 'continues': {'from': 'A3-hawthorn', 'edge': 'the lane continues from the right edge of A3-hawthorn'},
-            'prompt': (
-                f'The same orchard house as A3-orchard.png (white walls, the one lit upstairs window, apple trees, the gate and stone wall), seen from further away '
-                f'across a dark hillside at dusk: the house and its orchard fill only the upper middle of the picture, from {full_x(hx)}% to {full_x(hx + hw)}% across '
-                f'and from {round(hy * 100)}% to {round((hy + hh) * 100)}% down, framed exactly as A3-orchard.png is, so that region looks like A3-orchard.png made small. '
-                f'In the foreground a country lane enters from the LEFT edge at {round(path * 100)}% of the image height and runs about '
-                f'{full_x(0.45) - full_x(0)}% of the way across the hill, where it ends at the top of a steep stone stair. The stair goes straight down the hillside '
-                f'and leaves the BOTTOM edge at {full_x(stair)}% across (a station platform lies far below, out of the picture). '
-                f'Far below on the right, one small platform lamp and a glint of rails. {NOBODY} {A3_FRAME} {STYLE}'
-            ),
-            'notes': (f'Edges the game links: lane LEFT edge at {path} of the height (from A3-hawthorn); stair BOTTOM edge at {stair} across the cropped frame '
-                      f'(to A3-platform). The zoom from this picture into the house lands on the box x {hx}–{round(hx + hw, 2)}, y {hy}–{round(hy + hh, 2)} '
-                      'of the cropped frame: keep the house there.'),
-        },
-        {
-            'id': 'A3-carriage', 'file': 'A3-carriage.png', 'act': 'act3',
-            'title': 'Our line at night, on the embankment before the viaduct',
-            'size': '1536x1024', 'reference_images': ['ST1-a.png', 'A3-gap.png'],
-            'parent': None, 'continues': {'from': 'A3-gap', 'edge': 'its rails run on into the left edge of A3-gap'},
-            'prompt': (
-                f'A single railway line on the high stone approach to the viaduct at night, under the same moonlit, rain-streaked sky as A3-gap.png and at the same scale '
-                f'(a railway carriage is about 30% of the picture\'s width); the line runs from a '
-                f'timber buffer stop near the LEFT edge to the RIGHT edge, where it becomes the stone viaduct deck of A3-gap.png (same stone, same iron railing along '
-                f'the near side, same height): the rails reach the RIGHT edge at exactly {round(rail * 100)}% of the image height, and the deck top is level all the way across. '
-                f'A tall signal post with one small warm lamp stands beside the line near the right; dark forested hills behind, the valley opening to the right. '
-                f'The line itself is empty (the train is added by the game; leave the left half of the track clear). {NOBODY} {A3_FRAME} {STYLE}'
-            ),
-            'notes': f'Edge the game links: rail RIGHT edge at {rail} of the height (to A3-gap\'s left edge). Our train waits on the left third.',
-        },
-        {
-            'id': 'A3-platform', 'file': 'A3-platform.png', 'act': 'act3',
-            'title': 'Bellwether station: the platform at night',
-            'size': '1536x1024', 'reference_images': ['ST1-a.png', 'A3-gap.png', 'A3-orchard.png'],
-            'parent': None, 'continues': {'from': 'A3-gap', 'edge': 'the rails continue from the right edge of A3-gap'},
-            'prompt': (
-                f'A small country station at night, seen side on from across the line, at the same distance and scale as the viaduct in A3-gap.png: '
-                f'a railway carriage would be about 30% of the picture\'s width and a standing person about 5% of its height. '
-                f'In front, our railway line runs on the same stone deck as A3-gap.png (same dressed ochre stone, same thin iron railing on posts) and enters from the '
-                f'LEFT edge with its deck top at exactly {round(rail * 100)}% of the image height, ending at a small timber buffer stop about {full_x(0.92)}% across. '
-                f'Behind it a long low stone platform: its near edge at about 71% of the height, just behind the deck\'s railing, its far edge at about 58%, its walking surface between. '
-                f'Behind the platform a second track at about 56% of the height, where another train will stand. A narrow, steep timber stair comes down from the TOP '
-                f'edge at {full_x(stair)}% across and lands on the far side of the platform at about {full_x(0.6)}% across (it comes down from the hill of A3-overlook). '
-                f'On the platform: a short wooden bench from about {full_x(0.196)}% to {full_x(0.264)}% across; one lamp post at about {full_x(0.82)}% across with the '
-                f'one warm amber light in the picture, about 12% of the height tall; a station nameboard on two short posts with a blank dark enamel plate from about '
-                f'{full_x(0.3)}% to {full_x(0.43)}% across at about 59% of the height (the game letters the name). Above, the dark roofs and chimneys of Bellwether '
-                f'and the night sky. Leave the platform and both tracks empty. {NOBODY} {A3_FRAME} {STYLE}'
-            ),
-            'notes': (f'Edges the game links: rail LEFT edge at {rail} of the height (from A3-gap); stair TOP edge at {stair} across the cropped frame (from A3-overlook). '
-                      f'Butch walks the platform at {round(0.8 + rail - 0.85, 3)} of the height from 0.44 to the bench at 0.24 across; Mara comes down the stair and '
-                      f'boards the far train at 0.71 across, 0.57 down; our train docks centred at 0.42. A 1978 version (A3-platform-1978, "the same place in 1978", '
-                      'same composition) would let the lens show it.'),
-        },
-    ]
+    crop_txt = lambda key: ', '.join(str(int(v)) for v in CROPS[key])
     lines = [
         '# Chapter 1 · art still needed (Acts 2 and 3)',
         '',
-        'These three Act 3 tiles have no painting yet. Until they do, the game uses the old',
-        'Bellwether panoramas, graded to the plates\' palette by `scripts/ch1-art/plates2-build.py`',
-        '(and the orchard house plate set into the hill view), with the rails, stair and lane the',
-        'puzzle needs drawn over them in the same matte palette.',
+        'Nothing. Round 8: George painted the three Act 3 tiles the interim plates stood in for,',
+        'and a close-up of the platform for the farewell. The graded panorama stand-ins are gone;',
+        '`scripts/ch1-art/plates2-build.py` cuts these from the paintings:',
         '',
-        'Paste each item into the batch (same format as `ch1-batch.json`), generate at 1536×1024,',
-        'save into `ch1/` under its `file` name and run `python3 -I scripts/ch1-art/plates2-build.py`.',
-        'Then add the new plate to its state in `src/chapters/nightService/acts/act3.js` and drop the',
-        'interim drawing in `art/act3Art.js` (the `ctx.plate` branch of drawOverlook, drawCarriageScene',
-        'or drawPlatform).',
+        '| Painting | Plate | Crop (source px) | What the game does with it |',
+        '|---|---|---|---|',
+        f'| A3-overlook | `act3/overlook.webp` | {crop_txt("a3/overlook")} | the orchard window zoomed out: the zoom from the house lands on the house painted here (matched to A3-orchard), Mara walks the lane and goes down the stair |',
+        f'| A3-carriage | `act3/carriage.webp` | {crop_txt("a3/carriage")} | our train waits on the approach, beside the buffer stop |',
+        f'| A3-platform | `act3/platform.webp` (+ `platform-1978.webp`, a 1978 grade) | {crop_txt("a3/platform")} | the train docks; Mara comes down the stair |',
+        f'| A3-platform-close | `act3/platform-close.webp`, `close-case.webp`, `close-door-dark.webp` | {crop_txt("a3/platform-close")} | the farewell: the platform tile zooms into it; Butch leaves the case on the bench, Mara boards through the lit door |',
         '',
-        '## The edges they must meet',
+        '## The edges, as measured on the plates',
         '',
-        '| Item | Edge | Where (cropped frame) | Where (full 3:2 image) | Meets |',
-        '|---|---|---|---|---|',
-        f'| A3-overlook | lane, LEFT | {path} of the height | {round(path * 100)}% down | A3-hawthorn\'s right edge (1978) |',
-        f'| A3-overlook | stair, BOTTOM | {stair} across | {full_x(stair)}% across | A3-platform\'s top edge |',
-        f'| A3-overlook | the house | x {hx}–{round(hx + hw, 2)}, y {hy}–{round(hy + hh, 2)} | {full_x(hx)}–{full_x(hx + hw)}% across | the zoom into A3-orchard |',
-        f'| A3-carriage | rail, RIGHT | {rail} of the height | {round(rail * 100)}% down | A3-gap\'s left edge |',
-        f'| A3-platform | rail, LEFT | {rail} of the height | {round(rail * 100)}% down | A3-gap\'s right edge |',
-        f'| A3-platform | stair, TOP | {stair} across | {full_x(stair)}% across | A3-overlook\'s bottom edge |',
+        '| Link | Edge | Declared | Measured |',
+        '|---|---|---|---|',
+        f'| hawthorn → overlook | lane (1978) | {path} down | overlook left edge {o["lane"]} |',
+        f'| overlook → platform | stair | {stair} across | overlook bottom {o["stairFoot"]} · platform top {pl["stairTop"]} |',
+        f'| carriage → gap → platform | rail (the deck top) | {rail} down | carriage {c["rail"]} · gap {geo3["gap"]["rail"]} · platform {pl["rail"]} |',
         '',
-        'The cropped frame is the middle 86% of the width (x 105–1431 of 1536), full height.',
+        f'The overlook\'s house region (the zoom into A3-orchard) is x {o["house"][0]}–{round(o["house"][0] + o["house"][2], 4)}, '
+        f'y {o["house"][1]}–{round(o["house"][1] + o["house"][3], 4)} of its tile. The farewell\'s camera move flies into the platform\'s bench '
+        f'({k["zoom"]} of the wide tile) and lands on the close-up\'s bench.',
         '',
-        '## Ready-to-paste items',
+        '## Would be nice, not needed',
         '',
-        '```json',
-        json.dumps(items, indent=1, ensure_ascii=False),
-        '```',
+        '- A3-platform-1978 (the same composition, "the same place in 1978"): the lens over the platform shows a 1978 grade of A3-platform today.',
+        '- A3-platform-close with the other train gone (the same view, the night and the hedge behind where it stood): her train could then',
+        '  be seen pulling away in the close-up. Today its leaving plays as the doorway going dark, the whistle and the Conductor\'s lines.',
         '',
     ]
     (OUT / 'NEEDED-ART.md').write_text('\n'.join(lines))
     print('  wrote public/assets/ch1-painted/NEEDED-ART.md')
-    return items
 
 
 def write_manifests():
@@ -1302,8 +1242,8 @@ def write_manifests():
         lines = [
             f'# {title}: painted plates',
             '',
-            f'Sources: George\'s Chapter 1 paintings, {CREDIT}. The panoramas behind the',
-            'interim plates come from `src/assets/generated/worlds/` (see that folder\'s own credits).',
+            f'Sources: George\'s Chapter 1 paintings, {CREDIT}' + (
+                '; A3-overlook, A3-carriage, A3-platform and A3-platform-close the same way, 2026-10-09 (round 8).' if act == 'act3' else '.'),
             '',
             'Every file here is generated by `python3 -I scripts/ch1-art/plates2-build.py` from the',
             'read-only 1536×1024 sources; do not edit them by hand. Crop boxes are source pixels',
@@ -1320,9 +1260,14 @@ def write_manifests():
             lines += ['## 1978 registration', '', 'Each 1978 painting is feature-matched onto its present (SIFT, RANSAC similarity) and cropped identically, so the lens shows one through the other in register.', '',
                       '| Pair | Inliers | Residual px | Offset px | Warped |', '|---|---|---|---|---|']
             for k, r in REGISTRATION.items():
-                if (act == 'act2') == k.startswith('A2'):
+                if 'residualPx' in r and (act == 'act2') == k.startswith('A2'):
                     lines.append(f"| {k} / {k}-1978 | {r['inliers']} | {r['residualPx']} | {r['maxCornerOffsetPx']} | {'yes' if r['warped'] else 'no'} |")
             lines.append('')
+        match = REGISTRATION.get('A3-orchard→A3-overlook')
+        if act == 'act3' and match:
+            lines += ['## The house in the hill view', '',
+                      f"A3-orchard's crop is matched into A3-overlook (AKAZE, RANSAC similarity): {match['inliers']} of {match['matches']} matches, "
+                      f"scale {match['scale']}, its corner at {match['origin']} (source px). The zoom out of the house lands there.", '']
         (OUT / act / 'ASSET_MANIFEST.md').write_text('\n'.join(lines))
         print(f'  wrote public/assets/ch1-painted/{act}/ASSET_MANIFEST.md ({total / 1024 / 1024:.2f} MB)')
 
@@ -1369,7 +1314,7 @@ def main():
         urls = {k.split('/', 1)[1]: v['url'] for k, v in OUTPUTS.items() if k.startswith('act3/')}
         write_js('act3Plates.js', 'Act 3 · TWO TRUE THINGS', {'PLATES3': urls, 'GEO3': geo3})
     if geo2 and geo3:
-        needed_art()
+        needed_art(geo3)
         write_manifests()
         pairs = [['act2/rack', 'act2/rack-1978'], ['act2/board', 'act2/board-1978'], ['act2/board-lit', 'act2/board-1978'], ['act2/aisle', 'act2/aisle-1978'],
                  ['act3/city', 'act3/city-1978'], ['act3/hawthorn', 'act3/hawthorn-1978'], ['act3/gap', 'act3/gap-1978'], ['act3/platform', 'act3/platform-1978'],
@@ -1383,7 +1328,10 @@ def main():
             'edges': {
                 'act2': {'drop': {'rack': geo2['rack']['dropAt'], 'aisle': geo2['aisle']['centre']}},
                 'act3': {'path': {'city': geo3['city']['floor'], 'hawthorn': geo3['hawthorn']['lane'], 'orchard': geo3['orchard']['lane']},
-                         'rail': {'gap': geo3['gap']['rail']}, 'declared': A3_EDGES},
+                         'rail': {'gap': geo3['gap']['rail'], 'carriage': geo3['carriage']['rail'], 'platform': geo3['platform']['rail']},
+                         'stair': {'overlook': geo3['overlook']['stairFoot'], 'platform': geo3['platform']['stairTop']},
+                         'lane': {'overlook': geo3['overlook']['lane']},
+                         'declared': A3_EDGES},
             },
         }
         MANIFEST.write_text(json.dumps(manifest, indent=1) + '\n')

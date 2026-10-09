@@ -860,7 +860,8 @@ export function createPanelModel(act, options = {}) {
         events.emit('actor', { id: actor.id });
         break;
       }
-      case 'zoomTo': zoomIn(arg.tile, arg.to, arg.rect ?? [0.25, 0.25, 0.5, 0.5], { forced: true }); break;
+      // `ms`: a scripted camera move slower than a click's zoom (Act 3's farewell)
+      case 'zoomTo': zoomIn(arg.tile, arg.to, arg.rect ?? [0.25, 0.25, 0.5, 0.5], { forced: true, ms: arg.ms }); break;
       // `{ zoomOut: { tile, to } }` steps back out into a different wide state
       // (the door that was locked when the player zoomed in is ajar now)
       case 'zoomOut': zoomOut(arg.tile ?? arg, { forced: true, to: arg.to ?? null }); break;
@@ -1148,13 +1149,13 @@ export function createPanelModel(act, options = {}) {
     if (relevant.length) events.emit('link:mismatch', relevant);
   }
 
-  function zoomIn(tileId, to, rect, { forced = false } = {}) {
+  function zoomIn(tileId, to, rect, { forced = false, ms = null } = {}) {
     const tile = s.tiles[tileId];
     if (!tile || !sceneOf(tileId, to) || (!forced && lockedOut())) return false;
     tile.zoomStack.push({ state: tile.state, rect });
     const from = tile.state;
     tile.state = to;
-    events.emit('zoom', { tile: tileId, dir: 'in', from, to, rect });
+    events.emit('zoom', { tile: tileId, dir: 'in', from, to, rect, ...(ms ? { ms } : {}) });
     pump();
     return true;
   }

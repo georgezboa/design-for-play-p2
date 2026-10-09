@@ -1,6 +1,7 @@
 // Act 3 presentation effects (see README.md → Custom fx).
 
-import { CITY_GLASS, ORCHARD_LIT, PATH_AT } from './act3Art.js';
+import { CITY_GLASS, CLOSE, ORCHARD_LIT, PATH_AT, PLATE } from './act3Art.js';
+import { plateKey } from '../panelModel.js';
 
 export const ACT3_FX = {
   /** The city window closes around the orchard window: light floods one picture. */
@@ -108,4 +109,86 @@ export const ACT3_FX = {
       });
     });
   },
+
+  /**
+   * The farewell's camera move (round 8): the figures standing in the wide
+   * platform go with the picture they stood in. The scene hides a tile's
+   * actors while it zooms; these copies ride the zoom (the tile's fx layer
+   * shares its camera) and fade with the wide picture.
+   */
+  holdActors(api, { tile, actors = [], over = 2600 }) {
+    const view = api.view(tile);
+    if (!view) return;
+    const copies = [];
+    actors.forEach((id) => {
+      const rig = api.rig(id);
+      const actor = api.model.state.actors[id];
+      if (!rig?.root || !actor?.visible || actor.tile !== tile) return;
+      const copy = cloneDisplay(api.scene, rig.root);
+      if (!copy) return;
+      view.fxLayer.add(copy);
+      copies.push(copy);
+    });
+    if (!copies.length) return;
+    // they fade exactly as the wide picture they stood in does (the zoom's
+    // outgoing layer), and never outlive the move
+    const scene = api.scene;
+    const start = scene.time.now;
+    let zoomed = false;
+    const tick = () => {
+      zoomed = zoomed || view.zooming;
+      const parent = view.zooming ? view.stateLayer.list.find((root) => root !== view.current?.root) : null;
+      const alpha = parent ? parent.alpha : zoomed ? 0 : 1;
+      copies.forEach((copy) => copy.setAlpha(alpha));
+      if ((zoomed && !view.zooming) || scene.time.now - start > over * 4) {
+        copies.forEach((copy) => copy.destroy());
+        scene.events.off('update', tick);
+      }
+    };
+    scene.events.on('update', tick);
+  },
+
+  /** Butch sets the orchard case down on the bench, his hand lingering on it. */
+  leaveCase(api) {
+    const rig = api.rig('butch');
+    rig?.gesture?.('receive');
+    const key = plateKey(PLATE['close-case']);
+    if (!api.scene.textures.exists(key)) return;
+    const [cx, cy, cw, ch] = CLOSE.case;
+    const a = api.screen('platform', cx, cy);
+    const b = api.screen('platform', cx + cw, cy + ch);
+    const to = { x: (a.x + b.x) / 2, y: b.y };
+    // from his hands (the painted carry frame's case), set down on the seat
+    const from = api.rigPoint('butch', 8, -34);
+    const sprite = api.topSprite(key, from.x, from.y + (b.y - a.y) / 2);
+    sprite.setOrigin(0.5, 1).setDisplaySize(b.x - a.x, b.y - a.y);
+    api.scene.tweens.add({ targets: sprite, x: to.x, duration: 520, ease: 'Sine.easeInOut' });
+    api.scene.tweens.add({ targets: sprite, y: to.y, duration: 520, ease: 'Quad.easeIn', onComplete: () => api.scene.time.delayedCall(80, () => sprite.destroy()) });
+  },
+
+  /** Mara steps up into the lit doorway and is gone. */
+  boardTrain(api, { actor = 'maraClose', over = 650 }) {
+    const rig = api.rig(actor);
+    if (!rig?.root) return;
+    api.scene.tweens.add({ targets: rig.root, alpha: 0, duration: over, ease: 'Sine.easeIn', onComplete: () => rig.root.setAlpha(1) });
+    api.audio.play('paper');
+  },
 };
+
+/** A still copy of a figure (images and containers) for the zoom to carry. */
+function cloneDisplay(scene, obj) {
+  if (!obj?.visible) return null;
+  if (obj.type === 'Container') {
+    const box = scene.add.container(obj.x, obj.y).setScale(obj.scaleX, obj.scaleY).setRotation(obj.rotation).setAlpha(obj.alpha);
+    obj.list.forEach((child) => { const copy = cloneDisplay(scene, child); if (copy) box.add(copy); });
+    return box;
+  }
+  if (obj.type === 'Image' || obj.type === 'Sprite') {
+    const image = scene.add.image(obj.x, obj.y, obj.texture.key, obj.frame.name);
+    image.setOrigin(obj.originX, obj.originY).setScale(obj.scaleX, obj.scaleY).setRotation(obj.rotation).setAlpha(obj.alpha).setFlip(obj.flipX, obj.flipY);
+    image.setBlendMode(obj.blendMode);
+    if (obj.isTinted) image.setTint(obj.tintTopLeft, obj.tintTopRight, obj.tintBottomLeft, obj.tintBottomRight);
+    return image;
+  }
+  return null;
+}

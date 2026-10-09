@@ -5,6 +5,7 @@ import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js'
 import { ACT2 } from '../../src/chapters/nightService/acts/act2.js';
 import { ACT3, SAFE_FAR, SAFE_NEAR, TRAIN_LENGTH, TRAIN_SCALE } from '../../src/chapters/nightService/acts/act3.js';
 import { CITY_WINDOW, GAP_SPAN, HEDGE, PLATFORM_DY, RAIL_AT } from '../../src/chapters/nightService/art/act3Art.js';
+import { GEO3 } from '../../src/chapters/nightService/art/act3Plates.js';
 import { FRAME_TAG_SEEN, frameTagFor, waitingWalkers } from '../../src/chapters/nightService/hints.js';
 import { createPanelModel, layoutGrid } from '../../src/chapters/nightService/panelModel.js';
 import { UNFOLD, createUnfold, planUnfold } from '../../src/chapters/nightService/unfold.js';
@@ -211,5 +212,8 @@ test('R5: the whole act still plays through with the raised rail and the larger 
   assert.equal(model.state.ended?.kind, 'endChapter');
   assert.ok(model.hasFlag('caseOnBench'));
   const butch = model.state.actors.butch;
-  assert.ok(Math.abs(butch.y - (0.8 + PLATFORM_DY)) < 1e-9, 'Butch walks on the raised platform');
+  // round 8: the farewell plays in the platform close-up; Butch stands on its painted floor
+  assert.equal(model.state.tiles.platform.state, 'close');
+  assert.equal(butch.state, 'close');
+  assert.ok(Math.abs(butch.y - GEO3.close.floor) < 1e-9, 'Butch walks on the painted platform');
 });

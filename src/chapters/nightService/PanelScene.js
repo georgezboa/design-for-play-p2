@@ -918,8 +918,8 @@ export class PanelScene extends Phaser.Scene {
 
   bindModel() {
     const m = this.model;
-    m.on('zoom', ({ tile, dir, rect, to }) => {
-      this.animateZoom(this.views[tile], dir, rect);
+    m.on('zoom', ({ tile, dir, rect, to, ms }) => {
+      this.animateZoom(this.views[tile], dir, rect, ms);
       if (dir === 'in') this.lensAside(tile, to);
       // the first close-up's step-back chip: done with once they have stepped back
       if (dir === 'out' && this.zoomBack?.tile === tile) this.retireZoomBack();
@@ -1450,10 +1450,11 @@ export class PanelScene extends Phaser.Scene {
   // ---------------------------------------------------------------------------
   // zoom
 
-  animateZoom(view, dir, rect) {
+  animateZoom(view, dir, rect, ms = null) {
     const toState = this.model.state.tiles[view.id].state;
     const reduce = reducedMotionActive();
-    const duration = reduce ? 240 : ZOOM_MS;
+    // `ms` (a scripted zoomTo): a slower, deliberate camera move
+    const duration = reduce ? 240 : ms ?? ZOOM_MS;
     const old = view.current;
     const next = this.buildState(view, toState);
     view.current = next;
