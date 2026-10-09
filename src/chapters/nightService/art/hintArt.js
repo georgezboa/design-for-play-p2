@@ -5,7 +5,7 @@
 // hand-jittered warm outline, a brass cuff button, pointing with the index
 // finger. It is drawn translucent over the windows, never over captions.
 
-import { PAL, brassFill, ink, inkEllipse, rivet, roundRectPath, speckle } from './ink.js';
+import { PAL, brassFill, ink, inkEllipse, roundRectPath, speckle } from './ink.js';
 
 /** Canvas size of the hand (at 1×) and where its fingertip is (the gesture point). */
 export const GHOST_HAND = Object.freeze({ w: 92, h: 128, tip: [30, 6] });
@@ -84,6 +84,30 @@ export const UNFOLD_TAG = Object.freeze({ w: 272, h: 70, eyelet: [17, 35] });
  * and a D-shaped grip standing proud of it towards the side the wall opens,
  * with two engraved chevrons pointing the way.
  */
+// round 7: the pull sits on the painted bezels, so it is worn brass like
+// them — matte, low contrast, no white highlight (its halo, chevrons and
+// tag are what call the eye)
+function agedBrass(c, x, y, w, h, vertical = false) {
+  const g = vertical ? c.createLinearGradient(x, 0, x + w, 0) : c.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, '#a5874f');
+  g.addColorStop(0.4, '#8a6b3b');
+  g.addColorStop(0.75, '#6d5331');
+  g.addColorStop(1, '#4a3720');
+  return g;
+}
+
+/** A slotted screw head in the same worn brass. */
+function agedScrew(c, x, y, r) {
+  c.save();
+  c.fillStyle = '#7d6136';
+  c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+  c.strokeStyle = 'rgba(30, 20, 10, 0.85)';
+  c.lineWidth = 1.1;
+  c.stroke();
+  c.beginPath(); c.moveTo(x - r * 0.62, y + r * 0.35); c.lineTo(x + r * 0.62, y - r * 0.35); c.stroke();
+  c.restore();
+}
+
 export function paintUnfoldPull(c) {
   const [ax, ay] = UNFOLD_PULL.anchor;
   c.save();
@@ -94,7 +118,7 @@ export function paintUnfoldPull(c) {
   // the plate, straddling the edge
   const px = ax - 15;
   const py = ay - 70;
-  c.fillStyle = brassFill(c, px, py, 30, 140, true);
+  c.fillStyle = agedBrass(c, px, py, 30, 140, true);
   roundRectPath(c, px, py, 30, 140, 9);
   c.fill();
   c.shadowColor = 'transparent';
@@ -102,11 +126,11 @@ export function paintUnfoldPull(c) {
   c.lineWidth = 1.6;
   roundRectPath(c, px, py, 30, 140, 9);
   c.stroke();
-  rivet(c, ax, py + 13, 4);
-  rivet(c, ax, py + 127, 4);
+  agedScrew(c, ax, py + 13, 4);
+  agedScrew(c, ax, py + 127, 4);
   // the arms of the grip
   [ay - 46, ay + 46].forEach((y) => {
-    c.fillStyle = brassFill(c, 18, y - 6, ax - 18, 12);
+    c.fillStyle = agedBrass(c, 18, y - 6, ax - 18, 12);
     roundRectPath(c, 18, y - 6, ax - 18, 12, 5);
     c.fill();
     c.strokeStyle = 'rgba(40, 26, 10, 0.8)';
@@ -119,7 +143,7 @@ export function paintUnfoldPull(c) {
   c.shadowBlur = 8;
   c.shadowOffsetX = 2;
   c.shadowOffsetY = 4;
-  c.fillStyle = brassFill(c, 8, ay - 62, 22, 124, true);
+  c.fillStyle = agedBrass(c, 8, ay - 62, 22, 124, true);
   roundRectPath(c, 8, ay - 62, 22, 124, 11);
   c.fill();
   c.shadowColor = 'transparent';
@@ -127,7 +151,7 @@ export function paintUnfoldPull(c) {
   c.lineWidth = 1.8;
   roundRectPath(c, 8, ay - 62, 22, 124, 11);
   c.stroke();
-  c.strokeStyle = 'rgba(255, 240, 200, 0.55)';
+  c.strokeStyle = 'rgba(255, 226, 170, 0.2)';
   c.lineWidth = 2;
   c.beginPath();
   c.moveTo(13, ay - 50);

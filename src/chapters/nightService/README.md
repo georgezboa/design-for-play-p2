@@ -183,14 +183,26 @@ is clamped to the board of windows (`model.lensBounds()`), and its rim fades
 while a spoken line's caption bar sits under it.
 
 **Links.** Drawn as a thin warm seam of light across the gap at the link
-height (a rail is two, a chute two walls) with light pooling on both bezel
-lips, and a short light-run when one connects: the pictures are what
-connect. Adjacent slots link when facing edges share `type` and their `at`
+height (a rail is two, a chute two walls): lamplight spilling through the
+gap onto the brass, brightest in the gap and soft where it lies on both
+bezel lips (no white core; LOW GRAPHICS draws the thread only), and a
+short light-run when one connects: the pictures are what connect. Adjacent slots link when facing edges share `type` and their `at`
 values differ by ≤ 0.03. Edges come from the tile's *current* state (so zoom
 level matters) plus any frame it hosts. `era: 'past'` edges count only while
 the lens covers their anchor: the edge endpoint, or `lensAt` if given (use one
 `lensAt` for both sides of a broken span). `silent: true` suppresses the
 mismatch shimmer. `when` gates an edge on any condition.
+
+**The chrome (round 7).** The bezels, the walnut wall, the panel trim, the
+sill and the luggage rail are George's painted brass and walnut
+(`C-bezel.png`), processed by `scripts/ch1-art/chrome-build.py` into
+`public/assets/ch1-painted/chrome/` (a 9-slice atlas and a seamless walnut
+tile; see its `ASSET_MANIFEST.md`). `wallArt.js` draws them; `CHROME_ATLAS`
+mirrors the script's `chrome.json`. A window's bezel is painted at its own
+display scale (Act 0 at 1.7 stays crisp), and its band (`BEZEL`, the drag
+hit area) is unchanged from round 6. The lamps glow low and warm; under LOW
+GRAPHICS their light is painted into the wall. Callers that pass no
+`chrome` (the finale's Movement I floor) keep the round-6 procedural look.
 
 ### Steps, conditions and effects
 
