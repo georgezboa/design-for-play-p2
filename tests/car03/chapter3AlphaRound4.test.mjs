@@ -231,9 +231,10 @@ describe('Chapter 3 alpha round 4 · the controls tag (P1)', () => {
 });
 
 describe('Chapter 3 alpha round 4 · 3.6 the woman in the rose scarf (P1)', () => {
-  it('ties an unlit rose scarf to her rig and holds the pair close until Butch boards', () => {
+  it('ties a rose scarf to her rig and holds the pair close until Butch boards', () => {
     assert.match(builders, /export function makeRoseScarf\(/);
-    assert.match(builders, /new THREE\.MeshBasicMaterial\(\{ color, fog: false \}\)/);
+    // Round 11: lit matte cloth (no longer an unlit ring), fitted to the bone.
+    assert.match(builders, /group\.addEventListener\('added', \(\) => fitRoseScarf\(group\)\);/);
     assert.match(runtime, /object\.isBone && \/neck\/i\.test\(object\.name\)/);
     assert.match(runtime, /this\.attachRoseScarf\(\);/);
     assert.doesNotMatch(runtime, /scarf\.position\.y = 1\.5;/, 'the old ring floated above her head');

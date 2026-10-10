@@ -165,10 +165,26 @@ describe('Chapter 3 integrated final lock v48', () => {
     // (publishControlsStage) and a softer dusk fill. Files: 29 + 1
     // (chapter3Entrance) + 2 (chapter3ColorGrade, chapter3CastLook) -> 32.
     // Toma's composition unchanged. Assets unchanged.
-    assert.equal(sourceFiles.length, 32);
+    // v48-ch3art (round 11 art pass, agent ch3art, 2026-10-10; the lead
+    // reconciles this lock with the other round-11 Chapter 3 branch at
+    // merge): George's notes on the oil, the burning words and the pink
+    // collar (tests/car03/chapter3Round11Art). The afternoon oil line is
+    // found along the court's real mortar joints and drawn as a lit,
+    // shadowed decal (dark joints, soaked stone edges, a paler wiped band,
+    // a broken wet sheen); the night letters are oil poured in the house
+    // face with a trail joining them: a ground pass for the unlit oil, the
+    // burning bed, heat on the stones, soot and the morning char, GPU flame,
+    // smoke and spark billboards seeded in the strokes (half on LOW), the
+    // lower row dark until it is lit, line-source fire lights (the second
+    // waits at zero intensity, so lighting it recompiles nothing); Mara's scarf
+    // is matte dusty-rose cloth (a loose double wrap, a knot on her left
+    // shoulder, one end down her back and one over the shoulder, swaying),
+    // fitted to whatever bone it is tied to. Files: +1 (chapter3OilArt):
+    // 32 -> 33. Toma's composition unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 33);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '108093d4c3351d1ac9f839971fd1235de26654157336683e4a13a8eecd6991f7',
+      'e5337e538d87b3b45906e39a10fe42815bc1fd24d42459d9d7818a5fbf7b5039',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
