@@ -63,6 +63,15 @@ test('a pre-round-11 gallery save with official-record varnish in it still loads
   assert.equal(fresh.canPaint(63, 11), true, 'the old official-record air takes paint');
 });
 
+test('an older studio save with a wrong colour in it comes back with that place unpainted', () => {
+  const store = chapter4Save();
+  recordChapter4Resume(store, { room: 'studio', fills: { apple: 'blue', sky: 'blue' }, brush: 'blue' });
+  const again = createDrawingStudio();
+  applyStudioResume(again, chapter4ResumeOnLoad({ store }));
+  assert.deepEqual(again.snapshot().fills, { sky: 'blue' });
+  assert.deepEqual(again.snapshot().wrong, []);
+});
+
 test('the studio comes back with its colours, the yard with its borrowed colours and painted parts', () => {
   const studio = createDrawingStudio();
   const region = STILL_LIFE_REGIONS[0];

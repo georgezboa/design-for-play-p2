@@ -58,8 +58,10 @@ export function sanitizeResume(data) {
   if (data.room === 'studio') {
     const fills = {};
     const pigments = STUDIO_PIGMENTS.map((p) => p.id);
+    // Only colours she noted are kept (round 11: a wrong colour no longer
+    // goes on, so an older save's wrong fill is simply left unpainted).
     Object.entries(data.fills ?? {}).forEach(([region, pigment]) => {
-      if (STILL_LIFE_REGIONS.some((r) => r.id === region) && pigments.includes(pigment)) fills[region] = pigment;
+      if (STILL_LIFE_REGIONS.some((r) => r.id === region && r.wants === pigment)) fills[region] = pigment;
     });
     return { room: 'studio', fills, brush: pigments.includes(data.brush) ? data.brush : null };
   }

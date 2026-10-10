@@ -36,16 +36,27 @@ import {
   showTitleCard,
 } from './chapterUi.js';
 import { devParam } from '../../devMode.js';
+import { reducedMotionActive } from '../../shell/motion.js';
 import { RESUME_REGISTRY_KEY, applyStudioResume, recordChapter4Resume } from './chapter4Resume.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
 
 // Chapter 4 // THE PAINTED COUNTRY — Part II, the still life.
 //
-// A short room with one real choice, made six times: which colour did Rosa
-// remember here? The brush holds one colour at a time. RIGHT-HOLD an object on
-// the shelf to take its colour; LEFT-HOLD a place in her drawing to paint it;
-// RIGHT-HOLD a painted place to wash it off. A wrong colour is accepted and
-// simply looks wrong. The door opens when the drawing is as she remembered it.
+// A short room: give Rosa's drawing back the six colours she remembered. The
+// brush holds one colour at a time. RIGHT-HOLD an object on the shelf to take
+// its colour; LEFT-HOLD a place in her drawing to paint it. The door opens
+// when the drawing is as she remembered it.
+//
+// Round 11 (George: "I had no idea which colour each thing wants"). What
+// each place wants is readable at a glance, three ways that agree:
+//   · Rosa's colour notes: beside each thing in her drawing, a pinned slip
+//     with a dab of the colour and her word for it ("red", "purple");
+//   · the colour itself, faint under her pencil, until it is painted in;
+//   · the shelf says the same plain words under each thing (RED, BLUE), and
+//     every tag leads with them ("THE APPLE WANTS RED · TAKE IT FROM THE RED
+//     CUP"; "LEFT-HOLD · PAINT THE APPLE RED").
+// A right colour goes on with a tick on her note; a wrong one will not take:
+// it runs off the paper and the room says which colour she noted.
 
 const VIEW = Object.freeze({ w: 960, h: 600 });
 const WORLD = Object.freeze({ w: 1640, h: 600 });
@@ -65,6 +76,10 @@ const CANVAS = Object.freeze({ x: 880, y: 140, w: 330, h: 250 });
 const SHELF = Object.freeze({ x: 480, y: 356, w: 380 });
 const EXIT = Object.freeze({ x: 1440, y: 300, w: 80, h: FLOOR_Y - 300 });
 const STUDIO_WINDOWS = Object.freeze([{ x: 54, w: 280 }, { x: 1230, w: 200 }]);
+// The view that frames the shelf and the whole easel together (SHELF.x 480 to
+// the canvas sheet's right edge 1224), and how far Butch may walk either way
+// before the camera leaves it to follow him.
+const WORK_FRAME = Object.freeze({ centre: 856, reach: 420 });
 let stillLifeKeys = null;
 
 const SOURCE_LAYOUT = Object.freeze(STUDIO_SOURCES.map((source, index) => {
@@ -84,6 +99,19 @@ const REGION_SHAPES = Object.freeze({
   sky: { type: 'rect', x: 0, y: 0, w: CANVAS.w, h: 74 },
 });
 const REGION_ORDER = ['apple', 'sun', 'plums', 'fox', 'leaves', 'sky'];
+// Rosa's colour notes, canvas-local: the pinned slip's top-left corner and
+// where its pencil leader touches the thing it is about (null: the slip sits
+// in it). Placed in the drawing's empty paper, clear of every shape.
+const NOTE_SPOTS = Object.freeze({
+  sky: { x: 8, y: 8, to: null },
+  sun: { x: 168, y: 20, to: { x: 246, y: 36 } },
+  leaves: { x: 172, y: 70, to: { x: 152, y: 84 } },
+  apple: { x: 154, y: 118, to: { x: 136, y: 124 } },
+  plums: { x: 252, y: 148, to: { x: 240, y: 190 } },
+  fox: { x: 122, y: 190, to: { x: 112, y: 206 } },
+});
+// How faint her colour shows under the pencil before it is painted in.
+const REMEMBERED_ALPHA = 0.24;
 
 const colorCss = (value) => `#${value.toString(16).padStart(6, '0')}`;
 
@@ -132,7 +160,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.frameReveal = 0;
     this.transitioning = false;
     this.locked = false;
-    this.tutorialSeen = { take: false, apply: false, wash: false, exit: false };
+    this.tutorialSeen = { take: false, apply: false, exit: false };
     this.qa = devParam('qa');
 
     this.cameras.main.setBackgroundColor(PAPER.sheet);
@@ -225,7 +253,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.add.text(24, 26, "THE STUDIO  ·  ROSA'S STILL LIFE", {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
     }).setOrigin(0, 0.5).setDepth(DEPTH.ROOM + 1);
-    this.add.text(SHELF.x + SHELF.w / 2, SHELF.y + 26, 'THINGS FROM THE ORCHARD HOUSE', {
+    this.add.text(SHELF.x + SHELF.w / 2, SHELF.y + 46, 'THINGS FROM THE ORCHARD HOUSE', {
       fontFamily: MONO, fontSize: '11px', color: '#8d8579', letterSpacing: 1.4,
     }).setOrigin(0.5, 0).setDepth(DEPTH.ROOM + 1);
 
@@ -243,7 +271,14 @@ export class DrawingStudioScene extends Phaser.Scene {
       const pigment = this.studio.pigment(this.studio.source(layout.id).pigment);
       const wash = this.add.image(layout.x, top, keys.wash).setOrigin(0.5, 0).setDepth(DEPTH.PAINT).setTint(pigment.color);
       const pencil = this.add.image(layout.x, top, keys.pencil).setOrigin(0.5, 0).setDepth(DEPTH.PAINT + 0.1);
-      return { layout, wash, pencil };
+      // its colour's plain name, on a little paper tag hung from the shelf
+      const label = this.add.text(layout.x, SHELF.y + 16, pigment.plain, {
+        fontFamily: MONO, fontSize: px(11), color: UI.ink, fontStyle: 'bold', backgroundColor: '#efe4cc', padding: { x: 3, y: 1 },
+      }).setOrigin(0.5, 0).setDepth(DEPTH.PAINT + 0.2);
+      const swatch = this.graphics(DEPTH.PAINT + 0.25);
+      swatch.fillStyle(pigment.color, 1).fillRect(layout.x - label.width / 2 + 3, SHELF.y + 16 + label.height - 3, label.width - 6, 3);
+      swatch.lineStyle(1, PAPER.graphite, 0.5).lineBetween(layout.x, SHELF.y + 11, layout.x, SHELF.y + 16);
+      return { layout, wash, pencil, label };
     });
     this.focusArt = this.graphics(DEPTH.PAINT + 2);
     this.streamArt = this.graphics(DEPTH.PROMPT - 2);
@@ -275,6 +310,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     ['sky', 'sun', 'leaves', 'apple', 'plums', 'fox'].forEach((id, i) => this.regionArt[id].setDepth(DEPTH.BOARD + i * 0.01));
     this.fillArt = null;
     this.pencilArt = this.add.image(x, y, stillLifeKeys.pencil).setOrigin(0).setDepth(DEPTH.BOARD + 1);
+    this.buildNotes();
     this.selectionArt = this.graphics(DEPTH.BOARD + 2);
     this.frameArt = this.graphics(DEPTH.BOARD + 3);
     this.completionLine = this.add.text(x + w / 2, y + h + 34, 'As Rosa remembered it.', {
@@ -290,14 +326,85 @@ export class DrawingStudioScene extends Phaser.Scene {
     }).setOrigin(0.5, 1).setDepth(DEPTH.BOARD);
   }
 
+  // Rosa's colour notes: a pinned slip beside each thing in her drawing, a
+  // dab of the colour she meant and her word for it, with a pencil leader to
+  // the thing. A tick goes on the slip once the place is painted.
+  buildNotes() {
+    this.notes = {};
+    this.noteArt = this.graphics(DEPTH.BOARD + 1.5);
+    STILL_LIFE_REGIONS.forEach((region) => {
+      const spot = NOTE_SPOTS[region.id];
+      const word = this.add.text(0, 0, region.note, {
+        fontFamily: SERIF, fontSize: px(14), color: '#3a2a1c', fontStyle: 'italic',
+      }).setOrigin(0, 0.5).setDepth(DEPTH.BOARD + 1.6);
+      this.notes[region.id] = { spot, word, pulse: 0 };
+    });
+    this.drawNotes();
+  }
+
+  drawNotes() {
+    const g = this.noteArt;
+    if (!g) return;
+    g.clear();
+    const fills = this.studio.state.fills;
+    STILL_LIFE_REGIONS.forEach((region, i) => {
+      const note = this.notes[region.id];
+      const { spot, word } = note;
+      const pigment = this.studio.pigment(region.wants);
+      const done = fills[region.id] === region.wants;
+      const k = 1 + 0.18 * Math.sin(Math.min(1, note.pulse) * Math.PI);
+      const x = CANVAS.x + spot.x;
+      const y = CANVAS.y + spot.y;
+      const dab = 7 * k;
+      const w = 24 + word.width + 8;
+      const h = 22;
+      // the leader, a light pencil line to the thing
+      if (spot.to) {
+        g.lineStyle(1.2, PAPER.graphite, done ? 0.3 : 0.6);
+        const fromX = spot.to.x < spot.x ? x : x + w;
+        draftLine(g, makeRandom(0x4e0 + i), fromX, y + h / 2, CANVAS.x + spot.to.x, CANVAS.y + spot.to.y, { overshoot: 0, jitter: 0.7, segments: 4 });
+      }
+      // the slip, pinned
+      g.fillStyle(0x000000, 0.08).fillRect(x + 1.5, y + 2, w, h);
+      g.fillStyle(0xf6efdd, done ? 0.8 : 0.96).fillRect(x, y, w, h);
+      g.lineStyle(1, PAPER.graphiteSoft, 0.7).strokeRect(x, y, w, h);
+      g.fillStyle(UI.walnut, 0.8).fillCircle(x + w / 2, y + 1, 1.8);
+      // her test dab of the colour
+      g.fillStyle(pigment.color, 0.95).fillCircle(x + 12, y + h / 2, dab);
+      g.lineStyle(1, PAPER.graphite, 0.55).strokeCircle(x + 12, y + h / 2, dab);
+      word.setPosition(x + 24, y + h / 2).setAlpha(done ? 0.6 : 1);
+      if (done) {
+        // her tick, in pencil
+        g.lineStyle(2.2, PAPER.verdigris, 0.95);
+        g.beginPath();
+        g.moveTo(x + w - 2, y + h / 2 + 1);
+        g.lineTo(x + w + 3, y + h / 2 + 6);
+        g.lineTo(x + w + 12, y + h / 2 - 7);
+        g.strokePath();
+      }
+    });
+  }
+
   buildPlayer() {
     this.walker = this.add.rectangle(220, 414, 18, 62, 0xffffff, 0);
     this.physics.add.existing(this.walker);
     this.physics.add.collider(this.walker, this.floor);
     this.walker.body.setCollideWorldBounds(true);
     this.figure = createPaintedPlayer(this, DEPTH.FIGURE);
-    this.cameras.main.startFollow(this.walker, true, 0.1, 0.12);
-    this.cameras.main.setDeadzone(280, 190);
+    // Round 11: the camera holds the shelf and the whole of her drawing in
+    // one view while Butch works between them, so every colour note and the
+    // thing that holds its colour are on screen together.
+    this.camTarget = this.add.zone(this.cameraXFor(this.walker.x), VIEW.h / 2, 2, 2);
+    this.cameras.main.startFollow(this.camTarget, true, 0.1, 0.12);
+  }
+
+  // Where the camera centres for Butch at x: on the work (the shelf and the
+  // easel, WORK_FRAME) while he is anywhere near it, on him beyond it.
+  cameraXFor(x) {
+    const { centre, reach } = WORK_FRAME;
+    if (x < centre - reach) return x + reach;
+    if (x > centre + reach) return x - reach;
+    return centre;
   }
 
   buildGrain() {
@@ -341,10 +448,12 @@ export class DrawingStudioScene extends Phaser.Scene {
     const qa = this.qa;
     if (qa === 'drawing-start') return;
     if (qa === 'drawing-wrong') {
-      STILL_LIFE_REGIONS.forEach((region, i) => {
-        this.studio.take(STUDIO_SOURCES.find((s) => s.pigment === (i === 3 ? 'blue' : region.wants)).id);
+      // five places painted; the brush holds the wrong colour for the last
+      STILL_LIFE_REGIONS.slice(0, -1).forEach((region) => {
+        this.studio.take(STUDIO_SOURCES.find((s) => s.pigment === region.wants).id);
         this.studio.apply(region.id);
       });
+      this.studio.take('blue-jug');
       this.walker.setPosition(CANVAS.x - 60, 414);
     } else if (qa === 'drawing-ready') {
       STILL_LIFE_REGIONS.slice(0, -1).forEach((region) => {
@@ -380,18 +489,60 @@ export class DrawingStudioScene extends Phaser.Scene {
   // Rosa's pencil is a texture now (art/studioArt.js), always on top.
   drawPencil() {}
 
-  // A region painted with a colour: her wash for that place, tinted.
+  // A region painted with a colour: her wash for that place, tinted. Not
+  // yet painted, the colour she remembered shows faintly under her pencil.
   paintRegion(id, pigmentId) {
     const pigment = this.studio.pigment(pigmentId);
     const image = this.regionArt[id];
+    if (this.runningOff?.[id]) return;
     if (!pigment) {
-      image.setVisible(false);
+      const remembered = this.studio.pigment(this.studio.region(id).wants);
+      if (image.tintTopLeft !== remembered.color || image.alpha !== REMEMBERED_ALPHA || image.state !== 'remembered') {
+        this.tweens.killTweensOf(image);
+        image.setTint(remembered.color).setVisible(true).setAlpha(REMEMBERED_ALPHA);
+        image.state = 'remembered';
+      }
       return;
     }
-    if (!image.visible || image.tintTopLeft !== pigment.color) {
-      image.setTint(pigment.color).setVisible(true).setAlpha(0.2);
+    if (image.state !== 'painted' || image.tintTopLeft !== pigment.color) {
+      image.state = 'painted';
+      image.setTint(pigment.color).setVisible(true).setAlpha(Math.max(REMEMBERED_ALPHA, image.alpha));
       this.tweens.killTweensOf(image);
       this.tweens.add({ targets: image, alpha: 0.9, duration: 420, ease: 'Sine.easeOut' });
+    }
+  }
+
+  // A colour she did not note: it goes on for a moment, then runs off the
+  // paper (Reduce Motion: it only fades).
+  runOff(id, pigmentId) {
+    const pigment = this.studio.pigment(pigmentId);
+    const image = this.regionArt[id];
+    if (!pigment) return;
+    this.runningOff = this.runningOff ?? {};
+    this.runningOff[id] = true;
+    this.tweens.killTweensOf(image);
+    image.state = 'running';
+    image.setTint(pigment.color).setVisible(true).setAlpha(0.75);
+    const still = reducedMotionActive();
+    this.tweens.add({
+      targets: image,
+      alpha: 0,
+      y: CANVAS.y + (still ? 0 : 10),
+      duration: 760,
+      ease: 'Sine.easeIn',
+      onComplete: () => {
+        image.y = CANVAS.y;
+        this.runningOff[id] = false;
+        image.state = null;
+        this.redrawCanvas();
+      },
+    });
+    const note = this.notes[id];
+    // her note for the place swells once (not under Reduce Motion)
+    if (note && !still) {
+      note.pulse = 0;
+      this.tweens.killTweensOf(note);
+      this.tweens.add({ targets: note, pulse: 2, duration: 900, ease: 'Linear', onUpdate: () => this.drawNotes(), onComplete: () => { note.pulse = 0; this.drawNotes(); } });
     }
   }
 
@@ -400,6 +551,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.frameArt.clear();
     const snapshot = this.studio.snapshot();
     REGION_ORDER.forEach((id) => this.paintRegion(id, snapshot.fills[id]));
+    this.drawNotes();
     if (this.hoverRegionId) {
       const c = regionCentre(this.hoverRegionId);
       this.selectionArt.lineStyle(2.4, UI.amberInk, 0.9).strokeCircle(CANVAS.x + c.x, CANVAS.y + c.y, 12);
@@ -497,18 +649,10 @@ export class DrawingStudioScene extends Phaser.Scene {
       this.redrawSources();
       return;
     }
-    if (this.hoverRegionId && b.paintDown) {
+    // a place already as she remembered it takes no more paint
+    if (this.hoverRegionId && b.paintDown && !this.studio.state.fills[region]) {
       if (this.setHold(`apply:${region}`, dt)) {
         this.studio.apply(region);
-        this.resetHold();
-        this.handleEvents();
-      }
-      return;
-    }
-    if (this.hoverRegionId && b.washDown && this.studio.state.fills[region]) {
-      if (this.setHold(`wash:${region}`, dt)) {
-        this.studio.wash(region);
-        this.tutorialSeen.wash = true;
         this.resetHold();
         this.handleEvents();
       }
@@ -531,23 +675,35 @@ export class DrawingStudioScene extends Phaser.Scene {
 
   handleEvents() {
     const cx = CANVAS.x + CANVAS.w / 2;
+    const plain = (id) => this.studio.pigment(id)?.plain ?? '';
     this.studio.drainEvents().forEach((event) => {
       if (event.type === 'color-taken') {
         const pigment = this.studio.pigment(event.pigment);
         const layout = SOURCE_LAYOUT.find((l) => l.id === event.source);
-        noteAt(this, layout.x, layout.rect.y - 4, pigment.name, { tone: 'info', hold: 700 });
+        noteAt(this, layout.x, layout.rect.y - 4, `THE BRUSH HOLDS ${pigment.plain}`, { tone: 'info', hold: 900 });
       } else if (event.type === 'region-painted') {
         this.tutorialSeen.apply = true;
+        const region = this.studio.region(event.region);
+        const at = regionCentre(event.region);
+        noteAt(this, CANVAS.x + at.x, CANVAS.y + at.y - 18, `${plain(event.pigment)} · AS SHE REMEMBERED IT`, { tone: 'good', hold: 1100 });
+        if (region) this.notes[region.id].pulse = 0;
+      } else if (event.type === 'apply-refused' && event.reason === 'wrong-colour') {
+        // it will not take: it runs off, and her note says which colour
+        const region = this.studio.region(event.region);
+        const source = this.studio.sourceFor(event.region);
+        this.runOff(event.region, event.pigment);
+        const what = event.pigment === 'grey' ? "NOT THE ARCHIVE'S GREY" : `NOT ${plain(event.pigment)}`;
+        // (the tag beside it already says where her colour is)
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `${what} · SHE NOTED ${plain(event.wants)} FOR ${region.label}`, { tone: 'warn', hold: 2400 });
+        if (!this.hoverRegionId) noteAt(this, cx, CANVAS.y + CANVAS.h + 84, `TAKE IT FROM THE ${source.object}`, { tone: 'warn', hold: 2400 });
       } else if (event.type === 'apply-refused' && event.reason === 'dry-brush') {
-        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `THE BRUSH IS DRY · ${this.brush.label('washHold')} A THING ON THE SHELF`, { tone: 'warn' });
-      } else if (event.type === 'apply-refused' && event.reason === 'already-painted') {
-        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `ALREADY PAINTED · ${this.brush.label('washHold')} TO WASH IT OFF`, { tone: 'warn' });
+        const region = this.studio.region(event.region);
+        const source = this.studio.sourceFor(event.region);
+        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, `THE BRUSH IS DRY · ${region.label} WANTS ${plain(region.wants)}\n${this.brush.label('washHold')} THE ${source.object} ON THE SHELF`, { tone: 'warn', hold: 2200 });
       } else if (event.type === 'still-life-complete') {
         this.frameReveal = 0;
         this.tweens.add({ targets: this, frameReveal: 1, duration: 720, ease: 'Back.easeOut' });
         noteAt(this, cx, CANVAS.y + CANVAS.h + 96, 'THE DOOR TO THE TRAIN IS OPEN', { tone: 'good', hold: 2200 });
-      } else if (event.type === 'still-life-looks-wrong') {
-        noteAt(this, cx, CANVAS.y + CANVAS.h + 56, "IT ISN'T AS ROSA REMEMBERED IT.\nWASH OFF WHAT LOOKS WRONG.", { tone: 'warn', hold: 2600 });
       } else if (event.type === 'still-life-opened-again') {
         this.frameReveal = 0;
       }
@@ -568,19 +724,27 @@ export class DrawingStudioScene extends Phaser.Scene {
     if (this.hoverSourceId) {
       const layout = SOURCE_LAYOUT.find((l) => l.id === this.hoverSourceId);
       const item = this.studio.source(layout.id);
-      this.tag.show(`${b.label('washHold')} · TAKE ${this.studio.pigment(item.pigment).name}`, layout.x, layout.rect.y - 4, { progress });
+      const pigment = this.studio.pigment(item.pigment);
+      const what = pigment.id === 'grey' ? "THE ARCHIVE'S GREY" : `${pigment.plain} (${pigment.name})`;
+      this.tag.show(`${b.label('washHold')} · TAKE ${what}`, layout.x, layout.rect.y - 4, { progress });
       return;
     }
-    if (this.hoverRegionId) {
+    if (this.hoverRegionId && !snapshot.complete) {
+      // what the place wants, first; then what to do about it
       const region = this.studio.region(this.hoverRegionId);
       const c = regionCentre(region.id);
       const filled = snapshot.fills[region.id];
+      const wants = this.studio.pigment(region.wants).plain;
+      const source = this.studio.sourceFor(region.id);
       const text = filled
-        ? `${b.label('washHold')} · WASH ${region.label} OFF`
-        : snapshot.brush
-          ? `${b.label('paintHold')} · PAINT ${region.label} ${this.studio.pigment(snapshot.brush).name}`
-          : `${region.label} · TAKE A COLOUR FROM THE SHELF`;
-      this.tag.show(text, CANVAS.x + c.x, CANVAS.y + c.y - 16, { progress });
+        ? `${region.label} · ${wants} · AS SHE REMEMBERED IT`
+        : snapshot.brush === region.wants
+          ? `${b.label('paintHold')} · PAINT ${region.label} ${wants}`
+          : snapshot.brush
+            ? `${region.label} WANTS ${wants} · THE BRUSH HOLDS ${this.studio.pigment(snapshot.brush).plain}\nTAKE ${wants} FROM THE ${source.object}`
+            : `${region.label} WANTS ${wants} · TAKE IT FROM THE ${source.object}`;
+      // under the easel, so the tag never covers her notes
+      this.tag.show(text, CANVAS.x + c.x, CANVAS.y + CANVAS.h + 46, { progress, lift: 0 });
       return;
     }
     const exitCentre = EXIT.x + EXIT.w / 2;
@@ -589,7 +753,7 @@ export class DrawingStudioScene extends Phaser.Scene {
       return;
     }
     if (!this.tutorialSeen.take && this.walker.x < SHELF.x + SHELF.w + 60) {
-      this.tag.show(`AIM WITH THE ${b.label('aim')} · ${b.label('washHold')} A THING TO TAKE ITS COLOUR`, SHELF.x + SHELF.w / 2, SHELF.y - 60);
+      this.tag.show(`ROSA NOTED EACH COLOUR BESIDE ITS PLACE IN HER DRAWING\nAIM WITH THE ${b.label('aim')} · ${b.label('washHold')} A THING ON THE SHELF TO TAKE ITS COLOUR`, SHELF.x + SHELF.w / 2, SHELF.y - 60);
       return;
     }
     this.tag.hide();
@@ -665,8 +829,7 @@ export class DrawingStudioScene extends Phaser.Scene {
   objectiveText() {
     const s = this.studio.snapshot();
     if (s.complete) return 'the still life is as Rosa remembered it; the door to the painted train is open';
-    if (s.filled === STILL_LIFE_REGIONS.length) return 'every place is painted but something looks wrong; wash it off and repaint';
-    return `take colours from the shelf and paint Rosa's still life (${s.filled} / ${STILL_LIFE_REGIONS.length})`;
+    return `paint each place the colour Rosa noted beside it (${s.filled} / ${STILL_LIFE_REGIONS.length})`;
   }
 
   update(time, delta) {
@@ -681,6 +844,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     }
     const move = this.brush.readMove(this.keys);
     this.stepPlayer(move);
+    this.camTarget.setPosition(this.cameraXFor(this.walker.x), VIEW.h / 2);
     if (!this.locked && !this.transitioning) this.stepInteraction(dt, move);
     this.updateFigure();
     this.drawStream();

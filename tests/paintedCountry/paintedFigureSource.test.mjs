@@ -99,3 +99,14 @@ test('Chapter 4 keeps no persistent HUD and teaches paint and wash where they ar
   assert.match(studioSource, /chapter4-drawing-music', \{ loop: true, volume: 0\.38 \}/);
   assert.match(trainSource, /chapter4-consequence-music', \{ loop: true, volume: 0\.34 \}/);
 });
+
+// Round 11 (George): in the studio he could not tell which colour each thing
+// wants; on the line, Butch standing on top of the engine looked wrong.
+test('the studio shows what each place wants: her colour notes, the faint colour, plain names', () => {
+  assert.match(studioSource, /buildNotes\(\)/);
+  assert.match(studioSource, /NOTE_SPOTS/);
+  assert.match(studioSource, /REMEMBERED_ALPHA/);
+  assert.match(studioSource, /WANTS \$\{wants\}/);
+  assert.match(studioSource, /SHE NOTED \$\{plain\(event\.wants\)\}/);
+  assert.doesNotMatch(studioSource, /WASH OFF WHAT LOOKS WRONG/);
+});
