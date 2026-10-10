@@ -205,10 +205,11 @@ test('the idle tease only breathes the fold a little and never opens it', () => 
 test('PanelScene: the act waits folded; only a checkpoint-free handoff (or ?from=) starts folded', () => {
   const scene = read('src/chapters/nightService/PanelScene.js');
   assert.match(scene, /if \(this\.foldActive\(\)\) this\.updateFold\(delta\);\s*else stepModel\(this\.model, dt\);/);
-  assert.match(scene, /if \(this\.growth\) \{ this\.startFold\(this\.growth\); return; \}/);
+  assert.match(scene, /if \(this\.growth\) \{\s*this\.startFold\(this\.growth\);/);
   // the fold needs the act we came from and no `?step=` jump
   assert.match(scene, /if \(!grow \|\| !from \|\| grow\.act !== this\.fromAct \|\| this\.startStep\) return null;/);
-  assert.match(scene, /restart\(\{ actId: next, carry, services: this\.services, fromAct: this\.actId \}\)/);
+  // (round 11: with the last act's final frame, the handoff)
+  assert.match(scene, /restart\(\{ actId: next, carry, services: this\.services, fromAct: this\.actId, handoff: \{ \.\.\.geometry, key \} \}\)/);
   // a loaded checkpoint carries no `fromAct` (only the dev `?from=` does)
   const main = read('src/nightService-main.js');
   assert.match(main, /const fromAct = ACTS\[params\.get\('from'\)\] \? params\.get\('from'\) : null;/);

@@ -14,8 +14,8 @@
 import { BUTCH_PACE, defineAct } from '../panelModel.js';
 import { drawConductorCar, drawCubby, drawDesk, drawDoor, drawLockers, drawWindow } from '../art/act1Art.js';
 import {
-  A1_BUTCH_SCALE, A1_FLOOR as FLOOR, A1_WALK as WALK, BUTCH_HOME1, BUTCH_IN_CAR, BUTCH_IN_CHAIR1, CAR_ACTOR_SCALE, CHUTE_AT, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, DOOR, DOOR_WAIT_X,
-  DOORWAY_ZOOM, HANDLE_HIT, LOCKERS_CHUTE_AT, PLATES1, PROPS1, SLOT_Y, TAG_DROP_Y, TAG_HIT, TAG_AT, TAGGED_HIT, TAGGED_ZOOM, WINDOW_FLOOR,
+  A1_BUTCH_SCALE, A1_FLOOR as FLOOR, A1_WALK as WALK, BUTCH_IN_CAR, BUTCH_IN_CHAIR1, BUTCH_ON_WALK1, BUTCH_ROUND_DESK1, BUTCH_STEP_IN, BUTCH_UP1, CAR_ACTOR_SCALE,
+  CHUTE_AT, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, DOOR_STEP, DOOR_WAIT_X, DOORWAY_ZOOM, HANDLE_HIT, LOCKERS_CHUTE_AT, PLATES1, PROPS1, SLOT_Y, TAG_DROP_Y, TAG_HIT, TAG_AT, TAGGED_HIT, TAGGED_ZOOM, WINDOW_FLOOR,
   drawConductorPlate, drawCubbyPlate, drawDeskPlate1, drawDoorPlate1, drawLockersPlate, drawWindowPlate,
 } from '../art/act1Plates.js';
 import { ACT1_FX } from '../art/act1Fx.js';
@@ -137,6 +137,8 @@ export const ACT1 = defineAct({
           draw: (ctx) => (ctx.plate ? drawConductorPlate(ctx) : drawConductorCar(ctx)),
           zoomOut: false,
           actorScale: CAR_ACTOR_SCALE,
+          // round 11: Butch on the threshold is nearer than the Conductor: drawn in front of him
+          depthSort: true,
         },
       },
     },
@@ -146,7 +148,8 @@ export const ACT1 = defineAct({
     // 1.75 m beside the painted 2 m door (round 7)
     // in his desk chair, where Act 0.5 left him (round 8: the painted sit-chair frame)
     butch: { rig: 'butch', pace: BUTCH_PACE, scale: A1_BUTCH_SCALE, tile: 'desk', x: BUTCH_IN_CHAIR1.x, y: BUTCH_IN_CHAIR1.y, pose: 'sit-chair', facing: 1 },
-    conductor: { rig: 'conductor', scale: CONDUCTOR_SCALE, tile: 'door', state: 'conductor', x: CONDUCTOR_IN_CAR.x, y: CONDUCTOR_IN_CAR.y, facing: -1, pose: 'idle' },
+    // round 11: waiting with his lantern at his side (raised, it hung in front of Butch's face)
+    conductor: { rig: 'conductor', scale: CONDUCTOR_SCALE, tile: 'door', state: 'conductor', x: CONDUCTOR_IN_CAR.x, y: CONDUCTOR_IN_CAR.y, facing: -1, pose: 'lowered' },
   },
   steps: [
     {
@@ -154,16 +157,18 @@ export const ACT1 = defineAct({
       when: { link: { a: 'desk', b: 'door', type: 'floor' } },
       hint: { tile: 'desk', edge: { side: 'right', at: FLOOR }, ghost: { drag: { tile: 'desk', leftOf: 'door' } } },
       do: [
-        // up out of his chair (standing where his feet were), round the desk's end and down the corridor
-        { placeActor: { actor: 'butch', x: BUTCH_IN_CHAIR1.x + 0.08, pose: 'stand', facing: 1 } },
+        // up out of his chair (standing where his feet were), along the boards in
+        // front of the desk, round its end and down the corridor (round 11: the
+        // old path cut through the painted pedestal)
+        { placeActor: { actor: 'butch', x: BUTCH_UP1.x, y: BUTCH_UP1.y, pose: 'stand', facing: 1 } },
         { sfx: 'stool' },
         { wait: 450 },
         {
           walkButch: {
             id: 'toDoor',
             path: [
-              { tile: 'desk', x: BUTCH_HOME1.x, y: WALK },
-              { tile: 'desk', x: 0.7, y: WALK },
+              { tile: 'desk', x: BUTCH_ROUND_DESK1.x, y: BUTCH_ROUND_DESK1.y },
+              { tile: 'desk', x: BUTCH_ON_WALK1.x, y: BUTCH_ON_WALK1.y },
               { tile: 'desk', x: 1, y: WALK },
               { tile: 'door', x: 0, y: WALK, via: 'floor' },
               { tile: 'door', x: DOOR_WAIT_X, y: WALK },
@@ -213,17 +218,18 @@ export const ACT1 = defineAct({
         { sfx: 'door' },
         { setState: { tile: 'door', state: 'open' } },
         { wait: 700 },
-        { walkButch: { id: 'throughDoor', speed: 120, path: [{ tile: 'door', x: DOOR.x + DOOR.w * 0.5, y: FLOOR - 0.01 }] } },
+        // onto the threshold, short of the leaf that swings out at the opening's right
+        { walkButch: { id: 'throughDoor', speed: 120, path: [{ tile: 'door', x: DOOR_STEP.x, y: DOOR_STEP.y }] } },
         // from here the scene plays itself
         { lockInput: true },
         { placeActor: { actor: 'butch', visible: false } },
         { wait: 250 },
-        // through the doorway into the next car: he has just stepped in, the
-        // Conductor waits under the corridor's lamp, his lantern raised
-        { placeActor: { actor: 'butch', tile: 'door', state: 'conductor', x: BUTCH_IN_CAR.x - 0.035, y: BUTCH_IN_CAR.y, visible: true, pose: 'idle', facing: 1 } },
+        // through the doorway into the next car: he steps in over its
+        // threshold, the Conductor waits a metre down the corridor's runner
+        { placeActor: { actor: 'butch', tile: 'door', state: 'conductor', x: BUTCH_STEP_IN.x, y: BUTCH_STEP_IN.y, visible: true, pose: 'idle', facing: 1 } },
         { zoomTo: { tile: 'door', to: 'conductor', rect: DOORWAY_ZOOM } },
         { wait: 520 },
-        { walkButch: { id: 'meetConductor', speed: 45, path: [{ tile: 'door', x: BUTCH_IN_CAR.x, y: BUTCH_IN_CAR.y }] } },
+        { walkButch: { id: 'meetConductor', speed: 32, path: [{ tile: 'door', x: BUTCH_IN_CAR.x, y: BUTCH_IN_CAR.y }] } },
         { actorPose: { actor: 'butch', pose: 'idle', facing: 1 } },
         { wait: 300 },
         {
@@ -235,8 +241,12 @@ export const ACT1 = defineAct({
         { fx: { name: 'punchHandover', ms: 1300 } },
         { giveItem: 'punch' },
         { ringBell: true },
-        { wait: 2000 },
-        { fx: { name: 'fadeAll', ms: 1700 } },
+        { wait: 1400 },
+        // round 11 (George: no black between Acts I and II): the other windows
+        // dim and the camera leans in on Butch; Act II opens on this frame,
+        // its aisle laid over the corridor with Butch where he stands here,
+        // and pulls back into the luggage car (act2 `enter.act1`)
+        { fx: { name: 'flight', tile: 'door', actor: 'butch', push: 1.08, ms: 1800 } },
         { checkpoint: 'chapter-1-act-2' },
         { nextAct: 'act2' },
       ],

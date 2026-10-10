@@ -47,6 +47,11 @@ export const ACT2 = defineAct({
   // (alpha R4 · P2)
   slots: ['window', 'rack', 'aisle', 'board'],
   start: { bell: 1, items: ['punch'] },
+  // round 11: from Act I's last frame (no black between them): the aisle
+  // window opens over the Conductor's corridor, pushed in so that Butch here
+  // stands where he stood there, dissolves into it, then pulls back and
+  // glides home (PanelScene flightIn)
+  enter: { act1: { tile: 'aisle', actor: 'butch', ms: 2400 } },
   assets: ['fields', 'memory'],
   fx: ACT2_FX,
   cards: {
@@ -365,7 +370,10 @@ export const ACT2 = defineAct({
         { wait: 1200 },
         { zoomOutAll: { tile: 'aisle', gap: 650 } },
         { wait: 500 },
-        { fx: { name: 'fadeAll', ms: 1700 } },
+        // round 11: no black into Act 3 either: the camera leans in on Butch
+        // and the orchard case, and Act 3 opens out of this frame on the
+        // orchard house it came from (act3 `enter.act2`)
+        { fx: { name: 'flight', tile: 'aisle', actor: 'butch', push: 1.08, ms: 1800 } },
         { checkpoint: 'chapter-1-act-3' },
         { nextAct: 'act3' },
       ],

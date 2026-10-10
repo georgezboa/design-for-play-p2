@@ -67,7 +67,8 @@ export const SPRITE_RIGS = Object.freeze({
     sheet: 'conductor',
     // the lantern raised at the door; after the handover he lowers it
     idle: 'lantern',
-    poses: Object.freeze({ idle: 'lantern', stand: 'lantern', lantern: 'lantern', offer: 'offer', walk: 'walk', rest: 'stand-empty' }),
+    // `lowered` (round 11): waiting with the lantern at his side, the punch in his hand
+    poses: Object.freeze({ idle: 'lantern', stand: 'lantern', lantern: 'lantern', lowered: 'stand', offer: 'offer', walk: 'walk', rest: 'stand-empty' }),
     gestures: Object.freeze({ offer: Object.freeze({ frame: 'offer', hold: true }) }),
     glow: Object.freeze({ size: 62, alpha: 0.26, tint: 0xffb860 }),
     shadow: Object.freeze({ w: 52, h: 8, alpha: 0.34 }),
@@ -278,7 +279,7 @@ export function createAnimator(kind) {
     if (moving) return spec.poses.walk ?? spec.idle;
     // a walker held at an edge keeps the pose 'walk' but stands
     if (pose === 'walk' || pose == null) return st.rest ?? spec.idle;
-    if (st.rest && (pose === 'idle' || pose === 'stand')) return st.rest;
+    if (st.rest && (pose === 'idle' || pose === 'stand' || pose === 'lowered')) return st.rest;
     return spec.poses[pose] ?? spec.idle;
   }
 

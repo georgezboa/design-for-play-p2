@@ -5,6 +5,9 @@
 //   (2×2) → Act 2 THE LUGGAGE CAR (2×2) → Act 3 TWO TRUE THINGS (3×2) → Chapter 2.
 //   Acts 0 → 0.5 → 1 grow the carriage wall in place (see `growFrom`): each
 //   opens folded and the player drags the brass pull to unfold it (unfold.js).
+//   Acts 1 → 2 → 3 fly out of one act's last picture into the next one's first
+//   (an ending `flight` fx answered by the next act's `enter`; flight.js). No
+//   join goes through black (round 11), only the chapter's end.
 
 import { ACT0 } from './act0.js';
 import { ACT05 } from './act05.js';
