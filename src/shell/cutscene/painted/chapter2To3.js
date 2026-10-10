@@ -11,23 +11,36 @@
 
 import drawn from '../scenes/chapter2To3.js';
 import {
-  clockHands, drawPlate, drawWindowView, drawWords, lampGlow, lightSweep, linkRect, motes, pages, rain, ramp, sway, vignette, windowLayout,
+  clockHands, drawPlate, drawStamp, drawWindowView, drawWords, lampGlow, lightSweep, linkRect, motes, pages, rain, ramp, sway, vignette, windowLayout,
 } from './kit.js';
 import { geometry, paintedCutscene } from './scene.js';
 
-const DOOR = geometry('C23-door', { window: [700, 250, 220, 110], lamp: [300, 160] }, { window: [1140, 240, 200, 100], lamp: [180, 120] });
-const LETTER = geometry('C23-letter', { at: { x: 800, y: 400, rot: -0.03 }, w: 520, lamp: [1260, 560] }, { at: { x: 820, y: 360, rot: -0.04 }, w: 460, lamp: [1360, 640] });
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+// C23-door: the door's little window (glass ≈ x 678–826, y 30–280) with the lantern and Butch's back in it
+const DOOR = geometry('C23-door', { glass: [679, 31, 146, 248], window: [504, 31, 496, 248], lamp: [750, 100] },
+  { glass: null, window: [1140, 240, 200, 100], lamp: [180, 120] });
+// C23-letter: the folded page tilts ≈ 0.15 rad and leans back (its left edge slants), held by both thumbs
+const LETTER = geometry('C23-letter', { at: { x: 850, y: 352, rot: 0.15, skewX: -0.12 }, w: 430, lamp: [1355, 170] },
+  { at: { x: 820, y: 360, rot: -0.04 }, w: 460, lamp: [1360, 640] });
 const WINDOW = geometry('C12-window', {}, { glass: [420, 160, 760, 470] });
-const ECHO = geometry('C23-echo', { clock: { x: 1060, y: 250, r: 46 }, sun: [0, 0, 1600, 520] }, { clock: { x: 1160, y: 238, r: 22 }, sun: [0, 0, 1600, 560] });
+// C23-echo: the clock face on the tower (≈ 52 across); the sunlit square under the hill town
+const ECHO = geometry('C23-echo', { clock: { x: 1046, y: 128, r: 24 }, sun: [0, 90, 1600, 520] }, { clock: { x: 1160, y: 238, r: 22 }, sun: [0, 0, 1600, 560] });
+// C23-board: two blank tickets pinned side by side (pins near the top), the right one a shade higher
 const BOARD = geometry('C23-board', {
-  tickets: [{ x: 640, y: 420, rot: -0.05, w: 260, name: 'VELEZ, M.' }, { x: 990, y: 440, rot: 0.06, w: 260, name: 'M. VENN', stamp: 'DUPLICATE' }],
+  tickets: [
+    { x: 663, y: 372, rot: -0.04, w: 320, name: 'VELEZ, M.' },
+    { x: 1030, y: 360, rot: -0.05, w: 330, name: 'M. VENN', stamp: 'DUPLICATE', stampAt: [1085, 437] },
+  ],
+}, {
+  tickets: [{ x: 640, y: 420, rot: -0.05, w: 260, name: 'VELEZ, M.' }, { x: 990, y: 440, rot: 0.06, w: 260, name: 'M. VENN', stamp: 'DUPLICATE', stampAt: [1060, 490] }],
 });
 
 function shotJustMadeIt(c, t, w, h, env) {
   c.save();
   sway(c, env, { amp: 0.9, period: 2.6 });
   drawPlate(c, 'C23-door');
-  lampGlow(c, DOOR.lamp[0] - t * 260, DOOR.lamp[1], 300, { alpha: 0.34, env });
+  // the lantern in the door's window
+  lampGlow(c, DOOR.lamp[0], DOOR.lamp[1], 170, { alpha: 0.3, env, flicker: 0.08 });
   // the platform's lamps slide away behind as the train gathers speed
   lightSweep(c, 1 - ramp(t, 0.05, 0.6), { alpha: 0.18, width: 300, angle: -0.2 });
   lightSweep(c, 1 - ramp(t, 0.4, 0.95), { alpha: 0.14, width: 260, angle: -0.2 });
@@ -38,10 +51,10 @@ function shotJustMadeIt(c, t, w, h, env) {
 
 const LINES = [
   { text: 'Butch —', size: 0.075, ink: 'rgba(56, 32, 18, 0.85)', dy: -0.36, dx: -0.3 },
-  { text: 'I made it through this city,', size: 0.052, ink: 'rgba(70, 44, 26, 0.62)', dy: -0.2, dx: -0.06 },
-  { text: 'but I could not wait here.', size: 0.052, ink: 'rgba(70, 44, 26, 0.62)', dy: -0.1, dx: -0.08 },
-  { text: 'If you are following me —', size: 0.052, ink: 'rgba(70, 44, 26, 0.62)', dy: 0.04, dx: -0.06 },
-  { text: 'KEEP MOVING.', size: 0.11, ink: 'rgba(56, 32, 18, 0.92)', dy: 0.2, dx: 0, weight: 700 },
+  { text: 'I made it through this city,', size: 0.052, ink: 'rgba(70, 44, 26, 0.72)', dy: -0.2, dx: -0.06 },
+  { text: 'but I could not wait here.', size: 0.052, ink: 'rgba(70, 44, 26, 0.72)', dy: -0.1, dx: -0.08 },
+  { text: 'If you are following me —', size: 0.052, ink: 'rgba(70, 44, 26, 0.72)', dy: 0.04, dx: -0.06 },
+  { text: 'KEEP MOVING.', size: 0.097, ink: 'rgba(56, 32, 18, 0.92)', dy: 0.2, dx: 0, weight: 700 },
   { text: '— M.', size: 0.07, ink: 'rgba(56, 32, 18, 0.8)', dy: 0.36, dx: 0.3 },
 ];
 
@@ -54,7 +67,12 @@ function shotLetter(c, t, w, h, env) {
   LINES.forEach((line, i) => {
     const reveal = ramp(t, 0.06 + i * 0.09, 0.16 + i * 0.09);
     if (reveal <= 0) return;
-    const at = { x: g.at.x + line.dx * g.w, y: g.at.y + line.dy * g.w * 0.62, rot: g.at.rot };
+    // down the page, in the page's own tilt
+    const ox = line.dx * g.w;
+    const oy = line.dy * g.w * 0.62;
+    const cos = Math.cos(g.at.rot);
+    const sin = Math.sin(g.at.rot);
+    const at = { x: g.at.x + ox * cos - oy * sin + oy * (g.at.skewX ?? 0), y: g.at.y + ox * sin + oy * cos, rot: g.at.rot, skewX: g.at.skewX };
     drawWords(c, line.text, at, { face: 'hand', size: g.w * line.size, weight: line.weight, ink: line.ink, tracking: 0.01, reveal, jitter: 1.1, seed: 20 + i });
   });
   lampGlow(c, g.lamp[0], g.lamp[1], 520, { alpha: 0.3, env, flicker: 0.1 });
@@ -108,6 +126,7 @@ function shotSeat43(c, t, w, h, env) {
     drawWords(c, ['NIGHT SERVICE', 'SEAT 43', tk.name], { x: tk.x, y: tk.y, rot: tk.rot }, {
       face: 'print', size: tk.w * 0.075, weight: 600, tracking: 0.14, leading: 1.75, ink: '#2b1d12', fade: 0.9 * on, seed: 30 + i,
     });
+    if (tk.stamp) drawStamp(c, tk.stamp, tk.stampAt[0], tk.stampAt[1], ramp(t, 0.5, 0.62), { size: tk.w * 0.06, rot: -0.14, seed: 31 });
   });
   motes(c, env, [0, 0, w, h], { count: 40, alpha: 0.3, seed: 44 });
   vignette(c, { alpha: 0.25 });
@@ -121,8 +140,13 @@ export const chapter2To3 = paintedCutscene(drawn, {
     {
       id: 'just-made-it',
       draw: shotJustMadeIt,
-      camera: { from: { x: 0.46, y: 0.5, zoom: 1.08 }, to: { x: 0.54, y: 0.46, zoom: 1.2 }, still: { x: 0.5, y: 0.48, zoom: 1.1 } },
-      transition: { type: 'zoom', duration: 1.4, rect: DOOR.window, reveal: [0.15, 0.65], feather: 0.15 },
+      // from the caught coat and the platform, up to the door's little window
+      camera: DOOR.glass
+        ? { from: { x: 0.55, y: 0.52, zoom: 1.06 }, to: { x: 0.48, y: 0.36, zoom: 1.28 }, still: { x: 0.5, y: 0.45, zoom: 1.1 } }
+        : { from: { x: 0.46, y: 0.5, zoom: 1.08 }, to: { x: 0.54, y: 0.46, zoom: 1.2 }, still: { x: 0.5, y: 0.48, zoom: 1.1 } },
+      transition: DOOR.glass
+        ? { type: 'zoom', duration: 1.5, rect: DOOR.window, clip: DOOR.glass, clipRadius: 16, reveal: [0.1, 0.5], feather: 0 }
+        : { type: 'zoom', duration: 1.4, rect: DOOR.window, reveal: [0.15, 0.65], feather: 0.15 },
     },
     {
       id: 'the-letter',
@@ -139,7 +163,7 @@ export const chapter2To3 = paintedCutscene(drawn, {
     {
       id: 'echo-city',
       draw: shotEcho,
-      camera: { from: { x: 0.42, y: 0.46, zoom: 1.04 }, to: { x: 0.6, y: 0.5, zoom: 1.18 }, still: { x: 0.5, y: 0.48, zoom: 1.08 } },
+      camera: { from: { x: 0.42, y: 0.46, zoom: 1.04 }, to: { x: 0.66, y: 0.52, zoom: 1.2 }, still: { x: 0.5, y: 0.48, zoom: 1.08 } },
       transition: { type: 'zoom', duration: 1.4, rect: linkRect('C23-board', [1060, 300, 420, 210]), reveal: [0.2, 0.7] },
     },
     {

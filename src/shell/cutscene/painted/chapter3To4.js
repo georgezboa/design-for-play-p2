@@ -14,9 +14,15 @@ import {
 } from './kit.js';
 import { cueTimes, geometry, paintedCutscene } from './scene.js';
 
-const SEAT = geometry('C34-seat', { plate: { x: 1120, y: 470, w: 60 }, floor: [0, 560, 1600, 240] }, { plate: { x: 1060, y: 694, w: 60 }, floor: [0, 560, 1600, 240], glass: [380, 90, 840, 300] });
-const ROSA = geometry('C34-rosa', { sign: { x: 1180, y: 620, rot: -0.08, size: 54 }, stamp: [820, 400] }, { sign: { x: 1210, y: 640, rot: -0.08, size: 48 }, stamp: [820, 400] });
-const ARRIVE = geometry('C34-arrive', { hedge: [1150, 600, 110] }, { hedge: [1040, 560, 110] });
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+// C34-seat: Butch on the left, his head in front of the glass; the empty seat's brass number plate; the low
+// sun striping the seat; `inset` is the 2 : 1 bit of window clear of his head that the camera flies into
+const SEAT = geometry('C34-seat', { plate: { x: 1160, y: 218, w: 34 }, floor: [1002, 166, 366, 432], inset: [704, 30, 400, 200] },
+  { plate: { x: 1060, y: 694, w: 60 }, floor: [0, 560, 1600, 240], glass: [380, 90, 840, 300], inset: null });
+// C34-rosa: the blank paper in the lower right corner, under the grass and right of the poppies
+const ROSA = geometry('C34-rosa', { sign: { x: 1376, y: 727, rot: -0.08, size: 50 }, stamp: [800, 420] }, { sign: { x: 1210, y: 640, rot: -0.08, size: 48 }, stamp: [820, 400] });
+// C34-arrive: the hedge by the gate, lower right
+const ARRIVE = geometry('C34-arrive', { hedge: [1292, 668, 95] }, { hedge: [1040, 560, 110] });
 const THUD = cueTimes(drawn, 'filed', 'thud')[0] ?? 4.5;
 const FILED_S = drawn.shots.find((s) => s.id === 'filed').duration;
 
@@ -104,8 +110,8 @@ export const chapter3To4 = paintedCutscene(drawn, {
     {
       id: 'seat-43',
       draw: shotSeat,
-      camera: { from: { x: 0.56, y: 0.55, zoom: 1.1 }, to: { x: 0.5, y: 0.45, zoom: 1.16 }, still: { x: 0.52, y: 0.5, zoom: 1.1 } },
-      transition: { type: 'zoom', duration: 1.4, rect: insetOf(windowLayout('C34-seat', { glass: SEAT.glass }).glass), reveal: [0.15, 0.6], feather: 0.12 },
+      camera: { from: { x: 0.54, y: 0.5, zoom: 1.04 }, to: { x: 0.56, y: 0.4, zoom: 1.2 }, still: { x: 0.52, y: 0.5, zoom: 1.1 } },
+      transition: { type: 'zoom', duration: 1.4, rect: SEAT.inset ?? insetOf(windowLayout('C34-seat', { glass: SEAT.glass }).glass), reveal: [0.15, 0.6], feather: 0.12 },
     },
     {
       id: 'colour-drains',

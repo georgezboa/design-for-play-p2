@@ -20,8 +20,9 @@
     768
    ],
    "align": {
-    "cc": 0.9362,
-    "shift": 0.22,
+    "method": "features",
+    "edges": 0.9004,
+    "shift": 0.21,
     "warped": false
    },
    "url": "/assets/cutscenes/A0-office.webp",
@@ -45,12 +46,8 @@
    "bytes": 122394
   },
   "OP-viaduct": {
-   "source": "A3-gap-1978.png",
-   "standIn": {
-    "from": "A3-gap-1978.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "OP-viaduct.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -62,21 +59,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/OP-viaduct.webp",
-   "bytes": 248130
+   "url": "/assets/cutscenes/OP-viaduct.webp",
+   "bytes": 196656
   },
   "OP-case": {
-   "source": "A0-office-awake.png",
-   "standIn": {
-    "from": "A0-office-awake.png",
-    "box": [
-     300,
-     27,
-     600,
-     227
-    ],
-    "treat": null
-   },
+   "source": "OP-case.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -88,16 +76,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/OP-case.webp",
-   "bytes": 41860
+   "url": "/assets/cutscenes/OP-case.webp",
+   "bytes": 181450
   },
   "OP-tag-front": {
-   "source": "A0-ticket.png",
-   "standIn": {
-    "from": "A0-ticket.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "OP-tag-front.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -109,16 +93,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/OP-tag-front.webp",
-   "bytes": 156590
+   "url": "/assets/cutscenes/OP-tag-front.webp",
+   "bytes": 198692
   },
   "OP-tag-back": {
-   "source": "A0-ticket.png",
-   "standIn": {
-    "from": "A0-ticket.png",
-    "box": null,
-    "treat": "older"
-   },
+   "source": "OP-tag-back.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -130,16 +110,30 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/OP-tag-back.webp",
-   "bytes": 133786
+   "align": {
+    "method": "features",
+    "edges": 0.9245,
+    "shift": 0.81,
+    "warped": true,
+    "warp": [
+     [
+      1.00016,
+      -7e-05,
+      -0.59479
+     ],
+     [
+      7e-05,
+      1.00016,
+      -0.55314
+     ]
+    ]
+   },
+   "url": "/assets/cutscenes/OP-tag-back.webp",
+   "bytes": 171824
   },
   "C12-rack": {
-   "source": "A2-rack.png",
-   "standIn": {
-    "from": "A2-rack.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-rack.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -151,16 +145,19 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-rack.webp",
-   "bytes": 225218
+   "glass": [
+    390.6,
+    225.0,
+    816.7,
+    350.0
+   ],
+   "keyed": 0.2121,
+   "url": "/assets/cutscenes/C12-rack.webp",
+   "bytes": 154332
   },
   "C12-halt-out": {
-   "source": "A3-orchard.png",
-   "standIn": {
-    "from": "A3-orchard.png",
-    "box": null,
-    "treat": "dark"
-   },
+   "source": "C12-halt-out.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -172,16 +169,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-halt-out.webp",
-   "bytes": 160570
+   "url": "/assets/cutscenes/C12-halt-out.webp",
+   "bytes": 254310
   },
   "C12-ticket": {
-   "source": "A0-ticket.png",
-   "standIn": {
-    "from": "A0-ticket.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-ticket.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -193,16 +186,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-ticket.webp",
-   "bytes": 156590
+   "url": "/assets/cutscenes/C12-ticket.webp",
+   "bytes": 188710
   },
   "C12-window": {
-   "source": "A2-window.png",
-   "standIn": {
-    "from": "A2-window.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-window.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -214,16 +203,19 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-window.webp",
-   "bytes": 201412
+   "glass": [
+    393.8,
+    59.4,
+    811.5,
+    553.1
+   ],
+   "keyed": 0.3485,
+   "url": "/assets/cutscenes/C12-window.webp",
+   "bytes": 142492
   },
   "C12-fields": {
-   "source": "A1-window.png",
-   "standIn": {
-    "from": "A1-window.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-fields.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -235,16 +227,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-fields.webp",
-   "bytes": 192928
+   "url": "/assets/cutscenes/C12-fields.webp",
+   "bytes": 118636
   },
   "C12-city": {
-   "source": "ST3-b.png",
-   "standIn": {
-    "from": "ST3-b.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-city.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -256,16 +244,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-city.webp",
-   "bytes": 191190
+   "url": "/assets/cutscenes/C12-city.webp",
+   "bytes": 166646
   },
   "C12-terminal": {
-   "source": "ST3-a.png",
-   "standIn": {
-    "from": "ST3-a.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C12-terminal.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -277,16 +261,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C12-terminal.webp",
-   "bytes": 184398
+   "url": "/assets/cutscenes/C12-terminal.webp",
+   "bytes": 246908
   },
   "C23-door": {
-   "source": "ST3-c.png",
-   "standIn": {
-    "from": "ST3-c.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C23-door.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -298,16 +278,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C23-door.webp",
-   "bytes": 171548
+   "url": "/assets/cutscenes/C23-door.webp",
+   "bytes": 205912
   },
   "C23-letter": {
-   "source": "A2-letter.png",
-   "standIn": {
-    "from": "A2-letter.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C23-letter.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -319,16 +295,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C23-letter.webp",
-   "bytes": 289250
+   "url": "/assets/cutscenes/C23-letter.webp",
+   "bytes": 214944
   },
   "C23-records": {
-   "source": "A05-stores.png",
-   "standIn": {
-    "from": "A05-stores.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C23-records.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -340,16 +312,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C23-records.webp",
-   "bytes": 253296
+   "url": "/assets/cutscenes/C23-records.webp",
+   "bytes": 243088
   },
   "C23-echo": {
-   "source": "ST4-b.png",
-   "standIn": {
-    "from": "ST4-b.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C23-echo.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -361,21 +329,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C23-echo.webp",
-   "bytes": 254518
+   "url": "/assets/cutscenes/C23-echo.webp",
+   "bytes": 294010
   },
   "C23-board": {
-   "source": "ST4-b.png",
-   "standIn": {
-    "from": "ST4-b.png",
-    "box": [
-     900,
-     380,
-     1290,
-     640
-    ],
-    "treat": null
-   },
+   "source": "C23-board.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -387,16 +346,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C23-board.webp",
-   "bytes": 92692
+   "url": "/assets/cutscenes/C23-board.webp",
+   "bytes": 275586
   },
   "C34-seat": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": "dusk"
-   },
+   "source": "C34-seat.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -408,16 +363,19 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-seat.webp",
-   "bytes": 161874
+   "glass": [
+    477.1,
+    0.0,
+    637.5,
+    257.3
+   ],
+   "keyed": 0.0878,
+   "url": "/assets/cutscenes/C34-seat.webp",
+   "bytes": 183358
   },
   "C34-dusk": {
-   "source": "ST4-c.png",
-   "standIn": {
-    "from": "ST4-c.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C34-dusk.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -429,16 +387,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-dusk.webp",
-   "bytes": 280210
+   "url": "/assets/cutscenes/C34-dusk.webp",
+   "bytes": 190852
   },
   "C34-dusk-pencil": {
-   "source": "ST4-c.png",
-   "standIn": {
-    "from": "ST4-c.png",
-    "box": null,
-    "treat": "pencil"
-   },
+   "source": "C34-dusk-pencil.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -450,16 +404,30 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-dusk-pencil.webp",
-   "bytes": 349204
+   "align": {
+    "method": "ecc",
+    "edges": 0.6799,
+    "shift": 2.04,
+    "warped": true,
+    "warp": [
+     [
+      0.99923,
+      0.00502,
+      -0.74968
+     ],
+     [
+      0.00023,
+      1.00511,
+      -1.8937
+     ]
+    ]
+   },
+   "url": "/assets/cutscenes/C34-dusk-pencil.webp",
+   "bytes": 294596
   },
   "C34-rosa": {
-   "source": "A2-orchard.png",
-   "standIn": {
-    "from": "A2-orchard.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C34-rosa.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -471,16 +439,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-rosa.webp",
-   "bytes": 303706
+   "url": "/assets/cutscenes/C34-rosa.webp",
+   "bytes": 271914
   },
   "C34-rosa-grey": {
-   "source": "A2-orchard.png",
-   "standIn": {
-    "from": "A2-orchard.png",
-    "box": null,
-    "treat": "grey"
-   },
+   "source": "C34-rosa-grey.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -492,16 +456,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-rosa-grey.webp",
-   "bytes": 149612
+   "align": {
+    "method": "none",
+    "edges": 0.9543,
+    "shift": 0.0,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/C34-rosa-grey.webp",
+   "bytes": 197846
   },
   "C34-arrive": {
-   "source": "A3-orchard.png",
-   "standIn": {
-    "from": "A3-orchard.png",
-    "box": null,
-    "treat": "pencil"
-   },
+   "source": "C34-arrive.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -513,21 +479,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C34-arrive.webp",
-   "bytes": 697436
+   "url": "/assets/cutscenes/C34-arrive.webp",
+   "bytes": 159078
   },
   "C45-wet": {
-   "source": "C-train.png",
-   "standIn": {
-    "from": "C-train.png",
-    "box": [
-     0,
-     500,
-     1536,
-     1024
-    ],
-    "treat": "paper"
-   },
+   "source": "C45-wet.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -539,21 +496,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-wet.webp",
-   "bytes": 283488
+   "url": "/assets/cutscenes/C45-wet.webp",
+   "bytes": 120158
   },
   "C45-ink": {
-   "source": "C-train.png",
-   "standIn": {
-    "from": "C-train.png",
-    "box": [
-     0,
-     500,
-     1536,
-     1024
-    ],
-    "treat": "dark"
-   },
+   "source": "C45-ink.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -565,16 +513,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-ink.webp",
-   "bytes": 82164
+   "align": {
+    "method": "features",
+    "edges": 0.844,
+    "shift": 0.34,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/C45-ink.webp",
+   "bytes": 178842
   },
   "C45-hall": {
-   "source": "A05-stores.png",
-   "standIn": {
-    "from": "A05-stores.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C45-hall.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -586,16 +536,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-hall.webp",
-   "bytes": 253296
+   "url": "/assets/cutscenes/C45-hall.webp",
+   "bytes": 178186
   },
   "C45-cases": {
-   "source": "A1-lockers.png",
-   "standIn": {
-    "from": "A1-lockers.png",
-    "box": null,
-    "treat": "dark"
-   },
+   "source": "C45-cases.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -607,16 +553,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-cases.webp",
-   "bytes": 67122
+   "url": "/assets/cutscenes/C45-cases.webp",
+   "bytes": 152560
   },
   "C45-cases-lit": {
-   "source": "A1-lockers.png",
-   "standIn": {
-    "from": "A1-lockers.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C45-cases-lit.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -628,16 +570,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-cases-lit.webp",
-   "bytes": 162350
+   "align": {
+    "method": "none",
+    "edges": 0.5786,
+    "shift": 0.0,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/C45-cases-lit.webp",
+   "bytes": 164212
   },
   "C45-card": {
-   "source": "A0-ticket.png",
-   "standIn": {
-    "from": "A0-ticket.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C45-card.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -649,16 +593,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-card.webp",
-   "bytes": 156590
+   "url": "/assets/cutscenes/C45-card.webp",
+   "bytes": 244858
   },
   "C45-archivist": {
-   "source": "A05-desk.png",
-   "standIn": {
-    "from": "A05-desk.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C45-archivist.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -670,16 +610,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C45-archivist.webp",
-   "bytes": 139540
+   "url": "/assets/cutscenes/C45-archivist.webp",
+   "bytes": 160050
   },
   "C5C-gallery": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C5C-gallery.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -691,16 +627,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C5C-gallery.webp",
-   "bytes": 199788
+   "url": "/assets/cutscenes/C5C-gallery.webp",
+   "bytes": 174498
   },
   "C5C-rails": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": "dark"
-   },
+   "source": "C5C-rails.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -712,16 +644,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C5C-rails.webp",
-   "bytes": 84580
+   "align": {
+    "method": "features",
+    "edges": 0.756,
+    "shift": 0.25,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/C5C-rails.webp",
+   "bytes": 163046
   },
   "C5C-conductor": {
-   "source": "A1-conductor.png",
-   "standIn": {
-    "from": "A1-conductor.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C5C-conductor.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -733,21 +667,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C5C-conductor.webp",
-   "bytes": 152494
+   "url": "/assets/cutscenes/C5C-conductor.webp",
+   "bytes": 196206
   },
   "C5C-face": {
-   "source": "A1-conductor.png",
-   "standIn": {
-    "from": "A1-conductor.png",
-    "box": [
-     700,
-     150,
-     1100,
-     417
-    ],
-    "treat": null
-   },
+   "source": "C5C-face.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -759,16 +684,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C5C-face.webp",
-   "bytes": 64176
+   "url": "/assets/cutscenes/C5C-face.webp",
+   "bytes": 98254
   },
   "C5C-raise": {
-   "source": "A1-door-open.png",
-   "standIn": {
-    "from": "A1-door-open.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "C5C-raise.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -780,16 +701,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/C5C-raise.webp",
-   "bytes": 122038
+   "url": "/assets/cutscenes/C5C-raise.webp",
+   "bytes": 211152
   },
   "CBK-palm": {
-   "source": "A2-stone.png",
-   "standIn": {
-    "from": "A2-stone.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "CBK-palm.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -801,16 +718,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/CBK-palm.webp",
-   "bytes": 241762
+   "url": "/assets/cutscenes/CBK-palm.webp",
+   "bytes": 109560
   },
   "CBK-door": {
-   "source": "A1-door-locked.png",
-   "standIn": {
-    "from": "A1-door-locked.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "CBK-door.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -822,16 +735,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/CBK-door.webp",
-   "bytes": 123032
+   "url": "/assets/cutscenes/CBK-door.webp",
+   "bytes": 137216
   },
   "CBK-door-open": {
-   "source": "A1-door-open.png",
-   "standIn": {
-    "from": "A1-door-open.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "CBK-door-open.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -843,16 +752,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/CBK-door-open.webp",
-   "bytes": 122038
+   "align": {
+    "method": "features",
+    "edges": 0.7059,
+    "shift": 0.34,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/CBK-door-open.webp",
+   "bytes": 129552
   },
   "CBK-door-shut": {
-   "source": "A1-door-locked.png",
-   "standIn": {
-    "from": "A1-door-locked.png",
-    "box": null,
-    "treat": "dark"
-   },
+   "source": "CBK-door-shut.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -864,16 +775,18 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/CBK-door-shut.webp",
-   "bytes": 43368
+   "align": {
+    "method": "features",
+    "edges": 0.8668,
+    "shift": 0.19,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/CBK-door-shut.webp",
+   "bytes": 131090
   },
   "CBK-seat": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": "dark"
-   },
+   "source": "CBK-seat.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -885,36 +798,23 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/CBK-seat.webp",
-   "bytes": 84580
+   "url": "/assets/cutscenes/CBK-seat.webp",
+   "bytes": 111580
   },
   "CBK-ticket": {
-   "source": "C-props.png",
-   "standIn": {
-    "from": "C-props.png",
-    "box": [
-     1100,
-     100,
-     1450,
-     450
-    ],
-    "treat": "black"
-   },
+   "source": "CBK-ticket.png",
+   "standIn": null,
    "kind": "cutout",
    "size": [
-    1536,
-    911
+    1284,
+    601
    ],
-   "url": "/assets/cutscenes/standin/CBK-ticket.webp",
-   "bytes": 57558
+   "url": "/assets/cutscenes/CBK-ticket.webp",
+   "bytes": 163886
   },
   "END-walk-a": {
-   "source": "A1-desk.png",
-   "standIn": {
-    "from": "A1-desk.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "END-walk-a.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -926,16 +826,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/END-walk-a.webp",
-   "bytes": 153406
+   "url": "/assets/cutscenes/END-walk-a.webp",
+   "bytes": 221144
   },
   "END-walk-b": {
-   "source": "A1-door-locked.png",
-   "standIn": {
-    "from": "A1-door-locked.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "END-walk-b.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -947,16 +843,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/END-walk-b.webp",
-   "bytes": 123032
+   "url": "/assets/cutscenes/END-walk-b.webp",
+   "bytes": 193742
   },
   "END-mara": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": null
-   },
+   "source": "END-mara.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -968,16 +860,12 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/END-mara.webp",
-   "bytes": 199788
+   "url": "/assets/cutscenes/END-mara.webp",
+   "bytes": 124214
   },
   "END-beside": {
-   "source": "A2-aisle.png",
-   "standIn": {
-    "from": "A2-aisle.png",
-    "box": null,
-    "treat": "older"
-   },
+   "source": "END-beside.png",
+   "standIn": null,
    "kind": "plate",
    "crop": [
     0,
@@ -989,8 +877,14 @@
     1536,
     768
    ],
-   "url": "/assets/cutscenes/standin/END-beside.webp",
-   "bytes": 167006
+   "align": {
+    "method": "features",
+    "edges": 0.8832,
+    "shift": 0.63,
+    "warped": false
+   },
+   "url": "/assets/cutscenes/END-beside.webp",
+   "bytes": 119216
   }
  },
  "links": {
@@ -1002,18 +896,51 @@
     300,
     150
    ],
-   "inliers": 0,
+   "inliers": 5,
+   "solved": false
+  },
+  "C23-board": {
+   "parent": "C23-echo",
+   "rect": [
+    1252,
+    336,
+    348,
+    174
+   ],
+   "inliers": 40,
+   "solved": false
+  },
+  "C45-card": {
+   "parent": "C45-cases-lit",
+   "rect": [
+    1267,
+    321,
+    241,
+    120
+   ],
+   "inliers": 6,
+   "solved": false
+  },
+  "C5C-face": {
+   "parent": "C5C-conductor",
+   "rect": [
+    545,
+    44,
+    505,
+    253
+   ],
+   "inliers": 16,
    "solved": false
   }
  },
  "complete": {
-  "opening": false,
-  "chapter1To2": false,
-  "chapter2To3": false,
-  "chapter3To4": false,
-  "chapter4To5": false,
-  "chapter5-to-conductor": false,
-  "chapter5-to-black-knife": false,
-  "ending": false
+  "opening": true,
+  "chapter1To2": true,
+  "chapter2To3": true,
+  "chapter3To4": true,
+  "chapter4To5": true,
+  "chapter5-to-conductor": true,
+  "chapter5-to-black-knife": true,
+  "ending": true
  }
 }

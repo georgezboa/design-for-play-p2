@@ -67,7 +67,12 @@ LINKS = {
     'OP-case': 'A0-office-awake', 'C23-board': 'C23-echo', 'C45-card': 'C45-cases-lit', 'C5C-face': 'C5C-conductor',
 }
 FALLBACK_LINKS = {
+    # measured by eye on George's paintings (round 9): the case on the top shelf, the notice board at
+    # the right edge of the square, the fourth case's placard, the conductor's head and shoulders
     'OP-case': [319, 16, 300, 150],
+    'C23-board': [1252, 336, 348, 174],
+    'C45-card': [1267, 321, 241, 120],
+    'C5C-face': [545, 44, 505, 253],
 }
 
 # Stand-ins while a painting is not in: (source dir key, file, crop box in source px or None for the
@@ -198,25 +203,79 @@ def solve_link(child, parent):
     return [float(cx - rw / 2), float(cy - rw / 4), float(rw), float(rw / 2)], int(inl.sum())
 
 
+def _edges(g):
+    gx = cv2.Sobel(g, cv2.CV_32F, 1, 0, ksize=3)
+    gy = cv2.Sobel(g, cv2.CV_32F, 0, 1, ksize=3)
+    e = cv2.magnitude(gx, gy)
+    return (e - e.mean()) / (e.std() + 1e-6)
+
+
+def _edge_ncc(ga, gb):
+    """How well two pictures line up, by their edges (lighting changes do not count)."""
+    ea, eb = _edges(ga), _edges(gb)
+    return float((ea * eb).mean())
+
+
 def align_pair(a, b):
-    """Warp b onto a (the edit tool may shift a picture a few px): ECC affine on a small copy."""
+    """Warp b onto a (the edit tool may shift a picture a few px). Candidates: none, ECC affine,
+    and a feature-matched similarity transform (for pairs whose lighting changes, where ECC fails);
+    the one whose edges agree best with a wins."""
     ga = cv2.cvtColor(np.array(a.convert('RGB')), cv2.COLOR_RGB2GRAY).astype(np.float32) / 255
     gb = cv2.cvtColor(np.array(b.convert('RGB')), cv2.COLOR_RGB2GRAY).astype(np.float32) / 255
     s = 0.25
     sa = cv2.resize(ga, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
     sb = cv2.resize(gb, None, fx=s, fy=s, interpolation=cv2.INTER_AREA)
-    warp = np.eye(2, 3, dtype=np.float32)
+    h, w = sa.shape
+    cands = [('none', np.eye(2, 3, dtype=np.float32))]
     try:
-        cc, warp = cv2.findTransformECC(sa, sb, warp, cv2.MOTION_AFFINE, (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5), None, 5)
+        cc, warp = cv2.findTransformECC(sa, sb, np.eye(2, 3, dtype=np.float32), cv2.MOTION_AFFINE,
+                                        (cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 200, 1e-5), None, 5)
+        cands.append(('ecc', warp))
     except cv2.error:
-        return b, None
+        pass
+    # features: AKAZE on the full-size pictures, a similarity transform b -> a
+    det = cv2.AKAZE_create()
+    u8a = (ga * 255).astype(np.uint8)
+    u8b = (gb * 255).astype(np.uint8)
+    ka, da = det.detectAndCompute(u8a, None)
+    kb, db = det.detectAndCompute(u8b, None)
+    if da is not None and db is not None and len(ka) > 20 and len(kb) > 20:
+        m = cv2.BFMatcher(cv2.NORM_HAMMING).knnMatch(db, da, k=2)
+        good = [x for x, y in (p for p in m if len(p) == 2) if x.distance < 0.8 * y.distance]
+        if len(good) >= 20:
+            pb = np.float32([kb[g.queryIdx].pt for g in good])
+            pa = np.float32([ka[g.trainIdx].pt for g in good])
+            M, inl = cv2.estimateAffinePartial2D(pb, pa, method=cv2.RANSAC, ransacReprojThreshold=4.0)
+            if M is not None and inl is not None and inl.sum() >= 15:
+                # as an inverse map at the small scale (warpAffine with WARP_INVERSE_MAP wants a -> b)
+                Minv = cv2.invertAffineTransform(M).astype(np.float32)
+                Minv[:, 2] *= s
+                cands.append(('features', Minv))
+    best = None
+    for name, warp in cands:
+        wb = cv2.warpAffine(sb, warp, (w, h), flags=cv2.INTER_LINEAR | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
+        score = _edge_ncc(sa[8:-8, 8:-8], wb[8:-8, 8:-8])
+        if best is None or score > best[0]:
+            best = (score, name, warp)
+    score, name, warp = best
+    warp = warp.copy()
     warp[:, 2] /= s
     shift = float(np.hypot(warp[0, 2], warp[1, 2]))
-    if shift < 0.75 and abs(warp[0, 0] - 1) < 0.002:
-        return b, {'cc': round(float(cc), 4), 'shift': round(shift, 2), 'warped': False}
+    info = {'method': name, 'edges': round(score, 4), 'shift': round(shift, 2)}
+    if name == 'none' or (shift < 0.75 and abs(warp[0, 0] - 1) < 0.002):
+        return b, {**info, 'warped': False}
     arr = np.array(b)
     out = cv2.warpAffine(arr, warp, (arr.shape[1], arr.shape[0]), flags=cv2.INTER_CUBIC | cv2.WARP_INVERSE_MAP, borderMode=cv2.BORDER_REPLICATE)
-    return Image.fromarray(out), {'cc': round(float(cc), 4), 'shift': round(shift, 2), 'warped': True, 'warp': [[round(float(v), 5) for v in row] for row in warp]}
+    return Image.fromarray(out), {**info, 'warped': True, 'warp': [[round(float(v), 5) for v in row] for row in warp]}
+
+
+def sane_link(rect, size):
+    """A solved close-up rect is used only if it lies (nearly) inside its parent and is not most of it."""
+    if not rect:
+        return False
+    x, y, w, h = rect
+    W, H = size
+    return x > -0.04 * W and y > -0.04 * H and x + w < 1.04 * W and y + h < 1.04 * H and w < 0.85 * W and w > 0.05 * W
 
 
 def main():
@@ -322,7 +381,7 @@ def main():
         rect, quality = None, 0
         if child in cropped and parent in cropped and not plates.get(child, {}).get('standIn') and not plates.get(parent, {}).get('standIn'):
             rect, quality = solve_link(cropped[child], cropped[parent])
-        if rect:
+        if rect and sane_link(rect, (OUT_W, OUT_H)):
             links[child] = {'parent': parent, 'rect': [round(v * k, 1) for v in rect], 'inliers': quality, 'solved': True}
         elif child in FALLBACK_LINKS:
             links[child] = {'parent': parent, 'rect': FALLBACK_LINKS[child], 'inliers': quality, 'solved': False}

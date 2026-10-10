@@ -10,15 +10,21 @@ import drawn from '../scenes/chapter5-to-black-knife.js';
 import { drawPair, drawPlate, drawWords, lampGlow, plateInfo, ramp, signLight, vignette } from './kit.js';
 import { cueTimes, geometry, paintedCutscene } from './scene.js';
 
-// ember, grid, echo, pigment, black ticket: where they lie in the palm, and their light
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+// CBK-palm — ember, grid, echo, pigment, black ticket: where they lie in the palm, and their light
 const STONES = geometry('CBK-palm', {
-  at: [[640, 440], [740, 400], [840, 410], [930, 450], [790, 500]],
+  at: [[702, 345], [835, 300], [940, 395], [705, 475], [857, 490]],
 }, {
   at: [[700, 470], [780, 430], [860, 440], [930, 480], [820, 520]],
 });
 const STONE_LIGHT = [[255, 110, 70], [170, 210, 150], [170, 210, 240], [255, 196, 110], [170, 120, 230]];
-const DOOR = geometry('CBK-door', { plate: { x: 800, y: 300, w: 200 }, window: [740, 170, 120, 60] }, { plate: { x: 1210, y: 330, w: 150 }, window: [1150, 200, 140, 70] });
-const SEAT = geometry('CBK-seat', { ticket: [800, 300, 150] });
+// CBK-door: the blank brass plate under the door's little window (glass ≈ x 736–874, y 50–255); `window` is the
+// 2 : 1 rect round the glass the camera flies through; `open` is the dark doorway in CBK-door-open
+const DOOR = geometry('CBK-door', {
+  plate: { x: 803, y: 316, w: 150 }, glass: [736, 50, 138, 205], window: [600, 50, 410, 205], open: [692, 30, 250, 125],
+}, { plate: { x: 1210, y: 330, w: 150 }, glass: null, window: [1150, 200, 140, 70], open: [1150, 200, 140, 70] });
+// CBK-seat: the black ticket hangs in the dark above the chair's back (its top ≈ y 280)
+const SEAT = geometry('CBK-seat', { ticket: [800, 165, 210] }, { ticket: [800, 300, 150] });
 const PALM_S = drawn.shots.find((s) => s.id === 'five-stones').duration;
 const DOOR_S = drawn.shots.find((s) => s.id === 'door-closes').duration;
 const GLOWS = [...cueTimes(drawn, 'five-stones', 'softBell'), ...cueTimes(drawn, 'five-stones', 'bell')].sort((a, b) => a - b);
@@ -38,7 +44,7 @@ function shotDoor(c, t, w, h, env) {
   drawPlate(c, 'CBK-door');
   const p = DOOR.plate;
   drawWords(c, 'LAST CARRIAGE', { x: p.x, y: p.y }, { face: 'print', size: p.w * 0.085, weight: 600, tracking: 0.26, ink: 'rgba(40, 26, 12, 0.92)', fade: 0.9 });
-  const [wx, wy, ww, wh] = DOOR.window;
+  const [wx, wy, ww, wh] = DOOR.glass ?? DOOR.window;
   signLight(c, wx, wy, ww, wh, 1, { color: [160, 190, 230], alpha: 0.18 + 0.08 * Math.sin((env.reducedMotion ? 0 : env.wall) * 2.3), env, seed: 3 });
   vignette(c, { alpha: 0.45 });
 }
@@ -51,10 +57,17 @@ function shotSeat(c, t, w, h, env) {
   const wall = env.reducedMotion ? 0 : env.wall;
   const bob = Math.sin(wall * 1.3) * 8;
   const turn = Math.cos(wall * 0.6);
+  const shown = ramp(t, 0.05, 0.3);
+  // a little warm light behind it, so the black card reads against the black carriage
+  lampGlow(c, x, y + bob, tw * 1.3, { color: [255, 210, 150], alpha: 0.16 * shown, env });
   c.save();
   c.translate(x, y + bob);
   c.scale(Math.max(0.08, Math.abs(turn)), 1);
-  drawPlate(c, 'CBK-ticket', { x: -tw / 2, y: -th / 2, w: tw, h: th, alpha: ramp(t, 0.05, 0.3) });
+  drawPlate(c, 'CBK-ticket', { x: -tw / 2, y: -th / 2, w: tw, h: th, alpha: shown });
+  // gilt print, never punched
+  drawWords(c, ['LAST CARRIAGE', 'ADMIT ONE · NO RETURN'], { x: 0, y: 0 }, {
+    face: 'print', size: tw * 0.07, weight: 700, tracking: 0.2, leading: 1.9, ink: 'rgba(214, 172, 100, 0.9)', blend: null, fade: shown,
+  });
   c.restore();
   lampGlow(c, x, y - 220, 260, { color: [190, 205, 230], alpha: 0.14, env });
   vignette(c, { alpha: 0.55 });
@@ -62,9 +75,11 @@ function shotSeat(c, t, w, h, env) {
 
 function shotCloses(c, t, w, h, env) {
   const s = t * DOOR_S;
-  drawPair(c, 'CBK-door-open', 'CBK-door-shut', ramp(s, THUD - 0.5, THUD), { mask: 'fade' });
+  const shut = ramp(s, THUD - 0.5, THUD);
+  drawPair(c, 'CBK-door-open', 'CBK-door-shut', shut, { mask: 'fade' });
+  // the plate's words are on the door, which is open (swung away) until it shuts
   const p = DOOR.plate;
-  drawWords(c, 'LAST CARRIAGE', { x: p.x, y: p.y }, { face: 'print', size: p.w * 0.085, weight: 600, tracking: 0.26, ink: 'rgba(40, 26, 12, 0.92)', fade: 0.9 });
+  drawWords(c, 'LAST CARRIAGE', { x: p.x, y: p.y }, { face: 'print', size: p.w * 0.085, weight: 600, tracking: 0.26, ink: 'rgba(40, 26, 12, 0.92)', fade: 0.9 * shut });
   vignette(c, { alpha: 0.45 + 0.3 * ramp(s, THUD, DOOR_S) });
 }
 
@@ -88,13 +103,15 @@ export const chapter5ToBlackKnife = paintedCutscene(drawn, {
       id: 'last-carriage',
       draw: shotDoor,
       camera: { from: { x: 0.5, y: 0.5, zoom: 1.02 }, to: { x: (DOOR.window[0] + DOOR.window[2] / 2) / 1600, y: (DOOR.window[1] + DOOR.window[3] / 2) / 800, zoom: 1.4 } },
-      transition: { type: 'zoom', duration: 1.4, rect: DOOR.window, reveal: [0.2, 0.7], feather: 0.16 },
+      transition: DOOR.glass
+        ? { type: 'zoom', duration: 1.5, rect: DOOR.window, clip: DOOR.glass, clipRadius: 22, reveal: [0.1, 0.5], feather: 0 }
+        : { type: 'zoom', duration: 1.4, rect: DOOR.window, reveal: [0.2, 0.7], feather: 0.16 },
     },
     {
       id: 'one-seat',
       draw: shotSeat,
       camera: { from: { x: 0.5, y: 0.5, zoom: 1.04 }, to: { x: 0.5, y: 0.45, zoom: 1.14 } },
-      transition: { type: 'pull', duration: 1.3, rect: DOOR.window, reveal: [0.1, 0.55] },
+      transition: { type: 'pull', duration: 1.3, rect: DOOR.open, reveal: [0.1, 0.55] },
     },
     {
       id: 'door-closes',

@@ -15,9 +15,15 @@ import {
 import { cueTimes, geometry, paintedCutscene } from './scene.js';
 import { drawWorldsFold } from './worlds.js';
 
-const WALK = geometry('END-walk-a', { floor: 655, butch: 250, lamps: [[420, 120], [1180, 120], [2020, 120], [2780, 120]] }, { floor: 640, butch: 230, lamps: [[300, 160], [1000, 160], [1900, 160], [2600, 160]] });
-const SEATS = geometry('END-mara', { lamp: [800, 90], window: [980, 120, 520, 380] }, { lamp: [520, 140], window: [900, 120, 600, 380] });
-const VIADUCT = geometry('OP-viaduct', { deckY: 293, carriage: 250 }, { deckY: 668, carriage: 300 });
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+// END-walk-a / -b side by side (b at x + 1600): the pendant lamps, and the aisle runner he walks along — in
+// front of the seats, so a standing man's head is about at the windows (sill ≈ y 360, floor ≈ y 600 there)
+const WALK = geometry('END-walk-a', { floor: 668, butch: 430, lamps: [[390, 108], [945, 110], [2107, 110], [2685, 110]] },
+  { floor: 640, butch: 230, lamps: [[300, 160], [1000, 160], [1900, 160], [2600, 160]] });
+// END-mara / -beside: the lamp's reflection in the dark window behind them, the window, his lantern on the floor
+const SEATS = geometry('END-mara', { lamp: [718, 115], window: [525, 0, 570, 300], lantern: [735, 692] },
+  { lamp: [520, 140], window: [900, 120, 600, 380], lantern: null });
+const VIADUCT = geometry('OP-viaduct', { deckY: 288, carriage: 250 }, { deckY: 668, carriage: 300 });
 const FOLD_S = drawn.shots.find((s) => s.id === 'worlds-fold').duration;
 const WALK_S = drawn.shots.find((s) => s.id === 'the-walk').duration;
 const BESIDE_S = drawn.shots.find((s) => s.id === 'beside-her').duration;
@@ -49,7 +55,7 @@ function shotNext(c, t, w, h, env) {
   c.save();
   sway(c, env, { amp: 0.5 });
   drawPlate(c, 'END-mara');
-  lampGlow(c, SEATS.lamp[0], SEATS.lamp[1], 320, { alpha: 0.24, env });
+  lampGlow(c, SEATS.lamp[0], SEATS.lamp[1], 220, { alpha: 0.24, env });
   c.restore();
   vignette(c, { alpha: 0.4 });
 }
@@ -58,8 +64,11 @@ function shotBeside(c, t, w, h, env) {
   const s = t * BESIDE_S;
   c.save();
   sway(c, env, { amp: 0.5 });
-  drawPair(c, 'END-mara', 'END-beside', ramp(s, SIT - 0.7, SIT + 0.2), { mask: 'fade' });
-  lampGlow(c, SEATS.lamp[0], SEATS.lamp[1], 320, { alpha: 0.22, env });
+  const sat = ramp(s, SIT - 0.7, SIT + 0.2);
+  drawPair(c, 'END-mara', 'END-beside', sat, { mask: 'fade' });
+  lampGlow(c, SEATS.lamp[0], SEATS.lamp[1], 220, { alpha: 0.22, env });
+  // his lantern, set down on the floor between them
+  if (SEATS.lantern) lampGlow(c, SEATS.lantern[0], SEATS.lantern[1], 190, { alpha: 0.26 * sat, env, flicker: 0.1 });
   const [wx, wy, ww, wh] = SEATS.window;
   rain(c, env, { rect: { x: wx, y: wy, w: ww, h: wh }, alpha: 0.25 });
   // two lamps go by outside: their light sweeps across the window and over them

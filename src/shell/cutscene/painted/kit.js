@@ -194,7 +194,8 @@ export function drawPair(c, a, b, k, { mask = 'fade', dir = 'right', band = 160,
  */
 export function windowLayout(frameId, { glass = null } = {}) {
   const g = glass ?? glassRect(frameId, [400, 200, 800, 400]);
-  const vh = g[3] * 1.08;
+  // the view is a 2 : 1 strip at least as tall as the glass and at least as wide (a wide pane, a short one)
+  const vh = Math.max(g[3] * 1.08, (g[2] * 1.02) / 2);
   const vy = g[1] - (vh - g[3]) / 2;
   const vw = vh * 2;
   return {
@@ -501,29 +502,37 @@ export function pages(c, env, rect, { count = 18, seed = 31, speed = 900, tone =
 }
 
 /**
- * Gouache blooming on paper at (x, y): `k` 0..1 grows it to radius r — a few
- * soft overlapping blots, darker at their rims, multiplied into the paper.
+ * Colour coming back into a pencil drawing at (x, y): a faint wash, then a
+ * cluster of small flecks (hawthorn berries, petals) inked in one by one as
+ * `k` goes 0 → 1, the way a hand would colour them. `r` is the cluster's size.
  */
-export function bloom(c, x, y, r, k, { color = [176, 52, 42], seed = 41, alpha = 0.85 } = {}) {
+export function bloom(c, x, y, r, k, { color = [176, 52, 42], seed = 41, alpha = 0.85, count = 34 } = {}) {
   if (k <= 0) return;
   const random = rng(seed);
   const [R, G, B] = color;
   c.save();
   c.globalCompositeOperation = 'multiply';
-  for (let i = 0; i < 9; i++) {
+  // the wash, light, under the flecks
+  const wash = smooth(clamp(k * 1.6, 0, 1));
+  const g = c.createRadialGradient(x, y, 0, x, y, r);
+  g.addColorStop(0, `rgba(${R},${G},${B},${(alpha * 0.16 * wash).toFixed(3)})`);
+  g.addColorStop(1, `rgba(${R},${G},${B},0)`);
+  c.fillStyle = g;
+  c.beginPath();
+  c.ellipse(x, y, r, r * 0.62, 0, 0, TAU);
+  c.fill();
+  // the flecks: denser in the middle, each landing a little after the one before
+  for (let i = 0; i < count; i++) {
     const a = random() * TAU;
-    const d = random() * r * 0.55 * k;
-    const rr = r * (0.35 + random() * 0.45) * smooth(k * (1.2 - i * 0.05));
-    if (rr <= 0.5) continue;
-    const bx = x + Math.cos(a) * d;
-    const by = y + Math.sin(a) * d * 0.6;
-    const g = c.createRadialGradient(bx, by, 0, bx, by, rr);
-    g.addColorStop(0, `rgba(${R},${G},${B},${(alpha * 0.5).toFixed(3)})`);
-    g.addColorStop(0.82, `rgba(${R},${G},${B},${(alpha * 0.62).toFixed(3)})`);
-    g.addColorStop(1, `rgba(${R},${G},${B},0)`);
-    c.fillStyle = g;
+    const d = Math.sqrt(random()) * r * 0.8;
+    const size = r * (0.045 + random() * 0.05);
+    const on = smooth(clamp((k - (i / count) * 0.75) / 0.25, 0, 1));
+    if (on <= 0) continue;
+    const fx = x + Math.cos(a) * d;
+    const fy = y + Math.sin(a) * d * 0.6;
+    c.fillStyle = `rgba(${R},${G},${B},${(alpha * (0.55 + 0.4 * random()) * on).toFixed(3)})`;
     c.beginPath();
-    c.ellipse(bx, by, rr, rr * (0.7 + random() * 0.3), random() * 3, 0, TAU);
+    c.ellipse(fx, fy, size * on, size * (0.75 + random() * 0.25) * on, random() * 3, 0, TAU);
     c.fill();
   }
   c.restore();

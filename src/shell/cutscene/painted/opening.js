@@ -17,9 +17,12 @@ import {
 // Where things are in the paintings (stage units). The stand-ins used while a
 // painting is not in put them elsewhere: GEOM picks the set for what is built.
 const REAL = {
-  deckY: 293, carriage: 250,
-  tag: { x: 800, y: 470, w: 150, rot: 0 },
-  hands: { x: 800, y: 420, w: 300, rot: -0.04, back: { x: 800, y: 420 } },
+  // OP-viaduct: the rails run along the parapet's top (y ≈ 280); arches ≈ 160 apart
+  deckY: 288, carriage: 250,
+  // OP-case: the blank tag hangs from the handle, its face ≈ x 790–885, y 290–455
+  tag: { x: 838, y: 372, w: 92, rot: 0.02 },
+  // OP-tag-front / -back: the tag held level, its ruled frame ≈ x 655–1030, y 170–325
+  hands: { x: 842, y: 247, w: 380, rot: 0.045, back: { x: 838, y: 246 } },
 };
 const STAND = {
   deckY: 668, carriage: 300,
@@ -29,7 +32,7 @@ const STAND = {
 const geom = (id) => (plateInfo(id)?.standIn ? STAND : REAL);
 
 // the office (A0-office-awake / A0-office, both painted by George for Act 0)
-const OFFICE = { lamp: [1062, 428], case: linkRect('OP-case', [319, 16, 300, 150]), desk: [770, 435, 260, 130] };
+const OFFICE = { lamp: [1062, 428], case: linkRect('OP-case', [319, 16, 300, 150]), desk: [650, 458, 300, 150] };
 
 const CARS = 4;
 /** The train's head (stage x) at the viaduct shot's progress. */

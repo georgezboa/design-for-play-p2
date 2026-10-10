@@ -12,9 +12,10 @@ const FROM = [[-700, 70], [2200, 70], [-700, 470], [2200, 470]];
 
 /**
  * The worlds coming in round Butch, one at a time from either side
- * (`arrivals`: shot seconds), over `backdrop` dimmed to `dim`.
+ * (`arrivals`: shot seconds), over `backdrop` dimmed to `dim`. `figure: false`
+ * when the backdrop has Butch painted in; `lantern` is where his light is.
  */
-export function drawWorldsStack(c, seconds, env, { backdrop = null, dim = 0.6, arrivals = [0.7, 1.9, 3.1, 4.2], butch = { x: 800, y: 700, h: 190 } } = {}) {
+export function drawWorldsStack(c, seconds, env, { backdrop = null, dim = 0.6, arrivals = [0.7, 1.9, 3.1, 4.2], butch = { x: 800, y: 700, h: 190 }, figure = true, lantern = null } = {}) {
   if (backdrop) {
     drawPlate(c, backdrop);
     lampsDown(c, dim, { pool: [butch.x, butch.y - butch.h * 0.4, 420] });
@@ -31,8 +32,10 @@ export function drawWorldsStack(c, seconds, env, { backdrop = null, dim = 0.6, a
     drawFramedPlate(c, id, [-w / 2, -h / 2, w, h], { t: 13, light: 0.9 });
     c.restore();
   });
-  drawFigure(c, 'butch:lantern', butch.x, butch.y, butch.h, { light: 0.9, glow: { alpha: 0.4, env } });
-  lampGlow(c, butch.x + butch.h * 0.12, butch.y - butch.h * 0.62, butch.h * 0.9, { alpha: 0.22, env });
+  // Butch with his lantern: drawn, unless the backdrop has him painted in already (`figure: false`)
+  if (figure) drawFigure(c, 'butch:lantern', butch.x, butch.y, butch.h, { light: 0.9, glow: { alpha: 0.4, env } });
+  const [lx, ly] = lantern ?? [butch.x + butch.h * 0.12, butch.y - butch.h * 0.62];
+  lampGlow(c, lx, ly, butch.h * 0.9, { alpha: 0.22, env });
 }
 
 /**

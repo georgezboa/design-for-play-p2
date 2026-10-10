@@ -109,3 +109,19 @@ python3 -I scripts/cutscene-art/build.py [--standins]
    - the stones.
 4. Render every shot and join with `/tmp/claude-0/smoke/cs_frames.cjs <id> <dir> ?cutscenes=painted`. Look at the frames at 1600 × 900, 1280 × 720 and 900 × 1200.
 5. `COMPLETE` turns true by itself. Run the tests, then build and smoke the bundle.
+
+## The paintings are in (2026-10-10)
+
+George's 44 paintings are built; all 46 plates are real (`COMPLETE` is true for all eight), so the game now plays the painted cutscenes. The drawn ones stay behind `?cutscenes=drawn`.
+
+- **Build** (`build.py`):
+  - `align_pair` tries no warp, ECC and AKAZE features and keeps whichever lines the edges up best (edge NCC). Only OP-tag-back (features) and C34-dusk-pencil (ECC) needed a warp.
+  - A solved close-up link is used only if it is sane (`sane_link`: inside its parent, not most of it). None of the four solved cleanly on the real paintings, so all four use `FALLBACK_LINKS`, measured by eye: OP-case, C23-board, C45-card, C5C-face.
+- **Geometry:** every `painted/<id>.js` has its `real` set measured on grid overlays of the paintings (comments say what each number is). The `stand` sets are kept for a rebuild with stand-ins.
+- **Joins through glass:** the zooms through the door windows (C23-door, CBK-door) clip to the measured glass, like the opening's carriage window; the seat-43 zoom flies into the part of the window clear of Butch's head.
+- **Kit changes:**
+  - `windowLayout`: the view strip is at least as wide as the glass (wide panes such as C12-rack left a black band).
+  - `bloom`: the hawthorn's red comes back as a cluster of small flecks, not a blot.
+  - `drawWorldsStack`: `figure: false` when the backdrop has Butch painted in (C5C-rails), and `lantern` for where his light is.
+- **Words added:** a DUPLICATE stamp on the second seat-43 ticket; gilt LAST CARRIAGE · ADMIT ONE · NO RETURN on the black ticket, with a little warm light behind it so it reads in the dark. The case plates in the museum are a hand's width, so they carry a word or two (CITY LINE, KEEP MOVING, SEAT 43, R. VELEZ).
+- **Checked:** every shot and join of all eight at 1600 × 900; the opening at 900 × 1200 and chapter2To3 at 1280 × 720.

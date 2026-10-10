@@ -12,13 +12,24 @@ import { drawPair, drawPlate, lampGlow, linkRect, ramp, vignette } from './kit.j
 import { cueTimes, geometry, paintedCutscene } from './scene.js';
 import { drawWorldsStack } from './worlds.js';
 
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+// C5C-gallery / -rails: six pendant lamps down the middle of the gallery, nearest first; Butch from behind
+// (≈ 330 tall, feet at y ≈ 650) holding his lantern up at the right
 const GALLERY = geometry('C5C-gallery', {
+  lamps: [[800, 40, 120], [800, 106, 95], [798, 152, 75], [798, 202, 58], [798, 236, 45], [798, 265, 36]],
+  butch: [858, 378], figure: { x: 790, y: 650, h: 330, painted: true },
+}, {
   lamps: [[800, 120], [800, 205], [800, 262], [800, 300], [800, 326], [800, 344]].map(([x, y], i) => [x, y, 120 - i * 16]),
-  butch: [800, 560],
+  butch: [800, 560], figure: { x: 800, y: 700, h: 190, painted: false },
 });
-const CONDUCTOR = geometry('C5C-conductor', { pool: [800, 330, 260] }, { pool: [1080, 380, 260] });
-const FACE = geometry('C5C-face', { lantern: [800, 760] });
-const RAISE = geometry('C5C-raise', { lantern: [420, 230], pool: [1000, 330] }, { lantern: [300, 300], pool: [1100, 360] });
+// C5C-conductor: the lit doorway behind him
+const CONDUCTOR = geometry('C5C-conductor', { pool: [800, 300, 280] }, { pool: [1080, 380, 260] });
+// C5C-face: the warm light comes from the lower left, where the punch is
+const FACE = geometry('C5C-face', { lantern: [430, 640] }, { lantern: [800, 760] });
+// C5C-raise: Butch's raised lantern, the Conductor in the carriage door; `face` is the rect of the close-up's
+// framing on him (his cap ≈ y 148, chin ≈ y 235) for the pull back out of it
+const RAISE = geometry('C5C-raise', { lantern: [765, 215], pool: [965, 330], face: [797, 127, 336, 168] },
+  { lantern: [300, 300], pool: [1100, 360], face: null });
 const PUNCHES = cueTimes(drawn, 'lamps-out', 'punch');
 const LAMPS_S = drawn.shots.find((s) => s.id === 'lamps-out').duration;
 const STACK_PAPERS = cueTimes(drawn, 'worlds-stack', 'paper');
@@ -32,12 +43,16 @@ function shotLampsOut(c, t, w, h, env) {
   const out = GALLERY.lamps.reduce((n, _, i) => n + ramp(s, outAt(i), outAt(i) + 0.35), 0);
   drawPair(c, 'C5C-gallery', 'C5C-rails', out / GALLERY.lamps.length, { mask: 'fade' });
   GALLERY.lamps.forEach(([x, y, r], i) => lampGlow(c, x, y, r, { alpha: 0.32 * (1 - ramp(s, outAt(i), outAt(i) + 0.25)), env, seed: i }));
-  lampGlow(c, GALLERY.butch[0], GALLERY.butch[1], 160, { alpha: 0.28, env, seed: 9 });
+  lampGlow(c, GALLERY.butch[0], GALLERY.butch[1], 140, { alpha: 0.28, env, seed: 9 });
   vignette(c, { alpha: 0.4 });
 }
 
 function shotStack(c, t, w, h, env) {
-  drawWorldsStack(c, t * STACK_S, env, { backdrop: 'C5C-rails', dim: 0.55, arrivals: STACK_PAPERS.length >= 4 ? STACK_PAPERS : undefined });
+  const f = GALLERY.figure;
+  drawWorldsStack(c, t * STACK_S, env, {
+    backdrop: 'C5C-rails', dim: 0.55, arrivals: STACK_PAPERS.length >= 4 ? STACK_PAPERS : undefined,
+    butch: f, figure: !f.painted, lantern: f.painted ? GALLERY.butch : null,
+  });
   vignette(c, { alpha: 0.4 });
 }
 
@@ -91,13 +106,13 @@ export const chapter5ToConductor = paintedCutscene(drawn, {
       id: 'the-conductor',
       draw: shotConductor,
       camera: { from: { x: 0.5, y: 0.5, zoom: 1.02 }, to: { x: CONDUCTOR.pool[0] / 1600, y: CONDUCTOR.pool[1] / 800, zoom: 1.3 }, still: { x: 0.5, y: 0.5, zoom: 1.1 } },
-      transition: { type: 'zoom', duration: 1.3, rect: linkRect('C5C-face', [CONDUCTOR.pool[0] - 110, CONDUCTOR.pool[1] - 110, 220, 110]), reveal: [0.2, 0.7] },
+      transition: { type: 'zoom', duration: 1.3, rect: linkRect('C5C-face', [CONDUCTOR.pool[0] - 110, CONDUCTOR.pool[1] - 110, 220, 110]), reveal: [0.2, 0.7], feather: 0.16 },
     },
     {
       id: 'close',
       draw: shotFace,
       camera: { from: { x: 0.5, y: 0.5, zoom: 1.02 }, to: { x: 0.5, y: 0.46, zoom: 1.12 } },
-      transition: { type: 'pull', duration: 1.2, rect: [RAISE.pool[0] - 120, RAISE.pool[1] - 110, 240, 120], reveal: [0.1, 0.55] },
+      transition: { type: 'pull', duration: 1.2, rect: RAISE.face ?? [RAISE.pool[0] - 120, RAISE.pool[1] - 110, 240, 120], reveal: [0.1, 0.55] },
     },
     {
       id: 'raises-lamp',

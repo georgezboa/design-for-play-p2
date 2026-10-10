@@ -13,7 +13,7 @@ import {
   panelLayout, parallaxOffset, stageView, validateCutscene,
 } from '../src/shell/cutscene/timeline.js';
 import {
-  CUTSCENE_IDS, CUTSCENE_LOADERS, FILM_NAMES, filmName, loadCutscene, registeredCutscene, resolveCutsceneId,
+  CUTSCENE_IDS, CUTSCENE_LOADERS, FILM_NAMES, PAINTED_LOADERS, cutsceneVersion, filmName, loadCutscene, registeredCutscene, resolveCutsceneId,
 } from '../src/shell/cutscene/registry.js';
 import { FINAL_BOSS_DESTINATIONS } from '../src/shell/finalBossRoute.js';
 
@@ -440,8 +440,11 @@ const { chapter4To5 } = await import('../src/shell/cutscene/scenes/chapter4To5.j
 test('chapter3To4 and chapter4To5 are registered and follow the spec: shots, 25–40 s, captions ≥ 2.5 s, never two at once', async () => {
   assert.equal(registeredCutscene('chapter-3-to-4', '/cinematics/3-4.mp4'), 'chapter3To4');
   assert.equal(registeredCutscene('chapter-4-to-5', '/cinematics/4-5.mp4'), 'chapter4To5');
-  assert.equal(await loadCutscene('chapter3To4'), chapter3To4);
-  assert.equal(await loadCutscene('chapter4To5'), chapter4To5);
+  // the game plays the painted twin once its paintings are all in (round 9), else this drawn one
+  for (const [id, drawn] of [['chapter3To4', chapter3To4], ['chapter4To5', chapter4To5]]) {
+    const expected = cutsceneVersion(id) === 'painted' ? (await PAINTED_LOADERS[id]()).default : drawn;
+    assert.equal(await loadCutscene(id), expected, id);
+  }
   for (const scene of [chapter3To4, chapter4To5]) {
     assert.deepEqual(validateCutscene(scene), [], scene.id);
     for (const reducedMotion of [false, true]) {

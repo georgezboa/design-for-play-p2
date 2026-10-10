@@ -15,19 +15,23 @@ import {
 } from './kit.js';
 import { cueTimes, geometry, paintedCutscene } from './scene.js';
 
-const RACK = geometry('C12-rack', { lamp: [1340, 250] }, { lamp: [1340, 250], glass: [430, 300, 740, 300] });
-const TICKET = geometry('C12-ticket', { ticket: { x: 800, y: 400, w: 330, rot: -0.04 }, lamp: [260, 120] },
+// Where things are in George's paintings (stage units, measured round 9); the second set is for the stand-ins.
+const RACK = geometry('C12-rack', { lamp: [1452, 236] }, { lamp: [1340, 250], glass: [430, 300, 740, 300] });
+// C12-ticket: the blank ticket tilts up to the right (≈ 0.2 rad), its punch hole at the right end, the thumb under it
+const TICKET = geometry('C12-ticket', { ticket: { x: 690, y: 211, w: 300, rot: 0.2 }, lamp: [58, 322] },
   { ticket: { x: 882, y: 340, w: 380, rot: -0.2 }, lamp: [120, 60] });
-const WINDOW = geometry('C12-window', { lamp: [160, 300] }, { lamp: [160, 300], glass: [420, 160, 760, 470] });
-// the city's five blank signs (C12-city stage units)
+const WINDOW = geometry('C12-window', { lamp: [96, 150] }, { lamp: [160, 300], glass: [420, 160, 760, 470] });
+// the city's five blank billboards, left to right as the city runs in (C12-city stage units)
 const CITY = geometry('C12-city', {
-  signs: [[150, 300, 120, 60], [420, 220, 150, 70], [700, 330, 110, 50], [980, 200, 160, 70], [1300, 280, 130, 60]],
+  signs: [[328, 160, 94, 68], [555, 323, 90, 60], [690, 198, 162, 100], [1113, 158, 127, 77], [1337, 6, 223, 174]],
 }, {
   signs: [[150, 300, 120, 60], [420, 220, 150, 70], [700, 330, 110, 50], [1210, 150, 110, 70], [1300, 280, 130, 60]],
 });
+// C12-terminal: the blank board under the canopy, the canopy lamp, the train's open door on the left, the wet
+// platform (feet ≈ y 600; the bench, ≈ 1 m, is ≈ 115 tall there), a lit roof shed far right
 const TERMINAL = geometry('C12-terminal', {
-  board: { x: 800, y: 210, w: 420, rot: 0 }, lamp: [980, 250], door: [420, 560], floor: 600, butch: 165,
-  mara: { x: 1330, y: 360, h: 50, exit: 1420 },
+  board: { x: 700, y: 216, w: 250, rot: 0 }, lamp: [457, 158], door: [196, 598], floor: 600, butch: 235,
+  mara: { x: 1362, y: 463, h: 46, exit: 1470 },
 }, {
   board: { x: 1020, y: 250, w: 220, rot: 0 }, lamp: [170, 230], door: [230, 520], floor: 520, butch: 120,
   mara: { x: 1170, y: 380, h: 40, exit: 1250 },
@@ -42,8 +46,8 @@ function shotPullsAway(c, t, w, h, env) {
   sway(c, env, { amp: 0.6 });
   // the halt slides away: slow at first, as the train gathers speed
   const L = windowLayout('C12-rack', { glass: RACK.glass });
-  const scroll = L.vw * 1.1 * t * t;
-  drawWindowView(c, 'C12-rack', [{ id: 'C12-halt-out', x: 0 }], {
+  const scroll = L.vw * 0.95 * t * t;
+  drawWindowView(c, 'C12-rack', [{ id: 'C12-halt-out', x: 0 }, { id: 'C12-fields', x: L.vw }], {
     glass: RACK.glass,
     scroll,
     over: (cc, layout) => rain(cc, env, { rect: { x: layout.glass[0], y: layout.glass[1], w: layout.glass[2], h: layout.glass[3] }, alpha: 0.35 }),
@@ -127,7 +131,7 @@ function shotTerminal(c, t, w, h, env) {
 }
 
 const PLATES = [
-  'C12-rack', 'C12-halt-out', 'C12-ticket', 'C12-window', 'C12-fields', 'C12-city', 'C12-terminal',
+  'C12-rack', 'C12-halt-out', 'C12-fields', 'C12-ticket', 'C12-window', 'C12-city', 'C12-terminal',
   'butch:stand', ...Array.from({ length: 8 }, (_, i) => `butch:walk-${i + 1}`),
   'mara:back', 'mara:turn', ...Array.from({ length: 6 }, (_, i) => `mara:walk-${i + 1}`),
 ];
