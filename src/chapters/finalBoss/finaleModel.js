@@ -16,16 +16,26 @@ import { BELL_MS, CH2_RULES, createTimetable } from '../borrowedLight/timetableM
 // ---------------------------------------------------------------------------
 // Difficulty
 
+// Round 11 (the skill fight, conductorFight.js): STORY keeps every pattern
+// but slows and thins it. teleScale stretches every warning, flightScale
+// every throw and travelling hazard, tempo the gaps between attacks,
+// windowScale every punish window; `thin` leaves out the attacks marked
+// extra; hurtScale shrinks Butch's hurt radius; jumpClear is the height a
+// jump must reach to clear a ground hazard (lower clears sooner). rollback:
+// what a torn last layer costs ('phase': the phase begins again, his ticket
+// back at the phase's start; 'none': nothing is undone).
 export const DIFFICULTIES = Object.freeze({
   story: Object.freeze({
     id: 'story', label: 'STORY', layers: 6, telegraph: 1.35, beat: 3.05, overlap: 1,
     bossWindow: 1.5, speedScale: 0.82, respawnInv: 3, beamLanes: 1, fullSweepEvery: 0,
     lampMs: 3000, bridgeMs: 6400, boardMs: 3600,
+    teleScale: 1.4, flightScale: 1.3, tempo: 1.35, windowScale: 1.5, thin: true, hurtScale: 0.8, jumpClear: 0.45, rollback: 'none',
   }),
   normal: Object.freeze({
     id: 'normal', label: 'NORMAL', layers: 4, telegraph: 0.9, beat: 2.2, overlap: 2,
     bossWindow: 1.08, speedScale: 0.94, respawnInv: 2.6, beamLanes: 2, fullSweepEvery: 3,
     lampMs: 2400, bridgeMs: 5200, boardMs: 3400,
+    teleScale: 1, flightScale: 1, tempo: 1, windowScale: 1, thin: false, hurtScale: 1, jumpClear: 0.6, rollback: 'phase',
   }),
 });
 
@@ -71,6 +81,13 @@ export function tornLayerReset({ movement = 0, bossHp = 0, echoStage = 'combat',
     echoClock: movement === 2 && !keepWindow ? Math.min(echoClock, 5) : echoClock,
     kept: keptAfterTornLayers(movement, { echoWindow: keepWindow }),
   };
+}
+
+// Round 11 (conductorFight.js): a torn last layer is a phase checkpoint;
+// the death card says what it cost in one line.
+export function checkpointLine({ rollback = 'phase', phaseName = '' } = {}) {
+  if (rollback === 'phase') return `This phase starts again${phaseName ? `: ${phaseName}` : ''}. What you won before it stays won.`;
+  return 'His ticket stays where you left it. Nothing is undone.';
 }
 
 // ---------------------------------------------------------------------------
@@ -260,6 +277,9 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
   const random = planRng(seed);
   let round = 0;
   let beamsOn = beams;
+  // Round 11: each phase of Movement II sets its own pressure (setPressure):
+  // how many lanes his beams take, and how often they sweep all three.
+  const pressure = { beamLanes: preset.beamLanes, fullSweepEvery: preset.fullSweepEvery };
   let conductorLane = 'centre';
   let exposure = null; // { lane, bell, punched }
   let beam = null; // { lanes, firesInMs, fired }
@@ -271,8 +291,8 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     // running, so the player always has somewhere new to light.
     const choices = LANES.filter((lane) => lane !== fromLane);
     const lane = choices[Math.floor(random() * choices.length)];
-    const full = beamsOn && preset.fullSweepEvery > 0 && index > 2 && index % preset.fullSweepEvery === 0;
-    const count = !beamsOn ? 0 : full ? 3 : preset.beamLanes;
+    const full = beamsOn && pressure.fullSweepEvery > 0 && index > 2 && index % pressure.fullSweepEvery === 0;
+    const count = !beamsOn ? 0 : full ? 3 : Math.max(0, Math.min(3, pressure.beamLanes));
     const shuffled = [...LANES].sort(() => random() - 0.5);
     const lanes = LANES.filter((candidate) => shuffled.slice(0, count).includes(candidate));
     return { lane, beamLanes: lanes, fullSweep: full };
@@ -383,9 +403,10 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
   const stranded = (z) => onFrontPlatform(z) && !anyBridgeOut() && !(exposure && !exposure.punched && lit(exposure.lane));
   // The bridge closest to x (a return plank goes where the player is).
   const nearestBridge = (x) => Object.entries(BELL_ARENA.bridges).sort((a, b) => Math.abs(a[1] - x) - Math.abs(b[1] - x))[0][0];
-  const extendReturnBridge = (id, ms = RETURN_PLANK_MS) => {
+  // `full`: laid under a rider, it is out already (no slide-out dip).
+  const extendReturnBridge = (id, ms = RETURN_PLANK_MS, { full = false } = {}) => {
     if (!BELL_ARENA.bridges[id]) return false;
-    returns.set(id, { age: returns.get(id)?.age ?? 0, left: ms });
+    returns.set(id, { age: full ? Math.max(RETURN_PLANK_TRAVEL_MS, returns.get(id)?.age ?? 0) : (returns.get(id)?.age ?? 0), left: ms });
     return true;
   };
 
@@ -425,10 +446,28 @@ export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, sta
     nearestBridge,
     extendReturnBridge,
     returnPlanks: () => [...returns.keys()],
+    // Milliseconds a return plank has left before it is gone (0: none).
+    returnLeft: (id) => Math.max(0, returns.get(id)?.left ?? 0),
     nearestNode,
     punchConductor,
     clearQueue: () => timetable.clearQueue(),
-    setBeams(on) { beamsOn = Boolean(on); if (!beamsOn) { plan = { ...plan, beamLanes: [], fullSweep: false }; beam = null; } },
+    setBeams(on) {
+      const was = beamsOn;
+      beamsOn = Boolean(on);
+      if (!beamsOn) { plan = { ...plan, beamLanes: [], fullSweep: false }; beam = null; } else if (!was) { const lane = plan.lane; plan = { ...planFor(round + 1, conductorLane), lane }; }
+    },
+    // Set how many lanes his beams take and how often they sweep all three
+    // (0: never), from the next plan on (`replan`: the coming bell too; his
+    // announced lane is kept).
+    setPressure({ beamLanes = pressure.beamLanes, fullSweepEvery = pressure.fullSweepEvery, replan = false } = {}) {
+      pressure.beamLanes = beamLanes;
+      pressure.fullSweepEvery = fullSweepEvery;
+      if (replan) { const lane = plan.lane; plan = { ...planFor(round + 1, conductorLane), lane }; }
+      return { ...pressure };
+    },
+    get pressure() { return { ...pressure }; },
+    msSinceBell: () => BELL_MS - timetable.msToBell(),
+    get beamsOn() { return beamsOn; },
     get conductorLane() { return conductorLane; },
     get plan() { return { ...plan, beamLanes: [...plan.beamLanes] }; },
     get exposure() { return exposure ? { ...exposure } : null; },
