@@ -253,7 +253,7 @@ export class DrawingStudioScene extends Phaser.Scene {
     this.add.text(24, 26, "THE STUDIO  ·  ROSA'S STILL LIFE", {
       fontFamily: MONO, fontSize: '13px', color: '#5c574f', letterSpacing: 2.5,
     }).setOrigin(0, 0.5).setDepth(DEPTH.ROOM + 1);
-    this.add.text(SHELF.x + SHELF.w / 2, SHELF.y + 46, 'THINGS FROM THE ORCHARD HOUSE', {
+    this.shelfCaption = this.add.text(SHELF.x + SHELF.w / 2, SHELF.y + 46, 'THINGS FROM THE ORCHARD HOUSE', {
       fontFamily: MONO, fontSize: '11px', color: '#8d8579', letterSpacing: 1.4,
     }).setOrigin(0.5, 0).setDepth(DEPTH.ROOM + 1);
 
@@ -275,11 +275,21 @@ export class DrawingStudioScene extends Phaser.Scene {
       const label = this.add.text(layout.x, SHELF.y + 16, pigment.plain, {
         fontFamily: MONO, fontSize: px(11), color: UI.ink, fontStyle: 'bold', backgroundColor: '#efe4cc', padding: { x: 3, y: 1 },
       }).setOrigin(0.5, 0).setDepth(DEPTH.PAINT + 0.2);
-      const swatch = this.graphics(DEPTH.PAINT + 0.25);
-      swatch.fillStyle(pigment.color, 1).fillRect(layout.x - label.width / 2 + 3, SHELF.y + 16 + label.height - 3, label.width - 6, 3);
-      swatch.lineStyle(1, PAPER.graphite, 0.5).lineBetween(layout.x, SHELF.y + 11, layout.x, SHELF.y + 16);
-      return { layout, wash, pencil, label };
+      return { layout, wash, pencil, label, pigment };
     });
+    // With a large TEXT SIZE the names would run into each other: every
+    // other tag then hangs one row lower on a longer string.
+    const pitch = SOURCE_LAYOUT.length > 1 ? SOURCE_LAYOUT[1].x - SOURCE_LAYOUT[0].x : 52;
+    const stagger = this.sourceArt.some(({ label }) => label.width > pitch - 4);
+    this.sourceArt.forEach(({ layout, label, pigment }, i) => {
+      const y = SHELF.y + 16 + (stagger && i % 2 ? label.height + 3 : 0);
+      label.setY(y);
+      const swatch = this.graphics(DEPTH.PAINT + 0.25);
+      swatch.fillStyle(pigment.color, 1).fillRect(layout.x - label.width / 2 + 3, y + label.height - 3, label.width - 6, 3);
+      swatch.lineStyle(1, PAPER.graphite, 0.5).lineBetween(layout.x, SHELF.y + 11, layout.x, y);
+    });
+    const lowest = Math.max(...this.sourceArt.map(({ label }) => label.y + label.height));
+    this.shelfCaption?.setY(Math.max(SHELF.y + 46, lowest + 8));
     this.focusArt = this.graphics(DEPTH.PAINT + 2);
     this.streamArt = this.graphics(DEPTH.PROMPT - 2);
     this.markerArt = this.graphics(DEPTH.PROMPT - 3);
