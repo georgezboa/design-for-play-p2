@@ -26,6 +26,7 @@
 import { audioFocus } from './audioFocus.js';
 import { SOUND_TAG_TEXT, createAutoplayGate } from './autoplayGate.js';
 import { assetUrl } from './assetUrl.js';
+import { nativeRequestAnimationFrame } from '../shell/framePacing.js';
 
 const DEFAULTS = {
   volume: 0.55,
@@ -63,7 +64,9 @@ function setSoundTag(visible) {
     soundTag.textContent = SOUND_TAG_TEXT;
     soundTag.setAttribute('aria-label', 'Click for sound');
     soundTag.style.cssText = [
-      'position:fixed', 'left:16px', 'bottom:16px', 'z-index:40',
+      // round 11: above a cutscene (gameFlow.css .nf-cinematic, 20000), whose
+      // score is the one waiting for the click; under the pause menu (30000)
+      'position:fixed', 'left:16px', 'bottom:16px', 'z-index:20500',
       'padding:8px 16px 7px', 'border-radius:2px', 'cursor:pointer', 'pointer-events:auto', 'white-space:nowrap',
       'font:500 calc(11px * var(--nightfall-text-scale, 1))/1.2 var(--nf-ui, "Jost", sans-serif)', 'letter-spacing:0.26em',
       'color:#f1ede4', 'background:rgba(9, 8, 7, 0.86)', 'border:1px solid rgba(241, 237, 228, 0.22)',
@@ -118,19 +121,24 @@ function startElement(entry) {
   });
 }
 
+// The first real key or click: sound is allowed from now on, and a track
+// waiting for it starts (inside the gesture, as Safari requires). Round 11:
+// also called by a cutscene's own key handler (gameFlow.js), which keeps its
+// skip keys from ever reaching the listeners below.
+function userGesture() {
+  gate.gesture();
+  setSoundTag(false);
+  if (pending) {
+    const call = pending;
+    pending = null;
+    play(call.id, call.options);
+  }
+}
+
 function installUnlock() {
   if (typeof window === 'undefined') return;
-  const unlock = () => {
-    gate.gesture();
-    setSoundTag(false);
-    if (pending) {
-      const call = pending;
-      pending = null;
-      play(call.id, call.options);
-    }
-  };
-  window.addEventListener('keydown', unlock, { passive: true });
-  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('keydown', userGesture, { passive: true });
+  window.addEventListener('pointerdown', userGesture, { passive: true });
 }
 installUnlock();
 if (typeof window !== 'undefined') {
@@ -150,7 +158,10 @@ if (typeof window !== 'undefined') {
 
 // One rAF loop owns every running volume ramp (cheap: at most 2 tracks overlap).
 // Ramps follow the wall clock, not the frame count: on a 15 fps laptop a
-// 2.5 s crossfade still takes 2.5 s.
+// 2.5 s crossfade still takes 2.5 s. Round 11: on the browser's own frame
+// (framePacing.js): the page's paced frames stop while a cutscene covers the
+// page, which froze every fade under a cutscene — its own score stayed at
+// volume 0 and the chapter's music it should have replaced played on.
 const ramps = new Set();     // { el, to, perSec, onDone }
 let rafRunning = false;
 let lastRampAt = 0;
@@ -160,7 +171,7 @@ function rampPump() {
   if (ramps.size === 0) { rafRunning = false; return; }
   if (!rafRunning) lastRampAt = nowMs();
   rafRunning = true;
-  requestAnimationFrame(() => {
+  nativeRequestAnimationFrame(() => {
     const now = nowMs();
     const dt = Math.min(0.25, Math.max(0, (now - lastRampAt) / 1000));
     lastRampAt = now;
@@ -300,5 +311,5 @@ audioFocus.subscribe({
 // exposes no controls and cannot change the mix.
 if (typeof window !== 'undefined') window.NIGHTFALL_MUSIC_QA = qa;
 
-export const music = { play, stop, currentId, setDialogueActive, qa, setSoundTagVisible };
+export const music = { play, stop, currentId, setDialogueActive, qa, setSoundTagVisible, userGesture };
 export default music;

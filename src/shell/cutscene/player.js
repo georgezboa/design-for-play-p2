@@ -244,7 +244,7 @@ function paintPaintedFrame(L, k) {
  * drives: start(), pause(reason) / resume(reason), skip(), hold(on, text),
  * markReady(), destroy(); `onEnd` runs once when the last shot has played.
  */
-export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}) {
+export function mountCutscene(def, { root, onEnd = () => {}, ready = true, music: musicOverride = null, keepMusic = false } = {}) {
   const options = playbackOptions(settingsNow(), osReducedMotion());
   const timeline = buildTimeline(def, { reducedMotion: options.reducedMotion });
   const session = createSession(timeline, { ready });
@@ -661,7 +661,8 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
       if (cue.sfx) sfx.play(cue.sfx, cue);
       if (cue.stopSfx) sfx.stop(cue.stopSfx, cue.fade);
       if (cue.music) music.play(cue.music.id, cue.music);
-      if (cue.stopMusic) music.stop({ fade: cue.fade ?? 2.5 });
+      // (round 11: a score handed on to the page is the page's to stop)
+      if (cue.stopMusic && !keepMusic) music.stop({ fade: cue.fade ?? 2.5 });
     });
   };
 
@@ -671,7 +672,10 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
     // A chapter's last line may still hold the score ducked under dialogue
     // (Echo City's station scanner did): the cutscene has no voice.
     music.setDialogueActive(false);
-    music.play(def.music.id ?? `cutscene-${def.id}`, { loop: true, fade: 2, ...def.music });
+    // Round 11: a cutscene on the page it leads to can play its score under
+    // that page's own cue (id and mix), so the page carries it on.
+    const { id: cueId = null, ...mix } = musicOverride ?? {};
+    music.play(cueId ?? def.music.id ?? `cutscene-${def.id}`, { loop: true, fade: 2, ...def.music, ...mix });
   };
 
   const tick = (now) => {
@@ -696,7 +700,8 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
   const reachEnd = () => {
     if (ended) return;
     ended = true;
-    music.stop({ fade: def.music?.outFade ?? 2.2 });
+    // (round 11: `keepMusic` leaves the score to the page the cutscene led to)
+    if (!keepMusic) music.stop({ fade: def.music?.outFade ?? 2.2 });
     sfx.close();
     onEnd({ skipped: session.skipped });
   };
@@ -803,8 +808,13 @@ export function mountCutscene(def, { root, onEnd = () => {}, ready = true } = {}
         if (destroyed) return;
       }
       stats.warmMs = Math.round(performance.now() - warmStart);
-      startMusic();
-      sfx.resume();
+      // Skipped while it was still warming: the cutscene is over, so its
+      // score must not start now (it used to, and played on under the
+      // next chapter's load).
+      if (!ended) {
+        startMusic();
+        sfx.resume();
+      }
       if (document.hidden) session.pause('hidden');
       root.classList.add('is-ready');
       render();

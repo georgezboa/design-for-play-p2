@@ -92,9 +92,13 @@ test('entry: own 1920×1080 antialiased FIT Arcade game, chapter controls, dev-o
   assert.match(scene, /width: 1920|w: 1920/);
 });
 
-test('Chapter 2 exits exactly like before: save chapter-3-start, 2-3 film, chapter-3 preload gate, Echo City', () => {
+test('Chapter 2 exits: save chapter-3-start, then straight to Echo City, which plays the 2-3 cutscene while it loads (round 11)', () => {
   const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
-  assert.match(scene, /markCheckpoint\('chapter-3-start'\);\s*navigateAfterCinematic\('chapter-2-to-3', CINEMATICS\.chapter2To3, '\/car03-3d\.html', \{[\s\S]*?preloadChapterId: 'chapter3',\s*requirePreloadReady: true/);
+  assert.match(scene, /markCheckpoint\('chapter-3-start'\);\s*arriveAt\('\/car03-3d\.html', 'chapter2'\);/);
+  assert.doesNotMatch(scene, /navigateAfterCinematic|preloadChapterId/);
+  const city = read('src/car03-3d-main.js');
+  assert.match(city, /arrivalFrom\(window\.location\.search, \{ expected: 'chapter2', override: qaOverride \}\)/);
+  assert.match(city, /playCinematic\(\{\s*id: 'chapter-2-to-3',\s*src: CINEMATICS\.chapter2To3,[\s\S]*?arrival: \{\s*gate: arrivalGate,/);
 });
 
 test('the Grid Stone keeps its id, gets a new clue, and is an authored world pickup', () => {

@@ -99,6 +99,27 @@ export class Chapter3DialogueController {
     return true;
   }
 
+  // Round 11 (walk-and-talk): a bark still on screen stays up at least
+  // `seconds` more (a voiced line keeps its caption until the voice ends).
+  extendBark(seconds) {
+    if (this.active || this.barkRemaining <= 0) return false;
+    this.barkRemaining = Math.max(this.barkRemaining, Number(seconds) || 0);
+    return true;
+  }
+
+  // The bark on screen leaves now (its line's time is up).
+  endBark() {
+    if (this.active || this.barkRemaining <= 0) return false;
+    this.barkRemaining = 0;
+    this.root.hidden = true;
+    this.root.classList.remove('is-bark');
+    return true;
+  }
+
+  voiceSpeaking() {
+    return this.voice.speaking();
+  }
+
   currentLine() {
     return this.lines[this.index] || null;
   }

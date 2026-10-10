@@ -32,7 +32,9 @@ test('no runtime code names a retired film: CINEMATICS and the Museum routes nam
 
 test('the completed chapter route owns all four film handoffs', () => {
   assert.match(source('src/nightService-main.js'), /CINEMATICS\.chapter1To2/);
-  assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /CINEMATICS\.chapter2To3/);
+  // Round 11: the 2→3 cutscene plays on Echo City's page, over its load.
+  assert.match(source('src/chapters/borrowedLight/BorrowedLightScene.js'), /arriveAt\('\/car03-3d\.html', 'chapter2'\)/);
+  assert.match(source('src/car03-3d-main.js'), /CINEMATICS\.chapter2To3/);
   assert.match(source('src/cars/presentCity3d/Chapter3OpeningRuntime.js'), /nightfall:chapter3-complete/);
   assert.match(source('src/car03-3d-main.js'), /CINEMATICS\.chapter3To4/);
   // Chapter 4 now ends on the line ahead (PaintedLineScene), not the yard.
@@ -52,11 +54,16 @@ test('every transition preloads its next chapter while the film is playing', () 
   const chapter3 = source('src/car03-3d-main.js');
   const chapter4 = source('src/chapters/paintedCountry/PaintedLineScene.js');
   assert.match(flow, /await cutscene\.start\(\);\s*\/\/ the next chapter loads while the cutscene plays\s*beginPreload\(\);/);
-  assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady/);
+  assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady \|\| Boolean\(arrival\)/);
   assert.match(flow, /if \(waitForPreload\)[\s\S]*?await preloadPromise/);
-  for (const [file, chapter] of [[title, 1], [chapter1, 2], [chapter2, 3], [chapter3, 4], [chapter4, 5]]) {
+  for (const [file, chapter] of [[title, 1], [chapter1, 2], [chapter3, 4], [chapter4, 5]]) {
     assert.match(file, new RegExp(`preloadChapterId: 'chapter${chapter}'`));
   }
+  // Round 11: Chapter 3 loads itself under the 2→3 cutscene on its own page
+  // (the gate is the city's real readiness, not a cache warm-up).
+  assert.doesNotMatch(chapter2, /preloadChapterId/);
+  assert.match(chapter3, /arrival: \{\s*gate: arrivalGate,/);
+  assert.match(chapter3, /const warmMs = await preview\.warmUp\(\{ onProgress: \(fraction\) => arrivalGate\.report\('warm', fraction\) \}\);[\s\S]*?arrivalGate\.ready\(\);/);
 });
 
 test('the hidden title router gives Chapter 3 direct node access', () => {

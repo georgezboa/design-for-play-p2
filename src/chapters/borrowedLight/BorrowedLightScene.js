@@ -23,7 +23,7 @@
 import Phaser from 'phaser';
 import { music } from '../../shared/musicDirector.js';
 import { createSaveStore } from '../../shell/saveSystem.js';
-import { CINEMATICS, navigateAfterCinematic } from '../../shell/gameFlow.js';
+import { arriveAt } from '../../shell/gameFlow.js';
 import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
 import { reducedMotionActive } from '../../shell/motion.js';
 import { BELL_MS, CH2_RULES, createTimetable, rememberedSequence } from './timetableModel.js';
@@ -1934,21 +1934,22 @@ export class BorrowedLightScene extends Phaser.Scene {
     return g;
   }
 
+  // Round 11 (George: the game stuck where he skipped after Chapter 2, and
+  // Chapter 3 should load during the cutscene): the 2→3 cutscene now plays
+  // on Echo City's own page, over the city loading underneath, so this
+  // chapter leaves at once once the picture has gone to black. The music
+  // fades with it.
   exitChapter() {
     if (this.exiting) return;
     this.exiting = true;
+    music.stop({ fade: 1.1 });
     this.tweens.add({
       targets: this.hud.fade,
       alpha: 1,
       duration: 1100,
       onComplete: () => {
-        music.stop({ fade: 1.2 });
         createSaveStore().markCheckpoint('chapter-3-start');
-        navigateAfterCinematic('chapter-2-to-3', CINEMATICS.chapter2To3, '/car03-3d.html', {
-          label: 'Chapter 2 to Chapter 3 transition',
-          preloadChapterId: 'chapter3',
-          requirePreloadReady: true,
-        });
+        arriveAt('/car03-3d.html', 'chapter2');
       },
     });
   }
