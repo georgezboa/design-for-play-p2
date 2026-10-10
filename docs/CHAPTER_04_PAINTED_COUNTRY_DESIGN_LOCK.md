@@ -367,3 +367,33 @@ rather than the full three-second saturation of the country through the windows.
   stays solid. On the line one wash takes a whole column of paper off.
 - **The painted train** is pencil and gouache after the night service
   (`art/trainArt.js`): body, pooled edges and pencil per part.
+
+### Round 11 (2026-10-10, George's playtest notes)
+
+- **Part I, the plates are puzzles again.** Washing each plate open cell by
+  cell was fiddly and dull, and the Bay B "official record" varnish that
+  refused paint until it was washed twice felt bad. Each grey plate now has
+  Rosa's colours under it in pairs (`threadBoard.js`, pure, with a solver):
+  drag each colour from its dab to its match, square by square; colours never
+  cross; where a colour runs the grey lifts off her pencil; when every pair
+  is joined and every square covered the plate comes clear and her washes
+  bloom back in. Boards ramp 5×3 / 3 colours, 6×4 / 4, 7×4 / 5, each with
+  exactly one answer (tested). The marks, Mara's hawthorn and the rose decoy
+  are unchanged, so the door's question still works. Mouse drag (right-click
+  lifts); arrows/WASD step, F or SPACE pick up and put down, SHIFT lifts; pad
+  d-pad, A or RT, LT. The varnish and every "wash it twice" note are gone
+  from the car (old resume points with varnish still load).
+- **Part II, every place says what it wants.** Rosa's colour notes are
+  pinned beside each thing in her drawing (a dab and her word: "red",
+  "purple"), the colour shows faintly under her pencil until it is painted,
+  the shelf carries the same plain names (RED, ORANGE … GREY), and every tag
+  leads with them ("THE APPLE WANTS RED · TAKE IT FROM THE RED CUP"). A wrong
+  colour no longer goes on to be washed off: it runs off the paper and the
+  room names the colour she noted. The camera holds the shelf and the whole
+  easel in one view while Butch works between them.
+- **Part III, Butch rides the front footplate.** Standing on top of the
+  boiler looked wrong. He now rides on a plank over the buffer beam, one hand
+  on the grab rail from the smokebox (`RIDER` in `paintedLineModel.js`), low
+  over the line he paints, so the brush's reach and the camera are as before.
+  The yard's train has the same footplate. The line's varnished barriers are
+  gone too: every barrier comes off in one stroke.

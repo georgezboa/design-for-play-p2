@@ -2,7 +2,8 @@
 //
 // Round 6 (George, G2): "the train runs one stretch per bell" was not fun.
 // The painted train no longer waits for a bell. It rolls, continuously, and
-// Butch rides its engine with the brush out over the line ahead:
+// Butch rides on the engine's front footplate (round 11: he used to stand on
+// top of the boiler), holding the rail, the brush out over the line ahead:
 //
 //   the train   has weight: it gathers speed slowly (ACCEL) and stops well
 //               inside what it can see (BRAKE), short of any break.
@@ -11,8 +12,9 @@
 //               PAINTED. The share of painted rail in the next few cells
 //               sets the pace, so painting the line ahead is what drives it.
 //   breaks      the archive's: torn gaps in the paper, rails rubbed out, and
-//               grey paper (some varnished) across the line. Paint the track
-//               in, paint the rails back, wash the paper off.
+//               grey paper across the line. Paint the track in, paint the
+//               rails back, wash the paper off (one stroke a column: round 11,
+//               nothing in the chapter is washed twice).
 //
 // Nothing fails. A train that reaches a break it cannot cross eases to a stop
 // in front of it, whistling, and rolls on the moment the way is clear. Kept
@@ -30,7 +32,12 @@ export const LINE_WORLD = Object.freeze({ w: LINE.cols * LINE.cell, h: LINE.rows
 // `length` columns long, rows topRow..trackRow.
 export const TRAIN = Object.freeze({ length: 14, topRow: 18, startFront: 16 });
 export const FINISH_FRONT = 276;
-export const VARNISH_COATS = 2;
+
+// Where Butch rides: on the front footplate, just behind the engine's nose
+// (`dx` from it), his feet on the footboard; A / D lean him a little along
+// it. The brush reaches `reach` px from his middle, which here is only ~60 px
+// above the rails, so the line just ahead is well inside it.
+export const RIDER = Object.freeze({ dx: -12, feetY: LINE.trackRow * LINE.cell - 22, lean: 3, reach: 200 });
 
 export const RIDE = Object.freeze({
   pencil: 96, // px/s on Rosa's pencil rails
@@ -68,15 +75,16 @@ export const FADED_SPANS = Object.freeze([
   { from: 252, to: 258 },
 ]);
 
-// Grey paper across the line, rows topRow..trackRow-1. `varnish` marks cells
-// under the official record's gloss: one extra wash, so two in all.
+// Grey paper across the line, rows topRow..trackRow-1. One wash stroke takes
+// a whole column off (round 11: the "official record" gloss that needed a
+// second wash is gone).
 export const BARRIERS = Object.freeze([
-  { col: 50, cols: 2, varnish: 0 }, // the wash lesson
-  { col: 104, cols: 2, varnish: VARNISH_COATS - 1 },
-  { col: 146, cols: 1, varnish: 0 },
-  { col: 147, cols: 2, varnish: VARNISH_COATS - 1 },
-  { col: 220, cols: 2, varnish: 0 },
-  { col: 239, cols: 1, varnish: 0 },
+  { col: 50, cols: 2 }, // the wash lesson
+  { col: 104, cols: 2 },
+  { col: 146, cols: 1 },
+  { col: 147, cols: 2 },
+  { col: 220, cols: 2 },
+  { col: 239, cols: 1 },
 ]);
 
 // The six parts and the places that lent their colours (chapter4ExpansionModel).
@@ -110,13 +118,9 @@ export function createPaintedLine() {
   const faded = new Set();
   FADED_SPANS.forEach(({ from, to }) => { for (let c = from; c < to; c += 1) faded.add(c); });
   const blocks = new Set();
-  const varnish = new Map();
-  BARRIERS.forEach(({ col, cols, varnish: coats }) => {
+  BARRIERS.forEach(({ col, cols }) => {
     for (let c = col; c < col + cols; c += 1) {
-      for (let r = TRAIN.topRow; r < LINE.trackRow; r += 1) {
-        blocks.add(key(c, r));
-        if (coats) varnish.set(key(c, r), coats);
-      }
+      for (let r = TRAIN.topRow; r < LINE.trackRow; r += 1) blocks.add(key(c, r));
     }
   });
 
@@ -135,7 +139,6 @@ export function createPaintedLine() {
     painted: new Set(), // paper painted into a gap or the air: solid
     inked: new Set(), // fresh paint over a rail on the ground: no new solid
     blocks,
-    varnish,
     returned: [],
     coatsLost: 0,
     distance: 0,
@@ -153,7 +156,6 @@ export function createPaintedLine() {
   const isPainted = (c, r) => state.painted.has(key(c, r));
   const isInked = (c, r) => state.inked.has(key(c, r));
   const isBlock = (c, r) => state.blocks.has(key(c, r));
-  const varnishAt = (c, r) => state.varnish.get(key(c, r)) ?? 0;
   const isSolid = (c, r) => inBounds(c, r) && (isGround(c, r) || isPainted(c, r) || isBlock(c, r));
   // A rail the train can run on: Rosa's pencil, or Butch's paint.
   const trackAt = (c) => (isGround(c, LINE.trackRow) && !isFaded(c)) || isPainted(c, LINE.trackRow) || isInked(c, LINE.trackRow);
@@ -214,7 +216,7 @@ export function createPaintedLine() {
   }
 
   const canWash = (c, r) => inBounds(c, r) && !underTrain(c, r)
-    && (varnishAt(c, r) > 0 || isPainted(c, r) || isInked(c, r) || isBlock(c, r));
+    && (isPainted(c, r) || isInked(c, r) || isBlock(c, r));
 
   function wash(c, r) {
     if (!inBounds(c, r)) return false;
@@ -229,27 +231,10 @@ export function createPaintedLine() {
     if (isBlock(c, r) && r >= TRAIN.topRow && r < LINE.trackRow) {
       const column = [];
       for (let row = TRAIN.topRow; row < LINE.trackRow; row += 1) if (isBlock(c, row)) column.push(row);
-      const varnished = column.filter((row) => varnishAt(c, row) > 0);
-      if (varnished.length) {
-        varnished.forEach((row) => {
-          const left = varnishAt(c, row) - 1;
-          if (left > 0) state.varnish.set(key(c, row), left);
-          else state.varnish.delete(key(c, row));
-          emit('varnish-thinned', { c, r: row, coatsLeft: left });
-        });
-        return true;
-      }
       column.forEach((row) => {
         state.blocks.delete(key(c, row));
         emit('barrier-washed', { c, r: row });
       });
-      return true;
-    }
-    const coats = varnishAt(c, r);
-    if (coats > 0) {
-      if (coats > 1) state.varnish.set(k, coats - 1);
-      else state.varnish.delete(k);
-      emit('varnish-thinned', { c, r, coatsLeft: coats - 1 });
       return true;
     }
     if (state.painted.delete(k)) {
@@ -370,7 +355,6 @@ export function createPaintedLine() {
     isInked,
     isBlock,
     isSolid,
-    varnishAt,
     trackAt,
     wetAt,
     obstacleAt,
@@ -402,7 +386,6 @@ export function createPaintedLine() {
         stops: state.stops,
         arrived: state.arrived,
         barriersLeft: state.blocks.size,
-        varnishLeft: state.varnish.size,
         painted: state.painted.size,
         inked: state.inked.size,
         returned: [...state.returned],

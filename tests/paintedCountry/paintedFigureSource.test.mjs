@@ -110,3 +110,11 @@ test('the studio shows what each place wants: her colour notes, the faint colour
   assert.match(studioSource, /SHE NOTED \$\{plain\(event\.wants\)\}/);
   assert.doesNotMatch(studioSource, /WASH OFF WHAT LOOKS WRONG/);
 });
+
+test('on the line Butch rides the front footplate, holding its rail, not the top of the boiler', () => {
+  assert.match(lineSource, /footboard: \{/);
+  assert.match(lineSource, /RIDER\.dx/);
+  assert.match(lineSource, /RIDER\.feetY - 29/);
+  assert.doesNotMatch(lineSource, /RIDE_SPOT|feetY: TRAIN_TOP \+ 30/);
+  assert.match(trainSource, /footboard: \{/, 'the yard train has the same footplate');
+});

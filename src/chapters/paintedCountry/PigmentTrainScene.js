@@ -87,6 +87,9 @@ const YARD_TRAIN_SPEC = Object.freeze({
   roof: partRect('violet'),
   wheels: TRAIN_PARTS.find((part) => part.id === 'green').circles,
   frame: { x0: 2255, x1: 2941, y: 447, h: 19 },
+  // the front footplate he will ride on the line (round 11), ahead of the
+  // smokebox, with its grab rail
+  footboard: { x: 2196, y: 444, w: 64, h: 9, rail: { x0: 2200, x1: 2252, y: 404, top: 388 } },
 });
 // Draw order, back to front; the wheels go over the bodies.
 const TRAIN_DRAW_ORDER = ['red', 'yellow', 'orange', 'blue', 'violet'];

@@ -8,6 +8,7 @@ import {
   LINE,
   LINE_WORLD,
   RIDE,
+  RIDER,
   TRAIN,
   TRAIN_COLOURS,
   coatAlpha,
@@ -45,9 +46,14 @@ import { stepFollower } from './residentMotion.js';
 //
 // Round 6 (George, G2): the painted train used to run one stretch per bell
 // and stand still in between, which was not fun. Now it never waits for a
-// bell. Butch rides the engine, standing on the boiler in front of the
-// chimney with the brush out over the line, and the train rolls on
-// continuously (paintedLineModel.js):
+// bell, and the train rolls on continuously (paintedLineModel.js).
+//
+// Round 11 (George: standing right on top of the locomotive was too odd):
+// Butch rides where a person rides the front of an engine, on its front
+// footplate: a plank over the buffer beam, one hand on the grab rail from
+// the smokebox, leaning out with the brush over the line just ahead. That is
+// also the closest place to the work, so the reach and the camera are as
+// they were (RIDER in paintedLineModel.js).
 //
 //   · it runs at its pencil pace on Rosa's pencil rails, and faster on rails
 //     he has just painted, so laying wet paint ahead of it is what drives it;
@@ -61,15 +67,16 @@ import { stepFollower } from './residentMotion.js';
 // Butch hops down and washes each borrowed colour back to whoever lent it,
 // and the pencil train that is left still runs, on to the Museum.
 //
-// A / D lean him along the boiler, SPACE hops; the brush is the mouse (or
-// I J K L with F / SHIFT, or the right stick with RT / LT).
+// A / D lean him a little on the footplate, SPACE gives a small hop; the
+// brush is the mouse (or I J K L with F / SHIFT, or the right stick with
+// RT / LT).
 
 const VIEW = Object.freeze({ w: 960, h: 600 });
 const CELL = LINE.cell;
 const TRACK_Y = LINE.trackRow * CELL; // 440
-// Riding, the brush reaches a little further than on foot: he stands up on
-// the boiler, and the line he paints is below him.
-const REACH = 200;
+// Riding, the brush reaches a little further than on foot: he leans out off
+// the footplate over the line (RIDER.reach).
+const REACH = RIDER.reach;
 const WALK_REACH = 180;
 const MOVE_SPEED = 200;
 const JUMP_VELOCITY = -560;
@@ -82,25 +89,31 @@ const PART_OF = Object.fromEntries(PIGMENTS.map((p) => [p.id, p]));
 // hit areas are the same rectangles.
 const TRAIN_L = TRAIN.length * CELL;
 const TRAIN_TOP = TRAIN.topRow * CELL;
+// Round 11: the carriage is a little shorter so the engine keeps its length
+// with a front footplate ahead of the smokebox for Butch to ride on.
 const LINE_TRAIN_SPEC = Object.freeze({
   S: 1,
   nose: 1,
-  carriage: { x: 8, y: TRAIN_TOP + 22, w: 150, h: 46 },
-  roof: { x: 4, y: TRAIN_TOP + 8, w: 196, h: 16 },
-  cab: { x: 158, y: TRAIN_TOP + 8, w: 48, h: 60 },
-  boiler: { x: 206, y: TRAIN_TOP + 30, w: TRAIN_L - 214, h: 38 },
-  stack: { x: 226, y: TRAIN_TOP + 6, w: 20, h: 26 },
+  carriage: { x: 8, y: TRAIN_TOP + 22, w: 132, h: 46 },
+  roof: { x: 4, y: TRAIN_TOP + 8, w: 180, h: 16 },
+  cab: { x: 140, y: TRAIN_TOP + 8, w: 46, h: 60 },
+  boiler: { x: 186, y: TRAIN_TOP + 30, w: 58, h: 38 },
+  stack: { x: 206, y: TRAIN_TOP + 6, w: 20, h: 26 },
   stackWhistle: false,
   windows: 3,
-  wheels: [22, 80, 150, 214, TRAIN_L - 28].map((dx) => ({ x: 10 + dx, y: TRACK_Y - 12, r: 12 })),
+  wheels: [22, 80, 136, 196, 232].map((dx) => ({ x: 10 + dx, y: TRACK_Y - 12, r: 12 })),
   frame: { x0: 6, x1: TRAIN_L - 6, y: TRACK_Y - 20, h: 7 },
   railDrop: 14,
+  // where he rides: the plank's top is RIDER.feetY (its grab rail is drawn
+  // in front of him, FOOT_RAIL, so his hand is on it)
+  footboard: { x: TRAIN_L + RIDER.dx - 16, y: RIDER.feetY, w: 30, h: 5 },
 });
+// The footplate's grab rail, relative to the nose: a stanchion at the front
+// edge and a rail back to the smokebox at his hand height.
+const FOOT_RAIL = Object.freeze({ x0: RIDER.dx - 14, x1: -1, y: RIDER.feetY - 27, top: RIDER.feetY - 35 });
 const LINE_TRAIN_ORDER = ['blue', 'violet', 'orange', 'red', 'yellow'];
 let lineTrainKeys = null;
-// Where Butch rides: on the boiler, in front of the chimney (relative to the
-// nose), and how far A / D lean him along it.
-const RIDE_SPOT = Object.freeze({ dx: -16, feetY: TRAIN_TOP + 30, lean: 9 });
+// Where Butch rides: RIDER (paintedLineModel.js), on the front footplate.
 // The six residents, each drawn their own way (art/figuresArt.js).
 const RESIDENT_TYPE = Object.freeze({ red: 0, orange: 1, yellow: 2, green: 3, blue: 4, violet: 5 });
 const PALE = 0xd6d0c4;
@@ -392,7 +405,7 @@ export class PaintedLineScene extends Phaser.Scene {
 
   buildPlayer() {
     // His body only takes over at the platform; riding, the engine carries him.
-    this.walker = this.add.rectangle(this.frontX() + RIDE_SPOT.dx, RIDE_SPOT.feetY - 29, 16, 58, 0xffffff, 0);
+    this.walker = this.add.rectangle(this.frontX() + RIDER.dx, RIDER.feetY - 29, 16, 58, 0xffffff, 0);
     this.physics.add.existing(this.walker);
     this.walker.body.enable = false;
     this.physics.add.collider(this.walker, this.solids);
@@ -409,21 +422,22 @@ export class PaintedLineScene extends Phaser.Scene {
     });
   }
 
-  // On the boiler, carried by the train, leaning with A / D, hopping on SPACE.
+  // On the front footplate, carried by the train (and riding its springs),
+  // leaning a little with A / D, a small hop on SPACE.
   placeRider() {
     const r = this.rider;
-    r.x = this.frontX() + this.departOffset + RIDE_SPOT.dx + r.lean * RIDE_SPOT.lean;
-    r.y = RIDE_SPOT.feetY - 29 - r.hop;
+    r.x = this.frontX() + this.departOffset + RIDER.dx + r.lean * RIDER.lean;
+    r.y = RIDER.feetY - 29 - r.hop + (this.trainBody?.y ?? 0);
     if (this.riding) this.walker.setPosition(r.x, r.y);
   }
 
   stepRider(move, dt) {
     const r = this.rider;
     const target = move.left && !move.right ? -1 : move.right && !move.left ? 1 : 0;
-    // a soft spring along the boiler: he leans out and settles back
+    // a soft spring on the footplate: he leans out and settles back
     r.leanV += (-(r.lean - target) * 90 - r.leanV * 12) * dt;
     r.lean = Phaser.Math.Clamp(r.lean + r.leanV * dt, -1.2, 1.2);
-    if (move.jumpPressed && r.hop <= 0.01) r.hopV = 260;
+    if (move.jumpPressed && r.hop <= 0.01) r.hopV = 200;
     if (r.hop > 0 || r.hopV > 0) {
       r.hopV -= 1500 * dt;
       r.hop = Math.max(0, r.hop + r.hopV * dt);
@@ -535,30 +549,30 @@ export class PaintedLineScene extends Phaser.Scene {
       const c = k % LINE.cols;
       const r = Math.floor(k / LINE.cols);
       b.create(c * CELL - off, r * CELL - off, `grey-${(c * 5 + r) % CELL_STAMP.variants}`);
-      const coats = this.line.varnishAt(c, r);
-      if (coats > 0) b.create(c * CELL - off, r * CELL - off, `varnish-${Math.min(2, coats)}`);
     });
     draftBlockEdges(this.blockEdges, this.line.state.blocks, LINE.cols, CELL);
   }
 
+  // The parts' hit rects are the drawing's own rectangles (LINE_TRAIN_SPEC).
   partRects(frontX) {
     const L = TRAIN.length * CELL;
     const x0 = frontX - L;
-    const top = TRAIN.topRow * CELL; // 360
+    const at = (r) => ({ x: x0 + r.x, y: r.y, w: r.w, h: r.h });
+    const S = LINE_TRAIN_SPEC;
     return {
       green: { x: x0 + 10, y: TRACK_Y - 26, w: L - 20, h: 26 },
-      blue: { x: x0 + 8, y: top + 22, w: 150, h: 46 },
-      violet: { x: x0 + 4, y: top + 8, w: 196, h: 16 },
-      orange: { x: x0 + 158, y: top + 8, w: 48, h: 60 },
-      red: { x: x0 + 206, y: top + 30, w: L - 214, h: 38 },
-      yellow: { x: x0 + 226, y: top + 6, w: 20, h: 26 },
+      blue: at(S.carriage),
+      violet: at(S.roof),
+      orange: at(S.cab),
+      red: at(S.boiler),
+      yellow: at(S.stack),
     };
   }
 
   // The five wheels, drawn over the body, cab and engine.
   wheelCentres(frontX) {
-    const w = this.partRects(frontX).green;
-    return [w.x + 22, w.x + 80, w.x + 150, w.x + 214, w.x + w.w - 18].map((x) => ({ x, y: TRACK_Y - 12 }));
+    const x0 = frontX - TRAIN.length * CELL;
+    return LINE_TRAIN_SPEC.wheels.map((w) => ({ x: x0 + w.x, y: TRACK_Y - 12 }));
   }
 
   // The painted train (art/trainArt.js) at the line's scale: pencil parts
@@ -607,11 +621,31 @@ export class PaintedLineScene extends Phaser.Scene {
     });
     this.trainWash.green = this.trainWheels.flatMap((w) => [w.wash, w.edge]);
     this.returnedShown = new Set();
+    // the footplate's rail, in front of the rider
+    this.footRail = this.add.graphics().setDepth(DEPTH.FIGURE + 0.4);
+  }
+
+  drawFootRail(fx) {
+    const g = this.footRail;
+    g.clear();
+    const dy = this.trainBody?.y ?? 0;
+    const r = makeRandom(0xf007);
+    g.lineStyle(2.4, PAPER.graphite, 0.92);
+    draftLine(g, r, fx + FOOT_RAIL.x1, RIDER.feetY + dy, fx + FOOT_RAIL.x1, FOOT_RAIL.top + dy, { overshoot: 0, jitter: 0.5, segments: 3 });
+    g.lineStyle(2, PAPER.graphite, 0.88);
+    draftLine(g, r, fx + FOOT_RAIL.x0, FOOT_RAIL.y + dy, fx + FOOT_RAIL.x1, FOOT_RAIL.y + dy, { overshoot: 0, jitter: 0.4, segments: 3 });
+    g.fillStyle(PAPER.graphite, 0.9);
+    g.fillCircle(fx + FOOT_RAIL.x0, FOOT_RAIL.y + dy, 1.6);
+    g.fillCircle(fx + FOOT_RAIL.x1, FOOT_RAIL.top + dy, 2);
+    // a little lamp iron on the post, its glass warm
+    g.fillStyle(0xf2c46a, 0.8).fillRect(fx + FOOT_RAIL.x1 - 3, FOOT_RAIL.top + dy - 7, 6, 5);
+    g.lineStyle(1, PAPER.graphite, 0.8).strokeRect(fx + FOOT_RAIL.x1 - 3, FOOT_RAIL.top + dy - 7, 6, 5);
   }
 
   drawTrain() {
     const fx = this.frontX() + this.departOffset;
     this.trainArt.setPosition(Math.round(fx - TRAIN_L), 0);
+    this.drawFootRail(Math.round(fx));
     // secondary motion: the body rocks a little on its springs at speed
     const speedK = Phaser.Math.Clamp(this.line.state.speed / RIDE.painted, 0, 1);
     const still = reducedMotionActive();
@@ -912,8 +946,6 @@ export class PaintedLineScene extends Phaser.Scene {
         for (let i = 0; i < 4; i += 1) this.puff();
       } else if (event.type === 'wash-refused') {
         noteAt(this, event.c * CELL, event.r * CELL, 'THE TRAIN IS ON IT', { tone: 'warn', hold: 900 });
-      } else if (event.type === 'varnish-thinned' && event.coatsLeft > 0) {
-        noteAt(this, event.c * CELL + CELL / 2, TRAIN.topRow * CELL - 10, 'OFFICIAL RECORD · ONE MORE WASH', { tone: 'warn', hold: 1100 });
       } else if (event.type === 'inked' && !this.tutorialSeen.ink && this.tutorialSeen.gap) {
         this.inkedCount = (this.inkedCount ?? 0) + 1;
         if (this.inkedCount >= 6) this.tutorialSeen.ink = true;
@@ -921,7 +953,7 @@ export class PaintedLineScene extends Phaser.Scene {
     });
   }
 
-  // He hops down off the boiler onto the platform, and has his legs again.
+  // He steps down off the footplate onto the platform, and has his legs again.
   onArrived({ instant = false } = {}) {
     if (!this.riding) return;
     whistle();
@@ -1178,7 +1210,7 @@ export class PaintedLineScene extends Phaser.Scene {
       drawPaintedPlayer(this.figure, this.walker, this.brush, PAPER.indigo, {
         grounded: !this.hopping && this.rider.hop <= 0.01,
         velocity: this.hopVelocity ?? { x: 0, y: -this.rider.hopV },
-        lean: this.rider.lean * 0.6,
+        lean: this.rider.lean * 0.45,
       });
     } else {
       drawPaintedPlayer(this.figure, this.walker, this.brush);
