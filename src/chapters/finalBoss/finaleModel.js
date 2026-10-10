@@ -197,7 +197,10 @@ export const LANES = Object.freeze(['west', 'centre', 'east']);
 export const LANE_X = Object.freeze({ west: -7, centre: 0, east: 7 });
 export const LANE_EDGE = 3.5;
 export const OFFBEAT_MS = BELL_MS / 2;
-export const LIGHT_DAMAGE = 25;
+// A punch on a lit Conductor (movements/onTheBell.js adds ON THE BELL).
+export const LIGHT_DAMAGE = 10;
+// A return plank lays in RETURN_PLANK_TRAVEL_MS, stays out RETURN_PLANK_MS
+// in all and folds as it came.
 // A return plank lays in RETURN_PLANK_TRAVEL_MS, stays out RETURN_PLANK_MS
 // in all and folds as it came.
 export const RETURN_PLANK_MS = 4200;
