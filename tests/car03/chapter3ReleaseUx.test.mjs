@@ -75,7 +75,8 @@ describe('Chapter 3 release UX', () => {
     assert.equal(CHECKPOINTS.find(({ id }) => id === 'chapter-3-start').detail, 'The duplicate ticket. M. Venn. Move as one.');
     // The fire letters are framed with nothing over them.
     assert.match(runtime, /for \(const lamp of this\.lampsNearFire \?\? \[\]\) lamp\.visible = !active;/);
-    assert.match(read('src/cars/presentCity3d/chapter3SceneBuilders.js'), /700 \$\{fontSize\}px EB Garamond, Georgia/);
+    // Round 11: the letters moved with the oil art (chapter3OilArt.js).
+    assert.match(read('src/cars/presentCity3d/chapter3OilArt.js'), /700 \$\{fontSize\}px EB Garamond, Georgia/);
   });
 
   it('gives every chapter a story-bible checkpoint line', () => {

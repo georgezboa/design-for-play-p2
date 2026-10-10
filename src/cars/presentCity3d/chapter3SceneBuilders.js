@@ -4,10 +4,12 @@
 // here decides what happens next.
 import * as THREE from 'three';
 
-import { FIRE_LETTERS, OPENING_POSITIONS } from './chapter3OpeningContent.js';
+import { CHAPTER3_CAST_LIGHT } from './chapter3CastLook.js';
+import { OPENING_POSITIONS } from './chapter3OpeningContent.js';
 
-// The burning ground message sits on the civic paving south-east of the clock.
-export const FIRE_SITE = Object.freeze({ x: 6.8, z: 5.8, approachZ: 9.1 });
+// Round 11: the lamp oil on the paving (the afternoon line and the night
+// letters) lives in chapter3OilArt.js; the runtime still builds it from here.
+export { FIRE_SITE, makeDarkSeam, makeGroundMessage } from './chapter3OilArt.js';
 
 export function positionFrom(values) {
   return new THREE.Vector3(values[0], values[1], values[2]);
@@ -133,43 +135,280 @@ export function makeActor(scene, { name, color, position, scale = 1 }) {
   return group;
 }
 
-// Alpha round 4 (P1): the Mara ahead's rose scarf, the one colour she
-// carries and every witness names. In world metres, built along +Y (the
-// neck bone's axis): a thick collar wrap, a knot at the front and two tails
-// that hang over her chest. Unlit, so it reads at gameplay zoom at dusk and
-// dawn and on the LOW tiers (no lighting maps to lose).
-export const ROSE_SCARF_COLOR = 0xe2577a;
-export function makeRoseScarf({ color = ROSE_SCARF_COLOR } = {}) {
+// The Mara ahead's rose scarf, the one colour she carries and every witness
+// names. Round 11 (owner note: "a hot-pink ring round her neck that reads as
+// a collar"): it is cloth now, as the cutscenes paint it. A loose double wrap
+// of a folded band round the neck, never a perfect ring (it sags in front,
+// sits on the shoulders, swells and thins along its length), knotted at the
+// back on her left; the long end falls down her back over the shoulder
+// blade, the short end is thrown forward over her left shoulder. Matte, lit
+// like the rest of the street, in the story's dusty rose (#C8506A), with the
+// cast's time-of-day fill floor so it still reads in shade and at dusk. The
+// ends sway a little, and trail behind her when she walks (in its vertex
+// shader: one draw call, no CPU work beyond a velocity estimate).
+//
+// Built in metres in her body frame (X her left, Y up, Z forward) about the
+// neck bone's origin. Whoever ties it to a bone gets it fitted there (see
+// fitRoseScarf, on 'added'); on the capsule placeholder it sits where the
+// capsule's shoulders round off.
+export const ROSE_SCARF_COLOR = 0xc8506a;
+// The cloth's own dye is a little warmer than the swatch: the street's cool
+// white balance (the afternoon and dawn grades) pulls a rose toward magenta,
+// and this lands on screen as the dusty rose of the paintings, not a neon pink.
+export const ROSE_SCARF_DYE = 0xb85a56;
+
+function scarfBand({ centre, radiusX, radiusFront, radiusBack, sag, height, thickness, seed, segments = 44, sides = 10 }) {
+  const positions = [];
+  const indices = [];
+  const lump = (angle, k) => 1 + 0.22 * Math.sin(angle * 3 + seed * 1.7 + k) + 0.12 * Math.sin(angle * 7 - seed * 2.3 + k);
+  const ringPoint = (angle) => {
+    const rz = Math.cos(angle) >= 0 ? radiusFront : radiusBack;
+    return new THREE.Vector3(
+      centre[0] + Math.sin(angle) * radiusX,
+      centre[1] + sag * Math.cos(angle) + 0.004 * Math.sin(angle * 2 + seed),
+      centre[2] + Math.cos(angle) * rz,
+    );
+  };
+  for (let index = 0; index < segments; index += 1) {
+    const angle = (index / segments) * Math.PI * 2;
+    const point = ringPoint(angle);
+    const tangent = ringPoint(angle + 0.01).sub(ringPoint(angle - 0.01)).normalize();
+    const outward = new THREE.Vector3(point.x - centre[0], 0, point.z - centre[2]).normalize();
+    const up = new THREE.Vector3().crossVectors(tangent, outward).normalize();
+    if (up.y < 0) up.negate();
+    const h = height * lump(angle, 0);
+    const t = thickness * lump(angle, 2.1);
+    for (let side = 0; side < sides; side += 1) {
+      const phi = (side / sides) * Math.PI * 2;
+      // A folded band: taller than it is thick, its edges rounded.
+      const c = Math.cos(phi);
+      const s = Math.sin(phi);
+      const offset = outward.clone().multiplyScalar(t * Math.sign(c) * Math.abs(c) ** 0.6)
+        .addScaledVector(up, h * Math.sign(s) * Math.abs(s) ** 0.8);
+      positions.push(point.x + offset.x, point.y + offset.y, point.z + offset.z);
+    }
+  }
+  for (let index = 0; index < segments; index += 1) {
+    const next = (index + 1) % segments;
+    for (let side = 0; side < sides; side += 1) {
+      const nextSide = (side + 1) % sides;
+      const a = index * sides + side;
+      const b = next * sides + side;
+      const c = next * sides + nextSide;
+      const d = index * sides + nextSide;
+      indices.push(a, b, d, b, c, d);
+    }
+  }
+  return { positions, indices, hang: new Array(positions.length / 3).fill(0), away: new Array(positions.length).fill(0) };
+}
+
+// One end of the scarf: a ribbon along `path`, `width` across (its width
+// starts along her left-right and turns by `twist` toward the tip, as a
+// hanging end does, so it is never seen only edge-on), rippled into folds.
+function scarfEnd({ path, width, away, seed, twist = 0, steps = 18 }) {
+  const curve = new THREE.CatmullRomCurve3(path.map((point) => new THREE.Vector3(...point)), false, 'centripetal');
+  const positions = [];
+  const indices = [];
+  const hang = [];
+  const awayList = [];
+  const across = new THREE.Vector3();
+  const awayVector = new THREE.Vector3(...away).normalize();
+  for (let step = 0; step <= steps; step += 1) {
+    const t = step / steps;
+    const point = curve.getPointAt(t);
+    const tangent = curve.getTangentAt(t);
+    across.set(Math.cos(twist * t), 0, Math.sin(twist * t));
+    const side = across.clone().addScaledVector(tangent, -across.dot(tangent)).normalize();
+    const normal = new THREE.Vector3().crossVectors(tangent, side).normalize();
+    // Narrow where it leaves the knot, full width below, a little flare at the hem.
+    const w = width * (0.55 + 0.45 * Math.min(1, t * 4)) * (1 + 0.12 * Math.max(0, (t - 0.85) / 0.15));
+    const fold = Math.sin(t * 17 + seed) * 0.0045;
+    for (const edge of [-1, -0.33, 0.33, 1]) {
+      const ripple = fold * Math.cos(edge * Math.PI * 0.5 + seed) + 0.0025 * Math.sin(edge * 4 + t * 9 + seed);
+      positions.push(
+        point.x + side.x * w * 0.5 * edge + normal.x * ripple,
+        point.y + side.y * w * 0.5 * edge + normal.y * ripple,
+        point.z + side.z * w * 0.5 * edge + normal.z * ripple,
+      );
+      hang.push(t);
+      awayList.push(awayVector.x, awayVector.y, awayVector.z);
+    }
+  }
+  for (let step = 0; step < steps; step += 1) {
+    for (let column = 0; column < 3; column += 1) {
+      const a = step * 4 + column;
+      const b = (step + 1) * 4 + column;
+      indices.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  return { positions, indices, hang, away: awayList };
+}
+
+function scarfKnot({ centre, size, seed }) {
+  const geometry = new THREE.IcosahedronGeometry(1, 2);
+  const position = geometry.getAttribute('position');
+  const positions = [];
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const y = position.getY(index);
+    const z = position.getZ(index);
+    // Cloth gathered into a knot: lumpy, a crease across it.
+    const lumpy = 1 + 0.16 * Math.sin(x * 5 + seed) * Math.cos(y * 4 - seed) - 0.12 * Math.exp(-((y - 0.1) ** 2) * 18);
+    positions.push(centre[0] + x * size[0] * lumpy, centre[1] + y * size[1] * lumpy, centre[2] + z * size[2] * lumpy);
+  }
+  const indices = geometry.index ? Array.from(geometry.index.array) : Array.from({ length: position.count }, (_, index) => index);
+  geometry.dispose();
+  return { positions, indices, hang: new Array(position.count).fill(0), away: new Array(position.count * 3).fill(0) };
+}
+
+function mergeScarfParts(parts) {
+  const positions = [];
+  const indices = [];
+  const hang = [];
+  const away = [];
+  for (const part of parts) {
+    const offset = positions.length / 3;
+    positions.push(...part.positions);
+    indices.push(...part.indices.map((index) => index + offset));
+    hang.push(...part.hang);
+    away.push(...part.away);
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('aHang', new THREE.Float32BufferAttribute(hang, 1));
+  geometry.setAttribute('aAway', new THREE.Float32BufferAttribute(away, 3));
+  geometry.setIndex(indices);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
+const SCARF_VERTEX_PARS = 'attribute float aHang;\nattribute vec3 aAway;\nuniform vec4 uScarfSway;';
+// x: seconds, y: how fast she is walking (0 still .. ~1.2 striding).
+const SCARF_VERTEX = /* glsl */`
+{
+	float hang = aHang * aHang;
+	float stride = uScarfSway.y * ( 0.55 + 0.45 * sin( uScarfSway.x * 7.4 + aHang * 2.6 ) );
+	float idle = 0.22 * ( 0.5 + 0.5 * sin( uScarfSway.x * 1.6 + aHang * 1.9 ) );
+	transformed += aAway * hang * ( stride + idle ) * 0.065;
+	transformed.x += hang * sin( uScarfSway.x * 2.2 + aHang * 3.1 ) * ( 0.006 + 0.016 * uScarfSway.y );
+}
+`;
+
+export function fitRoseScarf(scarf) {
+  const parent = scarf.parent;
+  if (!parent) return false;
+  let host = parent;
+  while (host.parent && !host.parent.isScene) host = host.parent;
+  host.updateMatrixWorld(true);
+  if (parent.isBone) {
+    // Her body frame at the neck, whatever the rig's bone axes and scale.
+    const boneRotation = parent.getWorldQuaternion(new THREE.Quaternion());
+    const hostRotation = host.getWorldQuaternion(new THREE.Quaternion());
+    scarf.quaternion.copy(boneRotation.invert().multiply(hostRotation));
+    const boneScale = parent.getWorldScale(new THREE.Vector3());
+    const hostScale = host.getWorldScale(new THREE.Vector3());
+    scarf.scale.set(hostScale.x / boneScale.x, hostScale.y / boneScale.y, hostScale.z / boneScale.z);
+    scarf.position.set(0, 0, 0);
+    scarf.userData.fittedTo = 'bone';
+    return true;
+  }
+  // The capsule placeholder: round where its shoulders end.
+  const capsule = parent.children.find((child) => child.geometry?.type === 'CapsuleGeometry');
+  if (!capsule) return false;
+  const { radius, height } = capsule.geometry.parameters;
+  const rise = radius * 0.45;
+  const girth = Math.sqrt(Math.max(0, radius * radius - rise * rise));
+  scarf.quaternion.identity();
+  scarf.scale.set(girth / 0.088, 1.5, girth / 0.088);
+  scarf.position.set(0, capsule.position.y + (height ?? 0) / 2 + rise, 0);
+  scarf.userData.fittedTo = 'placeholder';
+  return true;
+}
+
+export function makeRoseScarf({ color = ROSE_SCARF_DYE } = {}) {
   const group = new THREE.Group();
   group.name = 'echo-mara-rose-scarf';
-  const material = new THREE.MeshBasicMaterial({ color, fog: false });
-  const shade = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(0.72), fog: false });
-  const collar = new THREE.Mesh(new THREE.TorusGeometry(0.105, 0.05, 10, 22), material);
-  collar.rotation.x = Math.PI / 2;
-  const wrap = new THREE.Mesh(new THREE.TorusGeometry(0.115, 0.04, 8, 22), shade);
-  wrap.rotation.x = Math.PI / 2;
-  wrap.position.y = -0.055;
-  const knot = new THREE.Mesh(new THREE.SphereGeometry(0.055, 10, 8), material);
-  knot.position.set(0, -0.06, 0.11);
-  const tailGeometry = new THREE.BoxGeometry(0.085, 0.36, 0.03);
-  tailGeometry.translate(0, -0.18, 0);
-  const tailA = new THREE.Mesh(tailGeometry, material);
-  tailA.position.set(-0.03, -0.07, 0.12);
-  tailA.rotation.set(0.22, 0, 0.12);
-  const tailB = new THREE.Mesh(tailGeometry, shade);
-  tailB.position.set(0.035, -0.08, 0.125);
-  tailB.rotation.set(0.18, 0, -0.08);
-  tailB.scale.y = 0.8;
-  group.add(collar, wrap, knot, tailA, tailB);
+  // Fitted to the shared civic rig's neck (measured: the shoulders round off
+  // about 2 cm above the neck bone, the neck is ~6.5 cm in radius, the bun
+  // sits low at the back).
+  const geometry = mergeScarfParts([
+    // The first turn: low and loose, on the shoulders, dipping at the throat.
+    scarfBand({ centre: [0.004, 0.03, -0.012], radiusX: 0.09, radiusFront: 0.074, radiusBack: 0.114, sag: -0.018, height: 0.025, thickness: 0.018, seed: 1 }),
+    // The second turn, higher and closer, tucked under the bun behind.
+    scarfBand({ centre: [0.004, 0.064, -0.01], radiusX: 0.077, radiusFront: 0.071, radiusBack: 0.1, sag: -0.016, height: 0.019, thickness: 0.015, seed: 4 }),
+    // The knot, on her left shoulder at the neck.
+    scarfKnot({ centre: [0.1, 0.04, -0.004], size: [0.034, 0.03, 0.037], seed: 2 }),
+    // The long end over the shoulder and down her back.
+    scarfEnd({
+      path: [[0.098, 0.03, -0.024], [0.1, 0.022, -0.065], [0.087, -0.008, -0.132], [0.076, -0.06, -0.178], [0.07, -0.14, -0.203], [0.065, -0.24, -0.218], [0.06, -0.34, -0.212]],
+      width: 0.074,
+      away: [0.12, 0.08, -1],
+      seed: 3,
+      twist: -0.5,
+    }),
+    // The short end forward over the shoulder and down her front.
+    scarfEnd({
+      path: [[0.1, 0.03, 0.016], [0.106, 0.018, 0.048], [0.1, -0.022, 0.102], [0.093, -0.08, 0.137], [0.088, -0.16, 0.16], [0.085, -0.24, 0.161]],
+      width: 0.072,
+      away: [0.3, 0.08, 1],
+      seed: 5,
+      twist: 0.75,
+      steps: 16,
+    }),
+  ]);
+  const sway = { value: new THREE.Vector4(0, 0, 0, 0) };
+  const material = new THREE.MeshStandardMaterial({
+    color,
+    roughness: 0.92,
+    metalness: 0,
+    side: THREE.DoubleSide,
+  });
+  material.name = 'echo-mara-rose-scarf-cloth';
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uScarfSway = sway;
+    Object.assign(shader.uniforms, CHAPTER3_CAST_LIGHT);
+    shader.vertexShader = shader.vertexShader
+      .replace('#include <common>', `#include <common>\n${SCARF_VERTEX_PARS}`)
+      .replace('#include <begin_vertex>', `#include <begin_vertex>\n${SCARF_VERTEX}`);
+    // The cast's fill floor (time of day): a highlight that resets emissive
+    // can't take it away.
+    shader.fragmentShader = shader.fragmentShader
+      .replace('#include <common>', '#include <common>\nuniform vec4 chapter3CastLight;')
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += diffuseColor.rgb * max( chapter3CastLight.z, 0.14 );');
+  };
+  material.customProgramCacheKey = () => 'echo-mara-rose-scarf';
+  const cloth = new THREE.Mesh(geometry, material);
+  cloth.name = 'echo-mara-rose-scarf-cloth';
+  cloth.castShadow = false;
+  cloth.receiveShadow = true;
+  cloth.frustumCulled = false;
+  // How fast she is walking, from where the scarf was last drawn.
+  const last = new THREE.Vector3();
+  const here = new THREE.Vector3();
+  let lastTime = null;
+  let walk = 0;
+  cloth.onBeforeRender = () => {
+    const now = performance.now() / 1000;
+    cloth.getWorldPosition(here);
+    if (lastTime !== null) {
+      const dt = now - lastTime;
+      if (dt > 0 && dt < 0.5) {
+        const speed = Math.hypot(here.x - last.x, here.z - last.z) / dt;
+        const target = speed > 8 ? 0 : Math.min(1.2, speed / 1.6);
+        walk += (target - walk) * Math.min(1, dt * 4);
+      }
+    }
+    last.copy(here);
+    lastTime = now;
+    sway.value.set(now % 600, walk, 0, 0);
+  };
+  group.add(cloth);
   group.traverse((child) => {
-    if (!child.isMesh) return;
-    child.castShadow = false;
-    child.frustumCulled = false;
     child.userData.echoMaterial = true;
     child.userData.characterAsset = 'echo-mara';
   });
-  group.userData.echoMaterial = true;
-  group.userData.characterAsset = 'echo-mara';
+  group.userData.sway = sway;
+  group.addEventListener('added', () => fitRoseScarf(group));
   return group;
 }
 
@@ -287,131 +526,6 @@ export function makePreservingObjectHighlight(object, color = 0x527f77) {
       }
     },
   };
-}
-
-export function makeDarkSeam(scene, surfaceHeightAt = null) {
-  const points = [
-    new THREE.Vector3(3.4, 0, 11.5),
-    new THREE.Vector3(4.6, 0, 10.5),
-    new THREE.Vector3(5.6, 0, 9.4),
-    new THREE.Vector3(6.8, 0, 8.6),
-    new THREE.Vector3(8.0, 0, 7.7),
-    new THREE.Vector3(8.05, 0, 6.8),
-    new THREE.Vector3(9.2, 0, 6.0),
-    new THREE.Vector3(10.4, 0, 5.3),
-  ];
-
-  for (const point of points) {
-    const sampled = surfaceHeightAt?.(point.x, point.z);
-    point.y = Number.isFinite(sampled) ? sampled : 0.73;
-  }
-
-  // The first version used a sequence of equal-width boxes and circles. From
-  // the gameplay camera that read as a route-marking decal, not liquid that
-  // has settled into old paving. These uneven ribbons deliberately leave the
-  // stone visible, tighten through the joins, and open only where oil pooled.
-  const makeOrganicRibbon = ({ name, width, material, yOffset, widthScale = 1 }) => {
-    const group = new THREE.Group();
-    group.name = name;
-    for (let index = 0; index < points.length - 1; index += 1) {
-      const start = points[index];
-      const end = points[index + 1];
-      const dx = end.x - start.x;
-      const dz = end.z - start.z;
-      const length = Math.hypot(dx, dz);
-      const normalX = -dz / length;
-      const normalZ = dx / length;
-      const startWidth = width * (0.72 + ((index * 37) % 5) * 0.07) * widthScale;
-      const endWidth = width * (0.66 + ((index * 19 + 2) % 6) * 0.065) * widthScale;
-      const vertices = new Float32Array([
-        start.x + normalX * startWidth, start.y + yOffset, start.z + normalZ * startWidth,
-        start.x - normalX * startWidth, start.y + yOffset, start.z - normalZ * startWidth,
-        end.x + normalX * endWidth, end.y + yOffset, end.z + normalZ * endWidth,
-        end.x - normalX * endWidth, end.y + yOffset, end.z - normalZ * endWidth,
-      ]);
-      const geometry = new THREE.BufferGeometry();
-      geometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
-      // Face upward so the evidence remains visible from the fixed elevated
-      // gameplay camera. The former winding only rendered the round pools.
-      geometry.setIndex([0, 2, 1, 1, 2, 3]);
-      geometry.computeVertexNormals();
-      const segment = new THREE.Mesh(geometry, material);
-      group.add(segment);
-    }
-    scene.add(group);
-    return group;
-  };
-
-  const spread = makeOrganicRibbon({
-    name: 'opening-lamp-oil-seam-spread',
-    width: 0.26,
-    yOffset: 0.017,
-    material: new THREE.MeshStandardMaterial({
-      color: 0x503122,
-      roughness: 0.3,
-      metalness: 0.04,
-      transparent: true,
-      opacity: 0.66,
-      depthWrite: false,
-    }),
-  });
-  const stain = makeOrganicRibbon({
-    name: 'opening-lamp-oil-seam',
-    width: 0.115,
-    yOffset: 0.024,
-    material: new THREE.MeshStandardMaterial({
-      color: 0x392218,
-      roughness: 0.12,
-      metalness: 0.02,
-      envMapIntensity: 0.68,
-    }),
-  });
-  const wetGlint = makeOrganicRibbon({
-    name: 'opening-lamp-oil-seam-wet-glint',
-    width: 0.035,
-    yOffset: 0.03,
-    material: new THREE.MeshStandardMaterial({
-      color: 0xc99a63,
-      roughness: 0.06,
-      metalness: 0.16,
-      transparent: true,
-      opacity: 0.58,
-      depthWrite: false,
-    }),
-  });
-  // A few asymmetric pools are enough to explain the material without turning
-  // the entire evidence route into a decorative stripe.
-  for (const [index, point] of points.entries()) {
-    if ([0, 3, 5, points.length - 1].includes(index)) {
-      const spill = new THREE.Mesh(
-        new THREE.CircleGeometry(index === 0 ? 0.23 : 0.16, 14),
-        new THREE.MeshStandardMaterial({
-          color: index === 0 ? 0x26150f : 0x1b100d,
-          roughness: 0.1,
-          metalness: 0.06,
-          transparent: true,
-          opacity: 0.7,
-          depthWrite: false,
-        }),
-      );
-      spill.rotation.x = -Math.PI / 2;
-      spill.scale.set(1.42, 0.58 + (index % 2) * 0.14, 1);
-      spill.position.set(point.x, point.y + 0.027, point.z);
-      spill.rotation.z = index * 0.47;
-      stain.add(spill);
-    }
-  }
-  spread.renderOrder = 1;
-  stain.renderOrder = 2;
-  wetGlint.renderOrder = 3;
-  const outline = makeOrganicRibbon({
-    name: 'opening-lamp-oil-seam-highlight',
-    width: 0.28,
-    yOffset: 0.047,
-    material: new THREE.MeshBasicMaterial({ color: 0xd59b54, transparent: true, opacity: 0.82, depthWrite: false }),
-  });
-  outline.visible = false;
-  return { spread, stain, wetGlint, outline, points };
 }
 
 // A soft amber shaft of light with a pulsing ground ring: marks a
@@ -619,604 +733,6 @@ export function makeCutInterface(scene) {
   group.visible = false;
   scene.add(group);
   return { group, highlight };
-}
-
-export function makeGroundMessage(scene, surfaceHeightAt = null) {
-  const messageGroup = new THREE.Group();
-  messageGroup.name = 'chapter3-burning-ground-message';
-  const fireGround = surfaceHeightAt?.(FIRE_SITE.x, FIRE_SITE.z);
-  messageGroup.position.set(FIRE_SITE.x, Number.isFinite(fireGround) ? fireGround : 0.73, FIRE_SITE.z);
-  messageGroup.rotation.y = 0.845;
-  scene.add(messageGroup);
-
-  const makeParticleTexture = (kind) => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const context = canvas.getContext('2d');
-    if (kind === 'flame') {
-      // Small warm flame kernel: orange base, bright yellow core, transparent tip.
-      const gradient = context.createLinearGradient(64, 120, 64, 8);
-      gradient.addColorStop(0, 'rgba(255,62,18,0.98)');
-      gradient.addColorStop(0.36, 'rgba(255,132,38,0.96)');
-      gradient.addColorStop(0.72, 'rgba(255,198,86,0.84)');
-      gradient.addColorStop(1, 'rgba(255,248,190,0)');
-      context.fillStyle = gradient;
-      context.beginPath();
-      context.moveTo(64, 124);
-      context.bezierCurveTo(34, 118, 26, 84, 46, 62);
-      context.bezierCurveTo(54, 50, 50, 34, 64, 8);
-      context.bezierCurveTo(74, 34, 82, 50, 82, 64);
-      context.bezierCurveTo(102, 86, 94, 118, 64, 124);
-      context.closePath();
-      context.fill();
-      context.globalCompositeOperation = 'lighter';
-      const core = context.createRadialGradient(64, 92, 2, 64, 92, 26);
-      core.addColorStop(0, 'rgba(255,250,210,0.58)');
-      core.addColorStop(0.5, 'rgba(255,180,80,0.38)');
-      core.addColorStop(1, 'rgba(255,80,30,0)');
-      context.fillStyle = core;
-      context.fillRect(32, 60, 64, 60);
-    } else {
-      // Warm ember spark.
-      const gradient = context.createRadialGradient(64, 64, 1, 64, 64, 58);
-      gradient.addColorStop(0, 'rgba(255,246,200,1)');
-      gradient.addColorStop(0.28, 'rgba(255,162,58,0.86)');
-      gradient.addColorStop(0.6, 'rgba(255,94,24,0.34)');
-      gradient.addColorStop(1, 'rgba(255,58,15,0)');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, 128, 128);
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  };
-  const flameTexture = makeParticleTexture('flame');
-  const emberTexture = makeParticleTexture('ember');
-
-  const makeSmokeTexture = () => {
-    const canvas = document.createElement('canvas');
-    canvas.width = 128;
-    canvas.height = 128;
-    const context = canvas.getContext('2d');
-    const gradient = context.createRadialGradient(64, 64, 0, 64, 64, 60);
-    gradient.addColorStop(0, 'rgba(150,150,150,0.55)');
-    gradient.addColorStop(0.4, 'rgba(130,130,130,0.22)');
-    gradient.addColorStop(1, 'rgba(110,110,110,0)');
-    context.fillStyle = gradient;
-    context.fillRect(0, 0, 128, 128);
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  };
-  const smokeTexture = makeSmokeTexture();
-
-  const makeFireFlipbookAtlas = () => {
-    const frames = 8;
-    const size = 128;
-    const canvas = document.createElement('canvas');
-    canvas.width = frames * size;
-    canvas.height = size;
-    const context = canvas.getContext('2d');
-    for (let frame = 0; frame < frames; frame += 1) {
-      const originX = frame * size;
-      context.save();
-      context.translate(originX, 0);
-      context.clearRect(0, 0, size, size);
-      context.globalCompositeOperation = 'lighter';
-      const ribbons = 4;
-      for (let ribbon = 0; ribbon < ribbons; ribbon += 1) {
-        const phase = (frame + ribbon * 2) / frames;
-        const gradient = context.createLinearGradient(
-          size * 0.5, size * 0.9, size * 0.5 + Math.sin(phase * Math.PI * 2) * 18, size * 0.1,
-        );
-        gradient.addColorStop(0, 'rgba(255,55,10,0)');
-        gradient.addColorStop(0.25, 'rgba(255,85,22,0.55)');
-        gradient.addColorStop(0.55, 'rgba(255,150,50,0.85)');
-        gradient.addColorStop(0.8, 'rgba(255,210,100,0.55)');
-        gradient.addColorStop(1, 'rgba(255,250,200,0)');
-        context.fillStyle = gradient;
-        context.beginPath();
-        const baseX = size * 0.5 + Math.sin((ribbon * 3 + frame) * 0.7) * 18;
-        const sway = Math.sin(frame * 0.9 + ribbon * 1.3) * 14;
-        context.moveTo(baseX - 12, size * 0.88);
-        context.quadraticCurveTo(baseX - 24 + sway, size * 0.52, baseX + sway * 0.5, size * 0.1);
-        context.quadraticCurveTo(baseX + 24 + sway, size * 0.52, baseX + 12, size * 0.88);
-        context.closePath();
-        context.fill();
-      }
-      context.restore();
-    }
-    const texture = new THREE.CanvasTexture(canvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    return texture;
-  };
-  const flameAtlas = makeFireFlipbookAtlas();
-
-  const findStrongGlyphColumns = (pixelData, canvasWidth, canvasHeight, rowOffset, worldWidth, worldDepth, count = 6) => {
-    const step = 16;
-    const candidates = [];
-    for (let px = 0; px < canvasWidth; px += step) {
-      let score = 0;
-      let bottomY = -1;
-      for (let py = 0; py < canvasHeight; py += 2) {
-        const alpha = pixelData[(py * canvasWidth + px) * 4 + 3];
-        if (alpha >= 90) {
-          score += 1;
-          bottomY = Math.max(bottomY, py);
-        }
-      }
-      if (score > 0) candidates.push({ px, score, bottomY });
-    }
-    candidates.sort((a, b) => b.score - a.score || a.px - b.px);
-    const chosen = [];
-    const minSeparation = canvasWidth / 18;
-    for (const candidate of candidates) {
-      if (chosen.some((entry) => Math.abs(entry.px - candidate.px) < minSeparation)) continue;
-      chosen.push(candidate);
-      if (chosen.length === count) break;
-    }
-    while (chosen.length < count) {
-      const px = Math.round((chosen.length + 0.5) * (canvasWidth / count));
-      chosen.push({ px, score: 1, bottomY: Math.round(canvasHeight * 0.85) });
-    }
-    chosen.sort((a, b) => a.px - b.px);
-    return chosen.map((candidate) => {
-      const localX = (candidate.px / canvasWidth - 0.5) * worldWidth;
-      const localZ = rowOffset + (candidate.bottomY / canvasHeight - 0.5) * worldDepth;
-      return { x: localX, z: localZ };
-    });
-  };
-
-  const makeLine = (text, rowOffset, color) => {
-    const sourceCanvas = document.createElement('canvas');
-    // Oversample the lettering. The close isometric shot turns a 2k canvas
-    // soft before it turns the message into a landmark.
-    sourceCanvas.width = 4096;
-    sourceCanvas.height = 640;
-    const context = sourceCanvas.getContext('2d');
-    // Release pass: the game's voice face (EB Garamond, Georgia, bold capitals), sized to
-    // fill the groove so the whole sentence reads from the fixed camera. The
-    // fire clings to the stroke bottoms found below.
-    context.textAlign = 'left';
-    context.textBaseline = 'middle';
-    context.fillStyle = '#ffffff';
-    context.shadowColor = 'transparent';
-    context.shadowBlur = 0;
-    context.lineJoin = 'round';
-    const tracking = 34;
-    let fontSize = 330;
-    const measure = () => {
-      context.font = `700 ${fontSize}px EB Garamond, Georgia, "Times New Roman", "DejaVu Serif", serif`;
-      const widths = [...text].map((character) => context.measureText(character).width);
-      return { widths, total: widths.reduce((sum, width) => sum + width, 0) + tracking * Math.max(0, widths.length - 1) };
-    };
-    let fit = measure();
-    while (fit.total > sourceCanvas.width * 0.92 && fontSize > 180) {
-      fontSize -= 10;
-      fit = measure();
-    }
-    const glyphWidths = fit.widths;
-    const trackedWidth = fit.total;
-    let glyphX = (sourceCanvas.width - trackedWidth) / 2;
-    [...text].forEach((character, index) => {
-      const baselineJitter = ((index * 7) % 5 - 2) * 1.2;
-      if (character !== ' ') {
-        context.save();
-        context.translate(glyphX, sourceCanvas.height / 2 + baselineJitter);
-        // A barely perceptible per-letter slant, slight compression and a
-        // gentle forward shear give the line an editorial hand-painted rhythm
-        // without becoming cursive or calligraphic.
-        context.rotate(((index * 13) % 7 - 3) * 0.007);
-        context.scale(0.96, 1);
-        context.fillText(character, 0, 0);
-        context.restore();
-      }
-      glyphX += glyphWidths[index] + tracking;
-    });
-    const pixelData = context.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
-    const displayCanvas = document.createElement('canvas');
-    displayCanvas.width = sourceCanvas.width;
-    displayCanvas.height = sourceCanvas.height;
-    const displayContext = displayCanvas.getContext('2d');
-    displayContext.drawImage(sourceCanvas, 0, 0);
-    const texture = new THREE.CanvasTexture(displayCanvas);
-    texture.colorSpace = THREE.SRGBColorSpace;
-    const outlineSourceCanvas = document.createElement('canvas');
-    outlineSourceCanvas.width = sourceCanvas.width;
-    outlineSourceCanvas.height = sourceCanvas.height;
-    const outlineSourceContext = outlineSourceCanvas.getContext('2d');
-    // Dark charred gutter: a thick outline that reads as burned paving and
-    // gives the fire a clear ground boundary.
-    const outlineRadius = 14;
-    for (let angle = 0; angle < Math.PI * 2; angle += Math.PI / 10) {
-      outlineSourceContext.drawImage(
-        sourceCanvas,
-        Math.cos(angle) * outlineRadius,
-        Math.sin(angle) * outlineRadius,
-      );
-    }
-    const outlineDisplayCanvas = document.createElement('canvas');
-    outlineDisplayCanvas.width = sourceCanvas.width;
-    outlineDisplayCanvas.height = sourceCanvas.height;
-    const outlineDisplayContext = outlineDisplayCanvas.getContext('2d');
-    outlineDisplayContext.drawImage(outlineSourceCanvas, 0, 0);
-    const outlineTexture = new THREE.CanvasTexture(outlineDisplayCanvas);
-    outlineTexture.colorSpace = THREE.SRGBColorSpace;
-    const glyphWorldWidth = 11.2;
-    const glyphWorldDepth = 1.32;
-
-    // Charred gutter strip recessed into the groove.
-    const charred = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.65, 1.68),
-      new THREE.MeshBasicMaterial({
-        map: outlineTexture, color: 0x14080d, transparent: true, depthWrite: false, opacity: 0.96,
-      }),
-    );
-    charred.rotation.x = -Math.PI / 2;
-    charred.position.set(0, 0.006, rowOffset);
-    charred.renderOrder = 4;
-
-    // Soft warm wash behind the line, kept very low so it never competes.
-    const glow = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.8, 1.8),
-      new THREE.MeshBasicMaterial({
-        map: texture, transparent: true, depthWrite: false, opacity: 0.07,
-        color: 0xff4422,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    glow.rotation.x = -Math.PI / 2;
-    glow.position.set(0, 0.008, rowOffset);
-    glow.renderOrder = 6;
-
-    // The message itself: emissive strip inside the groove, rendered above every fire layer.
-    const mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.48, 1.58),
-      // Evidence lettering must remain readable above the station stair lip.
-      // Disable depth testing only for this authored decal, not the fire.
-      new THREE.MeshBasicMaterial({ map: texture, color, transparent: true, depthTest: false, depthWrite: false, opacity: 1.0, fog: false, toneMapped: false }),
-    );
-    mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(0, 0.010, rowOffset);
-    mesh.renderOrder = 8;
-
-    // A continuous but varied low fire follows the painted stroke bottoms.
-    // The text remains the sharp top layer, so density reads as burning oil
-    // without turning into an opaque curtain.
-    const edgeFireCount = 180;
-    const edgePositions = new Float32Array(edgeFireCount * 3);
-    const edgeBases = new Float32Array(edgeFireCount * 3);
-    const edgePhases = new Float32Array(edgeFireCount);
-    const edgeCandidates = [];
-    // Walk columns and find the lowest painted pixel in the full glyph mask.
-    // The letters are vertically centred in this texture, so scanning only
-    // the bottom 18% produced an empty particle geometry.
-    for (let px = 0; px < sourceCanvas.width; px += 4) {
-      let bottomY = -1;
-      for (let py = sourceCanvas.height - 10; py >= 0; py -= 4) {
-        if (pixelData[(py * sourceCanvas.width + px) * 4 + 3] >= 90) {
-          bottomY = py;
-          break;
-        }
-      }
-      if (bottomY < 0) continue;
-      edgeCandidates.push({ px, bottomY });
-    }
-    // Resample across the complete sentence. Stopping after the first N
-    // painted columns starved the right half of each line.
-    const accepted = Math.min(edgeFireCount, edgeCandidates.length);
-    for (let sample = 0; sample < accepted; sample += 1) {
-      const candidateIndex = Math.min(
-        edgeCandidates.length - 1,
-        Math.floor((sample + 0.5) * edgeCandidates.length / accepted),
-      );
-      const { px, bottomY } = edgeCandidates[candidateIndex];
-      const index = sample * 3;
-      const localX = (px / sourceCanvas.width - 0.5) * glyphWorldWidth;
-      const localZ = rowOffset + (bottomY / sourceCanvas.height - 0.5) * glyphWorldDepth;
-      edgePositions[index] = edgeBases[index] = localX + (Math.random() - 0.5) * 0.06;
-      edgePositions[index + 1] = edgeBases[index + 1] = 0.015;
-      edgePositions[index + 2] = edgeBases[index + 2] = localZ + (Math.random() - 0.5) * 0.04;
-      edgePhases[sample] = (px * 0.017 + rowOffset) % 1;
-    }
-    const edgeGeometry = new THREE.BufferGeometry();
-    edgeGeometry.setAttribute('position', new THREE.BufferAttribute(edgePositions, 3));
-    edgeGeometry.setDrawRange(0, accepted);
-    const flames = new THREE.Points(
-      edgeGeometry,
-      new THREE.PointsMaterial({
-        color: 0xff7f24,
-        map: flameTexture,
-        alphaTest: 0.03,
-        size: 0.34,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.85,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    flames.name = 'burning-letter-edge-flames';
-    flames.renderOrder = 5;
-    flames.userData.basePositions = edgeBases;
-    flames.userData.phases = edgePhases;
-    flames.userData.particleCount = accepted;
-
-    const flameCores = flames.clone();
-    flameCores.name = 'burning-letter-warm-flame-cores';
-    flameCores.material = new THREE.PointsMaterial({
-      color: 0xffc95c,
-      map: flameTexture,
-      alphaTest: 0.03,
-      size: 0.19,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.75,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    flameCores.renderOrder = 5;
-
-    const embers = flames.clone();
-    embers.name = 'burning-letter-rising-embers';
-    embers.material = new THREE.PointsMaterial({
-      color: 0xffb84a,
-      map: emberTexture,
-      alphaTest: 0.02,
-      size: 0.065,
-      sizeAttenuation: true,
-      transparent: true,
-      opacity: 0.8,
-      depthWrite: false,
-      blending: THREE.AdditiveBlending,
-    });
-    embers.renderOrder = 5;
-
-    // Wind-driven smoke above the line.
-    const smokeCount = 32;
-    const smokePositions = new Float32Array(smokeCount * 3);
-    const smokeBases = new Float32Array(smokeCount * 3);
-    const smokePhases = new Float32Array(smokeCount);
-    const smokeSpeeds = new Float32Array(smokeCount);
-    for (let index = 0; index < smokeCount; index += 1) {
-      const positionIndex = index * 3;
-      const u = (index % 8) / 7;
-      const v = Math.floor(index / 8) / 5;
-      const localX = (u - 0.5) * glyphWorldWidth * 0.9 + Math.sin(index * 3.7) * 0.15;
-      const localZ = rowOffset + (v - 0.5) * glyphWorldDepth * 2.2 + Math.cos(index * 2.3) * 0.12;
-      smokePositions[positionIndex] = smokeBases[positionIndex] = localX;
-      smokePositions[positionIndex + 1] = smokeBases[positionIndex + 1] = 0.006;
-      smokePositions[positionIndex + 2] = smokeBases[positionIndex + 2] = localZ;
-      smokePhases[index] = (index * 0.17 + rowOffset * 0.3) % 1;
-      smokeSpeeds[index] = 0.08 + (index % 5) * 0.03;
-    }
-    const smokeGeometry = new THREE.BufferGeometry();
-    smokeGeometry.setAttribute('position', new THREE.BufferAttribute(smokePositions, 3));
-    const smoke = new THREE.Points(
-      smokeGeometry,
-      new THREE.PointsMaterial({
-        color: 0x8a8a8a,
-        map: smokeTexture,
-        alphaTest: 0.02,
-        size: 0.38,
-        sizeAttenuation: true,
-        transparent: true,
-        opacity: 0.2,
-        depthWrite: false,
-        blending: THREE.NormalBlending,
-      }),
-    );
-    smoke.name = 'burning-letter-smoke';
-    smoke.renderOrder = 4;
-    smoke.userData.basePositions = smokeBases;
-    smoke.userData.phases = smokePhases;
-    smoke.userData.speeds = smokeSpeeds;
-
-    // Larger flame tongues reinforce strong stroke terminals while small edge
-    // kernels fill the gaps. Their phases and sizes alternate to avoid a wall.
-    const flameBand = new THREE.Group();
-    flameBand.name = 'burning-letter-irregular-watercolor-flame-clusters';
-    const flameAnchors = findStrongGlyphColumns(
-      pixelData,
-      sourceCanvas.width,
-      sourceCanvas.height,
-      rowOffset,
-      glyphWorldWidth,
-      glyphWorldDepth,
-      14,
-    );
-    flameAnchors.forEach((anchor, index) => {
-      const map = flameAtlas.clone();
-      map.wrapS = THREE.RepeatWrapping;
-      map.repeat.set(1 / 8, 1);
-      map.offset.set((index % 8) / 8, 0);
-      map.needsUpdate = true;
-      const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map,
-        color: index % 2 ? 0xff9a42 : 0xffc266,
-        transparent: true,
-        opacity: 0.86,
-        depthTest: false,
-        depthWrite: false,
-        blending: THREE.AdditiveBlending,
-      }));
-      sprite.position.set(anchor.x, 0.31, anchor.z);
-      sprite.scale.set(0.38 + (index % 4) * 0.055, 0.64 + (index % 3) * 0.1, 1);
-      sprite.renderOrder = 7;
-      sprite.userData.phase = index * 1.37 + rowOffset;
-      flameBand.add(sprite);
-    });
-
-    const heatHaze = new THREE.Group();
-    heatHaze.name = 'burning-letter-watercolor-heat-haze';
-
-    const selection = new THREE.Mesh(
-      new THREE.PlaneGeometry(11.65, 1.68),
-      new THREE.MeshBasicMaterial({
-        map: texture,
-        color: 0x8ed5c8,
-        transparent: true,
-        depthWrite: false,
-        opacity: 0.52,
-        blending: THREE.AdditiveBlending,
-      }),
-    );
-    selection.rotation.x = -Math.PI / 2;
-    selection.position.set(0, 0.012, rowOffset);
-    selection.visible = false;
-    selection.renderOrder = 9;
-
-    messageGroup.add(charred, glow, mesh, embers, flames, flameCores, flameBand, heatHaze, smoke, selection);
-    return {
-      charred,
-      mesh,
-      glow,
-      heatHaze,
-      flames,
-      flameCores,
-      flameBand,
-      embers,
-      smoke,
-      selection,
-      worldWidth: glyphWorldWidth,
-      ignitionProgress: 1,
-      setReveal(progress) {
-        const reveal = THREE.MathUtils.clamp(progress, 0, 1);
-        this.ignitionProgress = reveal;
-        displayContext.clearRect(0, 0, displayCanvas.width, displayCanvas.height);
-        outlineDisplayContext.clearRect(0, 0, outlineDisplayCanvas.width, outlineDisplayCanvas.height);
-        const cropWidth = Math.max(1, Math.round(sourceCanvas.width * reveal));
-        if (reveal > 0) {
-          displayContext.drawImage(
-            sourceCanvas,
-            0, 0, cropWidth, sourceCanvas.height,
-            0, 0, cropWidth, sourceCanvas.height,
-          );
-          outlineDisplayContext.drawImage(
-            outlineSourceCanvas,
-            0, 0, cropWidth, outlineSourceCanvas.height,
-            0, 0, cropWidth, outlineSourceCanvas.height,
-          );
-        }
-        texture.needsUpdate = true;
-        outlineTexture.needsUpdate = true;
-      },
-    };
-  };
-
-  // Carved groove slab beneath both rows. The text faces read as emissive strips
-  // just inside the recess, not planes floating above the ground.
-  const grooveSlab = new THREE.Mesh(
-    new THREE.BoxGeometry(12.3, 0.04, 4.5),
-    new THREE.MeshBasicMaterial({ color: 0x050205, transparent: true, opacity: 0.12, depthWrite: false }),
-  );
-  grooveSlab.name = 'burning-message-groove-slab';
-  // Keep the backing below the paving plane. The previous top face sat above
-  // the lettering and turned the evidence into two opaque black rectangles.
-  grooveSlab.position.set(0, -0.045, 1.45);
-  messageGroup.add(grooveSlab);
-
-  // Two rows, read top to bottom from the fixed camera (local +Z moves down the
-  // frame). Warm ivory-amber ink reads against both the flames and the dark
-  // paving; the runtime frames the pair centred with nothing over it.
-  const firstEffect = makeLine(FIRE_LETTERS.first, 0.25, '#ffb44e');
-  const secondEffect = makeLine(FIRE_LETTERS.second, 2.35, '#ffa13a');
-  const highlight = {
-    get visible() {
-      return firstEffect.selection.visible || secondEffect.selection.visible;
-    },
-    set visible(value) {
-      firstEffect.selection.visible = Boolean(value);
-      secondEffect.selection.visible = Boolean(value);
-    },
-  };
-  const firstLight = new THREE.PointLight(0xff6b2d, 17, 11, 1.6);
-  firstLight.position.set(0, 0.35, 0.25);
-  const secondLight = new THREE.PointLight(0xff8a35, 17, 11, 1.6);
-  secondLight.position.set(0, 0.35, 2.35);
-  messageGroup.add(firstLight, secondLight);
-  messageGroup.updateMatrixWorld(true);
-  const interfacePosition = messageGroup.localToWorld(new THREE.Vector3(-6.05, 0.08, 2.35));
-  const setEffectVisible = (effect, visible) => {
-    effect.setReveal(visible ? 1 : 0);
-    effect.charred.visible = visible;
-    effect.mesh.visible = visible;
-    effect.glow.visible = visible;
-    effect.heatHaze.visible = visible;
-    effect.flames.visible = visible;
-    effect.flameCores.visible = visible;
-    effect.flameBand.visible = visible;
-    effect.embers.visible = visible;
-    effect.smoke.visible = visible;
-  };
-  const api = {
-    first: firstEffect.mesh,
-    second: secondEffect.mesh,
-    firstEffect,
-    secondEffect,
-    firstLight,
-    secondLight,
-    fireLights: [firstLight, secondLight],
-    highlight,
-    group: messageGroup,
-    interfacePosition,
-    position: new THREE.Vector3(FIRE_SITE.x, messageGroup.position.y + 0.03, FIRE_SITE.z),
-    setFirstBurning(visible) {
-      if (visible) messageGroup.visible = true;
-      setEffectVisible(firstEffect, visible);
-      firstLight.visible = visible;
-    },
-    setSecondBurning(visible) {
-      if (visible) messageGroup.visible = true;
-      setEffectVisible(secondEffect, visible);
-      secondLight.visible = visible;
-    },
-    setSecondIgnitionProgress(progress) {
-      const reveal = THREE.MathUtils.clamp(progress, 0, 1);
-      secondEffect.setReveal(reveal);
-      secondEffect.mesh.visible = reveal > 0;
-      secondEffect.charred.visible = reveal > 0;
-      secondEffect.glow.visible = reveal > 0;
-      secondEffect.heatHaze.visible = reveal > 0;
-      secondEffect.flames.visible = reveal > 0;
-      secondEffect.flameCores.visible = reveal > 0;
-      secondEffect.flameBand.visible = reveal > 0;
-      secondEffect.embers.visible = reveal > 0;
-      secondEffect.smoke.visible = reveal > 0;
-      secondLight.visible = reveal > 0;
-      secondLight.intensity = 17 * reveal;
-    },
-    setBurnedOut() {
-      // Morning investigation needs the charred stone letters, but they must
-      // not exist as a black slab during the opening market investigation.
-      messageGroup.visible = true;
-      firstEffect.flames.visible = false;
-      firstEffect.flameCores.visible = false;
-      firstEffect.flameBand.visible = false;
-      firstEffect.heatHaze.visible = false;
-      firstEffect.embers.visible = false;
-      firstEffect.smoke.visible = false;
-      firstEffect.glow.visible = false;
-      secondEffect.flames.visible = false;
-      secondEffect.flameCores.visible = false;
-      secondEffect.flameBand.visible = false;
-      secondEffect.heatHaze.visible = false;
-      secondEffect.embers.visible = false;
-      secondEffect.smoke.visible = false;
-      secondEffect.glow.visible = false;
-      firstLight.visible = false;
-      secondLight.visible = false;
-      firstEffect.mesh.material.color.setHex(0x2f1d18);
-      secondEffect.mesh.material.color.setHex(0x2f1d18);
-      firstEffect.mesh.material.opacity = 0.74;
-      secondEffect.mesh.material.opacity = 0.74;
-    },
-  };
-  messageGroup.visible = false;
-  api.setFirstBurning(false);
-  api.setSecondBurning(false);
-  return api;
 }
 
 export function makeFinalTrainDoor(scene) {
