@@ -45,13 +45,16 @@ key_green, align_pair = _cb.key_green, _cb.align_pair
 # (title-batch.json layout_note) until measured on George's painting; STAND is the round-6 procedural
 # title at 1536 x 1024, which the stand-in is a capture of.
 REAL_GEOMETRY = {
-    'butch': {'x': 0.395, 'headX': 0.425, 'headY': 0.42, 'capTop': 0.36},
-    'lamp': [0.515, 0.585],
-    'pendant': [0.73, 0.075],
-    'wall': [0.585, 0.065, 0.28, 0.83],
-    'narrow': [0.02, 0.10, 0.58, 0.68],
+    # measured on George's TT-carriage (round 10, 2026-10-10): Butch leans on his hand at the window's right
+    # half, the oil lamp on the round table at the sill, the plain door-panel wall for the board, the
+    # pendant above it; the narrow crop is the window, Butch and the case down to his boots
+    'butch': {'x': 0.40, 'headX': 0.432, 'headY': 0.448, 'capTop': 0.382},
+    'lamp': [0.523, 0.58],
+    'pendant': [0.723, 0.085],
+    'wall': [0.578, 0.065, 0.268, 0.775],
+    'narrow': [0.04, 0.13, 0.54, 0.74],
     # the moon in TT-sky (fractions of the sky plate)
-    'moon': [0.32, 0.40],
+    'moon': [0.342, 0.338],
 }
 STAND_GEOMETRY = {
     'butch': {'x': 0.306, 'headX': 0.313, 'headY': 0.4996, 'capTop': 0.428},

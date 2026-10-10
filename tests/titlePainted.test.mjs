@@ -126,7 +126,8 @@ test('the generated plates: the carriage has its two glasses, the strips their b
     const p = TITLE_PLATES[strip];
     assert.ok(p.top >= 0 && p.top < 0.95 && p.sourceSize[1] > 0, strip);
   }
-  assert.ok(TITLE_PLATES.hills.top < TITLE_PLATES.orchard.top && TITLE_PLATES.orchard.top < TITLE_PLATES.trackside.top, 'far above mid above near');
+  // the near embankment is the lowest band (the orchard's trees may stand taller than the far hills' line)
+  assert.ok(TITLE_PLATES.trackside.top > TITLE_PLATES.hills.top && TITLE_PLATES.trackside.top > TITLE_PLATES.orchard.top, 'the embankment is the lowest band');
   assert.ok(TITLE_PLATES.pole.arm >= 0 && TITLE_PLATES.pole.arm < 0.3);
   assert.equal(TITLE_PLATES.lamp.flame.length, 2);
   // the geometry is fractions of the carriage, the board's wall right of the window

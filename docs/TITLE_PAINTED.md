@@ -54,3 +54,12 @@ python3 -I scripts/title-art/build.py [--art DIR] [--standins DIR]
 3. Measure `REAL_GEOMETRY` in `build.py` on a grid overlay of TT-carriage (Butch's head and cap, his lamp, the pendant, the wall, the narrow crop) and the moon in TT-sky; run `build.py` again.
 4. Look at the title with `?title=1&titleart=painted` at 1920 × 1080, 1600 × 900, 1280 × 800, 1024 × 768, 2560 × 1080, 900 × 1200 and 390 × 844, and with `freeze('sweep')` on the scene (`#nightfall-title.__scene`).
 5. `TITLE_COMPLETE` turns true by itself; the game then shows the painted title. Run the tests, build and smoke.
+
+## The paintings are in (2026-10-10)
+
+George's nine title paintings are built (`TITLE_COMPLETE` is true), so the game shows the painted title; `?titleart=drawn` still shows the round-6 one in dev.
+
+- The carriage's glasses keyed cleanly: the big window [104, 172, 727, 437], the door window [1369, 200, 120, 242] (plate px). The lit twin needed no warp (features, shift 0.32 px).
+- `REAL_GEOMETRY` is measured on his painting: Butch leans on his hand in the window's right half (head 0.432 × 0.448, cap top 0.382), the oil lamp on the round table (0.523 × 0.58), the board on the plain door-panel wall (0.578–0.846 × 0.065–0.84), the pendant above it (0.723 × 0.085), the narrow crop 0.04–0.58 × 0.13–0.87; the moon in TT-sky at 0.342 × 0.338.
+- The orchard's trees stand a little taller in their picture than the far hills' line; the mid layer is drawn over the far one, so that reads as nearer trees.
+- Checked at 1600 × 900, 1280 × 800, 1024 × 768, 2560 × 1080, 900 × 1200 and 390 × 844, with the passing lamp's sweep frozen on Butch.

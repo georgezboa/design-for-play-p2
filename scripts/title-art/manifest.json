@@ -1,88 +1,88 @@
 {
- "complete": false,
+ "complete": true,
  "items": {
   "TT-carriage": {
-   "out": "/assets/title/standin/carriage.webp",
-   "bytes": 81878,
-   "standIn": true,
+   "out": "/assets/title/carriage.webp",
+   "bytes": 163778,
+   "standIn": false,
    "glass": [
-    49,
-    164,
-    866,
-    529
+    104,
+    172,
+    727,
+    437
    ],
    "door": [
-    1432,
-    220,
-    78,
-    261
+    1369,
+    200,
+    120,
+    242
    ]
   },
   "TT-carriage-lit": {
-   "out": "/assets/title/standin/carriage-lit.webp",
-   "bytes": 65580,
-   "standIn": true,
+   "out": "/assets/title/carriage-lit.webp",
+   "bytes": 225962,
+   "standIn": false,
    "align": {
-    "method": "none",
-    "edges": 0.9945,
-    "shift": 0.0,
+    "method": "features",
+    "edges": 0.8308,
+    "shift": 0.32,
     "warped": false
    }
   },
   "TT-sky": {
-   "out": "/assets/title/standin/sky.webp",
-   "bytes": 47332,
-   "standIn": true
+   "out": "/assets/title/sky.webp",
+   "bytes": 122070,
+   "standIn": false
   },
   "TT-hills": {
-   "out": "/assets/title/standin/hills.webp",
-   "bytes": 3636,
-   "standIn": true,
-   "top": 0.4365,
+   "out": "/assets/title/hills.webp",
+   "bytes": 130276,
+   "standIn": false,
+   "top": 0.502,
    "sourceSize": [
     1536,
     1024
    ]
   },
   "TT-orchard": {
-   "out": "/assets/title/standin/orchard.webp",
-   "bytes": 3746,
-   "standIn": true,
-   "top": 0.5557,
+   "out": "/assets/title/orchard.webp",
+   "bytes": 201420,
+   "standIn": false,
+   "top": 0.4912,
    "sourceSize": [
     1536,
     1024
    ]
   },
   "TT-trackside": {
-   "out": "/assets/title/standin/trackside.webp",
-   "bytes": 1170,
-   "standIn": true,
-   "top": 0.7441,
+   "out": "/assets/title/trackside.webp",
+   "bytes": 59628,
+   "standIn": false,
+   "top": 0.751,
    "sourceSize": [
     1536,
     1024
    ]
   },
   "TT-pole": {
-   "out": "/assets/title/standin/pole.webp",
-   "bytes": 2064,
-   "standIn": true,
-   "arm": 0.0353
+   "out": "/assets/title/pole.webp",
+   "bytes": 57212,
+   "standIn": false,
+   "arm": 0.0746
   },
   "TT-lamp": {
-   "out": "/assets/title/standin/lamp.webp",
-   "bytes": 850,
-   "standIn": true,
+   "out": "/assets/title/lamp.webp",
+   "bytes": 32444,
+   "standIn": false,
    "flame": [
-    0.4941,
-    0.0254
+    0.516,
+    0.1742
    ]
   },
   "TT-next-carriage": {
-   "out": "/assets/title/standin/next-carriage.webp",
-   "bytes": 81532,
-   "standIn": true
+   "out": "/assets/title/next-carriage.webp",
+   "bytes": 113126,
+   "standIn": false
   }
  }
 }
