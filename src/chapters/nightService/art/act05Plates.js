@@ -60,8 +60,22 @@ export const DESK_RING = Object.freeze([...DESK.deskTop]);
  * floor line is where the wall meets the boards, and the link height).
  */
 export const A05_WALK = Math.round((A05_FLOOR + 0.03) * 10000) / 10000;
-/** Where Butch stands by his desk, waits at the locked door, steps aside, comes home. */
-export const BUTCH_AT_DESK = Object.freeze({ x: 0.4, y: A05_WALK });
+/**
+ * Round 11 (George: "he walked into the furniture"): the painted desk
+ * stands on the boards from the wall out to its pedestal's front foot
+ * (`deskFront`), its silhouette reaching `deskRight`. A figure is a cut-out
+ * over the plate, so nothing painted can hide him: deeper than the desk's
+ * front he must be clear of it. So Butch walks on the rug in front of the
+ * desk (DESK_FRONT_WALK) and turns up to the walk line only past its end.
+ */
+export const DESK_BLOCK05 = Object.freeze({ x0: 0, x1: DESK.deskRight, front: DESK.deskFront });
+export const DESK_FRONT_WALK = Math.round((DESK.deskFront + 0.033) * 10000) / 10000;
+/** Past the desk's end on the rug, heading out (his trailing coat clear of the pedestal). */
+export const BUTCH_ROUND_DESK = Object.freeze({ x: 0.44, y: DESK_FRONT_WALK });
+/** Off the walk line, coming home: far enough right that he leads with his front past the pedestal. */
+export const BUTCH_HOME_TURN = Object.freeze({ x: 0.53, y: A05_WALK });
+/** ... and down onto the rug, just past the desk's end. */
+export const BUTCH_HOME_RUG = Object.freeze({ x: 0.45, y: DESK_FRONT_WALK });
 /**
  * Round 8: in his desk chair (the painted figure's `sit-chair` frame: the
  * seat without the stool). The pose's pivot is the back of the seat, its

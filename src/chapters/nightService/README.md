@@ -32,6 +32,8 @@ export const ACT2 = defineAct({
                                          // tile coordinates stay the same, the canvases paint at screen res)
   growFrom: { act: 'act0', keep: { desk: 'office' } }, // optional: open folded on the previous act's wall;
                                          // the player drags the brass pull to unfold it (unfold.js)
+  enter: { act1: { tile: 'aisle', actor: 'butch' } },  // optional (round 11): fly in from that act's
+                                         // last frame instead of the title over black (see Joins below)
   slots: ['rack', 'window', 'aisle', 'board'],   // row-major starting layout
   start: { bell: 1, items: ['punch'] },  // chapter state when starting here fresh
   assets: ['fields', 'memory'],          // panoramas to load (worldAssets.js)
@@ -79,6 +81,7 @@ rack: {
       draw(ctx) {},                 // present layer
       drawPast(ctx) {},             // optional 1978 layer, seen only through the lens
       actorScale: 1,                // figure size in this state (zoomed rooms: ~1.9)
+      depthSort: true,              // draw its figures deepest (highest feet) first, nearest in front
       zoomOut: true,                // false: a one-way zoom (e.g. the Conductor's car)
       zoomOutWhen: cond,            // hold the player in a close-up until cond (Act 0's bell)
       edges: {
@@ -315,7 +318,36 @@ chunks (`nsv-w07-0`, `nsv-w01-2`, …) for exact crops — see `crop`/`cropFull`
 `screen(tile,u,v)`, `topSprite(key,x,y)`, `flash(tile,u,v,opts)`,
 `sparkle(x,y)`, `lightRun(points,opts)`, `rig(id)`, `rigPoint(id,lx,ly)`,
 `audio.play(name)`, `top` (the overlay container), `scene` (Phaser) and `model`. Built-ins: `fadeAll`,
-`pulse`, `drift {rate}` (slows the fields and the rail clack), `shake`.
+`pulse`, `drift {rate}` (slows the fields and the rail clack), `shake`, `flight {tile, actor?, push?, ms}`
+(an act's last beat before `nextAct`: see Joins).
+
+### Joins between acts (round 11)
+
+No act change goes through black any more (except the chapter's end, into the 1-2 film).
+When an act ends, `gotoAct` copies its last rendered frame into a texture (`nsv-handoff`)
+and hands it to the next act, which shows it while it loads (the step that ends an act
+also prefetches the next act's paintings) and dissolves it into its own first frame:
+
+- **Acts 0 → 0.5 → I** (`growFrom`): the picture dissolves into the folded wall (650 ms).
+- **Acts I → II → III** (`flight` / `enter`): the ending act plays
+  `{ fx: { name: 'flight', tile, actor, push, ms } }`: the other windows dim (never to
+  black) and that window's camera leans in, the figure's feet held still. The next act's
+  `enter[fromAct] = { tile, actor | rect, ms }` opens its `tile` over the window the eye
+  was on, its camera pushed in so its `actor` stands where the last one stood (as tall),
+  or on `rect`; the picture dissolves into it, then the camera pulls back as the window
+  glides home, the other windows light up and the act's name comes up on the sill.
+  Input is off (`growing`) until it lands; the intro fail-safe lands it on a stalled
+  renderer; Reduce Motion makes it a 420 ms crossfade in place. A dev `?step=` jump, a
+  Continue from a checkpoint and `?act=2` open with the title card as before.
+
+**Figures and painted things (round 11).** A figure is a cut-out over the plate, so
+nothing painted can pass in front of it: it must never stand where a painted object
+nearer the viewer would hide part of it. `stageClearance.js` checks a walk against
+painted obstacles (a desk's footprint `{ x0, x1, front }`, a corridor's walls, a doorway's
+jambs) with the figure's real painted width (`tests/nightService/round11.test.mjs`);
+the measured edges (`deskRight`, `deskFront`, `wallLeftNear` ...) come from
+`build_ch1_plates.py`. Walk in front of furniture (feet below its front foot) or clear
+of it, never through it.
 
 **Actors** take `scale` and `tint` (e.g. Act 3's far train). **Stone sockets**
 (five, below the sill at its right end, above the lens) appear once any stone
@@ -364,6 +396,7 @@ that failed to load gets the jointed figure instead.
 | butch | `carrying: 'case'` (or `true`) | `carry` standing; moving, the 6-frame carry walk (`C-butch-carry.png`, by distance); stopping from it, its passing pose (`carry-3` / `carry-6`), so the case keeps its shape |
 | butch | carrying anything else | the prop sprite (`props/*.webp`) at the frame's `hand` anchor |
 | conductor | `idle` | `lantern`: the lantern raised at the door |
+| conductor | `lowered` | `stand`: waiting with the lantern at his side, the punch in his hand (Act 1's car) |
 | conductor | gesture `offer` / punch hidden / gesture `rest` | `offer` (punch held out, lantern at his side) → `offer-empty` → `stand-empty` |
 | conductor | moving | `walk` (one frame) |
 | mara | `idle` | `turn`: three-quarter back view (her face is never shown) |

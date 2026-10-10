@@ -133,10 +133,14 @@ def a1_car_head(x, fy, metres):
     return ('pt', x, fy - metres * a1_car_px_per_m(fy))
 
 
-# where the two meet: Butch on the runner's left, a step inside; the
-# Conductor half a metre deeper on its right, under the corridor's lamp
-A1_CAR_BUTCH = (640.0, 662.0)
-A1_CAR_CONDUCTOR = (778.0, 632.0)
+# where the two meet (round 11): the corridor is ~1.1 m wide, too narrow for
+# two side-on figures at one depth to clear both walls (Butch's coat stood in
+# the left wall). So Butch stops on the threshold, just stepping in, inside
+# the doorway's left jamb (opening 532..940); the Conductor waits a metre
+# further in, on the runner's right, his back clear of the compartment doors
+# (the right wall's floor line is at x ~870 there).
+A1_CAR_BUTCH = (626.0, 872.0)
+A1_CAR_CONDUCTOR = (774.0, 692.0)
 
 # ---------------------------------------------------------------------------
 # The plates. Anchors (source px): ('y', v) a height, ('x', u) a position
@@ -189,6 +193,12 @@ PLATES = [
         'lamp': ('pt', 453, 406),
         'deskTop': ('pt', 532, 497),
         'deskEnd': ('x', 552),
+        # round 11: the desk as an obstacle on the boards: its silhouette's
+        # right edge (the top's corner and the pedestal's back foot) and the
+        # pedestal's front foot (nearer the viewer than this row, Butch is in
+        # front of the desk; deeper, he must be clear of it to its right)
+        'deskRight': ('x', 606),
+        'deskFront': ('y', 787),
         # the desk chair, and where Butch sits on it (the seated frame's
         # pivot: the back of the seat, his feet's row on the boards)
         'chair': ('rect', 117, 471, 283, 804),
@@ -231,6 +241,8 @@ PLATES = [
         'lamp': ('pt', 547, 413),
         'bell': ('pt', 588, 452),
         'deskEnd': ('x', 640),
+        'deskRight': ('x', 686),
+        'deskFront': ('y', 798),
         'chair': ('rect', 279, 476, 523, 818),
         'chairSit': ('pt', 305, 786),
     }),
@@ -243,6 +255,9 @@ PLATES = [
     }),
     dict(id='act1/door-open', src='A1-door-open.png', crop=full(A1_DOOR_TOP), anchors={
         'doorway': ('rect', 1060, 80, 1345, 775),
+        # round 11: the open leaf swings out towards the viewer right of the
+        # opening; its foot's nearest corner on the boards
+        'leafFoot': ('pt', 1444, 843),
         'lantern': ('pt', 1307, 252),
         'chute': ('x', 1197.5),
     }),
@@ -271,6 +286,12 @@ PLATES = [
         'conductorHead': a1_car_head(*A1_CAR_CONDUCTOR, 1.95),
         'doorway': ('rect', 532, 190, 940, 868),
         'threshold': ('y', 868),
+        # round 11: the corridor's walls where they meet the boards (the
+        # outer edges of the wood strips beside the runner), near row and far
+        'wallLeftNear': ('pt', 592, 850),
+        'wallLeftFar': ('pt', 612, 700),
+        'wallRightNear': ('pt', 933, 850),
+        'wallRightFar': ('pt', 889, 700),
         'lamp': ('pt', 748, 296),
         'ceilingLamps': ('rect', 666, 118, 666, 188),
         'slot': ('rect', 418, 282, 498, 352),

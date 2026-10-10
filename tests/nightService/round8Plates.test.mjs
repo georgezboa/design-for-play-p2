@@ -30,19 +30,21 @@ test('round 8: the Conductor\'s car is George\'s A1-conductor, not a crop of the
   assert.deepEqual(step.find((e) => e.zoomTo).zoomTo.rect, ZOOM['act1/conductor']);
 });
 
-test('round 8: in the car Butch and the Conductor meet on the runner, inside the doorway, facing each other', () => {
+test('round 8: in the car Butch and the Conductor meet in the doorway, facing each other', () => {
   const car = ANCHOR['act1/conductor'];
   const door = car.doorway;
-  for (const [u, v] of [car.butchFeet, car.conductorFeet]) {
-    assert.ok(inRect(door, u, v), 'standing in the corridor beyond the door');
-    assert.ok(v < car.threshold, 'beyond the threshold');
-  }
-  // Butch comes in a step and stops in front of the Conductor
+  // round 11: the Conductor waits on the corridor's runner; Butch stops on its
+  // threshold (the corridor is too narrow for both side on at one depth)
+  assert.ok(inRect(door, ...car.conductorFeet), 'the Conductor in the corridor beyond the door');
+  assert.ok(car.conductorFeet[1] < car.threshold, 'beyond the threshold');
+  assert.ok(inRect(door, car.butchFeet[0], car.threshold), 'Butch between the jambs');
+  assert.ok(Math.abs(car.butchFeet[1] - car.threshold) < 0.01, 'Butch on the threshold');
+  // Butch steps in over the threshold, from our side, and stops facing the Conductor
   const step = ACTS.act1.steps.find((st) => st.id === 'conductor').do;
   const place = step.find((e) => e.placeActor?.state === 'conductor').placeActor;
   const walk = step.find((e) => e.walkButch?.id === 'meetConductor').walkButch;
   assert.equal(place.facing, 1);
-  assert.ok(place.x < BUTCH_IN_CAR.x && Math.abs(place.y - BUTCH_IN_CAR.y) < 1e-9, 'a step across the runner, at one depth');
+  assert.ok(place.x <= BUTCH_IN_CAR.x && place.y > car.threshold && place.y < 1, 'a step in, from our side of the threshold');
   assert.deepEqual([walk.path.at(-1).x, walk.path.at(-1).y], [BUTCH_IN_CAR.x, BUTCH_IN_CAR.y]);
   assert.equal(ACTS.act1.actors.conductor.facing, -1);
   // he is placed before the zoom, so both are there when it lands

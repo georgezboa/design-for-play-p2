@@ -142,7 +142,9 @@ test('Act 2: full scripted solution through to the act-3 checkpoint (without the
   assert.deepEqual(model.state.ended, { kind: 'nextAct', next: 'act3' });
   assert.deepEqual(log.filter(([n]) => n === 'checkpoint').map(([, p]) => p.id), ['chapter-1-act-3']);
   const fx = log.filter(([n]) => n === 'fx').map(([, p]) => p.name);
-  ['punchPop', 'requestStop', 'markCase', 'arrive', 'drift', 'caseDrop', 'fadeAll'].forEach((name) => assert.ok(fx.includes(name), name));
+  // (round 11: it ends on a flight into Act 3, not a fade to black)
+  ['punchPop', 'requestStop', 'markCase', 'arrive', 'drift', 'caseDrop', 'flight'].forEach((name) => assert.ok(fx.includes(name), name));
+  assert.ok(!fx.includes('fadeAll'));
   assert.deepEqual(model.carry().items, ['punch', 'lens']);
   assert.equal(model.carry().bell, 3);
 });

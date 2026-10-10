@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { ACTS, startCarry } from '../../src/chapters/nightService/acts/index.js';
 import { ANCHOR, PLATE, PROP, SOLVED, ZOOM } from '../../src/chapters/nightService/art/ch1Plates.js';
-import { A05_BUTCH_SCALE, LEAF } from '../../src/chapters/nightService/art/act05Plates.js';
-import { A1_BUTCH_SCALE, BUTCH_IN_CAR, CAR_ACTOR_SCALE, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, TAG_AT, TAG_HIT } from '../../src/chapters/nightService/art/act1Plates.js';
+import { A05_BUTCH_SCALE, DESK_FRONT_WALK, LEAF } from '../../src/chapters/nightService/art/act05Plates.js';
+import { A1_BUTCH_SCALE, BUTCH_IN_CAR, DESK_FRONT_WALK1, CAR_ACTOR_SCALE, CONDUCTOR_IN_CAR, CONDUCTOR_SCALE, TAG_AT, TAG_HIT } from '../../src/chapters/nightService/art/act1Plates.js';
 import { actPlates, createPanelModel, pickPlate, plateKey, tagRect } from '../../src/chapters/nightService/panelModel.js';
 import { settle } from './helpers.mjs';
 
@@ -232,8 +232,10 @@ test('round 7: Butch stands 1.75 m beside the painted 2 m doors, feet on the pai
     }));
     // in his desk chair (sit-chair) his feet rest on the boards in front of the desk, nearer the viewer
     const chair = ANCHOR[id === 'act05' ? 'act05/desk' : 'act1/desk'].chairSit;
+    // round 11: and he walks round the desk on the boards in front of it (round11.test.mjs)
+    const front = id === 'act05' ? DESK_FRONT_WALK : DESK_FRONT_WALK1;
     for (const y of ys) {
-      if (y === undefined || y === chair[1]) continue;
+      if (y === undefined || y === chair[1] || y === front) continue;
       const d = y - floors[id];
       // (the walk through the open door steps into the doorway, a little above)
       assert.ok(d >= -0.012 && d <= 0.06, `${id}: Butch's y ${y} on the painted floor ${floors[id]}`);

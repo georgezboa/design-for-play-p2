@@ -67,23 +67,56 @@ export const TAG_DROP_Y = FUNNEL[1] + FUNNEL[3] * 0.5;
 
 /** Where Butch walks: on the boards a step in front of the wall (the floor line is the link height). */
 export const A1_WALK = Math.round((A1_FLOOR + 0.03) * 10000) / 10000;
-/** Butch: home at the desk, waiting at the door, and his scale (1.75 m beside the painted 2 m leaf). */
-export const BUTCH_HOME1 = Object.freeze({ x: DESK.deskEnd + 0.085, y: A1_WALK });
 /** Round 8: in his desk chair (`sit-chair`), where Act 1 opens. */
 export const BUTCH_IN_CHAIR1 = Object.freeze({ x: DESK.chairSit[0], y: DESK.chairSit[1] });
 export const DOOR_WAIT_X = 0.62;
 export const A1_BUTCH_SCALE = Math.round(((DOOR_A.leaf[3] * 414 * 1.75) / 2 / 70) * 100) / 100;
 /**
+ * Round 11 (George: "he walked into the furniture"): the painted desk stands
+ * on the boards from the wall out to its pedestal's front foot (`deskFront`),
+ * its silhouette reaching `deskRight`. A figure is a cut-out over the plate,
+ * so nothing painted can hide him: deeper than the desk's front he must be
+ * clear of it, so he walks along the boards in front of it (DESK_FRONT_WALK),
+ * past its end, and only then up to the corridor's walk line.
+ */
+export const DESK_BLOCK1 = Object.freeze({ x0: 0, x1: DESK.deskRight, front: DESK.deskFront });
+export const DESK_FRONT_WALK1 = Math.round((DESK.deskFront + 0.01) * 10000) / 10000;
+/** Up out of his chair: standing beside it, in front of the desk. */
+export const BUTCH_UP1 = Object.freeze({ x: BUTCH_IN_CHAIR1.x + 0.08, y: DESK_FRONT_WALK1 });
+/** Past the desk's end (his trailing coat clear of it), where he turns up the boards. */
+export const BUTCH_ROUND_DESK1 = Object.freeze({ x: 0.62, y: DESK_FRONT_WALK1 });
+/** Back on the corridor's walk line. */
+export const BUTCH_ON_WALK1 = Object.freeze({ x: 0.7, y: A1_WALK });
+/**
+ * Through the open door he stops on the threshold, in front of the wall's
+ * plane, his leading boot short of the leaf that swings out at the opening's
+ * right (the doorway's right jamb): then he steps through (and is gone).
+ */
+export const DOOR_STEP = Object.freeze({ x: 0.75, y: Math.round((A1_FLOOR + 0.015) * 10000) / 10000 });
+/** The open leaf as an obstacle on the boards: right of the opening, out to its foot's row. */
+export const DOOR_LEAF_BLOCK = Object.freeze({ x0: OPEN.doorway[0] + OPEN.doorway[2], x1: 1, front: OPEN.leafFoot[1] });
+/**
  * The Conductor's car (round 8: George's A1-conductor, the next car's
- * corridor through the open door). They meet on its runner a step inside:
- * Butch on the left, the Conductor half a metre deeper on the right, under
- * the corridor's lamp. Their heights come from the painting's perspective
- * (the script's a1_car_head: 1.75 m and 1.95 m at their floor rows), so
- * the state's actorScale makes Butch 1.75 m there, and the Conductor's own
- * scale makes him 1.95 m.
+ * corridor through the open door). Round 11: the corridor is about 1.1 m
+ * wide, too narrow for two figures side on at one depth to clear both walls
+ * (Butch's coat stood in the left wall). So Butch stops on the threshold,
+ * just stepping in, inside the doorway's left jamb, and the Conductor waits
+ * a metre further in on the runner's right, his back clear of the
+ * compartment doors; the nearer one is drawn in front (the state's
+ * `depthSort`). Their heights come from the painting's perspective (the
+ * script's a1_car_head: 1.75 m and 1.95 m at their floor rows), so the
+ * state's actorScale makes Butch 1.75 m there, and the Conductor's own scale
+ * makes him 1.95 m.
  */
 export const BUTCH_IN_CAR = Object.freeze({ x: CAR.butchFeet[0], y: CAR.butchFeet[1] });
 export const CONDUCTOR_IN_CAR = Object.freeze({ x: CAR.conductorFeet[0], y: CAR.conductorFeet[1] });
+/** Where Butch steps in from: our side of the threshold, a little nearer the viewer. */
+export const BUTCH_STEP_IN = Object.freeze({ x: Math.round((CAR.butchFeet[0] - 0.015) * 10000) / 10000, y: 0.985 });
+/**
+ * The corridor's walls, as their floor lines (each from the near row to the
+ * far one): a figure standing between them must fit (tests/nightService/round11.test.mjs).
+ */
+export const CAR_WALLS = Object.freeze({ left: Object.freeze([CAR.wallLeftNear, CAR.wallLeftFar]), right: Object.freeze([CAR.wallRightNear, CAR.wallRightFar]), doorway: CAR.doorway });
 const BUTCH_CAR_PX = (CAR.butchFeet[1] - CAR.butchHead[1]) * 414;
 const CONDUCTOR_CAR_PX = (CAR.conductorFeet[1] - CAR.conductorHead[1]) * 414;
 export const CAR_ACTOR_SCALE = Math.round((BUTCH_CAR_PX / 70 / A1_BUTCH_SCALE) * 1000) / 1000;

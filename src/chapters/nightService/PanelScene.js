@@ -30,6 +30,7 @@ import { HINT_SPEAKER, hintLine } from './hintLines.js';
 import { INTRO_FAILSAFE_SLACK_MS, createIntroGuard, growScheduleMs, introScheduleMs } from './introGuard.js';
 import { FRAME_TAG, GHOST_HAND, UNFOLD_PULL, UNFOLD_TAG, paintGhostHand, paintUnfoldPull, paintUnfoldTag } from './art/hintArt.js';
 import { DEMO_NUDGE, createUnfold, demoNudge, onFold, peekOffset, planUnfold, unfoldLayout } from './unfold.js';
+import { FLIGHT_DIM, FLIGHT_REDUCED_MS, clampFocus, flightFrame, flightPlacement, matchFocus, pullFocus, rectFocus } from './flight.js';
 import { NoticeChip } from './chips.js';
 import { ReadingView } from './readingView.js';
 import { createPaintContext, ensureLoopTexture, ensureSharedTextures } from './painter.js';
@@ -107,6 +108,15 @@ const PULL_SCALE = 1.25;
 /** The lamps' live glow over the wall (round 7: matte chrome, so low and warm). */
 const LAMP_GLOW = 0.11;
 
+/**
+ * Round 11 (George: no black between the acts): the last frame of an act is
+ * handed to the next as a picture (this texture), shown while the next one
+ * loads and dissolved into it, so the player never leaves the world. An act
+ * that ends with a `flight` (fx) holds its picture and dims the others; the
+ * next act's `enter[from]` flies its first window out of it (flight.js).
+ */
+const HANDOFF_KEY = 'nsv-handoff';
+
 const lerp = (a, b, t) => a + (b - a) * t;
 const wallKey = (layout) => `nsv-wall-${layout.cols}x${layout.rows}-${layout.slots[0]?.w ?? layout.tileW}`;
 const ease = (t) => 0.5 - Math.cos(Math.PI * t) / 2;
@@ -173,7 +183,10 @@ class TileView {
     }
     this.bezel = s.add.container(0, 0);
     this.vignette = s.add.image(-w / 2, -h / 2, vkey).setOrigin(0, 0);
-    this.cover = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
+    // (round 11: an opaque fill, faded by its alpha: with a fill alpha of 0 it
+    // never showed, so the intro's window-by-window reveal and fadeAll's
+    // windows going out one by one were invisible behind the blackout)
+    this.cover = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 1).setOrigin(0, 0).setAlpha(0);
     // round 6 · item 15: while a line is spoken the windows step back (dimmed)
     this.dim = s.add.rectangle(-w / 2 - 2, -h / 2 - 2, w + 4, h + 4, 0x050304, 0).setOrigin(0, 0);
     this.ring = s.add.image(-w / 2 - BEZEL, -h / 2 - BEZEL, key).setOrigin(0, 0).setScale(1 / res);
@@ -295,6 +308,12 @@ export class PanelScene extends Phaser.Scene {
     this.carryIn = data.carry ?? null;
     this.services = data.services ?? this.services ?? {};
     this.fromAct = data.fromAct ?? null;
+    // round 11: the last act's final frame and where its flight left the eye
+    this.handoff = data.handoff ?? null;
+    this.handoffImage = null;
+    this.flightOutState = null;
+    this.flight = null;
+    this.waitedForLoad = false;
   }
 
   resolveAct() {
@@ -303,8 +322,17 @@ export class PanelScene extends Phaser.Scene {
 
   preload() {
     this.preloadChrome();
+    // round 11: while this act loads, the last act's final frame stays on
+    // screen (a restart would otherwise show the empty canvas: black)
+    if (this.handoff?.key && this.textures.exists(this.handoff.key)) {
+      this.handoffImage = this.add.image(0, 0, this.handoff.key).setOrigin(0, 0).setDisplaySize(this.scale.width, this.scale.height);
+    }
     if (!this.textures.exists('nsv-paper')) this.load.image('nsv-paper', PAPER_URL);
-    const act = this.resolveAct();
+    this.queueActAssets(this.resolveAct());
+  }
+
+  /** Queue everything an act draws that is not loaded yet (preload, and the next act's prefetch). */
+  queueActAssets(act) {
     const hasTrain = Object.values(act.actors ?? {}).some((actor) => actor.rig === 'train');
     if (hasTrain && !this.textures.exists(TRAIN_KEY)) this.load.image(TRAIN_KEY, TRAIN_URL);
     const worlds = new Set(['fields', ...(act.assets ?? [])].filter((name) => WORLDS[name]));
@@ -317,6 +345,22 @@ export class PanelScene extends Phaser.Scene {
     // loads before the first draw; a kind whose frames fail falls back to
     // the jointed figure (actorRig.buildRig)
     queueSpriteTextures(this, act);
+  }
+
+  /**
+   * Round 11: once the step that ends the act begins, load the next act's
+   * paintings in the background, so the next act opens at once (no wait on
+   * the loader between the two).
+   */
+  prefetchFor(stepId) {
+    const step = this.act.steps.find((st) => st.id === stepId);
+    const effect = step?.do?.find((e) => e.nextAct !== undefined);
+    if (!effect || this.prefetched) return;
+    const next = ACTS[effect.nextAct === true ? this.act.next : effect.nextAct];
+    if (!next) return;
+    this.prefetched = next.id;
+    this.queueActAssets(next);
+    if (this.load.list.size > 0 && !this.load.isLoading()) this.load.start();
   }
 
   create() {
@@ -478,6 +522,9 @@ export class PanelScene extends Phaser.Scene {
 
     this.buildOverlays();
     this.bindModel();
+    // (a step already under way, e.g. a dev ?step= jump to the last one)
+    this.prefetched = null;
+    this.prefetchFor(this.act.steps[this.model.state.stepIndex - 1]?.id);
     this.bindInput();
     this.applyGrades(true);
 
@@ -499,6 +546,7 @@ export class PanelScene extends Phaser.Scene {
       window.removeEventListener('nightfall:hint', onHint);
       globalThis.clearTimeout?.(this.introTimer);
       this.introGuard.disarm();
+      this.releaseHandoff();
       window.removeEventListener('keydown', this.onKeyDown, true);
       window.removeEventListener('keyup', this.onKeyUp, true);
       window.removeEventListener('blur', this.onBlur);
@@ -945,7 +993,7 @@ export class PanelScene extends Phaser.Scene {
     m.on('bell', (bell) => this.onBell(bell));
     m.on('card', ({ card }) => (card?.reading ? this.showReading(card) : this.showCard(card)));
     m.on('card:close', () => this.hideCard());
-    m.on('step', () => this.flail.progress());
+    m.on('step', ({ id }) => { this.flail.progress(); this.prefetchFor(id); });
     m.on('dialogue', ({ line }) => this.showLine(line));
     m.on('dialogue:end', () => this.hideCaption());
     m.on('caption', (caption) => this.showCaption(caption));
@@ -970,8 +1018,104 @@ export class PanelScene extends Phaser.Scene {
 
   gotoAct(next, carry) {
     if (!next) return;
-    this.services.onActChange?.(next);
-    this.scene.restart({ actId: next, carry, services: this.services, fromAct: this.actId });
+    // round 11: the act's last frame goes with it (captureHandoff), so the
+    // next act opens on the same picture instead of a black canvas
+    // (the next act's paintings still coming in: hold this frame until they are)
+    if (this.load.isLoading() && !this.waitedForLoad) {
+      this.waitedForLoad = true;
+      let done = false;
+      const model = this.model;
+      const once = () => { if (done || this.model !== model) return; done = true; this.gotoAct(next, carry); };
+      this.load.once(Phaser.Loader.Events.COMPLETE, once);
+      globalThis.setTimeout?.(once, 6000);
+      return;
+    }
+    const geometry = this.handoffGeometry();
+    const go = (key) => {
+      if (!this.sys.isActive() && !this.sys.isPaused()) return;
+      // (the pause menu opened meanwhile: go on once it closes)
+      if (this.sys.isPaused()) { this.events.once('resume', () => go(key)); return; }
+      this.services.onActChange?.(next);
+      this.scene.restart({ actId: next, carry, services: this.services, fromAct: this.actId, handoff: { ...geometry, key } });
+    };
+    this.captureHandoff(go);
+  }
+
+  /**
+   * Copy the next rendered frame into a canvas texture (HANDOFF_KEY) and call
+   * `done(key)`; `done(null)` if no frame comes (a hidden or paused page): the
+   * next act then opens without the picture. Copied right after the render,
+   * while the WebGL drawing buffer still holds the frame.
+   */
+  captureHandoff(done) {
+    let finished = false;
+    const finish = (key) => {
+      if (finished) return;
+      finished = true;
+      globalThis.clearTimeout?.(timer);
+      done(key);
+    };
+    const grab = () => {
+      try {
+        const source = this.game.canvas;
+        const copy = document.createElement('canvas');
+        copy.width = source.width;
+        copy.height = source.height;
+        copy.getContext('2d').drawImage(source, 0, 0);
+        if (this.textures.exists(HANDOFF_KEY)) this.textures.remove(HANDOFF_KEY);
+        this.textures.addCanvas(HANDOFF_KEY, copy);
+        finish(HANDOFF_KEY);
+      } catch {
+        finish(null);
+      }
+    };
+    const timer = globalThis.setTimeout?.(() => { this.game.events.off(Phaser.Core.Events.POST_RENDER, grab); finish(null); }, 1200);
+    this.game.events.once(Phaser.Core.Events.POST_RENDER, grab);
+  }
+
+  /** Where the last act's flight left the eye: its window on screen and the figure it held (screen px). */
+  handoffGeometry() {
+    const out = this.flightOutState;
+    const view = out ? this.views[out.tile] : null;
+    if (!view) return { from: this.actId };
+    const k = view.rect.scale * view.base;
+    const w = view.w * k;
+    const h = view.h * k;
+    const win = { x: view.rect.x + view.rect.w / 2 - w / 2, y: view.rect.y + view.rect.h / 2 - h / 2, w, h };
+    const actor = out.actor ? this.model.state.actors[out.actor] : null;
+    let anchor = null;
+    if (actor?.visible && actor.tile === view.id && !actor.crossing && this.rigs[out.actor]) {
+      const entry = this.rigs[out.actor];
+      const sceneDef = this.model.sceneOf(view.id, this.model.state.tiles[view.id].state);
+      const p = view.screen(actor.x, actor.y);
+      anchor = { x: p.x, y: p.y, h: entry.rig.height * entry.scale * (sceneDef?.actorScale ?? 1) * k * (view.focus?.zoom ?? 1) };
+    }
+    return { from: this.actId, tile: view.id, window: win, anchor };
+  }
+
+  /** The handed-over picture, now over this act's wall (under the title), or null. */
+  takeHandoff() {
+    const img = this.handoffImage;
+    if (!img || !img.active) return null;
+    this.topLayer.addAt(img, this.topLayer.getIndex(this.blackout) + 1);
+    img.setPosition(0, 0).setDisplaySize(this.layout.view.w, this.layout.view.h).setAlpha(1);
+    return img;
+  }
+
+  /** Done with the handed-over picture: free it (it is a full-screen canvas). */
+  releaseHandoff() {
+    const img = this.handoffImage;
+    this.handoffImage = null;
+    if (img?.active) { this.tweens.killTweensOf(img); img.destroy(); }
+    const key = this.handoff?.key;
+    if (key && this.textures.exists(key)) this.textures.remove(key);
+    if (this.handoff) this.handoff = { ...this.handoff, key: null };
+  }
+
+  /** Dissolve the handed-over picture into what is on screen now. */
+  fadeHandoff(img, ms) {
+    if (!img) return;
+    this.tweens.add({ targets: img, alpha: 0, delay: 60, duration: ms, ease: 'Sine.easeInOut', onComplete: () => this.releaseHandoff() });
   }
 
   // ---------------------------------------------------------------------------
@@ -1335,16 +1479,21 @@ export class PanelScene extends Phaser.Scene {
 
   /** After the unfold: the act's name, small, on the sill below the grown wall. */
   unfoldTitle() {
+    this.sillTitle(0);
+    this.armIntroFailsafe(growScheduleMs({ openDelay: 0, openMs: 400 }));
+  }
+
+  /** The act's name, small, on the sill below the wall (over the world, never over black), `openDelay` ms from now. */
+  sillTitle(openDelay = 0) {
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
     this.titleMain.setText(act.heading ?? `${ROMAN[act.number] ?? act.number} · ${act.title}`);
     const titleY = Math.min(this.layout.view.h - 58, this.layout.y + this.layout.h + 96);
-    const openDelay = 0;
     const openMs = 400;
+    this.tweens.killTweensOf(this.titleBox);
     this.titleBox.setScale(0.7).setAlpha(0).setY(titleY + 8);
     this.tweens.add({ targets: this.titleBox, alpha: 1, y: titleY, delay: openDelay + openMs * 0.5, duration: 600, ease: 'Sine.easeOut' });
     this.tweens.add({ targets: this.titleBox, alpha: 0, delay: openDelay + openMs * 0.5 + 2600, duration: 700, ease: 'Sine.easeIn', onComplete: () => this.titleBox.setScale(1) });
-    this.armIntroFailsafe(growScheduleMs({ openDelay, openMs }));
   }
 
   /** Dev `N` while folded: open the wall (the next `N` skips the act). */
@@ -1405,7 +1554,18 @@ export class PanelScene extends Phaser.Scene {
   }
 
   introduce() {
-    if (this.growth) { this.startFold(this.growth); return; }
+    // round 11: the last act's final frame, dissolved into this one (never black)
+    const handoff = this.takeHandoff();
+    if (this.growth) {
+      this.startFold(this.growth);
+      this.fadeHandoff(handoff, reducedMotionActive() ? 260 : 650);
+      // (a stalled renderer must not leave the old picture up)
+      globalThis.setTimeout?.(() => { if (this.handoffImage === handoff) this.releaseHandoff(); }, 2600);
+      return;
+    }
+    const enter = this.fromAct && !this.startStep ? this.act.enter?.[this.fromAct] : null;
+    if (enter && this.views[enter.tile]) { this.flightIn(enter, handoff); return; }
+    this.releaseHandoff();
     const reduce = reducedMotionActive();
     const act = this.act;
     this.titleKicker.setText(act.kicker ?? 'CHAPTER 1 · NIGHT SERVICE');
@@ -1438,6 +1598,7 @@ export class PanelScene extends Phaser.Scene {
   /** The fail-safe: the act title, the blackout and the covers snap to their end state. */
   settleIntro(reason = 'frame') {
     this.introSettled = reason;
+    if (this.flight) this.landFlight();
     this.tweens.killTweensOf(this.titleBox);
     this.titleBox.setAlpha(0).setScale(1);
     if (!this.fading && !this.model.state.ended) {
@@ -1445,6 +1606,161 @@ export class PanelScene extends Phaser.Scene {
       this.blackout.setAlpha(0);
       Object.values(this.views).forEach((view) => { this.tweens.killTweensOf(view.cover); view.cover.setAlpha(0); });
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // round 11 · flights between acts (George: "no black between I and II")
+  //
+  // The act that ends plays `{ fx: { name: 'flight', tile, actor, push, ms } }`:
+  // the other windows dim (never to black) and the camera eases in a little
+  // on the window that holds the eye, keeping the figure's feet where they
+  // are. Its last frame is handed over (gotoAct). The next act names the
+  // flight it answers, `enter: { [fromAct]: { tile, actor | rect } }`: it opens
+  // on that frame, its own window placed over the one the eye was on, its
+  // camera pushed in so that its figure stands where the last one stood (or
+  // on `rect`), and dissolves into it; then the camera pulls back while the
+  // window glides home and the other windows light up, and the act's name
+  // comes up on the sill. Under Reduce Motion: a short crossfade in place.
+
+  flightOut({ tile, actor = null, push = 1.06, ms = 1800 } = {}) {
+    const view = this.views[tile];
+    if (!view) return;
+    this.fading = true;
+    this.flightOutState = { tile, actor };
+    const reduce = reducedMotionActive();
+    Object.values(this.views).forEach((other) => {
+      if (other === view) return;
+      this.tweens.add({ targets: other.cover, alpha: FLIGHT_DIM, duration: reduce ? 300 : ms * 0.75, ease: 'Sine.easeInOut' });
+    });
+    if (reduce || push === 1) return;
+    // the fixed point: the figure's feet (it does not slide), else the middle
+    const figure = actor ? this.model.state.actors[actor] : null;
+    const fx = (figure?.tile === tile ? figure.x : 0.5) * view.w;
+    const fy = (figure?.tile === tile ? figure.y : 0.5) * view.h;
+    const from = view.focus ?? { cx: view.w / 2, cy: view.h / 2, zoom: 1 };
+    const t = { k: 0 };
+    this.tweens.add({
+      targets: t,
+      k: 1,
+      duration: ms,
+      ease: 'Sine.easeInOut',
+      onUpdate: () => {
+        const z = from.zoom * (1 + (push - 1) * t.k);
+        // (never past the painting's edges)
+        view.focus = clampFocus({ cx: fx - (fx - view.w / 2) / z, cy: fy - (fy - view.h / 2) / z, zoom: z }, view.w, view.h);
+        view.apply();
+      },
+    });
+  }
+
+  /** Where this act's window starts in a flight: over the last act's window, pushed in to match it (flight.js). */
+  flightStart(enter, handoff, view, slot) {
+    const place = flightPlacement(handoff?.window ?? null, slot, view.w, view.h, view.base);
+    const k = place.scale * view.base;
+    let focus = { cx: view.w / 2, cy: view.h / 2, zoom: 1 };
+    const figure = enter.actor ? this.model.state.actors[enter.actor] : null;
+    const entry = enter.actor ? this.rigs[enter.actor] : null;
+    if (figure && entry && handoff?.anchor && figure.tile === view.id) {
+      // his feet where the last figure's were, as tall as it stood
+      const sceneDef = this.model.sceneOf(view.id, this.model.state.tiles[view.id].state);
+      const tall = entry.rig.height * entry.scale * (sceneDef?.actorScale ?? 1) * k;
+      focus = matchFocus({ feet: figure, tall, anchor: handoff.anchor, centre: place.centre, k, tileW: view.w, tileH: view.h });
+    } else if (enter.rect) {
+      focus = rectFocus(enter.rect, view.w, view.h);
+    }
+    return { rect: { x: place.x, y: place.y }, scale: place.scale, focus };
+  }
+
+  flightIn(enter, handoff) {
+    const reduce = reducedMotionActive();
+    const view = this.views[enter.tile];
+    const slot = this.model.slotRect(view.id);
+    const others = Object.values(this.views).filter((other) => other !== view);
+    this.blackout.setAlpha(0);
+    this.growing = true;
+    const ms = reduce ? FLIGHT_REDUCED_MS : enter.ms ?? 2400;
+    const start = reduce ? { rect: { x: slot.x, y: slot.y }, scale: 1, focus: null } : this.flightStart(enter, this.handoff, view, slot);
+    others.forEach((other) => other.cover.setAlpha(FLIGHT_DIM));
+    view.cover.setAlpha(0);
+    // the window whose slot the flight starts over sits in the flyer's slot
+    // meanwhile, and the two trade places as it lands (as a swap does): the
+    // wall never shows a hole
+    let displaced = null;
+    if (!reduce) {
+      const centre = { x: start.rect.x + slot.w / 2, y: start.rect.y + slot.h / 2 };
+      displaced = others.find((other) => {
+        const r = this.model.slotRect(other.id);
+        return r && centre.x >= r.x && centre.x <= r.x + r.w && centre.y >= r.y && centre.y <= r.y + r.h;
+      }) ?? null;
+      if (displaced) {
+        displaced.moving = true;
+        displaced.setRect(slot);
+      }
+      this.liftView(view, true);
+      view.moving = true;
+      view.setRect(slot, { x: start.rect.x, y: start.rect.y, scale: start.scale });
+      view.focus = start.focus;
+      view.apply();
+    }
+    const home = displaced ? this.model.slotRect(displaced.id) : null;
+    this.lensView.setAlpha(0);
+    const run = { t: 0 };
+    this.flight = { view, slot, start, others, run, displaced, from: this.fromAct, matched: Boolean(this.handoff?.anchor && enter.actor) };
+    this.tweens.add({
+      targets: run,
+      t: 1,
+      duration: ms,
+      ease: 'Linear',
+      onUpdate: () => {
+        const frame = flightFrame(run.t, { reduce, count: others.length });
+        // the dissolve: the last act's picture into this one, the camera still
+        if (handoff) handoff.setAlpha(frame.picture);
+        // the other windows light up, one after another
+        others.forEach((other, i) => other.cover.setAlpha(frame.cover(i)));
+        if (reduce) return;
+        // then the camera pulls back as the window glides home
+        view.focus = pullFocus(start.focus, frame.pull, view.w, view.h);
+        view.rect.x = lerp(start.rect.x, slot.x, frame.glide);
+        view.rect.y = lerp(start.rect.y, slot.y, frame.glide);
+        view.rect.scale = lerp(start.scale, 1, frame.glide);
+        view.apply();
+        if (displaced) {
+          // (under the flyer, on a slight arc, as the swap's other window goes)
+          displaced.rect.x = lerp(slot.x, home.x, frame.glide);
+          displaced.rect.y = lerp(slot.y, home.y, frame.glide) + Math.sin(Math.PI * frame.glide) * 18;
+          displaced.apply();
+        }
+      },
+      onComplete: () => this.landFlight(),
+    });
+    // the act's name on the sill, once the window is on its way home
+    this.sillTitle(reduce ? 120 : ms * 0.5);
+    this.armIntroFailsafe(Math.max(ms + 200, (reduce ? 120 : ms * 0.5) + 200 + 600 + 2600 + 700));
+  }
+
+  /** The flight is over (or the fail-safe ends it): everything where it belongs, the player's turn. */
+  landFlight() {
+    const flight = this.flight;
+    if (!flight) return;
+    this.flight = null;
+    const { view, slot, others, displaced } = flight;
+    this.tweens.killTweensOf(flight.run);
+    if (displaced) {
+      displaced.moving = false;
+      displaced.setRect(this.model.slotRect(displaced.id));
+    }
+    view.focus = null;
+    view.moving = false;
+    view.setRect(slot);
+    if (view.lifted) this.liftView(view, false);
+    others.forEach((other) => { this.tweens.killTweensOf(other.cover); other.cover.setAlpha(0); });
+    view.cover.setAlpha(0);
+    this.releaseHandoff();
+    this.growing = false;
+    this.idleMs = 0;
+    this.orderCameras();
+    this.audio.play('settle');
+    if (!reducedMotionActive()) this.bumpBezel(view);
   }
 
   // ---------------------------------------------------------------------------
@@ -2161,6 +2477,7 @@ export class PanelScene extends Phaser.Scene {
     const custom = this.act.fx?.[params.name];
     if (custom) { custom(this.fxApi(), params); return; }
     if (params.name === 'fadeAll') this.fadeAll(params.ms ?? 1600);
+    else if (params.name === 'flight') this.flightOut(params);
     else if (params.name === 'pulse') this.pulseHint(params.hint ?? params);
     else if (params.name === 'drift') {
       const rate = params.rate ?? 1;
@@ -3866,7 +4183,7 @@ export class PanelScene extends Phaser.Scene {
       const past = view.current?.past;
       if (past) {
         const slot = this.model.slotRect(view.id);
-        const near = lens.enabled && slot && lens.x > slot.x - lens.r && lens.x < slot.x + slot.w + lens.r && lens.y > slot.y - lens.r && lens.y < slot.y + slot.h + lens.r;
+        const near = lens.enabled && !this.flight && !this.flightOutState && slot && lens.x > slot.x - lens.r && lens.x < slot.x + slot.w + lens.r && lens.y > slot.y - lens.r && lens.y < slot.y + slot.h + lens.r;
         past.setVisible(Boolean(near));
         if (near) {
           const wp = view.cam.getWorldPoint(lens.x, lens.y);
@@ -3921,7 +4238,8 @@ export class PanelScene extends Phaser.Scene {
       // over a close-up with no 1978 layer the rim steps back too (it can
       // still be picked up): alpha R4 · P2
       const resting = this.tileUnderLens(lens);
-      const want = under ? 0.18 : resting && this.closeUpWithoutPast(resting) && this.press?.kind !== 'lens' ? 0.32 : 1;
+      // (round 11: while a flight takes the act out or brings one in, the lens waits off the glass)
+      const want = this.flight || this.flightOutState ? 0 : under ? 0.18 : resting && this.closeUpWithoutPast(resting) && this.press?.kind !== 'lens' ? 0.32 : 1;
       const a = this.lensView.alpha;
       this.lensView.setAlpha(a < want ? Math.min(want, a + dt / 260) : Math.max(want, a - dt / 260));
       // (a hint pulse tweens the rim's scale: leave it alone meanwhile)
@@ -3982,7 +4300,7 @@ export class PanelScene extends Phaser.Scene {
   drawRing(view, ring, live, current, fade = 1) {
     const g = ring.g;
     g.clear();
-    const on = current && !view.zooming && fade > 0.02 && (ring.kind === 'edge' || Boolean(live.get(ring.hotspot.id)?.enabled));
+    const on = current && !view.zooming && !this.flight && fade > 0.02 && (ring.kind === 'edge' || Boolean(live.get(ring.hotspot.id)?.enabled));
     if (!on) return;
     g.setAlpha(fade);
     const reduce = reducedMotionActive();
@@ -4013,7 +4331,7 @@ export class PanelScene extends Phaser.Scene {
     state.rings?.forEach((ring) => this.drawRing(view, ring, live, current, 1 - this.dialogueDim));
     state.tags.forEach((entry) => {
       const h = live.get(entry.hotspot.id);
-      const on = Boolean(h?.enabled) && state.stateId === this.model.state.tiles[view.id].state && !view.zooming;
+      const on = Boolean(h?.enabled) && state.stateId === this.model.state.tiles[view.id].state && !view.zooming && !this.flight;
       if (on && !entry.shown) {
         entry.shown = true;
         entry.holder.setVisible(true).setAlpha(0);
@@ -4071,6 +4389,11 @@ export class PanelScene extends Phaser.Scene {
         entry.stepClock += dt;
         if (entry.stepClock > 300) { entry.stepClock = 0; this.audio.play('step'); }
       }
+    });
+    // round 11: a state can ask for its figures to be drawn deepest first
+    // (feet higher up the picture are further away), so the nearer one is in front
+    Object.values(this.views).forEach((view) => {
+      if (view.actorLayer.list.length > 1 && this.model.sceneOf(view.id, this.model.state.tiles[view.id].state)?.depthSort) view.actorLayer.sort('y');
     });
   }
 
@@ -4248,6 +4571,9 @@ export class PanelScene extends Phaser.Scene {
           seam: this.lastSeamCue ?? null,
         },
         growing: this.growing,
+        // round 11: the flight that brings this act in (null once it has landed)
+        flight: this.flight ? { from: this.flight.from, tile: this.flight.view.id, matched: this.flight.matched, t: Number(this.flight.run.t.toFixed(2)) } : null,
+        handoff: Boolean(this.handoffImage),
         unfold: this.foldActive() ? {
           state: this.unfold.state,
           progress: Number(this.unfold.progress.toFixed(3)),

@@ -30,6 +30,8 @@ import { GEO3 } from '../art/act3Plates.js';
 import { ACT3_FX } from '../art/act3Fx.js';
 
 const lensOverGap = { lensOver: { tile: 'gap', x: 0.5, y: RAIL_AT } };
+/** The lit window of the orchard house (A3-orchard), where the flight from Act 2 lands. */
+const ORCHARD_LIT = GEO3.orchard.litCentre;
 const lensOverHedge = { lensOver: { tile: 'hawthorn', x: HEDGE.lens[0], y: HEDGE.lens[1] } };
 
 // The composition goals, as seams that must meet (hints.js unmetSeam): tier 1
@@ -120,6 +122,10 @@ export const ACT3 = defineAct({
   // the lens rests over the city room's bed (1978: her coat, her open case),
   // clear of the orchard window
   start: { bell: 3, items: ['punch', 'lens'], lens: { x: 1372, y: 262 } },
+  // round 11: from Act 2's last frame (no black between them): the orchard
+  // case dissolves into the orchard house it came from, its lit window, and
+  // the camera pulls back as that window glides home (PanelScene flightIn)
+  enter: { act2: { tile: 'orchard', rect: [ORCHARD_LIT[0] - 0.275, ORCHARD_LIT[1] - 0.26, 0.55, 0.55], ms: 2600 } },
   assets: ['fields', 'memory'],
   fx: ACT3_FX,
   cards: {
