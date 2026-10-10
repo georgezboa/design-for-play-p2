@@ -9,6 +9,7 @@ import {
   LINE,
   MAX_COATS_LOST,
   RIDE,
+  RIDER,
   TRAIN,
   TRAIN_COLOURS,
   coatAlpha,
@@ -41,13 +42,14 @@ function clear(line, col) {
   return true;
 }
 
-// A rider on the engine's boiler, with the brush's reach (200 px, measured
-// from his middle ~90 px above the rails): clears what he can reach, after
-// `react` seconds of seeing it; optionally paints the rails ahead as well.
+// A rider on the engine's front footplate (RIDER), with the brush's reach
+// measured from his middle: clears what he can reach, after `react` seconds
+// of seeing it; optionally paints the rails ahead as well.
 function ride(line, { dt = 1 / 60, react = 0, ink = false, limit = 400 } = {}) {
   const seen = new Map();
   let t = 0;
-  const reachX = () => line.state.x - 16 + Math.sqrt(200 ** 2 - 89 ** 2);
+  const above = (TRACK + 0.5) * CELL - (RIDER.feetY - 29);
+  const reachX = () => line.state.x + RIDER.dx + Math.sqrt(RIDER.reach ** 2 - above ** 2);
   while (!line.state.arrived && t < limit) {
     for (let c = Math.floor(line.state.x / CELL); (c + 1) * CELL <= reachX(); c += 1) {
       if (!seen.has(c)) seen.set(c, t);
@@ -168,14 +170,29 @@ test('rubbed-out rails are ground without track: paint them back', () => {
   assert.equal(line.trackAt(from), false);
 });
 
-test('official-record barriers take two washes per cell', () => {
+test('round 11: every barrier comes off in one wash, a whole column at a time', () => {
   const line = createPaintedLine();
-  const varnished = BARRIERS.find((b) => b.varnish);
-  const c = varnished.col;
-  assert.equal(line.wash(c, TRAIN.topRow), true);
-  assert.equal(line.isBlock(c, TRAIN.topRow), true);
-  assert.equal(line.wash(c, TRAIN.topRow), true);
-  assert.equal(line.isBlock(c, TRAIN.topRow), false);
+  BARRIERS.forEach(({ col, cols }) => {
+    for (let c = col; c < col + cols; c += 1) {
+      assert.equal(line.wash(c, TRAIN.topRow + 1), true);
+      for (let r = TRAIN.topRow; r < TRACK; r += 1) assert.equal(line.isBlock(c, r), false, `${c},${r}`);
+    }
+  });
+  assert.equal('varnish' in line.state, false);
+  assert.equal(line.drainEvents().some((e) => e.type === 'varnish-thinned'), false);
+});
+
+test('the rider stands on the front footplate, low over the line, and reaches the widest gap from a standstill', () => {
+  // his middle is about 60 px over the rails, not 90 on top of the boiler
+  const middleY = RIDER.feetY - 29;
+  assert.ok((TRACK + 0.5) * CELL - middleY < 70);
+  assert.ok(RIDER.feetY > TRAIN.topRow * CELL + 40, 'his feet are low on the engine, not on its roof');
+  assert.ok(RIDER.dx < 0 && RIDER.dx > -24, 'just behind the nose');
+  // stopped short of the widest break, the brush reaches its far side
+  const widest = Math.max(...GROUND_SPANS.slice(1).map((span, i) => span.from - GROUND_SPANS[i].to));
+  const nose = 100 * CELL;
+  const farX = nose + RIDE.margin + widest * CELL;
+  assert.ok(Math.hypot(farX - (nose + RIDER.dx), (TRACK + 0.5) * CELL - middleY) <= RIDER.reach, `widest gap ${widest} cells`);
 });
 
 test('its own track cannot be washed out from under it, and nothing is painted inside it', () => {

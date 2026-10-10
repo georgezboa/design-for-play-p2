@@ -8,12 +8,16 @@
 //
 // The three bays are a three-step escalation:
 //   A · THE COLD END   paint across a hole; wash a grey block away.
-//   B · THE GALLERY    varnished "official record" air: paint will not take
-//                      until it has been washed twice.
+//   B · THE GALLERY    build up to the first two plates; each is a short
+//                      puzzle of Rosa's colours (threadBoard.js).
 //   C · THE LONG WALL  pigment runs out. Washing the archive's grey gives
 //                      Rosa's colour back to the brush; painting spends it.
 //                      The last plate hangs over a hole, so the two verbs feed
 //                      each other.
+//
+// Round 11 (George): the varnished "official record" that refused paint
+// until it was washed twice is gone, and so is washing the plates open cell
+// by cell. Nothing in the car is done twice.
 //
 // This file describes surfaces and contents only. paintedCarModel.js turns it
 // into rules.
@@ -61,11 +65,6 @@ export const BLOCK_RECTS = [
   { col: 102, row: CEILING_ROW, cols: 6, rows: FLOOR_ROW - CEILING_ROW },
 ];
 
-// "Official record": varnished air under the orchard plate. Paint slides off
-// it until it has been washed twice (VARNISH_COATS), then it is ordinary paper.
-export const VARNISH_COATS = 2;
-export const VARNISH_RECTS = [{ col: 63, row: 11, cols: 17, rows: 11 }];
-
 // The door's own face. Nothing paints or washes it, so the signs stay legible.
 export const SEALED_RECTS = [{ col: 129, row: 8, cols: 15, rows: 14 }];
 
@@ -100,12 +99,28 @@ export const SIGN_LABELS = Object.freeze({
 
 // ------------------------------------------------------------------ plates
 // Three plates, hung too high to read from the floor. Each is under the
-// archive's grey: washing it (in the plate viewer) reveals the pencil beneath.
-// Every plate has a different large mark and, somewhere else on it, the same
-// small hawthorn — Mara's mark. Rosa's rose is on two of them, never three.
+// archive's grey, and under the grey are Rosa's colours in pairs (`board`):
+// joining every pair and covering every square in the plate viewer lifts
+// the grey (threadBoard.js). Every plate has a different large mark and,
+// somewhere else on it, the same small hawthorn — Mara's mark. Rosa's rose
+// is on two of them, never three.
 //
-// A plate is a 12 × 7 grid of wash cells. Rects are in those cells.
+// The marks are placed on a 12 × 7 grid of the plate (PLATE_GRID); the
+// puzzle has its own, coarser grid (`board.cols` × `board.rows`) over the
+// same picture. The boards ramp gently: 5 × 3 with three colours, 6 × 4 with
+// four, 7 × 4 with five. Each has exactly one answer (tests/paintedCountry).
 export const PLATE_GRID = Object.freeze({ cols: 12, rows: 7 });
+
+// Rosa's gouache, the colours under the grey (the same six as the studio and
+// the yard), each with a small pencil glyph so no colour is told by hue alone.
+export const THREAD_COLOURS = Object.freeze({
+  red: { name: 'VERMILION', color: 0xc95850, glyph: 'dot' },
+  blue: { name: 'INDIGO', color: 0x537ca6, glyph: 'bar' },
+  yellow: { name: 'OCHRE', color: 0xd7b84a, glyph: 'ring' },
+  green: { name: 'VERDIGRIS', color: 0x5e9172, glyph: 'cross' },
+  violet: { name: 'MULBERRY', color: 0x84658f, glyph: 'pair' },
+  orange: { name: 'MARIGOLD', color: 0xd98a3a, glyph: 'stem' },
+});
 
 export const PAINTINGS = [
   {
@@ -122,7 +137,16 @@ export const PAINTINGS = [
     markRect: { c: 1, r: 1, w: 6, h: 4 },
     hawthornRect: { c: 9, r: 4, w: 2, h: 2 },
     roseRect: null,
-    varnishRects: [],
+    // the first: three colours, one short bend
+    board: {
+      cols: 5,
+      rows: 3,
+      pairs: [
+        { id: 'yellow', a: [0, 0], b: [1, 1] },
+        { id: 'red', a: [2, 0], b: [3, 2] },
+        { id: 'blue', a: [3, 1], b: [0, 1] },
+      ],
+    },
     caption:
       'A rented room near the terminal, kept for the early shift.\n'
       + 'The archive filed it as the first claim, collected, and painted it the colour of a filing cabinet.',
@@ -143,7 +167,16 @@ export const PAINTINGS = [
     markRect: { c: 5, r: 1, w: 3, h: 5 },
     hawthornRect: { c: 0, r: 0, w: 2, h: 2 },
     roseRect: { c: 10, r: 5, w: 2, h: 2 },
-    varnishRects: [{ c: 4, r: 0, w: 5, h: 3 }],
+    board: {
+      cols: 6,
+      rows: 4,
+      pairs: [
+        { id: 'yellow', a: [0, 0], b: [3, 1] },
+        { id: 'blue', a: [1, 0], b: [1, 2] },
+        { id: 'green', a: [4, 1], b: [3, 2] },
+        { id: 'red', a: [0, 2], b: [1, 3] },
+      ],
+    },
     caption:
       'The orchard house, where she went home at weekends. Rosa drew it from the gate, porch lantern lit.\n'
       + 'The archive wrote "second claim" across it and never sent anyone to the address.',
@@ -166,7 +199,17 @@ export const PAINTINGS = [
     markRect: { c: 1, r: 2, w: 4, h: 5 },
     hawthornRect: { c: 7, r: 0, w: 2, h: 2 },
     roseRect: { c: 10, r: 4, w: 2, h: 2 },
-    varnishRects: [{ c: 6, r: 0, w: 4, h: 3 }, { c: 0, r: 5, w: 3, h: 2 }],
+    board: {
+      cols: 7,
+      rows: 4,
+      pairs: [
+        { id: 'blue', a: [0, 0], b: [5, 2] },
+        { id: 'red', a: [5, 0], b: [5, 3] },
+        { id: 'yellow', a: [0, 1], b: [3, 2] },
+        { id: 'green', a: [1, 2], b: [4, 2] },
+        { id: 'violet', a: [0, 2], b: [1, 3] },
+      ],
+    },
     caption:
       'Rosa Velez, age nine: "my sister coming home". Apples on every tree, because she wanted more of them.\n'
       + 'She signed it the way she signed everything. So did her sister.',

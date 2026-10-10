@@ -493,7 +493,15 @@ function chassis(spec, S, seed) {
   const { frame } = spec;
   const k = frame.h / 19;
   const lw = 1.5 * Math.max(0.6, k);
-  const rect = { x: frame.x0 - 30 * k, y: frame.y - 10 * k, w: frame.x1 - frame.x0 + 60 * k, h: frame.h + 40 * k };
+  let rect = { x: frame.x0 - 30 * k, y: frame.y - 10 * k, w: frame.x1 - frame.x0 + 60 * k, h: frame.h + 40 * k };
+  if (spec.footboard) {
+    // room for the footplate and its rail beside and above the frame
+    const fb = spec.footboard;
+    const top = Math.min(rect.y, (fb.rail?.top ?? fb.y) - 6);
+    const left = Math.min(rect.x, fb.x - 6);
+    const right = Math.max(rect.x + rect.w, fb.x + fb.w + 6);
+    rect = { x: left, y: top, w: right - left, h: rect.y + rect.h - top };
+  }
   const part = sheet(rect, 6, S);
   const { p } = part;
   // the frame: a kraft-wrapped beam with its footplate (pencil and a little
@@ -520,6 +528,28 @@ function chassis(spec, S, seed) {
     wash(p, buffer, INK.soft, { alpha: 0.45, seed: seed + 18 + i });
     pencil(p, buffer, { closed: true, w: lw * 0.9, seed: seed + 14 + i });
   });
+  // The front footplate (the line's engine only, round 11): a plank over the
+  // buffer beam where a person can ride, a lamp iron, and a grab rail from
+  // the smokebox to a stanchion at the front edge, at a rider's hand height.
+  if (spec.footboard) {
+    const fb = spec.footboard;
+    const plank = handRect(fb.x, fb.y, fb.w, fb.h, { seed: seed + 50, amp: 0.4 });
+    wash(p, plank, HUE.bark, { alpha: 0.55, seed: seed + 51, bloom: 0.2, granulate: 0.4 });
+    pencil(p, plank, { closed: true, smooth: false, w: lw, seed: seed + 52 });
+    hatch(p, plank, { spacing: 2.6, alpha: 0.3, angle: -0.4, seed: seed + 53 });
+    // two brackets down to the beam
+    [fb.x + 4, fb.x + fb.w - 5].forEach((bx, i) => rule(p, bx, fb.y + fb.h, bx - 3, frame.y + frame.h, { w: lw * 0.7, alpha: 0.7, seed: seed + 54 + i, overshoot: 0 }));
+    if (fb.rail) {
+      // the stanchion stands at the plank's front edge (the nose's side)
+      const { x0, x1, y, top } = fb.rail;
+      const post = (spec.nose ?? 1) < 0 ? x0 : x1;
+      rule(p, post, fb.y, post, top, { w: lw * 0.9, seed: seed + 56, overshoot: 1 });
+      rule(p, x0, y, x1, y, { w: lw * 0.85, seed: seed + 57, overshoot: 0 });
+      p.save(); p.fillStyle = INK.graphite; p.globalAlpha = 0.7;
+      [x0, x1].forEach((x) => { p.beginPath(); p.arc(x, y, 1.4, 0, TAU); p.fill(); });
+      p.beginPath(); p.arc(post, top, 1.6, 0, TAU); p.fill(); p.restore();
+    }
+  }
   // rails under it, and the sleepers' ends
   const ry = frame.y + frame.h + (spec.railDrop ?? 22 * k);
   rule(p, rect.x, ry, rect.x + rect.w, ry, { w: lw * 1.2, seed: seed + 30 });
@@ -557,7 +587,8 @@ export function rodPoints(spec) {
   return spec.wheels.map(({ x, y }) => ({ x, y }));
 }
 
-// spec: { S, nose: -1 | 1, boiler, cab, stack, carriage, roof, wheels: [{x,y,r}], frame: {x0, x1, y, h}, windows, stackWhistle }
+// spec: { S, nose: -1 | 1, boiler, cab, stack, carriage, roof, wheels: [{x,y,r}], frame: {x0, x1, y, h}, windows, stackWhistle,
+//         footboard?: { x, y, w, h, rail?: { x0, x1, y, top } } }
 // Each part: { pencil, wash, edge, x, y }; also chassis { pencil, x, y },
 // paper { canvas, x, y }, wheel { pencil, wash, edge, size }.
 export function paintTrain(spec, seed = 0x7a1) {

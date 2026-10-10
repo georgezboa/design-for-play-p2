@@ -5,8 +5,8 @@ import {
   CELL_SIZE,
   createPaintedCar,
   idx,
-  rectPlateCells,
 } from '../../src/chapters/paintedCountry/paintedCarModel.js';
+import { solveThreadBoard } from '../../src/chapters/paintedCountry/threadBoard.js';
 import {
   BLOCK_RECTS,
   CELL,
@@ -20,21 +20,27 @@ import {
   READ_RADIUS,
   SIGN,
   SIGN_LABELS,
-  VARNISH_COATS,
+  THREAD_COLOURS,
   WRONG_ANSWER_LINES,
 } from '../../src/chapters/paintedCountry/carLayout.js';
 import { MARK_SIGNS } from '../../src/chapters/paintedCountry/art/marksArt.js';
 
-// Chapter 4 · Part I, "Under the gouache" (release 1.0 rework): the Colour
-// Link cards are gone, the plates are washed clear instead, the sign set is
-// the STORY_BIBLE one, and the door never names its own answer.
+// Chapter 4 · Part I, "Under the gouache" (release 1.0 rework): the sign set
+// is the STORY_BIBLE one, and the door never names its own answer. Round 11:
+// the plates are short colour puzzles again (threadBoard.js), and nothing in
+// the car has to be washed twice.
 
 const PLAYER_HALF_HEIGHT = 29;
 const centreOfCellTop = (cx, cy) => ({ x: cx * CELL + CELL / 2, y: cy * CELL - PLAYER_HALF_HEIGHT });
-const washWholePlate = (car, id) => {
-  for (let pass = 0; pass < VARNISH_COATS; pass += 1) {
-    for (let r = 0; r < PLATE_GRID.rows; r += 1) for (let c = 0; c < PLATE_GRID.cols; c += 1) car.washPlate(id, c, r);
-  }
+// Solve a plate the way a player does: drag each colour from dab to dab.
+const solvePlate = (car, id) => {
+  const plate = PAINTINGS.find((p) => p.id === id);
+  const [solution] = solveThreadBoard(plate.board, { limit: 1 });
+  Object.values(solution).forEach((path) => {
+    car.threadBegin(id, ...path[0]);
+    path.slice(1).forEach(([c, r]) => car.threadExtend(id, c, r));
+    car.threadRelease(id);
+  });
 };
 
 test('the sign set is the story bible one: HAWTHORN, TICKET, LANTERN, APPLE and the ROSE decoy', () => {
@@ -104,16 +110,19 @@ test('wash takes back paint and eats the archive grey, but never the carriage or
   assert.equal(car.wash(pc, pr), false);
 });
 
-test('escalation 2: varnished official record refuses paint until washed twice', () => {
+test('round 11: nothing in the car is done twice: the old official-record air takes paint first time', () => {
   const car = createPaintedCar();
-  assert.equal(car.isVarnished(70, 20), true);
-  assert.equal(car.paint(70, 20), false);
-  assert.equal(car.paintRefusal(70, 20), 'varnished');
-  assert.equal(car.wash(70, 20), true);
-  assert.equal(car.paint(70, 20), false, 'one wash is not enough');
-  assert.equal(car.wash(70, 20), true);
-  assert.equal(car.isVarnished(70, 20), false);
+  for (let cx = 63; cx < 80; cx += 1) {
+    for (let cy = 11; cy < FLOOR_ROW; cy += 1) assert.equal(car.paintRefusal(cx, cy), null, `${cx},${cy}`);
+  }
   assert.equal(car.paint(70, 20), true);
+  assert.equal('varnish' in car.state, false);
+  assert.equal('varnishLeft' in car.snapshot(), false);
+  // every washable cell comes off in one wash
+  assert.equal(car.wash(70, 20), true);
+  assert.equal(car.isPainted(70, 20), false);
+  assert.equal(car.wash(41, 19), true);
+  assert.equal(car.isBlock(41, 19), false);
 });
 
 test('escalation 3: in bay C paint costs pigment, and washing the grey gives her colour back', () => {
@@ -159,7 +168,7 @@ test('not one plate can be reached from the floor', () => {
 });
 
 // Dead-end check: grow every cell the player could ever stand on or paint,
-// allowing varnish to be washed and treating bay C paint as affordable only
+// treating bay C paint as affordable only
 // within the pigment the long wall can give back. Every plate must have a
 // perch, and the pigment needed must be far inside what washing recovers.
 test('no dead ends: every plate has a legal perch and bay C never runs out of colour', () => {
@@ -203,30 +212,63 @@ test('no dead ends: every plate has a legal perch and bay C never runs out of co
   assert.ok(recoverable >= needed * 3, `bay C must never run dry: ${recoverable} vs ${needed}`);
 });
 
-test('a plate develops once its large mark and her hawthorn are both washed clear', () => {
-  const car = createPaintedCar();
-  const plate = PAINTINGS[0];
-  rectPlateCells(plate.markRect).forEach((cell) => car.washPlate(plate.id, cell % PLATE_GRID.cols, Math.floor(cell / PLATE_GRID.cols)));
-  assert.equal(car.plateState(plate.id).markFound, true);
-  assert.equal(car.plateState(plate.id).developed, false, 'the large mark alone is not the plate');
-  rectPlateCells(plate.hawthornRect).forEach((cell) => car.washPlate(plate.id, cell % PLATE_GRID.cols, Math.floor(cell / PLATE_GRID.cols)));
-  assert.equal(car.plateState(plate.id).developed, true);
-  assert.deepEqual(car.snapshot().picturesRead, [plate.id]);
+test('each plate is a colour puzzle with exactly one answer, and they ramp gently', () => {
+  const sizes = PAINTINGS.map((p) => p.board.cols * p.board.rows);
+  const colours = PAINTINGS.map((p) => p.board.pairs.length);
+  assert.deepEqual(colours, [3, 4, 5], 'one more colour per bay');
+  assert.ok(sizes[0] < sizes[1] && sizes[1] < sizes[2], `boards grow: ${sizes}`);
+  assert.ok(sizes[2] <= 30, 'the last is still a short puzzle');
+  PAINTINGS.forEach((plate) => {
+    const { cols, rows, pairs } = plate.board;
+    const dabs = pairs.flatMap((pair) => [pair.a, pair.b]).map(([c, r]) => `${c},${r}`);
+    assert.equal(new Set(dabs).size, dabs.length, `${plate.id}: no two dabs share a square`);
+    pairs.forEach((pair) => {
+      assert.ok(THREAD_COLOURS[pair.id], `${plate.id}: ${pair.id} is one of Rosa's colours`);
+      [pair.a, pair.b].forEach(([c, r]) => assert.ok(c >= 0 && r >= 0 && c < cols && r < rows));
+      assert.ok(Math.abs(pair.a[0] - pair.b[0]) + Math.abs(pair.a[1] - pair.b[1]) > 1, `${plate.id}: ${pair.id} is not already touching`);
+    });
+    assert.equal(new Set(pairs.map((p) => p.id)).size, pairs.length);
+    const solutions = solveThreadBoard(plate.board, { limit: 2 });
+    assert.equal(solutions.length, 1, `${plate.id} has exactly one answer`);
+  });
+  // the puzzle's squares line up with the picture the plate is drawn on
+  PAINTINGS.forEach((plate) => assert.ok(plate.board.cols < PLATE_GRID.cols && plate.board.rows < PLATE_GRID.rows));
 });
 
-test('varnished plate cells take two washes, and her hawthorn on the last plate is under varnish', () => {
+test('every colour has its own glyph, so no colour is told by hue alone', () => {
+  const glyphs = Object.values(THREAD_COLOURS).map((c) => c.glyph);
+  assert.equal(new Set(glyphs).size, glyphs.length);
+});
+
+test('a plate comes clear the moment every colour is joined and every square covered', () => {
   const car = createPaintedCar();
-  const plate = PAINTINGS[2];
-  const { c, r } = plate.hawthornRect;
-  assert.equal(car.washPlate(plate.id, c, r), 'thinned');
-  assert.equal(car.plateState(plate.id).grey.has(r * PLATE_GRID.cols + c), true);
-  assert.equal(car.washPlate(plate.id, c, r), 'washed');
+  const plate = PAINTINGS[0];
+  const [solution] = solveThreadBoard(plate.board, { limit: 1 });
+  const ids = Object.keys(solution);
+  // all but the last colour: not yet
+  ids.slice(0, -1).forEach((id) => {
+    const path = solution[id];
+    car.threadBegin(plate.id, ...path[0]);
+    path.slice(1).forEach(([c, r]) => car.threadExtend(plate.id, c, r));
+    car.threadRelease(plate.id);
+  });
+  assert.equal(car.plateState(plate.id).developed, false);
+  car.drainEvents();
+  const last = solution[ids[ids.length - 1]];
+  car.threadBegin(plate.id, ...last[0]);
+  last.slice(1).forEach(([c, r]) => car.threadExtend(plate.id, c, r));
+  assert.equal(car.plateState(plate.id).developed, true);
+  const types = car.drainEvents().map((e) => e.type);
+  assert.ok(types.includes('thread-joined') && types.includes('board-solved') && types.includes('plate-developed'), types.join(','));
+  assert.deepEqual(car.snapshot().picturesRead, [plate.id]);
+  // a developed plate is done: nothing more to draw on it
+  assert.equal(car.threadBegin(plate.id, ...plate.board.pairs[0].a), null);
 });
 
 test('the door waits for all three plates, never kills, and names the rose after two misses', () => {
   const car = createPaintedCar();
   assert.equal(car.chooseSign(SIGN.HAWTHORN).reason, 'not-all-pictures-read');
-  PAINTINGS.forEach((p) => washWholePlate(car, p.id));
+  PAINTINGS.forEach((p) => solvePlate(car, p.id));
   assert.equal(car.platesDeveloped(), true);
   car.drainEvents();
   let answer = car.chooseSign(SIGN.TICKET);

@@ -87,6 +87,9 @@ const YARD_TRAIN_SPEC = Object.freeze({
   roof: partRect('violet'),
   wheels: TRAIN_PARTS.find((part) => part.id === 'green').circles,
   frame: { x0: 2255, x1: 2941, y: 447, h: 19 },
+  // the front footplate he will ride on the line (round 11), ahead of the
+  // smokebox, with its grab rail
+  footboard: { x: 2196, y: 444, w: 64, h: 9, rail: { x0: 2200, x1: 2252, y: 404, top: 388 } },
 });
 // Draw order, back to front; the wheels go over the bodies.
 const TRAIN_DRAW_ORDER = ['red', 'yellow', 'orange', 'blue', 'violet'];
@@ -445,10 +448,8 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
     this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.input.keyboard.on('keydown-F', () => {
-      if (this.scale.isFullscreen) this.scale.stopFullscreen();
-      else this.scale.startFullscreen();
-    });
+    // (F is the keyboard brush since round 6; it no longer also toggles
+    // fullscreen here, which threw a keyboard player out of the room.)
     this.brush = new BrushInput(this, { anchor: null });
     // The pointer is a brush in every Chapter 4 room (round 6, item 11).
     this.input.setDefaultCursor(nibCursorCss('paint'));
