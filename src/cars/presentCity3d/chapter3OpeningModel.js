@@ -29,6 +29,10 @@ export const TICKET_IDS = Object.freeze(['ticket-velez', 'ticket-venn']);
 // when they file the stack. A ticket pinned stands for its 1978 record, so
 // it can be pinned only once the lens has checked it.
 export const TICKET_PROOF_IDS = Object.freeze([...TICKET_IDS, 'terminal-note', 'claim-card', 'market-sale']);
+// Round 11: papers that prove nothing about who held the tickets. The oil
+// receipt names a seat, not a person, so its pin is refused on the spot
+// (it used to stay pinned until FILE AS ONE refused the whole proof).
+export const TICKET_NOT_PROOF_IDS = Object.freeze(['market-sale']);
 
 // What the pinned papers prove (pure; the board and the model share it).
 // One passenger needs both tickets' 1978 records side by side (the same
@@ -478,7 +482,8 @@ export function createChapter3OpeningModel(options = {}) {
     },
 
     // Toggles a pin. A ticket stands for its 1978 record: unchecked, it
-    // cannot be pinned. Returns { pinned, changed, reason }.
+    // cannot be pinned; a paper that is no proof (TICKET_NOT_PROOF_IDS) is
+    // refused. Returns { pinned, changed, reason }.
     pinTicketProof(id) {
       const board = state.ticketBoard;
       if (board.conclusion !== 'one' || board.punched || !TICKET_PROOF_IDS.includes(id)) {
@@ -491,6 +496,10 @@ export function createChapter3OpeningModel(options = {}) {
       }
       if (TICKET_IDS.includes(id) && !board.lensSeen.includes(id)) {
         return { pinned: false, changed: false, reason: 'unchecked' };
+      }
+      if (TICKET_NOT_PROOF_IDS.includes(id)) {
+        state.lastEvent = `proof-refused-${id}`;
+        return { pinned: false, changed: false, reason: 'not-proof' };
       }
       board.proofs.push(id);
       state.lastEvent = `proof-pinned-${id}`;

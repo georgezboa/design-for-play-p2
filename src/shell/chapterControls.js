@@ -73,7 +73,8 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
     // Round 6 (items 8, 18): the operations only, never the solution
     // order; E / Enter acts (Ch3 has no jump, so Space is not shown).
-    ['TICKET BOARD', 'DRAG PAPERS AND THE 1978 LENS · CLICK A STACK TO PUNCH · H HINT'],
+    // Round 11: pinning (the proof step) is named too.
+    ['TICKET BOARD', 'DRAG PAPERS AND THE 1978 LENS · CLICK A STACK TO PUNCH · CLICK A PAPER TO PIN · H HINT'],
     ['BOARD BY KEYS', 'TAB + ARROWS · L LENS · E / ENTER ACT'],
     ['RESET CAMERA', 'R'],
     ['PAUSE', 'ESC'],
@@ -329,7 +330,8 @@ export const CONTROL_SETS = Object.freeze({
       board: stage('THE TICKET BOARD', [
         ['MOVE A CARD', 'DRAG IT · TAB, ARROWS'],
         ['THE 1978 LENS', 'DRAG IT OVER A CARD · L'],
-        ['PUNCH', 'CLICK · E / ENTER'],
+        ['PUNCH · PIN A PAPER', 'CLICK IT · E / ENTER'],
+        ['HINT', 'H'],
         ['STEP AWAY', 'ESC'],
       ]),
       lens: stage('THE 1978 LENS', [

@@ -28,7 +28,8 @@ installPauseMenu({
     const runtime = gameplayRuntime;
     const board = runtime?.ticketBoard;
     if (board?.active) {
-      board.close();
+      // Esc puts the board's filing off first (NOT YET · ESC), then steps away.
+      board.escape();
       return true;
     }
     const viewer = runtime?.evidenceViewer;

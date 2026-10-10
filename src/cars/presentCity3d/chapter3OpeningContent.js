@@ -231,66 +231,92 @@ export const NIKA_CONCLUSION = Object.freeze([
 
 // ---------------------------------------------------------------- ticket board
 // Archive cards, 2–3 lines each. `past` is what the 1978 punch-hole lens
-// shows on the same card.
+// shows on the same card; `pin` names the paper on the proof strip once it
+// is pinned (round 11; a ticket stands for its 1978 record).
 export const TICKET_BOARD_CARDS = Object.freeze([
   Object.freeze({
     id: 'ticket-velez',
+    pin: 'VELEZ · 1978',
     ticket: true,
     stamp: 'NIGHT SERVICE · SEAT 43',
     title: 'VELEZ, M.',
     lines: Object.freeze(['Issued Echo City terminal.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['City case.']) }),
-    at: Object.freeze([0.16, 0.31]),
+    at: Object.freeze([0.16, 0.29]),
   }),
   Object.freeze({
     id: 'ticket-venn',
+    pin: 'VENN · 1978',
     ticket: true,
     stamp: 'NIGHT SERVICE · SEAT 43 · DUPLICATE',
     title: 'M. VENN',
     lines: Object.freeze(['Reserved 15:38, cash.', '07:10 · one passenger.']),
     past: Object.freeze({ stamp: '1978 · CLAIM', title: '1978-0412', lines: Object.freeze(['Orchard case.']) }),
-    at: Object.freeze([0.82, 0.33]),
+    at: Object.freeze([0.82, 0.31]),
   }),
   Object.freeze({
     id: 'terminal-note',
+    pin: 'DUPLICATES',
     stamp: 'TERMINAL NOTE · NIKA',
     title: 'Duplicates',
     // Round 6 (item 8): the rule with a neutral example; the player applies
     // it to VELEZ (the card used to print the answer, VE · NN).
     lines: Object.freeze(['Long surnames are cut:', 'two letters, then NN.', '<b>ARDIN → AR · NN</b>']),
-    at: Object.freeze([0.49, 0.66]),
+    // Round 11: both rows sit a little higher (0.31/0.33 -> 0.29/0.31,
+    // 0.65/0.66 -> 0.62), clear of the proof strip under them at TEXT SIZE
+    // 130% too.
+    at: Object.freeze([0.49, 0.62]),
   }),
   Object.freeze({
     id: 'market-sale',
+    pin: 'LAMP OIL',
     stamp: 'MARKET WARD · EDA\'S STALL · 14:12',
     title: 'Lamp oil ×2',
     lines: Object.freeze(['Paid in cash, stamped SEAT 43.', 'Carried by the porter, Olek.']),
-    at: Object.freeze([0.17, 0.65]),
+    at: Object.freeze([0.17, 0.62]),
   }),
   Object.freeze({
     id: 'claim-card',
+    pin: 'CLAIM CARD',
     stamp: 'NIGHT SERVICE · LOST PROPERTY',
     title: 'Claim 1978-0412',
     lines: Object.freeze(['VELEZ, MARA. Two claims.', 'City case collected. Orchard case on board.']),
-    at: Object.freeze([0.81, 0.65]),
+    at: Object.freeze([0.81, 0.62]),
   }),
 ]);
 
-// Round 6 (item 8): the board's words. By default it states the question
-// only; what to do lives in the tiered hints (TICKET_BOARD_HINTS), shown
-// after a while without progress or on H. Operations are taught where the
-// player first touches them (TICKET_BOARD_TEXT.affordances).
+// Round 6 (item 8): the board's words. Operations are taught where the
+// player first touches them (TICKET_BOARD_TEXT.affordances); the reasoning
+// lives in the tiered hints (TICKET_BOARD_HINTS), shown after a while
+// without progress, after a refused move, or on H.
+// Round 11 (George: "I'm stuck here, I don't know what to do next"): the
+// board's top line is a task line that always names the next concrete
+// action (Chapter3TicketBoard.ticketBoardTask). It names operations and what
+// a paper must show, never the answer (which paper, the claim number, VE·NN).
+const TICKET_BOARD_QUESTION = 'How are the two tickets related?';
 export const TICKET_BOARD_TEXT = Object.freeze({
-  question: 'Two tickets for one seat. How are they related?',
+  question: TICKET_BOARD_QUESTION,
+  tasks: Object.freeze({
+    lens: `${TICKET_BOARD_QUESTION} Read both under the 1978 lens.`,
+    lensOne: 'One ticket read. Now the other, under the 1978 lens.',
+    stack: 'Compare the two 1978 records, then lay one ticket on the other.',
+    punch: 'Punch the stack to file it.',
+    conclude: 'One punch files them. Decide what the stack is.',
+    proveUnchecked: 'First read both tickets under the 1978 lens.',
+    proveRecords: 'Pin the papers that show both tickets are one claim.',
+    proveRecordOne: 'Pin the other ticket\'s 1978 record too.',
+    proveRule: 'Pin the paper that explains the name VENN.',
+    proveFile: 'The proof holds. FILE AS ONE.',
+    filed: 'Filed as one person.',
+  }),
   affordances: Object.freeze({
     lens: '<kbd>DRAG</kbd> · 1978 LENS',
     card: '<kbd>DRAG</kbd> · MOVE THE PAPER',
     punch: '<kbd>CLICK</kbd> · PUNCH THE STACK',
-    pin: '<kbd>CLICK</kbd> · PIN AS PROOF',
     mark: '<kbd>CLICK</kbd> · KEEP BESIDE THE OTHER',
   }),
   // What the board reports as it happens (feedback, never the next step).
-  seen: (title) => `1978 · checked: ${title}.`,
+  seen: (title) => `1978 · checked: ${title.replace(/\.$/, '')}.`,
   stacked: 'The two tickets lie one on the other.',
   unstacked: 'The tickets lie apart again.',
   checkedMark: '1978 · CHECKED',
@@ -302,14 +328,38 @@ export const TICKET_BOARD_TEXT = Object.freeze({
     Object.freeze({ id: 'two', label: 'TWO PASSENGERS ON ONE SEAT' }),
   ]),
   notYet: 'NOT YET',
-  proveIt: 'Pin the papers that prove it, then file.',
   file: 'FILE AS ONE',
+  // Round 11: the proof strip by FILE AS ONE. Lev's two questions are its
+  // slots; a pinned paper fills one, FILE stays locked until all are filled.
+  proof: Object.freeze({
+    claimGroup: 'WHY ONE CLAIM?',
+    nameGroup: 'WHY VENN?',
+    count: (pinned, total) => `PINNED ${pinned} / ${total}`,
+    help: '<kbd>CLICK</kbd> A PAPER TO PIN IT · AGAIN TO TAKE IT OFF · <kbd>TAB</kbd> TO A PAPER, <kbd>E</kbd>',
+    fileLocked: (pinned, total) => `File as one: ${pinned} of ${total} pinned, the proof is not complete.`,
+  }),
+  // The pin on every paper while proving (rest / under the pointer or focus).
+  pinBadge: Object.freeze({ rest: 'PIN', pinned: 'PINNED', act: 'CLICK / E · PIN', actPinned: 'CLICK / E · UNPIN' }),
+  // What a paper is called once pinned (the tickets stand for their records).
+  pinRecord: (title) => `${title} · 1978`,
+  pinned: (title) => `Pinned: ${title}.`,
+  unpinned: (title) => `Taken off: ${title}.`,
+  // A refused paper bounces with a short stamp saying why.
+  refusedStamp: Object.freeze({ 'not-proof': 'A SEAT, NOT A NAME', unchecked: 'NOT READ IN 1978 YET' }),
+  // ... and Lev says what kind of paper is still needed.
+  need: Object.freeze({
+    records: 'Find what makes the two tickets one claim.',
+    record: 'Pin the other ticket\'s record beside it.',
+    rule: 'Find what explains the name VENN.',
+    unchecked: 'Read both tickets under the lens first.',
+    file: 'What you have pinned already holds.',
+  }),
   // Lev answers a conclusion or a proof that does not hold.
   refuse: Object.freeze({
     unchecked: 'LEV · Two passengers on one seat? Look at where these tickets came from before you file that.',
     'same-claim': 'LEV · Two passengers under one claim from 1978? Put their records side by side again.',
     'no-records': 'LEV · The names differ. What makes these two tickets the same claim?',
-    'one-record': 'LEV · One ticket\'s 1978 record says nothing about the other. Set the two side by side.',
+    'one-record': 'LEV · One ticket\'s 1978 record says nothing about the other. Pin both records.',
     'no-rule': 'LEV · One claim, then. So why would the terminal print the second as VENN?',
     'not-proof': 'LEV · The oil was charged to the seat, not to a name. It says where she went, not who she is.',
     unchecked_pin: 'LEV · Its face says seat 43. You have not read what it was in 1978.',
@@ -342,15 +392,28 @@ export const TICKET_BOARD_HINTS = Object.freeze({
     'LEV · One claim, two cases: the city case and the orchard case. Count the passengers.',
     'HINT · File the stack as ONE PASSENGER, PRINTED TWICE.',
   ]),
-  prove: Object.freeze([
-    'LEV · Two questions. Why are they one claim, and why does one say VENN?',
-    'LEV · The 1978 records answer the first. Nika\'s note on duplicates answers the second.',
-    'HINT · Pin both tickets (their 1978 records) and the terminal note, then FILE AS ONE.',
+  // Round 11: proving is three stuck points (records, the name, filing),
+  // so each hint answers the question the player is on, and tier 3 names
+  // the paper to pin.
+  proveRecords: Object.freeze([
+    'LEV · Two questions. Why are they one claim, and why does one say VENN? The first one first.',
+    'LEV · What did the lens find under both tickets? Both records are on file at the top of the table.',
+    'HINT · Pin both 1978 records at the top of the table (VELEZ, M. and M. VENN): click each, or Tab to it and press E.',
+  ]),
+  proveRule: Object.freeze([
+    'LEV · One claim, two names. So why would the terminal print the second ticket as VENN?',
+    'LEV · Nika told us how terminals print duplicates. Her note is on this table.',
+    'HINT · Pin Nika\'s terminal note, Duplicates: VELEZ cut to two letters is VE, then NN.',
+  ]),
+  proveFile: Object.freeze([
+    'LEV · That holds. File it.',
+    'LEV · Every question has its paper. The punch is waiting.',
+    'HINT · Click FILE AS ONE, or Tab to it and press E.',
   ]),
   proveUnchecked: Object.freeze([
     'LEV · You are proving a claim you have not read yet.',
     'LEV · The lens still works while you choose. Check what is under both tickets.',
-    'HINT · Drag the lens over both tickets, pin them and the terminal note, then FILE AS ONE.',
+    'HINT · Drag the lens over the ticket you have not read, then pin both 1978 records and the terminal note.',
   ]),
 });
 

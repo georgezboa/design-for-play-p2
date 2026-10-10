@@ -51,12 +51,14 @@ const css = read('src/cars/presentCity3d/chapter3Release.css');
 const boardState = (model) => model.snapshot().ticketBoard;
 
 describe('Chapter 3 round 6 · Ticket 43 is the player\'s deduction (item 8)', () => {
-  it('asks only how the two tickets are related, on the task card and the board', () => {
+  // Round 11 (George: stuck at the proof, "I don't know what to do next")
+  // supersedes the board half of this: the board's line is now a task line
+  // naming the next operation (tests/car03/chapter3Round11Board.test.mjs).
+  // It still never names the answer; the task card keeps the question.
+  it('asks how the two tickets are related on the task card; the board never names the answer', () => {
     assert.equal(CHAPTER3_OBJECTIVES.fileTickets, 'FIND OUT HOW THE TWO TICKETS ARE RELATED');
-    assert.match(TICKET_BOARD_TEXT.question, /How are they related\?/);
+    assert.match(TICKET_BOARD_TEXT.question, /How are the two tickets related\?/);
     const model = createChapter3OpeningModel({ startAt: 'ticket-board' });
-    // Whatever the player has done, the default line is the question: it
-    // never names a step (lens, stack, punch, one person).
     const seen = new Set();
     const look = () => seen.add(ticketBoardGuidance(boardState(model)).text);
     look();
@@ -64,8 +66,8 @@ describe('Chapter 3 round 6 · Ticket 43 is the player\'s deduction (item 8)', (
     model.seeTicketThroughLens('ticket-venn'); look();
     model.stackTickets(true); look();
     model.beginTicketFiling(); look();
-    assert.deepEqual([...seen], [TICKET_BOARD_TEXT.question]);
-    for (const text of seen) assert.doesNotMatch(text, /lens|stack|punch|lay one|one person|1978-0412/i);
+    assert.ok([...seen][0].startsWith(TICKET_BOARD_TEXT.question), 'the board opens on the question');
+    for (const text of seen) assert.doesNotMatch(text, /one person|one passenger|1978-0412|VE\s*·\s*NN/i);
   });
 
   it('lets the player stack and punch in any order; the board then asks what the stack is', () => {
@@ -114,11 +116,14 @@ describe('Chapter 3 round 6 · Ticket 43 is the player\'s deduction (item 8)', (
     assert.equal(verdict().problem, 'no-rule', 'one claim is not yet why it says VENN');
     model.pinTicketProof('terminal-note');
     assert.equal(verdict().valid, true);
-    // The oil receipt names a seat, not a person: pinned, it is refused.
-    model.pinTicketProof('market-sale');
-    assert.equal(verdict().problem, 'not-proof');
-    assert.equal(model.punchTickets(), false);
-    assert.equal(model.pinTicketProof('market-sale').changed, true, 'a pin comes back out');
+    // The oil receipt names a seat, not a person: its pin is refused on the
+    // spot (round 11; it used to stay pinned until FILE refused the proof).
+    assert.deepEqual(model.pinTicketProof('market-sale'), { pinned: false, changed: false, reason: 'not-proof' });
+    assert.equal(verdict().valid, true);
+    // A pin comes back out.
+    assert.equal(model.pinTicketProof('terminal-note').changed, true);
+    assert.equal(verdict().problem, 'no-rule');
+    model.pinTicketProof('terminal-note');
     // The claim card agrees and may stay.
     model.pinTicketProof('claim-card');
     assert.equal(verdict().valid, true);
@@ -180,8 +185,14 @@ describe('Chapter 3 round 6 · tiered hints on the board (item 8)', () => {
     model.concludeTickets('two');
     assert.equal(step(), 'conclude');
     model.concludeTickets('one');
-    assert.equal(step(), 'prove');
-    for (const id of [...TICKET_IDS, 'terminal-note']) model.pinTicketProof(id);
+    // Round 11: proving is three stuck points.
+    assert.equal(step(), 'proveRecords');
+    model.pinTicketProof('ticket-velez');
+    assert.equal(step(), 'proveRecords', 'one record of two');
+    model.pinTicketProof('ticket-venn');
+    assert.equal(step(), 'proveRule');
+    model.pinTicketProof('terminal-note');
+    assert.equal(step(), 'proveFile');
     model.punchTickets();
     assert.equal(step(), null);
     // Proving before the lens has read both tickets.
@@ -215,12 +226,12 @@ describe('Chapter 3 round 6 · tiered hints on the board (item 8)', () => {
     assert.match(TICKET_BOARD_HINTS.lens[2], /Drag the 1978 lens/);
     assert.match(TICKET_BOARD_HINTS.stack[2], /PUNCH THE STACK/);
     assert.match(TICKET_BOARD_HINTS.conclude[2], /ONE PASSENGER, PRINTED TWICE/);
-    assert.match(TICKET_BOARD_HINTS.prove[2], /terminal note/);
+    assert.match(TICKET_BOARD_HINTS.proveRule[2], /terminal note/);
   });
 
   it('runs on the shared hint clock, escalates on H and restarts on progress', () => {
     assert.match(board, /tickHintClock\(this\.hint\.clock, dt, now\)/);
-    assert.match(board, /const due = ticketHintTierDue\(elapsed\);\n\s+if \(due > this\.hint\.tier\) this\.showHint\(due\);/);
+    assert.match(board, /const due = ticketHintTierDue\(elapsed, ticketHintDelays\(step\)\);\n\s+if \(due > this\.hint\.tier\) this\.showHint\(due\);/);
     assert.match(board, /if \(event\.code === 'KeyH'\) \{\n\s+stop\(\);\n\s+this\.requestHint\(\);/);
     assert.match(board, /this\.showHint\(Math\.min\(3, current \+ 1\)\)/);
     assert.match(board, /this\.hint\.clock = createHintClock\(\);/);
