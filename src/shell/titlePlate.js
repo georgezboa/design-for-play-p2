@@ -28,6 +28,9 @@
 // frame; LOW GRAPHICS paints less rain and no reflection.
 
 import { waitForFonts } from '../shared/fonts.js';
+import { devParam } from '../devMode.js';
+import { paintedLayout } from './titlePaintedLayout.js';
+import { TITLE_COMPLETE } from './titlePlates.generated.js';
 
 /** The largest backing store painted for the room (device pixels). */
 export const MAX_PIXELS = 2560 * 1440;
@@ -152,6 +155,16 @@ function narrowLayout(W, H) {
     butch,
     wordmark: mark,
   };
+}
+
+/**
+ * Which title the page shows (round 10): George's painted carriage
+ * (titlePainted.js) once all its plates are real paintings, else this
+ * round-6 procedural one. Dev builds can force either with ?titleart=.
+ */
+export function titleArtVersion({ complete = TITLE_COMPLETE, flag = devParam('titleart') ?? null } = {}) {
+  if (flag === 'painted' || flag === 'drawn') return flag;
+  return complete ? 'painted' : 'drawn';
 }
 
 /**
@@ -334,7 +347,10 @@ export function mountTitleScene(root) {
   const fx = make('fx');
   const holds = new Set();
   let art = null;
-  let L = sceneLayout(window.innerWidth, window.innerHeight);
+  let version = titleArtVersion();
+  const layoutFor = (w, h) => (version === 'painted' ? paintedLayout(w, h) : sceneLayout(w, h));
+  let L = layoutFor(window.innerWidth, window.innerHeight);
+  root.dataset.art = version;
   let cfg = currentConfig();
   let painted = null;
   let frame = 0;
@@ -391,7 +407,7 @@ export function mountTitleScene(root) {
   }
 
   const relayout = () => {
-    L = sceneLayout(window.innerWidth, window.innerHeight);
+    L = layoutFor(window.innerWidth, window.innerHeight);
     setVars(root, L);
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(paint, 160);
@@ -450,11 +466,24 @@ export function mountTitleScene(root) {
   if (document.hidden) holds.add('hidden');
 
   // The painter is its own chunk: the title's markup and menu are up first.
-  import('./titlePlateArt.js').then((module) => {
+  // The painted one loads its plates first; if they fail, the procedural
+  // carriage stands in.
+  const drawnArt = () => import('./titlePlateArt.js');
+  const paintedArt = () => import('./titlePainted.js').then((module) => module.loadPlates().then(() => module));
+  const start = (loader) => loader().then((module) => {
     art = module;
     // the claim tag is lettered in Jost (src/shared/fonts.js): wait for the
     // house faces briefly, so the canvas never keeps a fallback face
     return waitForFonts({ timeoutMs: 900 }).then(() => requestAnimationFrame(paint));
+  });
+  start(version === 'painted' ? paintedArt : drawnArt).catch((error) => {
+    if (version !== 'painted') throw error;
+    console.warn('[title] painted carriage unavailable, drawing it', error);
+    version = 'drawn';
+    root.dataset.art = version;
+    L = layoutFor(window.innerWidth, window.innerHeight);
+    setVars(root, L);
+    return start(drawnArt);
   }).catch((error) => {
     root.dataset.scene = 'failed';
     console.warn('[title] scene unavailable', error);

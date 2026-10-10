@@ -64,6 +64,8 @@ export function routerEntries(routes = DEV_ROUTES) {
 // Shell pages the dev launcher lists above the chapter nodes.
 export const DEV_SHELL_ROUTES = Object.freeze([
   { id: 'T', group: 'SHELL', title: 'TITLE SCREEN', detail: 'The production title menu (type 1111 for the node router).', route: '/?title=1' },
+  { id: 'TP', group: 'SHELL', title: 'TITLE SCREEN · PAINTED', detail: 'The round-10 painted title (stand-ins until all of George\'s title paintings are in).', route: '/?title=1&titleart=painted' },
+  { id: 'TD', group: 'SHELL', title: 'TITLE SCREEN · DRAWN', detail: 'The round-6 procedural title, for comparison.', route: '/?title=1&titleart=drawn' },
   { id: 'C', group: 'SHELL', title: 'CREDITS', detail: 'Title screen with the credits roll open.', route: '/?credits=1' },
   { id: 'O', group: 'SHELL', title: 'OPENING STORYBOARD', detail: 'Dev-only preview of the Chapter 1 opening animation.', route: '/chapter01-opening.html' },
 ]);

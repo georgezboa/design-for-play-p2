@@ -1,0 +1,88 @@
+{
+ "complete": false,
+ "items": {
+  "TT-carriage": {
+   "out": "/assets/title/standin/carriage.webp",
+   "bytes": 81878,
+   "standIn": true,
+   "glass": [
+    49,
+    164,
+    866,
+    529
+   ],
+   "door": [
+    1432,
+    220,
+    78,
+    261
+   ]
+  },
+  "TT-carriage-lit": {
+   "out": "/assets/title/standin/carriage-lit.webp",
+   "bytes": 65580,
+   "standIn": true,
+   "align": {
+    "method": "none",
+    "edges": 0.9945,
+    "shift": 0.0,
+    "warped": false
+   }
+  },
+  "TT-sky": {
+   "out": "/assets/title/standin/sky.webp",
+   "bytes": 47332,
+   "standIn": true
+  },
+  "TT-hills": {
+   "out": "/assets/title/standin/hills.webp",
+   "bytes": 3636,
+   "standIn": true,
+   "top": 0.4365,
+   "sourceSize": [
+    1536,
+    1024
+   ]
+  },
+  "TT-orchard": {
+   "out": "/assets/title/standin/orchard.webp",
+   "bytes": 3746,
+   "standIn": true,
+   "top": 0.5557,
+   "sourceSize": [
+    1536,
+    1024
+   ]
+  },
+  "TT-trackside": {
+   "out": "/assets/title/standin/trackside.webp",
+   "bytes": 1170,
+   "standIn": true,
+   "top": 0.7441,
+   "sourceSize": [
+    1536,
+    1024
+   ]
+  },
+  "TT-pole": {
+   "out": "/assets/title/standin/pole.webp",
+   "bytes": 2064,
+   "standIn": true,
+   "arm": 0.0353
+  },
+  "TT-lamp": {
+   "out": "/assets/title/standin/lamp.webp",
+   "bytes": 850,
+   "standIn": true,
+   "flame": [
+    0.4941,
+    0.0254
+   ]
+  },
+  "TT-next-carriage": {
+   "out": "/assets/title/standin/next-carriage.webp",
+   "bytes": 81532,
+   "standIn": true
+  }
+ }
+}
