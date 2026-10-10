@@ -3,6 +3,9 @@ import { getChapterPreloadState, preloadChapter } from './chapterPreloader.js';
 import { preloadProgress } from './preloadQueue.js';
 import { SKIP_HOLD_MS, createHoldGesture, isSkipKey } from './holdToSkip.js';
 import { loadCutscene, registeredCutscene } from './cutscene/registry.js';
+import { nativeRequestAnimationFrame, setPageCovered } from './framePacing.js';
+import { arrivalRoute, arrivalStep } from './arrivalGate.js';
+import { music as musicDirector } from '../shared/musicDirector.js';
 
 export { CUTSCENE_IDS, registeredCutscene, resolveCutsceneId } from './cutscene/registry.js';
 
@@ -35,6 +38,18 @@ export function playCinematic({
   requirePreloadReady = false,
   preserveBlackout = false,
   label = 'NIGHTFALL CINEMATIC',
+  // Round 11: a cutscene played on the page it leads to (the 2→3 hand-off).
+  // `arrival.gate` is that page's readiness (arrivalGate.js): the overlay
+  // leaves only once the cutscene has ended (or been skipped) and the gate
+  // has settled, showing the gate's live progress over the last frame
+  // meanwhile, and handing over to the page's own loading screen if it
+  // stops making progress. `arrival.onReveal({ stalled })` runs as the
+  // overlay starts to fade off the live page.
+  arrival = null,
+  // Round 11: the cutscene's score under another cue id and mix (`music`),
+  // and left playing at the end (`keepMusic`) for the page to carry on.
+  music: musicOverride = null,
+  keepMusic = false,
 }) {
   if (activePlayback) return activePlayback.promise;
   // A chapter transition owns its next chapter's readiness. Once a route has
@@ -42,7 +57,7 @@ export function playCinematic({
   // complete; otherwise the player trades the cutscene's final frame for a second
   // loading screen. `requirePreloadReady` remains for explicit non-chapter
   // callers, but every chapter preload is now a hard completion gate.
-  const waitForPreload = Boolean(preloadChapterId) || requirePreloadReady;
+  const waitForPreload = Boolean(preloadChapterId) || requirePreloadReady || Boolean(arrival);
   // Every transition is a cutscene; an id that names none is skipped.
   const cutsceneName = registeredCutscene(id, src);
   const mode = 'cutscene';
@@ -61,11 +76,20 @@ export function playCinematic({
     </div>
   `;
   document.body.append(root);
+  // The overlay is opaque from the first frame: the page underneath stops
+  // drawing at once (framePacing.js), not only once the cutscene is up.
+  setPageCovered(true);
   let cutscene = null;
   let preloadPromise = null;
   let preloadSettled = false;
   const beginPreload = () => {
-    if (!preloadPromise && preloadChapterId) {
+    if (!preloadPromise && arrival?.gate) {
+      preloadPromise = arrival.gate.promise;
+      preloadPromise.then(() => {
+        preloadSettled = true;
+        cutscene?.markReady();
+      });
+    } else if (!preloadPromise && preloadChapterId) {
       preloadPromise = preloadChapter(preloadChapterId);
       preloadPromise.then(() => {
         preloadSettled = true;
@@ -74,6 +98,9 @@ export function playCinematic({
     }
     return preloadPromise;
   };
+  // Round 11: the arrival's gate settles before the cutscene has even
+  // started when the page is quick; start watching it at once.
+  if (arrival?.gate) beginPreload();
 
   // ---------- hold to skip ----------
   // Any input reveals a small prompt; holding Space / Enter / Escape or a
@@ -103,11 +130,14 @@ export function playCinematic({
     return true;
   };
   // Frames only animate the ring; a timer guarantees completion even when a
-  // heavy scene underneath starves requestAnimationFrame.
+  // heavy scene underneath starves requestAnimationFrame. Round 11: on the
+  // browser's own frame — the page's (paced) frames are held while the
+  // overlay covers it, so the ring never filled and the skip seemed to do
+  // nothing for a second, then jumped.
   const holdFrameStep = () => {
     holdFrame = 0;
     if (updateHold() || settled || !hold.holding) return;
-    holdFrame = requestAnimationFrame(holdFrameStep);
+    holdFrame = nativeRequestAnimationFrame(holdFrameStep);
   };
   const holdTimerStep = () => {
     holdTimer = 0;
@@ -118,8 +148,9 @@ export function playCinematic({
     if (settled) return;
     showPrompt();
     hold.press(source, performance.now());
-    if (!holdFrame) holdFrame = requestAnimationFrame(holdFrameStep);
-    if (!holdTimer) holdTimer = window.setTimeout(holdTimerStep, SKIP_HOLD_MS);
+    if (!holdFrame) holdFrame = nativeRequestAnimationFrame(holdFrameStep);
+    // (the hold counts responsive time in short steps: holdToSkip.js)
+    if (!holdTimer) holdTimer = window.setTimeout(holdTimerStep, Math.min(50, SKIP_HOLD_MS));
   };
   const releaseSkip = (source) => {
     hold.release(source);
@@ -141,10 +172,16 @@ export function playCinematic({
     if (settled || globalThis.NIGHTFALL_PAUSED) return;
     showPrompt();
     if (!isSkipKey(event)) return;
+    // The skip keys never reach the page below, nor the music director's own
+    // gesture listener: hand it the gesture, so a browser that refused
+    // autoplay (Safari, on a page opened by navigation) starts the score.
+    if (event.key !== 'Escape') musicDirector.userGesture?.();
     event.preventDefault();
     event.stopImmediatePropagation();
     if (event.repeat) return;
-    if (event.key === 'Escape' || event.code === 'Escape') escapeDownAt = performance.now();
+    // the tap is timed on the events' own clock: a busy page (the next
+    // chapter loading underneath) must not turn a tap into a hold
+    if (event.key === 'Escape' || event.code === 'Escape') escapeDownAt = event.timeStamp || performance.now();
     pressSkip(`key:${event.code || event.key}`);
   };
   const onKeyUp = (event) => {
@@ -154,7 +191,7 @@ export function playCinematic({
     releaseSkip(`key:${event.code || event.key}`);
     const escape = event.key === 'Escape' || event.code === 'Escape';
     if (escape && escapeDownAt !== null) {
-      const tap = performance.now() - escapeDownAt < ESCAPE_TAP_MS;
+      const tap = (event.timeStamp || performance.now()) - escapeDownAt < ESCAPE_TAP_MS;
       escapeDownAt = null;
       if (tap && !settled && !hold.completed && !globalThis.NIGHTFALL_PAUSED) openPauseMenu();
     }
@@ -196,7 +233,8 @@ export function playCinematic({
   // ---------- preparing the next chapter ----------
   const progressBar = root.querySelector('.nf-cinematic-progress span');
   const renderPreparing = (state = getChapterPreloadState(preloadChapterId)) => {
-    const percent = Math.round(preloadProgress(state) * 100);
+    const fraction = arrival?.gate ? arrival.gate.progress() : preloadProgress(state);
+    const percent = Math.round(fraction * 100);
     // the cutscene's last frame stays up, with one small line under it; if
     // the cutscene never came up, the line goes under the black overlay
     const line = root.querySelector('.nf-cinematic-arriving') ?? root.querySelector('.nf-cinematic-loading');
@@ -210,6 +248,67 @@ export function playCinematic({
   let settled = false;
   let resolvePlayback;
   const promise = new Promise((resolve) => { resolvePlayback = resolve; });
+  // While the last frame is held for the next chapter, a tap of Escape still
+  // opens the pause menu (the hold used to take every key and leave the
+  // player with nothing to do but wait).
+  const onHoldKeyDown = (event) => {
+    if (event.key !== 'Escape' || event.repeat || globalThis.NIGHTFALL_PAUSED) return;
+    if (openPauseMenu()) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  };
+  const teardown = async () => {
+    window.removeEventListener('keydown', onHoldKeyDown, true);
+    // After the ending the page stays black behind whatever comes next
+    // (the STATUS: OPEN card, then the credits page): the finished fight
+    // must not show through under the card.
+    if (preserveBlackout) {
+      const black = document.createElement('div');
+      black.className = 'nf-cinematic-afterblack';
+      black.setAttribute('aria-hidden', 'true');
+      document.body.append(black);
+    }
+    root.remove();
+    cutscene?.destroy();
+    setPageCovered(false);
+    activePlayback = null;
+    await onComplete?.();
+    resolvePlayback();
+  };
+  // Round 11 · the arrival: wait (holding the last frame with the page's
+  // live progress) until its gate settles, or until it has made no progress
+  // for its stall limit; then fade the overlay off the live page.
+  const waitForArrival = () => new Promise((resolve) => {
+    const gate = arrival.gate;
+    const check = () => {
+      const step = arrivalStep({ cutsceneDone: true, status: gate.status, idleMs: gate.idleFor(), stallMs: arrival.stallMs });
+      if (step === 'reveal' || step === 'reveal-loading') {
+        window.clearInterval(timer);
+        unsubscribe?.();
+        resolve(step);
+        return true;
+      }
+      renderPreparing();
+      return false;
+    };
+    const timer = window.setInterval(check, 250);
+    const unsubscribe = gate.subscribe?.(() => check());
+    check();
+  });
+  const revealArrival = async (step) => {
+    try {
+      arrival.onReveal?.({ stalled: step === 'reveal-loading', status: arrival.gate.status });
+    } catch (error) {
+      console.warn('[cinematic] arrival reveal failed', error);
+    }
+    // the page draws again under the fading overlay
+    setPageCovered(false);
+    root.classList.remove('is-preparing', 'is-blackout');
+    root.classList.add('is-finished');
+    await new Promise((resolve) => window.setTimeout(resolve, 300));
+    await teardown();
+  };
   const finish = () => {
     if (settled) return;
     settled = true;
@@ -221,6 +320,7 @@ export function playCinematic({
     // A hard-gated route that is still loading keeps the overlay black and
     // shows live progress instead of fading back to the previous scene.
     const holdForPreload = waitForPreload && Boolean(preloadPromise) && !preloadSettled;
+    if (holdForPreload) window.addEventListener('keydown', onHoldKeyDown, true);
     // The ending credits replace this overlay in the same document. Keeping
     // the overlay black until that screen mounts prevents the finished boss
     // frame from flashing through between the cutscene and the credits.
@@ -230,8 +330,19 @@ export function playCinematic({
       // hold the cutscene's last frame rather than going to black
       if (cutscene) cutscene.hold(true);
       else root.classList.add('is-blackout');
-    } else {
+    } else if (!arrival) {
       root.classList.add('is-finished');
+    }
+    if (arrival) {
+      window.setTimeout(async () => {
+        if (holdForPreload) {
+          root.classList.add('is-preparing');
+          renderPreparing();
+        }
+        const step = preloadSettled ? 'reveal' : await waitForArrival();
+        await revealArrival(step);
+      }, holdForPreload ? 260 : 0);
+      return;
     }
     window.setTimeout(async () => {
       if (beginPreload()) {
@@ -252,20 +363,7 @@ export function playCinematic({
           ]);
         }
       }
-      // After the ending the page stays black behind whatever comes next
-      // (the STATUS: OPEN card, then the credits page): the finished fight
-      // must not show through under the card.
-      if (preserveBlackout) {
-        const black = document.createElement('div');
-        black.className = 'nf-cinematic-afterblack';
-        black.setAttribute('aria-hidden', 'true');
-        document.body.append(black);
-      }
-      root.remove();
-      cutscene?.destroy();
-      activePlayback = null;
-      await onComplete?.();
-      resolvePlayback();
+      await teardown();
     }, 260);
   };
   const skip = () => {
@@ -281,7 +379,7 @@ export function playCinematic({
     if (settled) return;
     const { mountCutscene } = await import('./cutscene/player.js');
     if (settled) return;
-    cutscene = mountCutscene(def, { root, ready: !waitForPreload, onEnd: () => finish() });
+    cutscene = mountCutscene(def, { root, ready: !waitForPreload || preloadSettled, onEnd: () => finish(), music: musicOverride, keepMusic });
     if (activePlayback) {
       activePlayback.cutscene = cutscene;
       activePlayback.video = pauseShim;
@@ -318,6 +416,15 @@ export function playCinematic({
 
 export function getActiveCinematic() {
   return activePlayback;
+}
+
+/**
+ * Round 11: leave for a chapter whose page plays the transition cutscene
+ * itself while it loads underneath (arrivalGate.js): go at once, with
+ * `?from=<from>` so the page knows it is an arrival. Used by Chapter 2 → 3.
+ */
+export function arriveAt(route, from) {
+  window.location.assign(arrivalRoute(route, from));
 }
 
 export function navigateAfterCinematic(id, src, route, options = {}) {

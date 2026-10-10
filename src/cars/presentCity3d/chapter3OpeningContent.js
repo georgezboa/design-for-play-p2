@@ -29,13 +29,19 @@
 // tests/car03/chapter3OpeningModel.test.mjs walks the script in order).
 
 export const OPENING_POSITIONS = Object.freeze({
-  // In the sun on the platform paving in front of the shelter, where the
-  // opening camera can see him (the old spot was under the shelter roof).
-  playerStart: [-3.0, 0.5, 32.6],
+  // Round 11 (George: "the start position isn't good, he stays stuck in one
+  // place"): where Butch stands once he has stepped down from the night
+  // service (chapter3Alighting.js ALIGHTING.standAt): on the open paving
+  // behind the carriage, clear of the station block and the post box, with
+  // the platform, the departing train and Lev in one frame. (It was in the
+  // sun by the post box, frozen there through four captions and a card.)
+  playerStart: [-4.2, 0.5, 35.0],
   // Round 6 (G5): Lev waits in view, in the open paving across from Butch
   // (he stood at the top edge of the frame in the scanner arch's shadow, so
-  // "the man on the platform" walked in from off screen).
-  levStart: [-2.9, 0.5, 26.1],
+  // "the man on the platform" walked in from off screen). Round 11: on the
+  // open paving past the station forecourt, a short walk from where Butch
+  // steps down.
+  levStart: [1.3, 0.5, 34.1],
   levInterview: [1.8, 0.5, 11.8],
   seam: [8.2, 0.71, 7.3],
   seamApproach: [5.7, 0.5, 9.6],

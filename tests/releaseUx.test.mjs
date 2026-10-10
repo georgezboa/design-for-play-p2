@@ -14,7 +14,7 @@ import {
 } from '../src/shell/saveSystem.js';
 import { SETTINGS_CONTROLS } from '../src/shell/settingsControls.js';
 import { osPrefersReducedMotion, reducedMotionActive } from '../src/shell/motion.js';
-import { createHoldGesture, isSkipKey, SKIP_HOLD_MS } from '../src/shell/holdToSkip.js';
+import { createHoldGesture, isSkipKey, SKIP_HOLD_MAX_STEP_MS, SKIP_HOLD_MS } from '../src/shell/holdToSkip.js';
 import { CHAPTER_CONTROLS } from '../src/shell/chapterControls.js';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
@@ -188,11 +188,29 @@ test('an embedded page navigates its same-origin top window to the title', () =>
 test('holding a skip input for the full duration completes the gesture', () => {
   const hold = createHoldGesture({ holdMs: 1000 });
   hold.press('key:Space', 0);
-  assert.equal(hold.progress(500), 0.5);
+  // sampled every frame, as the cutscene does
+  let value = 0;
+  for (let t = 16; t <= 500; t += 16) value = hold.progress(t);
+  assert.ok(Math.abs(value - 0.496) < 1e-9);
   assert.equal(hold.completed, false);
-  assert.equal(hold.progress(1000), 1);
+  for (let t = 512; t <= 1008; t += 16) value = hold.progress(t);
+  assert.equal(value, 1);
   assert.equal(hold.completed, true);
   assert.equal(SKIP_HOLD_MS, 1000);
+});
+
+test('round 11: a page that stalls mid-hold never turns a tap into a skip', () => {
+  const hold = createHoldGesture({ holdMs: 1000 });
+  hold.press('key:Space', 0);
+  // a 4 s long task (a shader compile under the cutscene) before the next sample
+  assert.equal(hold.progress(4000), SKIP_HOLD_MAX_STEP_MS / 1000);
+  assert.equal(hold.completed, false);
+  // the key-up that was waiting behind it
+  hold.release('key:Space');
+  assert.equal(hold.progress(4100), 0);
+  const flow = read('src/shell/gameFlow.js');
+  assert.match(flow, /escapeDownAt = event\.timeStamp \|\| performance\.now\(\);/);
+  assert.match(flow, /const tap = \(event\.timeStamp \|\| performance\.now\(\)\) - escapeDownAt < ESCAPE_TAP_MS;/);
 });
 
 test('releasing early resets the hold; overlapping inputs keep it going', () => {
@@ -201,9 +219,11 @@ test('releasing early resets the hold; overlapping inputs keep it going', () => 
   hold.release('key:Space');
   assert.equal(hold.progress(900), 0);
   hold.press('key:Enter', 1000);
+  hold.progress(1200);
   hold.press('pointer:1', 1200);
   hold.release('key:Enter');
   assert.equal(hold.holding, true);
+  assert.equal(hold.progress(1450), 0.45);
   assert.equal(hold.progress(1500), 0.5);
   hold.releaseAll();
   assert.equal(hold.progress(3000), 0);

@@ -47,6 +47,7 @@ export class Chapter3EvidenceViewer {
     this.onClose = null;
     this.returnFocus = null;
     this.mode = null;
+    this.peeking = null;
     if (this.root) {
       this.root.classList.add('nf-card-backdrop');
       this.root.hidden = true;
@@ -79,16 +80,59 @@ export class Chapter3EvidenceViewer {
     return Boolean(this.document);
   }
 
-  populate(spec) {
-    this.document = spec;
+  fill(spec) {
     if (!this.root) return;
     this.stamp.textContent = spec.stamp;
     this.title.textContent = spec.title;
     this.lines.replaceChildren(...spec.lines.map((line) => el('p', '', line)));
   }
 
+  populate(spec) {
+    this.document = spec;
+    this.fill(spec);
+  }
+
+  // Round 11 (the arrival): a paper shown in Butch's hand while he walks.
+  // It holds nothing: no backdrop, no prompt, no input, `active` stays
+  // false; it sits at the side of the screen and leaves after `seconds`
+  // (counted by update(), so the pause menu holds it) or when a modal paper
+  // opens.
+  peek(spec, { seconds = 9 } = {}) {
+    if (!spec || this.active) return false;
+    this.fill(spec);
+    this.peeking = { id: spec.id, remaining: Math.max(0.5, Number(seconds) || 0) };
+    this.mode = 'peek';
+    if (this.root) {
+      this.root.classList.add('is-peek');
+      this.root.hidden = false;
+      this.root.setAttribute('aria-hidden', 'false');
+    }
+    return true;
+  }
+
+  endPeek() {
+    if (!this.peeking) return false;
+    this.peeking = null;
+    if (this.mode === 'peek') this.mode = null;
+    if (this.root) {
+      this.root.classList.remove('is-peek');
+      if (!this.active) {
+        this.root.hidden = true;
+        this.root.setAttribute('aria-hidden', 'true');
+      }
+    }
+    return true;
+  }
+
+  update(dt) {
+    if (!this.peeking) return;
+    this.peeking.remaining -= Math.max(0, Number(dt) || 0);
+    if (this.peeking.remaining <= 0) this.endPeek();
+  }
+
   open(spec, { onClose } = {}) {
     if (!spec || this.active) return false;
+    this.endPeek();
     this.populate(spec);
     this.onClose = onClose || null;
     this.returnFocus = typeof document !== 'undefined' ? document.activeElement : null;
@@ -119,6 +163,6 @@ export class Chapter3EvidenceViewer {
   }
 
   snapshot() {
-    return { active: this.active, mode: this.mode, documentId: this.document?.id || null };
+    return { active: this.active, mode: this.mode, documentId: this.document?.id || null, peek: this.peeking?.id || null };
   }
 }

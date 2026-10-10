@@ -18,7 +18,16 @@
       canvas { display: block; width: 100%; height: 100%; outline: none; cursor: default; }
       canvas.interaction-hover { cursor: pointer; }
       .c3-sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+      /* Round 11: opened by Chapter 2 (?from=chapter2), this page plays the
+         2→3 cutscene over the city loading underneath. Until it is up the
+         page is black, not the loading card; car03-3d-main.js lifts this
+         once the cutscene hands over (src/shell/arrivalGate.js). */
+      html.nf-arriving, html.nf-arriving body { background: #000; }
+      html.nf-arriving #loading-panel, html.nf-arriving #objective-card, html.nf-arriving #sunrise-tableau { visibility: hidden; }
     </style>
+    <script>
+      if (/[?&]from=chapter2(?:&|$)/.test(location.search)) document.documentElement.classList.add('nf-arriving');
+    </script>
   </head>
   <body>
     <div id="city-3d" aria-label="Echo City"></div>

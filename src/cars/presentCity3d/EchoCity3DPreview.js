@@ -3,6 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { devParam } from '../../devMode.js';
+import { nativeRequestAnimationFrame } from '../../shell/framePacing.js';
 import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks.js';
 import { PLAYER_TURN_RATE, dampYaw } from './chapter3Entrance.js';
 import { Chapter3CityLod } from './chapter3CityLod.js';
@@ -1182,6 +1183,9 @@ export class EchoCity3DPreview {
     this.occlusionHitPoint = new THREE.Vector3();
     this.loadErrors = [];
     this.modelsReady = false;
+    // Round 11: who wants to hear how the model stream is going (the 2→3
+    // cutscene's arrival gate, car03-3d-main.js): (completed, total).
+    this.onModelProgress = null;
     this.walkMeshes = [];
     this.surfaceRaycaster = new THREE.Raycaster();
     this.surfaceRayOrigin = new THREE.Vector3();
@@ -1397,6 +1401,7 @@ export class EchoCity3DPreview {
         completed += 1;
         this.loadingCount.textContent = `${completed} / ${total}`;
         this.loadingLabel.textContent = completed === total ? 'ASSEMBLING LIVE SCENE' : 'STREAMING GLB MODELS';
+        try { this.onModelProgress?.(completed, total); } catch { /* a listener never stops the load */ }
       }
     };
 
@@ -1472,7 +1477,65 @@ export class EchoCity3DPreview {
     this.loadingFill.style.width = '100%';
     this.loadingCount.textContent = ok ? `${total} / ${total}` : `${completed} / ${total}`;
     this.loadingLabel.textContent = ok ? 'LIVE 3D READY' : 'PARTIAL LOAD';
-    setTimeout(() => this.loadingPanel.classList.add('done'), 650);
+    // Round 11: the page lifts the loading card (car03-3d-main.js), once the
+    // cast is in and the first real frames are drawn; lifting it here showed
+    // the half-built platform (no cast, Butch at the default spot) first.
+  }
+
+  // Round 11 (the arrival): compile the scene's programs, upload its
+  // textures and draw it a few times while the 2→3 cutscene still covers the
+  // page, so the reveal is the chapter's first real frame and not its first
+  // shader compile. The work is cut into slices of about `sliceMs`, one per
+  // browser frame, so the cutscene keeps playing over it (a single
+  // renderer.compile of the whole city held it on one frame for seconds).
+  // It draws on the browser's own frame: the frame pacer holds the page's
+  // loop while a cutscene covers it. Never waits longer than `timeoutMs`.
+  async warmUp({ frames = 2, sliceMs = 10, timeoutMs = 15000, onProgress = null } = {}) {
+    const started = performance.now();
+    const nextFrame = () => new Promise((resolve) => nativeRequestAnimationFrame(resolve));
+    const stats = { programs: 0, textures: 0, slices: 0 };
+    const work = (async () => {
+      this.camera.updateMatrixWorld();
+      // one object per distinct material set and program variant
+      const objects = [];
+      const textures = new Set();
+      const seen = new Set();
+      this.scene.traverseVisible((object) => {
+        if (!(object.isMesh || object.isPoints || object.isLine || object.isSprite) || !object.material) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        for (const material of materials) {
+          for (const value of Object.values(material)) if (value?.isTexture) textures.add(value);
+        }
+        const key = `${materials.map((material) => material.uuid).join(',')}|${object.isSkinnedMesh ? 's' : ''}${object.isInstancedMesh ? 'i' : ''}${object.receiveShadow ? 'r' : ''}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        objects.push(object);
+      });
+      const jobs = [
+        ...[...textures].map((texture) => () => { this.renderer.initTexture(texture); stats.textures += 1; }),
+        ...objects.map((object) => () => { this.renderer.compile(object, this.camera, this.scene); stats.programs += 1; }),
+      ];
+      const total = jobs.length + frames;
+      const report = (done) => { try { onProgress?.(total ? done / total : 1); } catch { /* never stops the warm-up */ } };
+      let sliceStart = performance.now();
+      for (let index = 0; index < jobs.length; index += 1) {
+        try { jobs[index](); } catch { /* drawn below all the same */ }
+        if (performance.now() - sliceStart > sliceMs) {
+          stats.slices += 1;
+          report(index + 1);
+          await nextFrame();
+          sliceStart = performance.now();
+        }
+      }
+      for (let index = 0; index < frames; index += 1) {
+        await nextFrame();
+        this.render();
+        report(jobs.length + index + 1);
+      }
+    })();
+    await Promise.race([work, new Promise((resolve) => setTimeout(resolve, timeoutMs))]);
+    this.warmStats = { ...stats, ms: Math.round(performance.now() - started) };
+    return this.warmStats.ms;
   }
 
   placeModel(root, spec) {

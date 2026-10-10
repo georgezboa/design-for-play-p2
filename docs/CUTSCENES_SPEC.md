@@ -40,6 +40,7 @@ Canon is `docs/STORY_BIBLE.md`. This file is the script. Where the two disagree,
 - **Integration:** keep the existing API, so no call site changes.
   - `playCinematic({ id, src, onComplete, preloadChapterId, … })`, `navigateAfterCinematic(...)`, `CINEMATICS.*`, and `finalBossRoute.js`'s `cinematicId` / `cinematicPath`.
   - These resolve to a cutscene by id (or by the old `src` name). The preload gate still holds the destination until its chapter is ready; show the cutscene's last shot, or a "the night service is arriving" hold, while it waits.
+  - Round 11: the 2→3 cutscene plays on the page it leads to. Chapter 2 goes straight to `/car03-3d.html?from=chapter2`; Echo City mounts the cutscene with `playCinematic({ arrival: { gate } })` (`src/shell/arrivalGate.js`) and loads, warms and stages its arrival underneath. The overlay leaves once both are done; it holds the last shot with the city's live progress (the pause menu still opens) if the city is not ready, and hands over to the city's loading card if it stops making progress. The score carries on into the platform (`music`, `keepMusic`).
   - Once every cutscene is in, delete the mp4/webm files and the video code path. That saves about 70 MB.
 
 ## The eight cutscenes

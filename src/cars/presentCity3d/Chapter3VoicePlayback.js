@@ -92,6 +92,12 @@ export class Chapter3VoicePlayback {
     return true;
   }
 
+  // Whether a line's recording is playing now (not one waiting for a gesture).
+  speaking() {
+    const audio = this.audio;
+    return Boolean(audio && audio.src && !audio.paused && !audio.ended);
+  }
+
   retryPending() {
     const pending = this.pendingRetry;
     if (!pending || !this.audio || pending.token !== this.playToken) return;

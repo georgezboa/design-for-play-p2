@@ -52,8 +52,10 @@ test('five stones, including the Museum Black Knife stone, select Mathias boss w
 });
 
 test('Chapter 3 and every other chapter transition wait for the complete preload job', () => {
-  assert.match(chapter2, /requirePreloadReady: true/);
-  assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady/);
+  // Round 11: the 2→3 hand-off waits for Echo City itself (it loads under
+  // the cutscene on its own page: the arrival gate), not a preload job.
+  assert.match(chapter2, /arriveAt\('\/car03-3d\.html', 'chapter2'\)/);
+  assert.match(flow, /const waitForPreload = Boolean\(preloadChapterId\) \|\| requirePreloadReady \|\| Boolean\(arrival\)/);
   assert.match(flow, /if \(waitForPreload\)/);
   assert.match(flow, /await preloadPromise/);
   assert.match(flow, /\$\{ARRIVING_LINE\} · \$\{percent\}%/);

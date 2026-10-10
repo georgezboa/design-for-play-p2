@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 import {
-  ARRIVAL_BEFORE_CARD,
   ARRIVAL_DIALOGUE,
   BOARDED_DIALOGUE,
   BOARDING_DIALOGUE,
@@ -79,6 +78,7 @@ import {
   LEV_ENTRANCE, MARA_GLIMPSE, PLAYER_TURN_RATE, approachSpeed, besideTarget, dampYaw, gaitForSpeed, pointAlongPolyline,
   polylineLength, turnToward, wrapAngle, yawToward,
 } from './chapter3Entrance.js';
+import { alightingFocus, alightingPose, createLineQueue } from './chapter3Alighting.js';
 import {
   FIRE_SITE,
   addSilhouetteOutline,
@@ -139,6 +139,12 @@ const C3_MUSIC = {
   burning: { src: 'assets/music/ch3/3.8_beethoven_sym7_mvt2_allegretto_cello.mp3', volume: 0.46, fade: 4.8, outFade: 6.5, dialogueDuckDb: -6.5 },
   morning: { src: 'assets/music/ch3/3.9_dvorak_new_world_largo.mp3', volume: 0.45, fade: 6.5, outFade: 7.5, dialogueDuckDb: -5.5 },
 };
+// Round 11: the 2→3 cutscene plays on this page and hands its score straight
+// to the platform (the same Satie under the arrival's own cue id), so the
+// music carries on from the cutscene into the arrival instead of stopping
+// and starting again (car03-3d-main.js).
+export const CHAPTER3_ARRIVAL_MUSIC = Object.freeze({ id: 'c3-arrival', ...C3_MUSIC.arrival });
+
 
 const INTERACTION_RADIUS = 4.2;
 const SLEEP_BLACKOUT_MS = 5000;
@@ -174,6 +180,9 @@ const BUTCH_SILHOUETTE = Object.freeze({ color: 0xf0b25e, opacity: 0.92, widthCs
 // R5 (alpha round 3): how much closer the camera sits on the carriage door
 // for the empty-seat line.
 const BOARDED_CLOSE_UP_ZOOM = 1.6;
+// Round 11: the arrival is framed as close on the same carriage end while
+// Butch steps down, then eases out to the street camera as he takes over.
+const ARRIVAL_CLOSE_UP_ZOOM = 2.0;
 // Alpha round 4 (P1, 3.6): the station beat pushes in on Butch and the
 // woman in the rose scarf (about 30 % larger than the street camera), and
 // the scarf itself is oversized a little so it reads at that zoom.
@@ -327,6 +336,19 @@ export class Chapter3OpeningRuntime {
     this.levStrideMoving = false;
     this.maraGlimpse = null;
     this.faceTurns = new Map();
+    // Round 11 (the arrival, chapter3Alighting.js): Butch steps down from the
+    // night service's last carriage while the announcement plays; once he is
+    // down the opening is walk-and-talk (captions that never take the input).
+    this.arrivalStaged = false;
+    this.arrivalStarted = false;
+    this.arrivalCarriage = false;
+    this.arrivalFocus = null;
+    this.alightingElapsed = null;
+    this.alightingMoving = false;
+    this.openingLines = null;
+    this.levTalk = null;
+    this.levApproachPending = false;
+    this.finalDoorBase = null;
     this.levWalkElapsed = null;
     this.levWalkDuration = 0;
     this.levWalkStart = null;
@@ -1021,7 +1043,10 @@ export class Chapter3OpeningRuntime {
     }
   }
   // ------------------------------------------------------------------ setup
-  async initialize() {
+  // `holdArrival` (round 11): stage the arrival's first frame but leave it
+  // still until the page calls beginArrival() (when its cutscene or its
+  // loading card has lifted), so it never plays unseen.
+  async initialize({ holdArrival = false } = {}) {
     document.body.classList.add('gameplay-active');
     this.elements.sunriseTableau?.querySelector('#sunrise-tableau-continue')?.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -1156,8 +1181,13 @@ export class Chapter3OpeningRuntime {
     this.readout.hidden = true;
     document.body.append(this.readout);
 
-    // Only the two rigs needed on the platform load before play.
-    await Promise.all(this.characterSpecs().start.map((spec) => this.characters.attach(spec)));
+    // Only the two rigs needed on the platform load before play, and (round
+    // 11) the night service's carriage when Butch is about to step off it.
+    const arrivalPending = !this.model.snapshot().arrivalRead && !this.characterQa;
+    await Promise.all([
+      ...this.characterSpecs().start.map((spec) => this.characters.attach(spec)),
+      ...(arrivalPending ? [this.loadAssetGroup('train')] : []),
+    ]);
     this.afterAssetGroup('start', this.characterSpecs().start);
     this.makeButchMarker();
     // R2-4: the two walks across the city end at a beacon (Toma at the
@@ -1373,8 +1403,8 @@ export class Chapter3OpeningRuntime {
     this.updateDiagnosticState();
     const initial = this.model.snapshot();
     if (!initial.arrivalRead && !this.characterQa) {
-      this.showTitleCard();
-      this.openArrival();
+      this.stageArrival();
+      if (!holdArrival) this.beginArrival();
     } else if (/-resumed$/.test(initial.lastEvent)) {
       // Continue from a mid-chapter resume point: the chapter's title card.
       this.showTitleCard();
@@ -1476,9 +1506,12 @@ export class Chapter3OpeningRuntime {
     this.preview.resetCamera();
   }
 
-  showTitleCard() {
+  // `high` (round 11): the title over the top of the frame, clear of the
+  // arrival (Butch steps down in the middle of it).
+  showTitleCard({ high = false } = {}) {
     const card = document.createElement('section');
     card.className = 'nf-title-card';
+    if (high) card.classList.add('c3-title-high');
     card.setAttribute('aria-hidden', 'true');
     card.innerHTML = '<div><p class="nf-title-card__kicker">CHAPTER 3</p><h1 class="nf-title-card__main">ECHO CITY</h1><div class="nf-title-card__rule"></div></div>';
     document.body.append(card);
@@ -1547,7 +1580,9 @@ export class Chapter3OpeningRuntime {
     if (!halo) return;
     const player = this.preview.player;
     const state = this.model.snapshot();
-    halo.visible = player.visible && !state.boardedTrain && !this.butchBedPoseActive && !this.ticketBoard.active;
+    // (Round 11: not under him while he still stands in the carriage door.)
+    const lifted = (this.characters.get('butch')?.lift ?? 0) > 0.05;
+    halo.visible = player.visible && !state.boardedTrain && !this.butchBedPoseActive && !this.ticketBoard.active && !lifted;
     if (!halo.visible) return;
     const ground = this.insideMinistry || this.insideHotel ? null : this.preview.surfaceHeightAt(player.position.x, player.position.z);
     halo.position.set(player.position.x, (Number.isFinite(ground) ? ground : player.position.y - 0.47) + 0.035, player.position.z);
@@ -1597,6 +1632,10 @@ export class Chapter3OpeningRuntime {
       || this.dialogue.active
       // The opening train departure and Lev's walk to the oil line no longer
       // hold Butch: ground clicks work while they play (alpha round 1).
+      // Round 11: only the step down from the carriage holds him (a few
+      // seconds), and the arrival's first frame until the page shows it.
+      || this.alightingElapsed !== null
+      || (this.arrivalStaged && !this.arrivalStarted)
       || this.levWalkElapsed !== null
       || this.ministryTransitioning
       || this.hotelTransitioning
@@ -2195,28 +2234,146 @@ export class Chapter3OpeningRuntime {
     this.preview.setCameraOverrideTarget(subject);
   }
 
-  // The conductor's call and Butch's line, then the orchard-case claim card
-  // in his hand; closing it lets the train go (and Butch walk).
-  openArrival() {
-    const after = ARRIVAL_DIALOGUE.slice(ARRIVAL_BEFORE_CARD);
-    const depart = () => {
-      this.model.readArrival();
-      this.beginTrainDeparture();
-    };
-    const finish = () => (after.length ? this.showLines(after, { onComplete: depart }) : depart());
-    this.showLines(ARRIVAL_DIALOGUE.slice(0, ARRIVAL_BEFORE_CARD), {
-      onComplete: () => {
-        if (!this.evidenceViewer.open(CHAPTER3_DOCUMENTS.CLAIM_CARD, { onClose: finish })) finish();
-      },
-    });
+  // Round 11 (the arrival, chapter3Alighting.js). The first frame: Butch in
+  // the lit end doorway of the night service's last carriage (the carriage
+  // the finale boards), the camera on the carriage end and the paving he
+  // walks out to. Staged as soon as the cast is in, so the page can draw and
+  // warm it before it is revealed; beginArrival() sets it going.
+  stageArrival() {
+    if (this.arrivalStaged) return false;
+    this.arrivalStaged = true;
+    // The doorless carriage stands in for the first car, as in the finale; if
+    // its model failed, Butch steps off the end of the tram itself.
+    this.arrivalCarriage = Boolean(this.replacements.model('env-doorless-carriage'));
+    if (this.arrivalCarriage) {
+      const firstCar = this.preview.scene.getObjectByName('municipal-tram');
+      if (firstCar) firstCar.visible = false;
+      this.finalDoor.group.visible = true;
+    }
+    this.finalDoorBase = this.finalDoor.group.position.clone();
+    const pose = alightingPose(0);
+    const player = this.preview.player;
+    player.position.set(pose.x, 0.5, pose.z);
+    player.rotation.y = pose.facing;
+    this.setButchLift(pose.lift);
+    this.preview.stopWalking();
+    const focus = alightingFocus();
+    this.arrivalFocus = new THREE.Vector3(focus.x, CAMERA_HOME.target[1], focus.z);
+    this.preview.setCameraOverrideTarget(this.arrivalFocus);
+    this.snapCameraTo(this.arrivalFocus);
+    const camera = this.preview.camera;
+    camera.zoom = this.baseZoom + ARRIVAL_CLOSE_UP_ZOOM;
+    this.preview.controls.minZoom = camera.zoom;
+    this.preview.controls.maxZoom = camera.zoom;
+    camera.updateProjectionMatrix();
+    this.updateObjective();
+    return true;
+  }
+
+  // The camera straight onto `point` (no ease): the first frame of a beat.
+  snapCameraTo(point) {
+    const preview = this.preview;
+    preview.resetCamera();
+    const offset = preview.camera.position.clone().sub(preview.controls.target);
+    preview.controls.target.set(point.x, CAMERA_HOME.target[1], point.z);
+    preview.camera.position.copy(preview.controls.target).add(offset);
+    preview.cameraFollowTarget.copy(preview.controls.target);
+    preview.camera.updateProjectionMatrix();
+    preview.controls.update();
+  }
+
+  setButchLift(lift) {
+    const butch = this.characters.get('butch');
+    if (butch) butch.lift = lift;
+  }
+
+  // The arrival begins: the chapter title, the step down (a few seconds, the
+  // only part that holds the player) with the station announcement over it,
+  // then the rest of the opening's lines as walk-and-talk: the conductor's
+  // call-back as the train leaves, and Butch's two lines with the claim card
+  // in his hand (a paper at the side of the frame, never a modal).
+  beginArrival() {
+    if (this.arrivalStarted || this.model.snapshot().arrivalRead || this.characterQa) return false;
+    if (!this.arrivalStaged) this.stageArrival();
+    this.arrivalStarted = true;
+    this.showTitleCard({ high: true });
+    this.alightingElapsed = 0;
+    const firstThought = ARRIVAL_DIALOGUE.findIndex((line) => line.speaker === 'BUTCH');
+    this.openingLines = createLineQueue(ARRIVAL_DIALOGUE.map((line, index) => ({
+      line,
+      ...(index === 0 ? { at: 0.35 } : {}),
+      // the card stays in his hand until Lev has asked him to keep it out
+      ...(index === firstThought
+        ? { onShow: () => this.evidenceViewer.peek(CHAPTER3_DOCUMENTS.CLAIM_CARD, { seconds: 30 }) }
+        : {}),
+    })));
+    this.updateObjective();
+    this.updateOutlines();
+    return true;
+  }
+
+  // Butch's pose along the step down; once he is on the paving the train
+  // leaves and he is the player's.
+  updateAlighting(dt) {
+    if (this.alightingElapsed === null) return;
+    this.alightingElapsed += dt;
+    const pose = alightingPose(this.alightingElapsed);
+    const player = this.preview.player;
+    player.position.x = pose.x;
+    player.position.z = pose.z;
+    if (pose.facing !== null) player.rotation.y = dampYaw(player.rotation.y, pose.facing, PLAYER_TURN_RATE * 0.6, dt);
+    this.alightingMoving = pose.moving;
+    this.setButchLift(pose.lift);
+    if (!pose.done) return;
+    this.alightingElapsed = null;
+    this.alightingMoving = false;
+    this.setButchLift(0);
+    this.preview.setCameraOverrideTarget(null);
+    this.model.readArrival();
+    this.beginTrainDeparture();
+    this.updateObjective();
+    this.updateOutlines();
+  }
+
+  // One step of a walk-and-talk queue (chapter3Alighting createLineQueue):
+  // its captions are barks, so Butch keeps walking under them; a voiced line
+  // keeps its caption until the voice ends. Returns true once it is done.
+  stepLineQueue(queue, dt) {
+    if (!queue) return true;
+    if (queue.current && this.dialogue.active) queue.interrupt();
+    const speaking = Boolean(queue.current) && this.dialogue.voiceSpeaking();
+    const before = queue.current;
+    const entry = queue.tick(dt, { free: !this.dialogue.active, speaking });
+    // The queue owns the caption (on game time, like the rest of the beat):
+    // it clears a line when its time is up, and keeps the bark's own
+    // wall-clock timer from clearing it early on a slow frame.
+    if (before && !queue.current && !entry) this.dialogue.endBark();
+    if (entry && this.dialogue.bark(entry.line, entry.seconds + 2)) entry.onShow?.();
+    if (queue.current) this.dialogue.extendBark(2);
+    return queue.done;
+  }
+
+  updateOpeningLines(dt) {
+    if (this.openingLines && this.stepLineQueue(this.openingLines, dt)) this.openingLines = null;
+    if (this.levApproachPending && (!this.openingLines || this.openingLines.remaining <= 1)) {
+      this.levApproachPending = false;
+      this.beginLevArrivalApproach();
+    }
+    if (this.levTalk && this.stepLineQueue(this.levTalk, dt)) {
+      this.levTalk = null;
+      this.finishLevIntroduction();
+    }
   }
 
   beginTrainDeparture() {
-    this.preview.stopWalking();
     const roots = ['municipal-tram', 'municipal-tram-car-02', 'municipal-tram-car-03']
       .map((name) => this.preview.scene.getObjectByName(name)).filter(Boolean);
+    // Round 11: the carriage Butch stepped down from leaves with the train.
+    if (this.finalDoor.group.visible) roots.push(this.finalDoor.group);
     this.departureBases = roots.map((object) => ({ object, position: object.position.clone() }));
     this.departureElapsed = 0;
+    car03Audio.trainDoorSlam?.();
+    window.setTimeout(() => car03Audio.trainHorn?.(), 650);
     // Round 6 (G5): she is shown only as her rig (never the capsule), and
     // only when it is in place; the route starts under the station roof.
     const mara = this.characters.get('echo-mara');
@@ -2235,9 +2392,11 @@ export class Chapter3OpeningRuntime {
   // Round 6 (G5): Lev walks over at a walking pace (a jog if Butch has
   // wandered off) to stand beside Butch as the camera sees them, following
   // Butch if he walks; the introduction starts when they meet. Butch stays
-  // free to walk meanwhile (the departure never held him either).
+  // free to walk meanwhile (the departure never held him either). Round 11:
+  // the introduction is walk-and-talk too, and Lev keeps beside Butch
+  // through it; it waits for Butch's own lines to finish.
   beginLevArrivalApproach() {
-    this.levEntrance = { speed: 0, path: [], target: null, repathIn: 0 };
+    this.levEntrance = { speed: 0, path: [], target: null, repathIn: 0, talking: false };
     this.updateObjective();
   }
 
@@ -2321,11 +2480,17 @@ export class Chapter3OpeningRuntime {
     const cruise = far > LEV_ENTRANCE.jogBeyond ? LEV_ENTRANCE.jogSpeed : LEV_ENTRANCE.walkSpeed;
     const remaining = this.stepLevAlong(walker, dt, cruise);
     const settled = remaining < 0.04 && walker.speed < 0.2;
-    // A Butch who keeps walking is called to a halt once Lev is close.
-    if ((settled && !butchWalking) || (butchWalking && far <= LEV_ENTRANCE.callOut)) {
-      this.levEntrance = null;
+    // Standing beside Butch, Lev turns to him.
+    if (settled) {
       this.levStrideMoving = false;
-      if (butchWalking) this.preview.stopWalking();
+      if (!this.faceTurns.has(this.lev)) this.lev.rotation.y = turnToward(this.lev.rotation.y, yawToward(this.lev.position, butch), LEV_ENTRANCE.turnRate, dt);
+    }
+    // They have met: beside a Butch who stands, or close to one who walks
+    // (he is no longer called to a halt). The introduction waits for his
+    // own lines.
+    const met = (settled && !butchWalking) || far <= LEV_ENTRANCE.callOut;
+    if (met && !walker.talking && !this.openingLines) {
+      walker.talking = true;
       this.openLevIntroduction();
     }
   }
@@ -2352,13 +2517,21 @@ export class Chapter3OpeningRuntime {
   }
 
   openLevIntroduction() {
-    this.faceEachOther(this.preview.player, this.lev);
-    this.showLines(LEV_INTRO_DIALOGUE, {
-      onComplete: () => {
-        this.model.completeLevIntroduction();
-        this.beginGuidedWalk();
-      },
-    });
+    const butchWalking = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
+    if (!butchWalking) this.faceEachOther(this.preview.player, this.lev);
+    // Round 11: walk-and-talk (barks), Lev keeping beside Butch meanwhile;
+    // the claim card leaves his hand once Lev has asked him to keep it out.
+    this.levTalk = createLineQueue(LEV_INTRO_DIALOGUE.map((line, index) => ({
+      line,
+      ...(index === 1 ? { onShow: () => this.evidenceViewer.endPeek() } : {}),
+    })), { gap: 0.3 });
+  }
+
+  finishLevIntroduction() {
+    this.levEntrance = null;
+    this.levStrideMoving = false;
+    if (!this.model.completeLevIntroduction()) return;
+    this.beginGuidedWalk();
   }
 
   // Lev heads for the oil line and the player follows at their own pace: no
@@ -3629,11 +3802,20 @@ export class Chapter3OpeningRuntime {
       for (const entry of this.departureBases) entry.object.position.copy(entry.position).add(offset);
       if (this.departureElapsed >= 6.2) {
         for (const entry of this.departureBases) entry.object.visible = false;
+        // The finale stands the carriage at the platform again from here.
+        if (this.finalDoorBase) this.finalDoor.group.position.copy(this.finalDoorBase);
         this.departureElapsed = null;
         this.model.completeTrainDeparture();
-        this.beginLevArrivalApproach();
+        // Round 11: Lev sets off once Butch is on his last line, so he
+        // arrives as Butch finishes rather than standing by in silence.
+        this.levApproachPending = true;
       }
     }
+    // Round 11: the step down from the carriage, the opening's walk-and-talk
+    // lines and the claim card in his hand.
+    this.updateAlighting(dt);
+    this.updateOpeningLines(dt);
+    this.evidenceViewer.update(dt);
     // As the train pulls out, the woman in the rose scarf is already one
     // step ahead, crossing into the city, back to Butch. Round 6 (G5): she
     // walks out from under the station roof and leaves the top of the frame
@@ -3874,6 +4056,8 @@ export class Chapter3OpeningRuntime {
     // LOW quality frames a little closer: less city in view, larger cast.
     if (this.preview.qualityTier !== 'high') target += LOW_QUALITY_ZOOM_BOOST;
     if (this.dialogue.active && !state.boardedTrain) target += DIALOGUE_ZOOM_BOOST;
+    // Round 11: close on the carriage end while Butch steps down.
+    if (this.alightingElapsed !== null || (this.arrivalStaged && !this.arrivalStarted)) target = this.baseZoom + ARRIVAL_CLOSE_UP_ZOOM;
     // Alpha round 4: the station beat, close on Butch and her.
     if (this.stationCloseUpActive(state)) target = this.baseZoom + STATION_CLOSE_UP_ZOOM;
     // R5: the open carriage door, close, for the empty-seat line.
@@ -3899,7 +4083,7 @@ export class Chapter3OpeningRuntime {
       this.updateCharacterQa(dt);
       return;
     }
-    const butchMoving = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
+    const butchMoving = this.preview.path.length > 0 || this.directMoving || this.keyWalking || this.alightingMoving;
     const levMoving = (this.levGuide !== null && this.levStrideMoving)
       || (this.levEntrance !== null && this.levStrideMoving && !this.dialogue.active)
       || (!this.dialogue.active && (this.levWalkElapsed !== null || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame));
@@ -4489,6 +4673,16 @@ export class Chapter3OpeningRuntime {
         clampTarget: this.bellClamp.active ? (() => { const s = this.screenOf(this.groundMessage.interfacePosition); return [Math.round(s.x), Math.round(s.y)]; })() : null,
       },
       sequences: {
+        arrival: {
+          staged: this.arrivalStaged,
+          started: this.arrivalStarted,
+          carriage: this.arrivalCarriage,
+          alighting: this.alightingElapsed === null ? null : Number(this.alightingElapsed.toFixed(2)),
+          openingLinesLeft: this.openingLines?.remaining ?? 0,
+          levTalkLeft: this.levTalk?.remaining ?? 0,
+          claimCard: this.evidenceViewer.snapshot().peek,
+          butchLift: Number((this.characters.get('butch')?.lift ?? 0).toFixed(3)),
+        },
         trainDepartureActive: this.departureElapsed !== null,
         levWalkActive: this.levWalkElapsed !== null,
         levEntranceActive: this.levEntrance !== null,

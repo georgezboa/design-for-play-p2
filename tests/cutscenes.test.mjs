@@ -230,19 +230,23 @@ test('ids and old film paths resolve to the eight cutscenes', () => {
 });
 
 test('every call site resolves to the cutscene it means', () => {
+  // Round 11: the 2→3 cutscene plays on Echo City's own page (it loads under
+  // it), so car03-3d-main.js starts both the 2→3 and the 3→4.
   const sites = [
     ['src/shell/titleMenu.js', 'opening'],
     ['src/nightService-main.js', 'chapter1To2'],
-    ['src/chapters/borrowedLight/BorrowedLightScene.js', 'chapter2To3'],
+    ['src/car03-3d-main.js', 'chapter2To3'],
     ['src/car03-3d-main.js', 'chapter3To4'],
     ['src/chapters/paintedCountry/PaintedLineScene.js', 'chapter4To5'],
     ['src/chapters/finalBoss/spectacleBattle.js', 'ending'],
   ];
   for (const [file, want] of sites) {
     const source = read(file);
-    const id = source.match(/(?:playCinematic\(\{\s*id: |navigateAfterCinematic\()'([^']+)'/)?.[1];
-    assert.equal(resolveCutsceneId(id, null), want, `${file}: ${id}`);
+    const ids = [...source.matchAll(/(?:playCinematic\(\{\s*id: |navigateAfterCinematic\()'([^']+)'/g)].map((match) => match[1]);
+    assert.ok(ids.some((id) => resolveCutsceneId(id, null) === want), `${file}: ${ids.join(', ')}`);
   }
+  // Chapter 2 itself no longer plays a cutscene: it goes straight to Echo City.
+  assert.doesNotMatch(read('src/chapters/borrowedLight/BorrowedLightScene.js'), /playCinematic|navigateAfterCinematic/);
 });
 
 test('every id resolves to its authored cutscene; an unknown loader set falls through', () => {

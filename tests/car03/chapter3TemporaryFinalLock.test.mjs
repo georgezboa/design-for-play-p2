@@ -197,10 +197,33 @@ describe('Chapter 3 integrated final lock v48', () => {
     // v50-r11 (round 11 merge, 2026-10-10): v48-ch3art and v49-r11-board
     // together, plus the arrival and loading changes the lead makes on
     // release/1.0. Files: 33.
-    assert.equal(sourceFiles.length, 33);
+    // v51-r11-arrival (round 11, George's playtest, 2026-10-10;
+    // tests/car03/chapter3Round11Arrival, tests/arrivalGate): the 2→3
+    // hand-off and the arrival. The 2→3 cutscene now plays on this page
+    // (car03-3d.html?from=chapter2: black until it is up, the flag taken
+    // off the address) while the city loads, stages the arrival and warms
+    // its programs and textures underneath in per-frame slices
+    // (EchoCity3DPreview.warmUp, onModelProgress feeding the arrival gate;
+    // the loading card is lifted by the page, not 650 ms after the models);
+    // its Satie carries on as the arrival cue. The arrival (new
+    // chapter3Alighting): Butch stands in the lit end doorway of the
+    // night service's last carriage (the finale's doorless carriage, staged
+    // for the start and leaving with the train), steps down (the rig's new
+    // `lift`) and walks out to the station forecourt in about four seconds
+    // while the announcement plays, the camera close on the carriage end and
+    // the title card high; that is the only part that holds him. The rest
+    // of the opening is walk-and-talk (createLineQueue barks that never take
+    // the input; extendBark / endBark / voiceSpeaking): the call-back, his
+    // two lines with the claim card in his hand as a non-modal paper
+    // (Chapter3EvidenceViewer.peek), then Lev, who sets off on Butch's last
+    // line and introduces himself beside him without calling him to a halt.
+    // playerStart and levStart moved to the forecourt and the paving past
+    // it. Files: +1 (chapter3Alighting): 33 -> 34. Toma's composition
+    // unchanged. Assets unchanged.
+    assert.equal(sourceFiles.length, 34);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '6cdeda0db289567a200161bbb45f39103ef7ca635c52ee3e71da6515641060d1',
+      '26db495e94c1d2ed00d2b4de560c62a20c8830db8d5a0fa1dcd946d2fa0703d3',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

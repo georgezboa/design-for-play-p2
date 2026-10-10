@@ -2,12 +2,13 @@ import './fonts/fonts.css';
 import './shell/uiKit.css';
 import './cars/presentCity3d/chapter3Release.css';
 import { EchoCity3DPreview } from './cars/presentCity3d/EchoCity3DPreview.js';
-import { Chapter3OpeningRuntime } from './cars/presentCity3d/Chapter3OpeningRuntime.js';
+import { CHAPTER3_ARRIVAL_MUSIC, Chapter3OpeningRuntime } from './cars/presentCity3d/Chapter3OpeningRuntime.js';
 import { chapter3ResumeStart, createChapter3OpeningModel } from './cars/presentCity3d/chapter3OpeningModel.js';
 import { installDevMenuReturnControl } from './devMenuReturn.js';
 import { installPauseMenu } from './shell/pauseMenu.js';
 import { scheduleChapterControlsCard } from './shell/controlsCard.js';
-import { CINEMATICS, navigateAfterCinematic } from './shell/gameFlow.js';
+import { CINEMATICS, navigateAfterCinematic, playCinematic } from './shell/gameFlow.js';
+import { arrivalFrom, createArrivalGate, withoutArrival } from './shell/arrivalGate.js';
 import { createSaveStore } from './shell/saveSystem.js';
 import { DEV_MODE, devParams } from './devMode.js';
 import { CHAPTER_CONTROLS } from './shell/chapterControls.js';
@@ -40,8 +41,77 @@ installPauseMenu({
     return false;
   },
 });
-// Round 6 (item 18): name this chapter's keys once, as play begins.
-scheduleChapterControlsCard('chapter3', 7000);
+// ?playtest= jumps to one Chapter 3 beat; dev builds only (devParams() is
+// empty in production, so a shipped city always opens on the platform).
+const query = devParams();
+const playtest = query.get('playtest');
+// Alpha round 4 (P1): a dev / router route (?playtest=, ?focus=) always
+// wins over a resume point and never records one.
+const qaOverride = Boolean(playtest || query.get('focus'));
+
+// Round 11 (George: "第三章一开始要在动画的时候加载" — Chapter 3 should load
+// during the cutscene; and the game stuck where he skipped after Chapter 2):
+// Chapter 2 now comes straight here with ?from=chapter2, and the 2→3
+// cutscene plays on this page while the city loads, warms its shaders and
+// stages the arrival underneath. The overlay leaves when both the cutscene
+// has ended (or been skipped) and the city is ready; if the city is still
+// loading, the cutscene's last frame stays with the city's live progress;
+// if the city stops making progress, the overlay hands over to the city's
+// own loading card. The flag is taken off the address at once, so a reload
+// or Continue opens the platform without the cutscene. A dev route wins.
+const arrival = arrivalFrom(window.location.search, { expected: 'chapter2', override: qaOverride });
+if (new URLSearchParams(window.location.search).has('from')) {
+  try { window.history.replaceState(window.history.state, '', withoutArrival(window.location.href)); } catch { /* keep the address */ }
+}
+if (!arrival) document.documentElement.classList.remove('nf-arriving');
+const arrivalGate = arrival ? createArrivalGate([
+  { id: 'page', weight: 0.05 },
+  { id: 'materials', weight: 0.1 },
+  { id: 'models', weight: 0.55 },
+  { id: 'cast', weight: 0.2 },
+  { id: 'warm', weight: 0.1 },
+], { now: () => performance.now() }) : null;
+arrivalGate?.report('page');
+let arrivalHandedOver = false;
+let platformStarted = false;
+// Round 6 (item 18): name this chapter's keys once, as play begins (round
+// 11: as control comes to the player at the end of the step down, or 7 s in
+// on any other start).
+const startPlatform = () => {
+  if (platformStarted) return;
+  platformStarted = true;
+  // the city's clock starts from this frame, not from when it was covered
+  preview.lastFrame = performance.now();
+  if (gameplayRuntime.beginArrival()) scheduleChapterControlsCard('chapter3', 4200);
+  else scheduleChapterControlsCard('chapter3', 7000);
+};
+if (arrival) {
+  playCinematic({
+    id: 'chapter-2-to-3',
+    src: CINEMATICS.chapter2To3,
+    label: 'Chapter 2 to Chapter 3 transition',
+    arrival: {
+      gate: arrivalGate,
+      onReveal: () => {
+        arrivalHandedOver = true;
+        document.documentElement.classList.remove('nf-arriving');
+        // Stalled (or failed) before the city was in: its own loading card
+        // takes over, and the platform starts when it lifts (boot chain).
+        if (arrivalGate.status !== 'ready') return;
+        startPlatform();
+      },
+    },
+    // The cutscene's Satie is the platform's arrival cue: it plays under that
+    // cue's id and mix and carries on into the arrival.
+    music: {
+      id: CHAPTER3_ARRIVAL_MUSIC.id,
+      volume: CHAPTER3_ARRIVAL_MUSIC.volume,
+      dialogueDuckDb: CHAPTER3_ARRIVAL_MUSIC.dialogueDuckDb,
+      outFade: CHAPTER3_ARRIVAL_MUSIC.outFade,
+    },
+    keepMusic: true,
+  });
+}
 
 window.addEventListener('nightfall:chapter3-complete', () => {
   createSaveStore().markCheckpoint('chapter-4-start');
@@ -62,10 +132,6 @@ const preview = new EchoCity3DPreview({
   loadingFill: document.querySelector('#loading-fill'),
 });
 
-// ?playtest= jumps to one Chapter 3 beat; dev builds only (devParams() is
-// empty in production, so a shipped city always opens on the platform).
-const query = devParams();
-const playtest = query.get('playtest');
 const PLAYTEST_STARTS = Object.freeze({
   'chapter3-oil': 'oil-seam',
   'chapter3-ministry': 'ministry-walk',
@@ -99,8 +165,7 @@ const resumeAtDusk = requestedStage === 'dusk' && (DEV_MODE || unlocked.includes
 // the dusk one when it was opened at `?stage=dusk`, otherwise the chapter
 // start; when the active save stands on that checkpoint and holds a resume
 // point for it, the chapter opens at the start of that beat. A dev / router
-// route (?playtest=, ?focus=) always wins and never records one.
-const qaOverride = Boolean(playtest || query.get('focus'));
+// route (?playtest=, ?focus=) always wins and never records one (qaOverride).
 const pageCheckpoint = resumeAtDusk ? 'chapter-3-dusk' : 'chapter-3-start';
 const resumeStage = !qaOverride && activeSave?.checkpointId === pageCheckpoint
   ? chapter3ResumeStart(pageCheckpoint, store.readResume(pageCheckpoint))
@@ -156,10 +221,23 @@ if (DEV_MODE) {
   window.advanceTime = (ms) => preview.advanceTime(ms);
   window.echoCity3D = preview;
   window.chapter3Runtime = gameplayRuntime;
+  window.chapter3Arrival = arrivalGate;
 }
+
+preview.onModelProgress = (completed, total) => arrivalGate?.report('models', total ? completed / total : 1);
+// Alpha round 4: lift the loading card only once the city has drawn the
+// chapter's first real frames (a slow GPU otherwise showed the stale
+// platform frame, then the cut, for seconds after "loaded").
+const firstDrawnFrames = () => new Promise((resolve) => {
+  let frames = 0;
+  const tick = () => (++frames >= 3 ? resolve() : requestAnimationFrame(tick));
+  requestAnimationFrame(tick);
+  window.setTimeout(resolve, 8000);
+});
 
 preview.initialize()
   .then(() => {
+    arrivalGate?.report('materials');
     preview.start();
     if (playtest === 'chapter3-characters') {
       // The rig lab tests character loading/deformation, not the landmark
@@ -172,20 +250,32 @@ preview.initialize()
     }
     return preview.loadModels();
   })
-  .then(() => gameplayRuntime.initialize())
-  // Alpha round 4: lift the loading card only once the city has drawn the
-  // chapter's first real frames (a slow GPU otherwise showed the stale
-  // platform frame, then the cut, for seconds after "loaded").
-  .then(() => new Promise((resolve) => {
-    let frames = 0;
-    const tick = () => (++frames >= 3 ? resolve() : requestAnimationFrame(tick));
-    requestAnimationFrame(tick);
-    window.setTimeout(resolve, 8000);
-  }))
-  .then(() => {
+  // The arrival is staged (Butch in the carriage door) but held until the
+  // player can see it: the cutscene or the loading card lifting starts it.
+  .then(() => gameplayRuntime.initialize({ holdArrival: true }))
+  .then(async () => {
+    if (arrival && !arrivalHandedOver) {
+      // Under the cutscene: compile and draw the staged first frame now, so
+      // the reveal is a drawn frame and not a shader compile.
+      arrivalGate.report('cast');
+      const warmMs = await preview.warmUp({ onProgress: (fraction) => arrivalGate.report('warm', fraction) });
+      if (DEV_MODE) console.info(`[echo city] warmed under the cutscene in ${warmMs} ms`, JSON.stringify(preview.warmStats));
+      // (the card never shows on an arrival: lift it while it is hidden)
+      preview.loadingPanel.classList.add('done');
+      // Settling the gate reveals the platform now if the cutscene is over
+      // (gameFlow.js), or when it ends.
+      arrivalGate.ready();
+      // Handed over early (the city had stalled): its card was up; go now.
+      if (arrivalHandedOver) startPlatform();
+      return;
+    }
+    await firstDrawnFrames();
     preview.loadingPanel.classList.add('done');
+    startPlatform();
   })
   .catch((error) => {
     console.error('Failed to initialize Echo City', error);
     document.querySelector('#runtime-status').textContent = 'ECHO CITY FAILED TO START';
+    if (preview.loadingLabel) preview.loadingLabel.textContent = 'ECHO CITY FAILED TO START';
+    arrivalGate?.fail(error);
   });

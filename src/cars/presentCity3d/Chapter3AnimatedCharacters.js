@@ -97,6 +97,9 @@ class AnimatedCharacterInstance {
     // Round 6 (G5): the first update snaps the rig to the ground (it used to
     // ease up from the bind offset), and so does any teleport.
     this.groundSnap = true;
+    // Round 11 (the arrival): metres the feet stand above the sampled ground
+    // (the carriage floor while Butch steps down from the night service).
+    this.lift = 0;
     host.getWorldPosition(this.previousHostPosition);
     this.loaded = false;
     this.error = null;
@@ -198,7 +201,7 @@ class AnimatedCharacterInstance {
       Math.min(dt, 0.1),
     );
     this.groundSnap = false;
-    if (this.visual) this.visual.position.y = this.visualBaseY + this.groundCorrection;
+    if (this.visual) this.visual.position.y = this.visualBaseY + this.groundCorrection + (Number(this.lift) || 0);
 
     const referenceSpeed = LOCOMOTION_REFERENCE_SPEEDS[this.currentState];
     const action = this.currentAction ? this.actions.get(this.currentAction) : null;

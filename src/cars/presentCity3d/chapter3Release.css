@@ -92,6 +92,23 @@
 /* ---------- evidence card ---------- */
 .c3-evidence .nf-card { width: min(560px, calc(100vw - 48px)); }
 .c3-evidence .nf-card__lines b { color: var(--nf-oxblood); letter-spacing: 0.04em; }
+/* Round 11 (the arrival): the chapter title over the top of the frame,
+   clear of Butch stepping down from the carriage in the middle of it. */
+.nf-title-card.c3-title-high { place-items: start center; padding-top: max(96px, 15vh); }
+/* Round 11 (the arrival): the claim card in Butch's hand while he walks —
+   no backdrop, no prompt, never takes the pointer; at the right of the
+   frame, clear of the task card, the controls card and the caption bar. */
+.c3-evidence.is-peek { background: transparent; pointer-events: none; place-items: center end; padding: 0 max(20px, 3vw) 12vh 0; }
+.c3-evidence.is-peek .nf-card { width: min(390px, calc(100vw - 48px)); padding: 24px 28px 18px; transform: rotate(1.2deg); animation: c3-peek-in 480ms ease-out both; }
+.c3-evidence.is-peek .nf-card::before { top: 14px; right: 16px; width: 16px; height: 16px; }
+.c3-evidence.is-peek .nf-card__stamp { font-size: calc(10px * var(--nf-scale)); margin-bottom: 8px; }
+.c3-evidence.is-peek .nf-card__title { font-size: calc(23px * var(--nf-scale)); margin-bottom: 8px; }
+.c3-evidence.is-peek .nf-card__lines { font-size: calc(16px * var(--nf-scale)); line-height: 1.42; }
+.c3-evidence.is-peek .nf-card__lines p { margin-bottom: 4px; }
+.c3-evidence.is-peek .nf-card__close { display: none; }
+@keyframes c3-peek-in { from { opacity: 0; transform: translateX(24px) rotate(2.4deg); } to { opacity: 1; transform: rotate(1.2deg); } }
+@media (prefers-reduced-motion: reduce) { .c3-evidence.is-peek .nf-card { animation: none; } }
+:root[data-reduced-motion='true'] .c3-evidence.is-peek .nf-card { animation: none; }
 
 /* ---------- ticket 43 board ---------- */
 body.c3-board-open .nf-caption { display: none; }

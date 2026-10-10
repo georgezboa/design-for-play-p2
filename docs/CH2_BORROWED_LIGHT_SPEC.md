@@ -69,7 +69,7 @@ Lamps: at the start, after A2, before A3, between A3/A4, after A4, after A5, bef
 - The countdown stays **12 bells**: a clean run boards with about five to spare, a first run with two typical mistakes (a brake released from outside its cage, a bell I missed) with about three (tests: `solveC`).
 - No fail state at the end. If the countdown ends first, the train "remembers" the punches made in this section and fires them itself in sequence (the walkways are set in place, the ledge dropped), so Butch runs aboard; players in time get the calmer ending shot (the train waits with its door open).
 - Mara's letter is on the bench. E reads it.
-- Then: save `chapter-3-start` → `playCinematic` `2-3.mp4` with the chapter-3 preload gate → `/car03-3d.html`.
+- Then: save `chapter-3-start` → `/car03-3d.html?from=chapter2`, where the 2→3 cutscene plays while Echo City loads underneath (round 11; `arriveAt`, `src/shell/arrivalGate.js`).
 
 ## 6. Tech
 - Page `borrowed-light.html` + `src/borrowedLight-main.js`, its own Phaser game at **1920×1080**, antialiased, Arcade physics, with the shared shell (pause menu with per-chapter controls, settings, reduce motion, text size, saves, stones, cinematics, desktop bridge).

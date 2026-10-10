@@ -162,7 +162,7 @@ export function preloadChapter(chapterId, {
   // A stalled or missing request must never hold a hard-gated transition
   // forever: each resource has a stall timeout and the job has a ceiling.
   const ceiling = createCeiling(profile.ceilingMs ?? ceilingMs, signal);
-  const promise = (async () => {
+  const job = (async () => {
     const route = absolute(profile.route);
     let pageResources = [];
     try {
@@ -200,7 +200,24 @@ export function preloadChapter(chapterId, {
     const result = { ...state, status: error?.name === 'AbortError' ? 'cancelled' : 'partial', error };
     dispatchProgress(result);
     return result;
-  }).finally(() => ceiling.clear());
+  });
+  // Round 11: the ceiling is a deadline the job cannot outlive, not only an
+  // abort it is asked to honour. A body read that never settles after its
+  // abort (a stalled connection the browser does not cut) used to hold the
+  // job, and with it a hard-gated transition, for good.
+  let deadline = null;
+  const ceilingMsResolved = profile.ceilingMs ?? ceilingMs;
+  const timedOut = new Promise((resolve) => {
+    deadline = setTimeout(() => {
+      const result = { ...state, status: 'timeout' };
+      dispatchProgress(result);
+      resolve(result);
+    }, ceilingMsResolved + 1000);
+  });
+  const promise = Promise.race([job, timedOut]).finally(() => {
+    clearTimeout(deadline);
+    ceiling.clear();
+  });
 
   jobs.set(chapterId, promise);
   globalThis.NIGHTFALL_PRELOADS = jobs;
