@@ -482,6 +482,68 @@ export function paintClaimCase({ era = 'present', claim = '', seed = 1, tone = '
   return canvas;
 }
 
+// Round 11 · the mark his OVERDUE stamp leaves on a panel: oxblood ink, a
+// double border, the word and the year, pressed a little unevenly.
+export function paintOverdueStamp({ seed = 9 } = {}) {
+  const w = 420;
+  const h = 176;
+  const canvas = makeCanvas(w, h);
+  const c = canvas.getContext('2d');
+  const random = rng(seed);
+  c.strokeStyle = 'rgba(138, 42, 30, 0.92)';
+  c.fillStyle = 'rgba(138, 42, 30, 0.92)';
+  c.lineWidth = 10;
+  roundRectPath(c, 10, 10, w - 20, h - 20, 14); c.stroke();
+  c.lineWidth = 4;
+  roundRectPath(c, 26, 26, w - 52, h - 52, 8); c.stroke();
+  c.textAlign = 'center';
+  c.textBaseline = 'middle';
+  c.font = '700 74px "Jost", "Helvetica Neue", Arial, sans-serif';
+  c.fillText('OVERDUE', w / 2, h / 2 - 8);
+  c.font = '700 22px "Jost", monospace';
+  c.fillText('LOST PROPERTY · 1978', w / 2, h / 2 + 46);
+  // Uneven ink: knock some of it back to paper.
+  c.globalCompositeOperation = 'destination-out';
+  for (let i = 0; i < 260; i += 1) {
+    c.fillStyle = `rgba(0,0,0,${0.15 + random() * 0.5})`;
+    c.beginPath();
+    c.arc(random() * w, random() * h, 0.8 + random() * 3.2, 0, TAU);
+    c.fill();
+  }
+  c.globalCompositeOperation = 'source-over';
+  return canvas;
+}
+
+// Round 11 · a true thing in Movement III: a lamp-lit record card (the
+// fact's words are a world tag beside it, so they follow TEXT SIZE).
+export function paintTrueThingCard() {
+  const w = 300;
+  const h = 210;
+  const canvas = makeCanvas(w, h);
+  const c = canvas.getContext('2d');
+  const halo = c.createRadialGradient(w / 2, h / 2, 20, w / 2, h / 2, w * 0.62);
+  halo.addColorStop(0, 'rgba(255, 214, 140, 0.85)');
+  halo.addColorStop(1, 'rgba(255, 190, 110, 0)');
+  c.fillStyle = halo;
+  c.fillRect(0, 0, w, h);
+  c.save();
+  c.translate(w / 2, h / 2);
+  c.rotate(-0.04);
+  c.fillStyle = '#efe3c6';
+  roundRectPath(c, -110, -70, 220, 140, 8); c.fill();
+  c.strokeStyle = 'rgba(176, 138, 74, 0.95)';
+  c.lineWidth = 6;
+  roundRectPath(c, -104, -64, 208, 128, 6); c.stroke();
+  c.fillStyle = 'rgba(60, 40, 24, 0.55)';
+  for (let i = 0; i < 4; i += 1) c.fillRect(-80, -30 + i * 18, i === 3 ? 90 : 160, 5);
+  c.fillStyle = '#e0a24a';
+  c.beginPath(); c.arc(78, -40, 14, 0, TAU); c.fill();
+  c.fillStyle = '#fff2cc';
+  c.beginPath(); c.arc(78, -40, 6, 0, TAU); c.fill();
+  c.restore();
+  return canvas;
+}
+
 // ---------------------------------------------------------------------------
 // Movement II · BORROWED LIGHT
 

@@ -10,51 +10,51 @@ const battle = read('src/chapters/finalBoss/spectacleBattle.js');
 const style = read('src/chapters/finalBoss/style.css');
 const finaleCss = read('src/shell/finale.css');
 
-test('A4-5: every hit names its source, and a fatal fall no longer overwrites the death card', () => {
-  for (const source of ["'case'", "'ghost-train' : 'train'", "'beam'", "'fall'", "'collapse'", "'sweep'"]) assert.ok(battle.includes(source), source);
-  assert.match(battle, /takeHit\(\{ force = false, source = 'hit', from = null \} = \{\}\)/);
-  assert.match(battle, /this\.showHitFeedback\(this\.lastHit, from\)/);
-  assert.match(battle, /this\.showDeathCard\(this\.lastHit \?\? \{ label: HIT_SOURCES\.hit \}, \{ echoWindow \}\)/);
-  // The street-gap line only when the fall did not end the movement.
-  assert.match(battle, /if \(p\.respawns === before\) \{[\s\S]{0,400}?this\.toast\(tutor\.gapIsRailing \? 'THE BRIDGE FOLDED · BACK ON THE NEAR ROOF' : 'THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE'\);\s*\}/);
-  // Round 6 (item 16): the card says what is kept; nothing is rolled back.
-  assert.doesNotMatch(battle, /his ticket is back where this movement began/);
+test('A4-5: every hit names its source, and the death card says what tore the last layer and what it cost', () => {
+  // Round 11: the directors name each hit by its attack's source; the
+  // stage shows it on the hit label and the death card.
+  const { HIT_SOURCES } = { HIT_SOURCES: Object.fromEntries([...battle.matchAll(/^  '?([a-z-]+)'?: '([^']+)',$/gm)].map(([, k, v]) => [k, v])) };
+  for (const source of ['case', 'train', 'ghost-train', 'stamp', 'beam', 'bell-wave', 'fall', 'echo', 'shockwave', 'collapse', 'pigment', 'sweep', 'wash']) assert.ok(HIT_SOURCES[source], source);
+  assert.match(battle, /onHurt\(e\) \{\s*const label = HIT_SOURCES\[e\.source\] \?\? HIT_SOURCES\.hit;/);
+  assert.match(battle, /if \(e\.layersLeft > 0\) this\.showHitFeedback\(this\.lastHit, e\.from\);/, 'a fatal hit leaves the moment to the death card');
   assert.match(battle, /LAYERS TORN · MOVEMENT \$\{phase\.number\} GOES ON/);
-  assert.match(battle, /keptAfterTornLayers\(this\.phase, \{ echoWindow \}\)/);
+  assert.match(battle, /checkpointLine\(\{ rollback, phaseName \}\)/);
   assert.match(style, /\.nf-hit-flash\[data-side='left'\]/);
 });
 
-// Round 4 moved the steps into finaleModel.js createBellTutorial (model-
-// tested in alphaRound4.test.mjs); the battle feeds it and shows its hint.
-test('Movement II teaches one machine, then the other, then both, with the combined hint before any failure', () => {
-  assert.match(battle, /if \(!keepTutorial\) this\.bell\.tutor = createBellTutorial\(\);/);
-  assert.match(battle, /tutor\.queued\(\{ line: node\.line, lane: node\.lane, nextLane: arena\.plan\.lane \}\)/);
-  assert.match(battle, /if \(kind === 'bridge'\) tutor\.bridgeOut\(\);/);
-  assert.match(battle, /const help = tutor\.exposed\(\{ bridgeOut: arena\.anyBridgeOut\(\) \}\);/);
-  assert.match(battle, /this\.hint\(tutor\.hint\(\{/);
-  const model = read('src/chapters/finalBoss/finaleModel.js');
-  assert.match(model, /BOTH BEFORE ONE BELL · AN <kbd>AMBER<\/kbd> BRIDGE \+ THE <kbd>ROSE<\/kbd> SIGNAL IN HIS NEXT LANE/);
+// Round 11 moved Movement II's teaching into movements/onTheBell.js
+// (round11Movements.test.mjs drives it): phase 1 opens with no beams until
+// the first punch lands, one hint at a time.
+test('Movement II teaches by doing: lamps, bridge and punch first; the beams only after the first punch', () => {
+  const bell = read('src/chapters/finalBoss/movements/onTheBell.js');
+  assert.match(bell, /'on-the-bell': \{\s*teach\(\) \{ arena\.setBeams\(false\);/);
+  assert.match(bell, /teachDone: \(\) => firstPunch,/);
+  assert.match(bell, /PUNCH AN <kbd>AMBER<\/kbd> LAMP · <kbd>E<\/kbd> · ITS BRIDGE CROSSES ON THE BELL/);
+  assert.match(bell, /NOW THE <kbd>ROSE<\/kbd> SIGNAL IN THE \$\{lane\.toUpperCase\(\)\} LANE/);
   // Wires from each amber and teal lamp to its machine.
   assert.match(battle, /new THREE\.TubeGeometry\(curve, 28, 0\.05, 6, false\)/);
   assert.match(battle, /THE AMBER LINE IS STILL OUT · PUNCH IT AGAIN ONCE ITS BRIDGE FOLDS/);
 });
 
-test('A4-6: a stranded player gets a return plank, and the post-death grace respects the gap', () => {
-  assert.match(battle, /if \(arena\.stranded\(p\.z\) && !this\.transition\) \{[\s\S]{0,300}arena\.extendReturnBridge\(arena\.nearestBridge\(p\.x\)\)/);
+test('A4-6: a stranded player gets a return plank, and a bridge holds for its rider', () => {
+  const bell = read('src/chapters/finalBoss/movements/onTheBell.js');
+  assert.match(bell, /if \(body && arena\.stranded\(body\.z\) && d\.state !== 'done'\) \{[\s\S]{0,300}arena\.extendReturnBridge\(arena\.nearestBridge\(body\.x\)\)/);
+  assert.match(bell, /arena\.extendReturnBridge\(id, undefined, \{ full: true \}\);/);
+  assert.match(bell, /The gap is a railing: a step over it needs a bridge underfoot\./);
   assert.match(battle, /const level = arena\.bridgeLevel\(id\);/);
-  assert.match(battle, /if \(arena && \(p\.respawnInv > 0 \|\| this\.bell\.tutor\.gapIsRailing\) && arena\.fallsAt\(resolved\.x, resolved\.z\) && !arena\.fallsAt\(p\.x, p\.z\)\)/);
 });
 
-test('Movement IV plays from the keyboard: HOLD E absorbs the nearest colour, HOLD R returns it', () => {
-  // Round 6: E is the action key elsewhere; in Movement IV it still absorbs.
-  assert.match(battle, /if \(event\.code === 'KeyE'\) \{\s*if \(this\.mode === 'play' && this\.phase === 3\) this\.startKeyboardPaint\(2\);\s*else this\.actAction\(\);/);
-  assert.match(battle, /if \(event\.code === 'KeyR'\) this\.startKeyboardPaint\(0\);/);
-  assert.match(battle, /findNearestPaint\(reach = 4\.2\)/);
-  assert.match(read('src/chapters/finalBoss/finaleControls.js'), /HOLD E · ABSORB THE NEAREST COLOUR/);
+test('Movement IV plays from the keyboard: HOLD E absorbs the nearest wet colour, HOLD R returns it', () => {
+  // Round 6: E is the action key elsewhere; in Movement IV it is held.
+  assert.match(battle, /if \(this\.phase === 3\) \{\s*input\.actHeld = k\.has\('KeyE'\)/);
+  assert.match(battle, /input\.retHeld = k\.has\('KeyR'\)/);
+  const paint = read('src/chapters/finalBoss/movements/paintedCountry.js');
+  assert.match(paint, /\.filter\(\(\{ dist, aimDist \}\) => \(aim \? dist <= 4\.2 && aimDist <= 2\.4 : dist <= ABSORB_REACH\)\)/, 'keys: the nearest in reach; the mouse: the one under it');
+  assert.match(read('src/chapters/finalBoss/finaleControls.js'), /HOLD E · ABSORB WET COLOUR/);
   assert.match(read('src/chapters/finalBoss/finaleControls.js'), /\['ABSORB \(MOVEMENT IV\)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'\]/);
   // The start board lists every movement's keys, the mouse ones included.
   const page = read('final-boss.html');
-  assert.match(page, /HOLD E absorbs the nearest colour · HOLD R returns it · or hold right \/ left mouse/);
+  assert.match(page, /HOLD E absorbs wet colour · HOLD R returns it when he is open · or hold right \/ left mouse/);
   assert.match(page, /MOUSE aims it/);
 });
 

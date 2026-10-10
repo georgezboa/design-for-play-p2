@@ -4,9 +4,8 @@ import { access } from 'node:fs/promises';
 import fs from 'node:fs';
 
 import {
-  BELL_ARENA, CASE_RETURN_DAMAGE, LANE_X, LIGHT_DAMAGE, OFFBEAT_MS, PAINT_DAMAGE_BY_CHARGE,
-  caseReturnable, createBellArena, createDeathLedger, createEchoDebate, difficultyPreset,
-  ghostTrainRevealed, laneOf, orbitLens, paintReturnDamage, punchCase, trainHits, underLens,
+  BELL_ARENA, LANE_X, LENS_RADIUS, LIGHT_DAMAGE, OFFBEAT_MS, PAINT_DAMAGE_BY_CHARGE,
+  createBellArena, createDeathLedger, difficultyPreset, laneOf, paintReturnDamage, underLens,
 } from '../../src/chapters/finalBoss/finaleModel.js';
 import { ECHO_EXCHANGES, ECHO_VOICE_URLS } from '../../src/chapters/finalBoss/echoExchanges.js';
 import { BELL_MS } from '../../src/chapters/borrowedLight/timetableModel.js';
@@ -26,41 +25,8 @@ test('Movement IV damage scales with the absorbed charge: 7 / 15 / 24 (round 11:
 });
 
 // --------------------------------------------------------------- Movement III
-
-// Round 6: an answer is two steps (the facts, then the framing); these walk
-// the facts step with the two true things.
-const throughFacts = (debate) => {
-  const open = debate.open();
-  open.facts.forEach((fact, index) => { if (fact.holds) debate.pickFact(index); });
-  assert.equal(debate.confirmFacts().result, 'hold');
-  return open;
-};
-
-test('the echo debate resolves an exchange once: repeated answer keys are ignored', () => {
-  const debate = createEchoDebate(ECHO_EXCHANGES);
-  const open = throughFacts(debate);
-  const right = open.replies.findIndex((reply) => reply.holdsBoth);
-  const first = debate.choose(right);
-  assert.equal(first.result, 'window');
-  // the old bug: pressing the same number again re-dealt the damage
-  assert.deepEqual(debate.choose(right), { result: 'ignored' });
-  assert.deepEqual(debate.choose(1 - right), { result: 'ignored' });
-  assert.deepEqual(debate.confirmFacts(), { result: 'ignored' });
-  assert.equal(debate.history().filter((entry) => entry.step === 'framing').length, 1);
-  assert.equal(debate.isOpen, false);
-});
-
-test('a deflected answer sends the exchange to the back of the queue', () => {
-  const debate = createEchoDebate(ECHO_EXCHANGES);
-  const first = throughFacts(debate);
-  const wrong = first.replies.findIndex((reply) => !reply.holdsBoth);
-  assert.equal(debate.choose(wrong).result, 'deflected');
-  const second = debate.open();
-  assert.notEqual(second.id, first.id, 'the next exchange opens');
-  assert.equal(debate.remaining(), ECHO_EXCHANGES.length);
-  // re-opening an unresolved exchange returns the same one (no reshuffle)
-  assert.equal(debate.open(), second);
-});
+// Round 11: the argument is fought (movements/echoCity.js, tested in
+// round11Movements.test.mjs). The exchanges' content still has to hold.
 
 test('every exchange offers exactly two voiced answers and one holds both truths', async () => {
   assert.ok(ECHO_EXCHANGES.length >= 4, 'enough exchanges to carry Movement III (200 → 100 HP)');
@@ -221,33 +187,10 @@ test('STORY fires one beam lane and never a full sweep; NORMAL escalates', () =>
 
 // ----------------------------------------------------------------- Movement I
 
-test('the lens reads a case tag; only a read case can be returned', () => {
-  const player = { x: 0, z: 4 };
-  const item = { landed: true, x: 1, z: 4, tagX: 1.4, tagZ: 3.6 };
-  const lens = { x: 1.2, z: 3.8 };
-  assert.equal(underLens(lens, item.tagX, item.tagZ), true);
-  assert.equal(caseReturnable(item, lens, player), true);
-  assert.deepEqual(punchCase(item, lens, player), { result: 'returned', damage: CASE_RETURN_DAMAGE });
-  assert.equal(punchCase(item, { x: 9, z: -5 }, player).result, 'unread');
-  assert.equal(punchCase(item, lens, { x: 9, z: -5 }).result, 'out-of-reach');
-  assert.equal(punchCase({ ...item, landed: false }, lens, player).result, 'none');
-});
-
-test('keyboard play: the lens orbits Butch at a fixed radius', () => {
-  const player = { x: 2, z: 1 };
-  for (const t of [0, 0.7, 2.3, 5]) {
-    const lens = orbitLens(player, t);
-    assert.ok(Math.abs(Math.hypot(lens.x - player.x, lens.z - player.z) - 2.6) < 1e-9);
-  }
-});
-
-test('ghost trains only exist where the lens shows 1978, and seam trains hit only in the seam', () => {
-  const train = { tailX: -8, tailZ: 0.4, headX: -3, headZ: 0.4, halfWidth: 0.6 };
-  assert.equal(ghostTrainRevealed(train, { x: -5, z: 1.5 }), true);
-  assert.equal(ghostTrainRevealed(train, { x: 6, z: 5 }), false);
-  assert.equal(trainHits(train, { x: -5, z: 0.6 }), true);
-  assert.equal(trainHits(train, { x: -5, z: 2.4 }), false);
-  assert.equal(trainHits(train, { x: 2, z: 0.4 }), false, 'ahead of the train is safe until it arrives');
+test('the lens reads the 1978 layer only inside its circle', () => {
+  assert.equal(underLens({ x: 1, z: 3 }, 1 + LENS_RADIUS - 0.01, 3), true);
+  assert.equal(underLens({ x: 1, z: 3 }, 1 + LENS_RADIUS + 0.01, 3), false);
+  assert.equal(underLens(null, 0, 0), false);
 });
 
 // ------------------------------------------------------------------- shared
@@ -295,5 +238,5 @@ test('alpha round 3 (K2): a second press on a queued lamp is the same punch, nev
   assert.ok(arena.preview().machines.some((change) => change.machineId === 'lamp-west' && change.to === 'on'));
   const battle = fs.readFileSync(new URL('../../src/chapters/finalBoss/spectacleBattle.js', import.meta.url), 'utf8');
   assert.doesNotMatch(battle, /UNPUNCHED/);
-  assert.match(battle, /result\.result === 'already'\) \{ bellAudio\.refused\(\); this\.toast\(`\$\{node\.label\} · ALREADY PUNCHED/);
+  assert.match(battle, /r === 'already'\) \{ bellAudio\.refused\(\); this\.toast\(`\$\{node\?\.label \?\? 'THAT LAMP'\} · ALREADY PUNCHED/);
 });

@@ -1,11 +1,16 @@
-// Chapter 6 · round 6 playtest (items 16–19): a torn last layer never
-// undoes progress, the answer is reasoned from evidence (facts, then
-// framing), Space only jumps, and each movement names its own controls.
+// Chapter 6 · round 6 playtest (items 16–19): the answer rests on
+// evidence (named records), Space only jumps, and each movement names its
+// own controls. Round 11 turned the argument into action and made a torn
+// last layer a phase checkpoint; what round 6 asked for that still holds is
+// pinned here.
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { ECHO_FACTS_TO_PICK, createEchoDebate, keptAfterTornLayers, tornLayerReset } from '../../src/chapters/finalBoss/finaleModel.js';
+import { checkpointLine } from '../../src/chapters/finalBoss/finaleModel.js';
+import { createArgument } from '../../src/chapters/finalBoss/movements/echoCity.js';
+import { createFightRunner } from '../../src/chapters/finalBoss/conductorFight.js';
+import { createLostPropertyFight } from '../../src/chapters/finalBoss/movements/lostProperty.js';
 import { ECHO_EXCHANGES, ECHO_FACTS_ASK } from '../../src/chapters/finalBoss/echoExchanges.js';
 import {
   CONTROLS_STAGE_EVENT, FINALE_ALL_CONTROLS, FINALE_STAGE_CONTROLS, MOVEMENT_KEY_LINES, PROGRESS_KEPT_LINES,
@@ -17,12 +22,14 @@ const battle = read('src/chapters/finalBoss/spectacleBattle.js');
 const page = read('final-boss.html');
 
 const truthIndices = (exchange) => exchange.facts.map((fact, index) => (fact.holds ? index : -1)).filter((index) => index >= 0);
-const misreadIndices = (exchange) => exchange.facts.map((fact, index) => (fact.holds ? -1 : index)).filter((index) => index >= 0);
-const rightReply = (exchange) => exchange.replies.findIndex((reply) => reply.holdsBoth);
+const ECHO_FACTS_TO_PICK = 2;
 
 // ------------------------------------------------------------ item 17
 
-describe('Movement III: the answer is reasoned from what the journey found', () => {
+describe('Movement III: the argument rests on what the journey found', () => {
+  // Round 11: the two true things come down as record cards to strike, and
+  // the misreadings are what he throws (each carrying his answer from the
+  // record). The content round 6 wrote for them still has to hold.
   it('every exchange offers four facts over named records: two true things, two misreadings with his answer', () => {
     // The records the earlier chapters establish (docs/STORY_BIBLE.md, the
     // Chapter 1–5 content): every fact names the one it rests on.
@@ -51,171 +58,52 @@ describe('Movement III: the answer is reasoned from what the journey found', () 
     assert.match(ECHO_FACTS_ASK, /TWO TRUE THINGS · ONE HE CAN GRANT, ONE THAT STAYS OPEN/);
   });
 
-  it('the framing cannot be reached without the facts (no tone-only shortcut)', () => {
-    const debate = createEchoDebate(ECHO_EXCHANGES);
-    const open = debate.open();
-    assert.equal(open.step, 'facts');
-    assert.deepEqual(debate.choose(rightReply(open.exchange)), { result: 'ignored' });
-    assert.equal(debate.isOpen, true);
-  });
-
-  it('picking: a pick toggles, a third lets the oldest go, and confirming needs exactly two', () => {
-    const debate = createEchoDebate(ECHO_EXCHANGES);
-    debate.open();
-    assert.equal(debate.confirmFacts().result, 'need-two');
-    assert.equal(debate.pickFact(0).result, 'picked');
-    assert.deepEqual(debate.confirmFacts(), { result: 'need-two', picked: [debate.current.facts[0].id] });
-    assert.equal(debate.pickFact(0).result, 'unpicked');
-    debate.pickFact(0); debate.pickFact(1);
-    const third = debate.pickFact(2);
-    assert.equal(third.dropped, debate.current.facts[0].id);
-    assert.deepEqual(third.picked, [debate.current.facts[1].id, debate.current.facts[2].id]);
-    assert.equal(debate.pickFact(9).result, 'ignored');
-  });
-
-  it('a misreading: he answers it from the record, it stays struck, and the claim is not replayed', () => {
-    const debate = createEchoDebate(ECHO_EXCHANGES);
-    const first = debate.open();
-    const [wrong] = misreadIndices(first.exchange);
-    const [right] = truthIndices(first.exchange);
-    debate.pickFact(wrong); debate.pickFact(right);
-    const outcome = debate.confirmFacts();
-    assert.equal(outcome.result, 'misread');
-    assert.equal(outcome.fact.id, first.facts[wrong].id);
-    assert.equal(outcome.rebut, first.facts[wrong].rebut, 'the rebuttal is specific to the misreading');
-    assert.equal(debate.isOpen, false);
-    // Back of the queue: the others come first, then it returns.
-    for (let i = 1; i < ECHO_EXCHANGES.length; i += 1) {
-      const next = debate.open();
-      assert.notEqual(next.id, first.id);
-      assert.equal(next.returning, false);
-      truthIndices(next.exchange).forEach((index) => debate.pickFact(index));
-      debate.confirmFacts();
-      debate.choose(1 - rightReply(next.exchange));
-    }
-    const again = debate.open();
-    assert.equal(again.id, first.id);
-    assert.equal(again.returning, true, 'the stage shows his claim as text, not his voice again');
-    assert.equal(again.step, 'facts');
-    assert.deepEqual(again.struck, [first.facts[wrong].id]);
-    assert.equal(debate.pickFact(wrong).result, 'struck', 'a struck card cannot be picked again');
-  });
-
-  it('true facts then the wrong framing: the facts are kept, and only the one true answer is left', () => {
-    const debate = createEchoDebate([ECHO_EXCHANGES[1]]);
-    const open = debate.open();
-    truthIndices(open.exchange).forEach((index) => debate.pickFact(index));
-    assert.equal(debate.confirmFacts().result, 'hold');
-    assert.equal(debate.step, 'framing');
-    const wrong = 1 - rightReply(open.exchange);
-    assert.equal(debate.choose(wrong).result, 'deflected');
-    const again = debate.open();
-    assert.equal(again.returning, true);
-    assert.equal(again.step, 'framing', 'it comes back straight at the framing');
-    assert.deepEqual([...again.picked].sort(), open.exchange.facts.filter((fact) => fact.holds).map((fact) => fact.id).sort());
-    assert.deepEqual(debate.openReplies(), [rightReply(open.exchange)]);
-    assert.deepEqual(debate.choose(wrong), { result: 'ignored' }, 'a filed answer stays filed');
-    assert.equal(debate.choose(rightReply(open.exchange)).result, 'window');
-    assert.deepEqual(debate.landed(), [open.exchange.id]);
-  });
-
-  it('however a player stumbles, four windows can be earned and the queue never runs dry', () => {
-    const debate = createEchoDebate(ECHO_EXCHANGES);
-    let windows = 0;
-    for (let turn = 0; turn < 40 && windows < 4; turn += 1) {
-      const open = debate.open();
-      if (open.step === 'facts') {
-        // First visit: always a misreading; a return: the truth.
-        const picks = open.returning ? truthIndices(open.exchange) : [misreadIndices(open.exchange)[0], truthIndices(open.exchange)[0]];
-        picks.forEach((index) => debate.pickFact(index));
-        if (debate.confirmFacts().result !== 'hold') continue;
-      }
-      if (debate.choose(rightReply(open.exchange)).result === 'window') windows += 1;
-    }
-    assert.equal(windows, 4, 'Movement III (200 → 100) can always be finished');
-    // A debug jump past the windows still finds an exchange to open.
-    for (let i = 0; i < 6; i += 1) {
-      const open = debate.open();
-      truthIndices(open.exchange).forEach((index) => debate.pickFact(index));
-      debate.confirmFacts();
-      debate.choose(rightReply(open.exchange));
-    }
-    assert.ok(debate.open());
-  });
-
-  it('the debate refuses malformed exchanges', () => {
+  it('the argument refuses malformed exchanges', () => {
     const [first] = ECHO_EXCHANGES;
-    assert.throws(() => createEchoDebate([{ ...first, facts: first.facts.slice(0, 2) }]), /at least three facts/);
-    assert.throws(() => createEchoDebate([{ ...first, facts: first.facts.map((fact) => ({ ...fact, holds: true })) }]), /exactly two true things/);
-    assert.throws(() => createEchoDebate([{ ...first, facts: first.facts.map((fact) => ({ ...fact, rebut: undefined })) }]), /needs a rebuttal/);
+    assert.throws(() => createArgument([{ ...first, facts: first.facts.map((fact) => ({ ...fact, holds: true })) }]), /two true things/);
+    assert.throws(() => createArgument([{ ...first, replies: first.replies.map((reply) => ({ ...reply, holdsBoth: true })) }]), /one answer that holds both/);
+    assert.throws(() => createArgument([]), /no exchanges/);
   });
 
-  it('the stage draws the board in two steps, keyboard and mouse alike, and never replays a heard claim', () => {
-    assert.match(battle, /if \(exchange\.returning\) \{ this\.showAnswerBoard\(\); return; \}/);
-    assert.match(battle, /data-fact="\$\{index\}"/);
-    assert.match(battle, /data-confirm="1"/);
-    assert.match(battle, /<kbd>E<\/kbd> SAY THESE TWO/);
-    assert.match(battle, /if \(this\.echo\.stage === 'facts'\) this\.pickFact\(index\);/);
-    assert.match(battle, /else if \(this\.echo\.stage === 'framing' && index < 2\) this\.chooseAnswer\(index\);/);
-    // A misreading is answered by name, then the one-line deflection.
-    assert.match(battle, /this\.playVoice\(rebut, \(\) => this\.showDeflection\(ECHO_MISREAD_DEFLECT\)\);/);
-    // Every size on the board follows TEXT SIZE.
-    const style = read('src/chapters/finalBoss/style.css');
-    const board = style.slice(style.indexOf('the answer board (round 6'));
-    const fonts = [...board.matchAll(/\bfont(?:-size)?:[^;}]*/g)].map((match) => match[0]).filter((rule) => /\dpx/.test(rule));
-    assert.ok(fonts.length > 10);
-    fonts.forEach((rule) => assert.match(rule, /^font(?:-size)?: (?:700 )?calc\(\d+(?:\.\d+)?px \* var\(--nf-scale\)\)/, rule));
-    // A fresh run gets a fresh argument.
-    assert.match(battle, /begin\(\{ movement = 0 \} = \{\}\) \{[\s\S]{0,700}this\.debate = createEchoDebate\(ECHO_EXCHANGES\);/);
+  it('the stage never shows a board to answer on: the square is fought, and his lines are subtitles', () => {
+    assert.doesNotMatch(battle, /data-fact=|data-confirm=|SAY THESE TWO/);
+    assert.match(battle, /this\.caption\.style\.pointerEvents = 'none';/);
+    // Every size on the subtitle follows TEXT SIZE (finale.css).
+    const finale = read('src/shell/finale.css');
+    assert.match(finale, /\.nf-caption__choice \{[^}]*calc\(17px \* var\(--nf-scale\)\)/);
   });
 });
 
 // ------------------------------------------------------------ item 16
 
-describe('a torn last layer costs Butch his place, never his progress', () => {
-  it('his ticket never rolls back, in any movement', () => {
-    for (const movement of [0, 1, 2, 3]) {
-      const reset = tornLayerReset({ movement, bossHp: 175, echoStage: 'combat', echoClock: 8, brush: 2 });
-      assert.equal(reset.bossHp, 175, `movement ${movement}`);
-      assert.equal(reset.brush, 0, 'only the chance in hand goes');
-      assert.match(reset.kept, /^His ticket stays where you left it/);
+describe('a torn last layer: round 6 kept everything; round 11 makes each phase the checkpoint', () => {
+  it('NORMAL: the phase begins again, earlier phases stay won; STORY: nothing is undone', () => {
+    for (const [difficulty, rolledBack] of [['normal', true], ['story', false]]) {
+      const director = createLostPropertyFight({ difficulty });
+      director.skipTeach();
+      const runner = createFightRunner({ director, difficulty });
+      director.damage(20);
+      runner.body.inv = 0;
+      let death = null;
+      for (let i = 0; i < runner.body.maxHp && !death; i += 1) {
+        runner.body.inv = 0; runner.body.respawnInv = 0;
+        death = (runner.hurt({ source: 'case' }) ?? []).find((e) => e.type === 'death') ?? null;
+      }
+      assert.ok(death, difficulty);
+      assert.equal(death.rolledBack, rolledBack, difficulty);
+      assert.equal(director.track.hp, rolledBack ? 100 : 80);
     }
+    assert.match(checkpointLine({ rollback: 'phase', phaseName: 'RETURN TO SENDER' }), /^This phase starts again: RETURN TO SENDER\. What you won before it stays won\.$/);
+    assert.match(checkpointLine({ rollback: 'none' }), /^His ticket stays where you left it/);
   });
 
-  it('what goes is only the current chance: the cases (I), the lamps (II), the brush (IV)', () => {
-    assert.equal(tornLayerReset({ movement: 0 }).clearCases, true);
-    assert.equal(tornLayerReset({ movement: 1 }).newArena, true);
-    assert.equal(tornLayerReset({ movement: 2 }).clearCases, false);
-    assert.equal(tornLayerReset({ movement: 3, brush: 3 }).spilled, 3);
-  });
-
-  it('Movement III: an earned window stays open, and the next exchange never waits longer', () => {
-    const window = tornLayerReset({ movement: 2, echoStage: 'window', echoClock: 10 });
-    assert.equal(window.keepWindow, true);
-    assert.equal(window.echoStage, 'window');
-    assert.match(window.kept, /your answer stands: walk back to the lit front edge/);
-    assert.equal(tornLayerReset({ movement: 2, echoStage: 'combat', echoClock: 9 }).echoClock, 5);
-    assert.equal(tornLayerReset({ movement: 2, echoStage: 'combat', echoClock: 2 }).echoClock, 2);
-    assert.match(keptAfterTornLayers(2), /Your answers stand, and struck cards stay struck/);
-  });
-
-  it('the battle uses the rule: no reset to the movement start, the card and the ticket say KEPT', () => {
-    const respawn = battle.slice(battle.indexOf('  respawnPlayer() {'), battle.indexOf('  // After three deaths in one movement'));
-    assert.doesNotMatch(respawn, /this\.boss\.hp = this\.boss\.phaseStartHp/);
-    assert.match(respawn, /const reset = tornLayerReset\(\{ movement: this\.phase, bossHp: this\.boss\.hp/);
-    assert.match(respawn, /this\.boss\.hp = reset\.bossHp;/);
-    assert.match(battle, /'KEPT · NOTHING UNDONE'/);
+  it('the battle says so on the card and the ticket, and every movement states it once on its title card', () => {
+    assert.match(battle, /'CHECKPOINT · THIS PHASE AGAIN' : 'KEPT · NOTHING UNDONE'/);
     assert.doesNotMatch(battle, /STARTS AGAIN/);
-    assert.match(battle, /Nothing is lost either way\. His ticket stays where you left it\./);
-  });
-
-  it('every movement states the rule once, on its title card', () => {
+    assert.match(battle, /Nothing is lost either way\. Earlier phases stay won\./);
     assert.equal(PROGRESS_KEPT_LINES.length, 4);
-    PROGRESS_KEPT_LINES.forEach((line) => {
-      assert.match(line, /^TORN LAYERS COST YOU YOUR PLACE · /);
-      assert.ok(line.length <= 72, line);
-    });
-    assert.match(battle, /kept\.textContent = PROGRESS_KEPT_LINES\[index\];/);
+    PROGRESS_KEPT_LINES.forEach((line) => assert.ok(line.length <= 72, line));
+    assert.match(battle, /kept\.textContent = difficulty === 'story' \? STORY_KEPT_LINE : PROGRESS_KEPT_LINES\[index\];/);
   });
 });
 
@@ -225,26 +113,28 @@ describe('controls: Space only jumps, E / Enter acts, and each movement names it
   it('Space is never the action key: it jumps, and E or Enter acts', () => {
     assert.doesNotMatch(battle, /spaceAction/);
     assert.match(battle, /if \(event\.code === 'Space'\) \{ event\.preventDefault\(\); this\.jumpKey\(\); \}/);
-    assert.match(battle, /if \(event\.code === 'Enter' \|\| event\.code === 'NumpadEnter'\) \{[\s\S]{0,200}this\.actAction\(\{ key: 'Enter' \}\);/);
+    assert.match(battle, /if \(event\.code === 'KeyE' \|\| event\.code === 'Enter' \|\| event\.code === 'NumpadEnter'\) \{[\s\S]{0,200}this\.actAction\(\{ key: event\.code === 'KeyE' \? 'E' : 'Enter' \}\);/);
     // Space is shown only where it jumps (boarding the night service).
     const spacePrompts = [...battle.matchAll(/<kbd>SPACE<\/kbd>[^'`]*/g)].map((match) => match[0]);
     assert.deepEqual(spacePrompts, ['<kbd>SPACE</kbd> / <kbd>E</kbd> · JUMP ABOARD THE NIGHT SERVICE']);
     for (const prompt of ["'<kbd>E</kbd> · RETURN'", '`<kbd>E</kbd> · ${node.label}`', "'<kbd>E</kbd> · RETURN THE LIGHT'"]) assert.ok(battle.includes(prompt), prompt);
+    // Round 11: Space is the jump the fight asks for (rings, sweeps), and the
+    // hints that teach it say so.
+    assert.match(read('src/chapters/finalBoss/movements/onTheBell.js'), /<kbd>SPACE<\/kbd> · JUMP IT/);
     // The ticket inspection continues on E / Enter, not Space.
     assert.match(battle, /\['Enter', 'NumpadEnter', 'KeyE'\]\.includes\(event\.code\)/);
     // An action key with nothing to act on says so.
     assert.match(battle, /NO LAMP IN REACH · WALK UP TO ONE/);
-    assert.match(battle, /E SPEAKS WHEN HE ASKS · KEEP CLEAR UNTIL THEN/);
+    assert.match(battle, /E STRIKES A TRUE THING · WAIT FOR THEM TO COME DOWN/);
   });
 
   it('the start board and the title cards show the unified keys', () => {
     assert.match(page, /<b>JUMP<\/b> SPACE <i><\/i> <b>ACT<\/b> E \/ ENTER/);
     assert.doesNotMatch(page, /SPACE \/ CLICK returns|SPACE punches|SPACE at the front edge/);
-    MOVEMENT_KEY_LINES.slice(0, 3).forEach((line) => {
-      assert.match(line, /SPACE · JUMP$/);
-      assert.equal(line.match(/SPACE/g).length, 1, line);
+    MOVEMENT_KEY_LINES.forEach((line) => {
+      (line.match(/SPACE · [A-Z ’]+/g) ?? []).forEach((use) => assert.match(use, /^SPACE · JUMP/, line));
     });
-    assert.match(MOVEMENT_KEY_LINES[2], /1 – 4 · CHOOSE WHAT YOU KNOW/);
+    assert.match(MOVEMENT_KEY_LINES[2], /E · STRIKE ONE TRUE THING, THEN THE OTHER/);
   });
 
   it('each movement has 3–5 controls of its own; Space is only ever JUMP', () => {
@@ -254,6 +144,7 @@ describe('controls: Space only jumps, E / Enter acts, and each movement names it
       rows.forEach(([label, keys]) => { if (/SPACE/.test(keys)) assert.match(label, /JUMP/, `${stage}: ${label}`); });
     }
     for (const stage of ['lost', 'borrowed', 'echo']) assert.ok(finaleStageControls(stage).some(([, keys]) => /E \/ ENTER/.test(keys)), stage);
+    assert.ok(finaleStageControls('painted').some(([, keys]) => /HOLD E/.test(keys)));
     FINALE_ALL_CONTROLS.forEach(([label, keys]) => { if (/SPACE/.test(keys)) assert.equal(label, 'JUMP'); });
     assert.deepEqual(Object.keys(FINALE_STAGE_CONTROLS), ['lost', 'borrowed', 'echo', 'painted', 'departure']);
     // Unknown stages fall back, and callers get copies.

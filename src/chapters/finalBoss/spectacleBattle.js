@@ -6,14 +6,16 @@
 //       1978 tags (and shows the ghost trains that only exist in 1978).
 //   II  BORROWED LIGHT · ON THE BELL — Chapter 2's four-second bell and the
 //       one-line rule: bridges, billboards and signal lamps fire on the bell.
-//   III ECHO CITY · TWO TRUE THINGS — the voiced argument about Mara.
-//   IV  THE PAINTED COUNTRY — absorb the colour, return it (16 / 34 / 52).
+//   III ECHO CITY · TWO TRUE THINGS — the argument about Mara, fought.
+//   IV  THE PAINTED COUNTRY — absorb his colour, return it when he is open.
 // Then the night service arrives and Butch boards it: the train keeps
 // running, with Butch still aboard (docs/STORY_BIBLE.md, normal ending).
 //
-// The rules live in finaleModel.js (node-tested); the drawings come from
-// finaleArt.js (the Chapter 1 / 2 canvas kits); the DOM HUD from
-// shell/finaleUi.js. This file renders, reads input and wires audio.
+// Round 11 (docs/CHAPTER_06_BOSS_ROUND11.md): every movement is a three-phase
+// skill fight. Its rules live in movements/*.js on the kernel in
+// conductorFight.js (all node-tested, and playable by fightBot.js); the
+// drawings come from finaleArt.js and fightVisuals.js; the DOM HUD from
+// shell/finaleUi.js. This file reads input, renders and wires audio.
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
@@ -43,21 +45,26 @@ import {
 import { DEV_MODE, devParam } from '../../devMode.js';
 import * as bellAudio from '../borrowedLight/audio.js';
 import {
-  BELL_ARENA, CASE_REACH, DEFAULT_DIFFICULTY, ECHO_FACTS_TO_PICK, ECHO_WINDOW_DAMAGE, LANE_X, LENS_RADIUS, MACHINE_NAMES, PANEL_SEAMS, STRANDED_GRACE_S,
-  createBellArena, createBellTutorial, createDeathLedger, createEchoDebate, difficultyPreset, ghostTrainRevealed, laneOf, orbitLens,
-  keptAfterTornLayers, paintReturnDamage, punchCase, spreadWorldTags, tornLayerReset, trainHits, underLens,
+  BELL_ARENA, DEFAULT_DIFFICULTY, LANE_X, LENS_RADIUS, MACHINE_NAMES, PAINT_MOVEMENT_DRAIN, PANEL_SEAMS,
+  checkpointLine, createDeathLedger, difficultyPreset, laneOf, paintReturnDamage, spreadWorldTags,
 } from './finaleModel.js';
-import { ECHO_EXCHANGES, ECHO_FACTS_ASK } from './echoExchanges.js';
-import { FINALE_ALL_CONTROLS, MOVEMENT_KEY_LINES, PROGRESS_KEPT_LINES, announceControlsStage } from './finaleControls.js';
+import { createBody, createFightRunner, startJump, stepBody } from './conductorFight.js';
+import { CASE_REACH as LOST_CASE_REACH, createLostPropertyFight } from './movements/lostProperty.js';
+import { createBellFight } from './movements/onTheBell.js';
+import { FRONT_EDGE_Z as ECHO_FRONT_EDGE_Z, TRUTH_REACH as ECHO_TRUTH_REACH, createEchoFight } from './movements/echoCity.js';
+import { ABSORB_REACH as PAINT_ABSORB_REACH, createPaintFight } from './movements/paintedCountry.js';
+import { CHANCE_COLOR as CHANCE_HEX, DANGER_COLORS, createTelegraphLayer } from './fightVisuals.js';
+import { FINALE_ALL_CONTROLS, MOVEMENT_KEY_LINES, PROGRESS_KEPT_LINES, STORY_KEPT_LINE, announceControlsStage, readFinalePad } from './finaleControls.js';
 import { completedEnding, recordEnding, showJourneyComplete } from './journeyComplete.js';
 import { createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference, frameSteps } from './finaleQuality.js';
 import {
   LOST_FLOOR, RAIN_FLOOR, loadFinaleArtSources, lostPropertyFloorSteps, paintBillboardFace, paintBridgeDeck,
   paintClaimCase, paintConductorCarBackdrop, paintInkButch, paintInkConductor, paintInkTrain, paintInkTrainFront, paintLampNode,
-  paintGapWall, paintLensRimCanvas, paintRainConductor, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
+  paintGapWall, paintLensRimCanvas, paintOverdueStamp, paintRainConductor, paintRainFigure, paintRainSkyline, paintRoofSection, paintStreetBelow,
+  paintTrueThingCard,
 } from './finaleArt.js';
 import {
-  ECHO_FLOOR, ECHO_SQUARE, PAINTED_FLOOR, echoTerraceSteps, paintEchoParapet, paintEchoProp, paintEchoSkyline, paintEchoSquare,
+  ECHO_SQUARE, echoTerraceSteps, paintEchoParapet, paintEchoProp, paintEchoSkyline, paintEchoSquare,
   paintPaintedCountryBackdrop, paintPaintedField, paintPaintedFold, paintPaintedProp, paintedSheetSteps,
 } from './finaleWorldArt.js';
 import { waitForFonts } from '../../shared/fonts.js';
@@ -98,17 +105,32 @@ const LINE_CSS = { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' };
 const ARENA = { minX: -13.2, maxX: 13.2, minZ: -7.35, maxZ: 8.2 };
 const CONDUCTOR_Z = -15.8;
 const PHASE_START_HP = [400, 300, 200, 100];
-const ECHO_COMBAT_INTERVAL = 10;
-// Movement III: Butch says it to his face from in front of this line.
-const ECHO_FRONT_EDGE_Z = -3.4;
-// How long a deflection's one-line reason stays up before the volley.
-const ECHO_DEFLECT_READ_SECONDS = 2.8;
-const ECHO_DEFLECT_FALLBACK = 'He files that. Try the true thing.';
-// After a misreading: the fact stays struck when he comes back to it.
-const ECHO_MISREAD_DEFLECT = 'The record says otherwise. That card stays struck when he comes back to it.';
-// The E prompt at the lit front edge spells the whole move out this often.
-const ECHO_FULL_PROMPT_USES = 3;
-const PAINT_HOLD_SECONDS = 0.68;
+// His ticket below each movement (each movement is 100 of the 400).
+const MOVEMENT_BASE_HP = [300, 200, 100, 0];
+// Round 11: each movement's director (movements/*.js), and its seed.
+const MOVEMENT_FIGHTS = Object.freeze([createLostPropertyFight, createBellFight, createEchoFight, createPaintFight]);
+const FIGHT_SEEDS = Object.freeze([11, 17, 23, 31]);
+// How he reels from each kind of hit.
+const DAMAGE_REACTION = Object.freeze({
+  'returned-claim': 'pain', 'volleyed-claim': 'pain', 'borrowed-light': 'pain', 'two-true-things': 'shame', 'said-to-his-face': 'shame', 'returned-pigment': 'rage', debug: 'pain',
+});
+const PIGMENT_HEX = Object.freeze({ soot: 0x202126, indigo: 0x435d91, verdigris: 0x4f8f7c });
+const PIGMENT_URL = Object.freeze({ soot: ch4SootUrl, indigo: ch4IndigoUrl, verdigris: ch4VerdigrisUrl });
+// The one-line rule of each phase, on the plaque (bottom right).
+const PHASE_RULES = Object.freeze({
+  'return-to-sender': 'Stand by a brass ring. Lens on the case. Punch it back as it lands.',
+  'trains-in-the-seams': 'His trains run in the seams. Cross behind one. Sepia is a 1978 train.',
+  unclaimed: 'His stamp comes down on a panel. Leave it. The 1978 layer widens the lens.',
+  'on-the-bell': 'Amber lamp: a bridge. Rose signal in his lane: his light. Cross on the bell.',
+  'the-bell-swings': 'Every bell swings a brass ring out from him. Jump it.',
+  'last-bell': 'He calls his lane late. Every fourth bell his beams take all three lanes.',
+  'the-claim': 'Dodge his misreadings. Strike one true thing, then the other.',
+  echoes: 'Every throw echoes where you stood. Keep moving. Jump the rings.',
+  'the-square-falls': 'The square falls behind you. The true things drift.',
+  'take-the-colour': 'Absorb wet colour. Return it while his brush is dry.',
+  'the-wash': 'Jump a sweep, or dash through it to take its colour.',
+  'painted-over': 'Two washes, one after the other. The fuller brush cuts deeper.',
+});
 const CLAIMS = [
   '1978-0388 · A. KOVAC', '1978-0391 · HAT BOX', '1978-0397 · E. MARSH', '1978-0402 · UMBRELLA',
   '1978-0405 · T. OKAFOR', '1978-0409 · VIOLIN CASE', '1978-0411 · I. BRANDT', '1978-0412 · VELEZ, M.',
@@ -132,26 +154,32 @@ const BOSS_SCORE = {
 };
 
 export const PHASES = Object.freeze([
-  { id: 'lost', number: 'I', title: 'I · NIGHT SERVICE', world: 'LOST PROPERTY', rule: 'Read the tag through the lens. Punch the case back to him.', form: 'CLERK', music: BOSS_SCORE.threshold },
-  { id: 'borrowed', number: 'II', title: 'II · BORROWED LIGHT', world: 'ON THE BELL', rule: 'Punch a lamp. It fires on the bell.', form: 'CLERK', music: BOSS_SCORE.grid },
-  { id: 'echo', number: 'III', title: 'III · ECHO CITY', world: 'TWO TRUE THINGS', rule: 'Two true things: one he can grant, one that stays open.', form: 'BUTCH', music: BOSS_SCORE.echoCity },
-  { id: 'painted', number: 'IV', title: 'IV · THE PAINTED COUNTRY', world: 'TAKE BACK THE COLOUR', rule: 'The fuller the brush, the deeper it cuts.', form: 'INK FIGURE', music: BOSS_SCORE.allLines },
+  { id: 'lost', number: 'I', title: 'I · NIGHT SERVICE', world: 'LOST PROPERTY', rule: 'Read the claim through the lens. Punch it back to him as it lands.', form: 'CLERK', music: BOSS_SCORE.threshold },
+  { id: 'borrowed', number: 'II', title: 'II · BORROWED LIGHT', world: 'ON THE BELL', rule: 'Punch a lamp. It fires on the bell. Cross and punch him in his light.', form: 'CLERK', music: BOSS_SCORE.grid },
+  { id: 'echo', number: 'III', title: 'III · ECHO CITY', world: 'TWO TRUE THINGS', rule: 'Dodge what he gets wrong. Strike both true things.', form: 'BUTCH', music: BOSS_SCORE.echoCity },
+  { id: 'painted', number: 'IV', title: 'IV · THE PAINTED COUNTRY', world: 'TAKE BACK THE COLOUR', rule: 'Take his colour. Return it when his brush is dry.', form: 'INK FIGURE', music: BOSS_SCORE.allLines },
 ]);
 
 // What can tear a paper layer, as the player is told it (alpha A4-5): the
 // hit label, the death card and the side the hit flash comes from.
 export const HIT_SOURCES = Object.freeze({
-  case: 'A FALLING CASE',
-  train: 'HIS TRAIN, IN THE SEAM',
-  'ghost-train': 'A 1978 TRAIN · ONLY THE LENS SHOWS IT',
-  beam: 'HIS SIGNAL BEAM · SHELTER BEHIND A LIT BILLBOARD',
-  fall: 'THE STREET GAP · WAIT FOR A BRIDGE',
-  'crushed-trash-can': 'A THROWN BIN',
-  'fountain-bench': 'A THROWN BENCH',
-  'pa-speaker': 'A THROWN SPEAKER',
-  collapse: 'THE BROKEN FLOOR',
-  pigment: 'FALLING PIGMENT',
-  sweep: 'A SWEEP OF HIS PAINT',
+  case: 'A FALLING CASE · STAND BY ITS RING, NOT IN IT',
+  train: 'HIS TRAIN, IN THE SEAM · CROSS BEHIND IT',
+  'ghost-train': 'A 1978 TRAIN · THE SEPIA SEAM WARNED OF IT',
+  stamp: 'HIS OVERDUE STAMP · LEAVE THE PANEL IT SHADOWS',
+  beam: 'HIS SIGNAL BEAM · ANOTHER LANE, OR BEHIND A LIT BILLBOARD',
+  'bell-wave': 'THE BELL’S SWING · JUMP ITS RING',
+  fall: 'THE STREET GAP',
+  'crushed-trash-can': 'A THROWN BIN · HIS MISREADING',
+  'fountain-bench': 'A THROWN BENCH · HIS MISREADING',
+  'pa-speaker': 'A THROWN SPEAKER · HIS MISREADING',
+  echo: 'AN ECHO OF HIS THROW · IT LANDS WHERE YOU STOOD',
+  shockwave: 'A BENCH’S RING ON THE STONES · JUMP IT',
+  collapse: 'THE FALLING SQUARE · KEEP AHEAD OF ITS EDGE',
+  pigment: 'FALLING PIGMENT · STEP IN ONCE IT HAS LANDED',
+  sweep: 'A SWEEP OF HIS PAINT · JUMP IT, OR DASH THROUGH',
+  wash: 'HIS WASH · LEAVE THE BAND BEFORE IT FLOODS',
+  cover: 'A FALLING INDIGO TILE',
   hit: 'THE CONDUCTOR',
 });
 
@@ -575,27 +603,32 @@ class SpectacleBattle {
     this.trauma = 0;
     this.dialoguePause = false;
     this.deaths = createDeathLedger();
+    this.runs = 0;
+    this.fight = null;
+    this.runner = null;
+    this.entityViews = new Map();
+    this.pendingInput = { jump: false, dash: false, act: false };
+    this.mouseHeld = { left: false, right: false };
+    this.mousePoint = null;
+    this.pad = null;
+    this.padButtons = null;
     this.voiceAudio = typeof Audio === 'undefined' ? null : new Audio();
     if (this.voiceAudio) { this.voiceAudio.preload = 'auto'; this.voiceAudio.playsInline = true; this.voiceAudio.volume = 0.9 * globalBus('master'); }
     this.voiceState = { playing: false, speaker: null, tone: null, text: null };
-    this.debate = createEchoDebate(ECHO_EXCHANGES);
-    this.echo = { clock: ECHO_COMBAT_INTERVAL, window: 0, windowSpent: false, stage: 'combat', lastOutcome: null };
-    // How often "say it to his face" has landed (the E prompt's first uses).
-    this.echoSaid = 0;
     // The pause menu's stage (finaleControls.js) and the KEPT flash on the
     // ticket bar after a torn last layer.
     this.controlsStage = null;
     this.keptFlash = 0;
-    this.paintTutorial = { stage: 'pending' };
-    this.paintHold = { active: false, button: -1, elapsed: 0, point: null, target: null, completed: false };
-    this.lost = { cases: [], trains: [], lens: { x: 0, z: 3 }, lensTarget: { x: 0, z: 3 }, lensMode: 'orbit', lastPointer: -Infinity, tutorial: 'pending', claimIndex: 0, returned: 0 };
-    this.bell = { arena: null, tutor: createBellTutorial(), held: false, listening: false, beamFlash: 0, beamLanes: [], telegraphLanes: [], falls: 0 };
+    // Movement I's lens input (the director owns the lens itself).
+    this.lost = { lensMode: 'lead', lastPointer: -Infinity, pointer: null, lensTarget: { x: 0, z: 3 } };
+    this.bell = { listening: false, beamFlash: 0, beamLanes: [], telegraphLanes: [] };
     this.butchActionState = 'idle';
     this.butchLandTimer = 0;
     this.raycaster = new THREE.Raycaster();
     this.pointerNdc = new THREE.Vector2();
     this.buildLights();
     this.buildWorlds();
+    this.fightVisuals = createTelegraphLayer(this.scene, { reducedMotion: reducedMotionActive });
     this.buildActors();
     this.buildHud();
     this.bindEvents();
@@ -1025,7 +1058,7 @@ class SpectacleBattle {
     }
     this.paintTransfer.visible = false;
     this.scene.add(this.paintTransfer);
-    this.player = { x: 0, y: 0, z: 6.1, vy: 0, grounded: true, hp: 4, maxHp: 4, inv: 0, respawnInv: 0, respawns: 0, phaseHeals: 0, hitTimer: 0, dash: 0, dashCd: 0, attack: 0, attackCd: 0, facingX: 0, facingZ: -1, color: 0 };
+    this.player = createBody({ x: 0, z: 6.1 });
     this.boss = { x: 0, z: CONDUCTOR_Z, hp: 400, maxHp: 400, phaseStartHp: 400, paintCoverage: 0, inv: 0, exposed: 0, attackClock: 1.4, stagger: 0, gesture: 'idle', gestureTime: 0, reaction: 'idle', flash: 0, rounds: 0, phaseRound: 0, targetX: 0 };
     this.departureTrain = new THREE.Group();
     const paperPlane = (width, height, color, x, y, z = 0.08) => {
@@ -1118,6 +1151,7 @@ class SpectacleBattle {
     this.lensRim.material.map = canvasTexture(rim);
     this.lensRim.material.needsUpdate = true;
     const rimScale = (LENS_RADIUS * 2) * (rim.width / 280);
+    this.lensRimBase = rimScale;
     this.lensRim.scale.set(rimScale, rimScale, 1);
     this.lensRim.visible = this.phase === 0;
     yield;
@@ -1144,6 +1178,13 @@ class SpectacleBattle {
       yield;
     }
     this.caseArt = caseArt;
+    // The cases he throws to be dodged carry no claim (the lens says so).
+    this.unclaimedArt = {
+      claim: 'NO CLAIM',
+      present: canvasTexture(paintClaimCase({ era: 'present', claim: 'NO CLAIM', seed: 2, tone: '#4a3f36' })),
+      past: canvasTexture(paintClaimCase({ era: 'past', claim: 'UNCLAIMED · NO OWNER', seed: 2, tone: '#4a3f36' })),
+    };
+    yield;
     // Actors: the Night Service ink forms now; the Borrowed Light rain forms
     // are added by borrowedLightArt().
     const butchInk = { idle: paintInkButch({ pose: 'idle' }) };
@@ -1294,17 +1335,10 @@ class SpectacleBattle {
     this.caption.className = 'nf-caption';
     this.caption.hidden = true;
     this.caption.innerHTML = '<p class="nf-caption__speaker"></p><p class="nf-caption__text"></p><div class="nf-caption__choices nf-caption__choices--pair"></div><span class="nf-caption__meta"></span>';
-    this.caption.style.pointerEvents = 'auto';
+    // Round 11: Movement III's lines are spoken while it is fought; the
+    // caption is a subtitle, never a board to answer on.
+    this.caption.style.pointerEvents = 'none';
     this.hud.append(this.caption);
-    this.caption.addEventListener('click', (event) => {
-      const factButton = event.target.closest('[data-fact]');
-      if (factButton) { this.pickFact(Number(factButton.dataset.fact)); return; }
-      if (event.target.closest('[data-confirm]')) { this.confirmFacts(); return; }
-      const button = event.target.closest('[data-choice]');
-      if (button) { this.chooseAnswer(Number(button.dataset.choice)); return; }
-      // A click on a line being read moves it on (as E / Enter do).
-      this.advanceDialogue();
-    });
   }
 
   bindEvents() {
@@ -1314,59 +1348,63 @@ class SpectacleBattle {
       this.renderer.setSize(this.container.clientWidth, this.container.clientHeight);
     });
     // The unified keys (round 6, item 18; finaleControls.js): Space only
-    // jumps, E or Enter is the movement's action (and confirms or moves a
-    // line on), 1–4 answer in Movement III. Movement IV keeps hold E / R.
+    // jumps, Shift / X dash, E or Enter is the movement's action. Movement IV
+    // holds its verbs: hold E absorbs, hold R returns (read each step).
     window.addEventListener('keydown', (event) => {
       if (globalThis.NIGHTFALL_PAUSED) return;
       this.keys.add(event.code);
       if (event.repeat) return;
       if (event.code === 'Space') { event.preventDefault(); this.jumpKey(); }
       if (event.code === 'ShiftLeft' || event.code === 'ShiftRight' || event.code === 'KeyX') this.dash();
-      const digit = /^(Digit|Numpad)([1-4])$/.exec(event.code);
-      if (digit && this.phase === 2 && this.debate.isOpen) {
-        const index = Number(digit[2]) - 1;
-        if (this.echo.stage === 'facts') this.pickFact(index);
-        else if (this.echo.stage === 'framing' && index < 2) this.chooseAnswer(index);
+      if (event.code === 'KeyE' || event.code === 'Enter' || event.code === 'NumpadEnter') {
+        if (event.code !== 'KeyE') event.preventDefault();
+        this.actAction({ key: event.code === 'KeyE' ? 'E' : 'Enter' });
       }
-      if (event.code === 'KeyL' && this.phase === 0) { this.lost.lensMode = 'orbit'; this.lost.lastPointer = -Infinity; this.lost.pointer = null; this.toast('LENS · CIRCLING BUTCH · MOVE THE MOUSE TO AIM IT AGAIN'); }
-      if (event.code === 'KeyE') {
-        if (this.mode === 'play' && this.phase === 3) this.startKeyboardPaint(2);
-        else this.actAction();
-      }
-      if (event.code === 'Enter' || event.code === 'NumpadEnter') {
-        // Enter answers through the board, never also through a focused button.
-        if (this.phase === 2 && this.dialoguePause) event.preventDefault();
-        this.actAction({ key: 'Enter' });
-      }
-      if (event.code === 'KeyR') this.startKeyboardPaint(0);
+      // Arrow keys / WASD take the lens back from the mouse (it leads Butch).
+      if (this.phase === 0 && /^(Key[WASD]|Arrow)/.test(event.code) && this.lost.lensMode === 'mouse' && this.elapsed - this.lost.lastPointer > 1.5) this.lost.lensMode = 'lead';
       if (event.code === 'KeyF' && this.mode !== 'menu') {
         if (!document.fullscreenElement) document.querySelector('.stage-wrap')?.requestFullscreen?.(); else document.exitFullscreen?.();
       }
     });
-    window.addEventListener('keyup', (event) => {
-      this.keys.delete(event.code);
-      if ((event.code === 'KeyE' && this.paintHold.button === 2) || (event.code === 'KeyR' && this.paintHold.button === 0)) {
-        if (this.paintHold.keyboard) this.releasePaintPointer({ button: this.paintHold.button });
-      }
-    });
-    window.addEventListener('blur', () => {
-      this.keys.clear();
-      if (this.paintHold.keyboard) this.releasePaintPointer({ button: this.paintHold.button });
-    });
+    window.addEventListener('keyup', (event) => { this.keys.delete(event.code); });
+    window.addEventListener('blur', () => { this.keys.clear(); this.mouseHeld = { left: false, right: false }; });
     this.renderer.domElement.addEventListener('contextmenu', (event) => { if (this.mode === 'play') event.preventDefault(); });
     this.renderer.domElement.addEventListener('pointerdown', (event) => {
-      if (this.mode === 'play' && this.phase === 0 && event.button === 0) { this.aimLensAt(event); this.actAction(); return; }
-      // Movement III: a click on the stage says it, once he has no answer.
-      if (this.mode === 'play' && this.phase === 2 && event.button === 0 && this.echo.stage === 'window') { this.actAction(); return; }
-      this.handlePaintPointer(event);
+      this.mousePoint = { clientX: event.clientX, clientY: event.clientY };
+      if (this.mode !== 'play') return;
+      if (event.button === 0) this.mouseHeld.left = true;
+      if (event.button === 2) this.mouseHeld.right = true;
+      if (this.phase === 0 && event.button === 0) { this.aimLensAt(event); this.actAction(); return; }
+      // Movement III: a click strikes too (and says it at the front edge).
+      if (this.phase === 2 && event.button === 0) this.actAction();
+      if (this.phase === 3) event.preventDefault();
     });
     this.renderer.domElement.addEventListener('pointermove', (event) => {
+      this.mousePoint = { clientX: event.clientX, clientY: event.clientY };
       if (this.phase === 0) this.aimLensAt(event);
-      this.updatePaintPointer(event);
     });
-    this.renderer.domElement.addEventListener('pointerup', (event) => this.releasePaintPointer(event));
-    this.renderer.domElement.addEventListener('pointercancel', (event) => this.releasePaintPointer(event));
-    this.renderer.domElement.addEventListener('pointerleave', () => { if (this.paintHold.active) this.releasePaintPointer({ button: this.paintHold.button }); });
+    const release = (event) => {
+      if (event.button === 0 || event.button === undefined) this.mouseHeld.left = false;
+      if (event.button === 2 || event.button === undefined) this.mouseHeld.right = false;
+    };
+    this.renderer.domElement.addEventListener('pointerup', release);
+    this.renderer.domElement.addEventListener('pointercancel', () => { this.mouseHeld = { left: false, right: false }; });
+    this.renderer.domElement.addEventListener('pointerleave', () => { this.mouseHeld = { left: false, right: false }; });
+  }
+
+  // The gamepad (finaleControls.js readFinalePad), polled once a frame.
+  pollPad() {
+    let pads = [];
+    try { pads = globalThis.navigator?.getGamepads?.() ?? []; } catch { pads = []; }
+    const pad = readFinalePad(pads, this.padButtons);
+    this.padButtons = pad.buttons;
+    this.pad = pad.connected ? pad : null;
+    if (!pad.connected || globalThis.NIGHTFALL_PAUSED) { if (pad.pressed.start && globalThis.NIGHTFALL_PAUSED) this.pauseMenu?.close?.(); return; }
+    if (pad.pressed.start && this.mode !== 'menu') { this.pauseMenu?.open?.(); return; }
+    if (pad.pressed.jump) { if (this.mode === 'menu') document.querySelector('#start')?.click(); else this.jumpKey(); }
+    if (pad.pressed.dash) this.dash();
+    if (pad.pressed.act && this.phase !== 3) this.actAction();
+    if (this.phase === 0 && pad.aimActive) { this.lost.lensMode = 'stick'; }
   }
 
   groundPointFromPointer(event) {
@@ -1697,14 +1735,12 @@ class SpectacleBattle {
     this.transition = null;
     this.tutorialShown = new Set();
     this.deaths.reset();
-    // A fresh argument for a fresh run (the old one kept its spent queue
-    // across PLAY THE CONDUCTOR AGAIN).
-    this.debate = createEchoDebate(ECHO_EXCHANGES);
-    this.echoSaid = 0;
+    // A fresh fight for a fresh run (PLAY THE CONDUCTOR AGAIN plays its
+    // patterns from new seeds).
+    this.runs += 1;
     this.keptFlash = 0;
-    this.player.maxHp = D().layers;
-    this.player.hp = this.player.maxHp;
-    Object.assign(this.player, { x: 0, y: 0, z: 6.1, vy: 0, grounded: true, inv: 1, respawnInv: 0, respawns: 0, phaseHeals: 0, hitTimer: 0, dash: 0, dashCd: 0, attack: 0, attackCd: 0, color: 0 });
+    this.lastDeath = null;
+    this.player = createBody({ x: 0, z: 6.1, layers: D().layers });
     Object.assign(this.boss, { x: 0, targetX: 0, z: CONDUCTOR_Z, hp: PHASE_START_HP[startMovement], phaseStartHp: PHASE_START_HP[startMovement], paintCoverage: 0, inv: 0, exposed: 0, attackClock: 1.4, stagger: 0, gesture: 'idle', gestureTime: 0, reaction: 'idle', flash: 0, rounds: 0, phaseRound: 0 });
     this.playerRoot.position.set(0, 0, 6.1);
     this.conductorRoot.position.set(0, -2.8, CONDUCTOR_Z);
@@ -1733,10 +1769,11 @@ class SpectacleBattle {
     const phase = PHASES[index];
     this.setControlsStage(phase.id);
     const card = () => {
-      const shown = showTitleCard({ kicker: `MOVEMENT ${phase.number}`, main: phase.world, sub: phase.rule, keys: MOVEMENT_KEYS[index], duration: index === 3 ? 5600 : 5000, parent: this.hud });
+      // Short: the movement's first phase opens teaching by doing.
+      const shown = showTitleCard({ kicker: `MOVEMENT ${phase.number}`, main: phase.world, sub: phase.rule, keys: MOVEMENT_KEYS[index], duration: 3600, parent: this.hud });
       const kept = document.createElement('p');
       kept.className = 'nf-title-card__kept';
-      kept.textContent = PROGRESS_KEPT_LINES[index];
+      kept.textContent = difficulty === 'story' ? STORY_KEPT_LINE : PROGRESS_KEPT_LINES[index];
       shown?.root?.firstElementChild?.append(kept);
       return shown;
     };
@@ -1745,10 +1782,9 @@ class SpectacleBattle {
     // The card waits for the world it names to be on screen.
     const show = () => { if (this.worldVeiled) this.pendingTitleCard = card; else card(); };
     if (first) this.titleTimer = setTimeout(show, 1250); else show();
-    if (index === 0) this.startLostProperty();
-    if (index === 1) this.startBellArena();
-    if (index === 2) this.startEchoCity();
-    if (index === 3) this.startPaintOnboarding();
+    this.startFight(index);
+    this.applyPhaseLook(0);
+    if (index === 1) { bellAudio.setRain?.(0.5); this.syncNodeArt(true); }
   }
 
   // The pause menu's stage (finaleControls.js): the shell listens for it.
@@ -1763,7 +1799,9 @@ class SpectacleBattle {
     this.hazards = [];
     this.projectiles = [];
     this.effects = [];
-    this.clearLostProperty();
+    this.fightVisuals?.clear();
+    this.clearEntityViews();
+    this.stopVoices?.();
     this.portal.visible = false;
     this.holeVisuals?.forEach((hole) => { hole.visible = false; });
     this.closeCaption();
@@ -1803,7 +1841,8 @@ class SpectacleBattle {
     this.setConductorWorld(index);
     this.holeVisuals.forEach((hole) => { hole.visible = false; });
     this.activeHoles = [];
-    this.paintTutorial = { stage: index === 3 ? 'await-pigment' : 'pending' };
+    if (this.collapseView) this.collapseView.visible = false;
+    if (this.nextLaneMarker) this.nextLaneMarker.visible = index === 1;
     this.boss.phaseStartHp = PHASE_START_HP[index];
     this.boss.paintCoverage = index === 3 ? Math.max(0, (100 - this.boss.hp) / 88) : 0;
     this.conductorLight.intensity = 0;
@@ -1824,358 +1863,500 @@ class SpectacleBattle {
     });
   }
 
-  // ------------------------------------------------------------ input verbs
+  // ------------------------------------------------------------ the fight
+  //
+  // Round 11: the rules of every movement live in a director
+  // (movements/*.js) wrapped by a runner (conductorFight.js) that owns
+  // Butch's body and layers. The stage feeds it input once per step and
+  // draws what it reports. Nothing here decides a hit.
+
+  startFight(index) {
+    const factory = MOVEMENT_FIGHTS[index];
+    const director = factory({ difficulty, seed: FIGHT_SEEDS[index] + (this.runs ?? 0) * 13 });
+    const keep = this.player;
+    this.runner = createFightRunner({ director, difficulty, ledger: this.deaths, movement: index, spawn: { x: 0, z: 6.2 } });
+    this.fight = director;
+    this.player = this.runner.body;
+    if (keep) { this.player.inv = Math.max(this.player.inv, keep.inv ?? 0); this.player.facingX = keep.facingX ?? 0; }
+    this.pendingInput = { jump: false, dash: false, act: false };
+    this.fightVisuals?.clear();
+    this.clearEntityViews();
+    this.phaseShown = director.track.index;
+    this.lensView = { x: 0, z: 3.5, radius: LENS_RADIUS };
+    this.bell.telegraphLanes = [];
+    this.bell.beamLanes = [];
+    this.bell.beamFlash = 0;
+    this.collapseView && (this.collapseView.visible = false);
+    this.showFrontEdge(false);
+    this.holeVisuals?.forEach((hole) => { hole.visible = false; });
+    this.boss.exposed = 0;
+    this.syncBossHp();
+    this.playerRoot.position.set(this.player.x, 0, this.player.z);
+  }
+
+  // His ticket: the movements before this one, plus what is left of it.
+  syncBossHp() {
+    if (!this.fight) return;
+    this.boss.hp = MOVEMENT_BASE_HP[this.phase] + this.fight.track.hp;
+  }
+
+  // ------------------------------------------------------------ input
+  queueInput(kind) { if (this.pendingInput) this.pendingInput[kind] = true; }
+
+  // One step's input, from the keys, the mouse and the pad. Presses are
+  // consumed by the first step of a frame.
+  fightInput() {
+    const k = this.keys;
+    let dx = Number(k.has('ArrowRight') || k.has('KeyD')) - Number(k.has('ArrowLeft') || k.has('KeyA'));
+    let dz = Number(k.has('ArrowDown') || k.has('KeyS')) - Number(k.has('ArrowUp') || k.has('KeyW'));
+    const pad = this.pad;
+    if (pad?.connected) { dx += pad.moveX; dz += pad.moveZ; }
+    const pending = this.pendingInput ?? {};
+    const input = { dx, dz, jump: Boolean(pending.jump), dash: Boolean(pending.dash), act: Boolean(pending.act), actHeld: false, retHeld: false, aim: null };
+    if (this.phase === 0) {
+      if (pad?.aimActive) input.aim = { x: this.player.x + pad.aimX * 4.2, z: this.player.z + pad.aimZ * 4.2 };
+      else if (this.lost.lensMode === 'mouse' && this.lost.pointer) input.aim = this.groundPointFromPointer(this.lost.pointer) ?? this.lost.lensTarget;
+      else if (this.lost.lensMode === 'mouse' && this.qaAim) input.aim = this.qaAim;
+      if (input.aim) this.lost.lensTarget = { x: input.aim.x, z: input.aim.z };
+    }
+    if (this.phase === 3) {
+      input.actHeld = k.has('KeyE') || Boolean(pad?.buttons.act) || this.mouseHeld.right;
+      input.retHeld = k.has('KeyR') || Boolean(pad?.buttons.ret) || this.mouseHeld.left;
+      if (this.mouseHeld.right && this.mousePoint) input.aim = this.groundPointFromPointer(this.mousePoint);
+    }
+    this.pendingInput = { jump: false, dash: false, act: false };
+    return input;
+  }
+
+  // Space: always a jump (and boarding the night service).
+  jumpKey() {
+    if (this.mode === 'departure') { this.jumpAboardDepartureTrain(); return; }
+    if (this.mode !== 'play' || this.transition || this.dialoguePause) return;
+    this.queueInput('jump');
+  }
 
   jump() {
-    if (!['play', 'departure'].includes(this.mode) || this.transition || this.dialoguePause || !this.player.grounded) return;
-    this.player.vy = 8.7;
-    this.player.grounded = false;
-    this.tone(330, 0.08, 'triangle', 0.03);
+    if (!['play', 'departure'].includes(this.mode) || this.transition || this.dialoguePause) return;
+    if (startJump(this.player)) this.tone(330, 0.08, 'triangle', 0.03);
   }
 
   dash() {
-    if (this.mode !== 'play' || this.transition || this.player.dashCd > 0) return;
-    this.player.dash = 0.18;
-    this.player.dashCd = 0.72;
-    this.player.inv = Math.max(this.player.inv, 0.3);
-    this.trauma = Math.max(this.trauma, 0.12);
-    this.tone(410, 0.09, 'sawtooth', 0.03);
+    if (this.mode !== 'play' || this.transition || this.dialoguePause) return;
+    this.queueInput('dash');
   }
 
-  // Space: only ever a jump (round 6, item 18). Pressed on an answer step it
-  // says which key answers instead of doing nothing.
-  jumpKey() {
-    if (this.mode === 'departure') { this.jumpAboardDepartureTrain(); return; }
-    if (this.mode === 'play' && this.phase === 2 && ['facts', 'framing'].includes(this.echo.stage)) {
-      this.toastOnce('space-answer', this.echo.stage === 'facts' ? 'SPACE JUMPS · 1–4 CHOOSE · E SAYS THEM' : 'SPACE JUMPS · 1 / 2 SAYS IT', 2.2, 3);
-      return;
-    }
-    this.jump();
-  }
-
-  // E / Enter (and a click in Movement I): the movement's action. In
-  // Movement III it also confirms an answer and moves a line on.
+  // E / Enter / a click (Movement I) / pad X: the movement's action.
   actAction({ key = 'E' } = {}) {
     if (this.mode === 'departure') { this.jumpAboardDepartureTrain(); return; }
-    if (this.mode !== 'play' || this.transition || this.storyOffer) return;
-    if (this.phase === 2 && this.dialoguePause) { this.confirmEcho(); return; }
-    if (this.dialoguePause) return;
-    if (this.phase === 3) { if (key === 'Enter') this.toastOnce('enter-paint', 'HOLD E · ABSORB A COLOUR   ·   HOLD R · RETURN IT'); return; }
-    this.player.attack = 0.26;
-    if (this.phase === 0) { this.punchLostProperty(); return; }
-    if (this.phase === 1) { this.punchBellArena(); return; }
-    if (this.phase === 2) this.punchEchoWindow();
+    if (this.mode !== 'play' || this.transition || this.storyOffer || this.dialoguePause) return;
+    if (this.phase === 3) { if (key === 'Enter') this.toastOnce('enter-paint', 'HOLD E · ABSORB WET COLOUR   ·   HOLD R · RETURN IT WHEN HE IS OPEN'); return; }
+    this.queueInput('act');
   }
-
-  // ======================================================== Movement I
 
   aimLensAt(event) {
     if (this.mode !== 'play' || this.phase !== 0) return;
     this.lost.pointer = { clientX: event.clientX, clientY: event.clientY };
-    if (!this.aimLensAtPointer()) return;
     this.lost.lensMode = 'mouse';
     this.lost.lastPointer = this.elapsed;
   }
 
-  // The ground under the last pointer position, re-read every frame while
-  // the mouse aims (the camera drifts with Butch).
-  aimLensAtPointer() {
-    const pointer = this.lost.pointer;
-    const point = pointer ? this.groundPointFromPointer(pointer) : null;
-    if (!point) return false;
-    this.lost.lensTarget = { x: THREE.MathUtils.clamp(point.x, ARENA.minX, ARENA.maxX), z: THREE.MathUtils.clamp(point.z, ARENA.minZ, ARENA.maxZ) };
-    return true;
+  // ------------------------------------------------------------ one step
+  stepFight(dt) {
+    if (!this.runner) return;
+    // DEV: the QA bot (fightBot.js) can play instead of the keys.
+    let input = this.fightInput();
+    if (DEV_MODE && this.bot) input = this.bot.decide(this.runner, dt);
+    const events = this.runner.step(dt, input);
+    this.onFightEvents(events);
+    this.syncBossHp();
   }
 
-  startLostProperty() {
-    this.clearLostProperty();
-    this.lost.tutorial = 'lens';
-    this.lost.returned = 0;
-    this.boss.attackClock = 999;
-    // One tagged case lands beside Butch; nothing else moves until it is read.
-    this.spawnClaimCase({ x: 3.4, z: 4.2, tutorial: true, delay: 1.2 });
+  onFightEvents(events) {
+    const director = this.fight;
+    for (const e of events) {
+      switch (e.type) {
+        case 'telegraph': this.fightVisuals.add(e.attack, this.telegraphStyle(e.attack)); this.onTelegraph(e.attack); break;
+        case 'strike': this.fightVisuals.struck(e.attack, this.elapsed); this.onStrike(e.attack); break;
+        case 'remove': this.fightVisuals.remove(e.attack); this.removeEntityView(e.attack.id); break;
+        case 'jump': this.tone(330, 0.08, 'triangle', 0.03); break;
+        case 'dash': this.trauma = Math.max(this.trauma, 0.12); this.tone(410, 0.09, 'sawtooth', 0.03); break;
+        case 'land': this.trauma = Math.max(this.trauma, 0.08); this.tone(110, 0.055, 'triangle', 0.02); this.butchLandTimer = 0.2; break;
+        case 'hurt': this.onHurt(e); break;
+        case 'death': this.onDeath(e); break;
+        case 'damage': this.bossHitFx(e.amount, DAMAGE_REACTION[e.cause] ?? 'pain', e); break;
+        case 'phase-cleared': this.onPhaseCleared(e); break;
+        case 'phase': this.onPhaseStart(e); break;
+        case 'finished': this.onMovementFinished(); break;
+        case 'act': this.onActResult(e); break;
+        case 'reposition': this.playerRoot.position.set(e.x, 0, e.z); if (e.why === 'fall') { bellAudio.fallWhoosh?.(); this.toast('THE STREET IS A LONG WAY DOWN · BACK ON THE NEAR ROOF'); } break;
+        // Movement I
+        case 'case-landed': this.spawnImpact(e.x, 0.4, e.z, e.claim ? AMBER : 0x8a7a66); this.trauma = Math.max(this.trauma, 0.28); this.tone(96, 0.14, 'square', 0.03); break;
+        case 'return': this.flyCaseBack(e); break;
+        // Movement II
+        case 'arena': this.onBellEvent(e.event); break;
+        case 'return-plank': bellAudio.machineOn('bridge'); if (!e.rider) this.toast('A RETURN PLANK · THE LINE WILL NOT STRAND YOU · STEP BACK ACROSS', 3); break;
+        // Movement III
+        case 'say': this.queueVoice(e.cue, { meta: e.meta ?? '', kind: e.kind }); break;
+        case 'misread-hit': this.showRecordLine(e); break;
+        case 'pair': this.onPair(e); break;
+        case 'deflected': this.toast(e.line, 3.2); bellAudio.refused(); break;
+        case 'no-answer': this.toast('HE HAS NO ANSWER', 2.4); this.trauma = Math.max(this.trauma, 0.4); this.playConductorAction('Hit_Chest', true); break;
+        case 'said': this.toast('SAID TO HIS FACE', 2.4); break;
+        // Movement IV
+        case 'absorb': this.spawnImpact(this.player.x, 1, this.player.z, PIGMENT_HEX[e.colour] ?? 0xff806f); this.tone(520 + e.charge * 70, 0.1, 'triangle', 0.03); if (e.via === 'dash') this.toast(`THROUGH THE SWEEP · COLOUR ${e.charge} / 3`, 1.6); break;
+        case 'spilled': this.toast('THE COLOUR ON YOUR BRUSH IS SPILLED', 1.8); break;
+        case 'stroke': this.launchStroke(e); break;
+        case 'stroke-landed': this.toast(`${e.charge} COLOUR${e.charge === 1 ? '' : 'S'} RETURNED · ${paintReturnDamage(e.charge)}`, 1.8); break;
+        case 'stroke-blocked': this.toast('HIS BRUSH WAS WET · HE PAINTS IT OUT AND FLICKS IT BACK', 2.4); bellAudio.refused(); break;
+        case 'open': this.boss.reaction = 'pain'; this.boss.gestureTime = 0.8; this.tone(660, 0.18, 'triangle', 0.035); break;
+        default: break;
+      }
+    }
+    if (director && director.track.index !== this.phaseShown && this.fight === director) this.phaseShown = director.track.index;
   }
 
-  clearLostProperty() {
-    [...(this.lost?.cases ?? []), ...(this.lost?.trains ?? [])].forEach((item) => { this.scene.remove(item.root); item.telegraph && this.scene.remove(item.telegraph); });
-    if (this.lost) { this.lost.cases = []; this.lost.trains = []; }
-    if (this.seamGlows) { this.seamGlows.x.material.opacity = 0; this.seamGlows.z.material.opacity = 0; }
+  telegraphStyle(attack) {
+    const m = this.phase;
+    if (m === 0) {
+      if (attack.source === 'case') return attack.meta?.claim ? { color: CHANCE_HEX, edge: 0xffe2a0 } : { color: DANGER_COLORS.lost, edge: 0xf3e2c0 };
+      if (attack.source === 'stamp') return { color: OXBLOOD, edge: 0xf6d8c4 };
+      return { color: AMBER, ghost: 0xc49a62 };
+    }
+    if (m === 1) return attack.source === 'bell-wave' ? { color: 0xf2c271, edge: 0xffe9b8 } : { color: DANGER_COLORS.borrowed };
+    if (m === 2) return attack.meta?.echo ? { color: 0xc58fff, edge: 0xe8d6ff } : { color: DANGER_COLORS.echo, edge: 0xf3e2c0 };
+    const pigment = PIGMENT_HEX[attack.meta?.colour] ?? DANGER_COLORS.painted;
+    if (attack.source === 'cover') return { color: 0x46618c, edge: 0x2b2f3a };
+    return { color: pigment, edge: 0x1d1f24 };
   }
 
-  spawnClaimCase({ x = null, z = null, tutorial = false, delay = 0 } = {}) {
-    if (!this.caseArt) return null;
-    const px = x ?? THREE.MathUtils.clamp(this.player.x + THREE.MathUtils.randFloatSpread(9), ARENA.minX + 1.5, ARENA.maxX - 1.5);
-    let pz = z ?? THREE.MathUtils.clamp(this.player.z + THREE.MathUtils.randFloatSpread(6), ARENA.minZ + 1.2, ARENA.maxZ - 1.2);
-    // never on a seam: cases lie on the pictures, the rails stay clear
-    if (Math.abs(pz - PANEL_SEAMS.z) < 1.2) pz += pz >= PANEL_SEAMS.z ? 1.3 : -1.3;
-    const art = this.caseArt[this.lost.claimIndex % this.caseArt.length];
-    this.lost.claimIndex += 1;
+  onTelegraph(attack) {
+    const src = attack.source;
+    if (src === 'train' || src === 'ghost-train') {
+      this.tone(src === 'ghost-train' ? 880 : 62, src === 'ghost-train' ? 0.4 : 0.22, src === 'ghost-train' ? 'sine' : 'square', src === 'ghost-train' ? 0.012 : 0.03);
+      this.ensureTrainView(attack);
+    } else if (src === 'stamp') this.tone(140, 0.3, 'square', 0.02);
+    else if (src === 'case') { this.ensureCaseView(attack); this.tone(attack.meta?.claim ? 720 : 520, 0.12, 'sine', 0.015); }
+    else if (src === 'wash') this.tone(180, 0.5, 'sine', 0.025);
+    else if (src === 'sweep') this.tone(300, 0.16, 'triangle', 0.02);
+    if (this.phase === 2 && attack.meta?.prop) this.ensurePropView(attack);
+    if (this.phase === 3 && (attack.meta?.paint || attack.meta?.cover)) this.ensurePaintDropView(attack);
+  }
+
+  onStrike(attack) {
+    const src = attack.source;
+    const heavy = ['stamp', 'wash', 'crushed-trash-can', 'fountain-bench', 'pa-speaker', 'cover'].includes(src);
+    if (attack.kind === 'drop' || attack.kind === 'zone') { this.trauma = Math.max(this.trauma, heavy ? 0.42 : 0.22); this.tone(heavy ? 70 : 96, 0.16, 'square', 0.03); }
+    if (attack.kind === 'train') this.trauma = Math.max(this.trauma, attack.ghost ? 0.08 : 0.2);
+    if (attack.kind === 'wave') { this.tone(200, 0.2, 'triangle', 0.02); }
+    if (src === 'stamp') this.inkStamp(attack);
+  }
+
+  onActResult(e) {
+    const p = this.player;
+    const r = e.result;
+    if (this.phase === 0) {
+      if (r === 'volley') { bellAudio.punchClack(); this.toast('VOLLEY · ON THE BOUNCE', 1.4); }
+      else if (r === 'returned') { bellAudio.punchClack(); this.toast('CLAIM RETURNED', 1.2); }
+      else if (r === 'unread') { bellAudio.refused(); this.toastOnce('unread', this.lost.lensMode === 'mouse' || this.pad?.aimActive ? 'READ THE CLAIM FIRST · PUT THE LENS ON IT' : 'READ THE CLAIM FIRST · FACE IT, THE LENS LEADS YOU', 1.8, 2); }
+      else if (r === 'unclaimed') { bellAudio.refused(); this.toastOnce('unclaimed', 'NO CLAIM ON THAT ONE · THE BRASS RING IS THE CLAIM', 1.8, 2.5); }
+      else if (r === 'out-of-reach') this.toastOnce('far', 'TOO FAR · WALK UP TO THE CASE', 1.4, 2);
+      else if (r === 'none') this.toastOnce('no-case', 'NO CLAIM CASE YET · HE THROWS ONE IN EVERY PATTERN', 1.6, 3);
+      if (['volley', 'returned'].includes(r)) p.attack = 0.26;
+      return;
+    }
+    if (this.phase === 1) {
+      const node = e.node ? BELL_ARENA.nodes.find((n) => n.id === e.node) : null;
+      if (r === 'on-the-bell') { bellAudio.punchClack(); this.toast('ON THE BELL · THE BORROWED LIGHT GOES BACK', 1.6); }
+      else if (r === 'hit') { bellAudio.punchClack(); this.toast('THE BORROWED LIGHT GOES BACK TO HIM', 1.4); }
+      else if (r === 'wrong-lane') { bellAudio.refused(); this.toast(`STAND IN THE LIT LANE · ${String(e.lane).toUpperCase()}`); }
+      else if (r === 'not-lit') { bellAudio.refused(); this.toastOnce('not-lit', 'HE IS NOT LIT · LIGHT HIS LANE ON THE BELL', 1.8, 2); }
+      else if (r === 'spent') { bellAudio.refused(); this.toastOnce('spent', 'THAT LIGHT IS SPENT · LIGHT HIM AGAIN ON A BELL', 1.8, 2); }
+      else if (r === 'no-lamp') this.toastOnce('no-lamp', 'NO LAMP IN REACH · WALK UP TO ONE', 1.6, 2.5);
+      else if (['queued', 'caught', 'renew'].includes(r)) bellAudio.punchClack();
+      else if (r === 'replaced') { bellAudio.punchClack(); bellAudio.fizzle(); this.toast(`ONE LINE, ONE BORROWED MOMENT · ${node?.label ?? 'THAT LAMP'} TAKES ITS PLACE`, 2.2); }
+      else if (r === 'already') { bellAudio.refused(); this.toast(`${node?.label ?? 'THAT LAMP'} · ALREADY PUNCHED · IT GOES ON THE BELL`); }
+      else if (r === 'busy') { bellAudio.refused(); this.toast(e.line === 'amber' ? 'THE AMBER LINE IS STILL OUT · PUNCH IT AGAIN ONCE ITS BRIDGE FOLDS' : `THE ${String(e.line).toUpperCase()} LINE IS STILL BURNING · WAIT FOR IT TO GO OUT`); }
+      else if (r === 'cut') { bellAudio.cutLine(); this.toast(`${node?.label ?? 'THAT LAMP'} · CUT`); }
+      if (r !== 'no-lamp' && r !== 'none') p.attack = 0.26;
+      this.syncNodeArt();
+      return;
+    }
+    if (this.phase === 2) {
+      if (r === 'held') { bellAudio.paper?.(); this.tone(620, 0.12, 'sine', 0.03); this.toast('ONE TRUE THING · NOW THE OTHER', 1.6); }
+      else if (r === 'pair') bellAudio.punchClack();
+      else if (r === 'too-far') this.toastOnce('too-far', 'CLOSER · WALK UP TO IT', 1.2, 2);
+      else if (r === 'closer') { bellAudio.refused(); this.toastOnce('closer', 'CLOSER · THE LIT FRONT EDGE', 1.4, 1.5); }
+      else if (r === 'nothing') this.toastOnce('echo-wait', 'E STRIKES A TRUE THING · WAIT FOR THEM TO COME DOWN', 1.8, 3);
+      if (['held', 'pair', 'said'].includes(r)) p.attack = 0.26;
+    }
+  }
+
+  onHurt(e) {
+    const label = HIT_SOURCES[e.source] ?? HIT_SOURCES.hit;
+    this.hitStop = 0.07;
+    this.trauma = Math.min(1, this.trauma + 0.55);
+    this.spawnImpact(this.player.x, 1.4 + this.player.y, this.player.z, OXBLOOD);
+    if (flashEnabled && !reducedMotionActive()) { this.renderer.domElement.classList.add('hit-flash'); setTimeout(() => this.renderer.domElement.classList.remove('hit-flash'), 70); }
+    this.tone(63, 0.22, 'sawtooth', 0.05);
+    this.lastHit = { source: e.source, label, at: this.elapsed };
+    if (e.layersLeft > 0) this.showHitFeedback(this.lastHit, e.from);
+  }
+
+  // The last layer torn: a checkpoint restart (conductorFight.js). On NORMAL
+  // this phase begins again; earlier phases stay won. STORY undoes nothing.
+  onDeath(e) {
+    this.clearEntityViews();
+    this.fightVisuals.clear();
+    this.playerRoot.position.set(e.x, 0, e.z);
+    this.hitStop = 0.1;
+    this.trauma = 0.25;
+    this.keptFlash = 2.8;
+    this.spawnImpact(e.x, 1.1, e.z, AMBER);
+    this.tone(220, 0.28, 'triangle', 0.04);
+    if (this.phase === 1) { this.syncNodeArt(true); }
+    this.syncBossHp();
+    this.boss.exposed = 0;
+    const rollback = this.runner.tuning.rollback;
+    this.lastDeath = { phase: this.phase, fightPhase: e.phase, source: this.lastHit?.source ?? 'hit', bossHp: this.boss.hp, rolledBack: e.rolledBack, rollback };
+    this.showDeathCard(this.lastHit ?? { label: HIT_SOURCES.hit }, { rollback, phaseName: this.fight.track.phase.name });
+    if (e.offerStory) this.offerStory();
+  }
+
+  onPhaseCleared(e) {
+    this.boss.reaction = 'pain';
+    this.boss.gestureTime = 2;
+    this.boss.stagger = 0.5;
+    this.hitStop = 0.12;
+    this.trauma = Math.max(this.trauma, 0.6);
+    this.playConductorAction('Hit_Head', true);
+    this.tone(48, 0.6, 'sawtooth', 0.05);
+    this.clearEntityViews({ keepFlights: true });
+    if (!e.last) stampAnnounce(this.hud, 'PHASE CLEARED', { holdMs: 1400 });
+    this.hint('');
+  }
+
+  onPhaseStart(e) {
+    const total = this.fight.track.count;
+    stampAnnounce(this.hud, `${e.index + 1} / ${total} · ${e.phase.name}`, { holdMs: 2200 });
+    this.applyPhaseLook(e.index);
+  }
+
+  // A phase you can see: each movement's world shifts as it escalates.
+  applyPhaseLook(index) {
+    const m = this.phase;
+    if (m === 0) {
+      const glow = index >= 1 ? 0.12 : 0;
+      this.seamGlows.x.userData.base = glow; this.seamGlows.z.userData.base = glow;
+      this.scene.fog.density = [0.012, 0.014, 0.016][index] ?? 0.012;
+    } else if (m === 1) {
+      bellAudio.setRain?.([0.5, 0.75, 1][index] ?? 0.5);
+      this.rim.intensity = [36, 46, 60][index] ?? 36;
+    } else if (m === 2) {
+      this.scene.fog.color.setHex([0x241517, 0x2a1630, 0x301410][index] ?? 0x241517);
+      this.scene.background.copy(this.scene.fog.color);
+    } else if (m === 3) {
+      this.scene.fog.color.setHex([0xe5dfce, 0xd8d2c6, 0xcfc3b4][index] ?? 0xe5dfce);
+      this.scene.background.copy(this.scene.fog.color);
+    }
+  }
+
+  onMovementFinished() {
+    const m = this.phase;
+    this.fightVisuals.clear();
+    this.clearEntityViews();
+    if (m === 3) { this.startRescueSequence(); return; }
+    if (m === 1) { this.bellMeter.ring(); bellAudio.bell(); }
+    this.startWorldTransition(m + 1);
+  }
+
+  // The visual half of a hit on him (the director dealt the damage).
+  bossHitFx(amount, reaction = 'pain', e = {}) {
+    this.boss.inv = 0.09 * D().bossWindow;
+    this.boss.stagger = 0.18;
+    this.boss.reaction = reaction;
+    this.boss.lastDamageCause = e.cause ?? ['returned-claim', 'borrowed-light', 'two-true-things', 'returned-pigment'][this.phase];
+    this.boss.lastDamage = amount;
+    this.boss.gestureTime = reaction === 'rage' ? 1.4 : 0.8;
+    this.boss.flash = 0.18;
+    this.playConductorAction(reaction === 'pain' ? 'Hit_Chest' : reaction === 'shame' ? 'Hit_Head' : 'Interact', true);
+    this.hitStop = Math.max(this.hitStop, e.volley || e.onTheBell || e.pair ? 0.09 : 0.055);
+    this.trauma = Math.min(1, this.trauma + (e.volley || e.onTheBell || e.pair ? 0.4 : 0.3));
+    this.spawnImpact(this.boss.x, 8.2, this.boss.z + 1, reaction === 'shame' ? 0xffd7d7 : AMBER);
+    this.tone(72, 0.12, 'sawtooth', 0.05);
+    this.syncBossHp();
+    if (this.phase === 3) { this.boss.paintCoverage = THREE.MathUtils.clamp((100 - this.boss.hp) / PAINT_MOVEMENT_DRAIN, 0, 1); this.updatePaintCreep(); }
+  }
+
+  // QA and the debug hooks: damage dealt through the director.
+  hitBoss(amount = 25) {
+    if (this.mode !== 'play' || !this.fight || this.transition) return;
+    this.fight.damage(amount);
+    this.onFightEvents(this.fight.update(0, this.player, {}));
+  }
+
+  // ------------------------------------------------------------ views
+  // Meshes for a movement's things (cases, trains, props, true things,
+  // paint), keyed by the director's id, made on first sight and dropped
+  // when the director lets go of them.
+  clearEntityViews({ keepFlights = false } = {}) {
+    for (const view of this.entityViews?.values() ?? []) this.scene.remove(view.root);
+    this.entityViews = new Map();
+    if (!keepFlights) { this.projectiles.forEach((p) => this.scene.remove(p.root)); this.projectiles = []; }
+    if (this.paintTransfer) { this.paintTransfer.visible = false; this.paintTransfer.children.forEach((item) => { item.visible = false; }); }
+  }
+
+  removeEntityView(id) {
+    const view = this.entityViews?.get(id);
+    if (!view || view.keep) return;
+    this.scene.remove(view.root);
+    this.entityViews.delete(id);
+  }
+
+  addView(id, root, extra = {}) {
+    this.scene.add(root);
+    const view = { root, ...extra };
+    this.entityViews.set(id, view);
+    return view;
+  }
+
+  // ---- Movement I
+  ensureCaseView(attack) {
+    if (!this.caseArt || this.entityViews.has(attack.meta.caseId)) return;
+    const claim = attack.meta.claim;
+    const art = claim ? this.caseArt[(attack.meta.serial ?? 0) % this.caseArt.length] : this.unclaimedArt ?? this.caseArt[0];
     const root = new THREE.Group();
-    root.position.set(px, 0, pz);
+    root.position.set(attack.x, 0, attack.z);
     const card = new THREE.Mesh(new THREE.PlaneGeometry(2.5, 2.5 * (58 / 84)), paintedMaterial(art.present));
-    card.position.set(0, 12, 0);
+    card.position.y = 12;
     root.add(card);
-    const telegraph = new THREE.Mesh(new THREE.RingGeometry(0.9, 1.25, 40), new THREE.MeshBasicMaterial({ color: AMBER, transparent: true, opacity: 0.3, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
-    telegraph.rotation.x = -Math.PI / 2;
-    telegraph.position.set(px, 0.06, pz);
-    this.scene.add(root, telegraph);
-    const item = {
-      root, card, telegraph, art, claim: art.claim, x: px, z: pz, tagX: px + 0.65, tagZ: pz,
-      timer: (tutorial ? 0.6 : D().telegraph + 0.35) + delay, landed: false, returned: false, life: tutorial ? Infinity : 8.5, tutorial, hitChecked: false, revealed: false,
-    };
-    this.lost.cases.push(item);
-    return item;
+    this.addView(attack.meta.caseId, root, { kind: 'case', card, art, attack, claim, revealed: false, keep: true });
   }
 
-  spawnSeamTrain({ seam = 'z', dir = 1, ghost = false, delay = 0 } = {}) {
-    if (!this.trainArt) return null;
-    const along = seam === 'z' ? 'x' : 'z';
-    const front = seam === 'x';
+  ensureTrainView(attack) {
+    if (!this.trainArt || this.entityViews.has(attack.id)) return;
+    const front = attack.seam === 'x';
+    const ghost = attack.ghost;
     const map = front ? (ghost ? this.trainArt.frontPast : this.trainArt.front) : (ghost ? this.trainArt.sidePast : this.trainArt.side);
     const height = front ? 3.1 : 3.2;
     const width = front ? height * (60 / 64) : height * (150 / 50);
-    const material = ghost ? lensClipMaterial(map, { opacity: 0.95 }) : paintedMaterial(map);
-    const card = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(width, height), ghost ? lensClipMaterial(map, { opacity: 0.95 }) : paintedMaterial(map));
     card.renderOrder = ghost ? 6 : 2;
+    card.position.y = height / 2 + 0.05;
+    if (!front && attack.dir < 0) card.scale.x = -1;
     const root = new THREE.Group();
     root.add(card);
-    card.position.y = height / 2 + 0.05;
-    if (!front && dir < 0) card.scale.x = -1;
-    const start = along === 'x' ? -24 * dir : -22 * dir;
-    if (along === 'x') root.position.set(start, 0, PANEL_SEAMS.z);
-    else root.position.set(PANEL_SEAMS.x, 0, start);
     root.visible = false;
-    this.scene.add(root);
-    const train = {
-      root, card, seam, along, dir, ghost, front, length: front ? 4.2 : width * 0.94, progress: start,
-      timer: D().telegraph + (ghost ? 0.9 : 0.55) + delay, running: false, hitChecked: false,
-      speed: (ghost ? 13 : 17) * D().speedScale, life: 5,
-      tailX: 0, tailZ: 0, headX: 0, headZ: 0, halfWidth: 0.6,
-    };
-    this.lost.trains.push(train);
-    this.tone(ghost ? 880 : 62, ghost ? 0.4 : 0.22, ghost ? 'sine' : 'square', ghost ? 0.012 : 0.03);
-    return train;
+    this.addView(attack.id, root, { kind: 'train', card, attack, front });
   }
 
-  punchLostProperty() {
-    const p = this.player;
-    const nearest = this.lost.cases.filter((item) => item.landed && !item.returned)
-      .map((item) => ({ item, d: Math.hypot(item.x - p.x, item.z - p.z) }))
-      .sort((a, b) => a.d - b.d)[0];
-    if (!nearest || nearest.d > CASE_REACH) {
-      this.player.attack = 0;
-      this.toastOnce('no-case', nearest ? 'TOO FAR · WALK UP TO THE CASE' : 'NO CASE TO RETURN YET · HE DROPS THEM', 1.6, 2.5);
-      return;
-    }
-    const result = punchCase(nearest.item, this.lost.lens, p);
-    if (result.result === 'unread') {
-      bellAudio.refused();
-      this.toast(this.lost.lensMode === 'mouse' ? 'READ THE TAG FIRST · PUT THE LENS ON IT' : 'READ THE TAG FIRST · WAIT FOR THE LENS');
-      return;
-    }
-    if (result.result !== 'returned') return;
-    const item = nearest.item;
-    item.returned = true;
-    bellAudio.punchClack();
-    this.spawnImpact(item.x, 1, item.z, AMBER);
-    this.lost.returned += 1;
-    // the case flies back along the line to the Conductor
-    const start = item.root.position.clone().add(new THREE.Vector3(0, 0.9, 0));
-    const target = new THREE.Vector3(this.boss.x, 6.4, this.boss.z + 0.8);
-    this.scene.remove(item.telegraph);
-    item.root.remove(item.card);
+  inkStamp(attack) {
+    const p = attack;
+    const w = p.x1 - p.x0; const d = p.z1 - p.z0;
+    if (!this.stampArt) this.stampArt = canvasTexture(paintOverdueStamp());
+    const mark = new THREE.Mesh(new THREE.PlaneGeometry(Math.min(w, d * 1.9) * 0.8, Math.min(w, d * 1.9) * 0.8 * 0.42), new THREE.MeshBasicMaterial({ map: this.stampArt, transparent: true, opacity: 0.9, depthWrite: false, toneMapped: false }));
+    mark.rotation.x = -Math.PI / 2;
+    mark.rotation.z = (Math.random() - 0.5) * 0.3;
+    mark.position.set((p.x0 + p.x1) / 2, 0.07, (p.z0 + p.z1) / 2);
+    this.scene.add(mark);
+    this.effects.push({ root: mark, life: 2.4, type: 'decal' });
+    this.spawnImpact(mark.position.x, 0.6, mark.position.z, OXBLOOD);
+  }
+
+  flyCaseBack(e) {
+    const view = this.entityViews.get(e.caseId);
+    if (!view) return;
+    this.entityViews.delete(e.caseId);
+    const start = view.root.position.clone().add(new THREE.Vector3(0, 0.9, 0));
+    this.scene.remove(view.root);
     const flying = new THREE.Group();
-    flying.add(item.card);
-    item.card.position.set(0, 0, 0);
+    view.card.position.set(0, 0, 0);
+    view.card.material.map = view.art.past;
+    view.card.material.needsUpdate = true;
+    flying.add(view.card);
     flying.position.copy(start);
     this.scene.add(flying);
-    this.projectiles.push({ root: flying, type: 'claim', damage: result.damage, tutorial: item.tutorial, life: 1.4, age: 0, duration: 0.9, start, target });
-    this.scene.remove(item.root);
-    this.lost.cases = this.lost.cases.filter((entry) => entry !== item);
-    this.toast(`CLAIM ${item.claim.split('·')[0].trim()} · RETURNED`);
+    this.spawnImpact(e.x, 1, e.z, e.volley ? 0xffe2a0 : AMBER);
+    this.projectiles.push({ root: flying, type: 'claim', life: e.flight + 0.4, age: 0, duration: e.flight, start, target: new THREE.Vector3(this.boss.x, 6.4, this.boss.z + 0.8) });
   }
 
-  updateLostProperty(dt) {
-    const L = this.lost;
-    const p = this.player;
-    // The lens: once the mouse aims it, it stays where the mouse is (alpha
-    // round 4: it fell back to circling after 3.5 s of a still mouse while
-    // the HUD said CIRCLING); L hands it back to circling Butch.
-    const mouseLive = L.lensMode === 'mouse';
-    if (mouseLive && L.pointer) this.aimLensAtPointer();
-    const goal = mouseLive ? L.lensTarget : orbitLens(p, this.elapsed, { facingX: p.facingX, facingZ: p.facingZ });
-    const k = 1 - Math.exp(-dt * (mouseLive ? 18 : 6));
-    L.lens.x += (goal.x - L.lens.x) * k;
-    L.lens.z += (goal.z - L.lens.z) * k;
-    lensUniforms.uLens.value.set(L.lens.x, L.lens.z);
-    this.lensRim.position.set(L.lens.x, 0.05, L.lens.z);
-    this.lensRim.rotation.z += dt * 0.15;
-
-    // cases
-    L.cases.forEach((item) => {
-      if (item.timer > 0) {
-        item.timer -= dt;
-        item.telegraph.material.opacity = 0.18 + Math.abs(Math.sin(item.timer * 10)) * 0.28;
-        return;
+  syncLost(dt) {
+    const director = this.fight;
+    const lens = director.lens;
+    const view = this.lensView;
+    const k = 1 - Math.exp(-dt * (lens.aimed ? 20 : 9));
+    view.x += (lens.x - view.x) * k;
+    view.z += (lens.z - view.z) * k;
+    view.radius += (lens.radius - view.radius) * Math.min(1, dt * 3);
+    lensUniforms.uLens.value.set(view.x, view.z);
+    lensUniforms.uRadius.value = view.radius;
+    this.lensRim.position.set(view.x, 0.05, view.z);
+    if (this.lensRimBase) this.lensRim.scale.set(this.lensRimBase * (view.radius / LENS_RADIUS), this.lensRimBase * (view.radius / LENS_RADIUS), 1);
+    if (!reducedMotionActive()) this.lensRim.rotation.z += dt * 0.15;
+    const reveal = (x, z) => Math.hypot(x - lens.x, z - lens.z) <= lens.radius;
+    // Cases fall where their ring closes; under the lens their claim reads.
+    for (const c of director.cases) {
+      const v = this.entityViews.get(c.id);
+      if (!v) continue;
+      if (c.returned) continue;
+      if (c.filed) { v.card.material.opacity = Math.max(0, v.card.material.opacity - dt * 2.5); if (v.card.material.opacity <= 0.01) { this.scene.remove(v.root); this.entityViews.delete(c.id); } continue; }
+      if (!c.landed) {
+        const t = Math.min(1, c.attack.age / Math.max(0.01, c.attack.tele));
+        v.card.position.y = 0.86 + (1 - t * t) * 11.2;
+        v.card.rotation.z = reducedMotionActive() ? 0 : Math.sin(this.elapsed * 12) * 0.16 * (1 - t);
+      } else {
+        v.card.position.y = 0.86;
+        v.card.rotation.z = 0;
+        if (c.lieLeft < 0.9) v.card.material.opacity = Math.max(0.15, c.lieLeft / 0.9);
       }
-      if (!item.landed) {
-        item.card.position.y = Math.max(0.86, item.card.position.y - 22 * D().speedScale * dt);
-        item.card.rotation.z = Math.sin(this.elapsed * 12) * 0.18 * (item.card.position.y - 0.86) / 10;
-        if (item.card.position.y <= 0.861) {
-          item.landed = true;
-          item.card.rotation.z = 0;
-          item.telegraph.material.opacity = 0.12;
-          this.spawnImpact(item.x, 0.4, item.z, AMBER);
-          this.trauma = Math.max(this.trauma, 0.35);
-          this.tone(96, 0.14, 'square', 0.03);
-          if (!item.tutorial && Math.hypot(p.x - item.x, p.z - item.z) < 1.25 && p.y < 1) this.takeHit({ source: 'case', from: item });
-        }
-        return;
+      const revealed = c.landed && reveal(c.x, c.z);
+      if (revealed !== v.revealed) {
+        v.revealed = revealed;
+        v.card.material.map = revealed ? v.art.past : v.art.present;
+        v.card.material.needsUpdate = true;
+        if (revealed && c.claim) bellAudio.paper?.();
       }
-      item.life -= dt;
-      const revealed = underLens(L.lens, item.tagX, item.tagZ);
-      if (revealed !== item.revealed) {
-        item.revealed = revealed;
-        item.card.material.map = revealed ? item.art.past : item.art.present;
-        item.card.material.needsUpdate = true;
-        if (revealed) bellAudio.paper?.();
-      }
-      item.card.lookAt(this.camera.position.x, item.card.getWorldPosition(new THREE.Vector3()).y, this.camera.position.z);
-      if (item.life < 1.2) item.card.material.opacity = Math.max(0, item.life / 1.2);
+      v.card.lookAt(this.camera.position.x, v.card.getWorldPosition(new THREE.Vector3()).y, this.camera.position.z);
+    }
+    // Trains along the seams (ghost trains draw only inside the lens).
+    for (const a of director.attacks) {
+      if (a.kind !== 'train') continue;
+      const v = this.entityViews.get(a.id);
+      if (!v) continue;
+      v.root.visible = a.state === 'live';
+      const centre = a.pos - a.dir * (a.length / 2);
+      if (a.seam === 'z') v.root.position.set(centre, 0, PANEL_SEAMS.z);
+      else v.root.position.set(PANEL_SEAMS.x, 0, v.front ? a.pos - a.dir * 1.2 : centre);
+      if (v.front) v.card.lookAt(this.camera.position.x, v.card.getWorldPosition(new THREE.Vector3()).y, this.camera.position.z);
+    }
+    // The live seams (phase 2 on) glow faintly between trains.
+    ['x', 'z'].forEach((axis) => {
+      const glow = this.seamGlows[axis];
+      const base = glow.userData.base ?? 0;
+      glow.material.opacity += (base - glow.material.opacity) * Math.min(1, dt * 4);
     });
-    L.cases.filter((item) => item.life <= 0).forEach((item) => { this.scene.remove(item.root); this.scene.remove(item.telegraph); });
-    L.cases = L.cases.filter((item) => item.life > 0);
-
-    // trains in the seams
-    let glowX = 0;
-    let glowZ = 0;
-    L.trains.forEach((train) => {
-      if (!train.running) {
-        train.timer -= dt;
-        const pulse = 0.2 + Math.abs(Math.sin(train.timer * 9)) * 0.35;
-        const strength = train.ghost ? pulse * 0.28 : pulse;
-        if (train.seam === 'x') glowX = Math.max(glowX, strength); else glowZ = Math.max(glowZ, strength);
-        if (train.timer <= 0) { train.running = true; train.root.visible = true; this.trauma = Math.max(this.trauma, train.ghost ? 0.08 : 0.2); }
-        return;
-      }
-      train.progress += train.speed * train.dir * dt;
-      train.life -= dt;
-      if (train.along === 'x') train.root.position.x = train.progress;
-      else train.root.position.z = train.progress;
-      const head = train.progress + train.dir * (train.front ? 0.3 : train.length / 2);
-      const tail = train.progress - train.dir * (train.front ? train.length : train.length / 2);
-      if (train.along === 'x') Object.assign(train, { headX: head, tailX: tail, headZ: PANEL_SEAMS.z, tailZ: PANEL_SEAMS.z });
-      else Object.assign(train, { headX: PANEL_SEAMS.x, tailX: PANEL_SEAMS.x, headZ: head, tailZ: tail });
-      train.revealed = !train.ghost || ghostTrainRevealed(train, L.lens);
-      if (train.front) train.card.lookAt(this.camera.position.x, train.card.getWorldPosition(new THREE.Vector3()).y, this.camera.position.z);
-      if (!train.hitChecked && p.y < 1.05 && trainHits(train, p)) { train.hitChecked = true; this.takeHit({ source: train.ghost ? 'ghost-train' : 'train', from: { x: train.tailX, z: train.tailZ } }); }
-    });
-    L.trains.filter((train) => train.life <= 0).forEach((train) => this.scene.remove(train.root));
-    L.trains = L.trains.filter((train) => train.life > 0);
-    this.seamGlows.x.material.opacity += (glowX - this.seamGlows.x.material.opacity) * Math.min(1, dt * 12);
-    this.seamGlows.z.material.opacity += (glowZ - this.seamGlows.z.material.opacity) * Math.min(1, dt * 12);
-
-    // onboarding: read the first tag, then punch it back
-    if (L.tutorial === 'lens') {
-      const first = L.cases.find((item) => item.tutorial);
-      if (first?.landed) {
-        const read = underLens(L.lens, first.tagX, first.tagZ);
-        const near = Math.hypot(p.x - first.x, p.z - first.z) <= CASE_REACH;
-        this.hint(!read
-          ? (this.lost.lensMode === 'mouse' ? 'MOVE THE LENS ONTO THE TAG · <kbd>MOUSE</kbd>' : 'THE LENS CIRCLES YOU · WALK UP TO THE CASE')
-          : near ? '<kbd>E</kbd> / <kbd>CLICK</kbd> · RETURN THE CASE' : 'WALK UP TO THE CASE');
-      } else if (!first && L.returned > 0) {
-        L.tutorial = 'done';
-        this.hint('');
-        this.boss.attackClock = 0.8;
-        this.toast('HIS TRAINS RUN IN THE SEAMS · GHOST TRAINS ONLY SHOW IN THE LENS', 3.4);
-      }
-    }
   }
 
-  spawnLostPropertyBeat() {
-    const round = this.boss.phaseRound;
-    const story = difficulty === 'story';
-    const ghostEvery = story ? 3 : 2;
-    const seam = round % 2 === 0 ? 'z' : 'x';
-    const dir = round % 4 < 2 ? 1 : -1;
-    this.spawnSeamTrain({ seam, dir, ghost: round >= 2 && round % ghostEvery === 0 });
-    if (!story && round >= 4) this.spawnSeamTrain({ seam: seam === 'z' ? 'x' : 'z', dir: -dir, ghost: round % ghostEvery !== 0, delay: 0.7 });
-    const live = this.lost.cases.filter((item) => !item.returned).length;
-    const cases = Math.min(story ? 2 : 3, 4 - live);
-    for (let i = 0; i < cases; i += 1) {
-      const aimed = i === 0 && !story;
-      this.spawnClaimCase(aimed ? { x: THREE.MathUtils.clamp(this.player.x + THREE.MathUtils.randFloatSpread(1.2), ARENA.minX + 1.4, ARENA.maxX - 1.4), z: THREE.MathUtils.clamp(this.player.z + THREE.MathUtils.randFloatSpread(1.2), ARENA.minZ + 1.2, ARENA.maxZ - 1.2), delay: i * 0.15 } : { delay: i * 0.18 });
+  // ---- Movement II
+  onBellEvent(event) {
+    if (event.type === 'bell') { bellAudio.bell(); this.bellMeter.ring(); this.trauma = Math.max(this.trauma, 0.08); }
+    else if (event.type === 'power') bellAudio.machineOn(event.machineId.startsWith('bridge') ? 'bridge' : event.machineId.startsWith('board') ? 'billboard' : 'sign');
+    else if (event.type === 'off') bellAudio.machineOff(event.machineId.startsWith('bridge') ? 'bridge' : 'billboard');
+    else if (event.type === 'flicker') bellAudio.flickerTick();
+    else if (event.type === 'conductor-step') this.boss.targetX = LANE_X[event.to];
+    else if (event.type === 'exposed') { this.boss.reaction = 'pain'; this.boss.gestureTime = 0.8; this.toast(`HE IS LIT · ${event.lane.toUpperCase()} LANE · CROSS AND PUNCH`, 2); }
+    else if (event.type === 'beam-telegraph') { if (event.fullSweep) this.toast('FULL SWEEP ON THE OFF-BEAT · BEHIND A LIT BILLBOARD, OR IN HIS LIT LANE', 2.6); }
+    else if (event.type === 'beam-fire') {
+      this.bell.beamLanes = event.lanes;
+      this.bell.beamFlash = 0.38;
+      if (event.lanes.length) { this.tone(1100, 0.22, 'sawtooth', 0.03); this.trauma = Math.max(this.trauma, 0.18); }
+      if (this.fight?.arena?.shelteredBy(this.player.x, this.player.z) && event.lanes.length) this.toastOnce('held', 'THE BILLBOARD HOLDS', 1.2, 2);
     }
-    this.boss.attackClock = Math.max(2.3, (story ? 4.4 : 3.3) - Math.min(0.9, round * 0.08));
-  }
-
-  // ======================================================== Movement II
-
-  // Movement II teaches its rule one step per bell (finaleModel.js
-  // createBellTutorial, alpha round 4): the amber lamp and its bridge, the
-  // rose signal in his next lane, then the first punch with the bell
-  // waiting, then both before one bell; the beams come last. Until then the
-  // gap is a railing and the bell runs slower.
-  startBellArena({ keepTutorial = false } = {}) {
-    this.bell.arena = createBellArena({ difficulty, seed: 17 + this.player.respawns, beams: false });
-    if (!keepTutorial) this.bell.tutor = createBellTutorial();
-    if (this.bell.tutor.beams) this.bell.arena.setBeams(true);
-    this.bell.strandedFor = 0;
-    this.bell.beamFlash = 0;
-    this.bell.telegraphLanes = [];
-    this.bell.listening = false;
-    this.bell.held = false;
-    this.boss.targetX = LANE_X[this.bell.arena.conductorLane];
-    bellAudio.setRain?.(0.5);
-    this.syncNodeArt(true);
-  }
-
-  punchBellArena() {
-    const arena = this.bell.arena;
-    if (!arena) return;
-    const p = this.player;
-    const tutor = this.bell.tutor;
-    if (arena.onFrontPlatform(p.z)) {
-      const result = arena.punchConductor(p.x, p.z);
-      if (result.result === 'hit') {
-        bellAudio.punchClack();
-        this.hitBoss(result.damage, 'pain');
-        const before = tutor.stage;
-        const after = tutor.hit();
-        if (after === 'done' && before !== 'done') { arena.setBeams(true); this.toast('HE FIRES BACK NOW · ON THE OFF-BEAT · A LIT BILLBOARD SHELTERS ITS LANE', 3.6); }
-        else if (after === 'combo' && before !== 'combo') this.toast('THE BORROWED LIGHT GOES BACK TO HIM · NOW THE BELL WILL NOT WAIT', 3);
-        else this.toast('THE BORROWED LIGHT GOES BACK TO HIM');
-      } else if (result.result === 'wrong-lane') { bellAudio.refused(); this.toast(`STAND IN THE LIT LANE · ${result.lane.toUpperCase()}`); }
-      else if (result.result === 'not-lit') { bellAudio.refused(); this.toast('HE IS NOT LIT · LIGHT HIS LANE ON THE BELL'); }
-      else if (result.result === 'spent') { bellAudio.refused(); this.toastOnce('spent', 'THAT LIGHT IS SPENT · LIGHT HIM AGAIN ON A BELL', 2); }
-      return;
-    }
-    const node = arena.nearestNode(p.x, p.z);
-    if (!node) { this.player.attack = 0; this.toastOnce('no-lamp', 'NO LAMP IN REACH · WALK UP TO ONE', 1.6, 2.5); return; }
-    const result = arena.punch(node.id);
-    // While learning, the hint already says what a punch did: no second
-    // banner on top of it.
-    const learning = !tutor.done;
-    if (result.result === 'queued' || result.result === 'caught' || result.result === 'renew') { bellAudio.punchClack(); if (!learning) this.toast(`${node.label} · QUEUED FOR THE BELL`); }
-    else if (result.result === 'replaced') { bellAudio.punchClack(); bellAudio.fizzle(); if (!learning) this.toast(`ONE LINE, ONE BORROWED MOMENT · ${node.label} TAKES ITS PLACE`); }
-    else if (result.result === 'already') { bellAudio.refused(); this.toast(`${node.label} · ALREADY PUNCHED · IT GOES ON THE BELL`); }
-    else if (result.result === 'busy') {
-      bellAudio.refused();
-      this.toast(node.line === 'amber'
-        ? 'THE AMBER LINE IS STILL OUT · PUNCH IT AGAIN ONCE ITS BRIDGE FOLDS'
-        : `THE ${result.line.toUpperCase()} LINE IS STILL BURNING · WAIT FOR IT TO GO OUT`);
-    }
-    else if (result.result === 'cut') { bellAudio.cutLine(); this.toast(`${node.label} · CUT`); }
-    if (['queued', 'replaced', 'caught', 'renew'].includes(result.result)) tutor.queued({ line: node.line, lane: node.lane, nextLane: arena.plan.lane });
-    // A lamp caught just after a bell fires at once: its events are the bell's.
-    if (Array.isArray(result.events)) this.handleBellEvents(result.events);
     this.syncNodeArt();
   }
 
   syncNodeArt(force = false) {
     if (!this.nodeArt) return;
-    const arena = this.bell.arena;
+    const arena = this.fight?.arena;
     BELL_ARENA.nodes.forEach((node) => {
       const status = arena?.timetable.nodeStatus(node.id);
       const state = status?.powering ? 'powering' : status?.queued ? 'queued' : 'idle';
@@ -2187,93 +2368,37 @@ class SpectacleBattle {
     });
   }
 
-  // What the bell, the machines and the Conductor did this step.
-  handleBellEvents(events) {
-    const arena = this.bell.arena;
-    const tutor = this.bell.tutor;
-    let rang = false;
-    let exposedNow = false;
-    for (const event of events) {
-      if (event.type === 'bell') { rang = true; bellAudio.bell(); this.bellMeter.ring(); this.trauma = Math.max(this.trauma, 0.08); }
-      else if (event.type === 'power') {
-        const kind = event.machineId.startsWith('bridge') ? 'bridge' : event.machineId.startsWith('board') ? 'billboard' : 'sign';
-        bellAudio.machineOn(kind);
-        if (kind === 'bridge') tutor.bridgeOut();
-      } else if (event.type === 'off') bellAudio.machineOff(event.machineId.startsWith('bridge') ? 'bridge' : 'billboard');
-      else if (event.type === 'flicker') bellAudio.flickerTick();
-      else if (event.type === 'conductor-step') { this.boss.targetX = LANE_X[event.to]; }
-      else if (event.type === 'exposed') {
-        exposedNow = true;
-        this.boss.exposed = D().lampMs / 1000;
-        this.boss.reaction = 'pain'; this.boss.gestureTime = 0.8;
-        const help = tutor.exposed({ bridgeOut: arena.anyBridgeOut() });
-        if (help.plank) {
-          // The first time he is lit, the line lays a plank so the punch can
-          // be learned on its own (the bell waits meanwhile).
-          arena.extendReturnBridge(arena.nearestBridge(this.player.x));
-          bellAudio.machineOn('bridge');
-        }
-        if (help.missingBridge) this.toast('HE IS LIT · BUT NO BRIDGE IS OUT · BOTH BEFORE THE SAME BELL', 3.4);
-        else if (tutor.done) this.toast(`HE IS LIT · ${event.lane.toUpperCase()} LANE · CROSS AND PUNCH`, 2.4);
-      } else if (event.type === 'exposure-end') {
-        this.boss.exposed = 0;
-        tutor.exposureEnd();
-      }
-      else if (event.type === 'beam-telegraph') { this.bell.telegraphLanes = event.lanes; if (event.fullSweep) this.toast('FULL SWEEP ON THE OFF-BEAT · FIND SHELTER', 2.2); }
-      else if (event.type === 'beam-fire') {
-        this.bell.telegraphLanes = [];
-        this.bell.beamLanes = event.lanes;
-        this.bell.beamFlash = 0.38;
-        if (event.lanes.length) { this.tone(1100, 0.22, 'sawtooth', 0.03); this.trauma = Math.max(this.trauma, 0.18); }
-        const verdict = arena.resolveBeam(event.lanes, this.player.x, this.player.z);
-        if (verdict === 'hit' && this.player.y < 1.2) this.takeHit({ source: 'beam', from: { x: this.boss.x, z: CONDUCTOR_Z } });
-        else if (verdict === 'sheltered') this.toast('THE BILLBOARD HOLDS');
-      }
-    }
-    if (rang) tutor.bell({ exposed: exposedNow });
-    if (events.length) this.syncNodeArt();
-  }
-
-  updateBellArena(dt) {
-    const arena = this.bell.arena;
-    if (!arena) return;
-    const tutor = this.bell.tutor;
+  syncBell(dt) {
+    const director = this.fight;
+    const arena = director.arena;
     const p = this.player;
-    const waiting = arena.exposure && !arena.exposure.punched;
-    this.bell.held = tutor.holding({ lit: Boolean(waiting), dt });
-    this.handleBellEvents(arena.update(dt * 1000 * tutor.timeScale(), { hold: this.bell.held }));
-
-    // Machines follow their levels.
     const planks = new Set(arena.returnPlanks());
     Object.entries(this.bridgeMeshes).forEach(([id, mesh]) => {
       const level = arena.bridgeLevel(id);
       const status = arena.timetable.machineStatus(id);
       mesh.pivot.scale.z = Math.max(0.001, level);
       mesh.pivot.visible = level > 0.01;
-      mesh.deck.material.color.setHex(status.flicker && !planks.has(id) && Math.sin(this.elapsed * 40) > 0 ? 0x806040 : planks.has(id) ? 0xd8c8a8 : 0xffffff);
+      const flick = status.flicker && !planks.has(id) && !reducedMotionActive() && Math.sin(this.elapsed * 18) > 0;
+      mesh.deck.material.color.setHex(flick ? 0x806040 : planks.has(id) ? 0xd8c8a8 : status.flicker ? 0xb89060 : 0xffffff);
     });
     Object.entries(this.cableMeshes).forEach(([nodeId, cable]) => {
       const node = arena.timetable.nodeStatus(nodeId);
       const machine = arena.timetable.machineStatus(cable.machine);
       const out = cable.machine.startsWith('bridge') ? arena.bridgeLevel(cable.machine) > 0.5 : machine?.level > 0.5;
-      const target = out ? 0.95 : node?.queued ? 0.45 + Math.abs(Math.sin(this.elapsed * 6)) * 0.4 : 0.32;
+      const target = out ? 0.95 : node?.queued ? 0.6 + (reducedMotionActive() ? 0.15 : Math.abs(Math.sin(this.elapsed * 5)) * 0.25) : 0.32;
       cable.strip.material.opacity += (target - cable.strip.material.opacity) * Math.min(1, dt * 10);
       cable.endMaterial.opacity = Math.min(1, cable.strip.material.opacity + 0.2);
     });
     Object.entries(this.boardMeshes).forEach(([id, mesh]) => {
       const status = arena.timetable.machineStatus(id);
       mesh.panel.position.y = -1.6 + status.level * 1.6;
-      const lit = status.level > 0.6 && !(status.flicker && Math.sin(this.elapsed * 40) > 0);
+      const lit = status.level > 0.6 && !(status.flicker && !reducedMotionActive() && Math.sin(this.elapsed * 18) > 0);
       const map = lit ? this.billboardArt?.lit : this.billboardArt?.dark;
       if (map && mesh.face.material.map !== map) { mesh.face.material.map = map; mesh.face.material.needsUpdate = true; }
-      // Butch behind the board (from the camera): it turns to glass.
       const board = BELL_ARENA.boards[id];
       const behind = p.z < board.z + 0.2 && p.z > board.z - 5.5 && Math.abs(p.x - LANE_X[board.lane]) < 3.4;
       mesh.fade += ((behind ? 0.28 : 1) - mesh.fade) * Math.min(1, dt * 9);
-      [mesh.face, mesh.frame].forEach((part) => {
-        part.material.opacity = mesh.fade;
-        part.material.depthWrite = mesh.fade > 0.97;
-      });
+      [mesh.face, mesh.frame].forEach((part) => { part.material.opacity = mesh.fade; part.material.depthWrite = mesh.fade > 0.97; });
     });
     Object.entries(BELL_ARENA.lamps).forEach(([id, lane]) => {
       const status = arena.timetable.machineStatus(id);
@@ -2281,292 +2406,318 @@ class SpectacleBattle {
       const shaft = this.laneShafts[lane];
       shaft.material.opacity += (target - shaft.material.opacity) * Math.min(1, dt * 10);
     });
+    // His beams: the warned lanes (the proxies the director keeps), then the
+    // fire on the off-beat.
+    this.bell.telegraphLanes = director.attacks.filter((a) => a.source === 'beam' && a.state === 'tele' && !a.harmless).map((a) => a.meta.lane);
     this.bell.beamFlash = Math.max(0, this.bell.beamFlash - dt);
     Object.entries(this.laneBeams).forEach(([lane, beam]) => {
       const firing = this.bell.beamFlash > 0 && this.bell.beamLanes.includes(lane);
-      const warning = this.bell.telegraphLanes.includes(lane);
+      const proxy = director.attacks.find((a) => a.source === 'beam' && a.meta.lane === lane && a.state === 'tele');
+      const warning = Boolean(proxy) && !proxy.harmless;
+      const progress = proxy ? Math.min(1, proxy.age / Math.max(0.01, proxy.tele)) : 0;
       beam.material.color.setHex(firing ? 0xfff1e6 : ROSE);
-      beam.material.opacity = firing ? 0.75 * (this.bell.beamFlash / 0.38) : warning ? 0.06 + Math.abs(Math.sin(this.elapsed * 7)) * 0.1 : 0;
+      beam.material.opacity = firing ? 0.75 * (this.bell.beamFlash / 0.38) : warning ? 0.05 + progress * 0.22 * (reducedMotionActive() ? 1 : 0.8 + 0.2 * Math.sin(this.elapsed * 10)) : 0;
     });
-    const lit = arena.exposure;
+    const lit = director.exposureLit();
+    this.boss.exposed = lit && !lit.punched ? 1 : 0;
     this.conductorLight.intensity += ((lit ? 260 : 0) - this.conductorLight.intensity) * Math.min(1, dt * 8);
     this.conductorLight.position.x = this.boss.x;
     this.conductorLight.target.position.x = this.boss.x;
-    // next stop marker at the far edge
-    const next = arena.plan.lane;
-    this.nextLaneMarker.position.x += (LANE_X[next] - this.nextLaneMarker.position.x) * Math.min(1, dt * 6);
-    this.nextLaneMarker.material.opacity = 0.35 + Math.abs(Math.sin(this.elapsed * 3)) * 0.3;
-
-    // Listen (hold Q): ghost outlines of what the next bell moves.
-    this.bell.listening = this.keys.has('KeyQ');
+    // His next stop (only once he has called it, in the last phase).
+    const lane = director.announced();
+    this.nextLaneMarker.visible = Boolean(lane);
+    if (lane) this.nextLaneMarker.position.x += (LANE_X[lane] - this.nextLaneMarker.position.x) * Math.min(1, dt * 6);
+    this.nextLaneMarker.material.opacity = 0.45 + (reducedMotionActive() ? 0.1 : Math.abs(Math.sin(this.elapsed * 3)) * 0.25);
+    // Listen (hold Q / LB): ghost outlines of what the next bell moves.
+    this.bell.listening = this.keys.has('KeyQ') || Boolean(this.pad?.buttons.listen);
     const preview = this.bell.listening ? arena.preview() : null;
     const turningOn = new Set(preview?.machines.filter((change) => change.to === 'on').map((change) => change.machineId) ?? []);
-    Object.entries(this.bridgeMeshes).forEach(([id, mesh]) => { mesh.ghost.material.opacity = turningOn.has(id) ? 0.25 + Math.sin(this.elapsed * 6) * 0.08 : 0; });
+    Object.entries(this.bridgeMeshes).forEach(([id, mesh]) => { mesh.ghost.material.opacity = turningOn.has(id) ? 0.28 : 0; });
     Object.entries(this.boardMeshes).forEach(([id, mesh]) => { mesh.ghost.material.opacity = turningOn.has(id) ? 0.3 : 0; });
-    if (preview) Object.entries(BELL_ARENA.lamps).forEach(([id, lane]) => { if (turningOn.has(id)) this.laneShafts[lane].material.opacity = Math.max(this.laneShafts[lane].material.opacity, 0.14); });
-    if (preview) preview.beamLanes.forEach((lane) => { this.laneBeams[lane].material.opacity = Math.max(this.laneBeams[lane].material.opacity, 0.12); });
+    if (preview) Object.entries(BELL_ARENA.lamps).forEach(([id, l]) => { if (turningOn.has(id)) this.laneShafts[l].material.opacity = Math.max(this.laneShafts[l].material.opacity, 0.14); });
+  }
 
-    // Falling into the street gap: one layer, then back on the near roof.
-    // While learning the gap is a railing (updatePlayer), and a bridge that
-    // folds underfoot only puts Butch back on the near roof.
-    if (p.y < 0.2 && arena.fallsAt(p.x, p.z) && p.respawnInv <= 0) {
-      this.bell.falls += 1;
-      const before = p.respawns;
-      if (!tutor.gapIsRailing) this.takeHit({ force: true, source: 'fall' });
-      if (p.respawns === before) {
-        p.x = THREE.MathUtils.clamp(p.x, -9, 9); p.z = 1.2; p.vy = 0; p.y = 0;
-        p.inv = Math.max(p.inv, 1.2);
-        this.playerRoot.position.set(p.x, 0, p.z);
-        // Only when the fall did not end the movement: the death card owns
-        // that moment (the old line overwrote it, alpha A4-5).
-        this.toast(tutor.gapIsRailing ? 'THE BRIDGE FOLDED · BACK ON THE NEAR ROOF' : 'THE STREET IS A LONG WAY DOWN · WAIT FOR A BRIDGE');
-      }
-      bellAudio.fallWhoosh?.();
+  // ---- Movement III
+  ensurePropView(attack) {
+    if (this.entityViews.has(attack.id)) return;
+    const id = { 'crushed-trash-can': 'trash', 'fountain-bench': 'bench', 'pa-speaker': 'speaker' }[attack.meta.prop] ?? 'trash';
+    const model = this.cloneAsset(id, 2.2, 3.2);
+    const root = new THREE.Group();
+    root.position.set(attack.x, 0, attack.z);
+    if (model) {
+      model.position.y = 10;
+      if (attack.meta.echo) model.traverse((child) => { if (child.isMesh && child.material) { child.material = child.material.clone(); child.material.transparent = true; child.material.opacity = 0.42; child.material.depthWrite = false; } });
+      root.add(model);
     }
-
-    // Stranded on the far roof (a bridge folded under a hit, alpha A4-6):
-    // the line lays a return plank rather than make the street the only way.
-    if (arena.stranded(p.z) && !this.transition) {
-      this.bell.strandedFor = (this.bell.strandedFor ?? 0) + dt;
-      if (this.bell.strandedFor >= STRANDED_GRACE_S) {
-        this.bell.strandedFor = 0;
-        arena.extendReturnBridge(arena.nearestBridge(p.x));
-        bellAudio.machineOn('bridge');
-        this.toast('A RETURN PLANK · THE LINE WILL NOT STRAND YOU · STEP BACK ACROSS', 3);
-      }
-    } else this.bell.strandedFor = 0;
-
-    // One hint, one action (createBellTutorial.hint).
-    const exposure = arena.exposure;
-    const litLane = exposure && !exposure.punched ? exposure.lane : null;
-    this.hint(tutor.hint({
-      lane: arena.plan.lane, litLane, bridgeOut: arena.anyBridgeOut(), onFront: arena.onFrontPlatform(p.z), inLitLane: Boolean(litLane) && laneOf(p.x) === litLane,
-    }));
+    this.addView(attack.id, root, { kind: 'prop', model, attack, keep: true });
   }
 
-  // ======================================================== Movement III
-
-  startEchoCity() {
-    this.echo = { clock: 6, window: 0, windowSpent: false, stage: 'combat', lastOutcome: null, deflectClock: 0 };
-    this.showFrontEdge(false);
-    this.boss.attackClock = 1.4;
+  ensureTruthView(t) {
+    if (this.entityViews.has(t.id)) return this.entityViews.get(t.id);
+    if (!this.truthArt) this.truthArt = canvasTexture(paintTrueThingCard());
+    const root = new THREE.Group();
+    const card = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 1.05), new THREE.MeshBasicMaterial({ map: this.truthArt, transparent: true, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+    card.position.y = 9;
+    card.renderOrder = 7;
+    const ring = new THREE.Mesh(new THREE.RingGeometry(1.0, 1.18, 48), new THREE.MeshBasicMaterial({ color: CHANCE_HEX, transparent: true, opacity: 0.7, depthWrite: false, toneMapped: false, side: THREE.DoubleSide }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.y = 0.07;
+    root.add(card, ring);
+    return this.addView(t.id, root, { kind: 'truth', card, ring, truth: t });
   }
 
-  // He makes his claim (voiced); then Butch answers on the answer board in
-  // two steps (round 6, item 17): WHAT HE KNOWS (two of four facts from the
-  // journey's records), then HOW HE SAYS IT (one of two voiced answers).
-  // Stages: claim → facts → framing → reply → window, or → rebut / the
-  // voiced brush-off → deflected. A claim he comes back to is never heard
-  // twice: its text returns with the board, and whatever was worked out
-  // (struck facts, true facts found, a struck answer) is still there.
-  openExchange() {
-    const exchange = this.debate.open();
-    this.clearHazards();
-    this.dialoguePause = true;
-    if (exchange.returning) { this.showAnswerBoard(); return; }
-    this.echo.stage = 'claim';
-    this.showCaption(exchange.exchange.claim, { meta: `EXCHANGE ${this.debate.opened}` });
-    this.playVoice(exchange.exchange.claim, () => {
-      if (!this.debate.isOpen || this.echo.stage !== 'claim') return;
-      this.showAnswerBoard();
+  onPair(e) {
+    // Both true things fly to him together.
+    for (const factId of e.truths) {
+      const id = `${e.exchangeId}:${factId}`;
+      const view = this.entityViews.get(id);
+      if (!view) continue;
+      this.entityViews.delete(id);
+      const start = view.card.getWorldPosition(new THREE.Vector3());
+      this.scene.remove(view.root);
+      const flying = new THREE.Group();
+      view.card.position.set(0, 0, 0);
+      flying.add(view.card);
+      flying.position.copy(start);
+      this.scene.add(flying);
+      this.projectiles.push({ root: flying, type: 'truth', life: 1.1, age: 0, duration: 0.7, start, target: new THREE.Vector3(this.boss.x, 5.6, this.boss.z + 1) });
+    }
+    this.spawnImpact(this.player.x, 1.6, this.player.z, CHANCE_HEX);
+    this.tone(880, 0.3, 'triangle', 0.035);
+  }
+
+  showRecordLine(e) {
+    if (!e.rebut) return;
+    this.recordLineUntil = this.elapsed + 3.2;
+    if (this.voiceState.playing) { this.toast(`FROM THE RECORD · ${e.rebut}`, 3); return; }
+    this.showCaption({ speaker: 'CONDUCTOR · FROM THE RECORD', text: e.rebut }, { meta: e.record ?? '' });
+    clearTimeout(this.recordTimer);
+    this.recordTimer = setTimeout(() => { if (!this.voiceState.playing) this.closeCaption(); }, 3200);
+  }
+
+  syncEcho(dt) {
+    const director = this.fight;
+    // Thrown props fall where their ring closes, then sink.
+    for (const a of director.attacks) {
+      if (!a.meta?.prop) continue;
+      const v = this.entityViews.get(a.id);
+      if (!v?.model) continue;
+      const t = Math.min(1, a.age / Math.max(0.01, a.tele));
+      v.model.position.y = a.state === 'tele' ? (1 - t * t) * 10 : 0;
+      if (!reducedMotionActive()) v.model.rotation.z += dt * (a.state === 'tele' ? 4 : 0);
+    }
+    // A landed prop lies a moment where it fell, then sinks into its crack.
+    for (const [id, view] of this.entityViews) {
+      if (view.kind !== 'prop' || director.attacks.some((a) => a.id === id)) continue;
+      view.gone = (view.gone ?? 0) + dt;
+      if (view.model) view.model.position.y = -view.gone * 1.4;
+      if (view.gone > 0.9) { this.scene.remove(view.root); this.entityViews.delete(id); }
+    }
+    // The terrace: cracks where his misreadings landed…
+    director.holes.forEach((hole, i) => {
+      const visual = this.holeVisuals[i];
+      if (!visual) return;
+      visual.visible = true;
+      visual.position.set(hole.x, 0.035, hole.z);
+      visual.scale.setScalar(hole.r);
+      visual.rotation.y = i * 0.73;
+    });
+    for (let i = director.holes.length; i < this.holeVisuals.length; i += 1) this.holeVisuals[i].visible = false;
+    // …and in the last phase the back rows falling away.
+    const cz = director.collapseZ;
+    if (cz < ARENA.maxZ + 0.5) {
+      if (!this.collapseView) this.collapseView = this.buildCollapseView();
+      const view = this.collapseView;
+      view.visible = true;
+      const depth = Math.max(0.01, ARENA.maxZ + 2 - cz);
+      view.userData.pit.scale.set(1, depth, 1);
+      view.userData.pit.position.z = cz + depth / 2;
+      view.userData.edge.position.z = cz - 0.7;
+      view.userData.edge.material.opacity = 0.32 + (reducedMotionActive() ? 0.1 : Math.abs(Math.sin(this.elapsed * 4)) * 0.18);
+    } else if (this.collapseView) this.collapseView.visible = false;
+    // The true things: down from the lamps, hovering, held, gone.
+    const liveIds = new Set();
+    for (const t of director.truths) {
+      if (t.state === 'thrown' || t.state === 'faded') continue;
+      liveIds.add(t.id);
+      const v = this.ensureTruthView(t);
+      v.root.position.set(t.x, 0, t.z);
+      const bob = reducedMotionActive() ? 0 : Math.sin(this.elapsed * 2.4 + t.x) * 0.12;
+      if (t.state === 'descending') v.card.position.y = 1.8 + (1 - Math.min(1, t.age / 0.9)) * 7;
+      else if (t.state === 'held') {
+        v.root.position.set(this.player.x + Math.cos(this.elapsed * 3) * 0.9, 0, this.player.z + Math.sin(this.elapsed * 3) * 0.9);
+        v.card.position.y = 2.5;
+      } else v.card.position.y = 1.8 + bob;
+      v.ring.visible = t.state === 'ready';
+      v.card.lookAt(this.camera.position.x, v.card.getWorldPosition(new THREE.Vector3()).y, this.camera.position.z);
+      const fade = t.state === 'ready' && t.life - t.age < 1.5 ? Math.max(0.25, (t.life - t.age) / 1.5) : 1;
+      v.card.material.opacity = fade;
+    }
+    for (const [id, view] of this.entityViews) {
+      if (view.kind === 'truth' && !liveIds.has(id)) { this.scene.remove(view.root); this.entityViews.delete(id); }
+    }
+    this.showFrontEdge(director.frontLit);
+    if (director.frontLit && this.frontEdge) {
+      const pulse = reducedMotionActive() ? 0.5 : 0.5 + 0.5 * Math.sin(this.elapsed * 5.2);
+      this.frontEdge.children[0].material.opacity = (this.player.z <= ECHO_FRONT_EDGE_Z ? 0.26 : 0.16) + pulse * 0.12;
+    }
+    this.boss.exposed = director.frontLit ? 1 : 0;
+  }
+
+  buildCollapseView() {
+    const group = new THREE.Group();
+    const pit = new THREE.Mesh(new THREE.PlaneGeometry(ARENA.maxX - ARENA.minX + 6, 1), new THREE.MeshBasicMaterial({ color: 0x120c0b, toneMapped: false }));
+    pit.rotation.x = -Math.PI / 2;
+    pit.position.y = 0.045;
+    const edge = new THREE.Mesh(new THREE.PlaneGeometry(ARENA.maxX - ARENA.minX + 6, 1.4), new THREE.MeshBasicMaterial({ color: 0xe8663f, transparent: true, opacity: 0.35, depthWrite: false, toneMapped: false }));
+    edge.rotation.x = -Math.PI / 2;
+    edge.position.y = 0.05;
+    group.add(pit, edge);
+    group.userData = { pit, edge };
+    this.scene.add(group);
+    return group;
+  }
+
+  // ---- Movement IV
+  ensurePaintDropView(attack) {
+    if (this.entityViews.has(attack.id)) return;
+    const root = new THREE.Group();
+    root.position.set(attack.x, 0, attack.z);
+    let card;
+    if (attack.meta.cover) {
+      card = makePaperCard(this.textureLoader, ch4IndigoUrl, 2.05, 2.05, { alpha: true });
+      card.rotation.y = attack.meta.yaw;
+      const edgeParams = { color: 0x46618c, emissive: 0x1b315c, emissiveIntensity: 0.35 };
+      const edge = flatBox(2.08, 2.08, 0.1, this.quality.tier === 'low' ? new THREE.MeshLambertMaterial(edgeParams) : new THREE.MeshStandardMaterial({ ...edgeParams, roughness: 0.92 }));
+      edge.rotation.y = attack.meta.yaw;
+      root.add(edge);
+      root.userData.edge = edge;
+    } else card = makePaperCard(this.textureLoader, PIGMENT_URL[attack.meta.colour] ?? ch4SootUrl, 2.6, 1.6, { alpha: true });
+    card.position.y = 9;
+    root.add(card);
+    this.addView(attack.id, root, { kind: attack.meta.cover ? 'cover' : 'pigment', card, attack, keep: Boolean(attack.meta.cover), coverId: null });
+  }
+
+  ensurePuddleView(p) {
+    if (this.entityViews.has(p.id)) return this.entityViews.get(p.id);
+    const splat = new THREE.Mesh(new THREE.CircleGeometry(1.05, 20), new THREE.MeshBasicMaterial({ color: PIGMENT_HEX[p.colour] ?? 0x435d91, transparent: true, opacity: 0.85, depthWrite: false, toneMapped: false }));
+    splat.rotation.x = -Math.PI / 2;
+    splat.rotation.z = Math.random() * Math.PI;
+    splat.scale.set(1, 0.78, 1);
+    splat.position.y = 0.035;
+    const root = new THREE.Group();
+    root.position.set(p.x, 0, p.z);
+    root.add(splat);
+    return this.addView(p.id, root, { kind: 'puddle', splat, puddle: p });
+  }
+
+  launchStroke(e) {
+    const start = new THREE.Vector3(e.x, 1.2 + this.player.y, e.z);
+    const root = new THREE.Mesh(new THREE.OctahedronGeometry(0.28 + e.charge * 0.1), new THREE.MeshBasicMaterial({ color: 0xff806f, toneMapped: false }));
+    root.position.copy(start);
+    this.scene.add(root);
+    this.projectiles.push({ root, type: 'stroke', life: e.flight + 0.3, age: 0, duration: e.flight, start, target: new THREE.Vector3(this.boss.x, 6.8, this.boss.z + 0.8) });
+    this.tone(480 + e.charge * 90, 0.16, 'triangle', 0.04);
+  }
+
+  syncPaint(dt) {
+    const director = this.fight;
+    for (const a of director.attacks) {
+      const v = this.entityViews.get(a.id);
+      if (!v || (v.kind !== 'pigment' && v.kind !== 'cover')) continue;
+      const t = Math.min(1, a.age / Math.max(0.01, a.tele));
+      const landing = v.kind === 'cover' ? 1.12 : 0.45;
+      v.card.position.y = a.state === 'tele' ? landing + (1 - t * t) * (9 - landing) : landing;
+      if (v.kind === 'cover' && v.root.userData.edge) v.root.userData.edge.position.y = v.card.position.y;
+      if (v.kind === 'pigment' && !reducedMotionActive()) v.card.rotation.z += dt * (a.state === 'tele' ? 5 : 0);
+      if (v.kind === 'pigment' && a.state === 'live') { this.scene.remove(v.root); this.entityViews.delete(a.id); }
+    }
+    // Walls: a landed indigo tile stands until its time is up.
+    const walls = new Set(director.covers.filter((c) => c.up && c.left > 0).map((c) => c.attack.id));
+    for (const [id, view] of this.entityViews) {
+      if (view.kind !== 'cover') continue;
+      const attackLive = director.attacks.some((a) => a.id === id);
+      if (!attackLive && !walls.has(id)) { this.scene.remove(view.root); this.entityViews.delete(id); }
+    }
+    // Wet colour, drying.
+    const wet = new Set();
+    for (const p of director.puddles) {
+      if (p.taken || p.wetLeft <= -0.6) continue;
+      wet.add(p.id);
+      const v = this.ensurePuddleView(p);
+      const k = THREE.MathUtils.clamp((p.wetLeft + 0.6) / 1.2, 0, 1);
+      v.splat.material.opacity = 0.2 + 0.65 * k;
+      v.splat.material.color.setHex(p.wetLeft > 0 ? (PIGMENT_HEX[p.colour] ?? 0x435d91) : 0x9a948a);
+    }
+    for (const [id, view] of this.entityViews) {
+      if (view.kind === 'puddle' && !wet.has(id)) { this.scene.remove(view.root); this.entityViews.delete(id); }
+    }
+    // The strands of a hold (absorbing from wet colour, or a return winding up).
+    const hold = director.hold;
+    const target = hold.kind === 'absorb' && hold.target ? director.puddles.find((p) => p.id === hold.target) : null;
+    if ((hold.kind === 'absorb' && target) || (hold.kind === 'return' && this.player.color > 0)) this.drawPaintStrands(hold.progress, target);
+    else if (this.paintTransfer.visible) { this.paintTransfer.visible = false; this.paintTransfer.children.forEach((item) => { item.visible = false; }); }
+    this.boss.exposed = director.open ? 1 : 0;
+    this.conductorLight.intensity += ((director.open ? 180 : 0) - this.conductorLight.intensity) * Math.min(1, dt * 8);
+  }
+
+  drawPaintStrands(progress, puddle) {
+    const absorbing = Boolean(puddle);
+    const from = absorbing ? new THREE.Vector3(puddle.x, 0.65, puddle.z) : new THREE.Vector3(this.player.x, 1.15 + this.player.y, this.player.z);
+    const to = absorbing ? new THREE.Vector3(this.player.x, 1.1 + this.player.y, this.player.z) : new THREE.Vector3(this.boss.x, 6.7, this.boss.z + 0.7);
+    this.paintTransfer.visible = true;
+    const strands = this.paintTransfer.children.filter((item) => !item.userData.paintDroplet);
+    const droplets = this.paintTransfer.children.filter((item) => item.userData.paintDroplet);
+    const still = reducedMotionActive();
+    strands.forEach((strand, index) => {
+      const stagger = THREE.MathUtils.clamp(progress * 1.35 - index * 0.055, 0.025, 1);
+      const end = from.clone().lerp(to, stagger);
+      const middle = from.clone().lerp(end, 0.52);
+      middle.x += (still ? 0 : Math.sin(this.elapsed * 13 + index * 1.8) * (0.08 + progress * 0.14)) + (index - 2) * 0.065;
+      middle.y += 0.18 + Math.sin(progress * Math.PI) * 0.42;
+      strand.geometry.setFromPoints([from, middle, end]);
+      strand.material.opacity = 0.42 + progress * 0.5;
+      strand.visible = true;
+    });
+    droplets.forEach((droplet, index) => {
+      const travel = still ? index / droplets.length : (this.elapsed * 1.65 + index / droplets.length) % 1;
+      const flow = absorbing ? travel : 1 - travel;
+      droplet.position.lerpVectors(from, to, flow);
+      droplet.position.y += Math.sin(flow * Math.PI) * (0.35 + progress * 0.55);
+      droplet.scale.setScalar(0.72 + progress * 0.6);
+      droplet.material.opacity = 0.5 + progress * 0.45;
+      droplet.lookAt(this.camera.position);
+      droplet.visible = true;
     });
   }
 
-  showAnswerBoard() {
-    const current = this.debate.current;
-    if (!current || current.resolved) return;
-    this.echo.stage = current.step;
-    this.renderAnswerBoard();
+  // The visuals for this frame of the fight.
+  syncFightVisuals(dt) {
+    if (!this.fight) return;
+    this.fightVisuals.update(this.elapsed);
+    if (this.phase === 0) this.syncLost(dt);
+    else if (this.phase === 1) this.syncBell(dt);
+    else if (this.phase === 2) this.syncEcho(dt);
+    else if (this.phase === 3) this.syncPaint(dt);
   }
 
-  // The answer board, drawn into the caption box. Every size scales with
-  // TEXT SIZE (var(--nf-scale), style.css .nf-answer).
-  renderAnswerBoard({ nudge = null } = {}) {
-    const current = this.debate.current;
-    if (!current || current.resolved) return;
-    const { step, facts } = current;
-    const caption = this.caption;
-    caption.hidden = false;
-    caption.classList.add('has-choices', 'is-answer');
-    caption.classList.toggle('is-facts', step === 'facts');
-    caption.classList.toggle('is-framing', step === 'framing');
-    caption.querySelector('.nf-caption__speaker').textContent = step === 'facts'
-      ? (current.returning ? 'THE CONDUCTOR · HE COMES BACK TO IT' : 'THE CONDUCTOR')
-      : 'BUTCH · HOW DO YOU SAY IT?';
-    caption.querySelector('.nf-caption__text').textContent = current.exchange.claim.text;
-    caption.querySelector('.nf-caption__meta').textContent = step === 'facts' ? 'STEP 1 / 2 · WHAT DO YOU KNOW?' : 'STEP 2 / 2 · HOW DO YOU SAY IT?';
-    const box = caption.querySelector('.nf-caption__choices');
-    box.className = `nf-caption__choices nf-answer nf-answer--${step}`;
-    box.hidden = false;
-    if (step === 'facts') {
-      const picked = new Set(current.picked);
-      const struck = new Set(current.struck);
-      const cards = facts.map((entry, index) => {
-        const isStruck = struck.has(entry.id);
-        const isPicked = picked.has(entry.id);
-        const cls = ['nf-caption__choice', 'nf-answer__fact', isPicked && 'is-picked', isStruck && 'is-struck', nudge === entry.id && 'is-nudged'].filter(Boolean).join(' ');
-        return `<button class="${cls}" type="button" data-fact="${index}" aria-pressed="${isPicked}"${isStruck ? ' aria-disabled="true"' : ''}>`
-          + `<kbd>${index + 1}</kbd><span class="nf-answer__text">${escapeHtml(entry.text)}</span>`
-          + `<small class="nf-answer__source">${isStruck ? '<b>HE ANSWERED THIS</b> · ' : ''}${escapeHtml(entry.source)}</small></button>`;
-      }).join('');
-      const ready = picked.size === ECHO_FACTS_TO_PICK;
-      box.innerHTML = `<p class="nf-answer__ask">${escapeHtml(ECHO_FACTS_ASK)}</p><div class="nf-answer__grid">${cards}</div>`
-        + `<div class="nf-answer__foot"><span><kbd>1</kbd>–<kbd>${facts.length}</kbd> CHOOSE · ${picked.size} / ${ECHO_FACTS_TO_PICK}</span>`
-        + `<button class="nf-answer__confirm${ready ? ' is-ready' : ''}${nudge === 'confirm' ? ' is-nudged' : ''}" type="button" data-confirm="1"${ready ? '' : ' aria-disabled="true"'}><kbd>E</kbd> SAY THESE TWO</button></div>`;
-      return;
-    }
-    const known = current.picked.map((id) => facts.find((entry) => entry.id === id)).filter(Boolean);
-    const open = new Set(this.debate.openReplies());
-    const answers = current.replies.map((reply, index) => {
-      const isStruck = !open.has(index);
-      return `<button class="nf-caption__choice nf-answer__frame${isStruck ? ' is-struck' : ''}${nudge === 'frames' && !isStruck ? ' is-nudged' : ''}" type="button" data-choice="${index}"${isStruck ? ' disabled' : ''}>`
-        + `<small class="nf-answer__frame-label"><kbd>${index + 1}</kbd>${isStruck ? 'HE FILED THIS · ' : ''}${escapeHtml(reply.frame ?? '')}</small>`
-        + `<span class="nf-answer__text">${escapeHtml(reply.cue.text)}</span></button>`;
-    }).join('');
-    const single = open.size === 1;
-    box.innerHTML = `<p class="nf-answer__known"><b>YOU KNOW</b>${known.map((entry) => `<span>${escapeHtml(entry.text)}</span>`).join('')}</p>`
-      + `<div class="nf-answer__grid nf-answer__grid--two">${answers}</div>`
-      + `<div class="nf-answer__foot"><span>${single ? '<kbd>E</kbd> / <kbd>ENTER</kbd> · SAY IT' : '<kbd>1</kbd> / <kbd>2</kbd> · SAY IT THE WAY THAT KEEPS TO BOTH'}</span></div>`;
+  // ------------------------------------------------------------ voices
+  // Movement III speaks while it fights: lines queue, never pause the square.
+  queueVoice(cue, { meta = '', kind = 'line' } = {}) {
+    if (!cue) return;
+    this.voiceQueue ||= [];
+    // A new claim replaces anything still waiting (the argument moved on).
+    if (kind === 'claim') this.voiceQueue.length = 0;
+    this.voiceQueue.push({ cue, meta });
+    if (!this.voiceState.playing && !this.voiceBusy) this.nextVoice();
   }
 
-  // 1–4 or a click: take a fact up, or put it down again.
-  pickFact(index) {
-    if (this.echo.stage !== 'facts') return;
-    const result = this.debate.pickFact(index);
-    if (result.result === 'ignored') return;
-    if (result.result === 'struck') {
-      bellAudio.refused();
-      this.toast('HE HAS ANSWERED THAT ONE FROM THE RECORD · CHOOSE ANOTHER');
-      this.renderAnswerBoard({ nudge: result.fact.id });
-      return;
-    }
-    bellAudio.paper?.();
-    this.renderAnswerBoard();
-  }
-
-  // E / Enter on the facts: say the two that are picked.
-  confirmFacts() {
-    if (this.echo.stage !== 'facts') return;
-    const outcome = this.debate.confirmFacts();
-    if (outcome.result === 'ignored') return;
-    if (outcome.result === 'need-two') {
-      bellAudio.refused();
-      this.toast(outcome.picked.length ? 'ONE MORE · HE HEARS TWO TRUE THINGS AT ONCE' : 'CHOOSE TWO FIRST · 1–4 OR CLICK');
-      this.renderAnswerBoard({ nudge: 'confirm' });
-      return;
-    }
-    if (outcome.result === 'hold') {
-      bellAudio.punchClack();
-      this.echo.stage = 'framing';
-      this.renderAnswerBoard();
-      return;
-    }
-    // A misreading: he answers it from the record, and it stays struck.
-    this.echo.stage = 'rebut';
-    this.echo.lastOutcome = { result: 'misread', exchangeId: outcome.exchangeId, fact: outcome.fact.id };
-    bellAudio.refused();
-    const rebut = { speaker: 'CONDUCTOR', text: outcome.rebut, tone: 'cold-correction' };
-    this.showCaption(rebut, { meta: `FROM THE RECORD · ${outcome.fact.source}` });
-    this.playVoice(rebut, () => this.showDeflection(ECHO_MISREAD_DEFLECT));
-  }
-
-  // 1 / 2 or a click on the framing step: how Butch says it.
-  chooseAnswer(index) {
-    if (this.echo.stage !== 'framing') return;
-    const outcome = this.debate.choose(index);
-    if (outcome.result === 'ignored') return;
-    this.echo.stage = 'reply';
-    this.echo.lastOutcome = { result: outcome.result, exchangeId: outcome.exchangeId, choice: index };
-    const reply = outcome.reply;
-    this.showCaption(reply.cue);
-    this.playVoice(reply.cue, () => {
-      if (outcome.result === 'window') {
-        this.closeCaption();
-        this.dialoguePause = false;
-        this.player.inv = Math.max(this.player.inv, 0.9);
-        this.openEchoWindow(reply);
-        return;
-      }
-      this.echo.stage = 'rebut';
-      this.showCaption(reply.rebut);
-      this.playVoice(reply.rebut, () => this.showDeflection(reply.deflect ?? ECHO_DEFLECT_FALLBACK));
-    });
-  }
-
-  // Why it was deflected, in one line, before the square answers with a
-  // volley (alpha R4-4). The square stays frozen while it is read (alpha
-  // round 4: the box covers Butch, and a hit landed while reading); nothing
-  // is thrown until it closes. E / Enter / a click closes it early.
-  showDeflection(text) {
-    this.dialoguePause = true;
-    this.echo.stage = 'deflected';
-    this.echo.deflectClock = ECHO_DEFLECT_READ_SECONDS;
-    this.showCaption({ speaker: 'DEFLECTED', text }, { meta: 'HE WILL COME BACK TO IT' });
-    this.voiceState = { playing: false, speaker: 'DEFLECTED', tone: null, text };
-  }
-
-  // E / Enter while Movement III talks: confirm the facts, say the one
-  // answer left, or move a line being read on.
-  confirmEcho() {
-    const stage = this.echo.stage;
-    if (stage === 'facts') { this.confirmFacts(); return true; }
-    if (stage === 'framing') {
-      const open = this.debate.openReplies();
-      if (open.length === 1) { this.chooseAnswer(open[0]); return true; }
-      bellAudio.refused();
-      this.toast('HOW DO YOU SAY IT? · 1 OR 2 · OR CLICK ONE');
-      this.renderAnswerBoard({ nudge: 'frames' });
-      return true;
-    }
-    return this.advanceDialogue();
-  }
-
-  // E / Enter / a click on a line being read (never on an answer step):
-  // after a short beat, the line moves on.
-  advanceDialogue() {
-    if (this.phase !== 2 || this.mode !== 'play') return false;
-    const stage = this.echo.stage;
-    if (stage === 'deflected') {
-      if (ECHO_DEFLECT_READ_SECONDS - this.echo.deflectClock > 0.6) this.echo.deflectClock = 0;
-      return true;
-    }
-    if (['claim', 'reply', 'rebut'].includes(stage)) {
-      if (this.voiceSkip && performance.now() - (this.voiceStartedAt ?? 0) > 450) this.voiceSkip();
-      return true;
-    }
-    return false;
-  }
-
-  // The true answer landed: he has no answer until Butch says it to his
-  // face. The window stays open, with a lit front edge, a tag on it and a
-  // HUD line, until the hit is delivered (alpha R4-3: a 2.6 s toast during
-  // the volley was missed), and a torn last layer does not close it.
-  openEchoWindow(reply = null) {
-    this.echo.stage = 'window';
-    this.echo.window = 0;
-    this.echo.windowSpent = false;
-    this.boss.exposed = 1;
-    this.boss.reaction = reply?.reaction ?? 'shame';
-    this.boss.gestureTime = 1.4;
-    // Taken aback, then standing in the light (never the kneel, which read
-    // as a crumpled model at this scale).
-    this.playConductorAction('Hit_Chest', true);
-    this.showFrontEdge(true);
-    this.updateEchoWindowCue();
-  }
-
-  inEchoStrikeZone() {
-    return this.player.z <= ECHO_FRONT_EDGE_Z;
-  }
-
-  // E says it (round 6, item 18: Space only jumps). The whole move is spelled
-  // out for the first few windows; after that the line is shorter.
-  updateEchoWindowCue() {
-    if (this.echo.stage !== 'window') return;
-    const full = this.echoSaid < ECHO_FULL_PROMPT_USES;
-    this.hint(this.inEchoStrikeZone()
-      ? 'HE HAS NO ANSWER · <kbd>E</kbd> · SAY IT TO HIS FACE'
-      : full ? 'HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>E</kbd>' : 'HE HAS NO ANSWER · THE LIT FRONT EDGE · <kbd>E</kbd>');
+  nextVoice() {
+    const item = this.voiceQueue?.shift();
+    if (!item) { this.voiceBusy = false; if (!this.recordLineUntil || this.elapsed > this.recordLineUntil) this.closeCaption(); return; }
+    this.voiceBusy = true;
+    this.showCaption(item.cue, { meta: item.meta });
+    this.playVoice(item.cue, () => { this.voiceBusy = false; this.nextVoice(); });
   }
 
   showFrontEdge(visible) {
@@ -2588,289 +2739,39 @@ class SpectacleBattle {
     if (this.frontEdge) this.frontEdge.visible = visible;
   }
 
-  punchEchoWindow() {
-    if (this.echo.stage !== 'window' || this.echo.windowSpent) {
-      // Nothing to say yet: say so, rather than nothing (round 6, item 18).
-      if (this.echo.stage === 'combat') this.toastOnce('echo-wait', 'E SPEAKS WHEN HE ASKS · KEEP CLEAR UNTIL THEN', 1.8);
-      return false;
-    }
-    if (!this.inEchoStrikeZone()) { bellAudio.refused(); this.toast('CLOSER · THE LIT FRONT EDGE'); return true; }
-    this.echo.windowSpent = true;
-    this.echoSaid += 1;
-    this.hitBoss(ECHO_WINDOW_DAMAGE, 'shame');
-    this.toast('SAID TO HIS FACE');
-    this.endEchoWindow();
-    return true;
-  }
-
-  endEchoWindow() {
-    this.echo.stage = 'combat';
-    this.echo.window = 0;
-    this.echo.clock = ECHO_COMBAT_INTERVAL;
-    this.boss.exposed = 0;
-    this.boss.attackClock = 0.8;
-    this.showFrontEdge(false);
-    if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint('');
-  }
-
-  endEchoDeflection() {
-    this.closeCaption();
-    this.dialoguePause = false;
-    // A beat to find Butch again after the box goes.
-    this.player.inv = Math.max(this.player.inv, 0.9);
-    this.echo.stage = 'combat';
-    this.echo.clock = ECHO_COMBAT_INTERVAL;
-    // The deflection costs something: the square answers with a volley.
-    this.boss.attackClock = 0.1;
-  }
-
-  showCaption(cue, { choices = null, meta = '' } = {}) {
+  showCaption(cue, { meta = '' } = {}) {
     if (!cue) return;
     this.caption.hidden = false;
-    this.caption.classList.remove('is-answer', 'is-facts', 'is-framing');
+    this.caption.classList.remove('is-answer', 'is-facts', 'is-framing', 'has-choices');
     this.caption.querySelector('.nf-caption__speaker').textContent = cue.speaker;
     this.caption.querySelector('.nf-caption__text').textContent = cue.text;
     this.caption.querySelector('.nf-caption__meta').textContent = meta;
     const box = this.caption.querySelector('.nf-caption__choices');
-    box.className = 'nf-caption__choices nf-caption__choices--pair';
-    box.innerHTML = choices ? choices.map((reply, index) => `<button class="nf-caption__choice" type="button" data-choice="${index}"><kbd>${index + 1}</kbd>${escapeHtml(reply.cue.text)}</button>`).join('') : '';
-    box.hidden = !choices;
-    this.caption.classList.toggle('has-choices', Boolean(choices));
+    box.innerHTML = '';
+    box.hidden = true;
   }
 
   closeCaption() {
     if (!this.caption) return;
     this.caption.hidden = true;
-    this.caption.classList.remove('is-answer', 'is-facts', 'is-framing', 'has-choices');
-    this.caption.querySelector('.nf-caption__choices').innerHTML = '';
     this.voiceAudio?.pause();
-    // A line cut short never finishes later (a pending read timer would
-    // otherwise run the next step after a world change).
     clearTimeout(this.voiceTimer);
     this.voiceSkip = null;
     this.voiceState.playing = false;
     music.setDialogueActive(false);
   }
 
-  updateEchoCity(dt) {
-    if (this.echo.stage === 'combat') {
-      this.echo.clock = Math.max(0, this.echo.clock - dt);
-      // He never asks over the movement's title card (it carries the keys).
-      if (this.echo.clock <= 0 && !this.transition && !this.hud.querySelector('.nf-title-card')) this.openExchange();
-    } else if (this.echo.stage === 'window') {
-      this.echo.window += dt;
-      this.boss.exposed = 1;
-      this.updateEchoWindowCue();
-      const pulse = 0.5 + 0.5 * Math.sin(this.elapsed * 5.2);
-      if (this.frontEdge) this.frontEdge.children[0].material.opacity = (this.inEchoStrikeZone() ? 0.26 : 0.16) + pulse * 0.12;
-    } else if (this.echo.stage === 'deflected') {
-      this.echo.deflectClock -= dt;
-      if (this.echo.deflectClock <= 0) this.endEchoDeflection();
-    }
-  }
-
-  // ======================================================== Movement IV
-
-  handlePaintPointer(event) {
-    if (this.mode !== 'play' || this.phase !== 3 || this.transition || this.dialoguePause) return;
-    if (![0, 2].includes(event.button)) return;
-    event.preventDefault();
-    const point = this.groundPointFromPointer(event);
-    const target = event.button === 2 ? this.findAbsorbablePaint(point) : null;
-    this.paintHold = { active: true, button: event.button, elapsed: 0, point, target, completed: false };
-    this.renderer.domElement.setPointerCapture?.(event.pointerId);
-    this.updatePaintTransfer(0);
-  }
-
-  updatePaintPointer(event) {
-    if (!this.paintHold.active) return;
-    this.paintHold.point = this.groundPointFromPointer(event);
-    if (this.paintHold.button === 2) this.paintHold.target = this.findAbsorbablePaint(this.paintHold.point);
-  }
-
-  releasePaintPointer(event) {
-    if (!this.paintHold.active || (event.button >= 0 && event.button !== this.paintHold.button)) return;
-    this.paintHold.target?.asset?.scale.setScalar(1);
-    this.paintHold = { active: false, button: -1, elapsed: 0, point: null, target: null, completed: false };
-    this.paintTransfer.visible = false;
-    this.paintTransfer.children.forEach((item) => { item.visible = false; });
-  }
-
-  updatePaintHold(dt) {
-    if (!this.paintHold.active || this.phase !== 3 || this.mode !== 'play') return;
-    if (this.paintHold.keyboard && this.paintHold.button === 2 && !this.paintHold.completed) {
-      const target = this.findNearestPaint();
-      if (target !== this.paintHold.target) { this.paintHold.target?.asset?.scale.setScalar(1); this.paintHold.elapsed = 0; }
-      this.paintHold.target = target;
-      this.paintHold.point = target ? new THREE.Vector3(target.x, 0, target.z) : null;
-      if (!target) return;
-    }
-    this.paintHold.elapsed += dt;
-    const progress = THREE.MathUtils.clamp(this.paintHold.elapsed / PAINT_HOLD_SECONDS, 0, 1);
-    this.updatePaintTransfer(progress);
-    if (progress < 1 || this.paintHold.completed) return;
-    this.paintHold.completed = true;
-    if (this.paintHold.button === 2) this.absorbPaint(this.paintHold.point);
-    else this.usePaintBrush();
-  }
-
-  // Keyboard play (alpha: Movement IV needed the mouse): HOLD E absorbs the
-  // landed colour nearest to Butch, HOLD R returns the brush to the
-  // Conductor. The same hold and the same strands as the mouse.
-  startKeyboardPaint(button) {
-    if (this.mode !== 'play' || this.phase !== 3 || this.transition || this.dialoguePause || this.paintHold.active) return;
-    const target = button === 2 ? this.findNearestPaint() : null;
-    if (button === 2 && !target) this.toast(this.player.color >= 3 ? 'THE BRUSH IS FULL · RETURN IT · HOLD R' : 'NO COLOUR WITHIN REACH · WALK TO ONE THAT HAS LANDED');
-    if (button === 0 && this.player.color < 1) { this.toast('ABSORB A COLOUR FIRST · HOLD E BESIDE IT (OR HOLD RIGHT CLICK)'); return; }
-    this.paintHold = { active: true, button, elapsed: 0, point: target ? new THREE.Vector3(target.x, 0, target.z) : null, target, completed: false, keyboard: true };
-    this.updatePaintTransfer(0);
-  }
-
-  findNearestPaint(reach = 4.2) {
-    return this.hazards
-      .filter((hazard) => hazard.type === 'pigment' && hazard.absorbable)
-      .map((hazard) => ({ hazard, d: Math.hypot(this.player.x - hazard.x, this.player.z - hazard.z) }))
-      .filter(({ d }) => d < reach)
-      .sort((a, b) => a.d - b.d)[0]?.hazard ?? null;
-  }
-
-  findAbsorbablePaint(point = null) {
-    return this.hazards.find((hazard) => {
-      if (hazard.type !== 'pigment' || !hazard.absorbable) return false;
-      return Math.hypot(this.player.x - hazard.x, this.player.z - hazard.z) < 4.2 && point && Math.hypot(point.x - hazard.x, point.z - hazard.z) < 2.4;
-    }) || null;
-  }
-
-  updatePaintTransfer(progress) {
-    if (!this.paintHold.active) return;
-    const absorbing = this.paintHold.button === 2;
-    const target = absorbing ? (this.paintHold.target || this.findAbsorbablePaint(this.paintHold.point)) : null;
-    if (absorbing && !target) { this.paintTransfer.visible = false; return; }
-    if (!absorbing && this.player.color < 1) { this.paintTransfer.visible = false; return; }
-    const from = absorbing ? new THREE.Vector3(target.x, 0.65, target.z) : new THREE.Vector3(this.player.x, 1.15 + this.player.y, this.player.z);
-    const to = absorbing ? new THREE.Vector3(this.player.x, 1.1 + this.player.y, this.player.z) : new THREE.Vector3(this.boss.x, 6.7, this.boss.z + 0.7);
-    this.paintTransfer.visible = true;
-    const strands = this.paintTransfer.children.filter((item) => !item.userData.paintDroplet);
-    const droplets = this.paintTransfer.children.filter((item) => item.userData.paintDroplet);
-    strands.forEach((strand, index) => {
-      const stagger = THREE.MathUtils.clamp(progress * 1.35 - index * 0.055, 0.025, 1);
-      const end = from.clone().lerp(to, stagger);
-      const middle = from.clone().lerp(end, 0.52);
-      middle.x += Math.sin(this.elapsed * 13 + index * 1.8) * (0.08 + progress * 0.14) + (index - 2) * 0.065;
-      middle.y += 0.18 + Math.sin(progress * Math.PI) * 0.42;
-      middle.z += Math.cos(this.elapsed * 11 + index) * 0.08;
-      strand.geometry.setFromPoints([from, middle, end]);
-      strand.material.opacity = 0.42 + progress * 0.5;
-      strand.visible = true;
-    });
-    droplets.forEach((droplet, index) => {
-      const travel = (this.elapsed * 1.65 + index / droplets.length) % 1;
-      const flow = absorbing ? travel : 1 - travel;
-      droplet.position.lerpVectors(from, to, flow);
-      droplet.position.y += Math.sin(flow * Math.PI) * (0.35 + progress * 0.55);
-      droplet.scale.setScalar(0.72 + progress * 0.6 + Math.sin(this.elapsed * 20 + index) * 0.08);
-      droplet.material.opacity = 0.5 + progress * 0.45;
-      droplet.lookAt(this.camera.position);
-      droplet.visible = true;
-    });
-    if (absorbing && target.asset) target.asset.scale.setScalar(Math.max(0.68, 1 - progress * 0.28 + Math.sin(this.elapsed * 18) * 0.025));
-  }
-
-  advancePaintHold(ms) {
-    const steps = Math.max(1, Math.ceil(ms / (1000 / 60)));
-    for (let i = 0; i < steps && !this.paintHold.completed; i += 1) this.updatePaintHold(1 / 60);
-  }
-
-  updatePaintOnboarding() {
-    const stage = this.paintTutorial?.stage;
-    if (stage === 'await-pigment') this.hint(this.findNearestPaint() ? 'HOLD <kbd>E</kbd> · ABSORB THE COLOUR (OR HOLD RIGHT MOUSE ON IT)' : 'WALK TO THE FALLEN COLOUR · THEN HOLD <kbd>E</kbd> TO ABSORB IT');
-    else if (stage === 'absorbed') this.hint(this.player.color < 3 ? 'HOLD <kbd>R</kbd> · RETURN THE COLOUR TO HIM (OR HOLD LEFT MOUSE) · A FULLER BRUSH CUTS DEEPER' : 'HOLD <kbd>R</kbd> · RETURN THE FULL BRUSH TO HIM');
-    else if (stage === 'complete' && this.hintText && /ABSORB|RETURN/.test(this.hintText)) this.hint('');
-  }
-
-  startPaintOnboarding() {
-    if (this.phase !== 3 || this.paintTutorial?.stage !== 'await-pigment') return;
-    this.clearHazards();
-    this.boss.attackClock = 999;
-    this.boss.exposed = 999;
-    this.player.color = 0;
-    this.spawnPigmentObject(0, { tutorial: true, x: 2.8, z: 3.2 });
-  }
-
-  absorbPaint(point = null) {
-    const pigment = this.paintHold.target || this.findAbsorbablePaint(point);
-    if (pigment && this.player.color < 3) {
-      pigment.asset?.scale.setScalar(1);
-      pigment.absorbable = false; pigment.life = 0;
-      this.player.color += 1;
-      this.spawnImpact(this.player.x, 1, this.player.z, pigment.color);
-      this.toast(`COLOUR ${this.player.color} / 3 · RETURN IT FOR ${paintReturnDamage(this.player.color)}`);
-      if (this.paintTutorial.stage === 'await-pigment') {
-        this.paintTutorial.stage = 'absorbed';
-        this.boss.exposed = Math.max(this.boss.exposed, 999);
-      }
-      return true;
-    }
-    this.toast(this.player.color >= 3 ? 'THE BRUSH IS FULL · RETURN IT · HOLD R' : 'WALK TO A LANDED COLOUR · HOLD E (OR HOLD RIGHT CLICK ON IT)');
-    return false;
-  }
-
-  usePaintBrush() {
-    if (this.player.color < 1) { this.toast('ABSORB A COLOUR FIRST · HOLD E BESIDE IT (OR HOLD RIGHT CLICK)'); return; }
-    const charge = this.player.color;
-    const damage = paintReturnDamage(charge);
-    this.player.color = 0;
-    this.lastPaintReturn = { charge, damage };
-    this.hitBoss(damage, 'rage');
-    this.spawnImpact(this.boss.x, 6.7, this.boss.z + 0.7, 0xff806f);
-    this.tone(480 + charge * 90, 0.16, 'triangle', 0.04);
-    this.toast(`${charge} COLOUR${charge === 1 ? '' : 'S'} RETURNED · ${damage}`);
-    if (this.paintTutorial.stage === 'absorbed') {
-      this.paintTutorial.stage = 'complete';
-      this.boss.exposed = Math.min(this.boss.exposed, 1.2);
-      this.boss.attackClock = difficulty === 'story' ? 3.2 : 2.4;
-    }
+  stopVoices() {
+    if (this.voiceQueue) this.voiceQueue.length = 0;
+    this.voiceBusy = false;
+    this.closeCaption();
   }
 
   // ------------------------------------------------------------ combat core
 
-  spawnPlayerProjectile(color, damage) {
-    const root = new THREE.Mesh(new THREE.OctahedronGeometry(0.3), new THREE.MeshBasicMaterial({ color }));
-    root.position.set(this.player.x, 1.2 + this.player.y, this.player.z);
-    this.scene.add(root);
-    const start = root.position.clone();
-    const target = new THREE.Vector3(this.boss.x, 6.8, this.boss.z + 0.8);
-    this.projectiles.push({ root, type: 'player-shot', damage, life: 1.2, age: 0, duration: 0.8, start, target });
-  }
-
-  hitBoss(amount, reaction = 'pain') {
-    if (this.boss.hp <= 0 || this.mode !== 'play') return;
-    const oldPhase = this.phase;
-    this.boss.hp = Math.max(0, this.boss.hp - amount);
-    this.boss.inv = 0.09 * D().bossWindow;
-    this.boss.stagger = 0.18;
-    this.boss.reaction = reaction;
-    this.boss.lastDamageCause = ['returned-claim', 'borrowed-light', 'two-true-things', 'returned-pigment'][this.phase];
-    this.boss.lastDamage = amount;
-    if (this.phase === 3) {
-      this.boss.paintCoverage = THREE.MathUtils.clamp((100 - this.boss.hp) / 88, 0, 1);
-      this.updatePaintCreep();
-    }
-    this.boss.gestureTime = reaction === 'rage' ? 1.4 : 0.8;
-    this.boss.flash = 0.18;
-    this.playConductorAction(reaction === 'pain' ? 'Hit_Chest' : reaction === 'shame' ? 'Hit_Head' : 'Interact', true);
-    this.hitStop = 0.055;
-    this.trauma = Math.min(1, this.trauma + 0.3);
-    this.spawnImpact(this.boss.x, 8.2, this.boss.z + 1, reaction === 'shame' ? 0xffd7d7 : AMBER);
-    this.tone(72, 0.12, 'sawtooth', 0.05);
-    const newPhase = Math.min(3, Math.floor((400 - this.boss.hp) / 100));
-    if (this.phase === 3 && this.boss.hp <= 12) this.startRescueSequence();
-    else if (this.boss.hp <= 0) this.startRescueSequence();
-    else if (newPhase > oldPhase) this.startWorldTransition(newPhase);
-  }
-
   spawnImpact(x, y, z, color) {
-    for (let i = 0; i < 14; i += 1) {
+    const count = this.quality.tier === 'low' ? 7 : 14;
+    for (let i = 0; i < count; i += 1) {
       const shard = flatBox(0.05 + Math.random() * 0.13, 0.18 + Math.random() * 0.3, 0.04, new THREE.MeshBasicMaterial({ color, transparent: true }));
       shard.position.set(x, y, z);
       shard.userData.velocity = new THREE.Vector3(THREE.MathUtils.randFloatSpread(7), THREE.MathUtils.randFloat(2, 7), THREE.MathUtils.randFloatSpread(7));
@@ -2971,8 +2872,7 @@ class SpectacleBattle {
     clearTimeout(this.titleTimer);
     this.hud.querySelectorAll('.nf-title-card').forEach((card) => card.remove());
     this.clearHazards();
-    this.clearLostProperty();
-    this.closeCaption();
+    this.stopVoices();
     this.dialoguePause = false;
     this.hint('');
     if (this.phase === 1 && nextPhase === 2) { this.startVerifiedTransition(nextPhase); return; }
@@ -3020,7 +2920,6 @@ class SpectacleBattle {
     this.transition = { kind: 'verified', nextPhase, time: 0, duration: 10 };
     this.player.inv = 99;
     this.boss.attackClock = 999;
-    this.bell.arena = null;
     this.bellMeter.setVisible(false);
     const scene = document.createElement('div');
     scene.className = 'nf-stamp-scene';
@@ -3145,166 +3044,13 @@ class SpectacleBattle {
   }
 
   clearHazards() {
-    [...this.hazards, ...this.projectiles].forEach((item) => this.scene.remove(item.root));
-    this.hazards = [];
-    this.projectiles = [];
-    this.pendingCommand = null;
+    this.fightVisuals?.clear();
+    this.clearEntityViews();
   }
 
-  // ------------------------------------------------------------ beats
+  addPersistentHole() {}
 
-  spawnBeat() {
-    this.boss.rounds += 1;
-    this.boss.phaseRound += 1;
-    this.boss.gesture = 'point';
-    this.boss.gestureTime = 0.82;
-    this.playConductorAction('Interact', true);
-    if (this.phase === 0) { this.spawnLostPropertyBeat(); return; }
-    if (this.phase === 1) { this.boss.attackClock = 999; return; }
-    const pressure = Math.min(4, Math.floor((this.boss.phaseRound - 1) / 2));
-    const count = this.phase === 3 ? 1 : Math.min(5, D().overlap + 1 + pressure);
-    this.pendingCommand = { phase: this.phase, count, time: 0.62 };
-    this.boss.attackClock = this.phase === 3
-      ? Math.max(2.15, (3.4 - Math.min(0.9, this.boss.phaseRound * 0.1)) * D().bossWindow)
-      : Math.max(1.05, (D().beat - pressure * 0.16 - this.phase * 0.1) * THREE.MathUtils.randFloat(0.9, 1.06));
-    if (this.phase === 3 && this.boss.rounds % 3 === 0) {
-      this.boss.exposed = 2.65 * D().bossWindow;
-      this.toast('HE IS OPEN · RETURN THE COLOUR');
-    }
-  }
-
-  spawnEchoHole() {
-    this.showTutorialOnce('echo-collapse', 'WHAT HE THROWS BREAKS THE FLOOR · KEEP MOVING');
-    const x = THREE.MathUtils.clamp(this.player.x + THREE.MathUtils.randFloatSpread(7), -10.5, 10.5);
-    const z = THREE.MathUtils.clamp(this.player.z + THREE.MathUtils.randFloatSpread(5), -6.5, 6.5);
-    const root = this.telegraphPlane(0xb38a52, 3.6, 3.6, x, z);
-    root.children[0].geometry.dispose(); root.children[0].geometry = new THREE.RingGeometry(1.35, 1.85, 18);
-    const slam = this.cloneAsset(['trash', 'bench', 'speaker'][this.boss.rounds % 3], 2.2, 3.2);
-    if (slam) { slam.position.y = 10; root.add(slam); }
-    this.hazards.push({ root, asset: slam, assetId: ['crushed-trash-can', 'fountain-bench', 'pa-speaker'][this.boss.rounds % 3], type: 'echo-hole', x, z, timer: D().telegraph * 1.25, struck: false, landed: false, life: 0.9 });
-  }
-
-  spawnPigmentObject(index, options = {}) {
-    const x = options.x ?? THREE.MathUtils.clamp(this.player.x + THREE.MathUtils.randFloatSpread(6), -10.5, 10.5);
-    const z = options.z ?? THREE.MathUtils.clamp(this.player.z + THREE.MathUtils.randFloatSpread(4), -6.5, 6.5);
-    const colors = [0x202126, 0x435d91, 0x4f8f7c];
-    const color = colors[(this.boss.rounds + index) % colors.length];
-    const root = this.telegraphPlane(color, 2.8, 2.8, x, z);
-    const urls = [ch4SootUrl, ch4IndigoUrl, ch4VerdigrisUrl];
-    const object = makePaperCard(this.textureLoader, urls[(this.boss.rounds + index) % urls.length], 2.6, 1.6, { alpha: true }); object.position.y = 9; root.add(object);
-    this.hazards.push({ root, asset: object, assetId: ['bone-black-region', 'indigo-region', 'verdigris-region'][(this.boss.rounds + index) % 3], type: 'pigment', x, z, color, tutorial: Boolean(options.tutorial), persistentUntilLearned: Boolean(options.tutorial), timer: D().telegraph, struck: false, landed: false, absorbable: false, life: options.tutorial ? 999 : 3.2 });
-  }
-
-  spawnPaintSweep(index, options = {}) {
-    const vertical = options.vertical ?? (this.boss.rounds + index) % 2 === 0;
-    const offset = options.offset ?? (vertical ? THREE.MathUtils.randFloat(-10.5, 10.5) : THREE.MathUtils.randFloat(-5.8, 5.8));
-    const colors = [0x202126, 0x435d91, 0x4f8f7c];
-    const color = colors[(this.boss.rounds + index) % colors.length];
-    const root = this.telegraphPlane(color, vertical ? 1.25 : 29, vertical ? 20 : 1.25, vertical ? offset : 0, vertical ? 0 : offset);
-    root.children[0].material.opacity = 0.12;
-    this.hazards.push({ root, asset: root.children[0], assetId: 'painted-country-color-sweep', type: 'paint-sweep', vertical, offset, timer: options.timer ?? D().telegraph * 0.82 + index * 0.05, struck: false, life: difficulty === 'story' ? 0.5 : 0.68, color });
-  }
-
-  spawnPaintCover(index, options = {}) {
-    const existing = this.hazards.filter((hazard) => hazard.type === 'paint-cover' && !hazard.destroyed);
-    if (existing.length >= 2) return existing[0];
-    const x = THREE.MathUtils.clamp(options.x ?? this.player.x + (index % 2 === 0 ? 2.65 : -2.65), ARENA.minX + 1.5, ARENA.maxX - 1.5);
-    const z = options.z ?? this.player.z;
-    const yaw = options.yaw ?? (options.axis === 'x' ? Math.PI / 2 : 0);
-    const root = this.telegraphPlane(0x46618c, 2.7, 2.7, x, z);
-    const tile = makePaperCard(this.textureLoader, ch4IndigoUrl, 2.05, 2.05, { alpha: true });
-    tile.position.y = 9;
-    tile.rotation.y = yaw;
-    tile.rotation.z = index % 2 === 0 ? -0.12 : 0.12;
-    root.add(tile);
-    const edgeParams = { color: 0x46618c, emissive: 0x1b315c, emissiveIntensity: 0.35 };
-    const edge = flatBox(2.08, 2.08, 0.1, this.quality.tier === 'low' ? new THREE.MeshLambertMaterial(edgeParams) : new THREE.MeshStandardMaterial({ ...edgeParams, roughness: 0.92 }));
-    edge.position.y = 9;
-    edge.rotation.y = yaw;
-    root.add(edge);
-    const hazard = { root, asset: tile, edge, assetId: 'ch4-indigo-paper-grid-cover', type: 'paint-cover', x, z, yaw, timer: 0.16, struck: false, landed: false, life: 5.6, color: 0x46618c };
-    this.hazards.push(hazard);
-    return hazard;
-  }
-
-  spawnPaintCoverWave() {
-    const round = this.boss.phaseRound;
-    const makeGrid = (delay = 0) => {
-      const seed = round * 2.399 + delay * 1.731;
-      const x = THREE.MathUtils.clamp(this.player.x + Math.sin(seed) * 6.2, ARENA.minX + 1.6, ARENA.maxX - 1.6);
-      const z = THREE.MathUtils.clamp(this.player.z - 3.1 - (Math.cos(seed * 1.37) + 1) * 0.55, ARENA.minZ + 1.6, ARENA.maxZ - 1.6);
-      const yaw = THREE.MathUtils.euclideanModulo(seed * 1.61, Math.PI * 2);
-      this.spawnPaintCover(round + delay, { x, z, yaw });
-    };
-    const sweepVertical = round % 2 === 0;
-    const sweepOffset = sweepVertical ? THREE.MathUtils.clamp(this.player.x + Math.cos(round * 1.17) * 7.1, -10.5, 10.5) : THREE.MathUtils.clamp(this.player.z + Math.sin(round * 1.17) * 4.4, -5.8, 5.8);
-    this.spawnPaintSweep(round, { vertical: sweepVertical, offset: sweepOffset, timer: 1.72 });
-    makeGrid();
-    if (round >= 3 && round % 2 === 0) makeGrid(0.5);
-  }
-
-  telegraphPlane(color, w, d, x, z) {
-    const root = new THREE.Group();
-    const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, d), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false }));
-    plane.rotation.x = -Math.PI / 2; plane.position.y = 0.04; root.add(plane); root.position.set(x, 0, z); this.scene.add(root); return root;
-  }
-
-  resolveHazard(hazard) {
-    const p = this.player;
-    let hit = false;
-    if (p.y > 1.05) return;
-    if (['echo-hole', 'pigment'].includes(hazard.type)) hit = Math.hypot(p.x - hazard.x, p.z - hazard.z) < 2.1;
-    if (hazard.type === 'paint-sweep') hit = hazard.vertical ? Math.abs(p.x - hazard.offset) < 0.78 : Math.abs(p.z - hazard.offset) < 0.78;
-    if (hit && !hazard.tutorial && !hazard.hitChecked) {
-      hazard.hitChecked = true;
-      const source = hazard.type === 'echo-hole' ? hazard.assetId : hazard.type === 'paint-sweep' ? 'sweep' : hazard.type;
-      this.takeHit({ source, from: hazard.type === 'paint-sweep' ? (hazard.vertical ? { x: hazard.offset, z: p.z } : { x: p.x, z: hazard.offset }) : hazard });
-    }
-  }
-
-  addPersistentHole(x, z, radius = 1.45) {
-    if (this.activeHoles.length >= this.holeVisuals.length) return;
-    const hole = this.holeVisuals[this.activeHoles.length];
-    hole.position.set(x, 0.035, z); hole.scale.setScalar(radius); hole.rotation.y = this.activeHoles.length * 0.73; hole.visible = true;
-    this.activeHoles.push({ x, z, radius, visual: hole });
-  }
-
-  updateHazards(dt) {
-    this.hazards.forEach((hazard) => {
-      hazard.timer -= dt;
-      if (!hazard.struck && hazard.timer <= 0) {
-        hazard.struck = true;
-        hazard.root.children[0].material.opacity = 0.35;
-        if (hazard.type === 'paint-sweep') this.resolveHazard(hazard);
-        this.trauma = Math.max(this.trauma, ['echo-hole', 'pigment'].includes(hazard.type) ? 0.5 : 0.22);
-        this.tone(96, 0.16, 'square', 0.03);
-      }
-      if (hazard.struck) {
-        if (!hazard.persistentUntilLearned) hazard.life -= dt;
-        if (['echo-hole', 'pigment', 'paint-cover'].includes(hazard.type) && !hazard.landed) {
-          const landingY = hazard.type === 'paint-cover' ? 1.12 : 0.45;
-          if (hazard.asset) {
-            hazard.asset.position.y = Math.max(landingY, hazard.asset.position.y - 18 * D().speedScale * dt);
-            hazard.asset.rotation.z += hazard.type === 'paint-cover' ? dt * 0.4 : dt * 5;
-          }
-          if (hazard.type === 'paint-cover') hazard.edge.position.y = hazard.asset.position.y;
-          if (!hazard.asset || hazard.asset.position.y <= landingY + 0.01) {
-            hazard.landed = true; hazard.absorbable = hazard.type === 'pigment';
-            if (hazard.type !== 'paint-cover') this.resolveHazard(hazard);
-            if (hazard.type === 'echo-hole') this.addPersistentHole(hazard.x, hazard.z, 1.45 + Math.min(0.35, this.boss.phaseRound * 0.045));
-            this.spawnImpact(hazard.x, 0.4, hazard.z, hazard.color || AMBER);
-          }
-        }
-        hazard.root.children[0].material.opacity = hazard.type === 'paint-sweep' ? Math.max(0, hazard.life * 2.1) : Math.max(0.04, hazard.life * 0.12);
-      } else {
-        hazard.root.children[0].material.opacity = 0.1 + Math.abs(Math.sin(hazard.timer * 14)) * 0.16;
-      }
-    });
-    const expired = this.hazards.filter((hazard) => hazard.struck && hazard.life <= 0);
-    expired.forEach((hazard) => this.scene.remove(hazard.root));
-    this.hazards = this.hazards.filter((hazard) => !(hazard.struck && hazard.life <= 0));
-  }
-
+  // Flights are pictures only: what they carry was dealt by the director.
   updateProjectiles(dt) {
     this.projectiles.forEach((projectile) => {
       projectile.life -= dt;
@@ -3312,34 +3058,15 @@ class SpectacleBattle {
       const progress = Math.min(1, projectile.age / projectile.duration);
       projectile.root.position.lerpVectors(projectile.start, projectile.target, progress);
       projectile.root.position.y += Math.sin(progress * Math.PI) * 3.2;
-      projectile.root.rotation.z += dt * 7;
+      if (!reducedMotionActive()) projectile.root.rotation.z += dt * 7;
       if (!projectile.hit && progress >= 1) {
         projectile.hit = true;
-        this.hitBoss(projectile.damage, 'pain');
+        this.spawnImpact(projectile.target.x, projectile.target.y, projectile.target.z, projectile.type === 'stroke' ? 0xff806f : projectile.type === 'truth' ? CHANCE_HEX : AMBER);
       }
     });
     const expired = this.projectiles.filter((projectile) => projectile.life <= 0 || projectile.hit);
     expired.forEach((projectile) => this.scene.remove(projectile.root));
     this.projectiles = this.projectiles.filter((projectile) => projectile.life > 0 && !projectile.hit);
-  }
-
-  // `source` names what hit Butch (HIT_SOURCES) and `from` where it came
-  // from ({ x, z }), for the hit flash, the label and the death card.
-  takeHit({ force = false, source = 'hit', from = null } = {}) {
-    if ((!force && this.player.inv > 0) || this.mode !== 'play' || this.transition) return;
-    if (force && this.player.respawnInv > 0) return;
-    this.player.hp -= 1;
-    this.player.inv = 0.95;
-    this.player.hitTimer = 0.38;
-    this.hitStop = 0.07;
-    this.trauma = Math.min(1, this.trauma + 0.55);
-    this.spawnImpact(this.player.x, 1.4 + this.player.y, this.player.z, OXBLOOD);
-    if (flashEnabled && !reducedMotionActive()) { this.renderer.domElement.classList.add('hit-flash'); setTimeout(() => this.renderer.domElement.classList.remove('hit-flash'), 70); }
-    this.tone(63, 0.22, 'sawtooth', 0.05);
-    this.lastRespawnCount = this.player.respawns;
-    this.lastHit = { source, label: HIT_SOURCES[source] ?? HIT_SOURCES.hit, at: this.elapsed };
-    this.showHitFeedback(this.lastHit, from);
-    if (this.player.hp <= 0) this.respawnPlayer();
   }
 
   // The hit, readable: an oxblood edge on the side it came from, and a torn
@@ -3369,92 +3096,20 @@ class SpectacleBattle {
     this.hitLabelTimer = setTimeout(() => this.hitLabelEl.classList.remove('show'), 2400);
   }
 
-  // The last layer torn: what tore it, what is kept, and what Butch lost,
-  // gently (round 6, item 16). The movement goes on.
-  showDeathCard({ label }, { echoWindow = false } = {}) {
+  // The last layer torn: what tore it, and what it cost — the phase on
+  // NORMAL (its checkpoint), nothing on STORY.
+  showDeathCard({ label }, { rollback = 'phase', phaseName = '' } = {}) {
     const phase = PHASES[this.phase];
     const card = this.deathCardEl;
     card.querySelector('.nf-death-card__stamp').textContent = `LAYERS TORN · MOVEMENT ${phase.number} GOES ON`;
     card.querySelector('.nf-death-card__what').textContent = label;
-    card.querySelector('.nf-death-card__kept').textContent = keptAfterTornLayers(this.phase, { echoWindow });
+    card.querySelector('.nf-death-card__kept').textContent = checkpointLine({ rollback, phaseName });
     card.querySelector('.nf-death-card__lines').textContent = `You are back on your feet with ${this.player.maxHp} layers. Nothing can tear you for ${D().respawnInv.toFixed(1)} seconds.`;
     card.classList.remove('show');
     void card.offsetWidth;
     card.classList.add('show');
     clearTimeout(this.deathCardTimer);
     this.deathCardTimer = setTimeout(() => card.classList.remove('show'), Math.max(4500, D().respawnInv * 1000 + 600));
-  }
-
-  respawnClearance([x, z]) {
-    const clearances = [];
-    (this.activeHoles || []).forEach((hole) => clearances.push(Math.hypot(x - hole.x, z - hole.z) - hole.radius - 0.42));
-    (this.hazards || []).forEach((hazard) => {
-      if (!hazard.struck && !hazard.landed) return;
-      if (hazard.type === 'paint-sweep') clearances.push(hazard.vertical ? Math.abs(x - hazard.offset) - 1.2 : Math.abs(z - hazard.offset) - 1.2);
-      else if (['echo-hole', 'pigment'].includes(hazard.type)) clearances.push(Math.hypot(x - hazard.x, z - hazard.z) - 2.35);
-    });
-    if (this.phase === 0) clearances.push(Math.abs(x - PANEL_SEAMS.x) - 1.2, Math.abs(z - PANEL_SEAMS.z) - 1.2);
-    return clearances.length ? Math.min(...clearances) : 99;
-  }
-
-  findSafeRespawn() {
-    if (this.phase === 1) return [0, 4.6];
-    const candidates = [[-5.5, 5.2], [5.5, 5.2], [0, 5.2], [-10, 2.8], [10, 2.8], [-5, -3.5]];
-    const safe = candidates.find((point) => this.respawnClearance(point) >= 1.65);
-    if (safe) return safe;
-    const search = [];
-    for (let z = ARENA.maxZ - 0.9; z >= ARENA.minZ + 1.2; z -= 1.15) for (let x = ARENA.minX + 1.2; x <= ARENA.maxX - 1.2; x += 1.2) search.push([x, z]);
-    search.sort((a, b) => this.respawnClearance(b) - this.respawnClearance(a));
-    return search[0] || [0, ARENA.maxZ - 1];
-  }
-
-  // The last layer torn (round 6, item 16: a hit in Movement III put his
-  // ticket back where the movement began). It costs Butch his place and the
-  // chance in hand, never what he has done: his ticket stays where it was,
-  // answers given and facts struck stand, Movement II's lessons stay
-  // learned. What goes: Butch's position, the cases on the floor, the
-  // queued lamps, the colour on the brush. A window he earned in Movement
-  // III stays open: he walks back to the front edge.
-  respawnPlayer() {
-    const p = this.player;
-    const [x, z] = this.findSafeRespawn();
-    this.clearHazards();
-    p.hp = p.maxHp;
-    p.x = x; p.y = 0; p.z = z; p.vy = 0; p.grounded = true;
-    p.color = 0;
-    p.attack = 0; p.attackCd = 0; p.dash = 0; p.dashCd = 0;
-    p.respawns += 1;
-    p.respawnInv = D().respawnInv;
-    p.inv = Math.max(p.inv, p.respawnInv);
-    this.playerRoot.position.set(x, 0, z);
-    const reset = tornLayerReset({ movement: this.phase, bossHp: this.boss.hp, echoStage: this.echo.stage, echoClock: this.echo.clock, brush: p.color });
-    const echoWindow = reset.keepWindow;
-    this.boss.hp = reset.bossHp;
-    if (!echoWindow) { this.closeCaption(); this.dialoguePause = false; }
-    this.boss.exposed = echoWindow ? 1 : 0;
-    this.boss.phaseRound = 0;
-    this.updatePaintCreep();
-    this.boss.attackClock = Math.max(this.boss.attackClock, p.respawnInv + 0.55);
-    this.keptFlash = 2.8;
-    if (reset.clearCases) { this.clearLostProperty(); this.lost.tutorial = 'done'; this.boss.attackClock = p.respawnInv + 0.4; }
-    if (reset.newArena) {
-      // A new arena, but what was learned stays learned.
-      this.bell.tutor.afterDeath();
-      this.startBellArena({ keepTutorial: true });
-    }
-    if (this.phase === 2) {
-      this.echo.stage = reset.echoStage;
-      this.echo.clock = reset.echoClock;
-      if (!echoWindow) { this.showFrontEdge(false); if (/HE HAS NO ANSWER/.test(this.hintText ?? '')) this.hint(''); }
-    }
-    this.hitStop = 0.1;
-    this.trauma = 0.25;
-    this.spawnImpact(x, 1.1, z, AMBER);
-    this.tone(220, 0.28, 'triangle', 0.04);
-    this.lastDeath = { phase: this.phase, source: this.lastHit?.source ?? 'hit', bossHp: this.boss.hp, echoWindow };
-    this.showDeathCard(this.lastHit ?? { label: HIT_SOURCES.hit }, { echoWindow });
-    const record = this.deaths.record(this.phase, difficulty);
-    if (record.offerStory) this.offerStory();
   }
 
   // After three deaths in one movement the line offers to go gentler.
@@ -3469,7 +3124,7 @@ class SpectacleBattle {
     const backdrop = document.createElement('div');
     backdrop.className = 'nf-card-backdrop nf-story-offer';
     backdrop.setAttribute('role', 'dialog');
-    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">LAYERS TORN · MOVEMENT ${PHASES[this.phase].number} GOES ON</p><p class="nf-story-offer__what">What tore it: <b>${what}</b></p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: more paper layers, slower trains, longer windows.</p><p>Nothing is lost either way. His ticket stays where you left it.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
+    backdrop.innerHTML = `<article class="nf-card"><p class="nf-card__stamp">LAYERS TORN · MOVEMENT ${PHASES[this.phase].number} GOES ON</p><p class="nf-story-offer__what">What tore it: <b>${what}</b></p><h2 class="nf-card__title">The line can wait for you.</h2><div class="nf-card__lines"><p>Switch to STORY: the same patterns, slower and thinner, more paper layers, and a torn last layer undoes nothing.</p><p>Nothing is lost either way. Earlier phases stay won.</p></div><div class="nf-board__actions" style="justify-content:flex-start"><button class="nf-ticket-button" data-story="yes" type="button">STORY <span>S</span></button><button class="nf-ticket-button nf-ticket-button--quiet" data-story="no" type="button">KEEP NORMAL <span>N</span></button></div></article>`;
     this.hud.append(backdrop);
     backdrop.style.pointerEvents = 'auto';
     const close = (toStory) => {
@@ -3479,9 +3134,7 @@ class SpectacleBattle {
       this.dialoguePause = false;
       if (toStory) {
         setDifficulty('story');
-        this.player.maxHp = D().layers;
-        this.player.hp = this.player.maxHp;
-        if (this.phase === 1) { this.bell.tutor.skip(); this.startBellArena({ keepTutorial: true }); }
+        this.runner?.setDifficulty('story');
         this.toast('STORY · THE LINE SLOWS DOWN');
       }
     };
@@ -3491,119 +3144,60 @@ class SpectacleBattle {
       if (event.code === 'KeyS') { event.preventDefault(); event.stopImmediatePropagation(); close(true); }
       if (event.code === 'KeyN' || event.code === 'Escape') { event.preventDefault(); event.stopImmediatePropagation(); close(false); }
     };
+    this.storyOfferClose = close;
     window.addEventListener('keydown', onKey, true);
     backdrop.querySelector('[data-story="yes"]').addEventListener('click', () => close(true));
     backdrop.querySelector('[data-story="no"]').addEventListener('click', () => close(false));
     backdrop.querySelector('[data-story="yes"]').focus({ preventScroll: true });
   }
 
-  resolvePaintWallMovement(fromX, fromZ, nextX, nextZ) {
-    let x = nextX;
-    let z = nextZ;
-    this.hazards.filter((hazard) => hazard.type === 'paint-cover' && hazard.landed && !hazard.destroyed).forEach((wall) => {
-      const normalX = Math.sin(wall.yaw);
-      const normalZ = Math.cos(wall.yaw);
-      const tangentX = Math.cos(wall.yaw);
-      const tangentZ = -Math.sin(wall.yaw);
-      const fromAcross = (fromX - wall.x) * normalX + (fromZ - wall.z) * normalZ;
-      const nextAcross = (x - wall.x) * normalX + (z - wall.z) * normalZ;
-      const nextAlong = (x - wall.x) * tangentX + (z - wall.z) * tangentZ;
-      if (Math.abs(nextAlong) > 1.38) return;
-      const crossed = fromAcross * nextAcross <= 0;
-      const tooClose = Math.abs(nextAcross) < 0.4;
-      if (!crossed && !tooClose) return;
-      const side = Math.sign(fromAcross || nextAcross || 1);
-      const correction = side * 0.4 - nextAcross;
-      x += normalX * correction;
-      z += normalZ * correction;
-    });
-    return { x, z };
-  }
-
-  updatePlayer(dt) {
+  // Butch on screen: the runner moved him; this draws it.
+  updatePlayerView(dt) {
     const p = this.player;
-    const wasGrounded = p.grounded;
-    p.inv = Math.max(0, p.inv - dt);
-    p.respawnInv = Math.max(0, p.respawnInv - dt);
-    p.hitTimer = Math.max(0, p.hitTimer - dt);
-    p.dash = Math.max(0, p.dash - dt);
-    p.dashCd = Math.max(0, p.dashCd - dt);
-    p.attack = Math.max(0, p.attack - dt);
-    p.attackCd = Math.max(0, p.attackCd - dt);
-    const dx = Number(this.keys.has('ArrowRight') || this.keys.has('KeyD')) - Number(this.keys.has('ArrowLeft') || this.keys.has('KeyA'));
-    const dz = Number(this.keys.has('ArrowDown') || this.keys.has('KeyS')) - Number(this.keys.has('ArrowUp') || this.keys.has('KeyW'));
-    const length = Math.hypot(dx, dz) || 1;
-    const speed = p.dash > 0 ? 16 : 6.3;
-    if (dx || dz) { p.facingX = dx / length; p.facingZ = dz / length; }
-    const intendedX = THREE.MathUtils.clamp(p.x + (dx / length) * speed * dt, ARENA.minX, ARENA.maxX);
-    const intendedZ = THREE.MathUtils.clamp(p.z + (dz / length) * speed * dt, ARENA.minZ, ARENA.maxZ);
-    const resolved = this.resolvePaintWallMovement(p.x, p.z, intendedX, intendedZ);
-    // While the post-death grace holds (a fall cannot tear a layer then),
-    // and while Movement II is still being taught (alpha round 4), the street
-    // gap is a railing: nobody walks across thin air (alpha A4-6).
-    const arena = this.phase === 1 ? this.bell.arena : null;
-    if (arena && (p.respawnInv > 0 || this.bell.tutor.gapIsRailing) && arena.fallsAt(resolved.x, resolved.z) && !arena.fallsAt(p.x, p.z)) {
-      if (!arena.fallsAt(resolved.x, p.z)) resolved.z = p.z;
-      else { resolved.x = p.x; resolved.z = p.z; }
-    }
-    p.x = resolved.x;
-    p.z = resolved.z;
-    const hole = this.activeHoles?.find((entry) => Math.hypot(p.x - entry.x, p.z - entry.z) < entry.radius * 0.82);
-    if (hole && p.y <= 0.15 && p.respawnInv <= 0) {
-      const respawnsBefore = p.respawns;
-      p.y = -0.8;
-      this.takeHit({ source: 'collapse', from: hole });
-      if (p.respawns === respawnsBefore) {
-        const [safeX, safeZ] = this.findSafeRespawn();
-        p.x = safeX; p.z = safeZ; p.y = 0; p.vy = 0;
-      }
-    }
-    p.vy -= 22 * dt;
-    p.y += p.vy * dt;
-    if (p.y <= 0) {
-      if (!p.grounded && p.vy < -4) { this.trauma = Math.max(this.trauma, 0.1); this.tone(110, 0.055, 'triangle', 0.02); }
-      p.y = 0; p.vy = 0; p.grounded = true;
-    } else p.grounded = false;
-    if (!wasGrounded && p.grounded) this.butchLandTimer = 0.2;
     this.butchLandTimer = Math.max(0, this.butchLandTimer - dt);
     this.playerRoot.position.set(p.x, p.y, p.z);
     this.respawnAura.visible = p.respawnInv > 0;
     if (this.respawnAura.visible) {
-      this.respawnAura.scale.setScalar(1 + Math.sin(this.elapsed * 10) * 0.12);
-      this.respawnAura.material.opacity = 0.24 + Math.abs(Math.sin(this.elapsed * 8)) * 0.48;
+      const still = reducedMotionActive();
+      this.respawnAura.scale.setScalar(still ? 1 : 1 + Math.sin(this.elapsed * 6) * 0.1);
+      this.respawnAura.material.opacity = still ? 0.5 : 0.3 + Math.abs(Math.sin(this.elapsed * 4)) * 0.35;
     }
     const targetYaw = this.phase === 2 ? Math.atan2(p.facingX, p.facingZ) : 0;
     this.playerRoot.rotation.y = THREE.MathUtils.lerp(this.playerRoot.rotation.y, targetYaw, 1 - Math.exp(-dt * 14));
-    this.puppet?.update(dt, Boolean(dx || dz), p.grounded, p.attack > 0, p.hitTimer > 0, p.facingX);
+    this.puppet?.update(dt, Boolean(p.moving), p.grounded, p.attack > 0, p.hitTimer > 0, p.facingX);
     if (this.phase === 2) {
-      const moving = Boolean(dx || dz);
-      const butchAction = this.butchLandTimer > 0 ? 'Jump_Land' : !p.grounded ? (p.vy > 1.2 ? 'Jump_Start' : 'Jump_Loop') : moving ? 'Walk_Loop' : 'Idle_Loop';
+      const butchAction = this.butchLandTimer > 0 ? 'Jump_Land' : !p.grounded ? (p.vy > 1.2 ? 'Jump_Start' : 'Jump_Loop') : p.moving ? 'Walk_Loop' : 'Idle_Loop';
       this.playButchAction(butchAction, butchAction === 'Jump_Land');
-      if (this.butchAction && butchAction === 'Walk_Loop') this.butchAction.setEffectiveTimeScale(1.3);
-      this.butchRoot.rotation.z = p.hitTimer > 0 ? Math.sin(this.elapsed * 48) * 0.12 : 0;
+      if (this.butchAction && butchAction === 'Walk_Loop') this.butchAction.setEffectiveTimeScale(1.3 * (p.dash > 0 ? 1.8 : 1));
+      this.butchRoot.rotation.z = p.hitTimer > 0 && !reducedMotionActive() ? Math.sin(this.elapsed * 48) * 0.12 : 0;
     }
+  }
+
+  // The departure: Butch walks to the night service (no director).
+  updateDepartureWalk(dt) {
+    const k = this.keys;
+    let dx = Number(k.has('ArrowRight') || k.has('KeyD')) - Number(k.has('ArrowLeft') || k.has('KeyA'));
+    let dz = Number(k.has('ArrowDown') || k.has('KeyS')) - Number(k.has('ArrowUp') || k.has('KeyW'));
+    if (this.pad?.connected) { dx += this.pad.moveX; dz += this.pad.moveZ; }
+    if (this.pendingInput?.jump) { this.pendingInput.jump = false; startJump(this.player); }
+    // DEV: the QA bot walks to the night service and jumps aboard.
+    if (DEV_MODE && this.bot) {
+      const tx = this.departureTrain.position.x + 1.1 - this.player.x;
+      const tz = this.departureTrain.position.z + 1.6 - this.player.z;
+      const m = Math.hypot(tx, tz);
+      dx = m > 0.4 ? tx / m : 0; dz = m > 0.4 ? tz / m : 0;
+      if (this.departureBoardable && m < 3 && this.player.grounded) startJump(this.player);
+    }
+    stepBody(this.player, { dx, dz }, dt, { bounds: ARENA });
+    this.updatePlayerView(dt);
   }
 
   updateBoss(dt) {
     this.boss.inv = Math.max(0, this.boss.inv - dt);
-    if (this.phase !== 1 && this.phase !== 2) this.boss.exposed = Math.max(0, this.boss.exposed - dt);
-    if (this.phase === 2 && this.echo.stage !== 'window') this.boss.exposed = 0;
     this.boss.stagger = Math.max(0, this.boss.stagger - dt);
-    const onboarding = (this.phase === 0 && this.lost.tutorial === 'lens') || this.phase === 1 || (this.phase === 2 && this.echo.stage !== 'combat');
-    if (!onboarding) this.boss.attackClock -= dt;
     this.boss.gestureTime = Math.max(0, this.boss.gestureTime - dt);
     this.boss.flash = Math.max(0, this.boss.flash - dt);
-    if (this.pendingCommand) {
-      this.pendingCommand.time -= dt;
-      if (this.pendingCommand.time <= 0) {
-        const command = this.pendingCommand; this.pendingCommand = null;
-        for (let i = 0; i < command.count; i += 1) {
-          if (command.phase === 2) this.spawnEchoHole(i);
-          else if (command.phase === 3) this.spawnPigmentObject(i);
-        }
-        if (command.phase === 3) this.spawnPaintCoverWave();
-      }
-    }
+    const still = reducedMotionActive();
     const orbit = this.phase === 1 ? this.boss.targetX : Math.sin(this.elapsed * (0.32 + this.phase * 0.04)) * 2.2;
     this.boss.x = THREE.MathUtils.lerp(this.boss.x, orbit, 1 - Math.exp(-dt * (this.phase === 1 ? 3.2 : 0.9)));
     this.boss.z = CONDUCTOR_Z;
@@ -3612,28 +3206,29 @@ class SpectacleBattle {
     this.conductorRoot.position.y = -2.8 + (this.boss.reaction === 'pain' ? -Math.sin(this.boss.gestureTime * Math.PI) * 0.7 : 0);
     this.conductorRoot.rotation.y = this.phase === 2 ? Math.atan2((this.player.x - this.boss.x) * 0.15, this.player.z - this.boss.z) : 0;
     const reactionRoll = this.boss.reaction === 'shame' ? -0.08 : this.boss.reaction === 'rage' ? 0.1 : 0;
-    this.conductorRoot.rotation.z = this.boss.gestureTime > 0 ? reactionRoll + (this.boss.stagger > 0 ? Math.sin(this.elapsed * 45) * 0.08 : 0) : 0;
-    this.conductorPaper?.update(dt, false, true, this.phase === 1 && Boolean(this.bell.arena?.exposure), false, this.player.x - this.boss.x);
+    this.conductorRoot.rotation.z = this.boss.gestureTime > 0 ? reactionRoll + (this.boss.stagger > 0 && !still ? Math.sin(this.elapsed * 45) * 0.08 : 0) : 0;
+    this.conductorPaper?.update(dt, false, true, this.boss.exposed > 0, false, this.player.x - this.boss.x);
     const paperFace = this.conductorPaper?.cards[this.phase]?.face;
+    const lit = this.boss.flash > 0;
     if (paperFace?.material?.emissive) {
-      paperFace.material.emissive.setHex(this.boss.flash > 0 ? (this.boss.reaction === 'shame' ? 0x723344 : 0xffffff) : 0x000000);
-      paperFace.material.emissiveIntensity = this.boss.flash > 0 ? 0.8 : 0;
+      paperFace.material.emissive.setHex(lit ? (this.boss.reaction === 'shame' ? 0x723344 : 0xffffff) : this.boss.exposed > 0 ? 0x3a2a10 : 0x000000);
+      paperFace.material.emissiveIntensity = lit ? 0.8 : this.boss.exposed > 0 ? 0.5 : 0;
     } else if (paperFace?.material) {
-      paperFace.material.color.setHex(this.boss.flash > 0 ? 0xffd0c0 : 0xffffff);
+      paperFace.material.color.setHex(lit ? 0xffd0c0 : this.boss.exposed > 0 ? 0xfff0d8 : 0xffffff);
     }
     this.conductorModel?.traverse((child) => {
       if (!child.isMesh || !child.material?.emissive) return;
-      child.material.emissive.setHex(this.boss.flash > 0 ? (this.boss.reaction === 'shame' ? 0x723344 : 0xffffff) : 0x000000);
-      child.material.emissiveIntensity = this.boss.flash > 0 ? 0.8 : 0;
+      child.material.emissive.setHex(lit ? (this.boss.reaction === 'shame' ? 0x723344 : 0xffffff) : 0x000000);
+      child.material.emissiveIntensity = lit ? 0.8 : 0;
     });
     this.updatePaintCreep();
     if (this.boss.gestureTime <= 0 && this.boss.reaction !== 'idle') { this.boss.reaction = 'idle'; this.playConductorAction('Idle_Loop'); }
-    if (!onboarding && this.boss.attackClock <= 0 && !this.transition) this.spawnBeat();
   }
 
   updateEffects(dt) {
     this.effects.forEach((effect) => {
       effect.life -= dt;
+      if (effect.type === 'decal') { effect.root.material.opacity = Math.min(0.9, Math.max(0, effect.life)); return; }
       effect.root.userData.velocity.y -= 15 * dt;
       effect.root.position.addScaledVector(effect.root.userData.velocity, dt);
       effect.root.rotation.x += dt * 9;
@@ -3670,7 +3265,7 @@ class SpectacleBattle {
     if (this.mode === 'departure') {
       this.elapsed += dt;
       this.conductorPaper?.update(dt, false, true, false, true, this.player.x - this.boss.x);
-      this.updatePlayer(this.departureBoardable ? dt * 0.36 : dt);
+      this.updateDepartureWalk(this.departureBoardable ? dt * 0.36 : dt);
       this.updateRescue(dt);
       return;
     }
@@ -3680,8 +3275,6 @@ class SpectacleBattle {
     if (this.dialoguePause) {
       this.elapsed += dt * 0.08;
       this.updateEffects(dt * 0.08);
-      // The deflection's reason is read on a frozen square: only its clock runs.
-      if (this.phase === 2 && this.echo.stage === 'deflected') this.updateEchoCity(dt);
       return;
     }
     if (this.hitStop > 0) { this.hitStop -= dt; return; }
@@ -3694,14 +3287,12 @@ class SpectacleBattle {
       this.conductorPaper?.update(dt, false, true, false, false, this.player.x - this.boss.x);
       return;
     }
-    this.updatePlayer(dt);
-    if (this.phase === 0) this.updateLostProperty(dt);
-    if (this.phase === 1) this.updateBellArena(dt);
-    if (this.phase === 2) this.updateEchoCity(dt);
-    if (this.phase === 3) this.updatePaintOnboarding();
+    // Nothing is thrown while the world is still veiled or its card is up
+    // for the first beat (the director's intro covers the card).
+    if (!this.worldVeiled) this.stepFight(dt);
+    this.updatePlayerView(dt);
     this.updateBoss(dt);
-    this.updatePaintHold(dt);
-    this.updateHazards(dt);
+    this.syncFightVisuals(dt);
     this.updateProjectiles(dt);
     this.updateEffects(dt);
   }
@@ -3740,52 +3331,59 @@ class SpectacleBattle {
   updateHud(dt = 1 / 60) {
     if (!['play', 'departure', 'cinematic'].includes(this.mode)) return;
     const phase = PHASES[this.phase];
-    const exposed = this.phase === 1 ? Boolean(this.bell.arena?.exposure) : this.boss.exposed > 0 && this.boss.exposed < 900;
+    const director = this.fight;
+    const exposed = this.boss.exposed > 0;
     this.ticketBar.set(this.boss.hp / this.boss.maxHp, { dt });
-    this.ticketBar.setLabel(`MOVEMENT ${phase.number} · ${phase.world}`);
-    // After a torn last layer the ticket says it was kept (round 6, item 16).
+    const fightPhase = director?.track.phase;
+    this.ticketBar.setLabel(fightPhase && this.mode === 'play' ? `${phase.number} · ${phase.world} · ${director.track.index + 1}/${director.track.count} ${fightPhase.name}` : `MOVEMENT ${phase.number} · ${phase.world}`);
+    // After a torn last layer the ticket says what it cost.
     this.keptFlash = Math.max(0, this.keptFlash - dt);
-    this.ticketBar.setState(exposed ? 'EXPOSED' : this.mode === 'departure' ? 'OUTLASTED' : this.keptFlash > 0 ? 'KEPT · NOTHING UNDONE' : '', exposed);
+    const keptText = this.lastDeath?.rollback === 'phase' ? 'CHECKPOINT · THIS PHASE AGAIN' : 'KEPT · NOTHING UNDONE';
+    const openText = this.phase === 1 && director?.onTheBellOpen ? 'ON THE BELL' : this.phase === 3 && exposed ? `OPEN · ${director.openLeft.toFixed(1)}` : 'EXPOSED';
+    this.ticketBar.setState(exposed ? openText : this.mode === 'departure' ? 'OUTLASTED' : this.keptFlash > 0 ? keptText : '', exposed);
     this.ticketBar.root.classList.toggle('is-kept', this.keptFlash > 0 && !exposed);
     const plaqueTitle = this.plaque.querySelector('b');
     const plaqueRule = this.plaque.querySelector('span');
-    if (plaqueTitle.textContent !== phase.title) plaqueTitle.textContent = phase.title;
-    if (plaqueRule.textContent !== phase.rule) plaqueRule.textContent = phase.rule;
+    const title = fightPhase && this.mode === 'play' ? `${phase.number} · ${fightPhase.name}` : phase.title;
+    const rule = PHASE_RULES[fightPhase?.id] ?? phase.rule;
+    if (plaqueTitle.textContent !== title) plaqueTitle.textContent = title;
+    if (plaqueRule.textContent !== rule) plaqueRule.textContent = rule;
     const layerTitle = this.layers.querySelector('b');
-    const title = `BUTCH · ${phase.form === 'BUTCH' ? 'CLERK' : phase.form} · ${D().label}`;
-    if (layerTitle.textContent !== title) layerTitle.textContent = title;
+    const label = `BUTCH · ${phase.form === 'BUTCH' ? 'CLERK' : phase.form} · ${D().label}`;
+    if (layerTitle.textContent !== label) layerTitle.textContent = label;
     const row = this.layers.querySelector('.nf-layers__row');
     const key = `${this.player.hp}/${this.player.maxHp}`;
     if (row.dataset.key !== key) {
       row.dataset.key = key;
       row.innerHTML = Array.from({ length: this.player.maxHp }, (_, i) => `<i class="${i < this.player.hp ? '' : 'is-torn'}"></i>`).join('');
     }
-    const ability = this.player.respawnInv > 0
-      ? `STEADY · ${this.player.respawnInv.toFixed(1)}`
-      : this.phase === 3
-        ? `BRUSH ${this.player.color}/3 · RETURN · ${paintReturnDamage(Math.max(1, this.player.color))} · HOLD E ABSORB · HOLD R RETURN`
-        : this.phase === 1
-          ? `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'} · HOLD Q · LISTEN`
-          : this.phase === 0
-            ? `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'} · LENS · ${this.lost.lensMode === 'mouse' ? 'ON THE MOUSE (L: CIRCLE)' : 'CIRCLING YOU (MOUSE: AIM)'}`
-            : `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'}`;
+    const dashText = `SHIFT · DASH${this.player.dashCd > 0 ? ` ${this.player.dashCd.toFixed(1)}` : ' READY'}`;
+    let ability = dashText;
+    if (this.player.respawnInv > 0) ability = `STEADY · ${this.player.respawnInv.toFixed(1)}`;
+    else if (this.phase === 0 && director) ability = `${dashText} · LENS ${director.lens.aimed ? 'AIMED' : 'LEADS YOU'} · VOLLEYS ${director.stats.volleys}`;
+    else if (this.phase === 1) ability = `${dashText} · HOLD Q · LISTEN`;
+    else if (this.phase === 2 && director?.pairLeft > 0) ability = `HOLDING ONE TRUE THING · ${director.pairLeft.toFixed(1)}`;
+    else if (this.phase === 3) ability = `BRUSH ${this.player.color}/3 · RETURN ${paintReturnDamage(Math.max(1, this.player.color))}${this.player.color ? ` · HEAVY ${Math.round(this.player.color * 7)}%` : ''} · ${dashText}`;
     const small = this.layers.querySelector('small');
     if (small.textContent !== ability) small.textContent = ability;
+    // The one hint line (only while a phase teaches, or at the finish).
+    if (this.mode === 'play' && !this.transition && director) this.hint(director.hint(this.player, { mouse: this.lost.lensMode === 'mouse' }) || '');
     // bell meter
-    if (this.phase === 1 && this.bell.arena) {
-      const arena = this.bell.arena;
+    if (this.phase === 1 && director?.arena) {
+      const arena = director.arena;
       const lineStates = {};
       ['amber', 'teal', 'rose'].forEach((line) => {
         const nodes = BELL_ARENA.nodes.filter((node) => node.line === line).map((node) => arena.timetable.nodeStatus(node.id));
         lineStates[line] = nodes.some((node) => node.powering) ? 'powering' : nodes.some((node) => node.queued) ? 'queued' : 'idle';
       });
       const preview = this.bell.listening ? arena.preview() : null;
+      const lane = director.announced();
       const next = arena.plan;
-      const text = this.bell.held
-        ? 'THE BELL WAITS · CROSS AND PUNCH HIM'
-        : preview
+      const text = preview
         ? `LISTENING · ${preview.machines.filter((c) => c.to === 'on').map((c) => MACHINE_NAMES[c.machineId]).join(' · ') || 'NOTHING QUEUED'}`
-        : `NEXT BELL · HE STEPS ${next.lane.toUpperCase()}${next.beamLanes.length ? ` · BEAMS ${next.beamLanes.map((lane) => lane.toUpperCase()).join('+')}` : ''}`;
+        : director.onTheBellOpen ? 'ON THE BELL · PUNCH NOW'
+          : lane ? `NEXT BELL · HE STEPS ${lane.toUpperCase()}${next.beamLanes.length ? ` · BEAMS ${next.fullSweep ? 'ALL THREE' : next.beamLanes.map((l) => l.toUpperCase()).join('+')}` : ''}`
+            : 'HE CALLS HIS LANE LATE · WATCH THE BELL';
       this.bellMeter.update({ phase: arena.bellPhase(), msToBell: arena.msToBell(), lineStates, text, listening: this.bell.listening });
     }
     this.updateWorldTags();
@@ -3794,25 +3392,25 @@ class SpectacleBattle {
   updateWorldTags() {
     this.tags.begin();
     const p = this.player;
-    if (this.mode === 'play' && !this.transition && !this.dialoguePause && !this.worldVeiled) {
+    const director = this.fight;
+    if (this.mode === 'play' && !this.transition && !this.dialoguePause && !this.worldVeiled && director) {
       if (this.phase === 0) {
-        const closest = this.lost.cases.filter((item) => item.landed && !item.returned)
-          .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
-        const caseTags = [];
-        this.lost.cases.forEach((item) => {
-          if (!item.landed || item.returned) return;
-          const near = item === closest && Math.hypot(item.x - p.x, item.z - p.z) <= CASE_REACH;
-          if (!near && !item.revealed) return;
-          const pt = this.screenPoint(item.x, 2.2, item.z);
-          if (!pt) return;
-          if (item.revealed && near) caseTags.push({ text: '<kbd>E</kbd> · RETURN', x: pt.x, y: pt.y, priority: 2 });
-          else if (item.revealed) caseTags.push({ text: escapeHtml(item.claim), x: pt.x, y: pt.y, dim: true });
-          else caseTags.push({ text: 'LENS · READ THE TAG', x: pt.x, y: pt.y, dim: true, priority: near ? 1 : 0 });
-        });
-        // Never one tag over another (the prompt keeps its place).
-        spreadWorldTags(caseTags).forEach((tag) => this.tags.tag(tag.text, tag.x, tag.y, { dim: Boolean(tag.dim) }));
-      } else if (this.phase === 1 && this.bell.arena) {
-        const arena = this.bell.arena;
+        const tags = [];
+        const objective = director.objective(p);
+        for (const c of director.cases) {
+          if (!c.claim || c.returned || c.filed) continue;
+          const pt = this.screenPoint(c.x, 2.2, c.z);
+          if (!pt) continue;
+          const near = Math.hypot(c.x - p.x, c.z - p.z) <= LOST_CASE_REACH;
+          const read = c.landed && Math.hypot(c.x - director.lens.x, c.z - director.lens.z) <= director.lens.radius;
+          if (!c.landed) tags.push({ text: 'CLAIM · STAND BY ITS RING', x: pt.x, y: pt.y, dim: true });
+          else if (read && near) tags.push({ text: '<kbd>E</kbd> · RETURN', x: pt.x, y: pt.y, priority: 2 });
+          else if (read) tags.push({ text: escapeHtml(this.entityViews.get(c.id)?.art?.claim ?? CLAIMS[c.serial % CLAIMS.length]), x: pt.x, y: pt.y, dim: true });
+          else tags.push({ text: 'LENS · READ THE CLAIM', x: pt.x, y: pt.y, dim: true, priority: objective.caseId === c.id ? 1 : 0 });
+        }
+        spreadWorldTags(tags).forEach((tag) => this.tags.tag(tag.text, tag.x, tag.y, { dim: Boolean(tag.dim) }));
+      } else if (this.phase === 1 && director.arena) {
+        const arena = director.arena;
         const nearest = arena.nearestNode(p.x, p.z);
         BELL_ARENA.nodes.forEach((node) => {
           const status = arena.timetable.nodeStatus(node.id);
@@ -3820,28 +3418,48 @@ class SpectacleBattle {
           if (!isNear && !status.queued) return;
           const pt = this.screenPoint(node.x, 2.5, node.z);
           if (!pt) return;
-          // a queued lamp says so even up close: SPACE there adds nothing
           this.tags.tag(isNear && !status.queued ? `<kbd>E</kbd> · ${node.label}` : `${node.label} · QUEUED`, pt.x, pt.y, { color: LINE_CSS[node.line], queued: status.queued, dim: !isNear });
         });
-        const exposure = arena.exposure;
-        if (exposure && arena.onFrontPlatform(p.z)) {
-          const pt = this.screenPoint(LANE_X[exposure.lane], 2.4, ARENA.minZ + 0.6);
-          if (pt) this.tags.tag(laneOf(p.x) === exposure.lane ? '<kbd>E</kbd> · RETURN THE LIGHT' : `STEP INTO THE ${exposure.lane.toUpperCase()} LANE`, pt.x, pt.y);
+        const lit = director.exposureLit();
+        if (lit && !lit.punched && arena.onFrontPlatform(p.z)) {
+          const pt = this.screenPoint(LANE_X[lit.lane], 2.4, ARENA.minZ + 0.6);
+          if (pt) this.tags.tag(laneOf(p.x) === lit.lane ? '<kbd>E</kbd> · RETURN THE LIGHT' : `STEP INTO THE ${lit.lane.toUpperCase()} LANE`, pt.x, pt.y);
         }
-        const nextPt = this.screenPoint(LANE_X[arena.plan.lane], 1.1, ARENA.minZ + 0.9);
-        if (nextPt) this.tags.tag('NEXT STOP', nextPt.x, nextPt.y, { color: LINE_CSS.rose, dim: true });
+        const lane = director.announced();
+        if (lane) {
+          const nextPt = this.screenPoint(LANE_X[lane], 1.1, ARENA.minZ + 0.9);
+          if (nextPt) this.tags.tag('NEXT STOP', nextPt.x, nextPt.y, { color: LINE_CSS.rose, dim: true });
+        }
+      } else if (this.phase === 2) {
+        const tags = [];
+        for (const t of director.truths) {
+          if (t.state !== 'ready' && t.state !== 'descending') continue;
+          const pt = this.screenPoint(t.x, 2.9, t.z);
+          if (!pt) continue;
+          const near = Math.hypot(t.x - p.x, t.z - p.z) <= ECHO_TRUTH_REACH;
+          tags.push({ text: `${near ? '<kbd>E</kbd> · ' : ''}${escapeHtml(t.text)}`, x: pt.x, y: pt.y, priority: near ? 2 : 1 });
+        }
+        for (const a of director.attacks) {
+          if (!a.meta?.text || a.state !== 'tele') continue;
+          const pt = this.screenPoint(a.x, 1.4, a.z);
+          if (pt) tags.push({ text: escapeHtml(a.meta.text), x: pt.x, y: pt.y, dim: true });
+        }
+        if (director.frontLit) {
+          const pt = this.screenPoint(this.boss.x * 0.5, 1.8, ARENA.minZ + 1.2);
+          if (pt) tags.push({ text: p.z <= ECHO_FRONT_EDGE_Z ? '<kbd>E</kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · <kbd>E</kbd>', x: pt.x, y: pt.y, priority: 3 });
+        }
+        spreadWorldTags(tags).forEach((tag) => this.tags.tag(tag.text, tag.x, tag.y, { dim: Boolean(tag.dim) }));
       } else if (this.phase === 3) {
-        const nearest = this.findNearestPaint();
-        if (nearest && this.player.color < 3) {
-          const pt = this.screenPoint(nearest.x, 1.6, nearest.z);
-          if (pt) this.tags.tag('HOLD <kbd>E</kbd> · ABSORB', pt.x, pt.y);
+        const wet = director.puddles.filter((pd) => pd.wetLeft > 0 && !pd.taken)
+          .sort((a, b) => Math.hypot(a.x - p.x, a.z - p.z) - Math.hypot(b.x - p.x, b.z - p.z))[0];
+        if (wet && this.player.color < 3) {
+          const pt = this.screenPoint(wet.x, 1.4, wet.z);
+          if (pt) this.tags.tag(Math.hypot(wet.x - p.x, wet.z - p.z) <= PAINT_ABSORB_REACH ? 'HOLD <kbd>E</kbd> · ABSORB' : 'WET COLOUR', pt.x, pt.y, { dim: Math.hypot(wet.x - p.x, wet.z - p.z) > PAINT_ABSORB_REACH });
         }
-      } else if (this.phase === 2 && this.echo.stage === 'window') {
-        const pt = this.screenPoint(this.boss.x * 0.5, 1.8, ARENA.minZ + 1.2);
-        // The E prompt stands at the lit front edge (round 6, item 18), the
-        // whole sentence for the first few windows.
-        const full = this.echoSaid < ECHO_FULL_PROMPT_USES;
-        if (pt) this.tags.tag(this.inEchoStrikeZone() ? (full ? '<kbd>E</kbd> · SAY IT TO HIS FACE' : '<kbd>E</kbd> · SAY IT') : (full ? 'THE FRONT EDGE · COME HERE · THEN <kbd>E</kbd>' : 'THE FRONT EDGE · <kbd>E</kbd>'), pt.x, pt.y);
+        if (director.open && this.player.color > 0) {
+          const pt = this.screenPoint(p.x, 3.2, p.z);
+          if (pt) this.tags.tag('HE IS OPEN · HOLD <kbd>R</kbd>', pt.x, pt.y);
+        }
       }
     }
     this.tags.end();
@@ -3859,6 +3477,7 @@ class SpectacleBattle {
     const wall = Math.max(0, (now - this.lastFrame) / 1000);
     this.lastFrame = now;
     this.sampleQuality(wall);
+    this.pollPad();
     if (globalThis.NIGHTFALL_PAUSED) { this.render(0); return; }
     // Game time follows the wall clock down to 10 fps (alpha round 4: the
     // old 33 ms cap played a 15 fps laptop at half speed), in substeps of at
@@ -3921,7 +3540,6 @@ class SpectacleBattle {
     this.phase = THREE.MathUtils.clamp(Math.round(index), 0, 3);
     this.boss.phaseRound = 0;
     this.clearHazards();
-    this.clearLostProperty();
     this.setWorld(this.phase);
     this.setConductorWorld(this.phase, true);
     this.puppet?.setForm(this.phase, true);
@@ -3956,7 +3574,7 @@ const game = new SpectacleBattle(document.querySelector('#game'));
 // Every control in the chapter (finaleControls.js, the unified keys). The
 // shell's per-stage list hears the current movement from the
 // 'nightfall:controls-stage' event (SpectacleBattle.setControlsStage).
-installPauseMenu({
+game.pauseMenu = installPauseMenu({
   checkpointId: 'chapter-6-start',
   controls: [...FINALE_ALL_CONTROLS.map((row) => [...row])],
 });
@@ -4060,31 +3678,28 @@ if (game.quality.tier === 'low') game.applyLowQuality('setting');
 if (DEV_MODE) {
   window.__finalBoss = game;
   window.render_game_to_text = () => {
-    const arena = game.bell.arena;
+    const director = game.fight;
     return JSON.stringify({
       chapter: 'chapter06-final-boss', mode: game.mode, difficulty, quality: { ...game.quality.snapshot(), pixelRatio: game.renderer.getPixelRatio(), shadows: game.renderer.shadowMap.enabled, antialias: Boolean(game.renderer.getContextAttributes()?.antialias) }, phase: game.phase, phaseTitle: PHASES[game.phase].title, world: PHASES[game.phase].world,
       music: music.qa(), assetsReady: game.assetsReady, assetErrors: game.assetErrors,
       player: { x: +game.player.x.toFixed(2), y: +game.player.y.toFixed(2), z: +game.player.z.toFixed(2), hp: game.player.hp, maxHp: game.player.maxHp, grounded: game.player.grounded, color: game.player.color, respawns: game.player.respawns, inv: +game.player.inv.toFixed(2), action: game.phase === 2 ? game.butchActionState : game.puppet?.action },
-      boss: { hp: game.boss.hp, maxHp: game.boss.maxHp, phaseStartHp: game.boss.phaseStartHp, x: +game.boss.x.toFixed(2), exposed: game.boss.exposed > 0, lastDamageCause: game.boss.lastDamageCause ?? null, lastDamage: game.boss.lastDamage ?? null, form: game.conductorRoot.userData.form, phaseRound: game.boss.phaseRound },
+      boss: { hp: +game.boss.hp.toFixed(2), maxHp: game.boss.maxHp, phaseStartHp: game.boss.phaseStartHp, x: +game.boss.x.toFixed(2), exposed: game.boss.exposed > 0, lastDamageCause: game.boss.lastDamageCause ?? null, lastDamage: game.boss.lastDamage ?? null, form: game.conductorRoot.userData.form },
+      fight: director ? { movement: director.id, ...director.snapshot(), stats: director.stats, runnerDeaths: game.runner?.deaths ?? 0, runnerHits: game.runner?.hits ?? 0, time: +(game.runner?.time ?? 0).toFixed(1) } : null,
       deaths: [0, 1, 2, 3].map((m) => game.deaths.deaths(m)), storyOffer: Boolean(game.storyOffer),
-      lost: { lens: { x: +game.lost.lens.x.toFixed(2), z: +game.lost.lens.z.toFixed(2), mode: game.lost.lensMode }, tutorial: game.lost.tutorial, returned: game.lost.returned, cases: game.lost.cases.map((c) => ({ claim: c.claim, x: +c.x.toFixed(2), z: +c.z.toFixed(2), landed: c.landed, revealed: c.revealed, tutorial: c.tutorial })), trains: game.lost.trains.map((t) => ({ seam: t.seam, ghost: t.ghost, running: t.running, revealed: Boolean(t.revealed), progress: +t.progress.toFixed(2) })) },
-      bell: arena ? { ...arena.snapshot(), tutorial: game.bell.tutor.stage, held: game.bell.held, listening: game.bell.listening, falls: game.bell.falls, returnPlanks: arena.returnPlanks(), stranded: arena.stranded(game.player.z) } : null,
-      echo: {
-        stage: game.echo.stage, clock: +game.echo.clock.toFixed(2), window: +game.echo.window.toFixed(2), open: game.debate.isOpen, exchange: game.debate.current?.id ?? null, opened: game.debate.opened, history: game.debate.history(), lastOutcome: game.echo.lastOutcome,
-        said: game.echoSaid, landed: game.debate.landed(),
-        answer: game.debate.isOpen ? { step: game.debate.step, picked: [...game.debate.current.picked], struck: [...game.debate.current.struck], struckReplies: [...game.debate.current.struckReplies], returning: game.debate.current.returning, facts: game.debate.current.facts.map((entry) => entry.id) } : null,
-      },
-      controlsStage: game.controlsStage,
-      paint: { tutorial: game.paintTutorial?.stage, lastReturn: game.lastPaintReturn ?? null, hold: { active: game.paintHold.active, button: game.paintHold.button, completed: game.paintHold.completed } },
+      controlsStage: game.controlsStage, bot: Boolean(game.bot), pad: Boolean(game.pad),
+      visuals: { telegraphs: game.fightVisuals.count(), views: game.entityViews.size, projectiles: game.projectiles.length, effects: game.effects.length },
       transition: game.transition ? { kind: game.transition.kind, next: PHASES[game.transition.nextPhase].world, progress: +(game.transition.time / game.transition.duration).toFixed(2) } : null,
-      ui: { veiled: game.worldVeiled, titleCard: Boolean(game.hud.querySelector('.nf-title-card')), storyOfferWhat: game.hud.querySelector('.nf-story-offer__what')?.textContent ?? null, toast: game.lastToast ?? null, hint: game.hintText ?? '', tags: game.tags.texts(), caption: game.caption.hidden ? null : game.caption.textContent.trim().slice(0, 200), voice: game.voiceState, lastHit: game.lastHit ?? null, lastDeath: game.lastDeath ?? null, deathCard: game.deathCardEl.classList.contains('show') ? game.deathCardEl.textContent : null },
-      hazards: game.hazards.map((h) => ({ type: h.type, x: +(h.x ?? 0).toFixed(2), z: +(h.z ?? 0).toFixed(2), landed: Boolean(h.landed) })),
+      ui: { veiled: game.worldVeiled, titleCard: Boolean(game.hud.querySelector('.nf-title-card')), storyOfferWhat: game.hud.querySelector('.nf-story-offer__what')?.textContent ?? null, toast: game.lastToast ?? null, hint: game.hintText ?? '', tags: game.tags.texts(), caption: game.caption.hidden ? null : game.caption.textContent.trim().slice(0, 200), voice: game.voiceState, lastHit: game.lastHit ?? null, lastDeath: game.lastDeath ?? null, deathCard: game.deathCardEl.classList.contains('show') ? game.deathCardEl.textContent : null, ticketState: game.ticketBar.root.querySelector('.nf-ticket-bar__state')?.textContent ?? '', ticketLabel: game.ticketBar.root.querySelector('.nf-ticket-bar__stub span')?.textContent ?? '' },
       rescue: { stage: game.mode === 'departure' ? 'night-service-arrival' : game.mode === 'cinematic' ? 'train-departure' : null, boardable: Boolean(game.departureBoardable) },
     });
   };
   window.advanceTime = (ms) => {
     const steps = Math.max(1, Math.round(ms / (1000 / 60)));
-    for (let i = 0; i < steps; i += 1) game.update(1 / 60);
+    for (let i = 0; i < steps; i += 1) {
+      if (game.bot && game.mode === 'menu') break;
+      game.update(1 / 60);
+      game.updateHud(1 / 60);
+    }
     game.render();
   };
   window.setFinalBossPreviewPhase = (phase) => { if (game.mode === 'play') { game.previewPhase(phase); game.render(); } };
@@ -4095,43 +3710,42 @@ if (DEV_MODE) {
     game.render();
   };
   window.setFinalBossPlayerInvulnerable = (enabled = true) => { game.player.inv = enabled ? 9999 : 0; game.player.hp = game.player.maxHp; game.render(); };
+  // Tear layers as if hit (respects nothing: a QA shortcut to the checkpoint).
   window.damageFinalBossPlayer = (amount = 1) => {
-    if (game.mode !== 'play') return;
+    if (game.mode !== 'play' || !game.runner) return;
     for (let i = 0; i < Math.max(1, Math.round(Number(amount) || 1)); i += 1) {
       game.player.inv = 0; game.player.respawnInv = 0;
-      const before = game.player.respawns;
-      game.takeHit();
-      if (game.player.respawns !== before) break;
+      const events = game.runner.hurt({ source: 'hit' }) ?? [];
+      game.onFightEvents(events);
+      if (events.some((e) => e.type === 'death')) break;
     }
     game.render();
   };
   window.damageFinalBoss = (amount = 25) => { if (game.mode === 'play') { game.hitBoss(amount); game.render(); } };
-  window.setFinalBossLens = (x, z) => { game.lost.lensTarget = { x: Number(x), z: Number(z) }; game.lost.lensMode = 'mouse'; game.lost.lastPointer = game.elapsed; game.lost.lens = { x: Number(x), z: Number(z) }; game.render(); };
-  // E / Enter (the action key) and Space (jump only).
+  window.setFinalBossLens = (x, z) => { game.lost.lensMode = 'mouse'; game.lost.pointer = null; game.lost.lensTarget = { x: Number(x), z: Number(z) }; game.qaAim = { x: Number(x), z: Number(z) }; game.render(); };
+  // E / Enter (the action key), Space (jump only), Shift (dash).
   window.finalBossPunch = () => { game.actAction(); game.render(); };
   window.finalBossAct = () => { game.actAction(); game.render(); };
   window.finalBossJump = () => { game.jumpKey(); game.render(); };
-  // Movement III's answer board: a fact (0-based), the confirm, the framing.
-  window.finalBossPickFact = (index) => { game.pickFact(Number(index)); game.render(); };
-  window.finalBossConfirm = () => { game.confirmEcho(); game.render(); };
-  window.finalBossAnswer = (index) => { game.chooseAnswer(Number(index)); game.render(); };
-  // The right facts for the open exchange (QA only).
-  window.finalBossTrueFacts = () => (game.debate.current?.facts ?? []).map((entry, index) => (entry.holds ? index : -1)).filter((index) => index >= 0);
+  window.finalBossDash = () => { game.dash(); game.render(); };
+  // Movement IV's holds: 'absorb' (E) or 'return' (R), on or off.
+  window.finalBossHold = (kind = 'absorb', on = true) => { const code = kind === 'return' ? 'KeyR' : 'KeyE'; if (on) game.keys.add(code); else game.keys.delete(code); };
   window.finalBossHoldListen = (on = true) => { if (on) game.keys.add('KeyQ'); else game.keys.delete('KeyQ'); };
-  window.finalBossKeyPaint = (button = 2, holdMs = 800) => { if (game.mode === 'play' && game.phase === 3) { game.startKeyboardPaint(Number(button)); game.advancePaintHold(Number(holdMs)); game.releasePaintPointer({ button: Number(button) }); game.render(); } };
-  window.spawnFinalBossCase = (x, z) => { const item = game.spawnClaimCase({ x: Number(x), z: Number(z) }); game.render(); return Boolean(item); };
-  window.spawnFinalBossTrain = (seam = 'z', ghost = false, dir = 1) => { game.spawnSeamTrain({ seam, ghost: Boolean(ghost), dir: Number(dir) }); game.render(); };
-  window.setFinalBossPaintCharge = (amount = 3) => { if (game.mode === 'play' && game.phase === 3) { game.player.color = Math.max(0, Math.min(3, Number(amount) || 0)); game.render(); } };
-  window.rightClickFinalBossPigment = (x, z, holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 2, elapsed: 0, point: new THREE.Vector3(Number(x), 0, Number(z)), target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 2 }); game.render(); } };
-  window.leftClickFinalBossPaint = (holdMs = 800, release = true) => { if (game.mode === 'play' && game.phase === 3) { game.paintHold = { active: true, button: 0, elapsed: 0, point: null, target: null, completed: false }; game.updatePaintTransfer(0); game.advancePaintHold(Number(holdMs)); if (release) game.releasePaintPointer({ button: 0 }); game.render(); } };
+  window.finalBossMove = (dx = 0, dz = 0) => { ['KeyA', 'KeyD', 'KeyW', 'KeyS'].forEach((code) => game.keys.delete(code)); if (dx < 0) game.keys.add('KeyA'); if (dx > 0) game.keys.add('KeyD'); if (dz < 0) game.keys.add('KeyW'); if (dz > 0) game.keys.add('KeyS'); };
   window.triggerFinalBossRescue = () => { game.phase = 3; game.setWorld(3); game.boss.hp = 10; game.startRescueSequence(); game.render(); };
   window.triggerFinalBossWorldFall = (nextPhase = Math.min(3, game.phase + 1)) => { if (game.mode === 'play' && nextPhase > game.phase) game.startWorldTransition(nextPhase); };
   window.triggerFinalBossVerified = () => { if (game.mode !== 'play') return; game.phase = 1; game.setWorld(1); game.puppet?.setForm(1, true); game.startWorldTransition(2); game.render(); };
-  window.finishFinalBossTutorial = () => {
-    if (game.phase === 0) { game.clearLostProperty(); game.lost.tutorial = 'done'; game.hint(''); game.boss.attackClock = 0.2; }
-    if (game.phase === 1 && game.bell.arena) { game.bell.tutor.skip(); game.hint(''); game.bell.arena.setBeams(true); }
-    if (game.phase === 3) { game.clearHazards(); game.paintTutorial.stage = 'complete'; game.boss.exposed = 0; game.boss.attackClock = 0.3; }
-    game.render();
+  // Skip the phase's teaching beat, or jump to a phase (0-based) of the
+  // current movement.
+  window.finishFinalBossTutorial = () => { game.fight?.skipTeach?.(); game.hint(''); game.render(); };
+  window.setFinalBossFightPhase = (index) => { if (game.mode !== 'play' || !game.fight) return; game.clearHazards(); game.fight.jumpToPhase(Number(index)); game.syncBossHp(); game.applyPhaseLook(Number(index)); game.render(); };
+  window.setFinalBossDifficulty = (id) => { setDifficulty(id); game.runner?.setDifficulty(difficulty); };
+  // The QA bot (fightBot.js) plays the current movement and the departure.
+  window.finalBossBot = async (on = true, skill = 'competent', seed = 5) => {
+    if (!on) { game.bot = null; return false; }
+    const { createFightBot } = await import('./fightBot.js');
+    game.bot = createFightBot({ skill, seed });
+    return true;
   };
   window.showFinalBossEndingCard = () => showNormalEndingCard();
 }

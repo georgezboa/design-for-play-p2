@@ -4,9 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
 import { MAX_FRAME_SECONDS, MAX_STEP_SECONDS, frameSteps } from '../../src/chapters/finalBoss/finaleQuality.js';
-import {
-  BELL_ARENA, BELL_TUTORIAL_HOLD_S, BELL_TUTORIAL_TIME_SCALE, MACHINE_NAMES, createBellArena, createBellTutorial,
-} from '../../src/chapters/finalBoss/finaleModel.js';
+import { BELL_ARENA, MACHINE_NAMES, createBellArena } from '../../src/chapters/finalBoss/finaleModel.js';
 
 const source = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 const sum = (steps) => steps.reduce((total, step) => total + step, 0);
@@ -39,56 +37,11 @@ describe('frame-rate independence', () => {
   });
 });
 
-describe('Movement II teaches one step per bell', () => {
-  it('bridge, then the rose signal in his lane, then the punch with the bell waiting, then both, then the beams', () => {
-    const t = createBellTutorial();
-    assert.equal(t.stage, 'bridge');
-    assert.match(t.hint(), /AMBER/);
-    assert.equal(t.queued({ line: 'amber' }), 'bridge-wait');
-    assert.equal(t.bridgeOut(), 'lamp');
-    assert.match(t.hint({ lane: 'east' }), /ROSE<\/kbd> SIGNAL IN THE EAST LANE/);
-    assert.equal(t.queued({ line: 'rose', lane: 'east', nextLane: 'east' }), 'lamp-wait');
-    const help = t.exposed({ bridgeOut: false });
-    assert.deepEqual(help, { hold: true, plank: true, missingBridge: false }, 'the first lit moment lays a plank and holds the bell');
-    assert.equal(t.stage, 'punch');
-    assert.equal(t.holding({ lit: true, dt: 1 }), true);
-    assert.match(t.hint({ litLane: 'east', onFront: false }), /THE BELL WAITS/);
-    assert.equal(t.hit(), 'combo');
-    assert.equal(t.beams, false);
-    assert.match(t.hint({ lane: 'west' }), /BOTH BEFORE ONE BELL .* \(WEST\)/);
-    assert.deepEqual(t.exposed({ bridgeOut: false }), { hold: false, plank: false, missingBridge: true });
-    assert.equal(t.hit(), 'done');
-    assert.equal(t.beams, true);
-    assert.equal(t.gapIsRailing, false);
-    assert.equal(t.hint(), '');
-  });
-
-  it('a signal in the wrong lane says so at once, and a bell that passes names his new lane', () => {
-    const t = createBellTutorial({ stage: 'lamp' });
-    t.queued({ line: 'rose', lane: 'west', nextLane: 'centre' });
-    assert.equal(t.stage, 'lamp');
-    assert.match(t.hint({ lane: 'centre' }), /THAT IS THE WEST SIGNAL · HE STEPS CENTRE/);
-    t.queued({ line: 'rose', lane: 'centre', nextLane: 'centre' });
-    assert.equal(t.stage, 'lamp-wait');
-    // The bell rings and he was not lit: back to the signal step, naming
-    // the lane he steps into next (never "QUEUED" for 30 s).
-    assert.equal(t.bell({ exposed: false }), 'lamp');
-    assert.doesNotMatch(t.hint({ lane: 'east' }), /QUEUED/);
-    assert.match(t.hint({ lane: 'east' }), /EAST LANE/);
-  });
-
-  it('the bell runs slower while learning, never holds forever, and what was learned survives a death', () => {
-    assert.ok(BELL_TUTORIAL_TIME_SCALE.bridge < 1 && BELL_TUTORIAL_TIME_SCALE.done === 1);
-    const t = createBellTutorial({ stage: 'punch' });
-    let held = 0;
-    while (t.holding({ lit: true, dt: 0.5 })) held += 0.5;
-    assert.ok(held < BELL_TUTORIAL_HOLD_S + 1);
-    assert.equal(t.afterDeath(), 'lamp');
-    assert.equal(createBellTutorial({ stage: 'combo' }).afterDeath(), 'combo');
-    assert.equal(createBellTutorial({ stage: 'bridge-wait' }).afterDeath(), 'bridge');
-    assert.equal(createBellTutorial().gapIsRailing, true, 'no falls into the gap while learning');
-  });
-
+// Round 11: Movement II teaches by doing in its first phase (no beams until
+// the first punch lands, one hint at a time); movements/onTheBell.js has it
+// and round11Movements.test.mjs drives it. The arena keeps its hold and
+// its planks.
+describe('Movement II: the bell arena', () => {
   it('a held bell stands still, but a plank laid for the learner still crosses', () => {
     const arena = createBellArena({ seed: 3, beams: false });
     const before = arena.msToBell();
@@ -174,10 +127,10 @@ describe('after an ending, the journey says it is complete', () => {
 });
 
 describe('Movement III and the departure', () => {
-  it('the square freezes while a deflection is read, and the exposed pose is a stagger, never the kneel', async () => {
+  it('the argument never freezes the square (round 11: it is fought), and the exposed pose is a stagger, never the kneel', async () => {
     const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
-    assert.match(battle, /this\.dialoguePause = true;\s*this\.echo\.stage = 'deflected';/);
-    assert.match(battle, /if \(this\.phase === 2 && this\.echo\.stage === 'deflected'\) this\.updateEchoCity\(dt\);/);
+    assert.doesNotMatch(battle, /this\.echo\.stage = 'deflected'/);
+    assert.match(battle, /Movement III speaks while it fights: lines queue, never pause the square\./);
     assert.doesNotMatch(battle, /playConductorAction\('Fixing_Kneeling'/);
     assert.match(battle, /this\.playConductorAction\('Hit_Chest', true\);/);
   });
@@ -187,7 +140,7 @@ describe('Movement III and the departure', () => {
     assert.match(battle, /this\.setPortalWorld\(nextPhase\);/);
     assert.match(battle, /this\.hud\.classList\.add\('is-cinematic'\);/);
     assert.match(battle, /\/\/ locomotive \(x 7\.6 … 13\)/);
-    assert.match(battle, /RETURN · \$\{paintReturnDamage/);
+    assert.match(battle, /RETURN \$\{paintReturnDamage\(Math\.max\(1, this\.player\.color\)\)\}/);
     assert.doesNotMatch(battle, /lastPointer < 3\.5/);
   });
 });
