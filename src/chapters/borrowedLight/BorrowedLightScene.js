@@ -224,6 +224,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     // few punches, then whenever Butch stands at it a moment.
     this.lesson = createLesson();
     this.punchUses = 0;
+    // the kinds of machine he has punched a box for (the cause card: causeCard.js showCard)
+    this.kindsPunched = new Set();
     this.cardDwell = 0;
     this.cardFor = null;
     // Each timed machine's last remaining ms, for its closing ticks.
@@ -1154,7 +1156,11 @@ export class BorrowedLightScene extends Phaser.Scene {
         else if (res.result === 'renewed') this.floatHint(node.id, HINTS.renewed, color.css, 1600);
         else if (res.inBells === 2) this.floatHint(node.id, HINTS.waitsABell(node.phase), color.css, 2400);
         if (node.phase) this.flags.phasePunched = true;
-        if (res.result === 'queued' || res.result === 'caught') this.punchUses += 1;
+        if (res.result === 'queued' || res.result === 'caught') {
+          this.punchUses += 1;
+          const kind = machineById(node.machine)?.kind;
+          if (kind) this.kindsPunched.add(kind);
+        }
         // Listen is taught by a tag over Butch from the second punch on
         // (updatePrompts), until he has listened once.
         if (this.flags.firstPunch) this.flags.listenHinted = true;
@@ -2980,9 +2986,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (node) {
       const head = nodeHead(node);
       // Round 6 · walking up to a box shows what it does, large: for the
-      // first few punches, and whenever Butch stands at it a moment.
+      // first two punches, and once for each new kind of machine (round 11).
       const card = action?.kind === 'node' ? this.cardModel(node) : null;
-      if (card && showCard({ uses: this.punchUses, dwellMs: this.cardDwell })) {
+      const kind = machineById(node.machine)?.kind;
+      if (card && showCard({ uses: this.punchUses, newKind: Boolean(kind) && !this.kindsPunched.has(kind) })) {
         const anchor = machineAnchor(machineById(node.machine));
         this.cardShown = card;
         this.cardAt = { headX: head.x, headY: head.y, side: anchor.x >= node.x ? 1 : -1, view: this.view };

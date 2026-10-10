@@ -26,6 +26,7 @@
 import { audioFocus } from './audioFocus.js';
 import { SOUND_TAG_TEXT, createAutoplayGate } from './autoplayGate.js';
 import { assetUrl } from './assetUrl.js';
+import { acquireAudio, onUserGesture, releaseAudio } from './audioUnlock.js';
 import { nativeRequestAnimationFrame } from '../shell/framePacing.js';
 
 const DEFAULTS = {
@@ -106,19 +107,31 @@ function musicTarget(entry) {
 // source changes) are ignored, as before.
 function startElement(entry) {
   let promise;
+  const attemptedAt = nowMs();
   try { promise = entry.el.play(); } catch (error) { promise = Promise.reject(error); }
   if (!promise?.then) { gate.played(); return; }
   promise.then(() => {
     gate.played();
     setSoundTag(false);
   }, (error) => {
-    if (!gate.rejected(error) || current !== entry) return;
+    // Round 11 (Safari): a refusal of a play() made after the last gesture
+    // means the page needs another one; it re-blocks and shows the tag
+    // instead of staying silent (autoplayGate.js).
+    if (!gate.rejected(error, attemptedAt) || current !== entry) return;
     for (const r of [...ramps]) if (r.el === entry.el) ramps.delete(r);
     current = null;
-    entry.el.src = '';
+    dropElement(entry);
     pending = { id: entry.id, options: registry.get(entry.id) };
     setSoundTag(true);
   });
+}
+
+// An entry's element goes back to the pool (audioUnlock.js), its listeners off.
+function dropElement(entry) {
+  if (!entry?.el) return;
+  if (entry.onEnded) entry.el.removeEventListener?.('ended', entry.onEnded);
+  entry.onEnded = null;
+  releaseAudio(entry.el);
 }
 
 // The first real key or click: sound is allowed from now on, and a track
@@ -126,7 +139,7 @@ function startElement(entry) {
 // also called by a cutscene's own key handler (gameFlow.js), which keeps its
 // skip keys from ever reaching the listeners below.
 function userGesture() {
-  gate.gesture();
+  gate.gesture(nowMs());
   setSoundTag(false);
   if (pending) {
     const call = pending;
@@ -135,12 +148,9 @@ function userGesture() {
   }
 }
 
-function installUnlock() {
-  if (typeof window === 'undefined') return;
-  window.addEventListener('keydown', userGesture, { passive: true });
-  window.addEventListener('pointerdown', userGesture, { passive: true });
-}
-installUnlock();
+// Every key or click, in the capture phase (audioUnlock.js), before any
+// page handler can swallow it; the pool's elements are unlocked first.
+onUserGesture(() => userGesture());
 if (typeof window !== 'undefined') {
   window.addEventListener('nightfall:settings', () => {
     if (current) fadeTo(current.el, musicTarget(current), 0.08);
@@ -211,8 +221,10 @@ function play(id, options = {}) {
   pending = null;
 
   const prev = current;
-  const el = new Audio(assetUrl(opts.src));
-  el.dataset.nightfallAudioChannel = 'music';
+  // a pooled element, unlocked at an earlier gesture (Safari: audioUnlock.js)
+  const el = acquireAudio() ?? new Audio();
+  el.src = assetUrl(opts.src);
+  if (el.dataset) el.dataset.nightfallAudioChannel = 'music';
   el.loop = opts.loop;
   el.volume = 0;
   el.preload = 'auto';
@@ -228,14 +240,16 @@ function play(id, options = {}) {
   };
 
   if (opts.then && !opts.loop) {
-    el.addEventListener('ended', () => {
+    const entry = current;
+    entry.onEnded = () => {
       // Only chain if nothing else took over in the meantime.
       if (current && current.id === id && current.then) {
         current.onThen?.();
         const follow = registry.get(current.then) || current.thenOptions;
         if (follow) play(current.then, follow);
       }
-    });
+    };
+    el.addEventListener('ended', entry.onEnded);
   }
 
   const canPlay = audioFocus.isActive() && !pausedForMenu;
@@ -243,12 +257,7 @@ function play(id, options = {}) {
   if (canPlay) startElement(current);
 
   fadeTo(el, musicTarget(current), opts.fade);
-  if (prev) {
-    fadeTo(prev.el, 0, prev.outFade, () => {
-      prev.el.pause();
-      prev.el.src = '';
-    });
-  }
+  if (prev) fadeTo(prev.el, 0, prev.outFade, () => dropElement(prev));
 }
 
 // Called by narrative runtimes, not by individual dialogue lines. This keeps
@@ -268,10 +277,7 @@ function stop({ fade = 2.5 } = {}) {
   if (!current) return;
   const prev = current;
   current = null;
-  fadeTo(prev.el, 0, fade, () => {
-    prev.el.pause();
-    prev.el.src = '';
-  });
+  fadeTo(prev.el, 0, fade, () => dropElement(prev));
 }
 
 function currentId() {

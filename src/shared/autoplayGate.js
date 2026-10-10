@@ -23,6 +23,7 @@ export function isAutoplayRefusal(error) {
 
 export function createAutoplayGate({ onBlocked = () => {}, onUnlocked = () => {} } = {}) {
   let state = 'unknown';
+  let lastGestureAt = -Infinity;
   return {
     get state() { return state; },
     /** May a play() be attempted now (rather than kept pending for a gesture)? */
@@ -39,13 +40,18 @@ export function createAutoplayGate({ onBlocked = () => {}, onUnlocked = () => {}
      * A play() attempt was rejected. Returns true when it was an autoplay
      * refusal, i.e. the call should now wait for the first gesture.
      */
-    rejected(error) {
-      if (!isAutoplayRefusal(error) || state === 'allowed') return false;
+    rejected(error, attemptedAt = -Infinity) {
+      if (!isAutoplayRefusal(error)) return false;
+      // A refusal of an attempt made before the last gesture is stale: the
+      // gesture has since allowed sound. One made after it is not (Safari
+      // allows sound per element, not per page: round 11), so it blocks again.
+      if (state === 'allowed' && attemptedAt < lastGestureAt) return false;
       if (state !== 'blocked') { state = 'blocked'; onBlocked(); }
       return true;
     },
-    /** The first real key / pointer press: sound is allowed from now on. */
-    gesture() {
+    /** A real key / pointer press: sound is allowed from now on. */
+    gesture(now = 0) {
+      lastGestureAt = now;
       const wasBlocked = state === 'blocked';
       state = 'allowed';
       if (wasBlocked) onUnlocked();

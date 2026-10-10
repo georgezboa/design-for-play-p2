@@ -30,10 +30,16 @@ describe('autoplay gate', () => {
     assert.deepEqual(events, ['blocked', 'unlocked']);
   });
 
-  it('a late refusal after a gesture never re-blocks the page', async () => {
+  it('a stale refusal (an attempt from before the gesture) never re-blocks; a fresh one does (Safari, round 11)', async () => {
     const gate = createAutoplayGate();
-    gate.gesture();
-    assert.equal(gate.rejected(refusal()), false);
+    gate.gesture(100);
+    assert.equal(gate.rejected(refusal(), 50), false);
+    assert.equal(gate.state, 'allowed');
+    assert.equal(gate.rejected(refusal()), false, 'no attempt time: treated as stale');
+    assert.equal(gate.rejected(abort(), 200), false);
+    assert.equal(gate.rejected(refusal(), 200), true);
+    assert.equal(gate.state, 'blocked');
+    gate.gesture(300);
     assert.equal(gate.state, 'allowed');
     assert.equal(isAutoplayRefusal(refusal()), true);
     assert.equal(isAutoplayRefusal(abort()), false);
@@ -72,7 +78,7 @@ describe('music director autoplay', () => {
     try {
       const { music } = await import('../src/shared/musicDirector.js?autoplay-test');
       music.play('ending', { src: '/assets/music/credits.mp3' });
-      assert.equal(created.length, 1, 'the track is requested on page load, before any gesture');
+      assert.ok(created.some((a) => a.src === '/assets/music/credits.mp3'), 'the track is requested on page load, before any gesture');
       await new Promise((resolve) => setTimeout(resolve, 0));
       let qa = music.qa();
       assert.equal(qa.autoplay, 'blocked');
@@ -83,7 +89,8 @@ describe('music director autoplay', () => {
       listeners.get('keydown').forEach((fn) => fn({}));
       await new Promise((resolve) => setTimeout(resolve, 0));
       qa = music.qa();
-      assert.equal(created.length, 2, 'the gesture replays the pending call');
+      const playing = created.filter((a) => !a.paused && a.src === '/assets/music/credits.mp3');
+      assert.equal(playing.length, 1, 'the gesture replays the pending call');
       assert.equal(qa.playing, true);
       assert.equal(qa.autoplay, 'allowed');
       assert.equal(qa.soundTag, false);
@@ -91,7 +98,9 @@ describe('music director autoplay', () => {
       music.play('next', { src: '/assets/music/next.mp3' });
       await new Promise((resolve) => setTimeout(resolve, 0));
       assert.equal(music.qa().id, 'next');
-      assert.equal(created[2].paused, false);
+      assert.ok(created.some((a) => a.src === '/assets/music/next.mp3' && !a.paused));
+      // Safari (round 11): the director reuses a small pool of elements the gestures unlocked
+      assert.ok(created.length <= 4, `pooled elements, not one per track (${created.length})`);
     } finally {
       Object.entries(saved).forEach(([key, value]) => { globalThis[key] = value; });
     }

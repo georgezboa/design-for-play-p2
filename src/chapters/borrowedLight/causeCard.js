@@ -15,8 +15,10 @@
 // rule can be re-read at any box. Labels are CARD_FONT px at 1920×1080
 // (≥ 18 px on a 1280×720 window) and scale with TEXT SIZE.
 //
-// The card shows for the first TEACH_USES punches, and after that whenever
-// Butch stands at a box for DWELL_MS (walk up and look: it explains).
+// The card shows for the first TEACH_USES punches. Round 11 (George: "不要一直
+// 都有，前面两个有就行了" — after the first two it got in the way): after that
+// it comes back only once for a kind of machine he has not punched a box for
+// yet (a lift, a billboard: a new effect to explain), never again on a pause.
 
 import { HINTS } from './story.js';
 import { LINE_COLORS } from './art/palette.js';
@@ -25,7 +27,7 @@ export const CARD_FONT = 28;
 // The smallest text the card (or any round-6 world tag) may use at TEXT
 // SIZE 100: 27 px of 1920 is 18 px on a 1280×720 window.
 export const MIN_WORLD_FONT = 27;
-export const TEACH_USES = 3;
+export const TEACH_USES = 2;
 export const DWELL_MS = 700;
 export const RULE_TEXT = 'ONE PUNCH PER COLOUR';
 
@@ -103,9 +105,10 @@ export function causeCard({ node, machine, preview, status = null, msToBell = 0,
   }
 }
 
-// Show the card for the first few punches, then whenever Butch stands at a
-// box a moment (walk up and look).
-export const showCard = ({ uses = 0, dwellMs = 0 } = {}) => uses < TEACH_USES || dwellMs >= DWELL_MS;
+// Show the card for the first two punches, then only at a box whose kind of
+// machine is new to him (until he punches one). DWELL_MS is kept for callers
+// that time a pause, but no longer brings the card back.
+export const showCard = ({ uses = 0, newKind = false } = {}) => uses < TEACH_USES || newKind;
 
 /**
  * Card geometry (world px, before placing). `labelW` are the measured label

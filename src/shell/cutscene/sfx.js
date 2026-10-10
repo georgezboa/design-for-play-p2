@@ -6,6 +6,12 @@
 // without WebAudio plays the cutscene in silence.
 
 import { DEFAULT_SETTINGS, volumeForChannel } from '../saveSystem.js';
+import { holdSharedContext, sharedAudioContext } from '../../shared/audioUnlock.js';
+
+// Round 11 (Safari): every cutscene used to make its own AudioContext once
+// its paintings had loaded, outside the click that started it, and Safari
+// kept it suspended: no rail, rain or bells. They now share one context,
+// which audioUnlock.js resumes at every key or click.
 
 export const SFX_NAMES = Object.freeze(['rail', 'rain', 'bell', 'softBell', 'punch', 'paper', 'thud', 'whistle', 'brake']);
 const BEDS = new Set(['rail', 'rain']);
@@ -20,10 +26,9 @@ export function createCutsceneSfx() {
 
   function ensure() {
     if (ctx || closed) return ctx;
-    const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
-    if (!AC) return null;
     try {
-      ctx = new AC();
+      ctx = sharedAudioContext();
+      if (!ctx) return null;
       bus = ctx.createGain();
       bus.gain.value = volumeForChannel(settings(), 'sfx');
       const comp = ctx.createDynamicsCompressor();
@@ -165,15 +170,17 @@ export function createCutsceneSfx() {
       } catch { /* a sound must never stop the picture */ }
     },
     stop(name, fade) { beds.get(name)?.stop(fade); beds.delete(name); },
-    pause() { ctx?.suspend?.().catch(() => {}); },
-    resume() { if (!closed) ctx?.resume?.().catch(() => {}); },
+    pause() { if (ctx) holdSharedContext(true); },
+    resume() { if (!closed && ctx) holdSharedContext(false); },
     close() {
       if (closed) return;
       [...beds.keys()].forEach((name) => this.stop(name, 0.6));
       closed = true;
       globalThis.removeEventListener?.('nightfall:settings', onSettings);
-      const context = ctx;
-      setTimeout(() => context?.close?.().catch(() => {}), 1200);
+      // the context is shared: let this cutscene's sounds fade, then cut its bus off
+      const out = bus;
+      if (ctx) holdSharedContext(false);
+      setTimeout(() => { try { out?.disconnect(); } catch { /* gone */ } }, 1200);
     },
   };
 }
