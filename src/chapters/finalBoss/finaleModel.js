@@ -757,12 +757,13 @@ export function createEchoDebate(exchanges) {
 // Movement IV · PAINTED COUNTRY — a returned colour scales with its charge.
 //
 // The movement drains 88 of his ticket (100 → 12, where the night service
-// arrives). At 8 a colour that took ~11 single returns, ~10 minutes for a
-// first-time player (alpha R4-5). Now one colour is 16 (six single returns),
-// a full brush 52 (two), so a first run lands in 5–8 minutes and holding a
-// fuller brush still pays: 3 colours cut deeper than three single returns.
+// arrives). Round 11: a return lands only in the open beat after a wash
+// (movements/paintedCountry.js), and each of the three phases stops at its
+// floor, so one return can no longer end a phase: one colour is 7, a full
+// brush 24 (more than three single colours: holding a heavier brush pays),
+// and a phase takes about two open windows.
 export const PAINT_MOVEMENT_DRAIN = 88;
-export const PAINT_DAMAGE_BY_CHARGE = Object.freeze([0, 16, 34, 52]);
+export const PAINT_DAMAGE_BY_CHARGE = Object.freeze([0, 7, 15, 24]);
 
 export function paintReturnDamage(charge) {
   const index = Math.max(0, Math.min(PAINT_DAMAGE_BY_CHARGE.length - 1, Math.floor(Number(charge) || 0)));

@@ -121,13 +121,14 @@ test('R4-4: a deflection explains itself in one short line before the volley', (
 
 // ------------------------------------------------------------ R4-5 colour
 
-test('R4-5: one returned colour is worth much more: IV in ~6 single returns or 2 full brushes', () => {
+test('R4-5 → round 11: a return lands only in the open beat, so each colour cuts deep and a fuller brush deeper', () => {
   assert.equal(PAINT_MOVEMENT_DRAIN, 88);
-  assert.ok(paintReturnDamage(1) >= 15, 'a single colour is a real cut');
-  assert.ok(Math.ceil(PAINT_MOVEMENT_DRAIN / paintReturnDamage(1)) <= 6);
-  assert.equal(Math.ceil(PAINT_MOVEMENT_DRAIN / paintReturnDamage(3)), 2);
-  assert.ok(paintReturnDamage(2) > paintReturnDamage(1) * 2, 'holding still pays');
+  // A phase is ~30 of the 88 and stops at its floor: two open windows a phase.
+  assert.ok(paintReturnDamage(3) < 30, 'one full brush never ends a phase by itself');
+  assert.ok(paintReturnDamage(3) * 2 >= 30, 'two full brushes always do');
+  assert.ok(paintReturnDamage(2) > paintReturnDamage(1) * 2, 'holding pays');
   assert.ok(paintReturnDamage(3) > paintReturnDamage(1) * 3);
+  assert.equal(paintReturnDamage(9), paintReturnDamage(3), 'three colours at most');
 });
 
 // ---------------------------------------------------------- layout and flow

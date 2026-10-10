@@ -13,13 +13,13 @@ import { BELL_MS } from '../../src/chapters/borrowedLight/timetableModel.js';
 
 // ---------------------------------------------------------------- Movement IV
 
-test('Movement IV damage scales with the absorbed charge: 16 / 34 / 52', () => {
-  assert.deepEqual([...PAINT_DAMAGE_BY_CHARGE], [0, 16, 34, 52]);
+test('Movement IV damage scales with the absorbed charge: 7 / 15 / 24 (round 11: window-gated returns)', () => {
+  assert.deepEqual([...PAINT_DAMAGE_BY_CHARGE], [0, 7, 15, 24]);
   assert.equal(paintReturnDamage(0), 0);
-  assert.equal(paintReturnDamage(1), 16);
-  assert.equal(paintReturnDamage(2), 34);
-  assert.equal(paintReturnDamage(3), 52);
-  assert.equal(paintReturnDamage(9), 52, 'charge is capped at three colours');
+  assert.equal(paintReturnDamage(1), 7);
+  assert.equal(paintReturnDamage(2), 15);
+  assert.equal(paintReturnDamage(3), 24);
+  assert.equal(paintReturnDamage(9), 24, 'charge is capped at three colours');
   assert.equal(paintReturnDamage(-2), 0);
   // a full charge is worth more than three single returns: holding pays
   assert.ok(paintReturnDamage(3) > paintReturnDamage(1) * 3);
