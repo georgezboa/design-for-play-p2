@@ -51,12 +51,19 @@ test('every Chapter 4 room reuses the same brush-wielding protagonist and the sa
   assert.match(sceneSource, /new BrushInput\(this/);
 });
 
-test('the gallery plates are washed clear, not threaded: no Color Link remains', () => {
+// Round 11 (George): washing the plates open cell by cell was dull, and the
+// varnish that took two washes felt bad. Each plate is a short colour puzzle
+// again, laid over Rosa's drawing (threadBoard.js), and nothing is washed
+// twice; the old Color Link card's code is still not back.
+test('the gallery plates are colour puzzles over her drawing, and nothing is washed twice', () => {
   for (const source of [sceneSource, studioSource, trainSource, lineSource]) {
     assert.doesNotMatch(source, /COLOR LINK|boardBegin|cordColor|CORD_COLOURS/);
   }
   assert.match(sceneSource, /buildPlateTexture\(this, plate\)/);
-  assert.match(sceneSource, /this\.car\.washPlate\(picture\.id/);
+  assert.match(sceneSource, /car\.threadBegin\(id, /);
+  assert.match(sceneSource, /car\.threadExtend\(id, /);
+  assert.match(sceneSource, /JOIN EACH COLOUR TO ITS MATCH/);
+  assert.doesNotMatch(sceneSource, /washPlate|WASH IT TWICE|ONE MORE WASH|buildVarnish/);
 });
 
 test('the notes lay the plates side by side as images, with nothing written about the marks', () => {

@@ -5,8 +5,9 @@
 // drawing) plus the five marks (art/marksArt.js) at the rects carLayout.js
 // gives them. A second texture, `<key>-painted`, is the same plate with
 // Rosa's colour back in it; the scene blooms it in when the plate comes
-// clear. The archive's grey is drawn over it cell by cell by the scene, never
-// baked in, so washing reveals exactly this image.
+// clear. The archive's grey is drawn over it square by square by the scene,
+// never baked in, so where a thread of Rosa's colour runs (threadBoard.js)
+// the grey lifts off exactly this image.
 
 import { PLATE_GRID, SIGN } from './carLayout.js';
 import { makeRandom } from './paperSurface.js';
@@ -38,23 +39,18 @@ export function buildPlateTexture(scene, plate) {
   return plate.key;
 }
 
-// The archive's grey gouache over one plate cell, with brush drag in it.
+// The archive's grey gouache over one square of a plate (`size` wide, `h`
+// tall), with brush drag in it.
 export const GREY = 0x8f8a82;
 export const GREY_DARK = 0x77736c;
 
-export function drawGreyCell(g, x, y, size, seed, { varnish = 0, alpha = 1 } = {}) {
+export function drawGreyCell(g, x, y, size, seed, { h = size, alpha = 1 } = {}) {
   const rnd = makeRandom(seed);
-  g.fillStyle(GREY, alpha).fillRect(x, y, size + 0.5, size + 0.5);
-  g.lineStyle(Math.max(1, size / 14), GREY_DARK, 0.35 * alpha);
-  for (let i = 0; i < 3; i += 1) {
-    const yy = y + size * (0.2 + i * 0.3) + (rnd() - 0.5) * 3;
+  g.fillStyle(GREY, alpha).fillRect(x, y, size + 0.5, h + 0.5);
+  g.lineStyle(Math.max(1, Math.min(size, h) / 14), GREY_DARK, 0.35 * alpha);
+  const strokes = Math.max(3, Math.round(h / 22));
+  for (let i = 0; i < strokes; i += 1) {
+    const yy = y + h * ((i + 0.6) / (strokes + 0.2)) + (rnd() - 0.5) * 3;
     g.lineBetween(x + 1, yy, x + size - 1, yy + (rnd() - 0.5) * 3);
-  }
-  if (varnish > 0) {
-    // Official record: a hard gloss, brass-edged, one layer per coat.
-    g.fillStyle(0xe9e1cf, (0.28 + 0.14 * varnish) * alpha).fillRect(x, y, size, size);
-    g.lineStyle(Math.max(1, size / 16), 0xfffaf0, 0.7 * alpha);
-    g.lineBetween(x + size * 0.15, y + size * 0.85, x + size * 0.85, y + size * 0.15);
-    if (varnish > 1) g.lineBetween(x + size * 0.4, y + size * 0.95, x + size * 0.95, y + size * 0.4);
   }
 }

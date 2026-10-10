@@ -14,19 +14,18 @@ import {
   MOVE_SPEED,
   PAINTINGS,
   PIGMENT_ZONE,
-  PLATE_GRID,
   RACK_Y,
   REACH,
   SEALED_RECTS,
   SIGN_LABELS,
-  VARNISH_RECTS,
+  THREAD_COLOURS,
   VIEW,
   WAINSCOT_Y,
   WINDOWS,
   WORLD,
   WRONG_ANSWER_LINES,
 } from './carLayout.js';
-import { colOf, createPaintedCar, idx, plateCell, rectPlateCells, rowOf } from './paintedCarModel.js';
+import { colOf, createPaintedCar, idx, rowOf } from './paintedCarModel.js';
 import { PAPER } from './paperPalette.js';
 import { createPaintedPlayer, drawPaintedPlayer, preloadPaintedPlayer } from './paintedPlayerFigure.js';
 import { addFrames, addLayers, ensureCanvasTexture } from './art/artTextures.js';
@@ -76,8 +75,11 @@ import { createSaveStore } from '../../shell/saveSystem.js';
 // archive in grey. PAINT (left mouse · F · pad RT) rebuilds what she
 // remembered; WASH (right mouse · SHIFT · pad LT) strips the archive's grey and
 // shows the pencil underneath. Three plates hang too high to reach from the
-// floor; washing each one reveals a large mark and, somewhere else on it,
-// Mara's small hawthorn. The door asks which mark she left in all three.
+// floor. Taken down, each is a short puzzle (round 11, threadBoard.js): her
+// colours are under the grey in pairs, and joining every pair and covering
+// every square lifts the grey. Each plate shows a large mark and, somewhere
+// else on it, Mara's small hawthorn. The door asks which mark she left in all
+// three.
 //
 // No persistent HUD in Chapter 4: every prompt is a paper tag beside the thing
 // it is about. This file owns pixels and input only; every rule lives in
@@ -87,7 +89,7 @@ const DEPTH = {
   SHEET: 0,
   COUNTRY: 5,
   WALL: 10,
-  VARNISH: 14,
+  SEALED: 14,
   FIXTURE: 18,
   DRAWING: 22,
   PAINT: 30,
@@ -104,6 +106,13 @@ const DEPTH = {
 
 // The plate viewer, in screen space.
 const VIEWER = Object.freeze({ x: 240, y: 104, w: PLATE_TEX.w, h: PLATE_TEX.h });
+// A plate's puzzle squares, in viewer pixels (or scaled to the wall plate).
+const boardCell = (picture, w = VIEWER.w, h = VIEWER.h) => ({ w: w / picture.board.cols, h: h / picture.board.rows });
+// Arrows / WASD step the puzzle cursor (keyboard and pad hands).
+const STEP_KEYS = Object.freeze({
+  ArrowLeft: [-1, 0], KeyA: [-1, 0], ArrowRight: [1, 0], KeyD: [1, 0],
+  ArrowUp: [0, -1], KeyW: [0, -1], ArrowDown: [0, 1], KeyS: [0, 1],
+});
 // The notes: the three plates side by side.
 const NOTE_PLATE = Object.freeze({ w: 240, h: 140, y: 196, gap: 24 });
 
@@ -157,7 +166,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.lastPlateCell = null;
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
-    this.tutorialSeen = { move: false, bridge: false, wash: false, varnish: false, pigment: false };
+    this.tutorialSeen = { move: false, bridge: false, wash: false, pigment: false };
     // Round 6, item 11: the first lesson is on safe ground (paintLesson.js).
     this.lesson = createPaintLesson();
     // Round 6, item 13: which cells each press painted, so the paint can be
@@ -170,7 +179,6 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.hasJumped = false;
     this.activeTutorial = null;
     this.noteThrottle = {};
-    this.hintedSmallMark = new Set();
     this.notesPulse = false;
     this.locked = false;
     this.mara = null;
@@ -197,7 +205,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.buildCountry();
     this.buildCarriage();
     this.buildGrid();
-    this.buildVarnish();
+    this.ensureCellAtlas();
     this.buildSealed();
     ensureMarkTextures(this);
     PAINTINGS.forEach((plate) => buildPlateTexture(this, plate));
@@ -272,11 +280,10 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.walker.setPosition(at.x, at.y);
     this.walker.body.reset(at.x, at.y);
     this.cameras.main.centerOn(at.x, VIEW.h / 2);
-    this.tutorialSeen = { move: true, bridge: true, wash: true, varnish: true, pigment: this.car.state.pigment > 0 || at.x < PIGMENT_ZONE.fromCol * CELL };
+    this.tutorialSeen = { move: true, bridge: true, wash: true, pigment: this.car.state.pigment > 0 || at.x < PIGMENT_ZONE.fromCol * CELL };
     this.lesson.state.step = 'done';
     this.lastResumeBay = this.bayId();
     this.paintDirty = true;
-    this.varnishDirty = true;
     this.platesDirty = true;
   }
 
@@ -500,43 +507,9 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.boilTargets.push(boil);
   }
 
-  // "Official record": hard gloss over the air under the orchard plate, drawn
-  // per cell so it thins and vanishes as it is washed.
-  buildVarnish() {
-    this.ensureCellAtlas();
-    this.varnishLayer = this.add.blitter(0, 0, 'ch4-cells').setDepth(DEPTH.VARNISH);
-    this.varnishStamps = VARNISH_RECTS.map((rect) => this.add
-      // Low in the gloss, clear of the (lowered) orchard plate's title.
-      .text((rect.col + rect.cols / 2) * CELL, (rect.row + rect.rows * 0.72) * CELL, 'OFFICIAL RECORD', {
-        fontFamily: MONO, fontSize: '16px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 4,
-      })
-      .setOrigin(0.5)
-      .setAngle(-8)
-      .setAlpha(0.42)
-      .setDepth(DEPTH.VARNISH + 1));
-    this.varnishDirty = true;
-  }
-
-  redrawVarnish() {
-    const b = this.varnishLayer;
-    b.clear();
-    this.car.state.varnish.forEach((coats, key) => {
-      const x = (key % GRID.w) * CELL - CELL_STAMP.bleed;
-      const y = Math.floor(key / GRID.w) * CELL - CELL_STAMP.bleed;
-      b.create(x, y, `varnish-${Math.min(2, coats)}`);
-    });
-    VARNISH_RECTS.forEach((rect, i) => {
-      let left = 0;
-      for (let cx = rect.col; cx < rect.col + rect.cols; cx += 1) {
-        for (let cy = rect.row; cy < rect.row + rect.rows; cy += 1) left += this.car.varnishAt(cx, cy) > 0 ? 1 : 0;
-      }
-      this.varnishStamps[i].setAlpha(0.42 * Math.min(1, left / (rect.cols * rect.rows) * 1.6));
-    });
-  }
-
   // The door's own face: sealed, so the signs can never be painted over.
   buildSealed() {
-    const g = this.graphics(DEPTH.VARNISH);
+    const g = this.graphics(DEPTH.SEALED);
     SEALED_RECTS.forEach((rect) => {
       const x = rect.col * CELL;
       const y = rect.row * CELL;
@@ -611,16 +584,16 @@ export class PaintedCountryScene extends Phaser.Scene {
         }
         return;
       }
+      // the grey stays where no colour runs yet (the puzzle's progress
+      // shows on the wall too)
       const w = picture.w - inset * 2;
       const h = picture.h - inset * 2;
-      const cw = w / PLATE_GRID.cols;
-      const ch = h / PLATE_GRID.rows;
-      for (let r = 0; r < PLATE_GRID.rows; r += 1) {
-        for (let c = 0; c < PLATE_GRID.cols; c += 1) {
-          const cell = plateCell(c, r);
-          if (!state.grey.has(cell)) continue;
+      const { w: cw, h: ch } = boardCell(picture, w, h);
+      const board = state.board;
+      for (let r = 0; r < picture.board.rows; r += 1) {
+        for (let c = 0; c < picture.board.cols; c += 1) {
+          if (board.threadAt(c, r)) continue;
           g.fillStyle(0x8f8a82, 0.97).fillRect(picture.x + inset + c * cw, picture.y + inset + r * ch, cw + 0.6, ch + 0.6);
-          if (state.varnish.has(cell)) g.fillStyle(0xfffaf0, 0.35).fillRect(picture.x + inset + c * cw, picture.y + inset + r * ch, cw, ch);
         }
       }
     });
@@ -759,7 +732,7 @@ export class PaintedCountryScene extends Phaser.Scene {
 
   buildHud() {
     // No persistent HUD in Chapter 4. The mechanics are taught in place, by a
-    // paper tag at the gap, the block, the varnish and the dry brush.
+    // paper tag at the gap, the block and the dry brush.
     this.hudBand = null;
     this.bayLabel = null;
     this.pigmentPot = this.graphics(DEPTH.FIGURE + 1);
@@ -780,12 +753,13 @@ export class PaintedCountryScene extends Phaser.Scene {
     );
   }
 
-  // The plate viewer: the plate, taken down and held close, under its grey.
+  // The plate viewer: the plate, taken down and held close, under its grey,
+  // with Rosa's colours in pairs over it (round 11: a short puzzle each).
   // The notes: the three plates side by side, as images, nothing written.
   buildViewer() {
     const D = DEPTH.HUD + 10;
     const fixed = (object) => object.setScrollFactor(0).setDepth(D);
-    this.viewer = { open: false, mode: null, picture: null };
+    this.viewer = { open: false, mode: null, picture: null, cursor: null, latched: false, queue: [], padPrev: {} };
     const v = this.viewer;
     v.scrim = fixed(this.add.rectangle(0, 0, VIEW.w, VIEW.h, 0x1c130d, 0.78).setOrigin(0));
     v.card = fixed(this.add.graphics());
@@ -801,12 +775,19 @@ export class PaintedCountryScene extends Phaser.Scene {
     v.frame = fixed(this.add.graphics().setDepth(D + 1));
     v.frame.lineStyle(3, PAPER.graphite, 0.9).strokeRect(VIEWER.x - 6, VIEWER.y - 6, VIEWER.w + 12, VIEWER.h + 12);
     v.grey = fixed(this.add.graphics().setDepth(D + 2));
-    v.stamps = [0, 1].map(() => fixed(this.add.text(0, 0, 'OFFICIAL RECORD', {
-      fontFamily: MONO, fontSize: '14px', color: '#8a2a1e', fontStyle: 'bold', letterSpacing: 3,
-    }).setOrigin(0.5).setAngle(-9).setAlpha(0.7).setDepth(D + 3)));
+    // her colours: the threads, the dabs and the square under the brush
+    v.threads = fixed(this.add.graphics().setDepth(D + 3));
     v.caption = fixed(this.add.text(VIEW.w / 2, VIEWER.y + VIEWER.h + 20, '', {
       fontFamily: SERIF, fontSize: px(15), color: '#3a2a1c', align: 'center', lineSpacing: 5,
       wordWrap: { width: 620 },
+    }).setOrigin(0.5, 0));
+    // under the plate while it is still grey: the rule, then how far along
+    v.rule = fixed(this.add.text(VIEW.w / 2, VIEWER.y + VIEWER.h + 18, '', {
+      fontFamily: MONO, fontSize: px(12), color: UI.ink, fontStyle: 'bold', align: 'center', lineSpacing: 6, letterSpacing: 1,
+      wordWrap: { width: 720 },
+    }).setOrigin(0.5, 0));
+    v.progress = fixed(this.add.text(VIEW.w / 2, VIEW.h - 84, '', {
+      fontFamily: MONO, fontSize: px(11), color: UI.inkSoft, align: 'center', letterSpacing: 1.5,
     }).setOrigin(0.5, 0));
     v.close = fixed(this.add.text(VIEW.w / 2, VIEW.h - 58, '', {
       fontFamily: MONO, fontSize: '12px', color: UI.inkSoft, letterSpacing: 2,
@@ -823,11 +804,29 @@ export class PaintedCountryScene extends Phaser.Scene {
     });
     v.noteLayer = fixed(this.add.graphics().setDepth(D + 2));
     this.setViewerVisible(false);
+
+    // The keyboard hand steps the puzzle a square at a time (arrows / WASD);
+    // F or SPACE picks a colour up or puts it down; SHIFT lifts one. Kept in
+    // the order they were pressed, so quick typing on a slow frame rate is
+    // still read right.
+    // (Phaser can hand the same DOM event to a scene's keydown more than
+    // once in a slow frame; each event counts once.)
+    const seen = new WeakSet();
+    this.onViewerKey = (event) => {
+      if (!this.viewer.open || this.viewer.mode !== 'plate' || seen.has(event)) return;
+      seen.add(event);
+      const step = STEP_KEYS[event.code];
+      if (step) this.viewer.queue.push({ type: 'step', d: step });
+      else if ((event.code === 'Space' || event.code === 'KeyF') && !event.repeat) this.viewer.queue.push({ type: 'toggle' });
+      else if ((event.code === 'ShiftLeft' || event.code === 'ShiftRight') && !event.repeat) this.viewer.queue.push({ type: 'lift' });
+    };
+    this.input.keyboard.on('keydown', this.onViewerKey);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => this.input.keyboard?.off('keydown', this.onViewerKey));
   }
 
   viewerObjects() {
     const v = this.viewer;
-    return [v.scrim, v.card, v.title, v.plate, v.paint, v.frame, v.grey, ...v.stamps, v.caption, v.close, v.noteLayer,
+    return [v.scrim, v.card, v.title, v.plate, v.paint, v.frame, v.grey, v.threads, v.caption, v.rule, v.progress, v.close, v.noteLayer,
       ...v.notePlates.flatMap((n) => [n.img, n.label])];
   }
 
@@ -838,7 +837,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.viewerObjects().forEach((obj) => obj.setVisible(false));
     if (on) {
       [v.scrim, v.card, v.title, v.close].forEach((obj) => obj.setVisible(true));
-      if (mode === 'plate') [v.plate, v.paint, v.frame, v.grey, v.caption].forEach((obj) => obj.setVisible(true));
+      if (mode === 'plate') [v.plate, v.paint, v.frame, v.grey, v.threads, v.caption, v.rule, v.progress].forEach((obj) => obj.setVisible(true));
       if (mode === 'notes') {
         v.noteLayer.setVisible(true);
         v.notePlates.forEach((n) => { n.img.setVisible(true); n.label.setVisible(true); });
@@ -847,7 +846,10 @@ export class PaintedCountryScene extends Phaser.Scene {
       this.tag.hide();
       this.brush.setAnchor(null);
     } else {
+      if (v.picture) this.car.threadRelease(v.picture.id);
       v.picture = null;
+      v.latched = false;
+      v.queue.length = 0;
       this.lastPlateCell = null;
       this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y }), REACH - 2);
     }
@@ -859,14 +861,39 @@ export class PaintedCountryScene extends Phaser.Scene {
     v.picture = picture;
     v.title.setText(picture.title);
     v.plate.setTexture(picture.key).setDisplaySize(VIEWER.w, VIEWER.h);
-    this.tweens.killTweensOf(v.paint);
-    v.paint.setTexture(paintedPlateKey(picture)).setDisplaySize(VIEWER.w, VIEWER.h).setAlpha(this.car.plateState(picture.id).developed ? 1 : 0);
-    v.close.setText(`${this.brush.label('wash')} · WASH THE GREY      ${this.brush.label('read')} · PUT IT BACK`);
-    picture.varnishRects.forEach((rect, i) => {
-      v.stamps[i]?.setPosition(VIEWER.x + (rect.c + rect.w / 2) * PLATE_CELL, VIEWER.y + (rect.r + rect.h / 2) * PLATE_CELL);
-    });
+    this.tweens.killTweensOf([v.paint, v.threads]);
+    const developed = this.car.plateState(picture.id).developed;
+    v.paint.setTexture(paintedPlateKey(picture)).setDisplaySize(VIEWER.w, VIEWER.h).setAlpha(developed ? 1 : 0);
+    v.threads.setAlpha(developed ? 0 : 1);
+    // the cursor starts on the first dab, for the keyboard and pad hands
+    v.cursor = { c: picture.board.pairs[0].a[0], r: picture.board.pairs[0].a[1] };
+    v.latched = false;
+    v.queue.length = 0;
     this.lastPlateCell = null;
     this.drawViewerPlate();
+  }
+
+  // The square of the open plate under a screen point, or null.
+  viewerCellAt(x, y) {
+    const picture = this.viewer.picture;
+    if (!picture) return null;
+    const { w, h } = boardCell(picture);
+    const c = Math.floor((x - VIEWER.x) / w);
+    const r = Math.floor((y - VIEWER.y) / h);
+    return c >= 0 && r >= 0 && c < picture.board.cols && r < picture.board.rows ? { c, r } : null;
+  }
+
+  viewerCellCentre(picture, c, r) {
+    const { w, h } = boardCell(picture);
+    return { x: VIEWER.x + (c + 0.5) * w, y: VIEWER.y + (r + 0.5) * h };
+  }
+
+  // What the bottom line says, in the hand the player is using.
+  viewerHint() {
+    const d = this.brush.device;
+    if (d === 'pad') return 'D-PAD · MOVE    A · PICK UP / PUT DOWN    LT · LIFT    X · PUT IT BACK';
+    if (d === 'keys') return 'ARROWS · MOVE    F / SPACE · PICK UP / PUT DOWN    SHIFT · LIFT    E · PUT IT BACK';
+    return 'LEFT MOUSE · DRAG A COLOUR TO ITS MATCH    RIGHT MOUSE · LIFT IT    E · PUT IT BACK';
   }
 
   drawViewerPlate() {
@@ -874,27 +901,118 @@ export class PaintedCountryScene extends Phaser.Scene {
     const picture = v.picture;
     if (!picture) return;
     const state = this.car.plateState(picture.id);
+    const board = state.board;
+    const { cols, rows, pairs } = picture.board;
+    const { w: cw, h: ch } = boardCell(picture);
     const g = v.grey;
     g.clear();
-    for (let r = 0; r < PLATE_GRID.rows; r += 1) {
-      for (let c = 0; c < PLATE_GRID.cols; c += 1) {
-        const cell = plateCell(c, r);
-        if (!state.grey.has(cell) && !state.varnish.has(cell)) continue;
-        drawGreyCell(g, VIEWER.x + c * PLATE_CELL, VIEWER.y + r * PLATE_CELL, PLATE_CELL, 0x51a + cell * 7, {
-          varnish: state.varnish.get(cell) ?? 0,
-        });
+    // the archive's grey, wherever none of her colour runs yet
+    for (let r = 0; r < rows; r += 1) {
+      for (let c = 0; c < cols; c += 1) {
+        if (state.developed || board.threadAt(c, r)) continue;
+        drawGreyCell(g, VIEWER.x + c * cw, VIEWER.y + r * ch, cw, 0x51a + (r * cols + c) * 7, { h: ch });
       }
     }
-    picture.varnishRects.forEach((rect, i) => {
-      const left = rectPlateCells(rect).filter((cell) => state.varnish.has(cell)).length;
-      v.stamps[i]?.setVisible(v.open && v.mode === 'plate' && left > 0).setAlpha(0.3 + 0.4 * (left / (rect.w * rect.h)));
-    });
-    for (let i = picture.varnishRects.length; i < v.stamps.length; i += 1) v.stamps[i].setVisible(false);
-    v.caption.setText(state.developed ? picture.caption : '');
-    // The plate comes clear: Rosa's colour blooms back into it.
-    if (state.developed && v.paint.alpha === 0 && !this.tweens.isTweening(v.paint)) {
-      this.tweens.add({ targets: v.paint, alpha: 1, duration: 1300, ease: 'Sine.easeOut' });
+    // the puzzle's squares, faintly ruled over the grey
+    if (!state.developed) {
+      g.lineStyle(1, PAPER.graphite, 0.22);
+      for (let c = 1; c < cols; c += 1) g.lineBetween(VIEWER.x + c * cw, VIEWER.y, VIEWER.x + c * cw, VIEWER.y + VIEWER.h);
+      for (let r = 1; r < rows; r += 1) g.lineBetween(VIEWER.x, VIEWER.y + r * ch, VIEWER.x + VIEWER.w, VIEWER.y + r * ch);
     }
+    this.drawThreads();
+
+    const snap = board.snapshot();
+    if (state.developed) {
+      v.rule.setText('');
+      v.progress.setText('');
+      v.caption.setText(picture.caption);
+      v.close.setText(`${this.brush.label('read')} · PUT IT BACK`);
+    } else {
+      v.caption.setText('');
+      const first = PAINTINGS.indexOf(picture) === 0 || this.car.state.seen.size === 0;
+      v.rule.setFontSize(px(12)).setText(first
+        ? "HER COLOURS ARE STILL UNDER THE GREY, IN PAIRS.\nJOIN EACH COLOUR TO ITS MATCH  ·  THEY NEVER CROSS  ·  COVER EVERY SQUARE"
+        : 'JOIN EACH COLOUR TO ITS MATCH  ·  THEY NEVER CROSS  ·  COVER EVERY SQUARE');
+      v.progress.setFontSize(px(11)).setText(`${snap.joined.length} OF ${pairs.length} COLOURS JOINED   ·   ${snap.covered} OF ${snap.cells} SQUARES`);
+      v.close.setText(this.viewerHint());
+    }
+  }
+
+  // Rosa's colours over the plate: each thread a broad gouache stroke from
+  // dab to dab, each dab a blot with its own pencil glyph (THREAD_COLOURS),
+  // and the square under the brush ringed in amber.
+  drawThreads() {
+    const v = this.viewer;
+    const picture = v.picture;
+    const g = v.threads;
+    g.clear();
+    if (!picture) return;
+    const board = this.car.plateBoard(picture.id);
+    const { pairs } = picture.board;
+    const { w: cw, h: ch } = boardCell(picture);
+    const unit = Math.min(cw, ch);
+    const centre = (c, r) => this.viewerCellCentre(picture, c, r);
+    const width = unit * 0.34;
+    pairs.forEach((pair, index) => {
+      const path = board.state.paths[pair.id];
+      if (path.length < 2) return;
+      const color = THREAD_COLOURS[pair.id].color;
+      const pts = path.map(([c, r]) => centre(c, r));
+      // A loaded brush pulled from dab to dab: a soft graphite edge, two
+      // passes of gouache that do not quite agree, a pooled blot at each
+      // turn, and a dry streak of paper light along the stroke.
+      const pass = (w, col, alpha, seed, off = 0, jitter = 1.4) => {
+        const rnd = makeRandom(seed);
+        g.lineStyle(w, col, alpha);
+        for (let i = 1; i < pts.length; i += 1) {
+          const a = pts[i - 1];
+          const b = pts[i];
+          const nx = (b.y - a.y) === 0 ? 0 : 1;
+          const ny = nx ? 0 : 1;
+          draftLine(g, rnd, a.x + nx * off, a.y + ny * off, b.x + nx * off, b.y + ny * off, { overshoot: 0, jitter, segments: 5 });
+        }
+        pts.forEach((p, i) => g.fillStyle(col, alpha).fillCircle(p.x + (rnd() - 0.5) * 1.5, p.y + (rnd() - 0.5) * 1.5, w / 2 + (i % 2 ? 0.6 : 0)));
+      };
+      const seed = 0x7a0 + index * 131;
+      pass(width + 3.5, PAPER.graphite, 0.42, seed, 0, 1.1);
+      pass(width, color, 0.9, seed + 1, -1.2, 1.6);
+      pass(width * 0.72, color, 0.7, seed + 2, 1.4, 2);
+      pass(Math.max(1.4, width * 0.12), 0xfdfaf3, 0.28, seed + 3, -width * 0.22, 2.4);
+    });
+    pairs.forEach((pair) => {
+      const { color, glyph } = THREAD_COLOURS[pair.id];
+      const joined = board.joined(pair.id);
+      [pair.a, pair.b].forEach(([c, r]) => {
+        const p = centre(c, r);
+        const rad = unit * 0.3;
+        g.fillStyle(0x000000, 0.16).fillCircle(p.x + 1.5, p.y + 2.5, rad + 2);
+        g.fillStyle(UI.paper, 1).fillCircle(p.x, p.y, rad + 3);
+        g.fillStyle(color, 1).fillCircle(p.x, p.y, rad);
+        g.lineStyle(2, PAPER.graphite, 0.9).strokeCircle(p.x, p.y, rad + 3);
+        this.drawGlyph(g, glyph, p.x, p.y, rad * 0.42);
+        if (joined) g.lineStyle(2.4, PAPER.verdigris, 0.95).strokeCircle(p.x, p.y, rad + 7);
+      });
+    });
+    // the square under the brush (and the keyboard / pad cursor)
+    const developed = this.car.plateState(picture.id).developed;
+    const at = this.viewerCellAt(this.brush.x, this.brush.y) ?? (this.brush.mode === 'virtual' ? v.cursor : null);
+    if (!developed && at) {
+      const x = VIEWER.x + at.c * cw;
+      const y = VIEWER.y + at.r * ch;
+      const live = board.state.active;
+      g.lineStyle(live ? 3 : 2.2, live ? THREAD_COLOURS[live].color : UI.amberInk, 0.95).strokeRect(x + 3, y + 3, cw - 6, ch - 6);
+    }
+  }
+
+  drawGlyph(g, glyph, x, y, s) {
+    g.lineStyle(Math.max(2, s * 0.5), 0xfdfaf3, 0.95);
+    g.fillStyle(0xfdfaf3, 0.95);
+    if (glyph === 'dot') g.fillCircle(x, y, s * 0.7);
+    else if (glyph === 'bar') g.lineBetween(x - s, y, x + s, y);
+    else if (glyph === 'stem') g.lineBetween(x, y - s, x, y + s);
+    else if (glyph === 'ring') g.strokeCircle(x, y, s * 0.8);
+    else if (glyph === 'cross') { g.lineBetween(x - s * 0.8, y - s * 0.8, x + s * 0.8, y + s * 0.8); g.lineBetween(x - s * 0.8, y + s * 0.8, x + s * 0.8, y - s * 0.8); }
+    else if (glyph === 'pair') { g.fillCircle(x - s * 0.6, y, s * 0.45); g.fillCircle(x + s * 0.6, y, s * 0.45); }
   }
 
   // At the door, E lays the plates out side by side. Only pictures: the
@@ -1088,7 +1206,6 @@ export class PaintedCountryScene extends Phaser.Scene {
         if (wasPaint && !this.car.isPainted(cx, cy)) this.strokes.remove(cx, cy);
         if (wasBlock && !this.car.isBlock(cx, cy) && !this.car.isPainted(cx, cy)) this.removeCellBody(cx, cy);
         this.paintDirty = true;
-        this.varnishDirty = true;
         if (this.activeTutorial === 'wash') this.dismissTutorial('wash');
       }
       return;
@@ -1169,7 +1286,6 @@ export class PaintedCountryScene extends Phaser.Scene {
   }
 
   // Walk the brush from the last cell to this point, so no stroke has gaps.
-  // Holding still does not scrub: varnish takes two separate passes.
   // Round 6, item 12: a drag that leaves the reach is painted up to the edge
   // and stopped there visibly (an ink blot and a tick, a dry-brush scratch,
   // GET CLOSER), instead of quietly ending halfway across a gap.
@@ -1205,45 +1321,156 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.lastBrushCell = { cx, cy };
   }
 
-  // Washing inside the plate viewer. Dragging leaves no gaps.
-  stepViewerBrush() {
+  // The puzzle in the plate viewer. The mouse drags a colour from its dab
+  // (left), and lifts one (right). The keyboard and pad step a cursor a
+  // square at a time and pick a colour up or put it down (F / SPACE · pad A
+  // or RT); SHIFT / LT lifts. A fast drag that skips squares is walked
+  // square by square, so no stroke has gaps.
+  stepViewerBoard() {
     const v = this.viewer;
     const picture = v.picture;
     const brush = this.brush;
     if (!picture) return;
-    const cellOf = (x, y) => ({ c: Math.floor((x - VIEWER.x) / PLATE_CELL), r: Math.floor((y - VIEWER.y) / PLATE_CELL) });
-    const onPlate = ({ c, r }) => c >= 0 && r >= 0 && c < PLATE_GRID.cols && r < PLATE_GRID.rows;
-    const here = cellOf(brush.x, brush.y);
-    const state = this.car.plateState(picture.id);
-    if (brush.paintPressed && onPlate(here) && !state.developed) {
-      noteAt(this, brush.x, brush.y - 10, `${brush.label('wash')} · WASH`, { screen: true, depth: DEPTH.HUD + 30, hold: 900 });
+    const id = picture.id;
+    const car = this.car;
+    if (car.plateState(id).developed) {
+      v.queue.length = 0;
+      return;
     }
-    if (brush.washPressed) this.lastPlateCell = null;
+    const board = car.plateBoard(id);
     let changed = false;
-    const washTo = (cell) => {
-      if (!onPlate(cell)) {
-        this.lastPlateCell = null;
-        return;
-      }
-      const from = this.lastPlateCell;
-      if (!from) {
-        changed = Boolean(this.car.washPlate(picture.id, cell.c, cell.r)) || changed;
-      } else if (from.c !== cell.c || from.r !== cell.r) {
-        const steps = Math.max(Math.abs(cell.c - from.c), Math.abs(cell.r - from.r));
-        for (let s = 1; s <= steps; s += 1) {
-          const t = s / steps;
-          changed = Boolean(this.car.washPlate(picture.id, Math.round(from.c + (cell.c - from.c) * t), Math.round(from.r + (cell.r - from.r) * t))) || changed;
+    const towards = (cell) => {
+      // walk from the thread's head to `cell`, one square at a time
+      for (let guard = 0; guard < 40 && board.state.active; guard += 1) {
+        const path = board.state.paths[board.state.active];
+        const head = path[path.length - 1];
+        if (!head || (head[0] === cell.c && head[1] === cell.r)) return;
+        // backing up along its own thread is always one move
+        if (path.some((p) => p[0] === cell.c && p[1] === cell.r)) {
+          changed = car.threadExtend(id, cell.c, cell.r) || changed;
+          return;
         }
+        const dc = Math.sign(cell.c - head[0]);
+        const dr = Math.sign(cell.r - head[1]);
+        const tries = Math.abs(cell.c - head[0]) >= Math.abs(cell.r - head[1])
+          ? [[dc, 0], [0, dr]] : [[0, dr], [dc, 0]];
+        const moved = tries.some(([x, y]) => (x || y) && car.threadExtend(id, head[0] + x, head[1] + y));
+        if (!moved) return;
+        changed = true;
       }
-      this.lastPlateCell = { c: cell.c, r: cell.r };
     };
-    (brush.mode === 'mouse' ? brush.samples : []).filter((p) => p.wash).forEach((p) => washTo(cellOf(p.x, p.y)));
-    if (brush.washDown) washTo(here);
-    else this.lastPlateCell = null;
-    if (changed) {
-      this.platesDirty = true;
-      this.drawViewerPlate();
+    // a press picks a colour up at the cursor, or puts the held one down
+    const toggle = (cell) => {
+      const active = board.state.active;
+      const head = active ? board.state.paths[active].slice(-1)[0] : null;
+      const onHead = head && head[0] === cell.c && head[1] === cell.r;
+      if (active && (onHead || !(board.dotAt(cell.c, cell.r) || board.threadAt(cell.c, cell.r)))) {
+        car.threadRelease(id);
+        v.latched = false;
+      } else if (car.threadBegin(id, cell.c, cell.r)) {
+        v.latched = true;
+        changed = true;
+      } else {
+        this.viewerNote('START ON A DAB OF COLOUR', cell);
+      }
+    };
+    const lift = (cell) => {
+      if (cell && car.threadClear(id, cell.c, cell.r)) {
+        changed = true;
+        v.latched = false;
+      }
+    };
+    const settleLatch = () => {
+      // a joined colour puts itself down
+      if (v.latched && board.state.active && board.joined(board.state.active)) car.threadRelease(id);
+      if (!board.state.active) v.latched = false;
+    };
+
+    // the pad: the d-pad and left stick step like the arrows; A or RT picks
+    // up and puts down; LT lifts (read before the steps of the same frame)
+    const pad = brush.pad;
+    if (pad) {
+      const ax = pad.axes.length ? pad.axes[0].getValue() : 0;
+      const ay = pad.axes.length > 1 ? pad.axes[1].getValue() : 0;
+      const dirs = { left: pad.left || ax < -0.5, right: pad.right || ax > 0.5, up: pad.up || ay < -0.5, down: pad.down || ay > 0.5 };
+      const steps = { left: [-1, 0], right: [1, 0], up: [0, -1], down: [0, 1] };
+      const press = (pad.A && !v.padPrev.A) || (brush.device === 'pad' && brush.paintPressed);
+      const take = brush.device === 'pad' && brush.washPressed;
+      const pending = [];
+      if (press) pending.push({ type: 'toggle' });
+      if (take) pending.push({ type: 'lift' });
+      Object.entries(dirs).forEach(([dir, on]) => {
+        if (on && !v.padPrev[dir]) pending.push({ type: 'step', d: steps[dir] });
+        v.padPrev[dir] = on;
+      });
+      v.padPrev.A = Boolean(pad.A);
+      if (pending.length) brush.device = 'pad';
+      v.queue.unshift(...pending);
     }
+
+    const here = this.viewerCellAt(brush.x, brush.y);
+    if (brush.mode === 'mouse' && !v.latched && !v.queue.length) {
+      // the mouse: press on a dab, drag, let go; right-click lifts
+      if (here) v.cursor = here;
+      if (brush.paintPressed && here) {
+        if (car.threadBegin(id, here.c, here.r)) changed = true;
+        else this.viewerNote('START ON A DAB OF COLOUR', here);
+      }
+      if (brush.paintDown && board.state.active) {
+        brush.samples.forEach((p) => { const cell = this.viewerCellAt(p.x, p.y); if (cell && !p.wash) towards(cell); });
+        if (here) towards(here);
+      }
+      if (!brush.paintDown && board.state.active) car.threadRelease(id);
+      if (brush.washPressed && here) lift(here);
+    } else {
+      // keyboard and pad, in the order pressed; then the I J K L brush
+      if (here && !v.queue.some((item) => item.type === 'step')) v.cursor = here;
+      if (v.queue.length && brush.device === 'mouse') brush.device = 'keys';
+      let stepped = false;
+      v.queue.splice(0).forEach((item) => {
+        if (item.type === 'step') {
+          v.cursor = {
+            c: Phaser.Math.Clamp(v.cursor.c + item.d[0], 0, picture.board.cols - 1),
+            r: Phaser.Math.Clamp(v.cursor.r + item.d[1], 0, picture.board.rows - 1),
+          };
+          if (v.latched) towards(v.cursor);
+          stepped = true;
+        } else if (item.type === 'toggle') {
+          toggle(v.cursor);
+        } else if (item.type === 'lift') {
+          lift(v.cursor);
+        }
+        settleLatch();
+      });
+      if (stepped) {
+        // the brush's own (virtual) cursor sits on the square
+        const at = this.viewerCellCentre(picture, v.cursor.c, v.cursor.r);
+        brush.mode = 'virtual';
+        brush.screen = { x: at.x, y: at.y };
+        brush.x = at.x;
+        brush.y = at.y;
+      } else if (v.latched && here) {
+        towards(here);
+      }
+      // the mouse took over again: a held colour follows it until a click
+      if (brush.mode === 'mouse' && v.latched && brush.paintPressed) {
+        car.threadRelease(id);
+        v.latched = false;
+      }
+      settleLatch();
+    }
+    if (changed) this.platesDirty = true;
+    this.drawViewerPlate();
+  }
+
+  viewerNote(text, cell) {
+    const picture = this.viewer.picture;
+    if (!picture) return;
+    const key = `viewer:${text}`;
+    if (this.noteThrottle[key] && this.time.now - this.noteThrottle[key] < 1600) return;
+    this.noteThrottle[key] = this.time.now;
+    const at = this.viewerCellCentre(picture, cell.c, cell.r);
+    noteAt(this, at.x, at.y - boardCell(picture).h * 0.35, text, { screen: true, depth: DEPTH.HUD + 30, hold: 1100 });
   }
 
   tryOpenPicture(picture) {
@@ -1367,7 +1594,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     const car = this.car;
     if (car.state.complete) return 'the door is open; someone went through ahead';
     const read = car.state.seen.size;
-    if (read < PAINTINGS.length) return `wash the grey off the three plates (${read} of ${PAINTINGS.length})`;
+    if (read < PAINTINGS.length) return `join Rosa's colours on the three plates (${read} of ${PAINTINGS.length} clear)`;
     return 'compare the plates; choose the mark she left in all three';
   }
 
@@ -1487,7 +1714,7 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (this.nearDoor() && !this.car.state.door.solved) {
       const developed = PAINTINGS.filter((p) => this.car.plateState(p.id).developed).length;
       if (developed < PAINTINGS.length) {
-        this.tag.show(`${developed} OF ${PAINTINGS.length} PLATES WASHED`, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h - 20);
+        this.tag.show(`${developed} OF ${PAINTINGS.length} PLATES CLEAR`, DOOR.x + DOOR.w / 2, DOOR.y + DOOR.h - 20);
       } else if (this.hoveredDoorSign) {
         const panel = DOOR.panels.find((p) => p.sign === this.hoveredDoorSign);
         this.tag.show(`${b.label('paint')} · ${SIGN_LABELS[panel.sign]}`, panel.x + panel.w / 2, panel.y - 2);
@@ -1533,24 +1760,27 @@ export class PaintedCountryScene extends Phaser.Scene {
       const v = this.viewer;
       if (v.picture?.id === event.id) {
         this.drawViewerPlate();
+        // Her colours sink into the drawing: the threads fade as the plate's
+        // own washes bloom back in.
+        this.tweens.killTweensOf([v.paint, v.threads]);
+        this.tweens.add({ targets: v.paint, alpha: 1, duration: 1300, ease: 'Sine.easeOut' });
+        this.tweens.add({ targets: v.threads, alpha: 0, duration: 1100, delay: 250, ease: 'Sine.easeIn' });
         // Low on the card, under the caption: never on the plate's title (R4).
         noteAt(this, VIEW.w / 2, VIEW.h - 66, 'THE PLATE COMES CLEAR · IT GOES IN YOUR NOTES', { screen: true, tone: 'good', depth: DEPTH.HUD + 30, hold: 1800 });
       }
       this.platesDirty = true;
-    } else if (event.type === 'plate-mark-found') {
-      const plate = this.car.plateState(event.id);
-      if (!plate.hawthornFound && !this.hintedSmallMark.has(event.id)) {
-        this.hintedSmallMark.add(event.id);
-        noteAt(this, VIEW.w / 2, VIEWER.y + VIEWER.h + 44, 'SOMETHING SMALLER IS STILL UNDER THE GREY.', { screen: true, depth: DEPTH.HUD + 30, hold: 2200 });
-      }
-    } else if (event.type === 'plate-varnish-thinned') {
-      const p = { x: VIEWER.x + (event.c + 0.5) * PLATE_CELL, y: VIEWER.y + event.r * PLATE_CELL };
-      if (!this.noteThrottle.plateVarnish || this.time.now - this.noteThrottle.plateVarnish > 2500) {
-        this.noteThrottle.plateVarnish = this.time.now;
-        noteAt(this, p.x, p.y, 'OFFICIAL RECORD · ONE MORE WASH', { screen: true, tone: 'warn', depth: DEPTH.HUD + 30, hold: 1100 });
+    } else if (event.type === 'thread-blocked') {
+      const picture = this.viewer.picture;
+      if (picture?.id === event.id) this.viewerNote('NOT THROUGH ANOTHER COLOUR', { c: event.c, r: event.r });
+    } else if (event.type === 'thread-joined') {
+      const picture = this.viewer.picture;
+      const board = this.car.plateBoard(event.id);
+      if (picture?.id === event.id && !board.state.solved && board.allJoined()) {
+        // every pair joined, but grey still shows: say what is left
+        noteAt(this, VIEW.w / 2, VIEWER.y + VIEWER.h - 8, 'ALL JOINED · NOW COVER EVERY SQUARE OF GREY', { screen: true, tone: 'warn', depth: DEPTH.HUD + 30, hold: 2200 });
       }
     } else if (event.type === 'door-silent') {
-      this.note(DOOR.x + DOOR.w / 2, DOOR.y + 30, `THE DOOR WAITS · ${event.seen} OF ${event.of} PLATES WASHED`, 'warn');
+      this.note(DOOR.x + DOOR.w / 2, DOOR.y + 30, `THE DOOR WAITS · ${event.seen} OF ${event.of} PLATES CLEAR`, 'warn');
     } else if (event.type === 'door-refused') {
       const line = event.hint === 'rosa' ? WRONG_ANSWER_LINES.rosa
         : event.hint === 'gentle' ? WRONG_ANSWER_LINES.gentle(event.sign)
@@ -1562,19 +1792,11 @@ export class PaintedCountryScene extends Phaser.Scene {
       noteAt(this, DOOR.x + DOOR.w / 2, DOOR.y - 30, 'THE HAWTHORN. THE DOOR OPENS.', { tone: 'good', hold: 2000 });
     } else if (event.type === 'paint-refused') {
       const p = at(event);
-      if (event.reason === 'varnished') {
-        const first = !this.tutorialSeen.varnish;
-        this.tutorialSeen.varnish = true;
-        // One varnish slip at a time: the next waits until this one has gone.
-        this.note(p.x, p.y, first ? `OFFICIAL RECORD · WASH IT TWICE (${b.label('wash')}), THEN PAINT` : 'VARNISHED · WASH IT TWICE', 'warn', 'varnish', 2600);
-      } else if (event.reason === 'no-pigment') {
+      if (event.reason === 'no-pigment') {
         this.note(this.walker.x, this.walker.y - 64, `DRY BRUSH · ${b.label('wash')} · WASH THE GREY FOR COLOUR`, 'no', 'dry', 1800);
       } else if (event.reason === 'sealed') {
         this.note(p.x, p.y, "THE DOOR'S OWN FACE", 'info', 'sealed', 1800);
       }
-    } else if (event.type === 'varnish-thinned') {
-      const p = at(event);
-      this.note(p.x, p.y, 'ONE MORE WASH', 'info', 'thinned', 2200);
     } else if (event.type === 'pigment-recovered') {
       this.tutorialSeen.pigment = true;
     }
@@ -1616,12 +1838,12 @@ export class PaintedCountryScene extends Phaser.Scene {
       this.nib.hide();
       this.ghost.hide();
       this.ghost.update(dt);
-      // In the plate viewer the brush only washes: a wet nib over the grey.
+      // In the plate viewer the brush draws her colours: a loaded nib.
       const v = this.viewer;
       const overPlate = v.mode === 'plate' && v.picture && !this.car.plateState(v.picture.id).developed
-        && this.brush.x >= VIEWER.x && this.brush.x <= VIEWER.x + VIEWER.w && this.brush.y >= VIEWER.y && this.brush.y <= VIEWER.y + VIEWER.h;
-      this.nib.setCursor(overPlate ? 'wash' : 'none');
-      if (this.viewer.mode === 'plate') this.stepViewerBrush();
+        && this.viewerCellAt(this.brush.x, this.brush.y) !== null;
+      this.nib.setCursor(overPlate ? 'paint' : 'none');
+      if (this.viewer.mode === 'plate') this.stepViewerBoard();
       if (this.viewer.mode === 'notes') this.drawNotes();
       this.brush.drawCursor({ screenSpace: true });
       this.brush.cursor.setDepth(DEPTH.HUD + 20);
@@ -1636,10 +1858,6 @@ export class PaintedCountryScene extends Phaser.Scene {
     if (this.paintDirty) {
       this.redrawPaint();
       this.paintDirty = false;
-    }
-    if (this.varnishDirty) {
-      this.redrawVarnish();
-      this.varnishDirty = false;
     }
     if (this.platesDirty) {
       this.redrawWallPlates();
@@ -1730,6 +1948,17 @@ export class PaintedCountryScene extends Phaser.Scene {
         mode: this.viewer?.mode ?? null,
         picture: this.viewer?.picture?.id ?? null,
         notesPulse: this.notesPulse,
+        // the puzzle on the open plate, and where its squares are on screen
+        board: this.viewer?.picture ? {
+          ...this.car.plateBoard(this.viewer.picture.id).snapshot(),
+          cursor: this.viewer.cursor,
+          latched: this.viewer.latched,
+          origin: { x: VIEWER.x, y: VIEWER.y },
+          cell: boardCell(this.viewer.picture),
+          pairs: this.viewer.picture.board.pairs,
+        } : null,
+        rule: this.viewer?.rule?.text || null,
+        hint: this.viewer?.open ? this.viewer.close.text : null,
       },
       ...this.car.snapshot(),
       pigmentRingVisible: false,

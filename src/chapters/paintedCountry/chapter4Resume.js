@@ -14,7 +14,7 @@
 //
 // Rules only, no Phaser: the scenes call these.
 
-import { BLOCK_RECTS, GRID, PAINTINGS, VARNISH_COATS, VARNISH_RECTS } from './carLayout.js';
+import { BLOCK_RECTS, GRID, PAINTINGS } from './carLayout.js';
 import { STILL_LIFE_REGIONS, STUDIO_PIGMENTS } from './drawingStudioModel.js';
 import { PIGMENTS, TRAIN_BUILD_EXAMPLE_ORDER } from './chapter4ExpansionModel.js';
 
@@ -37,14 +37,6 @@ function blockCells() {
   return cells;
 }
 
-function varnishCells() {
-  const cells = [];
-  VARNISH_RECTS.forEach(({ col, row, cols, rows }) => {
-    for (let cx = col; cx < col + cols; cx += 1) for (let cy = row; cy < row + rows; cy += 1) cells.push(cy * GRID.w + cx);
-  });
-  return cells;
-}
-
 /** A save's resume data cleaned up, or null when it is not a Chapter 4 room. */
 export function sanitizeResume(data) {
   if (!data || typeof data !== 'object' || !CH4_ROOMS.includes(data.room)) return null;
@@ -55,9 +47,7 @@ export function sanitizeResume(data) {
       car: {
         painted: cellList(car.painted),
         washed: cellList(car.washed).filter((k) => blockCells().includes(k)),
-        varnish: Array.isArray(car.varnish)
-          ? car.varnish.filter((pair) => Array.isArray(pair) && varnishCells().includes(pair[0])).map(([k, coats]) => [k, num(coats, 0, VARNISH_COATS, VARNISH_COATS)])
-          : null,
+        // (a pre-round-11 save's `varnish` is dropped: the car has none now)
         pigment: num(car.pigment, 0, 999, 0),
         plates: inList(car.plates, PAINTINGS.map((p) => p.id)),
         wrongTries: num(car.wrongTries, 0, 99, 0),
@@ -96,7 +86,6 @@ export function galleryResumeData(car, at = null) {
     car: {
       painted: [...s.painted],
       washed,
-      varnish: [...s.varnish.entries()],
       pigment: s.pigment,
       plates: PAINTINGS.map((p) => p.id).filter((id) => s.plates[id]?.developed),
       wrongTries: s.door.wrongTries,
@@ -110,12 +99,9 @@ export function applyGalleryResume(car, data) {
   const clean = sanitizeResume(data);
   if (clean?.room !== 'gallery') return false;
   const s = car.state;
-  const { painted, washed, varnish, pigment, plates, wrongTries } = clean.car;
+  const { painted, washed, pigment, plates, wrongTries } = clean.car;
   washed.forEach((k) => s.blocks.delete(k));
   painted.forEach((k) => { if (!car.isSolid(k % GRID.w, Math.floor(k / GRID.w))) s.painted.add(k); });
-  if (varnish) {
-    s.varnish = new Map(varnish.filter(([, coats]) => coats > 0));
-  }
   s.pigment = pigment;
   plates.forEach((id) => car.developPlate(id));
   s.door.wrongTries = wrongTries;

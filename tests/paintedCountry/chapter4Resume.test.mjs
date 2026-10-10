@@ -35,7 +35,6 @@ test('the gallery comes back with its plates, paint, washed grey and Butch where
   for (let cx = 20; cx < 30; cx += 1) car.paint(cx, FLOOR_ROW);
   for (let cy = 17; cy < 22; cy += 1) for (let cx = 40; cx < 43; cx += 1) car.wash(cx, cy);
   car.developPlate(PAINTINGS[0].id);
-  car.wash(63, 11); // one coat off the official record
   const store = chapter4Save();
   recordChapter4Resume(store, galleryResumeData(car, { x: 1100.4, y: 380 }));
 
@@ -49,9 +48,19 @@ test('the gallery comes back with its plates, paint, washed grey and Butch where
   assert.equal(fresh.isBlock(103, 10), true, 'the long wall is still there');
   assert.equal(fresh.plateState(PAINTINGS[0].id).developed, true);
   assert.equal(fresh.plateState(PAINTINGS[1].id).developed, false);
-  assert.equal(fresh.varnishAt(63, 11), 1);
-  assert.equal(fresh.varnishAt(64, 11), 2);
+  assert.equal(fresh.plateBoard(PAINTINGS[0].id).state.solved, true, 'a developed plate stays solved');
   assert.deepEqual(fresh.drainEvents(), []);
+});
+
+test('a pre-round-11 gallery save with official-record varnish in it still loads', () => {
+  const store = chapter4Save();
+  recordChapter4Resume(store, { room: 'gallery', car: { painted: [], washed: [], varnish: [[11 * 144 + 63, 1]], pigment: 0, plates: ['city'], wrongTries: 0 }, at: null });
+  const loaded = chapter4ResumeOnLoad({ store });
+  assert.equal('varnish' in loaded.car, false);
+  const fresh = createPaintedCar();
+  assert.equal(applyGalleryResume(fresh, loaded), true);
+  assert.equal(fresh.plateState('city').developed, true);
+  assert.equal(fresh.canPaint(63, 11), true, 'the old official-record air takes paint');
 });
 
 test('the studio comes back with its colours, the yard with its borrowed colours and painted parts', () => {

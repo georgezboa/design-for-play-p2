@@ -4,18 +4,22 @@
 //
 //   PAINT — fill a cell. It becomes real paper you can stand on. This is Rosa
 //           remembering the place back into existence.
-//   WASH  — take something back off the paper: first any varnish, then your
-//           own paint, then the archive's grey gouache.
+//   WASH  — take something back off the paper: your own paint, or the
+//           archive's grey gouache.
 //
-// The escalation (see carLayout.js): varnished "official record" cells refuse
-// paint until they are washed twice; in Bay C the brush is dry, so paint
+// The escalation (see carLayout.js): in Bay C the brush is dry, so paint
 // costs pigment that only washing the archive's grey gives back.
 //
-// The gallery is solved on the plates: each is under grey, and washing it in
-// the viewer reveals a large mark and, hidden somewhere else on it, Mara's
-// small hawthorn. The door asks which mark she left in all three. A wrong
-// mark never kills: after two misses the door names Rosa's rose, or gently
-// points back at the plates.
+// The gallery is solved on the plates: each is under grey, and under the
+// grey are Rosa's colours in pairs. Joining every pair and covering every
+// square (threadBoard.js) lifts the grey, and the plate shows a large mark
+// and, somewhere else on it, Mara's small hawthorn. The door asks which mark
+// she left in all three. A wrong mark never kills: after two misses the door
+// names Rosa's rose, or gently points back at the plates.
+//
+// Round 11: nothing is done twice. The varnished "official record" (two
+// washes before paint would take) and the cell-by-cell washing of the plates
+// are gone.
 
 import {
   BLOCK_RECTS,
@@ -30,9 +34,8 @@ import {
   READ_RADIUS,
   SEALED_RECTS,
   SIGN,
-  VARNISH_COATS,
-  VARNISH_RECTS,
 } from './carLayout.js';
+import { createThreadBoard } from './threadBoard.js';
 
 export const CELL_SIZE = CELL;
 
@@ -76,16 +79,6 @@ export function rectPlateCells(rect) {
   return cells;
 }
 
-function createPlateState(plate) {
-  const grey = new Set();
-  for (let i = 0; i < PLATE_GRID.cols * PLATE_GRID.rows; i += 1) grey.add(i);
-  // On a plate the grey is itself one wash, so the varnish over it is one
-  // coat: an official-record cell takes two washes in all, like the air.
-  const varnish = new Map();
-  plate.varnishRects.forEach((rect) => rectPlateCells(rect).forEach((cell) => varnish.set(cell, VARNISH_COATS - 1)));
-  return { grey, varnish, markFound: false, hawthornFound: false, developed: false };
-}
-
 export function createPaintedCar() {
   const terrain = terrainCells();
   const sealed = rectCells(SEALED_RECTS);
@@ -93,10 +86,9 @@ export function createPaintedCar() {
   const state = {
     painted: new Set(),
     blocks: rectCells(BLOCK_RECTS),
-    varnish: new Map([...rectCells(VARNISH_RECTS)].map((key) => [key, VARNISH_COATS])),
     pigment: PIGMENT_ZONE.start,
     seen: new Set(),
-    plates: Object.fromEntries(PAINTINGS.map((plate) => [plate.id, createPlateState(plate)])),
+    plates: {},
     door: { chosen: null, solved: false, wrongTries: 0, lastHint: null },
     complete: false,
     // No wrong answer ends the run; kept false for QA snapshots.
@@ -106,14 +98,19 @@ export function createPaintedCar() {
   };
 
   const emit = (type, payload = {}) => state.events.push({ type, ...payload });
+  // One puzzle board per plate; its events carry the plate's id.
+  PAINTINGS.forEach((plate) => {
+    state.plates[plate.id] = {
+      developed: false,
+      board: createThreadBoard(plate.board, { emit: (type, payload) => emit(type, { id: plate.id, ...payload }) }),
+    };
+  });
 
   const inBounds = (cx, cy) => cx >= 0 && cy >= 0 && cx < GRID.w && cy < GRID.h;
   const isTerrain = (cx, cy) => terrain.has(idx(cx, cy));
   const isSealed = (cx, cy) => sealed.has(idx(cx, cy));
   const isBlock = (cx, cy) => state.blocks.has(idx(cx, cy));
   const isPainted = (cx, cy) => state.painted.has(idx(cx, cy));
-  const varnishAt = (cx, cy) => state.varnish.get(idx(cx, cy)) ?? 0;
-  const isVarnished = (cx, cy) => varnishAt(cx, cy) > 0;
   const inPigmentZone = (cx) => cx >= PIGMENT_ZONE.fromCol;
   const isSolid = (cx, cy) =>
     inBounds(cx, cy) && (isTerrain(cx, cy) || isBlock(cx, cy) || isPainted(cx, cy));
@@ -121,7 +118,6 @@ export function createPaintedCar() {
   function paintRefusal(cx, cy) {
     if (!inBounds(cx, cy)) return 'off-sheet';
     if (isSealed(cx, cy)) return 'sealed';
-    if (isVarnished(cx, cy)) return 'varnished';
     if (isSolid(cx, cy)) return 'already-solid';
     if (state.painted.size >= MAX_PAINTED) return 'sheet-full';
     if (inPigmentZone(cx) && state.pigment <= 0) return 'no-pigment';
@@ -143,23 +139,16 @@ export function createPaintedCar() {
   }
 
   const canWash = (cx, cy) => inBounds(cx, cy) && !isSealed(cx, cy)
-    && (isVarnished(cx, cy) || isPainted(cx, cy) || isBlock(cx, cy));
+    && (isPainted(cx, cy) || isBlock(cx, cy));
 
-  // Varnish first, then your own paint, then the archive's grey. The floor is
-  // the carriage and is never the player's to undo.
+  // Your own paint first, then the archive's grey. The floor is the carriage
+  // and is never the player's to undo.
   function wash(cx, cy) {
     if (!inBounds(cx, cy)) return false;
     const key = idx(cx, cy);
     if (isSealed(cx, cy)) {
       emit('wash-refused', { cx, cy, reason: 'sealed' });
       return false;
-    }
-    const coats = varnishAt(cx, cy);
-    if (coats > 0) {
-      if (coats > 1) state.varnish.set(key, coats - 1);
-      else state.varnish.delete(key);
-      emit(coats > 1 ? 'varnish-thinned' : 'varnish-stripped', { cx, cy, coatsLeft: coats - 1 });
-      return true;
     }
     if (state.painted.delete(key)) {
       if (inPigmentZone(cx)) state.pigment += 1;
@@ -191,15 +180,13 @@ export function createPaintedCar() {
 
   const plateSpec = (id) => PAINTINGS.find((plate) => plate.id === id) ?? null;
   const plateState = (id) => state.plates[id] ?? null;
-  const cellClear = (plate, cell) => !plate.grey.has(cell) && !plate.varnish.has(cell);
-  const rectClear = (plate, rect) => rectPlateCells(rect).every((cell) => cellClear(plate, cell));
+  const plateBoard = (id) => state.plates[id]?.board ?? null;
 
   function developPlate(id) {
     const plate = plateState(id);
     if (!plate || plate.developed) return false;
     plate.developed = true;
-    plate.grey.clear();
-    plate.varnish.clear();
+    plate.board.markSolved();
     if (!state.seen.has(id)) {
       state.seen.add(id);
       emit('picture-read', { id });
@@ -208,42 +195,23 @@ export function createPaintedCar() {
     return true;
   }
 
-  function checkPlate(id) {
-    const spec = plateSpec(id);
-    const plate = plateState(id);
-    if (!plate.markFound && rectClear(plate, spec.markRect)) {
-      plate.markFound = true;
-      emit('plate-mark-found', { id, sign: spec.primarySign });
-    }
-    if (!plate.hawthornFound && rectClear(plate, spec.hawthornRect)) {
-      plate.hawthornFound = true;
-      emit('plate-hawthorn-found', { id });
-    }
-    if (plate.markFound && plate.hawthornFound) developPlate(id);
-  }
-
-  // One brush-cell of washing on a plate. Returns 'thinned', 'washed' or null.
-  function washPlate(id, c, r) {
-    const spec = plateSpec(id);
-    const plate = plateState(id);
-    if (!spec || !plate || plate.developed) return null;
-    if (c < 0 || r < 0 || c >= PLATE_GRID.cols || r >= PLATE_GRID.rows) return null;
-    const cell = plateCell(c, r);
-    const coats = plate.varnish.get(cell) ?? 0;
-    let result = null;
-    if (coats > 0) {
-      if (coats > 1) plate.varnish.set(cell, coats - 1);
-      else plate.varnish.delete(cell);
-      emit('plate-varnish-thinned', { id, c, r, coatsLeft: coats - 1 });
-      result = 'thinned';
-    } else if (plate.grey.delete(cell)) {
-      result = 'washed';
-    }
-    if (result) checkPlate(id);
+  // The plate comes clear the moment its last colour joins and its last
+  // square is covered.
+  const afterBoard = (id, result) => {
+    if (plateBoard(id)?.state.solved) developPlate(id);
     return result;
-  }
+  };
+  const live = (id) => {
+    const plate = plateState(id);
+    return plate && !plate.developed ? plate.board : null;
+  };
+  // Press on a dab (or a thread), drag square by square, let go, lift.
+  const threadBegin = (id, c, r) => afterBoard(id, live(id)?.begin(c, r) ?? null);
+  const threadExtend = (id, c, r) => afterBoard(id, live(id)?.extend(c, r) ?? false);
+  const threadRelease = (id) => live(id)?.release();
+  const threadClear = (id, c, r) => afterBoard(id, live(id)?.clearAt(c, r) ?? false);
 
-  // Kept for QA and the old API: reading a plate is washing it to its marks.
+  // Kept for QA and the old API: a plate is read once its colours are joined.
   function readPicture(id) {
     const plate = plateState(id);
     if (!plate) return false;
@@ -287,8 +255,6 @@ export function createPaintedCar() {
     isGlaze: isSealed,
     isBlock,
     isPainted,
-    isVarnished,
-    varnishAt,
     inPigmentZone,
     isSolid,
     canPaint,
@@ -299,7 +265,11 @@ export function createPaintedCar() {
     pictureInRange,
     plateSpec,
     plateState,
-    washPlate,
+    plateBoard,
+    threadBegin,
+    threadExtend,
+    threadRelease,
+    threadClear,
     developPlate,
     readPicture,
     picturesRead: () => PAINTINGS.filter((p) => state.seen.has(p.id)),
@@ -319,18 +289,18 @@ export function createPaintedCar() {
       return {
         painted: state.painted.size,
         blocksLeft: state.blocks.size,
-        varnishLeft: state.varnish.size,
         pigment: { zoneFromCol: PIGMENT_ZONE.fromCol, amount: state.pigment },
         picturesRead: PAINTINGS.map((p) => p.id).filter((id) => state.seen.has(id)),
         allPicturesRead: allSeen(),
         plates: Object.fromEntries(PAINTINGS.map((plate) => {
           const p = state.plates[plate.id];
+          const board = p.board.snapshot();
           return [plate.id, {
-            greyLeft: p.grey.size,
-            varnishLeft: p.varnish.size,
-            markFound: p.markFound,
-            hawthornFound: p.hawthornFound,
             developed: p.developed,
+            joined: board.joined,
+            covered: board.covered,
+            cells: board.cells,
+            active: board.active,
           }];
         })),
         door: { ...state.door },
