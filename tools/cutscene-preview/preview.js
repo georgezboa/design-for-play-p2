@@ -27,7 +27,7 @@ app.innerHTML = `
   <header class="pv-head">
     <p class="pv-eyebrow">NIGHTFALL · ROUND 9</p>
     <h1>过场预览</h1>
-    <p class="pv-lede">用游戏自己的引擎播放 8 段新过场，镜头、衔接、字幕、音乐都是游戏里的。标着「替身」的画面是临时用的旧图，等新图出好以后换掉。</p>
+    <p class="pv-lede">用游戏自己的引擎播放 8 段新过场，镜头、衔接、字幕、音乐都是游戏里的。44 张新画已经全部换上；「看旧版」是第 6 轮手绘的那一版，留着对比。</p>
     <p class="pv-keys"><span>Esc</span> 返回列表 <span>空格</span> 暂停</p>
   </header>
   <ol class="pv-list" id="pv-list"></ol>
