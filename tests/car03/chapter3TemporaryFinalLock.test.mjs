@@ -165,10 +165,23 @@ describe('Chapter 3 integrated final lock v48', () => {
     // (publishControlsStage) and a softer dusk fill. Files: 29 + 1
     // (chapter3Entrance) + 2 (chapter3ColorGrade, chapter3CastLook) -> 32.
     // Toma's composition unchanged. Assets unchanged.
+    // v49-r11-board (round 11, George's playtest, 2026-10-10; the lead
+    // reconciles this lock with the other round-11 Chapter 3 branches at
+    // merge): George was stuck at the Ticket 43 proof. The board's top line
+    // is now a task line naming the next action (never the answer); while
+    // proving every paper wears a PIN badge (CLICK / E), the lens slides off
+    // the papers, a proof strip by FILE AS ONE shows Lev's two questions as
+    // slots with PINNED n / 3, FILE stays locked until they are filled, the
+    // oil receipt is refused on the spot with a stamp and what is needed
+    // instead, hints come at 12 / 25 / 40 s while proving and a refused move
+    // steps them up instead of restarting them, papers make room for the
+    // panel at TEXT SIZE 130%, and Esc (through the pause menu's hook) puts
+    // the filing off as NOT YET · ESC says (tests/car03/
+    // chapter3Round11Board). Files unchanged: 32. Assets unchanged.
     assert.equal(sourceFiles.length, 32);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '108093d4c3351d1ac9f839971fd1235de26654157336683e4a13a8eecd6991f7',
+      '3536a6e55cbc081da186db635175f719c82c055deb24b4a6eddb58f30e559353',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

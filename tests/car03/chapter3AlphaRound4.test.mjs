@@ -312,19 +312,20 @@ describe('Chapter 3 alpha round 4 · ticket board order (P1), superseded in roun
   // asks the question; PUNCH THE STACK shows whenever the two tickets lie
   // one on the other (the player's decision), and the 1978 check moves into
   // the proof (tests/car03/chapter3Round6.test.mjs).
-  it('never names the next step, and offers the punch only on a stack', () => {
+  // Round 11: the board's line names the next operation again (a task
+  // line, tests/car03/chapter3Round11Board.test.mjs); the punch still shows
+  // only on a stack, and before the lens has read both tickets the line asks
+  // for the lens, not the punch.
+  it('offers the punch only on a stack, and asks for the lens before it', () => {
     const model = createChapter3OpeningModel({ startAt: 'ticket-board' });
     const step = () => ticketBoardGuidance(model.snapshot().ticketBoard);
-    const texts = new Set();
     assert.equal(step().canPunch, false);
-    texts.add(step().text);
+    assert.ok(step().text.startsWith(CHAPTER3_OBJECTIVES_QUESTION));
     model.seeTicketThroughLens(TICKET_IDS[0]);
-    texts.add(step().text);
     model.stackTickets(true);
     assert.equal(step().canPunch, true, 'a stack can be punched before the lens');
-    texts.add(step().text);
-    assert.deepEqual([...texts], [CHAPTER3_OBJECTIVES_QUESTION]);
-    assert.doesNotMatch([...texts].join(' '), /lens|lay one|stack|punch/i);
+    assert.match(step().text, /lens/);
+    assert.doesNotMatch(step().text, /punch/i);
   });
 
   it('shows PUNCH THE STACK only when a punch would open the filing', () => {
