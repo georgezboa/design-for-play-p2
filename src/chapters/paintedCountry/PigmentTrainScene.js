@@ -448,10 +448,8 @@ export class PigmentTrainScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys({ a: 'A', d: 'D', w: 'W', e: 'E' });
     this.input.keyboard.addCapture(['SPACE', 'W']);
     this.input.mouse?.disableContextMenu();
-    this.input.keyboard.on('keydown-F', () => {
-      if (this.scale.isFullscreen) this.scale.stopFullscreen();
-      else this.scale.startFullscreen();
-    });
+    // (F is the keyboard brush since round 6; it no longer also toggles
+    // fullscreen here, which threw a keyboard player out of the room.)
     this.brush = new BrushInput(this, { anchor: null });
     // The pointer is a brush in every Chapter 4 room (round 6, item 11).
     this.input.setDefaultCursor(nibCursorCss('paint'));

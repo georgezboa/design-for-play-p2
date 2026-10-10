@@ -163,7 +163,6 @@ export class PaintedCountryScene extends Phaser.Scene {
     this.paintDirty = true;
     this.platesDirty = true;
     this.lastBrushCell = null;
-    this.lastPlateCell = null;
     this.hoveredPictureId = null;
     this.hoveredDoorSign = null;
     this.tutorialSeen = { move: false, bridge: false, wash: false, pigment: false };
@@ -850,8 +849,7 @@ export class PaintedCountryScene extends Phaser.Scene {
       v.picture = null;
       v.latched = false;
       v.queue.length = 0;
-      this.lastPlateCell = null;
-      this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y }), REACH - 2);
+        this.brush?.setAnchor(() => ({ x: this.walker.x, y: this.walker.y }), REACH - 2);
     }
   }
 
@@ -869,7 +867,6 @@ export class PaintedCountryScene extends Phaser.Scene {
     v.cursor = { c: picture.board.pairs[0].a[0], r: picture.board.pairs[0].a[1] };
     v.latched = false;
     v.queue.length = 0;
-    this.lastPlateCell = null;
     this.drawViewerPlate();
   }
 
