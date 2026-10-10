@@ -157,11 +157,12 @@ export const CONTROLS_STAGE_EVENT = 'nightfall:controls-stage';
 // copy is the set's fallback for ALL CONTROLS).
 export const CONDUCTOR_CONTROLS = list(
   ['MOVE', 'WASD / ARROWS'],
-  ['PUNCH / ACT', 'E / ENTER · LEFT CLICK (MOVEMENT I)'],
+  ['JUMP', 'SPACE'],
   ['DASH', 'SHIFT / X'],
-  ['LENS (MOVEMENT I)', 'MOUSE · L LETS IT CIRCLE YOU'],
+  ['PUNCH / ACT', 'E / ENTER · LEFT CLICK (MOVEMENTS I, III)'],
+  ['LENS (MOVEMENT I)', 'MOUSE OR RIGHT STICK · OTHERWISE IT LEADS YOU'],
   ['LISTEN (MOVEMENT II)', 'HOLD Q'],
-  ['ANSWER (MOVEMENT III)', '1 / 2'],
+  ['TRUE THINGS (MOVEMENT III)', 'E ON ONE, THEN THE OTHER'],
   ['SPEAK FACE TO FACE (MOVEMENT III)', 'E / ENTER AT THE LIT FRONT'],
   ['ABSORB (MOVEMENT IV)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'],
   ['RETURN (MOVEMENT IV)', 'HOLD R · OR HOLD LEFT MOUSE'],
@@ -470,31 +471,32 @@ export const CONTROL_SETS = Object.freeze({
     id: 'chapter6',
     title: 'ALL WORLDS AT ONCE',
     all: CONDUCTOR_CONTROLS,
-    basics: list(['MOVE', 'WASD / ARROWS'], ['ACT / SPEAK', 'E / ENTER'], ['DASH', 'SHIFT']),
+    basics: list(['MOVE', 'WASD / ARROWS'], ['JUMP', 'SPACE'], ['DASH', 'SHIFT / X'], ['ACT', 'E / ENTER']),
     stages: Object.freeze({
-      movement1: stage('I · NIGHT SERVICE', [
+      movement1: stage('I · LOST PROPERTY', [
         ['MOVE', 'WASD / ARROWS'],
-        ['PUNCH / ACT', 'E / ENTER · LEFT CLICK'],
-        ['LENS', 'MOUSE · L LETS IT CIRCLE YOU'],
-        ['DASH', 'SHIFT'],
+        ['PUNCH A CLAIM BACK', 'E / ENTER · LEFT CLICK · AS IT LANDS'],
+        ['LENS', 'MOUSE · RIGHT STICK · IT LEADS YOU'],
+        ['JUMP · DASH', 'SPACE · SHIFT'],
       ]),
       movement2: stage('II · ON THE BELL', [
         ['MOVE', 'WASD / ARROWS'],
+        ['PUNCH A LAMP · PUNCH HIM', 'E / ENTER'],
+        ['JUMP THE BELL’S RING', 'SPACE'],
         ['LISTEN (NEXT BELL)', 'HOLD Q'],
-        ['ACT', 'E / ENTER'],
         ['DASH', 'SHIFT'],
       ]),
       movement3: stage('III · TWO TRUE THINGS', [
-        ['CHOOSE WHAT TO SAY', '1 / 2'],
+        ['STRIKE A TRUE THING', 'E · THEN THE OTHER'],
         ['SPEAK FACE TO FACE', 'E / ENTER AT THE LIT FRONT'],
         ['MOVE', 'WASD / ARROWS'],
-        ['DASH', 'SHIFT'],
+        ['JUMP · DASH', 'SPACE · SHIFT'],
       ]),
       movement4: stage('IV · THE PAINTED COUNTRY', [
-        ['ABSORB THE COLOUR', 'HOLD E · HOLD RIGHT MOUSE'],
-        ['RETURN IT', 'HOLD R · HOLD LEFT MOUSE'],
+        ['ABSORB WET COLOUR', 'HOLD E · HOLD RIGHT MOUSE'],
+        ['RETURN IT WHEN HE IS OPEN', 'HOLD R · HOLD LEFT MOUSE'],
         ['MOVE', 'WASD / ARROWS'],
-        ['DASH', 'SHIFT'],
+        ['JUMP · DASH THROUGH A SWEEP', 'SPACE · SHIFT'],
       ]),
     }),
     aliases: Object.freeze({
@@ -502,12 +504,13 @@ export const CONTROL_SETS = Object.freeze({
       i: 'movement1', ii: 'movement2', iii: 'movement3', iv: 'movement4',
     }),
     entry: entry('CHAPTER 6 · ALL WORLDS AT ONCE', [
-      ['MOVE', 'WASD / ARROWS'],
-      ['ACT / SPEAK', 'E / ENTER'],
-      ['DASH', 'SHIFT'],
+      ['MOVE', 'WASD / ARROWS · STICK'],
+      ['JUMP', 'SPACE · A'],
+      ['DASH', 'SHIFT · B'],
+      ['ACT', 'E / ENTER · X'],
     ], [
-      ['NOW', 'E is ‘act’ and ‘speak face to face’. There is no jumping here.'],
-      ['NEW', 'Shift dashes. Each movement adds one verb, shown as it comes.'],
+      ['NOW', 'Four movements, three phases each. Read the warning, then move: jump rings, dash through sweeps.'],
+      ['NEW', 'Each phase is a checkpoint. Each movement adds one verb, taught as it comes.'],
     ]),
   }),
   // Chapter 6 · the five-stone route, THE BLACK TICKET (hidden-final-boss.html).

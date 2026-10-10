@@ -71,22 +71,16 @@ test('R4-1: the low tier caps the pixel ratio at 0.75 and turns off MSAA and sha
 
 // --------------------------------------------------------- R4-3 the window
 
-test('R4-3: after a true answer the window stays open, with a lit front edge, a tag and a HUD line, until the hit', () => {
-  assert.doesNotMatch(battle, /THE MOMENT PASSED/, 'the window no longer times out');
-  assert.doesNotMatch(battle, /this\.toast\('HE HAS NO ANSWER · GO TO THE FRONT EDGE', 2\.6\)/);
-  assert.match(battle, /openEchoWindow\(reply = null\) \{[\s\S]{0,500}this\.showFrontEdge\(true\);\s*this\.updateEchoWindowCue\(\);/);
-  // the HUD line is re-asserted every frame of the window
-  assert.match(battle, /\} else if \(this\.echo\.stage === 'window'\) \{\s*this\.echo\.window \+= dt;\s*this\.boss\.exposed = 1;\s*this\.updateEchoWindowCue\(\);/);
-  // Round 6 (item 18): E says it; Space only jumps.
-  assert.match(battle, /HE HAS NO ANSWER · <kbd>E<\/kbd> · SAY IT TO HIS FACE/);
-  assert.match(battle, /HE HAS NO ANSWER · WALK UP TO THE LIT FRONT EDGE · THEN <kbd>E<\/kbd>/);
-  assert.match(battle, /'<kbd>E<\/kbd> · SAY IT TO HIS FACE' : '<kbd>E<\/kbd> · SAY IT'\) : \(full \? 'THE FRONT EDGE · COME HERE · THEN <kbd>E<\/kbd>'/);
+test('R4-3: when he has no answer, the front edge stays lit with a tag and a HUD line until it is said', () => {
+  // Round 11: this is Movement III's finisher (movements/echoCity.js).
+  const echo = read('src/chapters/finalBoss/movements/echoCity.js');
+  assert.match(echo, /const noAnswer = \(\) => \{\s*frontLit = true;/);
+  assert.match(echo, /if \(frontLit\) \{\s*if \(body\.z <= FRONT_EDGE_Z\) \{[\s\S]{0,200}d\.damage\(SAID_DAMAGE, 'said-to-his-face'\);/);
+  assert.match(echo, /if \(frontLit\) return 'HE HAS NO ANSWER · THE LIT FRONT EDGE · <kbd>E<\/kbd> · SAY IT TO HIS FACE';/);
+  assert.doesNotMatch(battle, /THE MOMENT PASSED/, 'the window never times out');
+  assert.match(battle, /this\.showFrontEdge\(director\.frontLit\);/);
+  assert.match(battle, /text: p\.z <= ECHO_FRONT_EDGE_Z \? '<kbd>E<\/kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · <kbd>E<\/kbd>'/);
   assert.doesNotMatch(battle, /<kbd>SPACE<\/kbd> · SAY IT/);
-  // it ends only with the hit (or a torn last layer / a new movement)
-  assert.match(battle, /this\.hitBoss\(ECHO_WINDOW_DAMAGE, 'shame'\);\s*this\.toast\('SAID TO HIS FACE'\);\s*this\.endEchoWindow\(\);/);
-  // A torn last layer keeps the window open (round 6, item 16).
-  assert.match(battle, /if \(!echoWindow\) \{ this\.showFrontEdge\(false\);/);
-  assert.match(battle, /endEchoWindow\(\) \{[\s\S]{0,300}this\.showFrontEdge\(false\);/);
 });
 
 // ------------------------------------------------------- R4-4 the argument
@@ -103,7 +97,7 @@ test('R4-4: both answers answer "Official inquiry?", and the true one holds both
   assert.match(battle, /if \(Array\.isArray\(cue\?\.parts\) && cue\.parts\.length\) \{/);
 });
 
-test('R4-4: a deflection explains itself in one short line before the volley', () => {
+test('R4-4: a half answer is deflected in one short line, and the claim comes back', () => {
   for (const exchange of ECHO_EXCHANGES) {
     for (const reply of exchange.replies.filter((entry) => !entry.holdsBoth)) {
       assert.ok(reply.deflect, `${exchange.id}: has a reason`);
@@ -111,23 +105,23 @@ test('R4-4: a deflection explains itself in one short line before the volley', (
       assert.ok(reply.deflect.length <= 72, `${exchange.id}: one short line (${reply.deflect.length})`);
     }
   }
-  assert.doesNotMatch(battle, /this\.toast\('DEFLECTED · HE WILL COME BACK TO IT'\)/);
-  assert.match(battle, /this\.showDeflection\(reply\.deflect \?\? ECHO_DEFLECT_FALLBACK\)/);
-  assert.match(battle, /showDeflection\(text\) \{[\s\S]{0,300}this\.showCaption\(\{ speaker: 'DEFLECTED', text \}/);
-  // nothing is thrown while it is read
-  assert.match(battle, /\} else if \(this\.echo\.stage === 'deflected'\) \{\s*this\.echo\.deflectClock -= dt;\s*if \(this\.echo\.deflectClock <= 0\) this\.endEchoDeflection\(\);/);
-  assert.match(battle, /\(this\.phase === 2 && this\.echo\.stage !== 'combat'\)/);
+  // Round 11: the square never freezes; the line is a toast over the fight.
+  const echo = read('src/chapters/finalBoss/movements/echoCity.js');
+  assert.match(echo, /const line = why === 'none' \? ECHO_DEFLECT_FALLBACK : \(reply\.deflect \?\? ECHO_DEFLECT_FALLBACK\);/);
+  assert.match(echo, /argument\.deflect\(exchange\.id\);/);
+  assert.match(battle, /case 'deflected': this\.toast\(e\.line, 3\.2\);/);
 });
 
 // ------------------------------------------------------------ R4-5 colour
 
-test('R4-5: one returned colour is worth much more: IV in ~6 single returns or 2 full brushes', () => {
+test('R4-5 → round 11: a return lands only in the open beat, so each colour cuts deep and a fuller brush deeper', () => {
   assert.equal(PAINT_MOVEMENT_DRAIN, 88);
-  assert.ok(paintReturnDamage(1) >= 15, 'a single colour is a real cut');
-  assert.ok(Math.ceil(PAINT_MOVEMENT_DRAIN / paintReturnDamage(1)) <= 6);
-  assert.equal(Math.ceil(PAINT_MOVEMENT_DRAIN / paintReturnDamage(3)), 2);
-  assert.ok(paintReturnDamage(2) > paintReturnDamage(1) * 2, 'holding still pays');
+  // A phase is ~30 of the 88 and stops at its floor: two open windows a phase.
+  assert.ok(paintReturnDamage(3) < 30, 'one full brush never ends a phase by itself');
+  assert.ok(paintReturnDamage(3) * 2 >= 30, 'two full brushes always do');
+  assert.ok(paintReturnDamage(2) > paintReturnDamage(1) * 2, 'holding pays');
   assert.ok(paintReturnDamage(3) > paintReturnDamage(1) * 3);
+  assert.equal(paintReturnDamage(9), paintReturnDamage(3), 'three colours at most');
 });
 
 // ---------------------------------------------------------- layout and flow
@@ -144,7 +138,7 @@ test('Movement I: a case tag never covers the E · RETURN prompt beside it', () 
   // tags far apart are left alone
   const apart = spreadWorldTags([{ text: 'A', x: 100, y: 300 }, { text: 'B', x: 900, y: 300 }]);
   assert.deepEqual(apart.map((tag) => tag.y), [300, 300]);
-  assert.match(battle, /spreadWorldTags\(caseTags\)\.forEach/);
+  assert.match(battle, /spreadWorldTags\(tags\)\.forEach\(\(tag\) => this\.tags\.tag\(tag\.text, tag\.x, tag\.y, \{ dim: Boolean\(tag\.dim\) \}\)\);/);
 });
 
 test('the STORY offer replaces the death card and carries what tore the layer', () => {
@@ -159,7 +153,7 @@ test('A4-10: a new world is held behind a veil until the GPU has drawn it; the t
   assert.match(battle, /gl\.fenceSync\(gl\.SYNC_GPU_COMMANDS_COMPLETE, 0\)/);
   assert.match(battle, /this\.renderer\.render\(this\.scene, this\.camera\);\s*this\.checkWorldVeil\(\);/);
   assert.match(battle, /if \(this\.worldVeiled\) this\.pendingTitleCard = card; else card\(\);/);
-  assert.match(battle, /!this\.dialoguePause && !this\.worldVeiled\) \{/, 'no world tags over the veil');
+  assert.match(battle, /!this\.dialoguePause && !this\.worldVeiled && director\) \{/, 'no world tags over the veil');
   assert.match(style, /\.nf-world-veil\.is-held \{ opacity: 1;/);
   // and the fall lands on the fight's own framing
   assert.match(battle, /const pose = this\.landingCameraPose\(\);/);

@@ -22,12 +22,13 @@ const PAUSE = Object.freeze(['PAUSE', 'ESC']);
 const rows = (...list) => Object.freeze(list.map((row) => Object.freeze([...row])));
 
 // Stage ids are the movement ids (spectacleBattle.js PHASES), plus the
-// departure once the night service arrives.
+// departure once the night service arrives. Round 11 (the skill fight):
+// every movement is move, jump, dash and one verb of its own.
 export const FINALE_STAGE_CONTROLS = Object.freeze({
-  lost: rows(MOVE, ['RETURN A CASE', 'E / ENTER / CLICK'], ['AIM THE LENS', 'MOUSE · L: IT CIRCLES YOU'], JUMP, DASH),
-  borrowed: rows(MOVE, ['PUNCH A LAMP · PUNCH HIM', 'E / ENTER'], ['LISTEN FOR THE BELL', 'HOLD Q'], JUMP, DASH),
-  echo: rows(MOVE, ['CHOOSE WHAT YOU KNOW', '1 – 4 / CLICK'], ['SAY IT · TO HIS FACE', 'E / ENTER'], JUMP, DASH),
-  painted: rows(MOVE, ['ABSORB A COLOUR', 'HOLD E · OR HOLD RIGHT MOUSE'], ['RETURN IT TO HIM', 'HOLD R · OR HOLD LEFT MOUSE'], JUMP, DASH),
+  lost: rows(MOVE, ['PUNCH A CLAIM BACK', 'E / ENTER / CLICK · AS IT LANDS'], ['AIM THE LENS', 'MOUSE / RIGHT STICK · IT LEADS YOU'], JUMP, DASH),
+  borrowed: rows(MOVE, ['PUNCH A LAMP · PUNCH HIM', 'E / ENTER'], ['JUMP THE BELL’S RING', 'SPACE'], DASH, ['LISTEN FOR THE BELL', 'HOLD Q']),
+  echo: rows(MOVE, ['STRIKE A TRUE THING', 'E / ENTER · THEN THE OTHER'], JUMP, DASH, PAUSE),
+  painted: rows(MOVE, ['ABSORB WET COLOUR', 'HOLD E · OR HOLD RIGHT MOUSE'], ['RETURN IT WHEN HE IS OPEN', 'HOLD R · OR HOLD LEFT MOUSE'], JUMP, ['DASH · THROUGH A SWEEP TAKES ITS COLOUR', 'SHIFT / X']),
   departure: rows(MOVE, ['JUMP ABOARD', 'SPACE / E'], PAUSE),
 });
 
@@ -36,11 +37,12 @@ export const FINALE_STAGE_CONTROLS = Object.freeze({
 export const FINALE_ALL_CONTROLS = rows(
   MOVE, JUMP, DASH,
   ['ACT · CONFIRM', 'E / ENTER'],
-  ['LENS (MOVEMENT I)', 'MOUSE · L LETS IT CIRCLE YOU · CLICK RETURNS A CASE'],
+  ['LENS (MOVEMENT I)', 'MOUSE OR RIGHT STICK AIMS IT · OTHERWISE IT LEADS YOU · CLICK PUNCHES'],
   ['LISTEN (MOVEMENT II)', 'HOLD Q'],
-  ['ANSWER (MOVEMENT III)', '1 – 4 CHOOSE WHAT YOU KNOW · 1 / 2 HOW YOU SAY IT'],
+  ['TRUE THINGS (MOVEMENT III)', 'E ON ONE, THEN E ON THE OTHER · AT THE LIT EDGE, E'],
   ['ABSORB (MOVEMENT IV)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'],
   ['RETURN (MOVEMENT IV)', 'HOLD R · OR HOLD LEFT MOUSE'],
+  ['GAMEPAD', 'STICK MOVE · A JUMP · B DASH · X ACT / ABSORB · Y RETURN · LB LISTEN · RIGHT STICK LENS · START PAUSE'],
   ['FULLSCREEN', 'F'],
   PAUSE,
 );
@@ -72,17 +74,52 @@ export function announceControlsStage(stage, target = globalThis) {
 
 // The one line of keys on each movement's title card (where the verbs change).
 export const MOVEMENT_KEY_LINES = Object.freeze([
-  'E / CLICK · RETURN A CASE   ·   MOUSE · AIM THE LENS (L: IT CIRCLES YOU)   ·   SPACE · JUMP',
-  'E · PUNCH A LAMP, THEN HIM   ·   HOLD Q · LISTEN FOR THE BELL   ·   SPACE · JUMP',
-  '1 – 4 · CHOOSE WHAT YOU KNOW   ·   E / ENTER · SAY IT   ·   SPACE · JUMP',
-  'HOLD E · ABSORB THE NEAREST COLOUR   ·   HOLD R · RETURN IT   ·   OR HOLD RIGHT / LEFT MOUSE',
+  'E / CLICK · PUNCH A CLAIM BACK AS IT LANDS   ·   MOUSE · AIM THE LENS   ·   SPACE · JUMP',
+  'E · PUNCH A LAMP, THEN HIM   ·   SPACE · JUMP THE BELL’S RING   ·   SHIFT · DASH',
+  'E · STRIKE ONE TRUE THING, THEN THE OTHER   ·   SPACE · JUMP',
+  'HOLD E · ABSORB WET COLOUR   ·   HOLD R · RETURN IT WHEN HE IS OPEN   ·   SHIFT · DASH THROUGH A SWEEP',
 ]);
 
-// The rule every movement states once on entry (round 6, item 16): a torn
-// last layer costs Butch his place, never what he has done.
+// What a torn last layer costs, said once on each movement's title card:
+// a phase is its checkpoint (conductorFight.js createFightRunner).
 export const PROGRESS_KEPT_LINES = Object.freeze([
-  'TORN LAYERS COST YOU YOUR PLACE · RETURNED CASES STAY RETURNED',
-  'TORN LAYERS COST YOU YOUR PLACE · A LANDED PUNCH STAYS LANDED',
-  'TORN LAYERS COST YOU YOUR PLACE · WHAT YOU HAVE SAID STANDS',
-  'TORN LAYERS COST YOU YOUR PLACE · RETURNED COLOUR STAYS RETURNED',
+  'EACH PHASE IS A CHECKPOINT · A TORN LAST LAYER RESTARTS ONLY THE PHASE',
+  'EACH PHASE IS A CHECKPOINT · A TORN LAST LAYER RESTARTS ONLY THE PHASE',
+  'EACH PHASE IS A CHECKPOINT · A TORN LAST LAYER RESTARTS ONLY THE PHASE',
+  'EACH PHASE IS A CHECKPOINT · A TORN LAST LAYER RESTARTS ONLY THE PHASE',
 ]);
+export const STORY_KEPT_LINE = 'STORY · A TORN LAST LAYER UNDOES NOTHING';
+
+// ---------------------------------------------------------------------------
+// Gamepad (standard mapping): the same verbs as the keys.
+//   left stick / D-pad  move           A jump        B / RB dash
+//   X  act (Movement IV: hold to absorb)            Y hold to return (IV)
+//   LB hold to listen (II)   right stick  aims the lens (I)   START pause
+
+export const FINALE_PAD = Object.freeze({
+  jump: 0, dash: 1, act: 2, ret: 3, listen: 4, dashAlt: 5, start: 9, up: 12, down: 13, left: 14, right: 15, deadzone: 0.24,
+});
+
+const padPressed = (pad, index) => Boolean(pad?.buttons?.[index]?.pressed);
+const deadzone = (v, dz = FINALE_PAD.deadzone) => (Math.abs(v) < dz ? 0 : (v - Math.sign(v) * dz) / (1 - dz));
+
+// Read the first connected pad. `previous` is the last call's `buttons`
+// (for presses: true only on the poll a button goes down).
+export function readFinalePad(pads, previous = null) {
+  const pad = [...(pads ?? [])].find((entry) => entry && entry.connected !== false) ?? null;
+  const buttons = {
+    jump: padPressed(pad, FINALE_PAD.jump), dash: padPressed(pad, FINALE_PAD.dash) || padPressed(pad, FINALE_PAD.dashAlt), act: padPressed(pad, FINALE_PAD.act),
+    ret: padPressed(pad, FINALE_PAD.ret), listen: padPressed(pad, FINALE_PAD.listen), start: padPressed(pad, FINALE_PAD.start),
+  };
+  const axes = pad?.axes ?? [];
+  let moveX = deadzone(Number(axes[0]) || 0);
+  let moveZ = deadzone(Number(axes[1]) || 0);
+  if (padPressed(pad, FINALE_PAD.left)) moveX = -1;
+  if (padPressed(pad, FINALE_PAD.right)) moveX = 1;
+  if (padPressed(pad, FINALE_PAD.up)) moveZ = -1;
+  if (padPressed(pad, FINALE_PAD.down)) moveZ = 1;
+  const aimX = deadzone(Number(axes[2]) || 0, 0.3);
+  const aimZ = deadzone(Number(axes[3]) || 0, 0.3);
+  const pressed = Object.fromEntries(Object.entries(buttons).map(([key, down]) => [key, down && !previous?.[key]]));
+  return { connected: Boolean(pad), moveX, moveZ, aimX, aimZ, aimActive: Math.hypot(aimX, aimZ) > 0.05, buttons, pressed };
+}

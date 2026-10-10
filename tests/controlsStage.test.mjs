@@ -146,15 +146,16 @@ test('Chapter 1 reads its act from the page when no stage event came, and draws 
 
 test('the stage rows follow the unified scheme (item 18)', () => {
   const rowsOf = (set) => [set.basics, ...Object.values(set.stages).map((stage) => stage.rows)].flat();
-  // where there is jumping, Space only ever jumps
-  for (const id of ['chapter2', 'chapter4', 'chapter5']) {
+  // where there is jumping, Space only ever jumps (round 11: the Conductor's
+  // fight jumps his rings and sweeps)
+  for (const id of ['chapter2', 'chapter4', 'chapter5', 'chapter6']) {
     for (const [action, keys] of rowsOf(CONTROL_SETS[id])) {
       if (/\bSPACE\b/.test(keys)) assert.match(action, /^JUMP/, `${id}: ${action} · ${keys}`);
     }
     assert.ok(rowsOf(CONTROL_SETS[id]).some(([action, keys]) => /^JUMP/.test(action) && /\bSPACE\b/.test(keys)), `${id} jumps on Space`);
   }
   // where there is none, Space is not the main action of a stage
-  for (const id of ['chapter1', 'chapter3', 'chapter6', 'oneAnswer']) {
+  for (const id of ['chapter1', 'chapter3', 'oneAnswer']) {
     for (const [action, keys] of rowsOf(CONTROL_SETS[id])) assert.doesNotMatch(keys, /\bSPACE\b/, `${id}: ${action} · ${keys}`);
   }
   // E / Enter interact where a chapter has an interact verb
@@ -209,7 +210,7 @@ test('every chapter has an entry card: 3–4 basics and what changed', () => {
     assert.ok(spec.changed.length >= 1, `${id} says what changed`);
     for (const { tag } of spec.changed) assert.match(tag, /^(NEW|NOW|SAME|NOTE)$/);
   }
-  assert.match(chapterCardSpec('chapter6').changed.map(({ text }) => text).join(' '), /E is ‘act’ and ‘speak face to face’/);
+  assert.match(chapterCardSpec('chapter6').changed.map(({ text }) => text).join(' '), /three phases each[\s\S]*Each phase is a checkpoint/);
   assert.match(chapterCardSpec(2).changed.map(({ text }) => text).join(' '), /Space jumps/);
   assert.equal(chapterCardSpec('cutscene'), null);
   assert.equal(chapterCardSpec('nope'), null);
