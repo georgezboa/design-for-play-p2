@@ -1,5 +1,11 @@
 # Chapter 6 · ALL WORLDS AT ONCE — the Conductor, rebuilt as a skill fight (round 11)
 
+> **SUPERSEDED (2026-10-10) by `docs/CHAPTER_06_BOSS_ROUND12.md`.** Round 12 replaced these four
+> top-down skill fights with seven set pieces, each its own way to play (side-scroller, behind-the-back
+> duel, rooftop platformer, vertical climb, top-down bullet hell, a draw on the clock, on rails). The
+> code this document describes (`conductorFight.js`, `fightBot.js`, `fightVisuals.js`, `movements/`)
+> is gone. Kept as the record of round 11.
+
 George's note (round 11): "boss关太没意思 要像split fiction一样考验操作 最好四个部分重构一下" —
 the boss fight is boring; it should test execution like Split Fiction's boss fights; ideally
 restructure all four parts.
