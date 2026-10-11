@@ -27,6 +27,9 @@ const WORLD_LOOK = Object.freeze({
   echo: { background: 0x3a2420, fog: 0x3b2622, density: 0.018 },
 });
 
+const CONDUCTOR_H = 24;
+const CONDUCTOR_Z = -50;
+
 export function createLineView({ scene, textureLoader, low = false, still = () => false }) {
   const root = new THREE.Group();
   root.visible = false;
@@ -87,13 +90,14 @@ export function createLineView({ scene, textureLoader, low = false, still = () =
       return { x, sections };
     });
     // The train's front under Butch, and Butch.
-    const front = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.2), paintedMaterial(art.front, { fog: false }));
+    const front = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 2.3), paintedMaterial(art.front, { fog: false }));
     front.rotation.x = -Math.PI / 2;
-    front.position.set(0, 0.6, 1.2);
-    const butch = createFrameCard(art.butch, 1.9, { fog: false });
+    front.position.set(0, 0.6, 1.0);
+    const butch = createFrameCard(art.butch, 1.9, { fog: false, rim: { color: 0x1c1612, opacity: 0.5, grow: 0.1 } });
     // The Conductor, striding beside the line.
-    const conductor = new THREE.Mesh(new THREE.PlaneGeometry(26 * (1.75 / 3.8), 26), paintedMaterial(art.conductor, { fog: false }));
-    conductor.position.set(-17, 13 - 1, -36);
+    // Far enough back that all of him shows under the HUD, as tall as the hills.
+    const conductor = new THREE.Mesh(new THREE.PlaneGeometry(CONDUCTOR_H * (1.75 / 3.8), CONDUCTOR_H), paintedMaterial(art.conductor, { fog: false }));
+    conductor.position.set(-20, CONDUCTOR_H / 2, CONDUCTOR_Z);
     // The tunnel's walls and arches (the 1978 stretch), rain, Echo's skyline.
     const tunnel = new THREE.Group();
     const wallMat = basic(0x2a1d12);
@@ -237,16 +241,16 @@ export function createLineView({ scene, textureLoader, low = false, still = () =
     } else p.planks.forEach((m) => { m.visible = false; });
     // The Conductor strides alongside; his brush rises before a stroke.
     const raising = piece.strokes.length > 0 || piece.sweeps.length > 0;
-    p.conductor.position.y = 12 + (still() ? 0 : Math.abs(Math.sin(time * 2.2)) * 0.6);
+    p.conductor.position.y = CONDUCTOR_H / 2 + (still() ? 0 : Math.abs(Math.sin(time * 2.2)) * 0.6);
     p.conductor.rotation.z = THREE.MathUtils.damp(p.conductor.rotation.z, raising ? 0.08 : -0.02, 5, dt);
-    p.conductor.position.x = THREE.MathUtils.damp(p.conductor.position.x, piece.service ? -24 : -17, 1, dt);
+    p.conductor.position.x = THREE.MathUtils.damp(p.conductor.position.x, piece.service ? -27 : -20, 1, dt);
     // Butch and the train.
     const b = piece.body;
     p.front.position.x = piece.trainX;
     p.butch.root.position.set(b.x, 0.6 + b.y, -0.2);
     p.butch.flip(b.vx < -0.3 ? -1 : 1);
     p.butch.setFrame(!b.grounded ? 'jump' : b.moving ? `walk${Math.floor(time * 8) % 4}` : 'idle');
-    p.butch.mesh.rotation.z = piece.jolt > 0 && !still() ? Math.sin(time * 40) * 0.12 : 0;
+    p.butch.root.rotation.z = piece.jolt > 0 && !still() ? Math.sin(time * 40) * 0.12 : 0;
     // The night service alongside, at the end.
     if (piece.service) {
       p.service.visible = true;
@@ -318,7 +322,7 @@ export function createLineView({ scene, textureLoader, low = false, still = () =
     camera(piece) {
       const x = piece.trainX;
       if (piece.service && !piece.boarded) return { position: new THREE.Vector3(x * 0.3 - 1.2, 3.6, 7), target: new THREE.Vector3(x * 0.2 - 2.2, 1.4, -12), fov: 60 };
-      return { position: new THREE.Vector3(x * 0.4, 3.5 + piece.body.y * 0.2, 6.6), target: new THREE.Vector3(x * 0.25, 1.2, -14), fov: 58 };
+      return { position: new THREE.Vector3(x * 0.4, 3.5 + piece.body.y * 0.2, 6.6), target: new THREE.Vector3(x * 0.25, 2.4, -14), fov: 58 };
     },
     point(piece, what) {
       if (what === 'boss') return parts.conductor.position.clone();

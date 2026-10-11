@@ -208,8 +208,9 @@ export function createPieceRunner({ piece, difficulty = DEFAULT_DIFFICULTY, ledg
       vitals.hp = vitals.maxHp;
       piece.setDifficulty?.(id);
     },
-    // A new piece in the same run keeps the layers' count and the ledger.
-    adopt(next) { runner.piece = next; vitals.inv = Math.max(vitals.inv, 0.8); },
+    // A new piece in the same run is a checkpoint: every layer again (the
+    // death ledger, and so the STORY offer, carries on).
+    adopt(next) { runner.piece = next; vitals.hp = vitals.maxHp; vitals.inv = Math.max(vitals.inv, 0.8); },
     step(dt, input = {}) {
       runner.time += dt;
       vitals.inv = Math.max(0, vitals.inv - dt);

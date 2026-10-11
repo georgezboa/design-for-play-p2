@@ -263,14 +263,17 @@ test('the set pieces: four movements, seven pieces, each movement 100 of his tic
   assert.equal(findPiece('nope'), null);
 });
 
-test('a movement run hands its layers and ledger from piece to piece', () => {
-  const run = createMovementRun({ movement: 0, difficulty: 'normal' });
+test('a movement run: a new set piece starts with every layer; the ledger carries on', () => {
+  const ledger = createDeathLedger();
+  const run = createMovementRun({ movement: 0, difficulty: 'normal', ledger });
   assert.equal(run.piece.id, 'roof-run');
   assert.equal(run.ticket(), 0);
   run.runner.vitals.hp = 1;
+  ledger.record(0);
   assert.equal(run.next(), true);
   assert.equal(run.piece.id, 'return-to-sender');
-  assert.equal(run.runner.vitals.hp, 1, 'the layers carry over');
+  assert.equal(run.runner.vitals.hp, 3, 'a new piece is a checkpoint: every layer again');
+  assert.equal(run.runner.ledger.deaths(0), 1, 'the deaths still count toward the STORY offer');
   assert.equal(run.ticket(), 40);
   assert.equal(run.next(), false);
   run.jump(0, 2);

@@ -21,6 +21,7 @@ test('A4-5: every hit names its source, and the death card says what tore the la
   const emitted = new Set([
     ...[...pieceSources.matchAll(/source: '([a-z-]+)'/g)].map(([, s]) => s),
     ...[...pieceSources.matchAll(/crash\('([a-z-]+)'/g)].map(([, s]) => s),
+    ...[...pieceSources.matchAll(/LANDING_SOURCE = Object\.freeze\(\{([^}]*)\}/g)].flatMap(([, body]) => [...body.matchAll(/'([a-z-]+)'/g)].map(([, s]) => s)),
     'case', 'claim-case', 'gantry', 'trunk',
   ]);
   assert.ok(emitted.size >= 20, `${emitted.size} sources`);

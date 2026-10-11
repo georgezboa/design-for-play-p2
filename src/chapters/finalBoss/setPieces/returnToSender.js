@@ -76,6 +76,9 @@ export const RTS_HINTS = Object.freeze({
   decoy: 'UNDER THE LENS A RING CAN READ <b>NO CLAIM</b> · DO NOT PUNCH IT · STEP OUT',
 });
 
+// What tears a layer when it lands in Butch's ring (the death card says it).
+const LANDING_SOURCE = Object.freeze({ drop: 'drop', claim: 'landing-claim', decoy: 'decoy' });
+
 let serial = 0;
 
 export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 } = {}) {
@@ -260,7 +263,7 @@ export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 }
           const ring = h.kind === 'claim' ? THROW.ring : THROW.ring;
           const inRing = Math.abs(body.x - h.x) < ring + halfW() * 0.3 && body.y < 1.1;
           d.emit({ type: 'landed', hazard: h, inRing });
-          if (inRing && vitals.inv <= 0 && body.dashInv <= 0) d.emit({ type: 'hit', source: h.kind === 'drop' ? 'case' : h.kind === 'decoy' ? 'decoy' : 'claim-case', from: { x: h.x, y: 0.6 } });
+          if (inRing && vitals.inv <= 0 && body.dashInv <= 0) d.emit({ type: 'hit', source: LANDING_SOURCE[h.kind], from: { x: h.x, y: 0.6 } });
           if (h.kind === 'claim') rallyBroken(inRing ? 'hit' : 'missed');
         }
       } else if (h.kind === 'return') {

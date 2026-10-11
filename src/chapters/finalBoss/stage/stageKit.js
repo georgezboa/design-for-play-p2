@@ -68,20 +68,43 @@ export const basic = (color, opacity = 1, extra = {}) => new THREE.MeshBasicMate
 
 // A figure that swaps painted frames (feet at its origin). frames: { key:
 // canvas | texture }. A frame missing falls back to 'idle'.
-export function createFrameCard(frames, height, { lift = 0, fog = true } = {}) {
+// A flat-colour silhouette of a painted texture (its alpha, one colour):
+// behind a figure, a little larger, it is a rim that reads on any ground.
+export function silhouetteMaterial(map, { color = 0x000000, opacity = 0.6, fog = false } = {}) {
+  const material = new THREE.MeshBasicMaterial({ map, color, transparent: true, opacity, alphaTest: 0.04, depthWrite: false, side: THREE.DoubleSide, toneMapped: false, fog });
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = shader.fragmentShader.replace('#include <map_fragment>', '#ifdef USE_MAP\n\tdiffuseColor.a *= texture2D( map, vMapUv ).a;\n#endif');
+  };
+  material.customProgramCacheKey = () => 'nf-silhouette';
+  return material;
+}
+
+// A figure card that swaps frames. `rim`: { color, opacity, grow } adds its
+// silhouette behind it (Butch on the dark rain roofs, on the white paper).
+export function createFrameCard(frames, height, { lift = 0, fog = true, rim = null } = {}) {
   const maps = Object.fromEntries(Object.entries(frames).filter(([, v]) => v).map(([key, source]) => [key, source.isTexture ? source : canvasTexture(source)]));
   const first = maps.idle ?? Object.values(maps)[0];
   const image = first.image;
   const width = height * ((image?.width ?? 1) / (image?.height ?? 1));
   const material = paintedMaterial(first, { fog });
-  const mesh = new THREE.Mesh(new THREE.PlaneGeometry(width, height), material);
+  const geometry = new THREE.PlaneGeometry(width, height);
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.position.y = height / 2 + lift;
   const root = new THREE.Group();
+  let shade = null;
+  if (rim) {
+    shade = new THREE.Mesh(geometry, silhouetteMaterial(first, { color: rim.color ?? 0x000000, opacity: rim.opacity ?? 0.6 }));
+    shade.position.set(0, height / 2 + lift, -0.04);
+    shade.scale.setScalar(1 + (rim.grow ?? 0.1));
+    shade.renderOrder = -1;
+    root.add(shade);
+  }
   root.add(mesh);
   let current = 'idle';
   return {
     root,
     mesh,
+    shade,
     width,
     height,
     maps,
@@ -91,9 +114,10 @@ export function createFrameCard(frames, height, { lift = 0, fog = true } = {}) {
       current = next;
       material.map = maps[next];
       material.needsUpdate = true;
+      if (shade) { shade.material.map = maps[next]; shade.material.needsUpdate = true; }
     },
     get frame() { return current; },
-    flip(sign) { mesh.scale.x = sign < 0 ? -1 : 1; },
+    flip(sign) { mesh.scale.x = sign < 0 ? -1 : 1; if (shade) shade.scale.x = (sign < 0 ? -1 : 1) * Math.abs(shade.scale.y); },
     tint(hex) { material.color.setHex(hex); },
   };
 }

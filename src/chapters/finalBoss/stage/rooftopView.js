@@ -149,7 +149,7 @@ export function createRooftopView({ scene, low = false, still = () => false }) {
     const rain = new THREE.LineSegments(geometry, new THREE.LineBasicMaterial({ color: 0xc8d6dc, transparent: true, opacity: 0.22, toneMapped: false }));
     rain.frustumCulled = false;
     root.add(rain);
-    const butch = createFrameCard(art.butch, 2.4, { fog: false, lift: -0.08 });
+    const butch = createFrameCard(art.butch, 2.4, { fog: false, lift: -0.08, rim: { color: 0xf3e4c2, opacity: 0.42, grow: 0.12 } });
     butch.root.renderOrder = 3;
     roofs.add(butch.root);
 
@@ -207,7 +207,7 @@ export function createRooftopView({ scene, low = false, still = () => false }) {
       tower.add(w, shadow);
       return { w, shadow };
     });
-    const tbutch = createFrameCard(art.butch, 2.4, { fog: false, lift: -0.08 });
+    const tbutch = createFrameCard(art.butch, 2.4, { fog: false, lift: -0.08, rim: { color: 0xf3e4c2, opacity: 0.42, grow: 0.12 } });
     tower.add(bell, towerConductor, light, tbutch.root);
     parts = { sky, far, conductor, planks, lamps, rain, butch, ledges, swings, bell, towerConductor, light, ringBands, ringArrow, weights, tbutch };
   }
@@ -220,6 +220,8 @@ export function createRooftopView({ scene, low = false, still = () => false }) {
     camY = THREE.MathUtils.damp(camY, b.y, 3, dt);
     p.sky.position.x = b.x * 0.85;
     p.conductor.position.x = THREE.MathUtils.damp(p.conductor.position.x, b.x + 8 + (litFor > 0 ? 2 : 0), 1.5, dt);
+    // his face stays just under the HUD as the roofs climb
+    p.conductor.position.y = THREE.MathUtils.damp(p.conductor.position.y, camY - 0.5, 2, dt);
     litFor = Math.max(0, litFor - dt);
     const lit = litFor > 0;
     const map = lit ? art.conductorLit : art.conductor;

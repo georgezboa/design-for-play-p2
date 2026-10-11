@@ -256,19 +256,29 @@
 .nf-death-card--quick .nf-death-card__title { font-size: calc(18px * var(--nf-scale, 1)); }
 .nf-death-card--quick .nf-death-card__lines { font-size: calc(14px * var(--nf-scale, 1)); }
 /* THE STANDOFF: the four record cards at Butch's hands (↑ ← → ↓). */
-.nf-duel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: min(740px, calc(100vw - 60px)); height: 264px; pointer-events: none; }
+.nf-duel { position: absolute; left: 50%; top: 67%; transform: translate(-50%, -50%); width: min(700px, calc(100vw - 60px)); height: 214px; pointer-events: none; }
 .nf-duel__card { position: absolute; width: 270px; padding: 9px 12px 10px 44px; background: rgba(239, 227, 198, 0.94); color: #2a1712; border: 2px solid #b08a4a;
   font: calc(14px * var(--nf-scale, 1)) / 1.3 var(--nf-serif, Georgia, serif); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); transition: transform 0.15s ease, opacity 0.2s ease; }
 .nf-duel__card kbd { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font: 700 calc(16px * var(--nf-scale, 1)) / 1 var(--nf-mono, monospace); color: #8a2a1e; }
 .nf-duel__card[data-slot='up'] { left: 50%; top: 0; transform: translateX(-50%); }
-.nf-duel__card[data-slot='left'] { left: 0; top: 86px; }
-.nf-duel__card[data-slot='right'] { right: 0; top: 86px; }
-.nf-duel__card[data-slot='down'] { left: 50%; top: 176px; transform: translateX(-50%); }
+.nf-duel__card[data-slot='left'] { left: 0; top: 74px; }
+.nf-duel__card[data-slot='right'] { right: 0; top: 74px; }
+.nf-duel__card[data-slot='down'] { left: 50%; top: 148px; transform: translateX(-50%); }
 .nf-duel__card.is-said { background: #e0a24a; border-color: #fff1c8; }
-.nf-duel__state { position: absolute; left: 50%; top: 106px; transform: translateX(-50%); margin: 0; padding: 6px 12px; background: rgba(18, 12, 8, 0.85); color: #e0a24a;
+.nf-duel__state { position: absolute; left: 50%; top: 88px; transform: translateX(-50%); margin: 0; padding: 6px 12px; background: rgba(18, 12, 8, 0.85); color: #e0a24a;
   font: 700 calc(12px * var(--nf-scale, 1)) / 1.2 var(--nf-mono, monospace); letter-spacing: 0.16em; white-space: nowrap; }
 .nf-duel[data-stage='draw'] .nf-duel__state, .nf-duel[data-stage='second'] .nf-duel__state { background: #8a2a1e; color: #fff1d0; }
 .nf-duel[data-stage='claim'] .nf-duel__card { opacity: 0.8; }
 /* THE PAINTED LINE: his grey wash, creeping in from behind. */
 .nf-wash { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
   background: radial-gradient(ellipse 120% 70% at 50% 20%, transparent 55%, rgba(110, 112, 118, 0.55) 80%, rgba(80, 82, 88, 0.85) 100%); }
+
+/* Round 12: in the square (the bullet hell, the standoff) his lines are slim
+   subtitles at the bottom, between the layers and the plaque. */
+.nf-finale .battle-hud.is-compact-caption .nf-caption {
+  bottom: 14px; width: min(480px, calc(100vw - 800px)); min-width: 300px; padding: 7px 16px 8px;
+  background: rgba(9, 8, 7, 0.74); box-shadow: none;
+}
+.nf-finale .battle-hud.is-compact-caption .nf-caption .nf-caption__speaker { margin-bottom: 3px; font-size: calc(10px * var(--nf-scale)); }
+.nf-finale .battle-hud.is-compact-caption .nf-caption .nf-caption__text { font-size: calc(15px * var(--nf-scale)); line-height: 1.32; }
+.nf-finale .battle-hud.is-compact-caption .nf-caption .nf-caption__meta { display: none; }

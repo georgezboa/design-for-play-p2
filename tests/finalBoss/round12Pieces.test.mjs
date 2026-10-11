@@ -192,7 +192,7 @@ test('a grey ring hits a Butch inside it and misses one who stepped out', () => 
     toPlay(piece);
     piece.hazards.length = 0;
     piece.hazards.push({ id: 'drop', kind: 'drop', x: piece.body.x + offset, T: 0.2, age: 0, done: false });
-    return hits(play(piece, 0.4, {}), 'case').length;
+    return hits(play(piece, 0.4, {}), 'drop').length;
   };
   assert.equal(run(0), 1);
   assert.equal(run(THROW.ring + 0.5), 0);

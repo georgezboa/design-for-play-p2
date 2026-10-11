@@ -29,6 +29,8 @@ export function createSquareView({ scene, low = false, still = () => false }) {
   let rigs = null;
   let mode = 'top';
   let time = 0;
+  let crack = 0; // THE STANDOFF's finisher: he has no answer, the square opens under him
+  let hole = null;
   const views = new Map();
   let answerBeam = null;
   let cut = null;
@@ -102,7 +104,8 @@ export function createSquareView({ scene, low = false, still = () => false }) {
     parts = { floor, props: propMeshes, conductor: conductorWrap, butch: butchWrap, dot, dotRim, slotCards, pigeons: [] };
   }
 
-  const scaleBoss = (top) => parts.conductor.scale.setScalar(top ? 2.6 : 1.35);
+  // Above the square he stands nearly twice Butch's height, all of him in view.
+  const scaleBoss = (top) => parts.conductor.scale.setScalar(top ? 1.9 : 1.35);
 
   function syncTop(piece, dt, camera) {
     const b = piece.body;
@@ -196,6 +199,19 @@ export function createSquareView({ scene, low = false, still = () => false }) {
     parts.conductor.position.copy(STAND.boss);
     parts.conductor.rotation.y = Math.atan2(STAND.butch.x - STAND.boss.x, STAND.butch.z - STAND.boss.z);
     parts.dot.visible = parts.dotRim.visible = false;
+    if (crack > 0) {
+      crack += dt;
+      const open = THREE.MathUtils.smoothstep(crack, 0.2, 1.4);
+      if (!hole) {
+        hole = new THREE.Mesh(new THREE.CircleGeometry(1, 9), basic(0x050302));
+        hole.rotation.x = -Math.PI / 2;
+        root.add(hole);
+      }
+      hole.position.set(STAND.boss.x, 0.03, STAND.boss.z);
+      hole.scale.setScalar(0.2 + open * 3.2);
+      parts.conductor.position.y = -THREE.MathUtils.smoothstep(crack, 0.9, 2.3) * 7;
+      parts.conductor.rotation.z = THREE.MathUtils.smoothstep(crack, 0.6, 2.3) * 0.4;
+    }
     const duel = piece.duel;
     const slots = piece.slots();
     for (const [slot, card] of Object.entries(parts.slotCards)) {
@@ -233,7 +249,13 @@ export function createSquareView({ scene, low = false, still = () => false }) {
         Object.values(parts.slotCards).forEach((c) => { c.visible = mode === 'standoff'; });
       }
     },
-    leave() { root.visible = false; particles.clear(); },
+    leave() {
+      root.visible = false;
+      particles.clear();
+      crack = 0;
+      if (hole) { root.remove(hole); hole = null; }
+      if (parts) { parts.conductor.position.y = 0; parts.conductor.rotation.z = 0; }
+    },
     look() { return { background: 0x3a2420, fog: 0x3b2622, density: 0.012 }; },
     sync(piece, dt, camera) {
       time += dt;
@@ -250,7 +272,8 @@ export function createSquareView({ scene, low = false, still = () => false }) {
         if (duel?.stage === 'second' || duel?.stage === 'draw') return { position: new THREE.Vector3(STAND.butch.x - 2.4, 2.6, STAND.butch.z + 3.4), target: new THREE.Vector3(STAND.butch.x + 1.5, 2.1, STAND.butch.z - 2), fov: 40 };
         return { position: new THREE.Vector3(-2.8, 1.6, 9.5), target: new THREE.Vector3(1.4, 2.5, -3.5), fov: 42 };
       }
-      return { position: new THREE.Vector3(0, 16.5, 13.5), target: new THREE.Vector3(0, 0, -0.2), fov: 52 };
+      // from above and in front: all of him on the steps, all of the square
+      return { position: new THREE.Vector3(0, 16, 14.5), target: new THREE.Vector3(0, 0.5, -2.2), fov: 54 };
     },
     point(piece, what) {
       if (what === 'boss') return mode === 'top' ? new THREE.Vector3(piece.bossX, 5, SQUARE.bossZ) : STAND.boss.clone().setY(4);
@@ -275,6 +298,11 @@ export function createSquareView({ scene, low = false, still = () => false }) {
       if (e.type === 'hurt' && mode === 'top') particles.spawn('shard', piece.body.x, 1.2, piece.body.z, { color: 0x8a2a1e, count: 14, speed: 7, plane: 'xz' });
       if (e.type === 'held') particles.spawn('shard', piece.body.x, 1.4, piece.body.z, { color: BRASS, count: 10, speed: 5, plane: 'xz' });
       if (e.type === 'draw') cut = { kind: 'draw', left: 0.34 };
+      if (e.type === 'finisher' && e.kind === 'no-answer' && mode === 'standoff') {
+        crack = 0.001;
+        particles.spawn('shard', STAND.boss.x, 0.4, STAND.boss.z, { color: 0x6a4a32, count: 50, speed: 12, size: 0.4 });
+        particles.spawn('dust', STAND.boss.x, 0.3, STAND.boss.z, { color: 0xc8b090, count: 30, speed: 5, size: 0.6, gravity: 1 });
+      }
       if (e.type === 'answered') { cut = { kind: 'answered', left: 0.6 }; rigs?.conductor?.play('Spell_Simple_Shoot', true); }
       if (e.type === 'feint') {
         if (e.kind === 'hand') rigs?.conductor?.play('Interact', true);

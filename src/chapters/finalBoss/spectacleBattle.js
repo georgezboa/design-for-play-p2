@@ -97,6 +97,8 @@ export const HIT_SOURCES = Object.freeze({
   trunk: 'A TRUNK · STAY OUT OF ITS SHADOW',
   gantry: 'A SIGNAL GANTRY · DUCK UNDER IT',
   coupling: 'THE COUPLING · JUMP BETWEEN THE CARRIAGES',
+  drop: 'AN UNCLAIMED CASE · STEP OUT OF ITS GREY RING',
+  'landing-claim': 'A BRASS CLAIM CASE · E AS IT LANDS, OR STEP OUT OF ITS RING',
   decoy: 'NO CLAIM · LEAVE A RING THAT READS NO CLAIM',
   sack: 'A MAIL SACK · JUMP IT',
   stamp: 'HIS OVERDUE STAMP · LEAVE THAT SIDE OF THE ROOF',
@@ -772,6 +774,8 @@ class SpectacleBattle {
   enterPiece({ announce = true } = {}) {
     const piece = this.run.piece;
     this.setControlsStage(piece.id);
+    // In the square his lines are subtitles over play: slim, at the bottom.
+    this.hud.classList.toggle('is-compact-caption', piece.view === 'top' || piece.view === 'standoff');
     this.view.enter(piece, this.viewContext());
     const look = this.view.look(piece);
     this.scene.background.setHex(look.background);

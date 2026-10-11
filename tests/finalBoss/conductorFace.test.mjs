@@ -61,7 +61,7 @@ test('Movements I and II both use the finale face', () => {
   assert.match(finaleArt, /export function paintRainConductor[\s\S]*?drawConductorHeadOver\(c, headX, headY/);
   assert.match(finaleArt, /const spec = \{ \.\.\.CONDUCTOR_RAIN_SPEC, cap: null \}/, 'no side-view cap under the front-view head');
   // Round 12: the train view and the rooftop view paint him.
-  assert.match(trainView, /art\.conductor = canvasTexture\(paintInkConductor\(\{\}\)\);/);
+  assert.match(trainView, /art\.conductor = canvasTexture\(paintInkConductor\(\{ lantern: false \}\)\);/);
   assert.match(rooftopView, /art\.conductor = canvasTexture\(paintRainConductor\(\{ scale: 4 \}\)\);/);
   assert.match(rooftopView, /art\.conductorLit = canvasTexture\(paintRainConductor\(\{ scale: 4, lit: true \}\)\);/);
 });

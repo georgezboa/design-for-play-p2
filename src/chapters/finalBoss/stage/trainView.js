@@ -21,8 +21,12 @@ const BRASS = 0xe8b860;
 const OXBLOOD = 0x8a2a1e;
 const DANGER = 0xe0583a;
 // The duel's engine and Conductor stand nearer than the rules' BOSS_Z: at
-// the rules' distance he read as a figure on the horizon.
-const DUEL_BOSS_Z = -15;
+// the rules' distance he read as a figure on the horizon. He fills the
+// frame from the engine roof to just under the HUD.
+const DUEL_BOSS_Z = -13;
+const GIANT_H = 11.5;
+const ENGINE_TOP = 6.0;
+const GIANT_HAND_Y = ENGINE_TOP + GIANT_H * 0.55;
 const CARRIAGE = Object.freeze({ widthM: 20 * (600 / 583), heightM: 20 * (600 / 583) * (196 / 600), roofFromTop: 0.25, leftPx: 6 });
 
 export const CLAIM_TAGS = Object.freeze([
@@ -42,6 +46,7 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
   const art = {};
   let mode = 'side';
   let time = 0;
+  let knock = 0; // RETURN TO SENDER's finisher: the last rally knocks him back
 
   // ------------------------------------------------------------------ art
   function* paint(sources = {}) {
@@ -51,7 +56,7 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
     for (const [key, options] of [['idle', { pose: 'idle' }], ['walk0', { pose: 'walk', phase: 0 }], ['walk1', { pose: 'walk', phase: 0.25 }],
       ['walk2', { pose: 'walk', phase: 0.5 }], ['walk3', { pose: 'walk', phase: 0.75 }], ['punch', { pose: 'punch' }], ['hurt', { pose: 'hurt' }],
       ['jump', { pose: 'walk', phase: 0.12 }], ['duck', { pose: 'duck' }]]) { art.butch[key] = canvasTexture(paintInkButch(options)); yield; }
-    art.conductor = canvasTexture(paintInkConductor({}));
+    art.conductor = canvasTexture(paintInkConductor({ lantern: false })); // no glow: it clipped to a box round him
     yield;
     art.gantry = canvasTexture(paintGantry());
     art.trunk = canvasTexture(paintTrunk());
@@ -183,8 +188,8 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
     // The engine ahead, the Conductor on it.
     const engine = paintedCard(art.front, 6.4, { fog: false });
     engine.position.set(0, 3.2 - 0.4, DUEL_BOSS_Z - 1.2);
-    const giant = paintedCard(art.conductor, 15, { fog: false });
-    giant.position.set(0, 5.4 + 7.5 - 1.2, DUEL_BOSS_Z);
+    const giant = paintedCard(art.conductor, GIANT_H, { fog: false });
+    giant.position.set(0, ENGINE_TOP - 0.35 + GIANT_H / 2, DUEL_BOSS_Z);
     // The night fields along the horizon behind him.
     const horizon = new THREE.Mesh(new THREE.PlaneGeometry(200, 200 * (941 / 4096)), art.fields[0] ? paintedMaterial(art.fields[0], { transparent: false, fog: false }) : basic(0x0d1424));
     horizon.position.set(0, 4, -100);
@@ -196,10 +201,19 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
       duel.add(pole);
       return pole;
     });
-    // Smoke from the engine.
-    const smoke = Array.from({ length: 5 }, (_, i) => {
-      const puff = new THREE.Mesh(new THREE.CircleGeometry(1.6 + i * 0.4, 20), basic(0xd8d0c0, 0.35, { fog: false }));
-      puff.position.set(0, 9, DUEL_BOSS_Z + 2 + i * 6);
+    // Smoke from the engine's chimney, rising and blowing back behind him.
+    const puffCanvas = document.createElement('canvas');
+    puffCanvas.width = 128; puffCanvas.height = 128;
+    const pc = puffCanvas.getContext('2d');
+    const grad = pc.createRadialGradient(64, 64, 4, 64, 64, 62);
+    grad.addColorStop(0, 'rgba(226, 218, 204, 0.9)');
+    grad.addColorStop(0.55, 'rgba(200, 192, 180, 0.35)');
+    grad.addColorStop(1, 'rgba(180, 172, 160, 0)');
+    pc.fillStyle = grad; pc.fillRect(0, 0, 128, 128);
+    const puffMap = canvasTexture(puffCanvas, { mips: false });
+    const smoke = Array.from({ length: 6 }, (_, i) => {
+      const puff = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: puffMap, transparent: true, opacity: 0.3, depthWrite: false, fog: false, toneMapped: false }));
+      puff.position.set(0, 9, DUEL_BOSS_Z - 3 - i * 4);
       duel.add(puff);
       return puff;
     });
@@ -314,14 +328,17 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
     p.poles.forEach((pole, i) => { pole.position.z = ((i * 9 + time * 24) % 90) - 80; });
     p.smoke.forEach((puff, i) => {
       const k = ((time * 0.35 + i / p.smoke.length) % 1);
-      puff.position.set(p.giant.position.x * 0.4 + Math.sin(i * 2.1) * 1.5, 7 + k * 4, DUEL_BOSS_Z + 1 + k * 24);
-      puff.material.opacity = 0.32 * (1 - k);
+      puff.position.set(p.giant.position.x * 0.3 + 3.4 + Math.sin(i * 2.1) * 1.2 + k * 2, ENGINE_TOP + 1 + k * 9, DUEL_BOSS_Z - 2.5 - k * 16);
+      puff.scale.setScalar(2.4 + k * 6);
+      puff.material.opacity = 0.28 * Math.sin(Math.PI * Math.min(1, k * 1.4));
     });
     // He shuffles on the engine; reels when a rally gets past him.
     const reel = piece.stagger > 0 ? piece.stagger : 0;
     p.giant.position.x = THREE.MathUtils.damp(p.giant.position.x, piece.bossX * 1.6, 4, dt);
-    p.giant.position.z = DUEL_BOSS_Z - reel * 1.5;
-    p.giant.rotation.z = THREE.MathUtils.damp(p.giant.rotation.z, -reel * 0.12, 6, dt);
+    knock = Math.max(0, knock - dt * 0.5);
+    const k = knock > 0 ? THREE.MathUtils.smoothstep(Math.min(1, (1.8 - knock) / 0.5), 0, 1) : 0;
+    p.giant.position.z = DUEL_BOSS_Z - reel * 1.5 - k * 9;
+    p.giant.rotation.z = THREE.MathUtils.damp(p.giant.rotation.z, -reel * 0.12 - k * 0.5, 6, dt);
     // Butch, a three-quarter turn into the screen.
     p.butch.root.position.set(b.x, b.y, 0);
     p.butch.root.rotation.y = 0.6 * (b.facing < 0 ? -1 : 1);
@@ -342,7 +359,7 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
           views.set(h.id, v);
         }
         const t = Math.min(1, h.age / Math.max(0.01, h.T));
-        const start = new THREE.Vector3(p.giant.position.x + 2.2, 10.5, DUEL_BOSS_Z + 1);
+        const start = new THREE.Vector3(p.giant.position.x + 2.2, GIANT_HAND_Y, DUEL_BOSS_Z + 1);
         v.position.set(THREE.MathUtils.lerp(start.x, h.x, t), THREE.MathUtils.lerp(start.y, 0.7, t) + Math.sin(t * Math.PI) * 3.5, THREE.MathUtils.lerp(start.z, 0, t));
         const scale = 0.6 + t * 0.6;
         v.scale.setScalar(scale);
@@ -362,7 +379,7 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
       if (h.kind === 'return') {
         if (!v) { v = caseCard('claim'); v.material.map = art.claimPast; duel.add(v); views.set(h.id, v); }
         const t = Math.min(1, h.age / Math.max(0.01, h.T));
-        v.position.set(THREE.MathUtils.lerp(h.x, p.giant.position.x, t), 1.2 + t * 9 + Math.sin(t * Math.PI) * 2, THREE.MathUtils.lerp(0, DUEL_BOSS_Z + 1, t));
+        v.position.set(THREE.MathUtils.lerp(h.x, p.giant.position.x, t), 1.2 + t * (GIANT_HAND_Y - 1.2) + Math.sin(t * Math.PI) * 2, THREE.MathUtils.lerp(0, DUEL_BOSS_Z + 1, t));
         v.scale.setScalar(1.2 - t * 0.5);
         if (!still()) v.rotation.z -= dt * 10;
         continue;
@@ -400,7 +417,7 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
       for (const id of [...views.keys()]) dropView(id);
       particles.clear();
     },
-    leave() { root.visible = false; for (const id of [...views.keys()]) dropView(id); particles.clear(); },
+    leave() { root.visible = false; knock = 0; for (const id of [...views.keys()]) dropView(id); particles.clear(); },
     look(piece) {
       return piece.view === 'duel'
         ? { background: 0x070a12, fog: 0x0a0e18, density: 0.012 }
@@ -415,14 +432,14 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
     camera(piece) {
       if (piece.view === 'duel') {
         const b = piece.body;
-        return { position: new THREE.Vector3(b.x * 0.35, 2.9 + b.y * 0.2, 7.2), target: new THREE.Vector3(b.x * 0.2, 5.2, -10), fov: 56 };
+        return { position: new THREE.Vector3(b.x * 0.35, 3.4 + b.y * 0.2, 10.5), target: new THREE.Vector3(b.x * 0.2, 6, -10), fov: 60 };
       }
       const x = piece.camX + 0.6;
       return { position: new THREE.Vector3(x, 2.2, 18), target: new THREE.Vector3(x, 1.4, 0), fov: 38 };
     },
     // Where a thing is in the world, for effects and tags.
     point(piece, what) {
-      if (what === 'boss') return piece.view === 'duel' ? new THREE.Vector3(duelParts.giant.position.x, 10, DUEL_BOSS_Z) : new THREE.Vector3(piece.camX + 12, 6, -3);
+      if (what === 'boss') return piece.view === 'duel' ? new THREE.Vector3(duelParts.giant.position.x, GIANT_HAND_Y, DUEL_BOSS_Z) : new THREE.Vector3(piece.camX + 12, 6, -3);
       const b = piece.body;
       return piece.view === 'duel' ? new THREE.Vector3(b.x, 1.2 + b.y, 0) : new THREE.Vector3(b.x, 1.1 + b.y, 0.6);
     },
@@ -438,9 +455,15 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
       } else {
         if (e.type === 'landed') at(e.hazard.x, 0.4, 0, e.hazard.kind === 'drop' ? 0x8a7a66 : BRASS, 12, { speed: 6, plane: 'xz' });
         if (e.type === 'act' && (e.result === 'returned' || e.result === 'volley')) at(e.x, 1.2, 0, e.result === 'volley' ? 0xffe2a0 : AMBER, 18, { speed: 9 });
-        if (e.type === 'return-arrives' || e.type === 'rally-won') at(duelParts.giant.position.x, 9, DUEL_BOSS_Z + 1, AMBER, e.type === 'rally-won' ? 30 : 12, { speed: 12, size: 0.35 });
+        if (e.type === 'return-arrives' || e.type === 'rally-won') at(duelParts.giant.position.x, GIANT_HAND_Y, DUEL_BOSS_Z + 1, AMBER, e.type === 'rally-won' ? 30 : 12, { speed: 12, size: 0.35 });
         if (e.type === 'stamp') at((e.hazard.x0 + e.hazard.x1) / 2, 0.3, 0, OXBLOOD, 16, { speed: 6, plane: 'xz' });
         if (e.type === 'hurt') at(piece.body.x, 1.2, 0, OXBLOOD, 14, { speed: 7 });
+        if (e.type === 'state' && e.state === 'finisher') {
+          // Knocked back off his feet on the engine roof, his claims flying.
+          knock = 1.8;
+          at(duelParts.giant.position.x, GIANT_HAND_Y, DUEL_BOSS_Z + 1, AMBER, 60, { speed: 16, size: 0.4 });
+          at(duelParts.giant.position.x, ENGINE_TOP + 1, DUEL_BOSS_Z + 1, 0xefe3c6, 30, { speed: 10, size: 0.5 });
+        }
       }
     },
     // World tags (DOM, TEXT SIZE): the claim read through the lens.
