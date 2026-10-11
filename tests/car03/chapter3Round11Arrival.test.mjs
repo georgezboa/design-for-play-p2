@@ -145,27 +145,21 @@ describe('Chapter 3 round 11 · walk-and-talk captions', () => {
   });
 });
 
-describe('Chapter 3 round 11 · the opening never holds Butch after the step down', () => {
-  it('locks input only while he steps down (and before the page shows the arrival)', () => {
+// Round 12 (George: "一开始是应该那个人走到前面必须聊天的"): the walk-and-talk
+// after the step down is a required conversation again, with Lev in front
+// of Butch (tests/car03/chapter3Round12Play.test.mjs). What round 11 set up
+// around it stays: the step down holds him, the claim card is a paper at the
+// side, never a modal; the story order is unchanged.
+describe('Chapter 3 round 11 · the opening around the step down', () => {
+  it('locks input while he steps down (and before the page shows the arrival)', () => {
     assert.match(runtime, /\|\| this\.alightingElapsed !== null\s*\|\| \(this\.arrivalStaged && !this\.arrivalStarted\)/);
     // the old arrival held him through four captions and a modal card
     assert.doesNotMatch(runtime, /openArrival\(\)/);
     assert.doesNotMatch(runtime, /evidenceViewer\.open\(CHAPTER3_DOCUMENTS\.CLAIM_CARD/);
-    assert.match(runtime, /this\.evidenceViewer\.peek\(CHAPTER3_DOCUMENTS\.CLAIM_CARD, \{ seconds: 30 \}\)/);
-    // the announcement and his lines are one walk-and-talk queue over the step down
-    assert.match(runtime, /this\.openingLines = createLineQueue\(ARRIVAL_DIALOGUE\.map\(/);
+    assert.match(runtime, /this\.evidenceViewer\.peek\(CHAPTER3_DOCUMENTS\.CLAIM_CARD, \{ seconds: \d+ \}\)/);
+    // the announcement is a walk-and-talk caption over the step down
+    assert.match(runtime, /this\.openingLines = createLineQueue\(ARRIVAL_ANNOUNCEMENT\.map\(/);
     assert.ok(ARRIVAL_DIALOGUE[0].speaker === 'CONDUCTOR' && /Passengers leaving the train/.test(ARRIVAL_DIALOGUE[0].text), 'the announcement plays first');
-  });
-
-  it('Lev walks over and talks beside him: no halt, no blocking conversation', () => {
-    assert.doesNotMatch(runtime, /showLines\(LEV_INTRO_DIALOGUE/);
-    assert.match(runtime, /this\.levTalk = createLineQueue\(LEV_INTRO_DIALOGUE\.map\(/);
-    const entrance = runtime.match(/  updateLevEntrance\(dt\) \{([\s\S]*?)\n  \}\n/)[1];
-    assert.doesNotMatch(entrance, /stopWalking\(\)/, 'a walking Butch is no longer called to a halt');
-    assert.match(entrance, /const met = \(settled && !butchWalking\) \|\| far <= LEV_ENTRANCE\.callOut;/);
-    assert.match(entrance, /if \(met && !walker\.talking && !this\.openingLines\) \{/);
-    // Lev sets off on Butch's last line, so he does not stand by in silence
-    assert.match(runtime, /if \(this\.levApproachPending && \(!this\.openingLines \|\| this\.openingLines\.remaining <= 1\)\) \{/);
     assert.equal(LEV_INTRO_DIALOGUE[0].text, 'Keep that card out.');
   });
 
@@ -178,8 +172,8 @@ describe('Chapter 3 round 11 · the opening never holds Butch after the step dow
     assert.equal(model.completeLevIntroduction(), true);
     assert.equal(model.beginGuide(), true);
     const alight = runtime.match(/  updateAlighting\(dt\) \{([\s\S]*?)\n  \}\n/)[1];
-    assert.match(alight, /if \(!pose\.done\) return;[\s\S]*?this\.model\.readArrival\(\);\s*this\.beginTrainDeparture\(\);/);
-    assert.match(runtime, /finishLevIntroduction\(\) \{[\s\S]*?if \(!this\.model\.completeLevIntroduction\(\)\) return;\s*this\.beginGuidedWalk\(\);/);
+    assert.match(alight, /if \(!pose\.done\) return;[\s\S]*?this\.model\.readArrival\(\);[\s\S]*?this\.beginTrainDeparture\(\);\s*this\.beginLevArrivalApproach\(\);/);
+    assert.match(runtime, /finishLevIntroduction\(\) \{[\s\S]*?this\.model\.completeTrainDeparture\(\);[\s\S]*?if \(this\.model\.completeLevIntroduction\(\)\) this\.beginGuidedWalk\(\);/);
   });
 
   it('stages the first frame before the page reveals it, and leaves the finale its carriage', () => {

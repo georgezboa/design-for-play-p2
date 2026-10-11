@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
 import {
-  ARRIVAL_DIALOGUE,
   BOARDED_DIALOGUE,
   BOARDING_DIALOGUE,
   CAMPFIRE_SELINE_DIALOGUE,
@@ -18,7 +17,6 @@ import {
   HANA_OPENING,
   HANA_TOPIC_RESPONSES,
   HOTEL_ARRIVAL_DIALOGUE,
-  LEV_INTRO_DIALOGUE,
   MARKET_CROSSED_DIALOGUE,
   MORNING_LEV_REMINDER,
   MORNING_STONE_PICKUP,
@@ -56,6 +54,7 @@ import { Chapter3DialogueController } from './Chapter3Caption.js';
 import { Chapter3TicketBoard } from './Chapter3TicketBoard.js';
 import { cachedSnapshotModel, chapter3ResumePoint } from './chapter3OpeningModel.js';
 import { Chapter3ScannerField } from './Chapter3ScannerField.js';
+import { SCAN_HALF_DEPTH, inScanVolume, localCoordinates } from './chapter3WalkBesideModel.js';
 import { Chapter3BellClamp } from './Chapter3BellClamp.js';
 import { createChapter3MinistryHall, MINISTRY_POSITIONS } from './Chapter3MinistryHall.js';
 import { Chapter3TimeVisualController, chapter3LampGlowForClock } from './Chapter3TimeVisualController.js';
@@ -71,14 +70,17 @@ import {
 } from './chapter3HotelNavigation.js';
 import { Chapter3ReplacementAssetSystem } from './Chapter3ReplacementAssetSystem.js';
 import { CITY_MODELS, RAIL_LAYOUT, CAMERA_FOLLOW, CAMERA_HOME, WORLD_NODES } from './city3dConfig.js';
-import { RUN_MULTIPLIER, WALK_SPEED, findPath, isWalkable } from './EchoCity3DPreview.js';
+import { WALK_SPEED, findPath, isWalkable } from './EchoCity3DPreview.js';
 import { LEAD_KEY, LEAD_LINE_MS, LEAD_ROUTES, leadOffer, leadOfferHtml } from './chapter3LongWalks.js';
 import { Chapter3AnimatedCharacterSystem } from './Chapter3AnimatedCharacters.js';
 import {
-  LEV_ENTRANCE, MARA_GLIMPSE, PLAYER_TURN_RATE, approachSpeed, besideTarget, dampYaw, gaitForSpeed, pointAlongPolyline,
-  polylineLength, turnToward, wrapAngle, yawToward,
+  CONVERSATION_TURN, LEV_ENTRANCE, MARA_GLIMPSE, approachSpeed, besideTarget, conversationYaws, gaitForSpeed,
+  PLAYER_TURN_RATE, dampYaw, pointAlongPolyline, polylineLength, turnToward, wrapAngle, yawToward,
 } from './chapter3Entrance.js';
-import { alightingFocus, alightingPose, createLineQueue } from './chapter3Alighting.js';
+import {
+  ARRIVAL_ANNOUNCEMENT, ARRIVAL_CARD_AWAY, ARRIVAL_CARD_OUT, ARRIVAL_CONVERSATION, alightingFocus, alightingPose,
+  arrivalTalkDue, createLineQueue,
+} from './chapter3Alighting.js';
 import {
   FIRE_SITE,
   addSilhouetteOutline,
@@ -118,6 +120,7 @@ import {
   controlsHintHtml,
   controlsHintState,
   createHintClock,
+  createRevealHold,
   holdHintClock,
   idleLookHintDue,
   tickHintClock,
@@ -164,7 +167,6 @@ const wait = (ms) => new Promise((resolve) => { globalThis.setTimeout(resolve, m
 // like being lost; the length target is 30–35 minutes).
 const SEARCH_HINT_AFTER_SECONDS = 45;
 const SEARCH_HINT_NEAR_TARGET_SECONDS = 30;
-const DIRECT_WALK_SPEED = 3.1;
 // The default street camera sits closer than the old 2.85 overview so the
 // cast reads at least ~48 px tall at 1080p; dialogue eases in more (alpha
 // round 4: 0.45 -> 0.8, the speakers were still small in conversation).
@@ -214,8 +216,9 @@ const STATION_TRIGGER = Object.freeze([-3.2, 0.5, 21.2]);
 const HOTEL_ROOM_FRAME = Object.freeze([0.4, 0.7, -11.6]);
 const HOTEL_BED_REACH = 6.5;
 
-// About five flavour objects stay clickable in the street (hover only; Tab
-// never lights them). Everything else in the city is scenery.
+// About five flavour objects stay clickable in the street (hover, or the
+// reveal: round 12, holding Alt / Tab lights them too). Everything else in
+// the city is scenery.
 const FLAVOUR_OBJECTS = Object.freeze({
   'clock-tower': ['Seven minutes slow. Everyone in the square still checks it.', 'Still seven minutes slow. Nobody seems surprised.'],
   'reunion-fountain': ['Coins, tram tokens, and one brass button lie under the water.', 'Nothing with Mara\'s name. Just other people\'s wishes.'],
@@ -309,19 +312,24 @@ export class Chapter3OpeningRuntime {
     this.initialized = false;
     this.hoveredId = null;
     this.hoverAnchor = null;
-    this.tabHeld = false;
+    // Round 12: holding Alt (⌥ Option) or Tab shows every interactable on
+    // screen (chapter3Guidance createRevealHold).
+    this.reveal = createRevealHold();
     // Seconds without input (R2-3: after IDLE_LOOK_HINT_SECONDS the city
-    // suggests holding Tab).
+    // suggests holding the reveal).
     this.idleElapsed = 0;
     this.idleLookHintShown = false;
     this.destinationPass = { phase: null, near: false, passes: 0 };
     this.pointerClient = { x: 0, y: 0 };
-    this.pointerHeld = false;
-    this.keysHeld = new Set();
+    // Butch moves beside a walker he walks in step with.
     this.directMoving = false;
-    // Round 6 (item 18): WASD / arrows walk Butch everywhere, not only in
-    // the scanner fields (click-to-walk stays).
-    this.keyWalking = false;
+    // Round 12 (George: "第三章不要awsd的控制 就是只要一个point and click"):
+    // Chapter 3 is point and click. Round 6 had added WASD / arrows walking
+    // everywhere and the scanners steered by WASD or a held mouse; now a
+    // click walks, a click on a walker walks in step with them (and keeps
+    // walking in step: inStepField, the field whose walker he keeps pace
+    // with), and a click behind lets go.
+    this.inStepField = null;
     this.interactions = [];
     this.departureElapsed = null;
     this.departureBases = [];
@@ -335,10 +343,15 @@ export class Chapter3OpeningRuntime {
     this.levGait = 'walk';
     this.levStrideMoving = false;
     this.maraGlimpse = null;
+    // host -> { yaw, rate, at }: eased turns (updateFaceTurns). Round 12: who
+    // turns to whom in a conversation, and people at a post back to it after
+    // (postTurns: host -> the yaw they stood at).
     this.faceTurns = new Map();
+    this.postTurns = new Map();
+    this.conversationIdle = 0;
     // Round 11 (the arrival, chapter3Alighting.js): Butch steps down from the
-    // night service's last carriage while the announcement plays; once he is
-    // down the opening is walk-and-talk (captions that never take the input).
+    // night service's last carriage while the announcement plays (round 12:
+    // then Lev walks up and they talk; see beginArrival).
     this.arrivalStaged = false;
     this.arrivalStarted = false;
     this.arrivalCarriage = false;
@@ -346,8 +359,13 @@ export class Chapter3OpeningRuntime {
     this.alightingElapsed = null;
     this.alightingMoving = false;
     this.openingLines = null;
-    this.levTalk = null;
-    this.levApproachPending = false;
+    // Round 12: from the step down until the end of the conversation with
+    // Lev, Butch stays on the paving (arrivalHold); Lev walks up and stops
+    // in front of him (levArrived), then the conversation opens.
+    this.arrivalHold = false;
+    this.arrivalLanded = false;
+    this.levArrived = false;
+    this.arrivalTalkOpened = false;
     this.finalDoorBase = null;
     this.levWalkElapsed = null;
     this.levWalkDuration = 0;
@@ -396,11 +414,13 @@ export class Chapter3OpeningRuntime {
     // R2 P1: Lev's hint counts wall seconds too (chapter3Guidance hint clock).
     this.searchHintClock = createHintClock();
     this.searchHintLastShownAt = -Infinity;
-    // R2 P1: the compass tag (Tab, or a few seconds after the task changes).
+    // R2 P1: the compass tag (the reveal, or a few seconds after the task
+    // changes).
     this.compassFlashUntil = 0;
     this.compassFlashPending = false;
     this.compassShown = null;
-    // Alpha round 4: the controls tag (CLICK TO WALK · E TO LOOK · HOLD TAB).
+    // Alpha round 4: the controls tag (CLICK TO WALK · CLICK A TAG TO LOOK ·
+    // HOLD ALT, round 12).
     this.controlsUsed = new Set();
     this.controlsHintVisible = false;
     this.ambientAnimElapsed = 0;
@@ -857,25 +877,37 @@ export class Chapter3OpeningRuntime {
     return steering;
   }
 
+  // Round 12 (George: "有时候我不在那个位置跟人说话它就不会正对着我", the person
+  // he talks to did not turn to him when he spoke from another spot): the
+  // turn toward Butch used to be a snap, only for people on an ambient route
+  // (never Lev), and Butch kept whatever heading his walk ended on. Now
+  // everyone he talks to turns to face him at a turn rate from whichever
+  // side he stands, he turns to them, and people at a post (Toma at the
+  // ministry door, Petar at the cut, Hana at the desk) turn back to it when
+  // the conversation is over (updateConversationPosts).
   activateInteraction(interaction) {
     const ids = this.npcIdsForInteraction(interaction.id);
     this.activeNpcConversationIds = new Set(ids);
     this.activeNpcConversationId = ids[0] || null;
+    const hosts = [];
     for (const id of ids) {
-      const route = this.ambientLifeRoutes?.get(id);
       this.characters.play(id, 'idle', { immediate: true });
-      if (!route) continue;
-      const towardButch = this.preview.player.position.clone().sub(route.host.position);
-      if (towardButch.lengthSq() > 0.001) route.host.rotation.y = Math.atan2(towardButch.x, towardButch.z);
+      const host = this.npcHost(id);
+      if (host && this.actorIsActuallyVisible(host)) hosts.push({ id, host, at: host.getWorldPosition(new THREE.Vector3()) });
     }
+    const butch = this.preview.player.position;
+    const yaws = conversationYaws({ butch, npcs: hosts.map(({ at }) => at), faceOf: hosts[0]?.at ?? null });
+    hosts.forEach(({ id, host }, index) => {
+      if (this.ambientLifeRoutes?.get(id)?.fixed && !this.postTurns.has(host)) this.postTurns.set(host, host.rotation.y);
+      this.turnToFace(host, null, { yaw: yaws.npcs[index], rate: host === this.lev ? LEV_ENTRANCE.turnRate : CONVERSATION_TURN.npcRate });
+    });
+    if (yaws.butch !== null) this.turnToFace(this.preview.player, null, { yaw: yaws.butch, rate: CONVERSATION_TURN.butchRate });
     interaction.activate();
   }
 
-  // Each civilian roams among several semantically related work points. The
-  // travel and work phases share one state machine, so a character never plays
-  // a repair/push pose halfway through a walk or walks in place at a desk.
-  updateAmbientLifeRoutes(dt) {
-    const actors = {
+  // The people the city's conversations can turn (ambient route ids, and Lev).
+  npcActors() {
+    return {
       eda: this.eda, olek: this.olek, toma: this.toma,
       'produce-vendor': this.produceVendor, 'flower-vendor': this.flowerVendor,
       sava: this.ministryHall.sava, nika: this.ministryHall.nika, 'ministry-bosko': this.ministryHall.bosko,
@@ -883,6 +915,64 @@ export class Chapter3OpeningRuntime {
       'campfire-rada': this.campfireRada, 'campfire-miro': this.campfireMiro,
       'campfire-seline': this.campfireSeline, hana: this.hotelHall.hana,
     };
+  }
+
+  npcHost(id) {
+    if (id === 'lev') return this.lev;
+    return this.npcActors()[id] ?? null;
+  }
+
+  // Whether a scripted walk is moving `host` now (it keeps its own heading:
+  // Lev talks as he walks to the oil line).
+  hostWalking(host) {
+    if (host === this.lev) {
+      return Boolean(this.levGuide && this.levStrideMoving)
+        || Boolean(this.levEntrance && !this.levArrived)
+        || this.levWalkElapsed !== null || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame;
+    }
+    if (host === this.olek) return Boolean(this.model.snapshot().marketCrossed && (this.olekExitElapsed ?? 0) < 9 && !this.dialogue.active);
+    return false;
+  }
+
+  // Round 12: whoever speaks a line (within reach) turns to Butch, and Butch
+  // turns to them, except on a beat that pins an object in frame (the oil
+  // line, the fire letters), where he looks at that instead. A speaker on an
+  // ambient route stands still for the rest of the conversation.
+  faceSpeaker(line, focus = null) {
+    const host = this.hostForSpeaker(line?.speaker);
+    if (!host || !this.actorIsActuallyVisible(host)) return false;
+    const butch = this.preview.player.position;
+    const at = host.getWorldPosition(new THREE.Vector3());
+    if (Math.hypot(at.x - butch.x, at.z - butch.z) > CONVERSATION_TURN.reach || this.hostWalking(host)) return false;
+    const routeId = [...(this.ambientLifeRoutes?.entries() ?? [])].find(([, route]) => route.host === host)?.[0];
+    if (routeId) {
+      this.activeNpcConversationIds.add(routeId);
+      if (this.ambientLifeRoutes.get(routeId).fixed && !this.postTurns.has(host)) this.postTurns.set(host, host.rotation.y);
+    }
+    this.turnToFace(host, butch, { rate: host === this.lev ? LEV_ENTRANCE.turnRate : CONVERSATION_TURN.npcRate });
+    if (!this.directMoving && !this.preview.path.length) this.turnToFace(this.preview.player, focus ?? at, { rate: CONVERSATION_TURN.butchRate });
+    return true;
+  }
+
+  // People at a post turn back to it once the conversation (and any paper
+  // it opened) has been over a moment.
+  updateConversationPosts(dt) {
+    if (!this.postTurns.size) return;
+    if (this.dialogue.active || this.evidenceViewer.active || this.ticketBoard.active) {
+      this.conversationIdle = 0;
+      return;
+    }
+    this.conversationIdle += dt;
+    if (this.conversationIdle < 0.4) return;
+    for (const [host, yaw] of this.postTurns) this.turnToFace(host, null, { yaw, rate: CONVERSATION_TURN.npcRate });
+    this.postTurns.clear();
+  }
+
+  // Each civilian roams among several semantically related work points. The
+  // travel and work phases share one state machine, so a character never plays
+  // a repair/push pose halfway through a walk or walks in place at a desk.
+  updateAmbientLifeRoutes(dt) {
+    const actors = this.npcActors();
     if (!this.ambientLifeRoutes) {
       const routeSpecs = {
         eda: { points: [[0, 0], [2.4, -0.6], [1.2, 2.0]], actions: ['investigate', 'pickUp', 'talk'] },
@@ -1153,7 +1243,7 @@ export class Chapter3OpeningRuntime {
     this.controlsTag = document.createElement('div');
     this.controlsTag.className = 'nf-tag c3-controls';
     this.controlsTag.setAttribute('role', 'note');
-    this.controlsTag.setAttribute('aria-label', 'Controls: click or W A S D to walk, E to look, hold Tab to look around');
+    this.controlsTag.setAttribute('aria-label', 'Controls: click to walk, click a tag to look, hold Alt (Option) to look around');
     this.controlsTag.hidden = true;
     document.body.append(this.controlsTag);
     // Alpha round 4 fix round (P2, the long walks): G · LEV LEADS THE WAY
@@ -1268,11 +1358,13 @@ export class Chapter3OpeningRuntime {
         activate: () => this.openEda(),
       },
       {
-        id: 'olek-walker', label: 'Olek · crossing with his cart', verb: 'GO TO',
+        // Round 12 (point and click): a click on the walker, from anywhere,
+        // walks Butch up beside him and into step (it used to be GO TO from
+        // afar, then HOLD E beside him).
+        id: 'olek-walker', label: 'Olek · crossing with his cart', verb: SCANNER_WORDS.matchPrompt,
         position: this.olek.position, approach: () => this.walkerApproach('market'),
         outline: this.olekOutline,
-        eligible: () => exterior() && this.model.scannerActive('market') && !this.fieldState('market').matched
-          && !this.scannerFields.market.logic.eligible(this.preview.player.position),
+        eligible: () => exterior() && this.model.scannerActive('market') && !this.fieldState('market').matched,
         activate: () => this.tryMatch('market'),
       },
       {
@@ -1354,12 +1446,11 @@ export class Chapter3OpeningRuntime {
         activate: () => this.openAmbientDialogue(MORNING_LEV_REMINDER),
       },
       {
-        id: 'mara-walker', label: 'The woman in the rose scarf', verb: 'GO TO',
+        id: 'mara-walker', label: 'The woman in the rose scarf', verb: SCANNER_WORDS.matchPrompt,
         position: this.echoMara.position, approach: () => this.walkerApproach('station'),
         outline: makeDynamicObjectHighlight(this.echoMara, 0xc98088),
         eligible: () => exterior() && this.model.scannerActive('station') && this.echoMara.visible
-          && !this.fieldState('station').matched
-          && !this.scannerFields.station.logic.eligible(this.preview.player.position),
+          && !this.fieldState('station').matched,
         activate: () => this.tryMatch('station'),
       },
     ];
@@ -1391,8 +1482,15 @@ export class Chapter3OpeningRuntime {
     }
 
     this.preview.renderer.domElement.addEventListener('pointerdown', (event) => this.handlePointerDown(event));
-    window.addEventListener('pointerup', () => { this.pointerHeld = false; });
-    window.addEventListener('blur', () => { this.pointerHeld = false; this.keysHeld.clear(); this.walkInStepHeld = false; });
+    // Round 12: the reveal follows the Alt modifier on every pointer event
+    // (the page may have missed its keydown or keyup), and it ends when the
+    // window loses focus or the page is hidden: a key let go in another app
+    // never sends its keyup here.
+    const syncReveal = (event) => this.syncReveal(event);
+    window.addEventListener('pointermove', syncReveal, { passive: true });
+    window.addEventListener('pointerdown', syncReveal, { passive: true });
+    window.addEventListener('blur', () => this.clearReveal());
+    document.addEventListener('visibilitychange', () => { if (document.hidden) this.clearReveal(); });
 
     this.applyStartState();
     if (this.characterQa) this.stageCharacterQa();
@@ -1632,10 +1730,13 @@ export class Chapter3OpeningRuntime {
       || this.dialogue.active
       // The opening train departure and Lev's walk to the oil line no longer
       // hold Butch: ground clicks work while they play (alpha round 1).
-      // Round 11: only the step down from the carriage holds him (a few
-      // seconds), and the arrival's first frame until the page shows it.
+      // Round 11: only the step down from the carriage held him, and the
+      // arrival's first frame until the page shows it. Round 12: from the
+      // step down to the end of his conversation with Lev he stays on the
+      // paving (George: the man walks up and they must talk).
       || this.alightingElapsed !== null
       || (this.arrivalStaged && !this.arrivalStarted)
+      || this.arrivalHold
       || this.levWalkElapsed !== null
       || this.ministryTransitioning
       || this.hotelTransitioning
@@ -1720,7 +1821,25 @@ export class Chapter3OpeningRuntime {
       return;
     }
     this.clampOwnsPointer = false;
-    if (this.activeField() && !this.interactionLocked() && !this.hoveredId) this.pointerHeld = true;
+  }
+
+  // ---------------------------------------------------------------- reveal
+  // Round 12: hold Alt (⌥ Option) or Tab to light every interactable on
+  // screen; let go and it clears.
+  get revealHeld() {
+    return this.reveal.held;
+  }
+
+  syncReveal(event) {
+    const before = this.reveal.held;
+    this.reveal.sync(event);
+    if (this.reveal.held !== before) this.updateOutlines();
+  }
+
+  clearReveal() {
+    const before = this.reveal.held;
+    this.reveal.clear();
+    if (before) this.updateOutlines();
   }
 
   handlePointerMove(event) {
@@ -1774,7 +1893,6 @@ export class Chapter3OpeningRuntime {
 
   handlePointerUp(event = null) {
     if (!this.initialized) return false;
-    this.pointerHeld = false;
     if (this.bellClamp.handlePointerUp(event)) return true;
     if (this.clampOwnsPointer) {
       this.clampOwnsPointer = false;
@@ -1782,6 +1900,13 @@ export class Chapter3OpeningRuntime {
     }
     if (this.levWalkElapsed !== null && !this.dialogue.active && this.skipScriptedWalk()) return true;
     if (this.interactionLocked()) return true;
+    // Round 12: walking in step, a click ahead keeps the pace and a click
+    // behind lets the walker go; nothing else paths through the crossing.
+    const pacing = this.activeField();
+    if (pacing && this.fieldState(pacing.id).matched) {
+      this.inStepClick(pacing.id, event);
+      return true;
+    }
     // R2-5: while the feed is loose, a click on the ground by the copper end
     // or the ring is a missed grab (even when its press closed the caption
     // or began elsewhere), never a walk onto the clamp.
@@ -1806,8 +1931,9 @@ export class Chapter3OpeningRuntime {
       if (!this.walkInsideMinistry([point.x, walkY, point.z])) this.flashBlockedClick(point);
       return true;
     }
-    // Scanner fields use direct movement; a click never paths through them.
-    if (!interaction && this.activeField()) return true;
+    // Round 12: a click walks inside a scanner field too (it used to switch
+    // to WASD / a held mouse there); the arch stops a lone walker
+    // (updateScannerFields), so the scanner still reads him alone.
     if (!interaction) {
       // The preview paths Butch to the clicked ground.
       this.noteControlUsed('walk');
@@ -1926,37 +2052,29 @@ export class Chapter3OpeningRuntime {
   handleKeyDown(event) {
     this.noteInput();
     if (this.ticketBoard.active) return true;
-    const movementKey = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code);
-    if (movementKey) {
-      this.keysHeld.add(event.code);
-      if (!this.interactionLocked()) this.noteControlUsed('walk');
-      if (this.activeField()) {
-        event.preventDefault();
-        return true;
-      }
+    // Round 12: hold Alt (⌥ Option) or Tab to see what can be used. Any
+    // other key's altKey keeps the hold honest (createRevealHold).
+    const revealBefore = this.reveal.held;
+    const revealKey = this.reveal.keyDown(event);
+    if (this.reveal.held !== revealBefore) this.updateOutlines();
+    if (revealKey) {
+      event.preventDefault();
+      if (!event.repeat) this.noteControlUsed('reveal');
+      return true;
     }
     if (event.code === LEAD_KEY && !event.repeat && this.leadTheWay()) {
       event.preventDefault();
       return true;
     }
-    if (event.key === 'Tab') {
-      event.preventDefault();
-      this.tabHeld = true;
-      this.noteControlUsed('tab');
-      this.updateOutlines();
-      return true;
-    }
+    // Round 12 (point and click): no key walks Butch any more (round 6 had
+    // WASD / arrows everywhere, Shift to run and a held E to walk in step).
+    // E / Enter stay a quiet alias for the click on the nearest tag and for
+    // CONTINUE; E beside a lit walker falls into step with them.
     if (event.code === 'KeyE' || event.key === 'Enter') {
       event.preventDefault();
       if (event.repeat) return true;
       if (this.dialogue.active) {
         this.dialogue.handleAdvance();
-        return true;
-      }
-      // Walk beside: E matches the walker, and holding it walks in step.
-      const pacing = this.activeField();
-      if (pacing && this.fieldState(pacing.id).matched && !this.interactionLocked()) {
-        this.walkInStepHeld = true;
         return true;
       }
       if (this.sunriseTableauHoldElapsed !== null) {
@@ -1967,7 +2085,6 @@ export class Chapter3OpeningRuntime {
       const field = this.activeField();
       if (field && field.field.logic.eligible(this.preview.player.position)) {
         this.tryMatch(field.id);
-        this.walkInStepHeld = this.fieldState(field.id).matched;
         return true;
       }
       const nearest = this.eligibleInteractions()
@@ -1983,72 +2100,12 @@ export class Chapter3OpeningRuntime {
   }
 
   handleKeyUp(event) {
-    this.keysHeld.delete(event.code);
-    if (event.code === 'KeyE' || event.key === 'Enter') this.walkInStepHeld = false;
-    if (event.key !== 'Tab') return false;
+    const revealBefore = this.reveal.held;
+    const revealKey = this.reveal.keyUp(event);
+    if (this.reveal.held !== revealBefore) this.updateOutlines();
+    if (!revealKey) return false;
     event.preventDefault();
-    this.tabHeld = false;
-    this.updateOutlines();
     return true;
-  }
-
-  // Camera-relative intent on the ground: WASD / arrows, or the held mouse
-  // pulling toward the cursor.
-  movementIntent() {
-    const forward = new THREE.Vector3();
-    this.preview.camera.getWorldDirection(forward);
-    forward.y = 0;
-    forward.normalize();
-    const right = new THREE.Vector3(-forward.z, 0, forward.x);
-    const intent = new THREE.Vector3();
-    const held = (...codes) => codes.some((code) => this.keysHeld.has(code));
-    if (held('KeyW', 'ArrowUp')) intent.add(forward);
-    if (held('KeyS', 'ArrowDown')) intent.sub(forward);
-    if (held('KeyD', 'ArrowRight')) intent.add(right);
-    if (held('KeyA', 'ArrowLeft')) intent.sub(right);
-    if (intent.lengthSq() < 0.01 && this.pointerHeld) {
-      const point = this.preview.projectPointerToGround({ clientX: this.pointerClient.x, clientY: this.pointerClient.y });
-      if (point) {
-        intent.copy(point).sub(this.preview.player.position).setY(0);
-        if (intent.length() < 0.35) intent.set(0, 0, 0);
-      }
-    }
-    if (intent.lengthSq() > 0.0001) intent.normalize();
-    return intent;
-  }
-
-  // Round 6 (item 18, unified controls): outside the scanner fields WASD /
-  // arrows walk Butch at his click-walk pace (Shift runs), camera-relative,
-  // sliding along whatever blocks him. A key walk cancels a click walk.
-  updateKeyWalk(dt) {
-    this.keyWalking = false;
-    if (!this.keysHeld.size || this.activeField() || this.interactionLocked()) return;
-    const intent = this.movementIntent();
-    if (intent.lengthSq() < 0.01) return;
-    const player = this.preview.player;
-    if (this.preview.path.length) this.preview.stopWalking();
-    const running = Boolean(this.preview.shiftHeld);
-    const speed = WALK_SPEED * (running ? RUN_MULTIPLIER : 1);
-    const step = intent.clone().multiplyScalar(speed * dt);
-    const { bounds, obstacles } = this.interiorNavigation();
-    const clear = (x, z) => {
-      if (!bounds) return isWalkable(x, z, this.preview.boundaryObstacles);
-      return interiorSegmentIsClear(player.position, new THREE.Vector3(x, player.position.y, z), bounds, obstacles);
-    };
-    const next = player.position.clone().add(step);
-    if (clear(next.x, next.z)) {
-      player.position.x = next.x;
-      player.position.z = next.z;
-    } else if (clear(next.x, player.position.z)) {
-      player.position.x = next.x;
-    } else if (clear(player.position.x, next.z)) {
-      player.position.z = next.z;
-    } else {
-      return;
-    }
-    player.rotation.y = dampYaw(player.rotation.y, Math.atan2(intent.x, intent.z), PLAYER_TURN_RATE, dt);
-    this.preview.gait = running ? 'jog' : 'walk';
-    this.keyWalking = true;
   }
 
   // ------------------------------------------------------------------ walk beside
@@ -2069,14 +2126,42 @@ export class Chapter3OpeningRuntime {
       this.preview.stopWalking();
       car03Audio.matchSnap?.();
       this.matchBlend = 0;
+      // Round 12: in step at once, and on until the crossing or a click
+      // behind (a held E or WASD toward the arch used to keep the pace).
+      this.inStepField = id;
     } else if (events.includes('released')) {
       car03Audio.release?.();
+      this.inStepField = null;
     } else if (!before) {
       // Clicked from afar: walk up beside them first.
       const approach = this.walkerApproach(id);
       this.preview.walkTo(approach[0], approach[2], () => this.tryMatch(id));
     }
     this.updateObjective();
+  }
+
+  // Round 12: a click while walking in step. Ahead (or beside): keep in
+  // step. Clearly behind Butch, away from the arch: let the walker go
+  // (never once the pair is in the scan with the pips full).
+  inStepClick(id, event = null) {
+    const logic = this.scannerFields[id].logic;
+    const point = this.preview.projectPointerToGround({
+      clientX: event?.clientX ?? this.pointerClient.x,
+      clientY: event?.clientY ?? this.pointerClient.y,
+    });
+    const player = this.preview.player.position;
+    const along = point ? (point.x - player.x) * logic.geometry.u.x + (point.z - player.z) * logic.geometry.u.z : 0;
+    if (along < -0.8) {
+      const events = logic.toggleMatch(player);
+      if (events.includes('released')) {
+        car03Audio.release?.();
+        this.inStepField = null;
+        this.updateObjective();
+        return 'released';
+      }
+    }
+    this.inStepField = id;
+    return 'in-step';
   }
 
   updateScannerFields(dt) {
@@ -2092,11 +2177,11 @@ export class Chapter3OpeningRuntime {
       }
       const logic = field.logic;
       const locked = this.interactionLocked();
-      const inField = logic.contains(player.position) || logic.snapshot().matched;
-      const intent = !locked && inField ? this.movementIntent() : new THREE.Vector3();
-      if (inField && (intent.lengthSq() > 0 || logic.snapshot().matched)) this.preview.stopWalking();
-      const hold = Boolean(this.walkInStepHeld) && logic.snapshot().matched;
-      const events = locked ? [] : logic.update(dt, { player: player.position, input: intent, hold });
+      if (logic.snapshot().matched) this.preview.stopWalking();
+      // Round 12: matched by a click (or E), the pair walks in step on its
+      // own (`hold`); there is no steering input any more.
+      const hold = this.inStepField === id && logic.snapshot().matched;
+      const events = locked ? [] : logic.update(dt, { player: player.position, hold });
       const snapshot = logic.snapshot();
       if (snapshot.matched) {
         // Butch keeps station at the walker's side.
@@ -2106,21 +2191,24 @@ export class Chapter3OpeningRuntime {
         const previous = player.position.clone();
         player.position.lerp(target, this.matchBlend >= 1 ? 1 : 0.35);
         const moved = player.position.clone().sub(previous).setY(0);
-        if (moved.lengthSq() > 1e-6) player.rotation.y = Math.atan2(logic.geometry.u.x, logic.geometry.u.z);
+        if (moved.lengthSq() > 1e-6) player.rotation.y = dampYaw(player.rotation.y, Math.atan2(logic.geometry.u.x, logic.geometry.u.z), PLAYER_TURN_RATE, dt);
         this.directMoving = snapshot.walker.moving;
-      } else if (inField && intent.lengthSq() > 0 && !locked) {
-        const step = intent.clone().multiplyScalar(DIRECT_WALK_SPEED * dt);
-        const next = player.position.clone().add(step);
-        if (isWalkable(next.x, next.z, this.preview.boundaryObstacles)) {
-          player.position.x = next.x;
-          player.position.z = next.z;
-        } else if (isWalkable(next.x, player.position.z, this.preview.boundaryObstacles)) {
-          player.position.x = next.x;
-        } else if (isWalkable(player.position.x, next.z, this.preview.boundaryObstacles)) {
-          player.position.z = next.z;
+      } else {
+        if (this.inStepField === id) this.inStepField = null;
+        // A click walks into the field now (round 12); the arch's beam stops
+        // a lone walker inside it, so the scanner reads him ALONE, warns and
+        // sends him back, as it did when he was steered through. A walk back
+        // out the way he came is let go.
+        const { along } = localCoordinates(logic.geometry, player.position);
+        const offset = along - logic.geometry.gateAlong;
+        if (!inScanVolume(logic.geometry, player.position)) {
+          this.scanEntrySide = { ...this.scanEntrySide, [id]: Math.sign(offset) || -1 };
+        } else if (!locked && this.preview.path.length) {
+          const end = this.preview.path[this.preview.path.length - 1];
+          const endOffset = localCoordinates(logic.geometry, end).along - logic.geometry.gateAlong;
+          const backOut = Math.abs(endOffset) > SCAN_HALF_DEPTH && Math.sign(endOffset) === (this.scanEntrySide?.[id] ?? -1);
+          if (!backOut) this.preview.stopWalking();
         }
-        player.rotation.y = Math.atan2(intent.x, intent.z);
-        this.directMoving = true;
       }
       for (const event of events) this.onScannerEvent(id, event);
       field.render(snapshot.scanner);
@@ -2187,10 +2275,13 @@ export class Chapter3OpeningRuntime {
     });
   }
 
-  showLines(lines, { onComplete = null, focus = null } = {}) {
+  showLines(lines, { onComplete = null, focus = null, onLine = null } = {}) {
     this.preview.stopWalking();
     this.dialogue.show(lines, {
-      onLineChange: (line) => this.frameSpeaker(line, focus),
+      onLineChange: (line) => {
+        this.frameSpeaker(line, focus);
+        if (line) onLine?.(line);
+      },
       onComplete: () => {
         this.frameSpeaker(null);
         this.hoveredId = null;
@@ -2219,6 +2310,7 @@ export class Chapter3OpeningRuntime {
       if (!this.insideMinistry && !this.insideHotel) this.preview.setCameraOverrideTarget(null);
       return;
     }
+    this.faceSpeaker(line, focus);
     if (this.insideHotel || this.insideMinistry) return;
     const host = this.hostForSpeaker(line.speaker);
     const player = this.preview.player.position;
@@ -2255,6 +2347,8 @@ export class Chapter3OpeningRuntime {
     const player = this.preview.player;
     player.position.set(pose.x, 0.5, pose.z);
     player.rotation.y = pose.facing;
+    // Round 12: the man on the paving watches the carriage end he steps from.
+    this.lev.rotation.y = yawToward(this.lev.position, player.position);
     this.setButchLift(pose.lift);
     this.preview.stopWalking();
     const focus = alightingFocus();
@@ -2287,25 +2381,23 @@ export class Chapter3OpeningRuntime {
     if (butch) butch.lift = lift;
   }
 
-  // The arrival begins: the chapter title, the step down (a few seconds, the
-  // only part that holds the player) with the station announcement over it,
-  // then the rest of the opening's lines as walk-and-talk: the conductor's
-  // call-back as the train leaves, and Butch's two lines with the claim card
-  // in his hand (a paper at the side of the frame, never a modal).
+  // The arrival begins: the chapter title, the step down (a few seconds)
+  // with the station announcement over it (a caption that takes no input).
+  // Round 12 (George: "一开始是应该那个人走到前面必须聊天的"): Butch then stays on
+  // the paving (arrivalHold) while the train leaves and Lev walks up and
+  // stops in front of him, and the rest of the opening is one conversation
+  // the player clicks through (openArrivalConversation). The oil line is
+  // the task when it ends; only then is Butch the player's to walk.
   beginArrival() {
     if (this.arrivalStarted || this.model.snapshot().arrivalRead || this.characterQa) return false;
     if (!this.arrivalStaged) this.stageArrival();
     this.arrivalStarted = true;
+    this.arrivalHold = true;
     this.showTitleCard({ high: true });
     this.alightingElapsed = 0;
-    const firstThought = ARRIVAL_DIALOGUE.findIndex((line) => line.speaker === 'BUTCH');
-    this.openingLines = createLineQueue(ARRIVAL_DIALOGUE.map((line, index) => ({
+    this.openingLines = createLineQueue(ARRIVAL_ANNOUNCEMENT.map((line, index) => ({
       line,
       ...(index === 0 ? { at: 0.35 } : {}),
-      // the card stays in his hand until Lev has asked him to keep it out
-      ...(index === firstThought
-        ? { onShow: () => this.evidenceViewer.peek(CHAPTER3_DOCUMENTS.CLAIM_CARD, { seconds: 30 }) }
-        : {}),
     })));
     this.updateObjective();
     this.updateOutlines();
@@ -2313,7 +2405,7 @@ export class Chapter3OpeningRuntime {
   }
 
   // Butch's pose along the step down; once he is on the paving the train
-  // leaves and he is the player's.
+  // leaves and Lev walks over to him.
   updateAlighting(dt) {
     if (this.alightingElapsed === null) return;
     this.alightingElapsed += dt;
@@ -2330,7 +2422,9 @@ export class Chapter3OpeningRuntime {
     this.setButchLift(0);
     this.preview.setCameraOverrideTarget(null);
     this.model.readArrival();
+    this.arrivalLanded = true;
     this.beginTrainDeparture();
+    this.beginLevArrivalApproach();
     this.updateObjective();
     this.updateOutlines();
   }
@@ -2353,16 +2447,17 @@ export class Chapter3OpeningRuntime {
     return queue.done;
   }
 
+  // The announcement over the step down, then (round 12) the conversation,
+  // once Lev stands in front of Butch and the announcement has finished.
   updateOpeningLines(dt) {
     if (this.openingLines && this.stepLineQueue(this.openingLines, dt)) this.openingLines = null;
-    if (this.levApproachPending && (!this.openingLines || this.openingLines.remaining <= 1)) {
-      this.levApproachPending = false;
-      this.beginLevArrivalApproach();
-    }
-    if (this.levTalk && this.stepLineQueue(this.levTalk, dt)) {
-      this.levTalk = null;
-      this.finishLevIntroduction();
-    }
+    if (arrivalTalkDue({
+      landed: this.arrivalLanded,
+      announcementDone: !this.openingLines,
+      levArrived: this.levArrived,
+      opened: this.arrivalTalkOpened,
+      busy: this.dialogue.active || this.evidenceViewer.active || this.ticketBoard.active,
+    })) this.openArrivalConversation();
   }
 
   beginTrainDeparture() {
@@ -2384,19 +2479,22 @@ export class Chapter3OpeningRuntime {
   moveLevTo(position, duration, onComplete = null) {
     this.levWalkStart = this.lev.position.clone();
     this.levWalkTarget = position.isVector3 ? position.clone() : positionFrom(position);
-    this.levWalkDuration = duration;
+    // Round 12: never faster than his walk. The walk is eased (smooth), so
+    // its peak is 1.5x its mean; a near-zero duration still places him.
+    const metres = Math.hypot(this.levWalkTarget.x - this.levWalkStart.x, this.levWalkTarget.z - this.levWalkStart.z);
+    this.levWalkDuration = duration <= 0.05 ? duration : Math.max(duration, (1.5 * metres) / LEV_ENTRANCE.walkSpeed);
     this.levWalkElapsed = 0;
     this.levWalkOnComplete = onComplete;
   }
 
   // Round 6 (G5): Lev walks over at a walking pace (a jog if Butch has
-  // wandered off) to stand beside Butch as the camera sees them, following
-  // Butch if he walks; the introduction starts when they meet. Butch stays
-  // free to walk meanwhile (the departure never held him either). Round 11:
-  // the introduction is walk-and-talk too, and Lev keeps beside Butch
-  // through it; it waits for Butch's own lines to finish.
+  // wandered off) to stand beside Butch as the camera sees them. Round 12:
+  // Butch stays where he stepped down (arrivalHold), so Lev's spot is fixed:
+  // in front of him, face to face, LEV_ENTRANCE.faceToFace apart along the
+  // camera's right axis (both seen side on), on the side Lev comes from.
   beginLevArrivalApproach() {
-    this.levEntrance = { speed: 0, path: [], target: null, repathIn: 0, talking: false };
+    this.levEntrance = { speed: 0, path: [], target: null, elapsed: 0 };
+    this.levArrived = false;
     this.updateObjective();
   }
 
@@ -2463,75 +2561,90 @@ export class Chapter3OpeningRuntime {
 
   updateLevEntrance(dt) {
     const walker = this.levEntrance;
-    if (!walker || this.dialogue.active || this.evidenceViewer.active) return;
+    if (!walker || this.levArrived || this.dialogue.active || this.evidenceViewer.active) return;
     const butch = this.preview.player.position;
-    const butchWalking = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
-    walker.repathIn -= dt;
-    const target = besideTarget(butch, this.lev.position, this.cameraRightOnGround(), {
-      walkable: (x, z) => isWalkable(x, z, this.preview.boundaryObstacles),
-    });
-    const moved = !walker.target || Math.hypot(target.x - walker.target.x, target.z - walker.target.z) > 0.6;
-    if (moved || walker.repathIn <= 0) {
-      walker.target = target;
-      walker.repathIn = 0.5;
-      walker.path = this.levRoute(new THREE.Vector3(target.x, 0.5, target.z));
+    if (!walker.target) {
+      walker.target = besideTarget(butch, this.lev.position, this.cameraRightOnGround(), {
+        standOff: LEV_ENTRANCE.faceToFace,
+        walkable: (x, z) => isWalkable(x, z, this.preview.boundaryObstacles),
+      });
+      walker.path = this.levRoute(new THREE.Vector3(walker.target.x, 0.5, walker.target.z));
     }
+    walker.elapsed += dt;
     const far = Math.hypot(butch.x - this.lev.position.x, butch.z - this.lev.position.z);
     const cruise = far > LEV_ENTRANCE.jogBeyond ? LEV_ENTRANCE.jogSpeed : LEV_ENTRANCE.walkSpeed;
     const remaining = this.stepLevAlong(walker, dt, cruise);
     const settled = remaining < 0.04 && walker.speed < 0.2;
-    // Standing beside Butch, Lev turns to him.
-    if (settled) {
-      this.levStrideMoving = false;
-      if (!this.faceTurns.has(this.lev)) this.lev.rotation.y = turnToward(this.lev.rotation.y, yawToward(this.lev.position, butch), LEV_ENTRANCE.turnRate, dt);
-    }
-    // They have met: beside a Butch who stands, or close to one who walks
-    // (he is no longer called to a halt). The introduction waits for his
-    // own lines.
-    const met = (settled && !butchWalking) || far <= LEV_ENTRANCE.callOut;
-    if (met && !walker.talking && !this.openingLines) {
-      walker.talking = true;
-      this.openLevIntroduction();
-    }
+    // A blocked or long route never holds the opening: he is there.
+    if (!settled && walker.elapsed < LEV_ENTRANCE.meetWithin) return;
+    if (!settled) this.lev.position.set(walker.target.x, 0.5, walker.target.z);
+    this.levStrideMoving = false;
+    this.levArrived = true;
+    // Face to face: both turn (at a turn rate) to each other.
+    this.faceEachOther(this.preview.player, this.lev);
   }
 
-  // Both turn to face each other (eased: chapter3Entrance.dampYaw).
+  // Both turn to face each other at a turn rate (round 12: turnToward, not
+  // an exponential snap).
   faceEachOther(a, b) {
-    this.faceTurns.set(a, yawToward(a.position, b.position));
-    this.faceTurns.set(b, yawToward(b.position, a.position));
+    this.turnToFace(a, b.position, { rate: a === this.preview.player ? CONVERSATION_TURN.butchRate : CONVERSATION_TURN.npcRate });
+    this.turnToFace(b, a.position, { rate: b === this.preview.player ? CONVERSATION_TURN.butchRate : CONVERSATION_TURN.npcRate });
   }
 
+  // Turn `host` to face the ground point `toward` (or to the yaw `yaw`).
+  turnToFace(host, toward = null, { yaw = null, rate = CONVERSATION_TURN.npcRate } = {}) {
+    if (!host) return false;
+    const from = host.getWorldPosition ? host.getWorldPosition(new THREE.Vector3()) : host.position;
+    const target = yaw ?? (toward ? yawToward(from, toward) : null);
+    if (target === null || !Number.isFinite(target)) return false;
+    if (toward && Math.hypot(toward.x - from.x, toward.z - from.z) < 0.05) return false;
+    this.faceTurns.set(host, { yaw: target, rate, at: host.position.clone() });
+    return true;
+  }
+
+  // Eased turns. A turn ends when it is done, or the moment its walker moves
+  // (a walk of its own owns its heading).
   updateFaceTurns(dt) {
-    for (const [host, yaw] of this.faceTurns) {
-      // A walk of Butch's own takes his facing back.
-      if (host === this.preview.player && this.preview.path.length) {
+    for (const [host, turn] of this.faceTurns) {
+      const moved = Math.hypot(host.position.x - turn.at.x, host.position.z - turn.at.z) > 0.02;
+      if (moved || (host === this.preview.player && this.preview.path.length)) {
         this.faceTurns.delete(host);
         continue;
       }
-      host.rotation.y = dampYaw(host.rotation.y, yaw, 9, dt);
-      if (Math.abs(wrapAngle(yaw - host.rotation.y)) < 0.01) {
-        host.rotation.y = yaw;
+      host.rotation.y = turnToward(host.rotation.y, turn.yaw, turn.rate, dt);
+      if (Math.abs(wrapAngle(turn.yaw - host.rotation.y)) < CONVERSATION_TURN.settle) {
+        host.rotation.y = turn.yaw;
         this.faceTurns.delete(host);
       }
     }
   }
 
-  openLevIntroduction() {
-    const butchWalking = this.preview.path.length > 0 || this.directMoving || this.keyWalking;
-    if (!butchWalking) this.faceEachOther(this.preview.player, this.lev);
-    // Round 11: walk-and-talk (barks), Lev keeping beside Butch meanwhile;
-    // the claim card leaves his hand once Lev has asked him to keep it out.
-    this.levTalk = createLineQueue(LEV_INTRO_DIALOGUE.map((line, index) => ({
-      line,
-      ...(index === 1 ? { onShow: () => this.evidenceViewer.endPeek() } : {}),
-    })), { gap: 0.3 });
+  // Round 12: the opening as one conversation, Lev in front of Butch: the
+  // conductor's call-back as the train leaves, Butch's two lines with the
+  // claim card in his hand (a paper at the side of the frame), Lev's
+  // introduction. CONTINUE · E / a click moves it on; nothing else can
+  // happen until it ends.
+  openArrivalConversation() {
+    this.arrivalTalkOpened = true;
+    this.showLines(ARRIVAL_CONVERSATION, {
+      onLine: (line) => {
+        if (line.text === ARRIVAL_CONVERSATION[ARRIVAL_CARD_OUT].text) this.evidenceViewer.peek(CHAPTER3_DOCUMENTS.CLAIM_CARD, { seconds: 120 });
+        if (line.text === ARRIVAL_CONVERSATION[ARRIVAL_CARD_AWAY].text) this.evidenceViewer.endPeek();
+      },
+      onComplete: () => this.finishLevIntroduction(),
+    });
   }
 
   finishLevIntroduction() {
     this.levEntrance = null;
     this.levStrideMoving = false;
-    if (!this.model.completeLevIntroduction()) return;
-    this.beginGuidedWalk();
+    this.evidenceViewer.endPeek();
+    // The train may still be pulling out when the last line is read.
+    this.model.completeTrainDeparture();
+    this.arrivalHold = false;
+    if (this.model.completeLevIntroduction()) this.beginGuidedWalk();
+    // Control is the player's now (the page shows its controls card).
+    this.onArrivalControl?.();
   }
 
   // Lev heads for the oil line and the player follows at their own pace: no
@@ -2630,7 +2743,18 @@ export class Chapter3OpeningRuntime {
       this.levWalkOnComplete = () => this.openEda();
       return;
     }
-    this.moveLevTo(OPENING_POSITIONS.levEda, 0.01);
+    // Lev joins the conversation where he stands, beside Butch (he follows
+    // him to the stall, or the lead set him there). Round 12: the old
+    // moveLevTo(levEda, 0.01) waited out the conversation (scripted walks
+    // hold during a line), so he popped to the stall after it, facing
+    // anywhere. Only a Lev left behind is brought to the stall; he faces Butch.
+    const levEda = positionFrom(OPENING_POSITIONS.levEda);
+    if (this.lev.position.distanceTo(this.preview.player.position) > 4) {
+      this.lev.position.set(levEda.x, this.lev.position.y, levEda.z);
+      this.lev.rotation.y = yawToward(levEda, this.preview.player.position);
+    } else {
+      this.turnToFace(this.lev, this.preview.player.position, { rate: LEV_ENTRANCE.turnRate });
+    }
     this.openTopicMenu({
       opening: EDA_OPENING,
       menu: () => edaTopicMenu(this.model.snapshot().edaTopics),
@@ -3568,8 +3692,12 @@ export class Chapter3OpeningRuntime {
     movement.y = 0;
     const distance = movement.length();
     if (distance <= 0.22) return;
-    const naturalSpeed = 3.7 + 0.65 * (0.5 + 0.5 * Math.sin(this.morningLevFollowTime * 1.41));
-    const speed = distance > 4.2 ? 10.5 : naturalSpeed;
+    // Round 12: at Butch's own pace (he walks WALK_SPEED, 1.9 m/s, now; Lev
+    // walked 3.7–4.35 m/s on the walk clip, over twice its cadence, and
+    // closed a gap at 10.5). A gap closes at a jog.
+    const naturalSpeed = WALK_SPEED * (1.02 + 0.08 * (0.5 + 0.5 * Math.sin(this.morningLevFollowTime * 1.41)));
+    const speed = distance > 4.2 ? LEV_ENTRANCE.jogSpeed : naturalSpeed;
+    this.levFollowGait = gaitForSpeed(speed);
     const step = Math.min(distance, dt * speed);
     this.lev.position.addScaledVector(movement.normalize(), step);
     this.morningLevMovedThisFrame = step > 0.001;
@@ -3589,7 +3717,8 @@ export class Chapter3OpeningRuntime {
     desired.z = THREE.MathUtils.clamp(desired.z, HOTEL_CORRIDOR_WALK_BOUNDS.minZ, HOTEL_CORRIDOR_WALK_BOUNDS.maxZ);
     const movement = desired.sub(this.lev.position).setY(0);
     if (movement.lengthSq() < 0.0025) return;
-    const step = Math.min(movement.length(), dt * 2.35);
+    // Round 12: Butch's pace (it was 2.35 m/s beside his 5.4).
+    const step = Math.min(movement.length(), dt * WALK_SPEED * 1.05);
     this.lev.position.addScaledVector(movement.normalize(), step);
     this.lev.position.y = 0.5;
     this.lev.rotation.y = Math.atan2(movement.x, movement.z);
@@ -3635,12 +3764,19 @@ export class Chapter3OpeningRuntime {
       if (moving) this.updateOlekBarks(dt);
       return;
     }
-    // After the crossing he walks on east and leaves the frame.
+    // After the crossing he walks on east and leaves the frame; round 12: he
+    // stands (facing Butch, faceSpeaker) while the crossing's lines play.
+    if (this.dialogue.active && (this.olekExitElapsed ?? 0) < 9) {
+      states.set('olek', 'idle');
+      return;
+    }
     this.olekExitElapsed = (this.olekExitElapsed ?? 0) + dt;
     if (this.olekExitElapsed < 9) {
       const step = 1.4 * dt;
       this.olek.position.x += u.x * step;
       this.olek.position.z += u.z * step;
+      // back to his cart's heading after facing Butch to talk
+      this.olek.rotation.y = turnToward(this.olek.rotation.y, heading, CONVERSATION_TURN.npcRate, dt);
       this.cartObject.position.x += u.x * step;
       this.cartObject.position.z += u.z * step;
       states.set('olek', 'push');
@@ -3756,7 +3892,7 @@ export class Chapter3OpeningRuntime {
     this.ticketBoard.update(dt);
     this.bellClamp.update(dt);
     // Idle = free to act, standing still, no input (R2-3).
-    const moving = this.preview.path?.length > 0 || this.keysHeld.size > 0 || this.pointerHeld || this.keyWalking;
+    const moving = this.preview.path?.length > 0 || this.directMoving;
     if (this.interactionLocked() || moving) this.idleElapsed = 0;
     else this.idleElapsed += dt;
     music.setDialogueActive(this.dialogue.active);
@@ -3764,7 +3900,6 @@ export class Chapter3OpeningRuntime {
     this.updateCameraZoom(dt);
     this.updateStationCamera();
     this.updateScannerFields(dt);
-    this.updateKeyWalk(dt);
     this.updateStationTrigger();
     this.updateFinalDeparture(dt);
     this.updateButchBedTransition(dt);
@@ -3805,10 +3940,8 @@ export class Chapter3OpeningRuntime {
         // The finale stands the carriage at the platform again from here.
         if (this.finalDoorBase) this.finalDoor.group.position.copy(this.finalDoorBase);
         this.departureElapsed = null;
+        // (The arrival conversation may already have marked it: round 12.)
         this.model.completeTrainDeparture();
-        // Round 11: Lev sets off once Butch is on his last line, so he
-        // arrives as Butch finishes rather than standing by in silence.
-        this.levApproachPending = true;
       }
     }
     // Round 11: the step down from the carriage, the opening's walk-and-talk
@@ -3838,6 +3971,7 @@ export class Chapter3OpeningRuntime {
         this.levStrideMoving = false;
       }
     }
+    this.updateConversationPosts(dt);
     this.updateFaceTurns(dt);
 
     if (this.levWalkElapsed !== null && !this.dialogue.active) {
@@ -4083,16 +4217,17 @@ export class Chapter3OpeningRuntime {
       this.updateCharacterQa(dt);
       return;
     }
-    const butchMoving = this.preview.path.length > 0 || this.directMoving || this.keyWalking || this.alightingMoving;
+    const butchMoving = this.preview.path.length > 0 || this.directMoving || this.alightingMoving;
     const levMoving = (this.levGuide !== null && this.levStrideMoving)
       || (this.levEntrance !== null && this.levStrideMoving && !this.dialogue.active)
       || (!this.dialogue.active && (this.levWalkElapsed !== null || this.morningLevMovedThisFrame || this.hotelLevMovedThisFrame));
     // A long walk strides, a run runs: the rig jogs (chapter3LongWalks.js).
-    const butchGait = this.directMoving ? 'walk' : this.preview.gait;
+    const butchGait = this.directMoving || this.alightingMoving ? 'walk' : this.preview.gait;
     this.characters.play('butch', this.butchActionOverride || (butchMoving ? butchGait : 'idle'));
     // Round 6 (G5): Lev eases out of his stride (it was a hard cut to idle
     // the frame a line opened, mid-step).
-    const levStride = (this.levGuide || this.levEntrance) ? this.levGait : 'walk';
+    const levStride = (this.levGuide || this.levEntrance) ? this.levGait
+      : this.morningLevMovedThisFrame ? (this.levFollowGait ?? 'walk') : 'walk';
     this.characters.play('lev', levMoving ? levStride : 'idle', levMoving ? undefined : { fade: 0.32 });
     this.updateAmbientCharacterLoops(dt, ambientLifeStates);
   }
@@ -4102,6 +4237,8 @@ export class Chapter3OpeningRuntime {
       eda: ['eda'], 'transport-entrance': ['toma'], 'nika-terminal': ['nika'],
       'cut-feed-interface': ['petar'], 'hotel-register-hana': ['hana'], 'campfire-seline': ['campfire-seline'],
       'sava-records': ['sava'],
+      // Round 12: Lev turns to Butch too when Butch walks up to him.
+      'lev-morning-companion': ['lev'],
     }[interactionId] || [];
   }
 
@@ -4206,9 +4343,11 @@ export class Chapter3OpeningRuntime {
     const waitingForToma = !this.insideMinistry && state.seamInspected && !state.transportEntranceReached;
     this.preview.setOccludingBuildingForceClear?.('transit-ministry', waitingForToma);
     setActorForegroundVisibility(this.toma, waitingForToma);
+    // Round 12: the reveal (Alt / Tab held) lights every interactable,
+    // flavour objects and a following companion included.
     const visible = new Set(
       this.eligibleInteractions()
-        .filter((interaction) => (this.tabHeld && !interaction.ambient)
+        .filter((interaction) => this.revealHeld
           || interaction.id === this.hoveredId
           || (DISTANT_GUIDANCE_INTERACTIONS.has(interaction.id)
             && interaction.position.distanceTo(this.preview.player.position) > 7.5))
@@ -4222,10 +4361,10 @@ export class Chapter3OpeningRuntime {
   }
 
   // Paper tags (.nf-tag): the hovered interactable always; the nearest
-  // story interactable within E's reach (alpha round 2, R2-3: no Tab
-  // needed); with Tab held, every non-ambient story interactable on screen;
-  // walkers in a scanner field show the E prompt; after a long idle, one
-  // HOLD TAB · LOOK AROUND tag over Butch.
+  // story interactable within E's reach (alpha round 2, R2-3: no reveal
+  // needed); with the reveal held (Alt / ⌥ Option or Tab, round 12), every
+  // interactable on screen; after a long idle, one HOLD ALT · LOOK AROUND
+  // tag over Butch.
   updateTags() {
     this.tags.begin();
     const locked = this.interactionLocked();
@@ -4242,7 +4381,7 @@ export class Chapter3OpeningRuntime {
           distance: this.interactionDistance(interaction),
         })),
         hoveredId: this.hoveredId,
-        tabHeld: this.tabHeld,
+        tabHeld: this.revealHeld,
         radius: INTERACTION_RADIUS,
       });
       let storyTagShown = false;
@@ -4262,7 +4401,7 @@ export class Chapter3OpeningRuntime {
       }
       const storyTargets = eligible.filter((interaction) => !interaction.ambient && !interaction.follows).length;
       if (!this.activeField() && !(this.bellClamp.active && !this.bellClamp.seated)
-        && idleLookHintDue({ idleSeconds: this.idleElapsed, tabHeld: this.tabHeld, storyTargets, storyTagShown })) {
+        && idleLookHintDue({ idleSeconds: this.idleElapsed, tabHeld: this.revealHeld, storyTargets, storyTagShown })) {
         const anchor = this.preview.player.position.clone();
         anchor.y += 2.5;
         const screen = this.screenOf(anchor);
@@ -4271,19 +4410,8 @@ export class Chapter3OpeningRuntime {
           this.idleLookHintShown = true;
         }
       }
-      for (const [id, field] of Object.entries(this.scannerFields)) {
-        if (!this.model.scannerActive(id)) continue;
-        const logic = field.logic;
-        const snapshot = logic.snapshot();
-        const host = id === 'market' ? this.olek : this.echoMara;
-        if (!host.visible) continue;
-        const anchor = host.position.clone();
-        anchor.y += 2.3;
-        const screen = this.screenOf(anchor);
-        if (!screen.onScreen) continue;
-        if (snapshot.matched) continue; // the pips bar carries E · LET GO while matched
-        else if (logic.eligible(this.preview.player.position)) this.tags.place(screen, `HOLD <kbd>E</kbd> · ${SCANNER_WORDS.matchPrompt}`, { emphasis: true });
-      }
+      // (Round 12: a lit walker is an interactable of its own, WALK IN STEP,
+      // clicked from anywhere; the pips bar carries the pace while matched.)
       if (this.bellClamp.active && !this.bellClamp.seated) {
         // One tag, below the copper end: the fire letters are above it.
         const screen = this.screenOf(this.bellClamp.tipWorld());
@@ -4463,7 +4591,7 @@ export class Chapter3OpeningRuntime {
     const visible = compassVisible({
       hasTarget: Boolean(target),
       locked,
-      tabHeld: this.tabHeld,
+      tabHeld: this.revealHeld,
       flashRemaining: Math.max((this.compassFlashUntil - now) / 1000, flashFramesLeft > 0 ? 0.001 : 0),
       distance,
       // On screen, the target's own Tab tag already names it.
@@ -4556,7 +4684,8 @@ export class Chapter3OpeningRuntime {
     if (state.transportEntranceReached) return OBJECTIVES.publicHall;
     if (state.seamInspected) return OBJECTIVES.ministry;
     if (state.guideStarted) return OBJECTIVES.oilLine;
-    if (state.trainDeparted) return OBJECTIVES.meetLev;
+    // Round 12: the man walks up as soon as Butch is down.
+    if (state.trainDeparted || state.arrivalRead) return OBJECTIVES.meetLev;
     return OBJECTIVES.stepOff;
   }
 
@@ -4623,7 +4752,8 @@ export class Chapter3OpeningRuntime {
       state,
       music: { ...music.qa(), cue: this.musicCue },
       hoveredInteraction: this.hoveredId,
-      tabScanHeld: this.tabHeld,
+      tabScanHeld: this.revealHeld,
+      reveal: { held: this.revealHeld, keys: this.reveal.keys },
       eligibleInteractions: this.eligibleInteractions().map((interaction) => interaction.id),
       storyInteractables: this.eligibleInteractions().filter((interaction) => !interaction.ambient).map((interaction) => interaction.id),
       flavourInteractables: this.interactions.filter((interaction) => interaction.ambient).map((interaction) => interaction.id),
@@ -4679,7 +4809,10 @@ export class Chapter3OpeningRuntime {
           carriage: this.arrivalCarriage,
           alighting: this.alightingElapsed === null ? null : Number(this.alightingElapsed.toFixed(2)),
           openingLinesLeft: this.openingLines?.remaining ?? 0,
-          levTalkLeft: this.levTalk?.remaining ?? 0,
+          hold: this.arrivalHold,
+          landed: this.arrivalLanded,
+          levArrived: this.levArrived,
+          conversationOpened: this.arrivalTalkOpened,
           claimCard: this.evidenceViewer.snapshot().peek,
           butchLift: Number((this.characters.get('butch')?.lift ?? 0).toFixed(3)),
         },

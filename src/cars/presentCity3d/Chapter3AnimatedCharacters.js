@@ -167,7 +167,10 @@ class AnimatedCharacterInstance {
 
   update(dt, { groundingEnabled = true } = {}) {
     this.host.getWorldPosition(this.currentHostPosition);
-    if (dt > 0 && dt < 0.25) {
+    // Round 12: a slow frame (up to MAX_FRAME_SECONDS, 1 s) is still a
+    // speed. Under 4 fps it used to be skipped, so the walk clips fell to the
+    // 0.38x floor while their walkers kept their pace (skating feet).
+    if (dt > 0 && dt <= 1.05) {
       const dx = this.currentHostPosition.x - this.previousHostPosition.x;
       const dz = this.currentHostPosition.z - this.previousHostPosition.z;
       const measuredSpeed = Math.hypot(dx, dz) / dt;

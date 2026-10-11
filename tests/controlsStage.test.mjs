@@ -162,7 +162,14 @@ test('the stage rows follow the unified scheme (item 18)', () => {
   assert.match(CONTROL_SETS.chapter3.basics.map(([, k]) => k).join(' '), /E \/ ENTER/);
   assert.match(CONTROL_SETS.chapter6.stages.movement3.rows.map(([, k]) => k).join(' '), /E \/ ENTER/);
   // movement uses WASD / arrows
-  for (const id of ['chapter3', 'chapter5', 'chapter6']) assert.match(CONTROL_SETS[id].basics[0][1], /WASD \/ ARROWS/, id);
+  for (const id of ['chapter5', 'chapter6']) assert.match(CONTROL_SETS[id].basics[0][1], /WASD \/ ARROWS/, id);
+  // ... except Echo City, which is point and click (round 12, George's note)
+  assert.equal(CONTROL_SETS.chapter3.basics[0][1], 'CLICK THE GROUND');
+  // (the ticket board keeps its own keyboard: arrows move a paper there)
+  const streets = CONTROL_SETS.chapter3;
+  for (const [action, keys] of [streets.basics, streets.stages.city.rows, streets.stages.scanner.rows, streets.stages.clamp.rows].flat()) {
+    assert.doesNotMatch(keys, /WASD|ARROWS|SHIFT/, `chapter3: ${action} · ${keys}`);
+  }
 });
 
 test('the Ticket 43 board rows teach the operations, not the solution (item 8)', () => {

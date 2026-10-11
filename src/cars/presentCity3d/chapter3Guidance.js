@@ -1,20 +1,35 @@
-// Chapter 3 · which paper tags show without Tab (alpha round 2, R2-3).
+// Chapter 3 · which paper tags show without the reveal key (alpha round 2,
+// R2-3), and the reveal key itself (round 12).
 //
 // Pure: no THREE, no DOM. Points are plain { x, y } (screen pixels, or a
 // ground point written as { x: worldX, y: worldZ }).
 //
-// Without Tab the city tags
+// Without the reveal the city tags
 //   * the hovered interactable (anywhere along a long one such as the oil
 //     line, not only near its centre point);
 //   * the nearest story interactable within reach: the one E would use, so
 //     the tag appears exactly when E works (companions who follow Butch
 //     around, such as Lev in the morning, are never auto-tagged);
 // and after IDLE_LOOK_HINT_SECONDS with no input and no story tag on screen
-// it shows one small HOLD TAB · LOOK AROUND tag over Butch. On a walk, Tab
-// (and a change of task) also shows the compass tag below.
+// it shows one small HOLD ALT · LOOK AROUND tag over Butch. On a walk, the
+// reveal (and a change of task) also shows the compass tag below.
+//
+// Round 12 (George: "为什么不能alt高亮交互object了", why can't I hold Alt to
+// highlight what I can use?): Chapter 3 never bound Alt. Its reveal was HOLD
+// TAB (alpha round 2), and it lit only the current story target, which
+// already pulses, never the flavour objects or a following companion, so
+// holding it showed next to nothing. Now holding Alt (⌥ Option on a Mac,
+// event.key 'Alt', code AltLeft / AltRight) or Tab lights and tags every
+// interactable on screen, flavour objects included, and letting go clears
+// it. The hold also ends when the window loses focus (no keyup ever comes
+// for a key released in another app) and follows the modifier state that
+// every pointer event carries (event.altKey), so a missed keydown or keyup
+// can never leave it stuck either way (createRevealHold below). The
+// parameter is still called `tabHeld` in the helpers here: it means "the
+// reveal is held", whichever key holds it.
 
 export const IDLE_LOOK_HINT_SECONDS = 20;
-export const IDLE_LOOK_HINT_HTML = 'HOLD <kbd>TAB</kbd> · LOOK AROUND';
+export const IDLE_LOOK_HINT_HTML = 'HOLD <kbd>ALT ⌥</kbd> · LOOK AROUND';
 
 // Closest point of a polyline to `p`: its distance, and where it lies
 // (segment `index`, fraction `t` along that segment).
@@ -36,7 +51,8 @@ export function closestOnPolyline2D(p, points) {
 }
 
 // candidates: [{ id, ambient, follows, distance }] (distance in metres from
-// Butch). Returns the ids to tag and the one E would use.
+// Butch). Returns the ids to tag and the one E would use. With the reveal
+// held every candidate is tagged, flavour objects too (round 12).
 export function autoTaggedInteractions({ candidates, hoveredId = null, tabHeld = false, radius }) {
   let nearest = null;
   for (const candidate of candidates) {
@@ -45,7 +61,7 @@ export function autoTaggedInteractions({ candidates, hoveredId = null, tabHeld =
   }
   const shown = new Set();
   for (const candidate of candidates) {
-    if (candidate.id === hoveredId || (tabHeld && !candidate.ambient)) shown.add(candidate.id);
+    if (candidate.id === hoveredId || tabHeld) shown.add(candidate.id);
   }
   if (nearest && !nearest.follows) shown.add(nearest.id);
   return { shown, nearestId: nearest?.id ?? null };
@@ -57,17 +73,87 @@ export function idleLookHintDue({ idleSeconds, locked = false, tabHeld = false, 
   return !locked && !tabHeld && storyTargets > 0 && !storyTagShown && idleSeconds >= IDLE_LOOK_HINT_SECONDS;
 }
 
+// ---------------------------------------------------------------- reveal
+// Round 12: the reveal key's hold, from key and pointer events (plain
+// objects with key / code / altKey / repeat, so node tests can drive it).
+//   keyDown(event) / keyUp(event)  true when the event was a reveal key (the
+//                                  caller then prevents its default: Tab
+//                                  would move focus, a lone Alt press opens
+//                                  the browser's menu bar on Windows)
+//   sync(event)                    any key or pointer event: its altKey says
+//                                  whether Alt is down now. Safari and Chrome
+//                                  set it on every pointer event, so a press
+//                                  made while the page had no focus (no
+//                                  keydown) or a release made elsewhere (no
+//                                  keyup) is corrected by the next move.
+//   clear()                        the window lost focus
+// `held` is true while either key is down. Option combinations on a Mac
+// (⌥E types a dead key, ⌥1 types "¡") keep the hold; the game reads E and
+// the choice digits by event.code, so they still work with Alt held.
+export const REVEAL_KEY_CODES = Object.freeze(['AltLeft', 'AltRight', 'Tab']);
+
+export function revealKeyOf(event) {
+  if (!event) return null;
+  if (event.key === 'Alt' || event.code === 'AltLeft' || event.code === 'AltRight') return 'Alt';
+  if (event.key === 'Tab' || event.code === 'Tab') return 'Tab';
+  return null;
+}
+
+export function createRevealHold() {
+  const down = new Set();
+  // Alt seen as a modifier on an event (its keydown may never have come).
+  let modifier = false;
+  return {
+    keyDown(event) {
+      const key = revealKeyOf(event);
+      if (!key) {
+        this.sync(event);
+        return false;
+      }
+      down.add(key);
+      if (key === 'Alt') modifier = true;
+      return true;
+    },
+    keyUp(event) {
+      const key = revealKeyOf(event);
+      if (!key) {
+        this.sync(event);
+        return false;
+      }
+      down.delete(key);
+      if (key === 'Alt') modifier = false;
+      return true;
+    },
+    sync(event) {
+      if (!event || typeof event.altKey !== 'boolean') return;
+      modifier = event.altKey;
+      if (!event.altKey) down.delete('Alt');
+    },
+    clear() {
+      down.clear();
+      modifier = false;
+    },
+    get held() {
+      return down.size > 0 || modifier;
+    },
+    get keys() {
+      return [...down, ...(modifier && !down.has('Alt') ? ['Alt'] : [])];
+    },
+  };
+}
+
 // ---------------------------------------------------------------- controls
 // Alpha round 4 (P1, "controls never shown in Ch3"): one paper tag under the
 // task card names the three verbs from the first moment Butch can move.
 // Each verb greys out once used; the tag goes once he has walked and looked
-// (holding Tab is offered, not required). It hides while a line or a card
-// holds the screen and comes back after.
+// (holding the reveal is offered, not required). It hides while a line or a
+// card holds the screen and comes back after. Round 12 (George: "第三章不要
+// awsd的控制 就是只要一个point and click"): Chapter 3 is point and click, so
+// the walk is a click and nothing else (round 6 had added WASD / arrows).
 export const CONTROLS_HINT_SEGMENTS = Object.freeze([
-  // Round 6 (item 18): WASD / arrows walk too.
-  Object.freeze({ id: 'walk', html: '<kbd>CLICK</kbd> / <kbd>WASD</kbd> TO WALK' }),
-  Object.freeze({ id: 'look', html: '<kbd>E</kbd> TO LOOK' }),
-  Object.freeze({ id: 'tab', html: 'HOLD <kbd>TAB</kbd> TO LOOK AROUND' }),
+  Object.freeze({ id: 'walk', html: '<kbd>CLICK</kbd> TO WALK' }),
+  Object.freeze({ id: 'look', html: '<kbd>CLICK</kbd> A TAG TO LOOK' }),
+  Object.freeze({ id: 'reveal', html: 'HOLD <kbd>ALT ⌥</kbd> TO LOOK AROUND' }),
 ]);
 
 export function controlsHintState({ used = [], locked = false } = {}) {
@@ -86,7 +172,8 @@ export function controlsHintHtml(segments) {
 }
 
 // ---------------------------------------------------------------- compass
-// Alpha round 3 (R2 P1): the free walks had no direction. Holding Tab, or
+// Alpha round 3 (R2 P1): the free walks had no direction. Holding the reveal
+// (Alt / Tab), or
 // for COMPASS_FLASH_SECONDS after the task card changes, one paper tag names
 // the walk's destination and points at it: over the target when it is on
 // screen, clamped to the screen edge (with its arrow turned toward it) when

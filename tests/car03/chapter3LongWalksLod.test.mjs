@@ -49,30 +49,37 @@ function timedWalk(from, to, { fps = 60, striding = false } = {}) {
 }
 
 describe('Chapter 3 · the long walks', () => {
-  it('a far click strides, easing back to a walk; short clicks walk; Shift / double-click still run', () => {
+  // Round 12 (George: "走的速度太快了", he walks too fast): a natural walk, no
+  // stride on far clicks, a modest double-click jog, no Shift.
+  it('walks every click at a natural pace; a double-click jogs at the jog clip\'s pace', () => {
     assert.equal(stridesFor(STRIDE_MIN_METRES - 0.5), false);
-    assert.equal(stridesFor(STRIDE_MIN_METRES), true);
     const base = { walkSpeed: WALK_SPEED, runMultiplier: RUN_MULTIPLIER };
     assert.equal(pacedSpeed({ ...base, remaining: 30 }), WALK_SPEED);
-    assert.equal(pacedSpeed({ ...base, striding: true, remaining: 30 }), WALK_SPEED * STRIDE_MULTIPLIER);
-    assert.equal(pacedSpeed({ ...base, striding: true, remaining: 0.2 }), WALK_SPEED, 'arrives at a walk');
-    assert.ok(pacedSpeed({ ...base, striding: true, remaining: 1.5 }) < WALK_SPEED * STRIDE_MULTIPLIER);
-    assert.equal(pacedSpeed({ ...base, running: true, striding: true, remaining: 30 }), WALK_SPEED * RUN_MULTIPLIER);
+    assert.equal(STRIDE_MULTIPLIER, 1, 'a far click no longer strides');
+    assert.equal(pacedSpeed({ ...base, striding: true, remaining: 30 }), WALK_SPEED);
+    assert.equal(pacedSpeed({ ...base, running: true, remaining: 30 }), WALK_SPEED * RUN_MULTIPLIER);
+    // The rig's clips are paced for 1.75 (walk) and 3.4 (jog) m/s
+    // (Chapter3AnimatedCharacters): both play at about their own cadence.
+    assert.ok(WALK_SPEED >= 1.6 && WALK_SPEED <= 2.1, `walk ${WALK_SPEED} m/s`);
+    assert.ok(WALK_SPEED / 1.75 > 0.95 && WALK_SPEED / 1.75 < 1.2);
+    const jog = WALK_SPEED * RUN_MULTIPLIER;
+    assert.ok(jog / 3.4 > 0.85 && jog / 3.4 < 1.1, `jog ${jog.toFixed(2)} m/s`);
     assert.equal(gaitFor(WALK_SPEED), 'walk');
-    assert.equal(gaitFor(WALK_SPEED * STRIDE_MULTIPLIER), 'jog');
-    assert.ok(WALK_SPEED < JOG_GAIT_SPEED && WALK_SPEED * STRIDE_MULTIPLIER > JOG_GAIT_SPEED);
+    assert.equal(gaitFor(jog), 'jog');
+    assert.ok(WALK_SPEED < JOG_GAIT_SPEED && jog > JOG_GAIT_SPEED);
+    assert.doesNotMatch(preview, /shiftHeld/, 'Shift no longer runs');
   });
 
-  it('measures the four longest walks and keeps each under 25 s, at 60 fps and at 10 fps alike', () => {
+  it('measures the four longest walks at the walk, each one Lev can lead, at 60 fps and at 10 fps alike', () => {
     for (const [id, [from, to]] of Object.entries(LONG_WALKS)) {
       const walk = timedWalk(from, to);
-      const stride = timedWalk(from, to, { striding: true });
-      const slow = timedWalk(from, to, { striding: true, fps: 10 });
+      const slow = timedWalk(from, to, { fps: 10 });
       assert.ok(walk.metres > 40, `${id} is a long walk (${walk.metres.toFixed(0)} m)`);
-      assert.ok(walk.seconds <= 25, `${id} walks in ${walk.seconds.toFixed(1)} s`);
-      assert.ok(stride.seconds < walk.seconds * 0.8, `${id} strides in ${stride.seconds.toFixed(1)} s`);
+      assert.ok(walk.seconds >= 20 && walk.seconds <= 35, `${id} walks in ${walk.seconds.toFixed(1)} s`);
+      // G · LEV LEADS THE WAY is offered from its start.
+      assert.ok(Math.hypot(to[0] - from[0], (to[2] ?? to[1]) - from[1]) >= LEAD_MIN_METRES, `${id} offers the lead`);
       // Game time follows the wall clock: 10 fps arrives with 60 fps.
-      assert.ok(Math.abs(slow.seconds - stride.seconds) <= 0.1 + 1e-9, `${id}: ${slow.seconds.toFixed(2)} vs ${stride.seconds.toFixed(2)} s`);
+      assert.ok(Math.abs(slow.seconds - walk.seconds) <= 0.1 + 1e-9, `${id}: ${slow.seconds.toFixed(2)} vs ${walk.seconds.toFixed(2)} s`);
     }
     assert.equal(MAX_STEP_SECONDS, 0.1);
   });

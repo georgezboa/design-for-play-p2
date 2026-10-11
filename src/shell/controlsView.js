@@ -16,7 +16,8 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => `&#${c
 // Words that are always a key cap; single letters and digits only where they
 // lead a phrase or follow HOLD / PRESS / TAP (so "E AT A LIT NODE" capped
 // only the E).
-const NAMED_KEYS = new Set(['SPACE', 'ENTER', 'ESC', 'SHIFT', 'TAB', 'WASD', 'CTRL', 'ALT', 'BACKSPACE', '←', '→', '↑', '↓', '⌫', '⤢']);
+// ⌥ is the Mac's Option key, Alt elsewhere (Chapter 3's reveal, round 12).
+const NAMED_KEYS = new Set(['SPACE', 'ENTER', 'ESC', 'SHIFT', 'TAB', 'WASD', 'CTRL', 'ALT', '⌥', 'BACKSPACE', '←', '→', '↑', '↓', '⌫', '⤢']);
 const SHORT_KEY = /^(?:[A-Z]|[0-9])$/;
 const KEY_VERBS = new Set(['HOLD', 'PRESS', 'TAP']);
 

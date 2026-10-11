@@ -1049,10 +1049,14 @@ function makeDestinationMarker(scene) {
 // 1 fps the departure ran at a quarter speed and took minutes); a longer
 // stall (a background tab) still never dumps more than this at once.
 export const MAX_FRAME_SECONDS = 1;
-// Click-to-walk speed (m/s); a double-click or a held Shift runs, and a walk
-// ordered far away strides (chapter3LongWalks.js).
-export const WALK_SPEED = 5.4;
-export const RUN_MULTIPLIER = 1.8;
+// Click-to-walk speed (m/s); a double-click runs. Round 12 (George: "走的速度
+// 太快了", he walks too fast): 5.4 m/s played the walk clip (paced for 1.75,
+// Chapter3AnimatedCharacters) at 3x; now an unhurried walk at about the
+// clip's own cadence, and the double-click a modest jog at the jog clip's
+// pace (3.3 m/s; it was 9.7). A held Shift no longer runs and a far click no
+// longer strides (chapter3LongWalks.js): Chapter 3 is point and click.
+export const WALK_SPEED = 1.9;
+export const RUN_MULTIPLIER = 1.75;
 export const MAX_STEP_SECONDS = 0.1;
 // How far west the follow camera may go for a subject past the west bound
 // (the laundry fire, alpha round 4).
@@ -1279,14 +1283,12 @@ export class EchoCity3DPreview {
     // Double-click a destination to run there (the second click of the pair
     // has already set the same path).
     this.running = false;
-    this.shiftHeld = false;
     // A walk ordered STRIDE_MIN_METRES or more away is taken at a jog.
     this.striding = false;
     this.gait = 'walk';
     this.renderer.domElement.addEventListener('dblclick', () => {
       if (this.path.length) this.running = true;
     });
-    window.addEventListener('blur', () => { this.shiftHeld = false; });
     this.loadingCount.textContent = `0 / ${this.expectedUniqueModels}`;
     if (this.developerMode) this.resetCamera();
   }
@@ -1760,7 +1762,6 @@ export class EchoCity3DPreview {
   }
 
   onKeyDown(event) {
-    if (event.key === 'Shift') this.shiftHeld = true;
     if (this.gameplayRuntime?.handleKeyDown(event)) return;
     if (event.key.toLowerCase() === 'r') this.resetCamera();
     // The full-map developer camera is URL-only (`?dev=1`, dev builds only). It must never be
@@ -1770,7 +1771,6 @@ export class EchoCity3DPreview {
   }
 
   onKeyUp(event) {
-    if (event.key === 'Shift') this.shiftHeld = false;
     this.gameplayRuntime?.handleKeyUp(event);
   }
 
@@ -1947,7 +1947,7 @@ export class EchoCity3DPreview {
       const speed = pacedSpeed({
         walkSpeed: WALK_SPEED,
         runMultiplier: RUN_MULTIPLIER,
-        running: this.running || this.shiftHeld,
+        running: this.running,
         striding: this.striding,
         remaining: pathMetres(this.player.position, this.path),
       });
@@ -2156,7 +2156,7 @@ export class EchoCity3DPreview {
         y: Number(this.player.position.y.toFixed(2)),
         z: Number(this.player.position.z.toFixed(2)),
         pathNodesRemaining: this.path.length,
-        pace: { striding: this.striding, running: this.running || this.shiftHeld, gait: this.gait },
+        pace: { striding: this.striding, running: this.running, gait: this.gait },
       },
       camera: {
         type: 'orthographic',

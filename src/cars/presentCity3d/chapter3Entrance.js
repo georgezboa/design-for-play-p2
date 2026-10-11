@@ -42,9 +42,48 @@ export const LEV_ENTRANCE = Object.freeze({
   // A walker that keeps walking is called to a halt this close.
   callOut: 2.4,
   turnRate: 6.5,
-  // Lev's walk to the oil line: brisk, not a sprint.
-  guideSpeed: 2.3,
+  // Lev's walk to the oil line. Round 12 (George: Butch walks too fast;
+  // the people who walk with him match): Butch's own walk pace, 1.9 m/s
+  // (EchoCity3DPreview WALK_SPEED), so the two set off together (it was a
+  // brisk 2.3 beside Butch's 5.4).
+  guideSpeed: 1.9,
+  // Round 12 (George: "一开始是应该那个人走到前面必须聊天的", at the start
+  // the man should walk up in front of him and they must talk): Lev stops
+  // this far from Butch, face to face, side on to the camera (besideTarget
+  // along the camera's right axis), and the arrival's conversation opens.
+  faceToFace: 1.45,
+  // He gives up on a clear walk after this long and stands there (a blocked
+  // route must never hold the opening).
+  meetWithin: 7,
 });
+
+// Round 12 (George: "有时候我不在那个位置跟人说话它就不会正对着我", when he
+// talks to someone from another spot they do not turn to face him): whoever
+// Butch talks to turns to him at a turn rate (rad/s, turnToward), from
+// whichever side he stands, and he turns to them; people at a post (Toma at
+// the ministry door, Petar at the cut, Hana at the desk) turn back to it
+// afterwards. 180° takes about 0.7 s for them, 0.5 s for Butch.
+export const CONVERSATION_TURN = Object.freeze({
+  npcRate: 5,
+  butchRate: 7,
+  // a speaker this far from Butch is not in the conversation (a voice from
+  // the platform, Lev calling from across the square)
+  reach: 7,
+  // within this of the target yaw the turn is done (rad)
+  settle: 0.01,
+});
+
+/**
+ * The yaw each of a conversation's people turns to: every NPC toward Butch,
+ * Butch toward `faceOf` (the person he talks to, or null to keep his own).
+ * Points are { x, z }; returns { butch, npcs: [yaw] }.
+ */
+export function conversationYaws({ butch, npcs = [], faceOf = null }) {
+  return {
+    butch: faceOf ? yawToward(butch, faceOf) : null,
+    npcs: npcs.map((npc) => yawToward(npc, butch)),
+  };
+}
 
 // The Mara ahead's glimpse as the train pulls out: she steps out from under
 // the station roof (hidden at first), crosses the platform paving and turns

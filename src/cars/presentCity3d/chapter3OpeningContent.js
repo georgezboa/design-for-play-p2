@@ -68,10 +68,13 @@ export const OPENING_POSITIONS = Object.freeze({
   levDusk: [7.2, 0.5, 13.9],
 });
 
-// Scanner fields: the only places where movement switches from
-// click-to-walk to direct control (WASD / held mouse). `from` is the safe
-// line where a walker waits, `gate` is the scanner arch, `to` is where the
-// crossing completes. The field is the rectangle around that segment.
+// Scanner fields: the walk-beside crossings. `from` is the safe line where
+// a walker waits, `gate` is the scanner arch, `to` is where the crossing
+// completes. The field is the rectangle around that segment. Round 12
+// (point and click): a click walks in the field as anywhere else, a click on
+// the lit walker walks in step with them until the crossing, a click behind
+// lets go; the field no longer switches to direct control (WASD / a held
+// mouse).
 export const SCANNER_FIELDS = Object.freeze({
   market: Object.freeze({
     id: 'market',
@@ -494,9 +497,10 @@ export const SCANNER_WORDS = Object.freeze({
   matchPrompt: 'WALK IN STEP',
   release: 'LET GO',
   // The pips bar while matched (alpha round 1: "forward" read as screen-up).
-  holdHint: 'HOLD <kbd>E</kbd> · WALK IN STEP',
-  wrongWay: 'THE ARCH IS THE OTHER WAY · HOLD <kbd>E</kbd>',
-  releaseHint: 'WALK BACK · LET GO',
+  // Round 12: in step by a click, on until the arch; a click behind lets go.
+  holdHint: 'WALKING IN STEP',
+  wrongWay: 'THE ARCH IS THE OTHER WAY · <kbd>CLICK</kbd> AHEAD',
+  releaseHint: '<kbd>CLICK</kbd> BEHIND · LET GO',
 });
 
 // ---------------------------------------------------------------- dusk

@@ -261,15 +261,16 @@ describe('Chapter 3 round 6 · the 1978 findings stay on the tickets (item 9)', 
 });
 
 describe('Chapter 3 round 6 · unified controls (item 18)', () => {
-  it('acts on E / Enter, never shows Space, walks on WASD outside the scanners too', () => {
+  // Round 12 (George: "第三章不要awsd的控制 就是只要一个point and click"): the
+  // round-6 WASD / arrows walking is gone again; Chapter 3 is point and click.
+  it('acts on E / Enter, never shows Space, and walks on a click only (round 12)', () => {
     const rows = Object.fromEntries(CHAPTER_CONTROLS.echoCity);
     assert.doesNotMatch(Object.values(rows).join(' '), /SPACE/);
     assert.match(rows['BOARD BY KEYS'], /E \/ ENTER/);
-    assert.match(rows.WALK, /WASD/);
-    assert.match(CONTROLS_HINT_SEGMENTS[0].html, /WASD/);
+    assert.equal(rows.WALK, 'CLICK THE GROUND');
+    assert.doesNotMatch(CONTROLS_HINT_SEGMENTS[0].html, /WASD/);
     assert.match(board, /const confirm = key === 'Enter' \|\| event\.code === 'KeyE' \|\| key === ' ';/);
-    assert.match(runtime, /updateKeyWalk\(dt\) \{/);
-    assert.match(runtime, /if \(!this\.keysHeld\.size \|\| this\.activeField\(\) \|\| this\.interactionLocked\(\)\) return;/);
+    assert.doesNotMatch(runtime, /updateKeyWalk|keysHeld|keyWalking/);
   });
 });
 

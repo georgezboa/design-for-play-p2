@@ -71,11 +71,13 @@ describe('Chapter 3 alpha fixes (F2)', () => {
     assert.match(preview, /this\.cityLod\.update\(\{/);
   });
 
-  it('A2-2: the scanner walks in step on a held E, with an arrow along the lane', () => {
-    assert.equal(SCANNER_WORDS.holdHint, 'HOLD <kbd>E</kbd> · WALK IN STEP');
+  it('A2-2: the scanner walks in step without steering, with an arrow along the lane', () => {
+    // Round 12 (point and click): in step by a click on the walker, on until
+    // the arch (it was a held E, or WASD toward the arch).
+    assert.equal(SCANNER_WORDS.holdHint, 'WALKING IN STEP');
     assert.doesNotMatch(runtime, /HOLD FORWARD · WASD/);
-    assert.match(runtime, /this\.walkInStepHeld = true;/);
-    assert.match(runtime, /logic\.update\(dt, \{ player: player\.position, input: intent, hold \}\)/);
+    assert.doesNotMatch(runtime, /walkInStepHeld/);
+    assert.match(runtime, /logic\.update\(dt, \{ player: player\.position, hold \}\)/);
     assert.match(field, /this\.laneArrow = new THREE\.Mesh/);
     assert.match(runtime, /field\.updateLaneArrow\(/);
   });

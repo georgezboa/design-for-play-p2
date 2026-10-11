@@ -429,8 +429,9 @@ describe('Chapter 3 checklist menus', () => {
     assert.match(runtime, /this\.model\.reachNightLobby\(\);\n\s+this\.leaveHotelAtNight\(\);/);
     const preview = fs.readFileSync(new URL('../../src/cars/presentCity3d/EchoCity3DPreview.js', import.meta.url), 'utf8');
     assert.match(preview, /addEventListener\('dblclick'/);
-    // Double-click / Shift runs; a far click strides (chapter3LongWalks.js).
-    assert.match(preview, /running: this\.running \|\| this\.shiftHeld,\n\s+striding: this\.striding,/);
+    // A double-click runs (round 12: Shift no longer does, and a far click
+    // no longer strides; chapter3LongWalks.js).
+    assert.match(preview, /running: this\.running,\n\s+striding: this\.striding,/);
   });
 
   it('dresses Mara\'s scarf rose, as in Chapter 2', () => {
