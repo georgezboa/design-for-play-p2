@@ -126,6 +126,10 @@ export const HINTS = Object.freeze({
   // C4 · the ledge the city holds up drops when its brake lets go.
   dropBrake: 'E · RELEASE · THE LEDGE DROPS',
   cage: 'STAND IN THE CAGE · YOUR WEIGHT TAKES IT DOWN',
+  // Round 12 · the departure deadline: said, never played for him.
+  departureSoon: 'THREE BELLS TO DEPARTURE',
+  lateRun: 'THE TRAIN IS PULLING OUT · RUN FOR THE LAST CAR',
+  missedTrain: 'MISSED THE TRAIN · AGAIN FROM THE LAMP',
 });
 
 // One-time teaching tags for the new mechanics (where they are first met).
@@ -142,8 +146,8 @@ export const stoneToast = ({ count, total }) => `GRID STONE · MAGIC STONE ${cou
 // a punched node's afterglow); Butch's lamp shows their near edge, no more.
 export const DARK_DECK_HINT = 'DARK DECK · IT HOLDS ONLY IN BORROWED LIGHT';
 
-// The departure: one line as Butch boards. Late, the train is already rolling
-// and the doors close on his coat.
+// The departure: one line as Butch boards. Late (he ran for it as the train
+// pulled out), the doors close on his coat.
 export const BOARDING_LINES = Object.freeze({
   onTime: Object.freeze({ speaker: 'BUTCH', text: 'On the bell. The door waited for me.' }),
   late: Object.freeze({ speaker: 'BUTCH', text: 'Hold the— … Made it. Most of the coat, too.' }),

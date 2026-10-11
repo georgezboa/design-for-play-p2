@@ -16,9 +16,10 @@
 // (≥ 18 px on a 1280×720 window) and scale with TEXT SIZE.
 //
 // The card shows for the first TEACH_USES punches. Round 11 (George: "不要一直
-// 都有，前面两个有就行了" — after the first two it got in the way): after that
-// it comes back only once for a kind of machine he has not punched a box for
-// yet (a lift, a billboard: a new effect to explain), never again on a pause.
+// 都有，前面两个有就行了" — after the first two it got in the way) still let it
+// come back once for each new kind of machine; round 12 (George: "一开始提示
+// 一两次就好了") removes that: the first two punches, then never again (the
+// counterweight and the drop ledge brought it back at the end).
 
 import { HINTS } from './story.js';
 import { LINE_COLORS } from './art/palette.js';
@@ -105,10 +106,9 @@ export function causeCard({ node, machine, preview, status = null, msToBell = 0,
   }
 }
 
-// Show the card for the first two punches, then only at a box whose kind of
-// machine is new to him (until he punches one). DWELL_MS is kept for callers
-// that time a pause, but no longer brings the card back.
-export const showCard = ({ uses = 0, newKind = false } = {}) => uses < TEACH_USES || newKind;
+// Show the card for the first two punches only. Neither a pause (DWELL_MS,
+// kept for callers that time one) nor a new kind of machine brings it back.
+export const showCard = ({ uses = 0 } = {}) => uses < TEACH_USES;
 
 /**
  * Card geometry (world px, before placing). `labelW` are the measured label

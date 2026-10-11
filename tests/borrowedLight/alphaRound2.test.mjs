@@ -35,7 +35,7 @@ describe('Chapter 2 alpha round 2', () => {
     const at = placeTeachTag({ feetX: 2400, feetY: 760, ...tag, rects });
     assert.equal(at.at, 'head');
     assert.equal(at.y, 760 - tag.bodyH - 16);
-    assert.match(scene, /return \{ follow: true, text: HINTS\.listen \};/);
+    assert.match(scene, /return \{ id: 'listen', follow: true, text: HINTS\.listen \};/);
     assert.doesNotMatch(scene, /this\.feetY - 150, text: HINTS\.listen/);
   });
 

@@ -1,17 +1,19 @@
 // Chapter 2 · BORROWED LIGHT — tiered idle hints, room by room (alpha r4).
 //
-// Pure (no Phaser). Like Chapter 1's hints (nightService/hints.js), three
-// tiers on the wall clock, counted while the player is in control and not
-// solving the room in front of him:
+// Pure (no Phaser). Like Chapter 1's hints (nightService/hints.js), tiers
+// on the wall clock, counted while the player is in control and not solving
+// the room in front of him. Round 12 (George: hints once or twice at the
+// start, not all the time): they come by themselves only when he is clearly
+// stuck, small and out of the way:
 //
-//   tier 1 ·  25 s  a pulse on the node (or prop) that matters now (repeats)
-//   tier 2 ·  60 s  a toast naming the next action, keys and all (repeats)
-//   tier 3 · 120 s  Butch's fuller line, in the caption bar (repeats)
+//   tier 1 ·  40 s  a pulse on the node (or prop) that matters now (every 30 s)
+//   tier 2 ·  90 s  one toast naming the next action, keys and all (once)
+//   tier 3 · on demand only: Butch's fuller line, in the caption bar
 //
 // The clock starts again on progress: whenever the room, its step, or what
 // is punched / powered in it changes. The pause menu's SHOW ME (a
-// `nightfall:hint` window event) plays tier 2 at once, and tier 3 too once
-// the step has reached it or on a second SHOW ME.
+// `nightfall:hint` window event) and H play tier 2 at once, and tier 3 too
+// on a second ask.
 //
 // roomStep(ctx) reads where Butch is and the state of the room's machines and
 // returns the step he is on: { step, nodes, at? }. The words are in
@@ -19,10 +21,10 @@
 
 import { BENCH, FROM_HERE, HOTEL_WINDOW, machineById } from './level.js';
 
-export const IDLE_TIERS = Object.freeze({ pulse: 25000, nudge: 60000, full: 120000 });
-export const PULSE_REPEAT_MS = 12000;
-export const NUDGE_REPEAT_MS = 45000;
-export const FULL_REPEAT_MS = 60000;
+export const IDLE_TIERS = Object.freeze({ pulse: 40000, nudge: 90000, full: Infinity });
+export const PULSE_REPEAT_MS = 30000;
+export const NUDGE_REPEAT_MS = Infinity;
+export const FULL_REPEAT_MS = Infinity;
 
 const DX_B = 5960;
 const DX_C = 7500;

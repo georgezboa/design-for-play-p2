@@ -54,7 +54,7 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['BORROW / GIVE LIGHT', 'E AT A LIT / DEAD NODE (BLACKOUT)'],
     ['TALK / READ / CONTINUE', 'E / ENTER'],
     ['GAMEPAD', 'STICK · A JUMP · X ACT · RB PUNCH · LB LISTEN'],
-    ['STUCK?', 'PAUSE · SHOW ME'],
+    ['STUCK?', 'H · OR PAUSE → SHOW ME'],
     ['PAUSE', 'ESC / START'],
   ),
   echoCity: list(

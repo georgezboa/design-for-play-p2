@@ -26,7 +26,7 @@ import { createSaveStore } from '../../shell/saveSystem.js';
 import { arriveAt } from '../../shell/gameFlow.js';
 import { collectMagicStone, magicStoneSnapshot } from '../../shell/magicStones.js';
 import { reducedMotionActive } from '../../shell/motion.js';
-import { BELL_MS, CH2_RULES, createTimetable, rememberedSequence } from './timetableModel.js';
+import { BELL_MS, CH2_RULES, createTimetable } from './timetableModel.js';
 import { MOVING_VX, chestAt, nearestMiss, nodeAtPoint, pickTarget } from './targeting.js';
 import { CONTROLLER, createControllerState, stepController, tapHoldMs } from './controller.js';
 import { placeTeachTag, signRects } from './teachTag.js';
@@ -37,10 +37,10 @@ import {
   RESET_ON_RESPAWN,
   REHOLD_ON_RESPAWN,
   DEPARTURE_BELLS,
-  DEPARTURE_CHAIN,
   DEPARTURE_TRIGGER_X,
+  DEPARTURE_WARN_BELLS,
   FROM_HERE,
-  REMEMBER_PLACE,
+  LATE_ROLL_MS,
   GRID_STONE,
   HOTEL_WINDOW,
   LAMPS,
@@ -61,6 +61,7 @@ import {
   WORLD,
   cableFor,
   cagesAt,
+  canRunForTrain,
   circuitKey,
   districtOf,
   lampById,
@@ -74,11 +75,13 @@ import {
   sectionAt,
   settleStartLevels,
   standsOn,
+  stepUpLip,
   timetableDefinition,
 } from './level.js';
 import { ARCHIVE_CARD_B1, BOARDING_LINES, CHAPTER_TITLE, DARK_DECK_HINT, HINTS, IDLE_HINTS, LESSON_LINES, MARA_LETTER, TEACH, stoneToast } from './story.js';
 import { LESSON, afterTalk, createLesson, lessonPointing, ruleTaught, storyWaiting, talkLines, updateLesson } from './firstLesson.js';
-import { MIN_WORLD_FONT, causeCard, showCard } from './causeCard.js';
+import { MIN_WORLD_FONT, TEACH_USES, causeCard, showCard } from './causeCard.js';
+import { CARD_KINDS, compactPrompt, createHintBudget } from './hintBudget.js';
 import { machineTotalMs, ticksCrossed, timerOf } from './timerLights.js';
 import { createIdleHints, progressKey, roomStep } from './idleHints.js';
 import { afterglowLight, carriedLight, deckReveal, deckSolid, lampRim, machineLight } from './memoryLight.js';
@@ -180,7 +183,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.respawning = false;
     this.listening = false;
     this.boarded = false;
-    this.remembering = false;
+    // Round 12: the twelfth bell with Butch on the platform: the train rolls
+    // out with its doors open and he runs for it (no more auto-run).
+    this.lateRun = false;
+    this.missing = false;
+    this.missedTrains = 0;
     this.stoneTaken = magicStoneSnapshot().collected.includes('chapter-2');
     this.cull = [];
     this.platformX = PLATFORMS.find((p) => p.id === 'c-platform').x;
@@ -221,11 +228,15 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.pulses = [];
     // Round 6 · the first box is taught do-then-explain (firstLesson.js); a
     // box explains itself on a large cause card (causeCard.js) for the first
-    // few punches, then whenever Butch stands at it a moment.
+    // two punches only (round 12: no longer again for a new kind of machine).
     this.lesson = createLesson();
     this.punchUses = 0;
-    // the kinds of machine he has punched a box for (the cause card: causeCard.js showCard)
-    this.kindsPunched = new Set();
+    // Round 12 (George: hints once or twice at the start, then a clean
+    // screen): every teaching element asks this budget (hintBudget.js).
+    this.hints = createHintBudget();
+    this.teachKey = null;
+    this.promptKey = null;
+    this.frameDt = 0;
     this.cardDwell = 0;
     this.cardFor = null;
     // Each timed machine's last remaining ms, for its closing ticks.
@@ -491,6 +502,8 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.trainStart = buildTrain(this, { x: TRAIN.start.x, y: TRAIN.start.y + 36, cars: TRAIN.start.cars, key: 'start' });
     this.trainEnd = buildTrain(this, { x: TRAIN.end.x, y: TRAIN.end.y + 36, cars: TRAIN.end.cars, key: 'end' });
     this.trainEnd.setDoorOpen(true);
+    // Where it stands at its platform (a missed train is put back here).
+    this.trainHomeX = this.trainEnd.container.x;
     this.trainStart.sync();
     this.trainEnd.sync();
 
@@ -646,7 +659,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     const kb = this.input.keyboard;
     this.keys = kb.addKeys({
       left: 'LEFT', right: 'RIGHT', a: 'A', d: 'D', up: 'UP', w: 'W',
-      space: 'SPACE', e: 'E', f: 'F', q: 'Q', enter: 'ENTER',
+      space: 'SPACE', e: 'E', f: 'F', q: 'Q', enter: 'ENTER', h: 'H',
     });
     kb.addCapture(['SPACE', 'UP', 'DOWN', 'LEFT', 'RIGHT']);
     this.jumpQueued = false;
@@ -687,6 +700,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.keys.e.on('down', once(() => this.act({ source: 'key' })));
     this.keys.enter.on('down', once(() => this.act({ source: 'key' })));
     this.keys.f.on('down', once(() => this.punch({ source: 'key' })));
+    // Round 12: H asks for the room's hint on demand (as SHOW ME does), like
+    // the other chapters; hints no longer come by themselves except when
+    // clearly stuck.
+    this.keys.h.on('down', once(() => this.showMe()));
     this.input.on('pointerdown', (pointer) => {
       if (pointer.rightButtonDown()) return;
       if (this.hud.cardOpen) { this.hud.closeCard(); return; }
@@ -722,7 +739,12 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     this.startFeetX = lamp.spawnX;
     // Anyone starting past the first box has met it (round 6 lesson).
-    if (section !== 'A' || lamp.id !== SECTIONS.A.spawn) this.lesson = createLesson({ done: true });
+    if (section !== 'A' || lamp.id !== SECTIONS.A.spawn) {
+      this.lesson = createLesson({ done: true });
+      // … and gets the cause card (and the punched machine's ghost) once, as
+      // a reminder, rather than twice (round 12).
+      this.punchUses = Math.max(this.punchUses, TEACH_USES - 1);
+    }
     // A section title on a resume is short and gets out of the way as soon
     // as Butch moves (alpha r4: it came back over the chase).
     const titleHold = lamp.id === SECTIONS[section].spawn ? 2600 : 1400;
@@ -937,8 +959,10 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.camY = this.feetY - 150;
   }
 
-  respawn() {
-    if (this.respawning || this.boarded) return;
+  // `inDark` runs while the screen is black (a missed train puts itself back
+  // at the platform); `note` replaces the line said after the fall.
+  respawn({ inDark = null, note } = {}) {
+    if (this.respawning || this.boarded) { if (inDark) this.time.delayedCall(700, inDark); return; }
     this.respawning = true;
     // The departure does not count the bells spent falling and walking back
     // into the lamp's light.
@@ -968,7 +992,8 @@ export class BorrowedLightScene extends Phaser.Scene {
         });
         const cleared = this.tt.clearQueue();
         cleared.forEach((id) => { const v = this.nodeViews.get(id); if (v) v.sealing = 1; });
-        this.respawnNote = cleared.length ? HINTS.punchesReset : homeEvents.some((e) => e.type === 'light-return') ? HINTS.lightHomeFall : null;
+        this.respawnNote = note !== undefined ? note : cleared.length ? HINTS.punchesReset : homeEvents.some((e) => e.type === 'light-return') ? HINTS.lightHomeFall : null;
+        inDark?.();
         // The lamp flares as Butch steps back into its light.
         const lv = this.lamps.find((l) => l.id === lamp.id);
         if (lv) {
@@ -987,7 +1012,7 @@ export class BorrowedLightScene extends Phaser.Scene {
             if (this.fellThroughDark && !this.flags.darkDeckToasted) {
               this.flags.darkDeckToasted = true;
               this.hud.toast(DARK_DECK_HINT, '#cfeee8', 3600);
-            } else if (this.respawnNote) {
+            } else if (this.respawnNote && this.hints.take(`toast:${this.respawnNote}`)) {
               this.hud.toast(this.respawnNote, '#e6dcc2', 2600);
             }
             this.respawnNote = null;
@@ -1087,7 +1112,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     sfx.fizzle();
     const view = this.nodeViews.get(hb.nodeId);
     if (view) view.sealing = 1;
-    this.floatHint(hb.nodeId, HINTS.takenBack, color.css, 1400);
+    this.floatHint(hb.nodeId, HINTS.takenBack, color.css, 1400, 'takenBack');
     this.lastPunch = { nodeId: hb.nodeId, result: 'unqueued', at: this.clock };
   }
 
@@ -1098,7 +1123,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     sfx.refused();
     const v = this.nodeViews.get(miss.node.id);
     if (v) v.missFlash = 1;
-    this.floatHint(miss.node.id, HINTS.outOfReach, '#e6dcc2', 1400);
+    this.floatHint(miss.node.id, HINTS.outOfReach, '#e6dcc2', 1400, 'outOfReach');
     this.lastPunch = { nodeId: miss.node.id, result: 'out-of-reach', at: this.clock };
     return true;
   }
@@ -1151,16 +1176,12 @@ export class BorrowedLightScene extends Phaser.Scene {
         this.fx.pop(head.x, head.y + 51, color.glow);
         view.pulse = 0;
         view.pulseSpeed = 1.6;
-        if (res.result === 'caught') this.floatHint(node.id, HINTS.caught, color.css, 1200);
-        else if (res.result === 'renew') this.floatHint(node.id, HINTS.renew.replace('E · ', ''), color.css, 1600);
-        else if (res.result === 'renewed') this.floatHint(node.id, HINTS.renewed, color.css, 1600);
-        else if (res.inBells === 2) this.floatHint(node.id, HINTS.waitsABell(node.phase), color.css, 2400);
+        if (res.result === 'caught') this.floatHint(node.id, HINTS.caught, color.css, 1200, 'caught');
+        else if (res.result === 'renew') this.floatHint(node.id, HINTS.renew.replace('E · ', ''), color.css, 1600, 'renew');
+        else if (res.result === 'renewed') this.floatHint(node.id, HINTS.renewed, color.css, 1600, 'renewed');
+        else if (res.inBells === 2) this.floatHint(node.id, HINTS.waitsABell(node.phase), color.css, 2400, 'waitsABell');
         if (node.phase) this.flags.phasePunched = true;
-        if (res.result === 'queued' || res.result === 'caught') {
-          this.punchUses += 1;
-          const kind = machineById(node.machine)?.kind;
-          if (kind) this.kindsPunched.add(kind);
-        }
+        if (res.result === 'queued' || res.result === 'caught') this.punchUses += 1;
         // Listen is taught by a tag over Butch from the second punch on
         // (updatePrompts), until he has listened once.
         if (this.flags.firstPunch) this.flags.listenHinted = true;
@@ -1176,7 +1197,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         const old = this.nodeViews.get(res.cancelled);
         if (old) { old.sealing = 1; old.busyFlash = 1; }
         // Said where the player is looking (the old tag may be off-screen).
-        this.floatHint(node.id, HINTS.forgets(color.name), color.css, 2200);
+        this.floatHint(node.id, HINTS.forgets(color.name), color.css, 2200, 'forgets');
         break;
       }
       case 'already':
@@ -1185,7 +1206,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         // node's own tag already says so; a click on another node floats it.
         sfx.flickerTick();
         view.busyShake = Math.max(view.busyShake, 0.35);
-        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, this.tt.machineStatus(node.machine).waiting ? HINTS.liftWaits : HINTS.punched(node.phase, res.inBells), color.css, 1400);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, this.tt.machineStatus(node.machine).waiting ? HINTS.liftWaits : HINTS.punched(node.phase, res.inBells), color.css, 1400, 'punched');
         if (source) this.takeBack = { nodeId: node.id, source, ms: 0 };
         break;
       case 'busy': {
@@ -1196,7 +1217,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         const holder = this.tt.machineStatus(res.holder);
         // The marked node's own tag already says it (one wording, alpha r4);
         // a click on another node floats it.
-        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, holder?.held ? this.heldHint(res.holder) : HINTS.busyTimed, color.css, 3200);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, holder?.held ? this.heldHint(res.holder) : HINTS.busyTimed, color.css, 3200, holder?.held ? 'held' : 'busy');
         if (holder?.held) {
           // Show the tag that holds the line: it pulses, and the camera
           // looks back at it.
@@ -1214,19 +1235,19 @@ export class BorrowedLightScene extends Phaser.Scene {
         view.cutMark = 1;
         // The cut says how long the bridge has; a countdown runs on it.
         this.cutTotals.set(node.machine, res.remaining);
-        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 2200);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 2200, 'cut');
         break;
       case 'cutting':
         sfx.flickerTick();
         view.busyShake = Math.max(view.busyShake, 0.35);
-        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 1600);
+        if (node.id !== this.currentTarget?.id) this.floatHint(node.id, HINTS.cutDone(res.bells), color.css, 1600, 'cut');
         break;
       case 'dead':
       case 'given':
         sfx.refused();
         view.busyShake = 0.6;
         this.flags.deadSeen = true;
-        this.floatHint(node.id, res.result === 'given' ? HINTS.given : HINTS.dead, '#e6dcc2', 2600);
+        this.floatHint(node.id, res.result === 'given' ? HINTS.given : HINTS.dead, '#e6dcc2', 2600, res.result);
         break;
       default:
         break;
@@ -1249,14 +1270,14 @@ export class BorrowedLightScene extends Phaser.Scene {
         const b = machine ? machineBounds(machine, this.tt.machineStatus(machine.id).level) : null;
         this.lightTrail(machine?.kind === 'lantern' ? { x: machine.x, y: machine.y - machine.h } : b ? { x: b.x + b.w / 2, y: b.y } : head, lamp);
         this.flags.borrowed = true;
-        if (!this.flags.borrowToasted) { this.flags.borrowToasted = true; this.floatHint(node.id, HINTS.borrowed, '#f6e2b4', 2600); }
+        if (!this.flags.borrowToasted) { this.flags.borrowToasted = true; this.floatHint(node.id, HINTS.borrowed, '#f6e2b4', 2600, 'borrowed'); }
         break;
       }
       case 'given':
         sfx.giveLight();
         this.lightTrail(lamp, { x: head.x, y: head.y - 4 });
         if (view) { view.pulse = 0; view.pulseSpeed = 1.6; }
-        this.floatHint(node.id, HINTS.given, '#f6e2b4', 1800);
+        this.floatHint(node.id, HINTS.given, '#f6e2b4', 1800, 'gave');
         break;
       case 'returned':
         sfx.giveLight();
@@ -1269,20 +1290,23 @@ export class BorrowedLightScene extends Phaser.Scene {
         if (view) view.busyShake = Math.max(view.busyShake, 0.6);
         // The marked node's tag already reads STEP OFF FIRST / ONE LIGHT…
         const tagSays = node.id === this.currentTarget?.id && ['step-off', 'full', 'lit'].includes(res.result);
-        if (!tagSays) this.floatHint(node.id, text, '#e6dcc2', 1800);
+        if (!tagSays) this.floatHint(node.id, text, '#e6dcc2', 1800, `lamp-${res.result}`);
         break;
       }
     }
   }
 
-  floatHint(nodeId, text, color, ms = 2000) {
+  // `key` (round 12): a kind of float hint shows for its first two uses
+  // only (hintBudget.js); after that the box's flash and sound say it.
+  floatHint(nodeId, text, color, ms = 2000, key = null) {
     const node = NODES.find((n) => n.id === nodeId);
     if (!node) return;
     const head = nodeHead(node);
-    this.floatHintAt(head.x, head.y - 78, text, color, ms);
+    this.floatHintAt(head.x, head.y - 78, text, color, ms, key);
   }
 
-  floatHintAt(x, y, text, color, ms = 2000) {
+  floatHintAt(x, y, text, color, ms = 2000, key = null) {
+    if (key && !this.hints.take(`float:${key}`)) return;
     this.hintText.setText(text).setColor(color);
     // Kept inside the view (g04: the dark-deck hint ran off the right edge).
     const view = this.view;
@@ -1526,7 +1550,7 @@ export class BorrowedLightScene extends Phaser.Scene {
         const from = fromB ? { x: fromB.x + fromB.w / 2, y: fromB.y } : this.player.lampAt ?? { x: this.feetX, y: this.feetY - 60 };
         if (!fall) this.lightTrail(from, to, { ms: Math.min(1400, 400 + Math.hypot(to.x - from.x, to.y - from.y) * 0.4) });
         if (!fall) sfx.lightHome();
-        if (!fall && event.reason === 'spent' && Math.abs(to.x - this.feetX) > 900) this.hud.toast(HINTS.lightHome, '#f6e2b4', 1800);
+        if (!fall && event.reason === 'spent' && Math.abs(to.x - this.feetX) > 900 && this.hints.take('toast:lightHome')) this.hud.toast(HINTS.lightHome, '#f6e2b4', 1800);
         break;
       }
       case 'lift-wait': {
@@ -1536,14 +1560,17 @@ export class BorrowedLightScene extends Phaser.Scene {
         // part that says where to stand.
         sfx.flickerTick();
         const lift = machineById(event.machineId);
-        this.floatHintAt(lift.x + lift.w / 2, lift.y0 - 120, HINTS.standInCage, LINE_COLORS[nodeById(event.nodeId).line].css, 2600);
+        this.floatHintAt(lift.x + lift.w / 2, lift.y0 - 120, HINTS.standInCage, LINE_COLORS[nodeById(event.nodeId).line].css, 2600, 'standInCage');
         break;
       }
       case 'countdown':
-        sfx.bell({ departure: true, soft: true });
+        // The last bells are louder, and the count says so once (round 12:
+        // the deadline must be readable before it bites).
+        sfx.bell({ departure: true, soft: event.remaining > DEPARTURE_WARN_BELLS });
+        if (event.remaining === DEPARTURE_WARN_BELLS && !this.boarded) this.hud.toast(HINTS.departureSoon, '#e6aab0', 1800);
         break;
       case 'countdown-end':
-        if (!this.boarded) this.trainRemembers();
+        if (!this.boarded) this.departureBell();
         break;
       default:
         break;
@@ -1660,6 +1687,18 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
   }
 
+  // Tops Butch could step up onto (stepUpLip): the roofs and decks that are
+  // solid now, and the cars (lifts, counterweight cages) where they are.
+  lipSurfaces() {
+    this.roofTops ??= PLATFORMS.map((p) => ({ x0: p.x, x1: p.x + p.w, y: p.y, id: p.id }));
+    const darkOff = new Set((this.darkDecks ?? []).filter((d) => !d.solid).map((d) => d.platform.id));
+    const tops = this.roofTops.filter((t) => !darkOff.has(t.id));
+    for (const entry of this.machineViews.values()) {
+      for (const car of entry.cars) tops.push({ x0: car.x, x1: car.x + car.w, y: car.zone.body.top });
+    }
+    return tops;
+  }
+
   inUpdraft() {
     const x = this.feetX;
     const y = this.feetY - BODY_H / 2;
@@ -1735,6 +1774,20 @@ export class BorrowedLightScene extends Phaser.Scene {
     }
     body.setVelocity(out.vx, vy);
     this.player.pose = out.pose;
+    // Round 12 (George: Butch snagged on the rising and falling pieces at the
+    // end): walking into a lip only a few px high — a car at rest a hair off
+    // a roof, a cage against a deck — he steps up onto it (level.js stepUpLip).
+    const dir = input.right && !input.left ? 1 : input.left && !input.right ? -1 : 0;
+    if (dir && grounded && !out.jumped && (dir > 0 ? body.blocked.right || body.touching.right : body.blocked.left || body.touching.left)) {
+      const feetX = this.feetX;
+      const feetY = this.feetY;
+      const lift = stepUpLip({ feetX, feetY, dir, halfW: BODY_W / 2, surfaces: this.lipSurfaces() });
+      if (lift > 0) {
+        body.reset(feetX, feetY - lift - BODY_H / 2);
+        body.setVelocity(dir * Math.max(Math.abs(out.vx), 160), 0);
+        this.lastStepUp = { x: Math.round(feetX), lift: Math.round(lift), at: Math.round(this.clock * 10) / 10 };
+      }
+    }
     // Teaching: walking counts once Butch has covered a few steps himself.
     if (!this.flags.walked && !this.locked && grounded && (input.left || input.right)) {
       this.walkedPx += Math.abs(out.vx) * dt / 1000;
@@ -1805,14 +1858,14 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (!this.stoneTaken && Math.abs(x - GRID_STONE.x) < 80 && Math.abs(y - GRID_STONE.y) < 90) this.takeStone();
 
     // Departure: reading the letter starts it; walking past the bench does too.
-    if (this.section === 'C' && !this.departure.started && x >= DEPARTURE_TRIGGER_X && !this.hud.cardOpen) this.startDeparture();
+    if (this.section === 'C' && !this.departure.started && x >= DEPARTURE_TRIGGER_X && !this.hud.cardOpen && !this.locked) this.startDeparture();
 
     // Boarding.
     if (this.section === 'C' && x >= this.boardX() - 30 && Math.abs(y - TRAIN.end.y) < 40) this.board();
   }
 
   // Late, the door is rolling away: Butch boards where it actually is.
-  boardX() { return this.remembering ? this.trainEnd.doorWorldX : Math.min(BOARD_X + 200, this.trainEnd.doorWorldX); }
+  boardX() { return this.lateRun ? this.trainEnd.doorWorldX : Math.min(BOARD_X + 200, this.trainEnd.doorWorldX); }
 
   takeStone() {
     this.stoneTaken = true;
@@ -1833,46 +1886,61 @@ export class BorrowedLightScene extends Phaser.Scene {
     if (s.lightningOnly || s.flash) this.lightning(0.9);
   }
 
-  trainRemembers() {
-    if (this.remembering || this.boarded) return;
-    this.remembering = true;
-    this.locked = 'remember';
-    this.hud.toast('THE TRAIN REMEMBERS', '#f2c27a', 3200);
+  // Round 12 (George: "it stuck in one place and went straight into the next
+  // cutscene, it didn't let me run the rest"): the twelfth bell used to set
+  // every machine itself, carry Butch to the platform and run him aboard.
+  // Now he always runs it himself. On the platform (or on the last walkway,
+  // up or on its way), the train pulls out slowly with its doors open and he
+  // can still make the last car; anywhere else he has missed it.
+  departureBell() {
+    if (this.boarded || this.lateRun) return;
+    const walkway = machineById('c-weights2');
+    const ok = canRunForTrain({ x: this.feetX, y: this.feetY, platformX: this.platformX, walkway, status: this.tt.machineStatus(walkway.id) });
+    if (ok && !this.respawning) this.startLateRun();
+    else this.missTrain();
+  }
+
+  startLateRun() {
+    this.lateRun = true;
+    const train = this.trainEnd;
     sfx.trainChime();
-    const seq = rememberedSequence(this.tt.history(this.departure.startBell), DEPARTURE_CHAIN);
-    seq.forEach((machineId, i) => {
-      this.time.delayedCall(650 * i + 400, () => {
-        // The walkways are remembered in place, their brakes set; the drop
-        // ledge is remembered dropped.
-        const remembered = machineById(machineId);
-        if (remembered.kind === 'counterweight') { this.tt.settle(machineId, remembered.ballast ? 0 : 1); this.tt.release(machineId); } else this.tt.hold(machineId, this.holderNode(machineId));
-        NODES.filter((n) => n.machine === machineId).forEach((n) => { const v = this.nodeViews.get(n.id); if (v) v.pulse = 0; });
-        this.lightPlatformLamp(machineId);
-        sfx.machineOn(machineById(machineId).kind);
-        this.frameMachine(machineId, 600);
-      });
+    this.hud.toast(HINTS.lateRun, '#e6aab0', 2600);
+    this.lateRoll = this.tweens.add({
+      targets: train.container,
+      x: this.trainHomeX + 900,
+      duration: LATE_ROLL_MS,
+      ease: 'Sine.easeIn',
+      onUpdate: () => train.sync(),
+      // Gone without him: missed after all.
+      onComplete: () => { this.lateRoll = null; if (!this.boarded) this.missTrain(); },
     });
-    this.time.delayedCall(650 * seq.length + 1600, () => {
-      const onUpper = this.feetY <= TRAIN.end.y + 20 && this.feetX >= REMEMBER_PLACE.upperFromX;
-      const run = () => {
-        // Late: the doors are still open but the train is already rolling;
-        // Butch has to run the platform for the last car.
-        const train = this.trainEnd;
-        this.lateRoll = this.tweens.add({ targets: train.container, x: train.container.x + 900, duration: 9000, ease: 'Sine.easeIn', onUpdate: () => train.sync() });
-        sfx.trainChime();
-        this.autoRun = { targetX: this.boardX() + 10, then: null, chase: true };
-        this.locked = 'auto';
-      };
-      if (onUpper) { run(); return; }
-      this.tweens.add({
-        targets: this.hud.fade,
-        alpha: 1,
-        duration: 350,
-        onComplete: () => {
-          this.placePlayer(REMEMBER_PLACE.x, REMEMBER_PLACE.y);
-          this.snapCamera();
-          this.tweens.add({ targets: this.hud.fade, alpha: 0, duration: 400 });
-          run();
+  }
+
+  // Missed the train: never a skip ahead. A beat to hear it go, then the
+  // mist fade back to the last lamp lit (the room just before), the train
+  // at its platform again and a fresh count from the bench line.
+  missTrain() {
+    if (this.boarded || this.missing) return;
+    this.missing = true;
+    this.missedTrains += 1;
+    this.lateRoll?.stop();
+    this.lateRoll = null;
+    this.tt.stopCountdown();
+    this.departure.started = false;
+    sfx.trainChime();
+    this.hud.toast(HINTS.missedTrain, '#e6aab0', 2600);
+    this.locked = 'missed';
+    this.time.delayedCall(1100, () => {
+      this.locked = null;
+      this.respawn({
+        note: null,
+        inDark: () => {
+          const train = this.trainEnd;
+          train.container.x = this.trainHomeX;
+          train.setDoorOpen(true);
+          train.sync();
+          this.lateRun = false;
+          this.missing = false;
         },
       });
     });
@@ -1978,6 +2046,7 @@ export class BorrowedLightScene extends Phaser.Scene {
 
   update(_time, delta) {
     const dt = Math.min(this.maxFrameMs, delta) * this.timescale;
+    this.frameDt = dt;
     const t = (this.clock += dt / 1000);
     this.pollGamepad();
     this.listening = !this.locked && !this.hud.dialogOpen && !this.hud.cardOpen && (this.keys.q.isDown || Boolean(this.input.gamepad?.pad1?.L1));
@@ -2015,12 +2084,13 @@ export class BorrowedLightScene extends Phaser.Scene {
   }
 
   // =========================================================================
-  // Idle hints (alpha r4): 25 s a pulse on what matters, 60 s a toast naming
-  // the next action, 120 s Butch's fuller line; the clock restarts on any
-  // progress in the room (idleHints.js).
+  // Idle hints (alpha r4; round 12: only when clearly stuck): 40 s a small
+  // pulse on what matters, 90 s one toast naming the next action; Butch's
+  // fuller line only on SHOW ME / H. The clock restarts on any progress in
+  // the room (idleHints.js).
 
   idleActive() {
-    return !this.locked && !this.respawning && !this.boarded && !this.remembering && this.player.visible && !this.hud.dialogOpen && !this.hud.cardOpen;
+    return !this.locked && !this.respawning && !this.boarded && this.player.visible && !this.hud.dialogOpen && !this.hud.cardOpen;
   }
 
   idleContext() {
@@ -2070,7 +2140,7 @@ export class BorrowedLightScene extends Phaser.Scene {
     this.lastIdleHint = { tier, step: hint.step, at: Math.round(this.clock * 10) / 10 };
   }
 
-  // SHOW ME (pause menu): the nudge at once; Butch's line on a second ask.
+  // SHOW ME (pause menu) or H: the nudge at once; Butch's line on a second ask.
   showMe() {
     if (!this.idle || !this.idleActive()) return;
     const ctx = this.idleContext();
@@ -2285,14 +2355,16 @@ export class BorrowedLightScene extends Phaser.Scene {
   // Round 6 (owner G3, item 7): a punched machine shows by itself what the
   // next bell will do and when: its ghost where it will be, and a bell dial
   // there counting down, so the eye on the gap sees the same clock as the
-  // box. Listen (Q) draws the full preview instead.
+  // box. Listen (Q) draws the full preview instead. Round 12: only while the
+  // first two punches wait (with the cause card); after that the box's ring,
+  // the meter's NEXT BELL count, and Listen on demand.
   drawPunchedMachines(t) {
     const g = this.autoGhostG;
     const dg = this.dialG;
     g.clear();
     dg.clear();
     this.dialTexts.forEach((d) => d.setVisible(false));
-    if (this.listening || this.locked === 'intro') return;
+    if (this.listening || this.locked === 'intro' || this.punchUses > TEACH_USES) return;
     const view = this.view;
     let n = 0;
     for (const change of this.tt.preview()) {
@@ -2866,6 +2938,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       phases,
       quick: snap.bellMs < BELL_MS,
       carried: Boolean(snap.carried()),
+      warnBells: DEPARTURE_WARN_BELLS,
     });
   }
 
@@ -2878,11 +2951,11 @@ export class BorrowedLightScene extends Phaser.Scene {
       // B5: the lit lantern and the dead bridge beside it.
       const lantern = nodeById('b-nL1');
       const dead = nodeById('b-n9');
-      if (this.feetX > lantern.x - 260 && this.feetX < dead.x + 60 && Math.abs(this.feetY - lantern.y) < 12) return { follow: true, text: TEACH.borrow.text };
+      if (this.feetX > lantern.x - 260 && this.feetX < dead.x + 60 && Math.abs(this.feetY - lantern.y) < 12) return { id: 'borrow', follow: true, text: TEACH.borrow.text };
     }
     if (this.section === 'C' && !this.flags.cageRidden && grounded && !this.currentTarget) {
       const gantry = platformById('c-gantry');
-      if (this.feetX > gantry.x + 200 && Math.abs(this.feetY - gantry.y) < 12 && this.feetX < gantry.x + gantry.w + 240) return { follow: true, text: TEACH.cage.text };
+      if (this.feetX > gantry.x + 200 && Math.abs(this.feetY - gantry.y) < 12 && this.feetX < gantry.x + gantry.w + 240) return { id: 'cage', follow: true, text: TEACH.cage.text };
     }
     if (this.section !== 'A') return null;
     // The chase (A8): no other teach tags (HOLD Q popped up on cradle 1);
@@ -2899,25 +2972,25 @@ export class BorrowedLightScene extends Phaser.Scene {
         const onCradle = grounded && standsOn(cradle, level, this.feetX, this.feetY);
         const inReach = Boolean(pickTarget({ chest: chestAt(this.feetX, this.feetY), nodes: [nodeById(spot.node)] }));
         const text = onCradle && !inReach ? HINTS.fromCradleBack : HINTS.fromCradle;
-        return { x: spot.x, y: cradle.y - cradle.hoist - 112, text, mark: { x: spot.x, y: machineBounds(cradle, level).y } };
+        return { id: 'fromCradle', x: spot.x, y: cradle.y - cradle.hoist - 112, text, mark: { x: spot.x, y: machineBounds(cradle, level).y } };
       }
       return null;
     }
     // Alpha r4: walking, then jumping, taught on the terminal roof before
     // any jump is needed (the first is the AC unit on the ROOMS roof).
     if (!this.locked && this.feetX < MECHANIC.x + 300 && Math.abs(this.feetY - MECHANIC.y) < 12) {
-      if (!this.flags.walked) return { follow: true, text: HINTS.walk };
-      if (!this.flags.jumped && grounded) return { follow: true, text: HINTS.jumpFirst };
+      if (!this.flags.walked) return { id: 'walk', follow: true, text: HINTS.walk };
+      if (!this.flags.jumped && grounded) return { id: 'jumpFirst', follow: true, text: HINTS.jumpFirst };
     }
     const onRoomsRoof = this.feetX > 5160 && this.feetX < 5545 && Math.abs(this.feetY - 460) < 12;
-    if (!this.flags.acClimbed && onRoomsRoof) return { x: 5618, y: 386, text: HINTS.jump };
+    if (!this.flags.acClimbed && onRoomsRoof) return { id: 'jump', x: 5618, y: 386, text: HINTS.jump };
     // A6: the bell counts I, II — taught until the first phased punch.
     // Over the gap the II bridge will cross, clear of the node's prompt.
-    if (!this.flags.phasePunched && this.feetX > TEACH.bells.fromX && this.feetX < TEACH.bells.toX && Math.abs(this.feetY - 160) < 12) return { x: TEACH.bells.x, y: TEACH.bells.y, text: TEACH.bells.text };
+    if (!this.flags.phasePunched && this.feetX > TEACH.bells.fromX && this.feetX < TEACH.bells.toX && Math.abs(this.feetY - 160) < 12) return { id: 'bells', x: TEACH.bells.x, y: TEACH.bells.y, text: TEACH.bells.text };
     const queued = Object.values(this.tt.snapshot().queued).length > 0;
     if (!this.flags.listened && this.flags.listenHinted && queued && !this.currentTarget) {
       // Near Butch, clear of the hanging neon (R2-1: it covered LAUNDRY).
-      return { follow: true, text: HINTS.listen };
+      return { id: 'listen', follow: true, text: HINTS.listen };
     }
     return null;
   }
@@ -2936,6 +3009,11 @@ export class BorrowedLightScene extends Phaser.Scene {
     // Round 6: while a box explains itself on its card, the tags that follow
     // Butch (walk, jump, listen) wait: they landed on the box's own tag.
     if (teach?.follow && this.card.visible) teach = null;
+    // Round 12: each teach tag for its first two showings, then never.
+    const teachKey = teach ? `teach:${teach.id}` : null;
+    if (this.teachKey && this.teachKey !== teachKey) this.hints.hold(this.teachKey, false);
+    this.teachKey = teachKey;
+    if (teach && !this.hints.hold(teachKey, true, this.frameDt)) teach = null;
     this.teachText.setVisible(Boolean(teach));
     if (teach) {
       this.teachText.setText(teach.text);
@@ -2964,14 +3042,14 @@ export class BorrowedLightScene extends Phaser.Scene {
       mg.lineStyle(3, 0xf2c27a, 0.8).lineBetween(x - 34, y + 1, x + 34, y + 1);
     }
     this.talkText.setVisible(false);
-    if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { pt.setVisible(false); return; }
+    if (this.locked || this.hud.dialogOpen || this.hud.cardOpen) { this.releasePromptKey(); pt.setVisible(false); return; }
     // Round 6: exactly one E prompt, on what E will act on (actionTarget).
     const action = this.actionTarget();
     const target = action?.kind === 'prop' ? action.prop : null;
     // By the mechanic with the box nearer (or not yet punched), the box
     // keeps E; she shows, without a key, that she has more to say.
     if (action?.kind === 'node' && this.interactTarget() === 'mechanic') {
-      if (this.mechanicHasNews()) this.talkText.setText(HINTS.talkCloser).setPosition(MECHANIC.x, MECHANIC.y - 208).setVisible(true);
+      if (this.hints.hold('talk:closer', this.mechanicHasNews(), this.frameDt)) this.talkText.setText(HINTS.talkCloser).setPosition(MECHANIC.x, MECHANIC.y - 208).setVisible(true);
     } else if (target) {
       const [x, y, label] = target === 'mechanic'
         // Above the kiosk awning (its valance hangs 160–196 px up), clear of it.
@@ -2980,26 +3058,69 @@ export class BorrowedLightScene extends Phaser.Scene {
           ? [HOTEL_WINDOW.x, HOTEL_WINDOW.y - 230, HINTS.read]
           : [BENCH.x, BENCH.y - 100, HINTS.read];
       pt.setText(label).setPosition(x, y).setVisible(true);
+      this.releasePromptKey();
       return;
     }
     const node = this.currentTarget;
     if (node) {
       const head = nodeHead(node);
-      // Round 6 · walking up to a box shows what it does, large: for the
-      // first two punches, and once for each new kind of machine (round 11).
+      // Round 6 · walking up to a box shows what it does, large. Round 12
+      // (George): for the first two punches only — round 11's "once more for
+      // each new kind of machine" brought it back at the end of the chapter.
       const card = action?.kind === 'node' ? this.cardModel(node) : null;
-      const kind = machineById(node.machine)?.kind;
-      if (card && showCard({ uses: this.punchUses, newKind: Boolean(kind) && !this.kindsPunched.has(kind) })) {
+      if (card && showCard({ uses: this.punchUses })) {
         const anchor = machineAnchor(machineById(node.machine));
         this.cardShown = card;
         this.cardAt = { headX: head.x, headY: head.y, side: anchor.x >= node.x ? 1 : -1, view: this.view };
+        this.releasePromptKey();
         pt.setVisible(false);
         return;
       }
-      pt.setText(this.promptFor(node)).setPosition(head.x, head.y - 36).setVisible(true);
+      const text = this.promptShown(node);
+      if (text) pt.setText(text).setPosition(head.x, head.y - 36).setVisible(true);
+      else pt.setVisible(false);
       return;
     }
+    this.releasePromptKey();
     pt.setVisible(false);
+  }
+
+  // Round 12 · the tag over a box: its full wording for the first two
+  // showings of its kind, then a two-word chip or nothing (hintBudget.js).
+  // The kinds the cause card teaches show nothing once its two punches are
+  // done: the box's punched hole and ring say it.
+  promptShown(node) {
+    const kind = this.promptKind(node);
+    const key = `prompt:${kind}`;
+    if (this.promptKey && this.promptKey !== key) this.hints.hold(this.promptKey, false);
+    this.promptKey = key;
+    if (CARD_KINDS.includes(kind)) return this.punchUses < TEACH_USES ? this.promptFor(node) : compactPrompt(kind);
+    return this.hints.hold(key, true, this.frameDt) ? this.promptFor(node) : compactPrompt(kind);
+  }
+
+  releasePromptKey() {
+    if (this.promptKey) this.hints.hold(this.promptKey, false);
+    this.promptKey = null;
+  }
+
+  // What kind of tag promptFor() writes for this node (hintBudget.js keys).
+  promptKind(node) {
+    if (node.dead) {
+      if (this.section !== 'B') return 'dead';
+      const b = this.tt.borrowPreview(node.id, { riding: this.ridingMachine() }).result;
+      return { give: 'give', retrieve: 'retrieve', return: 'putBack', borrow: 'borrow', lit: 'lit', full: 'full', 'step-off': 'stepOff' }[b] ?? 'dead';
+    }
+    const pre = this.tt.punchPreview(node.id);
+    const machine = machineById(node.machine);
+    switch (pre.result) {
+      case 'replace': return 'replace';
+      case 'already': return pre.waiting ? 'liftWaits' : 'punched';
+      case 'renew': return 'renew';
+      case 'cut': return 'cut';
+      case 'cutting': return 'cutting';
+      case 'busy': return this.tt.machineStatus(pre.holder)?.held ? 'held' : 'busy';
+      default: return machine.kind === 'counterweight' ? (machine.ballast ? 'drop' : 'release') : 'punch';
+    }
   }
 
   // The float hint over a node: held for its time, then it rises as it
@@ -3098,6 +3219,7 @@ export class BorrowedLightScene extends Phaser.Scene {
       target: this.currentTarget?.id ?? null,
       targetPrompt: this.currentTarget && this.promptText.visible ? this.promptText.text : null,
       lastPunch: this.lastPunch ?? null,
+      lastStepUp: this.lastStepUp ?? null,
       takeBack: this.takeBack ? { nodeId: this.takeBack.nodeId, ms: Math.round(this.takeBack.ms) } : null,
       riding: this.ridingMachine(),
       talkTag: this.talkText.visible,
@@ -3109,7 +3231,8 @@ export class BorrowedLightScene extends Phaser.Scene {
       stone: { taken: this.stoneTaken },
       countdown: snap.countdown,
       departureStarted: this.departure.started,
-      remembering: this.remembering,
+      lateRun: this.lateRun,
+      missedTrains: this.missedTrains,
       boarded: this.boarded,
       boardedOnTime: this.boardedOnTime ?? null,
       dialog: this.hud.dialogOpen ? { speaker: this.hud.dialog.lines[this.hud.dialog.index].speaker, index: this.hud.dialog.index } : null,

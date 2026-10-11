@@ -156,8 +156,11 @@ export const MACHINES = Object.freeze([
   // is released, the cage carrying Butch sinks and the other rises — B on a
   // longer drum, so Butch's 110 px ride brings the walkway up 360 px, flush
   // with the platform. The brake rings on the bell, like every machine.
+  // Round 12 (`weighs`, `completes`, timetableModel.js): only Butch in cage A
+  // drives it, and a ride once started runs to its end, so the walkway always
+  // arrives flush and never sinks again under him.
   {
-    id: 'c-weights', kind: 'counterweight', section: 'C', duration: 3000, travel: 2400,
+    id: 'c-weights', kind: 'counterweight', section: 'C', duration: 3000, travel: 2400, weighs: 'a', completes: true,
     x: C(19370), w: 220, yA0: 180, yA1: 290,
     xB: C(19610), wB: 320, yB0: 540, yB1: 180,
   },
@@ -166,14 +169,14 @@ export const MACHINES = Object.freeze([
   // on its own (ballast 'b') into line with the signal deck and the landing.
   // Only the ledge (cage b) can be stood on.
   {
-    id: 'c-drop', kind: 'counterweight', section: 'C', duration: 3000, travel: 1600, ballast: 'b', startLevel: 1, riders: ['b'], style: 'ledge',
+    id: 'c-drop', kind: 'counterweight', section: 'C', duration: 3000, travel: 1600, ballast: 'b', completes: true, startLevel: 1, riders: ['b'], style: 'ledge',
     x: C(20190), w: 46, yA0: 300, yA1: 630,
     xB: C(20270), wB: 340, yB0: 180, yB1: -150,
     brakeAt: { x: C(20226), y: 174 },
   },
   // … then the second walkway, ridden up from cage A2 beside the landing.
   {
-    id: 'c-weights2', kind: 'counterweight', section: 'C', duration: 3000, travel: 2400,
+    id: 'c-weights2', kind: 'counterweight', section: 'C', duration: 3000, travel: 2400, weighs: 'a', completes: true,
     x: C(20810), w: 220, yA0: 180, yA1: 290,
     xB: C(21050), wB: 320, yB0: 540, yB1: 180,
   },
@@ -241,12 +244,22 @@ export const NODES = Object.freeze([
   { id: 'c-n6', line: 'rose', machine: 'c-weights2', x: C(20740), y: 180, mount: 'pole', section: 'C', district: 'C4', phase: 'odd' },
 ].map((node) => Object.freeze(node)));
 
-// Required machines for the departure (the train remembers them in order).
+// Required machines for the departure (each lights a platform lamp).
 export const DEPARTURE_CHAIN = Object.freeze(['c-points', 'c-lift', 'c-weights', 'c-drop', 'c-weights2']);
 // Tuned so a first run (a wasted bell or two in C3 and C4) makes it with
 // about three bells to spare and a clean run with five (round 3: C used to
 // leave nine of twelve; tests/borrowedLight/level.test.mjs, solveC).
+// Round 12 (George: "it stuck in one place and went straight into the next
+// cutscene"): the end of the count no longer plays the route for him. If
+// the twelfth bell rings with Butch already on the platform, the train rolls
+// out slowly with its doors open and he runs for the last car himself; if
+// not (or if it gets away), he is MISSED: back to the last lamp lit, with a
+// fresh count (DEPARTURE_BELLS again) from the bench line.
 export const DEPARTURE_BELLS = 12;
+// The count turns urgent (the HUD's departure line pulses) for these last bells.
+export const DEPARTURE_WARN_BELLS = 3;
+// How long the late train rolls with its doors open before it is gone (ms).
+export const LATE_ROLL_MS = 9000;
 
 // The chase (A8): from Mara's first look back until Butch lands on her roof,
 // the city's bell quickens.
@@ -307,8 +320,6 @@ export const BENCH = Object.freeze({ x: C(17160), y: 520, readRadius: 150 });
 export const GRID_STONE = Object.freeze({ x: B(11690), y: -60 });
 export const DEPARTURE_TRIGGER_X = C(17520);
 export const BOARD_X = D(20300);
-// Where the train puts Butch when it remembers the route for him.
-export const REMEMBER_PLACE = Object.freeze({ x: D(20020), y: 180, upperFromX: D(19950) });
 
 // Mara, always one roof ahead. Each sighting is a short authored run.
 // `waitForX`: she stands and looks back until Butch gets that close.
@@ -470,6 +481,40 @@ export function surfacesOf(machine, level) {
 export function standsOn(machine, level, feetX, feetY, { slack = 4, tol = 10, above = 0 } = {}) {
   return surfacesOf(machine, level).some((s) => feetX >= s.x0 - slack && feetX <= s.x1 + slack
     && feetY >= s.y - Math.max(tol, above) && feetY <= s.y + tol);
+}
+
+// Round 12 · the twelfth bell. Can Butch still run for the train as it pulls
+// out? On the platform, yes; in cage A2 or on the last walkway too, once
+// that walkway is up or on its way (he is a hop and a few strides from the
+// door). Anywhere else he has missed it. `status`: the walkway's
+// timetable machineStatus.
+export function canRunForTrain({ x, y, platformX, walkway, status = null, platformY = 180 } = {}) {
+  if (x >= platformX - 20 && Math.abs(y - platformY) < 40) return true;
+  if (!walkway || x < walkway.x) return false;
+  return Boolean(status && (status.level >= 0.999 || status.riding));
+}
+
+// Round 12 · no snag on a lip. Walking (grounded) into the side of a
+// surface whose top is only a little above his feet — a car that came to
+// rest a hair below a roof, a cage against a deck — Butch steps up onto it
+// instead of stopping. Returns how far to lift him (px), or 0. `surfaces`:
+// [{ x0, x1, y }] tops; `halfW`: half his body width. Real steps (the AC
+// unit, a cage below the walkway) are far taller than `maxStep` and still
+// need a jump.
+export const STEP_UP_PX = 26;
+export function stepUpLip({ feetX, feetY, dir, halfW = 20, surfaces = [], maxStep = STEP_UP_PX } = {}) {
+  const edge = feetX + dir * halfW;
+  let best = 0;
+  for (const s of surfaces) {
+    const rise = feetY - s.y;
+    if (rise <= 0.5 || rise > maxStep) continue;
+    const near = dir > 0 ? s.x0 : s.x1;
+    if (Math.abs(near - edge) > 6) continue;
+    // The surface must run on past his edge (a top to stand on, not a post).
+    if ((dir > 0 ? s.x1 - edge : edge - s.x0) < halfW) continue;
+    best = Math.max(best, rise + 0.5);
+  }
+  return best;
 }
 
 // Where power arrives at a machine (end of its cable).
@@ -647,8 +692,9 @@ export function timetableDefinition() {
       ...(node.noCatch ? { noCatch: true } : {}),
     })),
     // Every lift waits a bell for a rider who is still on the way (R3-3).
-    machines: MACHINES.map(({ id, kind, duration, travel, borrowable, ballast }) => ({
-      id, kind, duration, travel, borrowable: Boolean(borrowable), waitsForRider: kind === 'lift', ...(ballast ? { ballast } : {}),
+    machines: MACHINES.map(({ id, kind, duration, travel, borrowable, ballast, weighs, completes }) => ({
+      id, kind, duration, travel, borrowable: Boolean(borrowable), waitsForRider: kind === 'lift',
+      ...(ballast ? { ballast } : {}), ...(weighs ? { weighs } : {}), ...(completes ? { completes: true } : {}),
     })),
   };
 }

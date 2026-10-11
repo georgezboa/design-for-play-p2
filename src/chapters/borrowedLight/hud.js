@@ -168,7 +168,7 @@ export class BorrowedLightHud {
   }
 
   // ---- bell meter --------------------------------------------------------
-  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt, nextParity = null, phases = {}, quick = false, carried = false, hidden = false }) {
+  updateMeter({ phase, msToBell, lines, countdown, departure, t, dt, nextParity = null, phases = {}, quick = false, carried = false, hidden = false, warnBells = 3 }) {
     const g = this.meter;
     g.clear();
     // Boarding (alpha r4): the bell and the departure count step aside.
@@ -278,7 +278,15 @@ export class BorrowedLightHud {
       g.lineStyle(1.4, 0x0b0907, 1).strokeRect(lx - 7, ly - 12, 14, 18);
     }
     this.meterLabel.setText(departure ? '' : '');
-    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '').setY(tagsY + (waiting ? 92 : 58)).setAlpha(0.9 * ma);
+    // Round 12: the last bells read as a warning (brighter, pulsing, a size
+    // up) so the deadline is never a surprise.
+    const urgent = Boolean(countdown && countdown.remaining <= warnBells && !countdown.held);
+    const k = textScale();
+    this.nextLabel.setText(countdown ? `DEPARTURE · ${countdown.remaining} ${countdown.remaining === 1 ? 'BELL' : 'BELLS'}${countdown.held ? ' · HELD' : ''}` : '')
+      .setY(tagsY + (waiting ? 92 : 58))
+      .setColor(urgent ? '#ffb3bc' : '#e6aab0')
+      .setFontSize(`${Math.round((urgent ? 30 : 24) * k)}px`)
+      .setAlpha((urgent ? 0.75 + 0.25 * Math.sin(t * 7) : 0.9) * ma);
   }
 
   ring({ departure = false } = {}) {
