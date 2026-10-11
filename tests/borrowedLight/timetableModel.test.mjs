@@ -10,7 +10,6 @@ import {
   MEMORY_MS,
   REPEAT_GUARD_MS,
   createTimetable as createAnyTimetable,
-  rememberedSequence,
   ringsOn,
 } from '../../src/chapters/borrowedLight/timetableModel.js';
 
@@ -328,7 +327,9 @@ test('a held countdown lets bells ring without counting them (respawn)', () => {
   assert.equal(tt.countdown().remaining, 6);
 });
 
-test('the train remembers the section\'s punches in order, then the rest of the chain', () => {
+// Round 12: the train no longer plays the route back for Butch (the history
+// stays: the departure test counts what fired from the bench on).
+test('history keeps what fired from a bell on, in order', () => {
   const tt = createTimetable(def());
   tt.punch('n-lift');
   tt.update(BELL_MS);
@@ -341,7 +342,7 @@ test('the train remembers the section\'s punches in order, then the rest of the 
   tt.update(tt.msToBell());
   const history = tt.history(fromBell);
   assert.deepEqual(history.map((entry) => entry.machineId), ['board', 'board']);
-  assert.deepEqual(rememberedSequence(history, ['bridge', 'board', 'lift']), ['board', 'bridge', 'lift']);
+  assert.ok(history.every((entry) => entry.bell > fromBell));
 });
 
 test('definitions are validated', () => {

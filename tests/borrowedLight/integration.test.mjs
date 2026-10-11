@@ -155,7 +155,7 @@ test('alpha F2: jump and listen are taught in the world at first use', async () 
   const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
   assert.equal(HINTS.jump, 'SPACE · JUMP');
   // The first jump the route needs is the AC unit on the ROOMS roof.
-  assert.match(scene, /onRoomsRoof\) return \{ x: 5618, y: 386, text: HINTS\.jump \}/);
+  assert.match(scene, /onRoomsRoof\) return \{ id: 'jump', x: 5618, y: 386, text: HINTS\.jump \}/);
   assert.match(scene, /if \(out\.jumped\) \{\n\s+this\.flags\.jumped = true;/);
   assert.match(scene, /!this\.flags\.listened && this\.flags\.listenHinted && queued/);
   // Prompts are paper tags (ivory paper, walnut ink), not dark boxes.
@@ -183,7 +183,9 @@ test('alpha F2: missing the departure looks and sounds different, and falls do n
   assert.notEqual(BOARDING_LINES.onTime.text, BOARDING_LINES.late.text);
   assert.match(scene, /this\.hud\.say\(BOARDING_LINES\.late/);
   assert.match(scene, /this\.coatCaught = this\.caughtCoat\(train\)/);
-  assert.match(scene, /then: null, chase: true/);
+  // Round 12: late is a run Butch makes himself (no auto-run to the door).
+  assert.match(scene, /startLateRun\(\) \{/);
+  assert.doesNotMatch(scene, /chase: true/);
   assert.match(scene, /this\.tt\.holdCountdown\(true\)/);
 });
 

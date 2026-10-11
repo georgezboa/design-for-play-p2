@@ -116,7 +116,7 @@ test('R6-B: the scene runs the lesson, and Mara is seen across the gap when the 
   assert.match(scene, /const pointing = lessonPointing\(this\.lesson\) \|\| line === LESSON_LINES\.point;/);
   // Lines are captions that take no input (Butch keeps control).
   assert.match(scene, /if \(line && this\.hud\.say\(line, ms\)\)/);
-  assert.match(scene, /if \(section !== 'A' \|\| lamp\.id !== SECTIONS\.A\.spawn\) this\.lesson = createLesson\(\{ done: true \}\);/);
+  assert.match(scene, /if \(section !== 'A' \|\| lamp\.id !== SECTIONS\.A\.spawn\) \{\n\s+this\.lesson = createLesson\(\{ done: true \}\);/);
 });
 
 // ---------------------------------------------------------------------------
@@ -175,18 +175,18 @@ test('R6-A: the card reads punch → next bell → bridge, and the lit cell foll
   assert.equal(effectLabel(machineById('c-drop')), 'LEDGE DROPS');
 });
 
-test('R6-A: big type (≥ 18 px on a 1280×720 window), shown for the first two punches and for a new kind of machine', () => {
+test('R6-A: big type (≥ 18 px on a 1280×720 window), shown for the first two punches only', () => {
   assert.ok(CARD_FONT >= MIN_WORLD_FONT);
   assert.ok(MIN_WORLD_FONT * (1280 / 1920) >= 18, 'the smallest world text is 18 px at 1280×720');
   assert.match(scene, /export const TAG_FONT = MIN_WORLD_FONT;/);
   assert.match(scene, /fontSize: `\$\{TAG_FONT\}px`/);
-  // round 11: the first two punches, then only a new kind of machine — a pause no longer brings it back
+  // round 12: the first two punches, then never — neither a pause nor a new kind of machine brings it back
   assert.equal(TEACH_USES, 2);
   assert.ok(showCard({ uses: 0 }));
   assert.ok(showCard({ uses: TEACH_USES - 1 }));
   assert.equal(showCard({ uses: TEACH_USES }), false);
   assert.equal(showCard({ uses: 9, dwellMs: DWELL_MS * 10 }), false);
-  assert.ok(showCard({ uses: 9, newKind: true }));
+  assert.equal(showCard({ uses: 9, newKind: true }), false);
   // It scales with TEXT SIZE and sits above the box, reaching toward the machine.
   const small = cardLayout({ k: 1 });
   const big = cardLayout({ k: 1.5, labelW: [135, 255, 285] });
@@ -199,7 +199,7 @@ test('R6-A: big type (≥ 18 px on a 1280×720 window), shown for the first two 
   const clamped = placeCard({ headX: 1900, headY: 610, w: 600, h: 120, side: 1, view: { x: 0, right: 1920 } });
   assert.ok(clamped.x1 <= 1920 - 24);
   // The scene uses it in place of the small tag.
-  assert.match(scene, /if \(card && showCard\(\{ uses: this\.punchUses, newKind: Boolean\(kind\) && !this\.kindsPunched\.has\(kind\) \}\)\) \{/);
+  assert.match(scene, /if \(card && showCard\(\{ uses: this\.punchUses \}\)\) \{/);
   assert.match(scene, /this\.card\.update\(this\.cardShown, this\.cardAt, t, dt\);/);
 });
 

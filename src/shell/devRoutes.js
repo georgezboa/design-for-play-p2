@@ -22,7 +22,7 @@ export const DEV_ROUTES = Object.freeze([
   { id: '2.1c', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-start', title: 'A8 · THE CHASE (DEV ONLY)', detail: 'The quick bell and the window cradles.', route: '/borrowed-light.html?section=A&lamp=lamp-a7', devBuildOnly: true },
   { id: '2.2', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B · BLACKOUT', detail: 'Memory light, the Grid Stone, the hotel cut and borrowed light.', route: '/borrowed-light.html?section=B' },
   { id: '2.2b', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-midpoint', title: 'B5 · BORROWED LIGHT (DEV ONLY)', detail: 'Carry a lantern’s light to the dead nodes.', route: '/borrowed-light.html?section=B&lamp=lamp-b4', devBuildOnly: true },
-  { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Twelve-bell departure, the counterweight walkway; the train remembers.', route: '/borrowed-light.html?section=C' },
+  { id: '2.3', group: 'CHAPTER 2 · BORROWED LIGHT', checkpoint: 'chapter-2-platform', title: 'C · EVACUATION PLATFORM', detail: 'Twelve-bell departure, the counterweight walkways; run for the train.', route: '/borrowed-light.html?section=C' },
   { id: '3.1', group: 'CHAPTER 3 · ECHO CITY', checkpoint: 'chapter-3-start', title: 'CITY ENTRY · THE PLATFORM', detail: 'The night service drops Butch with the claim card.', route: '/car03-3d.html' },
   // Round 3: 3.1a/3.1b open the oil line and the ministry walk; 3.4 starts
   // at the dusk cut (the dusk save's own start) and 3.4a at the optional

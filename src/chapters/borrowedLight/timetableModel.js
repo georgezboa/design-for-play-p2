@@ -3,7 +3,7 @@
 // Pure model, no Phaser: the bell clock, the punch queue, the one-line rule,
 // two-phase lines, machine power timers and travel, borrowed light, the
 // counterweight pair, the memory-light afterglow, the departure countdown and
-// the record the train "remembers". The scene renders this and moves physics
+// the record of what fired (history). The scene renders this and moves physics
 // bodies to `machine.level`; node tests drive it directly.
 //
 // Rules (docs/CH2_BORROWED_LIGHT_SPEC.md §4):
@@ -43,6 +43,12 @@
 //   its source is restored. Nothing can be stranded.
 // - Counterweight pair (section C): while its brake is released (powered),
 //   the pair moves toward the loaded cage's side; locked otherwise.
+//   Round 12 (George: the walkway "got stuck in one place"): `weighs: 'a'`
+//   — only a rider in cage A drives the pair, so stepping onto the walkway
+//   while the brake is still off never sinks it again under him; and
+//   `completes` — a ride that has started runs to its end (a hop in the
+//   cage, or a step in late, no longer leaves the walkway part way up), the
+//   brake staying released until the pair has arrived.
 // - Machines flicker for FLICKER_MS before switching off, then travel home.
 // - Memory light (section B): a node that fired glows for MEMORY_MS.
 // - Departure countdown (section C): counts bells down; a held countdown
@@ -165,6 +171,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       light: null, // the borrowed charge powering it, if any
       lentOut: false, // a source whose light Butch has taken
       load: null, // counterweight: 'a' | 'b' | null
+      drive: null, // counterweight: the side a ride under way sinks ('a' | 'b')
     });
   }
 
@@ -256,6 +263,21 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     };
     for (const [id, machine] of state) {
       const def = defById.get(id);
+      const pair = def.kind === 'counterweight';
+      if (pair) {
+        // The side that sinks: the rider's cage (when it counts) or, for a
+        // ballasted pair, its own weight. A pair that `completes` keeps its
+        // ride going without the rider, and its brake holds until it arrives.
+        const rider = machine.load && (!def.weighs || def.weighs === machine.load) ? machine.load : null;
+        const want = rider ?? def.ballast ?? null;
+        if (!machine.powered) machine.drive = null;
+        else if (want) machine.drive = want;
+        else if (!def.completes) machine.drive = null;
+        if (def.completes && machine.powered && machine.drive && !machine.held) {
+          const left = Math.abs((machine.drive === 'a' ? 1 : 0) - machine.level) * Math.max(1, def.travel);
+          if (left > 0) machine.remaining = Math.max(machine.remaining, left + dt);
+        }
+      }
       let poweredMs = machine.powered ? dt : 0;
       if (machine.powered && !machine.held) {
         const before = machine.remaining;
@@ -268,11 +290,12 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
           powerOff(id, events);
         }
       }
-      if (def.kind === 'counterweight') {
+      if (pair) {
         // The brake is released while powered: the loaded cage sinks. A
         // ballasted pair (a ledge the city holds up) sinks on its own.
-        const load = machine.load ?? def.ballast ?? null;
-        if (poweredMs > 0 && load) travelFor(id, machine, poweredMs, load === 'a' ? 1 : 0);
+        const side = machine.drive;
+        if (poweredMs > 0 && side) travelFor(id, machine, poweredMs, side === 'a' ? 1 : 0);
+        if (!machine.powered || (side && machine.level === (side === 'a' ? 1 : 0))) machine.drive = null;
         continue;
       }
       // A machine that switches off mid-step travels out, then home.
@@ -561,7 +584,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
   // Put a machine straight into a state without travel (checkpoint seeding).
   const settle = (machineId, level) => {
     const machine = state.get(machineId);
-    if (machine) machine.level = Math.max(0, Math.min(1, level));
+    if (machine) { machine.level = Math.max(0, Math.min(1, level)); machine.drive = null; }
   };
 
   // Respawn reset of a machine Butch was relying on: unpowered, at rest.
@@ -572,6 +595,7 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     if (machine.powered) powerOff(machineId, events);
     machine.level = 0;
     machine.load = null;
+    machine.drive = null;
     return events;
   };
 
@@ -655,6 +679,8 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
       lightSource: machine.light?.source ?? null,
       lentOut: machine.lentOut,
       load: machine.load,
+      // A counterweight ride under way (round 12: it runs to its end).
+      riding: Boolean(machine.drive),
       // A lift holding a bell for its rider (its node waited once).
       waiting: [...waited].some((nodeId) => nodeById.get(nodeId).machine === machineId),
     };
@@ -739,14 +765,4 @@ export function createTimetable({ nodes = [], machines = [] } = {}, {
     nodeIds: () => [...nodeById.keys()],
     machineIds: () => [...defById.keys()],
   };
-}
-
-// Plays back what the train remembers: the machines this section fired, in
-// the order they first fired, followed by any required machine the player
-// never reached. Pure so the ordering can be tested.
-export function rememberedSequence(history, required = []) {
-  const order = [];
-  for (const { machineId } of history) if (!order.includes(machineId)) order.push(machineId);
-  for (const machineId of required) if (!order.includes(machineId)) order.push(machineId);
-  return order;
 }

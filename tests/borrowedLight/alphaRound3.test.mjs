@@ -8,6 +8,7 @@ import { readFileSync } from 'node:fs';
 import { CHAPTER_CONTROLS } from '../../src/shell/chapterControls.js';
 import { HINTS } from '../../src/chapters/borrowedLight/story.js';
 import { CH2_RULES, CATCH_MS } from '../../src/chapters/borrowedLight/timetableModel.js';
+import { RESET_ON_RESPAWN } from '../../src/chapters/borrowedLight/level.js';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const scene = read('src/chapters/borrowedLight/BorrowedLightScene.js');
@@ -64,7 +65,8 @@ test('P2: toasts sit on a dark band; the dark-deck hint is bright and stays on s
 test('P2: A1 shows the punch tag beside the mechanic; the chase shows no teach tag but its own', () => {
   // Round 6: one E prompt, on what E acts on; the mechanic beside the box
   // shows (without a key) that she has more to say.
-  assert.match(scene, /if \(action\?\.kind === 'node' && this\.interactTarget\(\) === 'mechanic'\) \{\n\s+if \(this\.mechanicHasNews\(\)\) this\.talkText/);
+  // (Round 12: for its first two showings.)
+  assert.match(scene, /if \(action\?\.kind === 'node' && this\.interactTarget\(\) === 'mechanic'\) \{\n\s+if \(this\.hints\.hold\('talk:closer', this\.mechanicHasNews\(\), this\.frameDt\)\) this\.talkText/);
   const teach = scene.slice(scene.indexOf('  teachPrompt() {'), scene.indexOf('  updatePrompts() {'));
   const chase = teach.indexOf('this.feetX >= CHASE.fromX && this.feetX < CHASE.toX');
   const listen = teach.indexOf('HINTS.listen');
@@ -74,9 +76,10 @@ test('P2: A1 shows the punch tag beside the mechanic; the chase shows no teach t
   assert.match(scene, /node\.id === 'a-n14' && pre\.result === 'queue' && !this\.tt\.machineStatus\('a-cradle1'\)\.powered/);
 });
 
-test('C4: the drop ledge starts held up, is remembered dropped, and only its ledge is a car', () => {
+test('C4: the drop ledge starts held up, stays dropped after a fall, and only its ledge is a car', () => {
   assert.match(scene, /settleStartLevels\(this\.tt\);/);
-  assert.match(scene, /this\.tt\.settle\(machineId, remembered\.ballast \? 0 : 1\)/);
+  // Round 12: nothing "remembers" it into place any more; a fall leaves it down.
+  assert.ok(Object.values(RESET_ON_RESPAWN).every((ids) => !ids.includes('c-drop')));
   assert.match(scene, /\(machine\.riders \?\? \['a', 'b'\]\)\.forEach\(\(side\) => addCar/);
   assert.match(scene, /machine\.ballast \? HINTS\.dropBrake : HINTS\.brake/);
 });

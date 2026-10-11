@@ -172,8 +172,8 @@ test('R4-3: A/D and SPACE are taught on the terminal roof, before any jump is ne
   assert.equal(HINTS.walk, 'A D  ·  ← →  WALK');
   assert.match(HINTS.jumpFirst, /^SPACE · JUMP/);
   const teach = scene.slice(scene.indexOf('  teachPrompt() {'), scene.indexOf('  updatePrompts() {'));
-  assert.match(teach, /if \(!this\.flags\.walked\) return \{ follow: true, text: HINTS\.walk \}/);
-  assert.match(teach, /if \(!this\.flags\.jumped && grounded\) return \{ follow: true, text: HINTS\.jumpFirst \}/);
+  assert.match(teach, /if \(!this\.flags\.walked\) return \{ id: 'walk', follow: true, text: HINTS\.walk \}/);
+  assert.match(teach, /if \(!this\.flags\.jumped && grounded\) return \{ id: 'jumpFirst', follow: true, text: HINTS\.jumpFirst \}/);
   // The terminal roof has no gap that needs a jump: the first one is the AC unit.
   const terminal = platformById('a-terminal');
   assert.ok(terminal.x + terminal.w <= machineById('a-bridge1').x + 1);
@@ -187,12 +187,15 @@ test('R4-4: idle hints come in tiers on the wall clock and restart on progress',
   assert.deepEqual(idle.update(1000), [], 'no room yet');
   idle.setKey('B:b-cut:');
   const seen = [];
-  for (let t = 0; t < 125000; t += 100) for (const tier of idle.update(100)) seen.push([tier, t + 100]);
+  for (let t = 0; t < 300000; t += 100) for (const tier of idle.update(100)) seen.push([tier, t + 100]);
   const first = (tier) => seen.find(([name]) => name === tier)?.[1];
   assert.equal(first('pulse'), IDLE_TIERS.pulse);
   assert.equal(first('nudge'), IDLE_TIERS.nudge);
-  assert.equal(first('full'), IDLE_TIERS.full);
-  assert.ok(seen.filter(([name]) => name === 'pulse').length >= 5, 'the pulse repeats');
+  // Round 12: only when clearly stuck, and never Butch's full line by itself.
+  assert.ok(IDLE_TIERS.pulse >= 40000 && IDLE_TIERS.nudge >= 90000);
+  assert.equal(first('full'), undefined, 'the caption line comes only on SHOW ME / H');
+  assert.equal(seen.filter(([name]) => name === 'nudge').length, 1, 'one toast per step');
+  assert.ok(seen.filter(([name]) => name === 'pulse').length >= 5, 'the pulse repeats (it is small)');
   // Not in control: the clock holds.
   const before = idle.idle;
   idle.update(5000, { active: false });
