@@ -451,12 +451,38 @@ function pavingUniforms(paving) {
 
 const SEAM_PIXELS_PER_METRE = 100;
 
-function drawSeamMasks(path) {
+// Round 12 ("石油管道看不到了", the oil line can't be seen any more): from the
+// street camera the oil in the joints is two or three pixels wide and reads
+// as one more joint. The oil now also soaked a band of stone along the line
+// the can was carried (the authored route, rounded): dark, wet stone about
+// SEAM_BAND_METRES wide with the joints inside it brimming with oil and a
+// faint halo where it wicked further. The band is what reads at a glance
+// and shows where the line turns; the joints are what reads close up.
+export const SEAM_BAND_METRES = 0.2;
+
+// The authored route, rounded at its corners (Chaikin, two passes), for the band.
+function roundedRoute(route) {
+  let points = route;
+  for (let pass = 0; pass < 2; pass += 1) {
+    const next = [points[0]];
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const [ax, az] = points[index];
+      const [bx, bz] = points[index + 1];
+      next.push([ax * 0.75 + bx * 0.25, az * 0.75 + bz * 0.25], [ax * 0.25 + bx * 0.75, az * 0.25 + bz * 0.75]);
+    }
+    next.push(points[points.length - 1]);
+    points = next;
+  }
+  return points;
+}
+
+function drawSeamMasks(path, route = path) {
   const pad = 0.55;
-  const minX = Math.min(...path.map(([x]) => x)) - pad;
-  const minZ = Math.min(...path.map(([, z]) => z)) - pad;
-  const spanX = Math.max(...path.map(([x]) => x)) + pad - minX;
-  const spanZ = Math.max(...path.map(([, z]) => z)) + pad - minZ;
+  const all = [...path, ...route];
+  const minX = Math.min(...all.map(([x]) => x)) - pad;
+  const minZ = Math.min(...all.map(([, z]) => z)) - pad;
+  const spanX = Math.max(...all.map(([x]) => x)) + pad - minX;
+  const spanZ = Math.max(...all.map(([, z]) => z)) + pad - minZ;
   // Multiples of 16 so the halved masks cover exactly the same metres.
   const width = Math.ceil((spanX * SEAM_PIXELS_PER_METRE) / 16) * 16;
   const height = Math.ceil((spanZ * SEAM_PIXELS_PER_METRE) / 16) * 16;
@@ -473,10 +499,27 @@ function drawSeamMasks(path) {
   const total = lengths[lengths.length - 1] || 1;
   const random = seededRandom(4307);
   // R: oil coverage. G: how far along the line (times coverage, so the
-  // outline can divide it back out at an antialiased edge).
+  // outline can divide it back out at an antialiased edge). B: the soaked
+  // band (its own canvas, added in at the end).
   const shade = (along, alpha = 1) => `rgba(255, ${Math.round(along * 255)}, 0, ${alpha})`;
   context.lineCap = 'round';
   context.lineJoin = 'round';
+  const band = roundedRoute(route);
+  const bandCanvas = makeCanvas(width, height);
+  const bandContext = bandCanvas.getContext('2d');
+  const bandRandom = seededRandom(9157);
+  bandContext.lineCap = 'round';
+  bandContext.lineJoin = 'round';
+  bandContext.strokeStyle = 'rgb(0, 0, 255)';
+  for (let index = 0; index < band.length - 1; index += 1) {
+    // A hand-carried can: the band swells where it paused and thins where
+    // it hurried.
+    bandContext.lineWidth = SEAM_BAND_METRES * (0.8 + 0.45 * bandRandom()) * SEAM_PIXELS_PER_METRE;
+    bandContext.beginPath();
+    bandContext.moveTo(px(band[index][0]), pz(band[index][1]));
+    bandContext.lineTo(px(band[index + 1][0]), pz(band[index + 1][1]));
+    bandContext.stroke();
+  }
   for (let index = 0; index < path.length - 1; index += 1) {
     const along = lengths[index] / total;
     // Poured by hand: the trail swells and thins a little as the can moves.
@@ -520,12 +563,16 @@ function drawSeamMasks(path) {
     context.arc(px(x) + Math.cos(angle) * reach, pz(z) + Math.sin(angle) * reach, (0.004 + 0.008 * random()) * SEAM_PIXELS_PER_METRE, 0, Math.PI * 2);
     context.fill();
   }
+  context.globalCompositeOperation = 'lighter';
+  context.drawImage(bandCanvas, 0, 0);
+  context.globalCompositeOperation = 'source-over';
   const soft = halve(core, 2);
   const wide = halve(soft, 2);
   return {
     core: maskTexture(core, { mipmaps: true }),
     soft: maskTexture(soft),
     wide: maskTexture(wide),
+    band,
     // world (x, z) -> mask uv
     matrix: new THREE.Matrix3().set(1 / metresX, 0, -minX / metresX, 0, 1 / metresZ, -minZ / metresZ, 0, 0, 1),
     bounds: { minX, minZ, metresX, metresZ },
@@ -544,35 +591,69 @@ uniform vec3 uOilColor;
 uniform vec3 uOilStain;
 uniform vec3 uOilPale;
 uniform vec3 uOilSky;
+uniform vec3 uOilAmber;
 uniform vec4 uOilLook; // x: wiped band strength, y: bead relief, z: joint relief, w: sky sheen
+uniform vec2 uOilBand; // x: pale margin strength, y: wet gloss on the band
 ${NOISE_GLSL}
 ${JOINT_GLSL}
-float oilSoftAt( vec2 world ) { return texture2D( uOilSoft, ( uOilMask * vec3( world, 1.0 ) ).xy ).r; }
+// The bead the liquid stands in: the poured line and, lower, the band.
+float oilSoftAt( vec2 world ) {
+	vec4 t = texture2D( uOilSoft, ( uOilMask * vec3( world, 1.0 ) ).xy );
+	return t.r + 0.45 * t.b;
+}
 `;
 
 // Replaces map_fragment: the oil's coverage, colour and wetness.
 const SEAM_ALBEDO = /* glsl */`
 vec2 oilUv = ( uOilMask * vec3( vOilWorld.xz, 1.0 ) ).xy;
-float oilWide = texture2D( uOilWide, oilUv ).r;
+vec4 oilWideT = texture2D( uOilWide, oilUv );
+float oilWide = oilWideT.r;
+float oilBandWide = oilWideT.b;
 // Most of the decal is bare street: skip the lighting there.
-if ( oilWide < 0.004 ) discard;
-float oilCore = texture2D( uOilCore, oilUv ).r;
-float oilSoft = texture2D( uOilSoft, oilUv ).r;
+if ( max( oilWide, oilBandWide ) < 0.004 ) discard;
+vec4 oilCoreT = texture2D( uOilCore, oilUv );
+vec4 oilSoftT = texture2D( uOilSoft, oilUv );
+float oilBandSoft = oilSoftT.b;
+// The poured line shows where it lies in (or beside) the soaked band.
+float oilNearBand = smoothstep( 0.03, 0.22, oilBandWide );
+float oilCore = oilCoreT.r * oilNearBand;
+float oilSoft = oilSoftT.r * oilNearBand;
+oilWide *= oilNearBand;
 float oilJoint = oilJointAt( vOilWorld.xz );
 float oilGrain = oilFbm( vOilWorld.xz * 23.0 );
 float oilBlot = oilFbm( vOilWorld.xz * 6.0 + 3.1 );
 // More oil here, less there, as the can moved.
 float oilFlow = 0.7 + 0.3 * oilFbm( vOilWorld.xz * 1.7 + 9.0 );
-// The oil itself: the poured line, and what ran along the crossing joints.
-float oilInJoint = oilJoint * max( smoothstep( 0.1, 0.42, oilSoft + ( oilBlot - 0.5 ) * 0.3 ),
-	0.75 * smoothstep( 0.05, 0.22, oilWide + ( oilBlot - 0.5 ) * 0.12 ) );
-float oilWet = max( smoothstep( 0.3, 0.7, oilCore + ( oilGrain - 0.5 ) * 0.4 ) * oilFlow, oilInJoint * 0.9 );
-// Oil wicked into the limestone either side: darker, warmer, uneven.
+// The soaked band along the way the can went (round 12): dark wet stone,
+// ragged at its edges, and a faint halo where the oil wicked further.
+float oilBand = smoothstep( 0.22, 0.56, oilBandSoft * oilFlow + ( oilBlot - 0.5 ) * 0.36 + ( oilGrain - 0.5 ) * 0.2 );
+float oilHalo = smoothstep( 0.05, 0.42, oilBandWide + ( oilBlot - 0.5 ) * 0.22 ) * ( 1.0 - oilBand );
+// The oil itself: the poured line, what ran along the crossing joints, and
+// every joint inside the band brimming.
+float oilInJoint = oilJoint * max( max( smoothstep( 0.1, 0.42, oilSoft + ( oilBlot - 0.5 ) * 0.3 ),
+	0.75 * smoothstep( 0.05, 0.22, oilWide + ( oilBlot - 0.5 ) * 0.12 ) ),
+	smoothstep( 0.18, 0.5, oilBandSoft + ( oilBlot - 0.5 ) * 0.22 ) );
+float oilWet = max( smoothstep( 0.3, 0.7, oilCore + ( oilGrain - 0.5 ) * 0.4 ) * oilFlow, oilInJoint * 0.92 );
+// Where the stone dips, the oil still stands on it.
+float oilStand = oilBand * smoothstep( 0.6, 0.78, oilFbm( vOilWorld.xz * 3.1 + 1.7 ) + ( oilGrain - 0.5 ) * 0.2 );
+oilWet = max( oilWet, oilStand * 0.85 );
+// Oil wicked into the limestone: darker, warmer, uneven.
 float oilSoak = smoothstep( 0.02, 0.38, oilSoft + oilWide * 0.35 + ( oilGrain - 0.5 ) * 0.34 ) * ( 0.45 + 0.55 * oilBlot ) * oilFlow;
+oilSoak = max( oilSoak, oilBand * ( 0.8 + 0.2 * oilBlot ) );
 // The band somebody wiped first: a little paler than the street.
-float oilWiped = smoothstep( 0.03, 0.12, oilWide + ( oilBlot - 0.5 ) * 0.12 ) * ( 1.0 - smoothstep( 0.02, 0.2, oilSoft ) ) * smoothstep( 0.35, 0.7, oilFbm( vOilWorld.xz * 2.2 + 7.0 ) );
-float oilAlpha = max( oilWet * 0.9, oilSoak * 0.6 );
-vec3 oilAlbedo = mix( uOilStain, uOilColor, oilWet );
+float oilWiped = smoothstep( 0.03, 0.12, oilWide + ( oilBlot - 0.5 ) * 0.12 ) * ( 1.0 - smoothstep( 0.02, 0.2, oilSoft ) ) * smoothstep( 0.35, 0.7, oilFbm( vOilWorld.xz * 2.2 + 7.0 ) ) * ( 1.0 - oilBand ) * ( 1.0 - oilHalo );
+float oilAlpha = max( max( oilWet * 0.95, oilSoak * 0.9 ), oilHalo * 0.34 );
+// Thin oil at the band's edges is amber, thick oil down its middle near
+// black: a warm band that reads on the pale limestone (dark) and on the
+// dark court (warm against the cool stone).
+float oilBandCore = smoothstep( 0.5, 0.88, oilBandSoft + ( oilBlot - 0.5 ) * 0.3 );
+vec3 oilAlbedo = mix( mix( uOilAmber, uOilStain, max( oilBandCore, 1.0 - oilBand ) ), uOilColor, oilWet );
+// Either side, the stone the spirit cleaned: a pale, broken margin (it
+// outlines the oil where the paving is as dark as the oil).
+float oilMargin = smoothstep( 0.03, 0.12, oilBandSoft + oilBandWide * 0.2 ) * ( 1.0 - smoothstep( 0.2, 0.34, oilBandSoft + ( oilGrain - 0.5 ) * 0.12 ) );
+oilMargin *= uOilBand.x * smoothstep( 0.25, 0.55, oilFbm( vOilWorld.xz * 4.3 + 5.0 ) + 0.25 ) * ( 1.0 - oilWet );
+oilAlbedo = mix( oilAlbedo, uOilPale, oilMargin / max( oilAlpha + oilMargin, 1e-3 ) );
+oilAlpha = max( oilAlpha, oilMargin );
 float oilPaleA = oilWiped * uOilLook.x * ( 0.65 + 0.35 * oilGrain ) * ( 1.0 - oilAlpha );
 oilAlbedo = mix( oilAlbedo, uOilPale, oilPaleA / max( oilAlpha + oilPaleA, 1e-3 ) );
 diffuseColor = vec4( oilAlbedo, ( oilAlpha + oilPaleA ) * opacity );
@@ -606,12 +687,20 @@ const SEAM_NORMAL = /* glsl */`
 `;
 
 // After emissivemap_fragment: a liquid mirrors the sky a little (Fresnel),
-// which is what tells oil from paint where no highlight falls.
+// which is what tells oil from paint where no highlight falls; round 12: the
+// thin film on lamp oil breaks that reflection into a faint teal / violet /
+// amber shimmer (still a reflection: it is never brighter than the sky).
 const SEAM_SHEEN = /* glsl */`
 {
 	vec3 oilView = isOrthographic ? vec3( 0.0, 0.0, 1.0 ) : normalize( vViewPosition );
 	float oilFresnel = 0.035 + 0.965 * pow( 1.0 - saturate( dot( normal, oilView ) ), 5.0 );
-	totalEmissiveRadiance += uOilSky * oilFresnel * oilWet * uOilLook.w;
+	float oilFilm = oilFbm( vOilWorld.xz * 7.0 + 2.3 ) * 1.6 + oilGrain * 0.4;
+	vec3 oilFilmTint = 0.5 + 0.5 * cos( 6.2831853 * ( oilFilm + vec3( 0.0, 0.33, 0.67 ) ) );
+	totalEmissiveRadiance += uOilSky * oilFresnel * oilWet * uOilLook.w * mix( vec3( 1.0 ), 1.7 * oilFilmTint, 0.55 );
+	// The wet band glosses: streaks of the sky along it, broken by the film.
+	float oilGloss = oilBandCore * smoothstep( 0.45, 0.8, oilFbm( vec2( vOilWorld.x + vOilWorld.z, vOilWorld.x - vOilWorld.z ) * vec2( 2.2, 7.0 ) ) );
+	vec3 oilSkyGrey = mix( uOilSky, vec3( dot( uOilSky, vec3( 0.3, 0.5, 0.2 ) ) ), 0.45 );
+	totalEmissiveRadiance += oilSkyGrey * uOilBand.y * oilGloss * mix( vec3( 1.0 ), 1.7 * oilFilmTint, 0.4 );
 }
 `;
 
@@ -638,8 +727,11 @@ uniform float uStrength;
 void main() {
 	vec2 uv = ( uOilMask * vec3( vOilWorld.xz, 1.0 ) ).xy;
 	vec4 core = texture2D( uOilCore, uv );
-	float soft = texture2D( uOilSoft, uv ).r;
-	float wide = texture2D( uOilWide, uv ).r;
+	vec4 softT = texture2D( uOilSoft, uv );
+	vec4 wideT = texture2D( uOilWide, uv );
+	// Round 12: round the soaked band too, not only the poured line.
+	float soft = max( softT.r, softT.b );
+	float wide = max( wideT.r, wideT.b );
 	float halo = smoothstep( 0.03, 0.22, wide ) * ( 1.0 - smoothstep( 0.2, 0.62, soft ) );
 	float breathe = 0.72 + 0.28 * sin( uTime * 2.35 );
 	float along = core.g / max( core.r, 1e-3 );
@@ -659,9 +751,10 @@ export function makeDarkSeam(scene, surfaceHeightAt = null) {
   const paving = typeof document === 'undefined' ? null : pavingUnder(scene, middle[0], middle[1]);
   const route = OIL_SEAM_ROUTE.map(([x, z]) => [x, z]);
   const started = typeof performance === 'undefined' ? 0 : performance.now();
-  const path = jointPath(route, jointSampler(paving)) ?? route;
+  // Round 12: the poured line keeps to the joints inside the soaked band.
+  const path = jointPath(route, jointSampler(paving), { corridor: 0.32 }) ?? jointPath(route, jointSampler(paving)) ?? route;
   const searchMs = typeof performance === 'undefined' ? 0 : performance.now() - started;
-  const masks = drawSeamMasks(path);
+  const masks = drawSeamMasks(path, route);
   const groundY = paving?.y ?? Math.max(...points.map((point) => point.y));
   const { minX, minZ, metresX, metresZ } = masks.bounds;
   const geometry = new THREE.PlaneGeometry(metresX, metresZ);
@@ -675,11 +768,17 @@ export function makeDarkSeam(scene, surfaceHeightAt = null) {
     uOilMask: { value: masks.matrix },
     // Kerosene and a dark lamp oil: near black with a brown cast; the stone
     // it soaked into goes a deep umber.
-    uOilColor: { value: new THREE.Color(0x1a1009) },
-    uOilStain: { value: new THREE.Color(0x33200f) },
-    uOilPale: { value: new THREE.Color(0xe8dcc6) },
+    // Round 12: darker, so the band holds its value under the painted
+    // afternoon's lifted, cool shadows (chapter3ColorGrade.js).
+    uOilColor: { value: new THREE.Color(0x100804) },
+    uOilStain: { value: new THREE.Color(0x120a05) },
+    uOilAmber: { value: new THREE.Color(0x6a4018) },
+    // The pale margin and the band's wet gloss (round 12): on the dark court
+    // paving, and in a building's shadow, these are what pick the line out.
+    uOilBand: { value: new THREE.Vector2(0.7, 0.4) },
+    uOilPale: { value: new THREE.Color(0xdcd0b8) },
     uOilSky: { value: new THREE.Color(0x9fb8d0) },
-    uOilLook: { value: new THREE.Vector4(0.11, 0.45, 0.7, 1.0) },
+    uOilLook: { value: new THREE.Vector4(0.05, 0.45, 0.7, 1.0) },
     ...pavingUniforms(paving),
   };
   const material = new THREE.MeshStandardMaterial({
@@ -712,6 +811,7 @@ export function makeDarkSeam(scene, surfaceHeightAt = null) {
   stain.castShadow = false;
   stain.renderOrder = 2;
   stain.frustumCulled = false;
+  stain.userData.oilUniforms = uniforms;
   // The sky it mirrors is the time of day's (the city's hemisphere light).
   let sky = null;
   stain.onBeforeRender = () => {

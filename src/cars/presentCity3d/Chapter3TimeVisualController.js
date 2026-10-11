@@ -5,122 +5,122 @@ import { CHAPTER3_CAST_LIGHT, setChapter3CastLight } from './chapter3CastLook.js
 
 const TRANSITION_SECONDS = 2.8;
 
-// Round 6 (owner note G8: "too sallow; it needs the West of Leone's Dollars
-// films"). The amber cast and the grey-yellow murk are gone:
-//   AFTERNOON  a high white-hot sun, short hard near-black shadows, a
-//              bleached pale sky, clean saturated stone, a little dust haze
-//              only toward the top of the frame;
-//   DUSK       a blood-orange sun low behind the street (the camera looks
-//              into it), so buildings and figures go to black silhouettes
-//              with an orange edge and long shadows reach toward the player;
-//   NIGHT      cool blue day-for-night moonlight; fire, lamps and windows
-//              keep the only warm colour (the NIGHT grade spares them);
-//   DAWN       cool, clear, low light and a thin mist.
-// Fog is linear and starts just short of the street camera's depth (the
-// orthographic camera sits ~123 m from everything it frames), so it is a
-// faint haze at the far edge, never a veil over the whole frame. three.js
-// mixes fog after the sRGB encode, so `fog` is stored as a display colour
-// (fogColor below): the hex is what the haze looks like on screen. `grade` is the colour grade (chapter3ColorGrade.js), `cast`
-// the rim and fill on the story cast (chapter3CastLook.js).
+// Round 12 (owner note: "第三章的色彩我不喜欢 要极乐迪斯科的体感 … 第三章的色彩要
+// 重新配"): the same clock and the same sun path, painted the way Disco
+// Elysium paints Martinaise instead of the round-6 Leone western (G8):
+//   AFTERNOON  still 14:20 and a high sun, but a soft, slightly hazy day: a
+//              warm cream key, a strong cool sky light that fills the
+//              shadows with slate and teal (never black), a grey-green sky
+//              and a pale haze over the whole street;
+//   DUSK       a dusty rose-orange evening with violet shadows (the sun
+//              still low behind the street, the camera looking into it);
+//   NIGHT      the painter's night: ink blue going to teal, a teal moonlight
+//              fill, warm fire, lamps and windows (the NIGHT grade spares
+//              them);
+//   DAWN       a pale grey-green morning in mist, a peach light.
+// Fog is linear and starts short of the street camera's depth (the
+// orthographic camera sits ~123 m from everything it frames), so it is an
+// even veil of haze over the frame, thicker toward the top. three.js mixes
+// fog after the sRGB encode, so `fog` is stored as a display colour
+// (fogColor below): the hex is what the haze looks like on screen. `grade` is
+// the colour grade (chapter3ColorGrade.js), `cast` the rim and fill on the
+// story cast (chapter3CastLook.js).
 const PALETTES = Object.freeze({
   AFTERNOON: Object.freeze({
-    background: 0xdce7ee,
-    fog: 0xeef2f3,
-    fogNear: 114,
+    background: 0xc6d0c8,
+    fog: 0xd3d5c8,
+    fogNear: 102,
     fogFar: 330,
-    exposure: 0.84,
-    hemiSky: 0xb9d2ea,
-    hemiGround: 0x6a4630,
-    hemiIntensity: 0.95,
-    sun: 0xfff7ee,
-    sunIntensity: 6.2,
-    fill: 0x86a8c8,
-    fillIntensity: 0.4,
+    exposure: 1.04,
+    hemiSky: 0x74b0d9,
+    hemiGround: 0x605045,
+    hemiIntensity: 1.3,
+    sun: 0xffecd8,
+    sunIntensity: 4.8,
+    fill: 0x7ea2aa,
+    fillIntensity: 0.55,
     grade: CHAPTER3_GRADES.AFTERNOON,
-    // The fill floor keeps a figure's colour block alive in a hard shadow.
-    cast: Object.freeze({ rimColor: 0xfff4e2, rimStrength: 0.3, rimPower: 4, fill: 0.25 }),
+    // A soft warm edge; the fill floor keeps a figure's colour block alive
+    // in the shade.
+    cast: Object.freeze({ rimColor: 0xffd9a8, rimStrength: 0.24, rimPower: 3.6, fill: 0.22 }),
   }),
   DUSK: Object.freeze({
-    background: 0xd9683a,
-    fog: 0xd9925e,
-    fogNear: 104,
-    fogFar: 250,
-    // Round 6 merge: a little more sky and fill than the look pass had, so
-    // the shadowed street (and the cut feed in it) stays readable in play.
-    exposure: 1.08,
-    hemiSky: 0x7d6a92,
-    hemiGround: 0x2e1a16,
-    hemiIntensity: 0.85,
-    sun: 0xffb066,
-    sunIntensity: 4.2,
-    fill: 0x5d4a72,
-    fillIntensity: 0.6,
+    background: 0xc88e74,
+    fog: 0xc6a088,
+    fogNear: 100,
+    fogFar: 260,
+    exposure: 1.12,
+    hemiSky: 0x70809c,
+    hemiGround: 0x3c2e28,
+    hemiIntensity: 1.3,
+    sun: 0xff9358,
+    sunIntensity: 3.8,
+    fill: 0x5a6484,
+    fillIntensity: 0.7,
     grade: CHAPTER3_GRADES.DUSK,
-    // A thin hot edge on near-black figures (a soft rim lit them whole).
-    cast: Object.freeze({ rimColor: 0xff8a45, rimStrength: 0.75, rimPower: 4.5, fill: 0.04 }),
+    cast: Object.freeze({ rimColor: 0xff9a62, rimStrength: 0.6, rimPower: 4, fill: 0.08 }),
   }),
   NIGHT: Object.freeze({
-    // Preserve midnight blue while keeping paving, doors and the route
-    // readable on dim displays (the night readability floor: exposure,
-    // sky light and fill stay at or above their alpha-round-4 values).
-    background: 0x0f1c30,
-    fog: 0x22375a,
-    fogNear: 112,
+    // The night readability floor stays (exposure, sky light and fill at or
+    // above their alpha-round-4 values); the blue goes toward ink and teal.
+    background: 0x0d1b24,
+    fog: 0x1e3440,
+    fogNear: 108,
     fogFar: 300,
     exposure: 1.1,
-    hemiSky: 0x7194c8,
-    hemiGround: 0x1e2638,
-    hemiIntensity: 1.25,
-    sun: 0xa8c4ff,
-    sunIntensity: 2.5,
-    fill: 0x5078b4,
+    hemiSky: 0x6b98b2,
+    hemiGround: 0x1c2428,
+    hemiIntensity: 1.3,
+    sun: 0x9cc2d8,
+    sunIntensity: 2.3,
+    fill: 0x4a7a98,
     fillIntensity: 2.05,
     grade: CHAPTER3_GRADES.NIGHT,
-    cast: Object.freeze({ rimColor: 0x9cc0ff, rimStrength: 0.7, rimPower: 3.2, fill: 0.12 }),
+    cast: Object.freeze({ rimColor: 0x9cc8e0, rimStrength: 0.6, rimPower: 3.2, fill: 0.12 }),
   }),
   DAWN: Object.freeze({
-    background: 0xd3e0e8,
-    fog: 0xe4ebef,
-    fogNear: 100,
+    background: 0xd2d8cc,
+    fog: 0xdcdcd0,
+    fogNear: 92,
     fogFar: 236,
-    exposure: 1.02,
-    hemiSky: 0xb2c8dc,
-    hemiGround: 0x4a4a54,
-    hemiIntensity: 0.82,
-    sun: 0xeef0f0,
-    sunIntensity: 3.4,
-    fill: 0x90b0cc,
+    exposure: 1.1,
+    hemiSky: 0xaec4c0,
+    hemiGround: 0x5a5446,
+    hemiIntensity: 1.25,
+    sun: 0xffd6b4,
+    sunIntensity: 3.3,
+    fill: 0x9ab4b8,
     fillIntensity: 0.5,
     grade: CHAPTER3_GRADES.DAWN,
-    cast: Object.freeze({ rimColor: 0xe6eeff, rimStrength: 0.4, rimPower: 3.6, fill: 0.08 }),
+    cast: Object.freeze({ rimColor: 0xffe2c8, rimStrength: 0.34, rimPower: 3.6, fill: 0.1 }),
   }),
 });
 
-// Late afternoon: the same white light, the sun a little lower. It holds the
-// Leone afternoon through the market (15:40) instead of sliding toward dusk
-// from 14:20 on.
+// Late afternoon: the same soft light, the sun a little lower and warmer. It
+// holds the afternoon through the market (15:40) instead of sliding toward
+// dusk from 14:20 on.
 const LATE_AFTERNOON = Object.freeze({
   ...PALETTES.AFTERNOON,
-  sun: 0xfff1e0,
-  sunIntensity: 5.9,
-  hemiIntensity: 0.92,
+  sun: 0xffe2c0,
+  sunIntensity: 4.5,
+  hemiIntensity: 1.26,
 });
 
 const TWILIGHT = Object.freeze({
-  background: 0x6a3a44,
-  fog: 0x6e4a5c,
-  fogNear: 104,
+  background: 0x584c60,
+  fog: 0x645a68,
+  fogNear: 100,
   fogFar: 260,
   exposure: 1.05,
-  hemiSky: 0x5d5478,
-  hemiGround: 0x1d1620,
-  hemiIntensity: 0.8,
-  sun: 0xc8401e,
-  sunIntensity: 1.8,
-  fill: 0x40507a,
-  fillIntensity: 0.7,
+  hemiSky: 0x5a6888,
+  hemiGround: 0x221e24,
+  hemiIntensity: 1.0,
+  sun: 0xd0603a,
+  sunIntensity: 1.7,
+  fill: 0x4a5a82,
+  fillIntensity: 0.8,
   grade: CHAPTER3_GRADES.DUSK,
-  cast: Object.freeze({ rimColor: 0xd85a3a, rimStrength: 1.0, rimPower: 2.6, fill: 0.05 }),
+  cast: Object.freeze({ rimColor: 0xe0704a, rimStrength: 0.85, rimPower: 2.8, fill: 0.06 }),
 });
 
 // The sun stands high and a little west by day (short shadows), drops into

@@ -8,6 +8,8 @@ import { gaitFor, pacedSpeed, pathMetres, stridesFor } from './chapter3LongWalks
 import { PLAYER_TURN_RATE, dampYaw } from './chapter3Entrance.js';
 import { Chapter3CityLod } from './chapter3CityLod.js';
 import { CHAPTER3_GRADES, applyChapter3Grade, chapter3GradeSnapshot, installChapter3ColorGrade } from './chapter3ColorGrade.js';
+import { Chapter3Painterly } from './chapter3Painterly.js';
+import { reducedMotionActive } from '../../shell/motion.js';
 import { setChapter3CastLight, setChapter3CastRimEnabled } from './chapter3CastLook.js';
 import { CHAPTER3_AFTERNOON_SUN_POSITION, CHAPTER3_LIGHT_PALETTES } from './Chapter3TimeVisualController.js';
 import {
@@ -670,9 +672,13 @@ function addCivicPlazaPaving(scene, walkMeshes, materials) {
     if (material[key]) material[key].repeat.set(1, 1);
   }
   material.side = THREE.DoubleSide;
-  material.polygonOffset = true;
-  material.polygonOffsetFactor = -1;
-  material.polygonOffsetUnits = -1;
+  // Round 12: no polygon offset. Its slope-scaled pull (about one pixel's
+  // depth) lifted this layer over the instanced panels (+8 mm) and the
+  // clock and fountain courts (+15 mm) on a 720-row canvas but not on a
+  // 1080-row or Retina one, so the plaza changed colour from machine to
+  // machine and with the camera's zoom (and the oil line on the clock court
+  // came and went with it). The authored heights now decide: the panels
+  // over this paving, the landmark courts over both.
   const surface = new THREE.Mesh(makeTiledWorldShapeGeometry(inset, 4.2), material);
   surface.name = 'civic-plaza-continuous-paving';
   surface.rotation.x = -Math.PI / 2;
@@ -1095,8 +1101,10 @@ export function walkAlongPath(position, path, travel) {
 }
 
 // Round 6 (G8): ACES plus the chapter's colour grade (chapter3ColorGrade.js)
-// in the materials' own tone-mapping step: no extra pass, the same on every
-// tier. Hard-edged PCF shadows (the Leone noon), cheaper than PCF soft.
+// in the materials' own tone-mapping step: the same palette on every tier
+// (round 12: Disco Elysium's, and HIGH paints the frame on top,
+// chapter3Painterly.js). PCF shadows, cheaper than PCF soft; round 12 widens
+// their filter (the sun's shadow.radius) for the painter's soft light.
 function createRenderer(container, { antialias = true } = {}) {
   const graded = installChapter3ColorGrade();
   const renderer = new THREE.WebGLRenderer({ antialias, alpha: false, powerPreference: 'high-performance' });
@@ -1156,6 +1164,9 @@ function addLights(scene) {
   sun.shadow.camera.far = 135;
   sun.shadow.bias = -0.00025;
   sun.shadow.normalBias = 0.035;
+  // Round 12: a soft, slightly hazy afternoon: the same nine PCF taps spread
+  // wider, so a shadow's edge is a soft band, not a hard line.
+  sun.shadow.radius = 2.4;
   scene.add(sun, sun.target);
 
   const fill = new THREE.DirectionalLight(day.fill, day.fillIntensity);
@@ -1238,7 +1249,14 @@ export class EchoCity3DPreview {
     // COMPUTERS, or the stored preference) is drawn without MSAA: on a
     // software or integrated GPU multisampling multiplies the fill cost, and
     // the context cannot drop it later.
-    this.renderer = createRenderer(container, { antialias: this.qualityMonitor.tier !== 'low' });
+    // Round 12: HIGH paints the frame (Disco Elysium's street paintings) from
+    // an off-screen frame with its own MSAA, so the canvas itself needs none
+    // (a multisampled canvas only multiplied the full-screen paint pass's
+    // fill); LOW / LOWEST draw straight to the screen with the grade only.
+    // `?paint=0` (dev) draws HIGH unpainted, multisampled, for comparison.
+    const paints = devParam('paint') !== '0';
+    this.renderer = createRenderer(container, { antialias: this.qualityMonitor.tier !== 'low' && !paints });
+    this.painterly = paints ? new Chapter3Painterly(this.renderer) : null;
     this.cameraPreset = requestedCameraPreset();
     this.camera = createCamera(container, this.cameraPreset);
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -1634,6 +1652,8 @@ export class EchoCity3DPreview {
     this.qualityTier = 'low';
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1) * LOW_PIXEL_RATIO);
     this.renderer.shadowMap.enabled = false;
+    // No painted frame on LOW: its buffers go too.
+    this.painterly?.disposeTargets();
     const fill = this.scene.getObjectByName('city-fill-light');
     if (fill) fill.visible = false;
     const hemi = this.scene.getObjectByName('city-hemisphere-light');
@@ -1852,15 +1872,26 @@ export class EchoCity3DPreview {
     return this.colorGrade;
   }
 
-  // Once per drawn frame: the time-of-day grade outdoors, a neutral one in
-  // the ministry and the hotel (their practical lights carry the look). No
-  // grain on LOW / LOWEST, whose canvas is upscaled.
+  // Round 12: the painted frame is drawn on HIGH only.
+  paintsFrame() {
+    return Boolean(this.painterly) && this.qualityTier === 'high';
+  }
+
+  // Once per drawn frame: the time-of-day grade outdoors, the interior one
+  // in the ministry and the hotel (their practical lights carry the look).
+  // Film grain only on an unpainted HIGH frame (the painted canvas replaces
+  // it; LOW / LOWEST's canvas is upscaled), and a still grain under REDUCE
+  // MOTION (checked twice a second).
   updateColorGrade() {
     const runtime = this.gameplayRuntime;
     const inside = Boolean(runtime?.insideMinistry || runtime?.insideHotel);
+    if (!(this.elapsed - (this.motionCheckedAt ?? -1) < 0.5)) {
+      this.motionCheckedAt = this.elapsed;
+      this.reducedMotion = reducedMotionActive();
+    }
     applyChapter3Grade(inside ? CHAPTER3_GRADES.INTERIOR : this.colorGrade, {
-      time: this.elapsed,
-      grain: this.qualityTier === 'high',
+      time: this.reducedMotion ? 0 : this.elapsed,
+      grain: this.qualityTier === 'high' && !this.paintsFrame(),
     });
     if (inside !== this.gradedInside) {
       this.gradedInside = inside;
@@ -2073,7 +2104,8 @@ export class EchoCity3DPreview {
   render() {
     this.updateShadowLod();
     this.updateColorGrade();
-    this.renderer.render(this.scene, this.camera);
+    if (this.paintsFrame()) this.painterly.render(this.scene, this.camera);
+    else this.renderer.render(this.scene, this.camera);
     this.statusElement.dataset.player = `${this.player.position.x.toFixed(2)},${this.player.position.z.toFixed(2)}`;
     this.statusElement.dataset.pathNodes = String(this.path.length);
     this.statusElement.dataset.clickCount = String(this.clickCount);
@@ -2184,6 +2216,7 @@ export class EchoCity3DPreview {
         triangles: this.renderer.info.render.triangles,
         quality: { tier: this.qualityTier, pixelRatio: this.renderer.getPixelRatio(), shadows: this.renderer.shadowMap.enabled, ...this.qualityMonitor.snapshot() },
         grade: { toneMapping: this.renderer.toneMapping === THREE.CustomToneMapping ? 'aces+chapter3-grade' : 'aces', ...chapter3GradeSnapshot() },
+        painterly: this.paintsFrame() ? this.painterly.snapshot() : null,
         cityLod: this.cityLod.snapshot(),
       },
       interaction: this.developerMode
