@@ -78,12 +78,16 @@ test('a playtest router lists only shipped, on-route nodes with player-safe copy
     assert.ok(!entry.devOnly && !entry.devBuildOnly, entry.id);
     assert.doesNotMatch(`${entry.title} ${entry.detail}`, /DEV ONLY|BLACK KNIFE|VENN|VELEZ|Mara|suitcase|ladder|Grid runner|not in production/i, entry.id);
   }
-  // Every Chapter 6 node describes the movement it opens today.
+  // Every Chapter 6 node describes the set piece it opens today (round 12).
   const ch6 = Object.fromEntries(DEV_ROUTES.filter(({ id }) => id.startsWith('6.')).map((entry) => [entry.id, entry]));
-  assert.match(ch6['6.1'].detail, /lens/);
+  assert.match(ch6['6.1'].detail, /roofs/);
+  assert.match(ch6['6.1b'].detail, /NO CLAIM/);
   assert.match(ch6['6.2'].detail, /bell/);
+  assert.match(ch6['6.2b'].detail, /tower/);
   assert.match(ch6['6.3'].detail, /truths/);
-  assert.match(ch6['6.4'].detail, /pigment/);
+  assert.match(ch6['6.3b'].detail, /clock/);
+  assert.match(ch6['6.4'].detail, /paint the line/);
+  for (const [id, qa] of [['6.1', '1'], ['6.1b', '1-2'], ['6.2', '2'], ['6.2b', '2-2'], ['6.3', '3'], ['6.3b', '3-2'], ['6.4', '4']]) assert.equal(ch6[id].route, `/final-boss.html?qa=conductor-${qa}`, id);
   const title = read('src/shell/titleMenu.js');
   assert.match(title, /DEV_MODE \? DEV_ROUTES : PLAYTEST_MODE \? routerEntries\(\) : \[\]/);
   assert.match(read('src/shell/devLauncher.js'), /seedRouterSave\(entry\.checkpoint, \{ stones: entry\.stones \?\? null \}\); activateHiddenRouter\(\);/);

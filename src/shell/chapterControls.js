@@ -156,17 +156,17 @@ export const CONTROLS_STAGE_EVENT = 'nightfall:controls-stage';
 
 // Chapter 6 · the Conductor (final-boss.html passes its own inline list; this
 // copy is the set's fallback for ALL CONTROLS).
+// Chapter 6 · the Conductor (final-boss.html), round 12: seven set pieces,
+// each with its own verbs (src/chapters/finalBoss/finaleControls.js passes
+// the live rows in its controls-stage event; these are the fallback).
 export const CONDUCTOR_CONTROLS = list(
   ['MOVE', 'WASD / ARROWS'],
-  ['JUMP', 'SPACE'],
+  ['JUMP', 'SPACE · HOLD FOR HIGHER'],
+  ['DUCK · SLIDE (THE ROOF RUN)', 'S / ↓'],
   ['DASH', 'SHIFT / X'],
-  ['PUNCH / ACT', 'E / ENTER · LEFT CLICK (MOVEMENTS I, III)'],
-  ['LENS (MOVEMENT I)', 'MOUSE OR RIGHT STICK · OTHERWISE IT LEADS YOU'],
-  ['LISTEN (MOVEMENT II)', 'HOLD Q'],
-  ['TRUE THINGS (MOVEMENT III)', 'E ON ONE, THEN THE OTHER'],
-  ['SPEAK FACE TO FACE (MOVEMENT III)', 'E / ENTER AT THE LIT FRONT'],
-  ['ABSORB (MOVEMENT IV)', 'HOLD E · OR HOLD RIGHT MOUSE ON IT'],
-  ['RETURN (MOVEMENT IV)', 'HOLD R · OR HOLD LEFT MOUSE'],
+  ['ACT · PUNCH · SAY IT', 'E / ENTER · LEFT CLICK'],
+  ['PAINT (THE PAINTED LINE)', 'HOLD E · HOLD THE MOUSE'],
+  ['ANSWER (THE STANDOFF)', '↑ ← → ↓ / WASD · PAD: D-PAD OR Y X B A'],
   ['PAUSE', 'ESC'],
 );
 
@@ -475,35 +475,59 @@ export const CONTROL_SETS = Object.freeze({
     all: CONDUCTOR_CONTROLS,
     basics: list(['MOVE', 'WASD / ARROWS'], ['JUMP', 'SPACE'], ['DASH', 'SHIFT / X'], ['ACT', 'E / ENTER']),
     stages: Object.freeze({
-      movement1: stage('I · LOST PROPERTY', [
-        ['MOVE', 'WASD / ARROWS'],
-        ['PUNCH A CLAIM BACK', 'E / ENTER · LEFT CLICK · AS IT LANDS'],
-        ['LENS', 'MOUSE · RIGHT STICK · IT LEADS YOU'],
-        ['JUMP · DASH', 'SPACE · SHIFT'],
+      'roof-run': stage('I · THE ROOF RUN', [
+        ['RUN', 'A / D · ← →'],
+        ['JUMP', 'SPACE · HOLD FOR HIGHER'],
+        ['DUCK · SLIDE UNDER A GANTRY', 'S / ↓'],
+        ['PUNCH A BRASS CLAIM BACK', 'E / ENTER · AS IT REACHES YOU'],
+        ['DASH', 'SHIFT / X'],
       ]),
-      movement2: stage('II · ON THE BELL', [
-        ['MOVE', 'WASD / ARROWS'],
-        ['PUNCH A LAMP · PUNCH HIM', 'E / ENTER'],
-        ['JUMP THE BELL’S RING', 'SPACE'],
-        ['LISTEN (NEXT BELL)', 'HOLD Q'],
-        ['DASH', 'SHIFT'],
+      'return-to-sender': stage('I · RETURN TO SENDER', [
+        ['MOVE ACROSS THE ROOF', 'A / D · ← →'],
+        ['PUNCH IT BACK', 'E / ENTER · AS IT LANDS IN THE RING'],
+        ['JUMP A SACK', 'SPACE'],
+        ['DASH', 'SHIFT / X'],
       ]),
-      movement3: stage('III · TWO TRUE THINGS', [
-        ['STRIKE A TRUE THING', 'E · THEN THE OTHER'],
-        ['SPEAK FACE TO FACE', 'E / ENTER AT THE LIT FRONT'],
-        ['MOVE', 'WASD / ARROWS'],
-        ['JUMP · DASH', 'SPACE · SHIFT'],
+      'on-the-bell': stage('II · ON THE BELL', [
+        ['RUN', 'A / D · ← →'],
+        ['JUMP', 'SPACE · HOLD FOR HIGHER'],
+        ['PUNCH A LAMP', 'E / ENTER · IT FIRES ON THE NEXT BELL'],
+        ['DASH', 'SHIFT / X · ONCE IN THE AIR'],
       ]),
-      movement4: stage('IV · THE PAINTED COUNTRY', [
-        ['ABSORB WET COLOUR', 'HOLD E · HOLD RIGHT MOUSE'],
-        ['RETURN IT WHEN HE IS OPEN', 'HOLD R · HOLD LEFT MOUSE'],
+      'bell-tower': stage('II · THE BELL TOWER', [
+        ['MOVE', 'A / D · ← →'],
+        ['JUMP · JUMP THE BELL’S RING', 'SPACE · HOLD FOR HIGHER'],
+        ['PUNCH THE BELL', 'E / ENTER · AS IT STRIKES'],
+        ['DASH', 'SHIFT / X'],
+      ]),
+      'false-claims': stage('III · FALSE CLAIMS', [
         ['MOVE', 'WASD / ARROWS'],
-        ['JUMP · DASH THROUGH A SWEEP', 'SPACE · SHIFT'],
+        ['DASH THROUGH THE WORDS', 'SHIFT / X'],
+        ['SAY BOTH TRUE THINGS', 'E / ENTER · UNDER HIM'],
+      ]),
+      standoff: stage('III · THE STANDOFF', [
+        ['WAIT', 'FOR THE CLOCK, NOT FOR HIM'],
+        ['A TRUE THING', '↑ ← → ↓ / WASD · THE CARD AT THAT HAND'],
+        ['THE OTHER TRUE THING', 'ITS DIRECTION ON THE SECOND STROKE'],
+      ]),
+      'painted-line': stage('IV · THE PAINTED LINE', [
+        ['LEAN TO A LINE', 'A / D · ← →'],
+        ['PAINT THE LINE AHEAD', 'HOLD E · HOLD THE MOUSE'],
+        ['JUMP HIS BRUSH', 'SPACE'],
+      ]),
+      departure: stage('IV · THE NIGHT SERVICE', [
+        ['LEAN LEFT', 'A / ←'],
+        ['JUMP ABOARD', 'SPACE'],
+        ['PAUSE', 'ESC'],
       ]),
     }),
+    // A movement's number names its first set piece (the dev routes and the
+    // round-11 stage ids say movement1 … movement4).
     aliases: Object.freeze({
-      1: 'movement1', 2: 'movement2', 3: 'movement3', 4: 'movement4',
-      i: 'movement1', ii: 'movement2', iii: 'movement3', iv: 'movement4',
+      1: 'roof-run', 2: 'on-the-bell', 3: 'false-claims', 4: 'painted-line',
+      i: 'roof-run', ii: 'on-the-bell', iii: 'false-claims', iv: 'painted-line',
+      lost: 'roof-run', borrowed: 'on-the-bell', echo: 'false-claims', painted: 'painted-line',
+      'return': 'return-to-sender', tower: 'bell-tower', rooftops: 'on-the-bell', claims: 'false-claims', line: 'painted-line',
     }),
     entry: entry('CHAPTER 6 · ALL WORLDS AT ONCE', [
       ['MOVE', 'WASD / ARROWS · STICK'],
@@ -511,8 +535,8 @@ export const CONTROL_SETS = Object.freeze({
       ['DASH', 'SHIFT · B'],
       ['ACT', 'E / ENTER · X'],
     ], [
-      ['NOW', 'Four movements, three phases each. Read the warning, then move: jump rings, dash through sweeps.'],
-      ['NEW', 'Each phase is a checkpoint. Each movement adds one verb, taught as it comes.'],
+      ['NOW', 'Four movements, seven set pieces: a roof run, a bell tower, a standoff, a race down a painted line. Each plays its own way.'],
+      ['NEW', 'Every stretch is a checkpoint, a few seconds back. Each set piece teaches its verb as it starts.'],
     ]),
   }),
   // Chapter 6 · the five-stone route, THE BLACK TICKET (hidden-final-boss.html).

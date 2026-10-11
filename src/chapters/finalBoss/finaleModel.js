@@ -1,40 +1,34 @@
-// Chapter 6 · ALL WORLDS AT ONCE — pure rules for the four movements.
+// Chapter 6 · ALL WORLDS AT ONCE — shared pure rules for the Conductor.
 //
-// No three.js, no DOM: spectacleBattle.js renders these and node tests drive
-// them directly (tests/finalBoss/finaleModel.test.mjs).
+// No three.js, no DOM: node tests drive these directly
+// (tests/finalBoss/finaleModel.test.mjs).
 //
-// Round 11 moved each movement's fight into movements/*.js on the kernel in
-// conductorFight.js. What stays here is shared with them:
-//   difficulty presets (STORY / NORMAL), the death ledger that offers STORY
-//   after three deaths in one movement, the checkpoint line, Movement I's
-//   lens and seams, Movement II's bell arena (Chapter 2's timetable and its
-//   one-line rule), Movement IV's damage by charge, and the HUD tag layout.
-
-import { BELL_MS, CH2_RULES, createTimetable } from '../borrowedLight/timetableModel.js';
+// Round 12 plays the fight as set pieces (setPieces/*.js on the kernel in
+// setPieces/kernel.js). What stays here is shared by all of them and by the
+// page: the difficulty presets (STORY / NORMAL), the checkpoint line on the
+// death card, the death ledger that offers STORY after three deaths in one
+// movement, and the HUD tag layout.
 
 // ---------------------------------------------------------------------------
-// Difficulty
-
-// Round 11 (the skill fight, conductorFight.js): STORY keeps every pattern
-// but slows and thins it. teleScale stretches every warning, flightScale
-// every throw and travelling hazard, tempo the gaps between attacks,
-// windowScale every punish window; `thin` leaves out the attacks marked
-// extra; hurtScale shrinks Butch's hurt radius; jumpClear is the height a
-// jump must reach to clear a ground hazard (lower clears sooner). rollback:
-// what a torn last layer costs ('phase': the phase begins again, his ticket
-// back at the phase's start; 'none': nothing is undone).
+// Difficulty (setPieces/kernel.js pieceTuning reads these).
+//
+// `pace` scales every scroll, train and projectile speed; teleScale every
+// warning's lead; windowScale every timing window (a punch, the draw, a
+// plank's time out); `thin` leaves out the hazards marked extra; hurtScale
+// shrinks Butch's hurt box. rollback: what a torn last layer costs
+// ('segment': that stretch of the set piece starts again, a few seconds;
+// 'none': he stands up where he fell). NORMAL has three layers: a set piece
+// is short and its checkpoints close together, so a death costs seconds and
+// a stretch takes a few tries. STORY plays the same set pieces, slower and
+// kinder, with six layers, and undoes nothing.
 export const DIFFICULTIES = Object.freeze({
   story: Object.freeze({
-    id: 'story', label: 'STORY', layers: 6, telegraph: 1.35, beat: 3.05, overlap: 1,
-    bossWindow: 1.5, speedScale: 0.82, respawnInv: 3, beamLanes: 1, fullSweepEvery: 0,
-    lampMs: 3000, bridgeMs: 6400, boardMs: 3600,
-    teleScale: 1.4, flightScale: 1.3, tempo: 1.35, windowScale: 1.5, thin: true, hurtScale: 0.8, jumpClear: 0.45, rollback: 'none',
+    id: 'story', label: 'STORY', layers: 6, respawnInv: 2,
+    pace: 0.82, teleScale: 1.4, windowScale: 1.6, thin: true, hurtScale: 0.8, rollback: 'none',
   }),
   normal: Object.freeze({
-    id: 'normal', label: 'NORMAL', layers: 4, telegraph: 0.9, beat: 2.2, overlap: 2,
-    bossWindow: 1.08, speedScale: 0.94, respawnInv: 2.6, beamLanes: 2, fullSweepEvery: 3,
-    lampMs: 2400, bridgeMs: 5200, boardMs: 3400,
-    teleScale: 1, flightScale: 1, tempo: 1, windowScale: 1, thin: false, hurtScale: 1, jumpClear: 0.6, rollback: 'phase',
+    id: 'normal', label: 'NORMAL', layers: 3, respawnInv: 1.2,
+    pace: 1, teleScale: 1, windowScale: 1, thin: false, hurtScale: 1, rollback: 'segment',
   }),
 });
 
@@ -45,16 +39,15 @@ export function difficultyPreset(id) {
 }
 
 // ---------------------------------------------------------------------------
-// A torn last layer is a checkpoint (round 11; conductorFight.js). Round 6
-// (item 16) made it cost only Butch's place, because one hit could undo a
-// whole movement of answers. Now every movement is three short phases, and
-// a phase is the checkpoint: on NORMAL the phase begins again (his ticket
-// back to the phase's start, earlier phases and movements kept); on STORY
-// nothing is undone. The death card says which, in one line.
+// A torn last layer is a checkpoint. Each set piece is two to four short
+// stretches (segments); on NORMAL the stretch begins again (earlier
+// stretches, set pieces and movements kept); on STORY nothing is undone.
+// The death card says which, in one line. ('phase' is the round-11 name
+// for the same thing and reads the same.)
 
-export function checkpointLine({ rollback = 'phase', phaseName = '' } = {}) {
-  if (rollback === 'phase') return `This phase starts again${phaseName ? `: ${phaseName}` : ''}. What you won before it stays won.`;
-  return 'His ticket stays where you left it. Nothing is undone.';
+export function checkpointLine({ rollback = 'segment', phaseName = '' } = {}) {
+  if (rollback === 'segment' || rollback === 'phase') return `This stretch starts again${phaseName ? `: ${phaseName}` : ''}. What you won before it stays won.`;
+  return 'He stands up where he fell. Nothing is undone.';
 }
 
 // ---------------------------------------------------------------------------
@@ -81,341 +74,8 @@ export function createDeathLedger({ offerAfter = STORY_OFFER_AFTER } = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// Movement I · LOST PROPERTY — the lens and the seams (movements/
-// lostProperty.js plays it). The arena is four painted panels in a 2×2
-// frame; his trains run in the seams. The punch-hole lens shows the sepia
-// 1978 layer: a claim reads only through it.
-
-export const LENS_RADIUS = 2.35;
-export const PANEL_SEAMS = Object.freeze({ x: 0, z: 0.4, halfWidth: 0.62 });
-
-export function underLens(lens, x, z, radius = LENS_RADIUS) {
-  if (!lens) return false;
-  return Math.hypot(x - lens.x, z - lens.z) <= radius;
-}
-
-// ---------------------------------------------------------------------------
-// Movement II · BORROWED LIGHT — the bell (movements/onTheBell.js plays it).
-//
-// Seven lamp nodes on three coloured lines feed six machines. The Chapter 2
-// timetable model (borrowedLight/timetableModel.js) owns the bell, the queue
-// and the one-line rule; this arena adds the Conductor's own timetable:
-//  - on every bell he steps into the lane he announced one bell earlier;
-//  - on every off-beat (half a bell later) his signal beams fire down the
-//    lanes he announced for that bell;
-//  - a rose signal lamp powered on a bell, in the lane he steps into, lights
-//    him: the damage window. A lit Conductor cannot fire down his own lane.
-// Amber bridges cross the floor gap to the front platform, where Butch
-// punches a lit Conductor. Teal billboards shelter the lane behind them.
-
-export const LANES = Object.freeze(['west', 'centre', 'east']);
-export const LANE_X = Object.freeze({ west: -7, centre: 0, east: 7 });
-export const LANE_EDGE = 3.5;
-export const OFFBEAT_MS = BELL_MS / 2;
-// A punch on a lit Conductor (movements/onTheBell.js adds ON THE BELL).
-export const LIGHT_DAMAGE = 10;
-// A return plank lays in RETURN_PLANK_TRAVEL_MS, stays out RETURN_PLANK_MS
-// in all and folds as it came.
-export const RETURN_PLANK_MS = 4200;
-export const RETURN_PLANK_TRAVEL_MS = 450;
-// Seconds stranded on the far roof before the line lays a return plank.
-export const STRANDED_GRACE_S = 1.2;
-
-export const BELL_ARENA = Object.freeze({
-  gapNearZ: -1.35,
-  gapFarZ: -4.35,
-  bridgeHalfWidth: 1.55,
-  bridges: Object.freeze({ 'bridge-west': LANE_X.west, 'bridge-east': LANE_X.east }),
-  boards: Object.freeze({ 'board-west': Object.freeze({ lane: 'west', z: 2.4 }), 'board-east': Object.freeze({ lane: 'east', z: 2.4 }) }),
-  lamps: Object.freeze({ 'lamp-west': 'west', 'lamp-centre': 'centre', 'lamp-east': 'east' }),
-  // Punchable lamp boxes on poles, each with a paper tag (arena metres).
-  // `label` names the lamp by its line's colour (alpha round 4: "AMBER
-  // lamp" and "ROSE signal" in the hints matched nothing on screen);
-  // `machine` + MACHINE_NAMES name what it drives.
-  nodes: Object.freeze([
-    Object.freeze({ id: 'lamp-west', line: 'rose', machine: 'lamp-west', lane: 'west', x: -7, z: 0.4, label: 'ROSE SIGNAL · WEST' }),
-    Object.freeze({ id: 'lamp-centre', line: 'rose', machine: 'lamp-centre', lane: 'centre', x: 0, z: 0.4, label: 'ROSE SIGNAL · CENTRE' }),
-    Object.freeze({ id: 'lamp-east', line: 'rose', machine: 'lamp-east', lane: 'east', x: 7, z: 0.4, label: 'ROSE SIGNAL · EAST' }),
-    Object.freeze({ id: 'bridge-west', line: 'amber', machine: 'bridge-west', lane: 'west', x: -3.6, z: 3.1, label: 'AMBER LAMP · BRIDGE WEST' }),
-    Object.freeze({ id: 'bridge-east', line: 'amber', machine: 'bridge-east', lane: 'east', x: 3.6, z: 3.1, label: 'AMBER LAMP · BRIDGE EAST' }),
-    Object.freeze({ id: 'board-west', line: 'teal', machine: 'board-west', lane: 'west', x: -11.2, z: 5.2, label: 'TEAL LAMP · BILLBOARD WEST' }),
-    Object.freeze({ id: 'board-east', line: 'teal', machine: 'board-east', lane: 'east', x: 11.2, z: 5.2, label: 'TEAL LAMP · BILLBOARD EAST' }),
-  ]),
-  nodeReach: 2.3,
-});
-
-// What each machine is, for the LISTEN read-out ("LISTENING · BRIDGE WEST").
-export const MACHINE_NAMES = Object.freeze({
-  'bridge-west': 'BRIDGE WEST', 'bridge-east': 'BRIDGE EAST', 'board-west': 'BILLBOARD WEST', 'board-east': 'BILLBOARD EAST',
-  'lamp-west': 'SIGNAL WEST', 'lamp-centre': 'SIGNAL CENTRE', 'lamp-east': 'SIGNAL EAST',
-});
-
-export function laneOf(x) {
-  if (x < -LANE_EDGE) return 'west';
-  if (x > LANE_EDGE) return 'east';
-  return 'centre';
-}
-
-export function bellArenaTimetable(preset = difficultyPreset()) {
-  return {
-    nodes: BELL_ARENA.nodes.map(({ id, line, machine }) => ({ id, line, machine })),
-    machines: [
-      { id: 'bridge-west', kind: 'bridge', duration: preset.bridgeMs, travel: 450 },
-      { id: 'bridge-east', kind: 'bridge', duration: preset.bridgeMs, travel: 450 },
-      { id: 'board-west', kind: 'billboard', duration: preset.boardMs, travel: 300 },
-      { id: 'board-east', kind: 'billboard', duration: preset.boardMs, travel: 300 },
-      { id: 'lamp-west', kind: 'sign', duration: preset.lampMs, travel: 150 },
-      { id: 'lamp-centre', kind: 'sign', duration: preset.lampMs, travel: 150 },
-      { id: 'lamp-east', kind: 'sign', duration: preset.lampMs, travel: 150 },
-    ],
-  };
-}
-
-// Deterministic "random" for the Conductor's plan (mulberry32).
-function planRng(seed) {
-  let a = seed >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-export function createBellArena({ difficulty = DEFAULT_DIFFICULTY, seed = 7, startMs = 0, beams = true } = {}) {
-  const preset = difficultyPreset(difficulty);
-  // Chapter 2's re-press rule (alpha round 3, K2): punching a queued lamp
-  // again is the same punch, never a silent take-back ("UNPUNCHED"). The
-  // finale keeps the legacy, wider bell catch: its 3D arena runs at a few
-  // frames a second on slow machines.
-  const timetable = createTimetable(bellArenaTimetable(preset), { startMs, memoryMs: 0, repress: CH2_RULES.repress });
-  const random = planRng(seed);
-  let round = 0;
-  let beamsOn = beams;
-  // Round 11: each phase of Movement II sets its own pressure (setPressure):
-  // how many lanes his beams take, and how often they sweep all three.
-  const pressure = { beamLanes: preset.beamLanes, fullSweepEvery: preset.fullSweepEvery };
-  let conductorLane = 'centre';
-  let exposure = null; // { lane, bell, punched }
-  let beam = null; // { lanes, firesInMs, fired }
-  // Return planks (alpha A4-6): a bridge the line lays by itself for a
-  // player stranded on the far roof, outside the timetable.
-  const returns = new Map(); // id -> { age, left } in ms
-  const planFor = (index, fromLane) => {
-    // The Conductor never announces the lane he already stands in twice
-    // running, so the player always has somewhere new to light.
-    const choices = LANES.filter((lane) => lane !== fromLane);
-    const lane = choices[Math.floor(random() * choices.length)];
-    const full = beamsOn && pressure.fullSweepEvery > 0 && index > 2 && index % pressure.fullSweepEvery === 0;
-    const count = !beamsOn ? 0 : full ? 3 : Math.max(0, Math.min(3, pressure.beamLanes));
-    const shuffled = [...LANES].sort(() => random() - 0.5);
-    const lanes = LANES.filter((candidate) => shuffled.slice(0, count).includes(candidate));
-    return { lane, beamLanes: lanes, fullSweep: full };
-  };
-  let plan = planFor(1, conductorLane);
-
-  const lampFor = (lane) => `lamp-${lane}`;
-  const lit = (lane) => Boolean(timetable.machineStatus(lampFor(lane))?.powered);
-
-  const onBell = (events, bellIndex) => {
-    round += 1;
-    const from = conductorLane;
-    conductorLane = plan.lane;
-    events.push({ type: 'conductor-step', from, to: conductorLane, bell: bellIndex });
-    const current = plan;
-    plan = planFor(round + 1, conductorLane);
-    events.push({ type: 'plan', next: { ...plan } });
-    if (lit(conductorLane)) {
-      exposure = { lane: conductorLane, bell: bellIndex, punched: false };
-      events.push({ type: 'exposed', lane: conductorLane, bell: bellIndex });
-    } else if (exposure) {
-      events.push({ type: 'exposure-end', lane: exposure.lane });
-      exposure = null;
-    }
-    beam = current.beamLanes.length ? { lanes: [...current.beamLanes], firesInMs: OFFBEAT_MS, fired: false, fullSweep: current.fullSweep } : null;
-    if (beam) events.push({ type: 'beam-telegraph', lanes: [...beam.lanes], fullSweep: beam.fullSweep });
-  };
-
-  // `hold`: the bell waits (Movement II's first punch is taught with the
-  // clock standing still): nothing on the timetable moves, but a return
-  // plank still lays itself out, and stays.
-  const update = (dtMs, { hold = false } = {}) => {
-    const out = [];
-    if (hold) {
-      const step = Math.max(0, Number(dtMs) || 0);
-      for (const plank of returns.values()) plank.age += step;
-      return out;
-    }
-    let left = Math.max(0, Number(dtMs) || 0);
-    // Step up to each bell so the off-beat and the bell never blur together.
-    while (left > 0) {
-      const step = Math.min(left, timetable.msToBell(), beam && !beam.fired ? Math.max(1e-6, beam.firesInMs) : Infinity);
-      const events = timetable.update(step);
-      left -= step;
-      if (beam && !beam.fired) {
-        beam.firesInMs -= step;
-        if (beam.firesInMs <= 1e-6) {
-          beam.fired = true;
-          const lanes = beam.lanes.filter((lane) => !(exposure && lane === exposure.lane && lit(lane)));
-          out.push({ type: 'beam-fire', lanes, cancelled: beam.lanes.filter((lane) => !lanes.includes(lane)), fullSweep: beam.fullSweep });
-        }
-      }
-      for (const event of events) {
-        out.push(event);
-        if (event.type === 'bell') onBell(out, event.index);
-      }
-      for (const [id, plank] of returns) {
-        plank.age += step;
-        plank.left -= step;
-        if (plank.left <= 0) { returns.delete(id); out.push({ type: 'return-off', machineId: id }); }
-      }
-      if (exposure && !lit(exposure.lane)) {
-        out.push({ type: 'exposure-end', lane: exposure.lane });
-        exposure = null;
-      }
-    }
-    return out;
-  };
-
-  const shelteredBy = (x, z) => {
-    const lane = laneOf(x);
-    for (const [id, board] of Object.entries(BELL_ARENA.boards)) {
-      const status = timetable.machineStatus(id);
-      if (board.lane === lane && status?.level >= 0.6 && z > board.z) return id;
-    }
-    return null;
-  };
-
-  // What a fired beam does to Butch at (x, z).
-  const resolveBeam = (lanes, x, z) => {
-    const lane = laneOf(x);
-    if (!lanes.includes(lane)) return 'clear';
-    return shelteredBy(x, z) ? 'sheltered' : 'hit';
-  };
-
-  const returnLevel = (id) => {
-    const plank = returns.get(id);
-    if (!plank) return 0;
-    return Math.max(0, Math.min(1, plank.age / RETURN_PLANK_TRAVEL_MS, plank.left / RETURN_PLANK_TRAVEL_MS));
-  };
-  // How far a bridge is out, 0..1: its timetable machine or a return plank.
-  const bridgeLevel = (id) => Math.max(timetable.machineStatus(id)?.level ?? 0, returnLevel(id));
-
-  const bridgeUnder = (x, z) => {
-    if (z > BELL_ARENA.gapNearZ || z < BELL_ARENA.gapFarZ) return null;
-    for (const [id, bx] of Object.entries(BELL_ARENA.bridges)) {
-      if (bridgeLevel(id) >= 0.85 && Math.abs(x - bx) <= BELL_ARENA.bridgeHalfWidth) return id;
-    }
-    return null;
-  };
-  const anyBridgeOut = () => Object.keys(BELL_ARENA.bridges).some((id) => bridgeLevel(id) >= 0.85);
-
-  // Standing over the gap with no extended bridge underfoot: Butch falls.
-  const fallsAt = (x, z) => z <= BELL_ARENA.gapNearZ && z >= BELL_ARENA.gapFarZ && !bridgeUnder(x, z);
-  const onFrontPlatform = (z) => z < BELL_ARENA.gapFarZ;
-  // On the far roof with no way back: no bridge out, and no lit Conductor
-  // still waiting for a punch there.
-  const stranded = (z) => onFrontPlatform(z) && !anyBridgeOut() && !(exposure && !exposure.punched && lit(exposure.lane));
-  // The bridge closest to x (a return plank goes where the player is).
-  const nearestBridge = (x) => Object.entries(BELL_ARENA.bridges).sort((a, b) => Math.abs(a[1] - x) - Math.abs(b[1] - x))[0][0];
-  // `full`: laid under a rider, it is out already (no slide-out dip).
-  const extendReturnBridge = (id, ms = RETURN_PLANK_MS, { full = false } = {}) => {
-    if (!BELL_ARENA.bridges[id]) return false;
-    returns.set(id, { age: full ? Math.max(RETURN_PLANK_TRAVEL_MS, returns.get(id)?.age ?? 0) : (returns.get(id)?.age ?? 0), left: ms });
-    return true;
-  };
-
-  const nearestNode = (x, z, reach = BELL_ARENA.nodeReach) => {
-    let best = null;
-    for (const node of BELL_ARENA.nodes) {
-      const d = Math.hypot(node.x - x, node.z - z);
-      if (d <= reach && (!best || d < best.d)) best = { node, d };
-    }
-    return best?.node ?? null;
-  };
-
-  // E on the front platform, in the lit lane, while the Conductor is lit:
-  // the borrowed light goes back to him. Once per window.
-  const punchConductor = (x, z) => {
-    if (!onFrontPlatform(z)) return { result: 'not-front' };
-    if (!exposure || !lit(exposure.lane)) return { result: 'not-lit' };
-    if (laneOf(x) !== exposure.lane) return { result: 'wrong-lane', lane: exposure.lane };
-    if (exposure.punched) return { result: 'spent' };
-    exposure.punched = true;
-    return { result: 'hit', damage: LIGHT_DAMAGE, lane: exposure.lane };
-  };
-
-  return {
-    timetable,
-    update,
-    punch: (nodeId) => timetable.punch(nodeId),
-    preview: () => ({ machines: timetable.preview(), conductorLane: plan.lane, beamLanes: [...plan.beamLanes], fullSweep: plan.fullSweep }),
-    resolveBeam,
-    shelteredBy,
-    bridgeUnder,
-    bridgeLevel,
-    anyBridgeOut,
-    fallsAt,
-    onFrontPlatform,
-    stranded,
-    nearestBridge,
-    extendReturnBridge,
-    returnPlanks: () => [...returns.keys()],
-    // Milliseconds a return plank has left before it is gone (0: none).
-    returnLeft: (id) => Math.max(0, returns.get(id)?.left ?? 0),
-    nearestNode,
-    punchConductor,
-    clearQueue: () => timetable.clearQueue(),
-    setBeams(on) {
-      const was = beamsOn;
-      beamsOn = Boolean(on);
-      if (!beamsOn) { plan = { ...plan, beamLanes: [], fullSweep: false }; beam = null; } else if (!was) { const lane = plan.lane; plan = { ...planFor(round + 1, conductorLane), lane }; }
-    },
-    // Set how many lanes his beams take and how often they sweep all three
-    // (0: never), from the next plan on (`replan`: the coming bell too; his
-    // announced lane is kept).
-    setPressure({ beamLanes = pressure.beamLanes, fullSweepEvery = pressure.fullSweepEvery, replan = false } = {}) {
-      pressure.beamLanes = beamLanes;
-      pressure.fullSweepEvery = fullSweepEvery;
-      if (replan) { const lane = plan.lane; plan = { ...planFor(round + 1, conductorLane), lane }; }
-      return { ...pressure };
-    },
-    get pressure() { return { ...pressure }; },
-    msSinceBell: () => BELL_MS - timetable.msToBell(),
-    get beamsOn() { return beamsOn; },
-    get conductorLane() { return conductorLane; },
-    get plan() { return { ...plan, beamLanes: [...plan.beamLanes] }; },
-    get exposure() { return exposure ? { ...exposure } : null; },
-    get beam() { return beam ? { ...beam, lanes: [...beam.lanes] } : null; },
-    get round() { return round; },
-    lit,
-    msToBell: () => timetable.msToBell(),
-    bellPhase: () => timetable.bellPhase(),
-    snapshot: () => ({ ...timetable.snapshot(), conductorLane, plan: { ...plan }, exposure: exposure ? { ...exposure } : null, beam: beam ? { ...beam } : null, round }),
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Movement IV · PAINTED COUNTRY — a returned colour scales with its charge.
-//
-// The movement drains 88 of his ticket (100 → 12, where the night service
-// arrives). Round 11: a return lands only in the open beat after a wash
-// (movements/paintedCountry.js), and each of the three phases stops at its
-// floor, so one return can no longer end a phase: one colour is 7, a full
-// brush 24 (more than three single colours: holding a heavier brush pays),
-// and a phase takes about two open windows.
-export const PAINT_MOVEMENT_DRAIN = 88;
-export const PAINT_DAMAGE_BY_CHARGE = Object.freeze([0, 7, 15, 24]);
-
-export function paintReturnDamage(charge) {
-  const index = Math.max(0, Math.min(PAINT_DAMAGE_BY_CHARGE.length - 1, Math.floor(Number(charge) || 0)));
-  return PAINT_DAMAGE_BY_CHARGE[index];
-}
-
-// ---------------------------------------------------------------------------
-// HUD · world-anchored tags never sit on one another (alpha round 2: in
-// Movement I a case's claim tag covered the SPACE · RETURN prompt beside it).
+// HUD · world-anchored tags never sit on one another (alpha round 2: a
+// case's claim tag covered the RETURN prompt beside it).
 //
 // A tag is drawn centred on x with its bottom edge on y (.nf-tag). Its box
 // is estimated from the text (13 px mono, 0.12em tracking, 34 px of padding

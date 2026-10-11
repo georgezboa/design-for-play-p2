@@ -336,6 +336,9 @@ export function paintInkButch({ pose = 'idle', phase = 0, scale = 6, lampGlow = 
     legF = -0.2; legB = 0.25; kneeF = 0.4; armF = 0.9; armB = 1.1; torso = -0.22; head = -0.25; bodyY = 1.5;
   } else if (pose === 'case') {
     armF = -1.15; armB = -1.0;
+  } else if (pose === 'duck') {
+    // Round 12 (THE ROOF RUN): crouched under a gantry, one knee forward.
+    legF = -1.15; kneeF = 1.9; legB = -0.5; kneeB = 2.2; armF = -0.6; armB = 0.5; torso = 0.55; head = 0.25; bodyY = 15;
   }
   // soft lamp glow and floor shadow
   c.save();
