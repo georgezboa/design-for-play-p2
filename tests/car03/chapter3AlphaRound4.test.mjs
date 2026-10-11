@@ -182,7 +182,9 @@ describe('Chapter 3 alpha round 4 · frame-rate independence (P1)', () => {
   it('runs the screen work once per drawn frame; LOW draws smaller, pinned LOW without MSAA', () => {
     assert.match(runtime, /if \(!final\) return;/);
     assert.match(runtime, /this\.model = cachedSnapshotModel\(model\);/);
-    assert.match(preview, /createRenderer\(container, \{ antialias: this\.qualityMonitor\.tier !== 'low' \}\)/);
+    // Round 12: a painted HIGH frame multisamples its own off-screen frame
+    // (chapter3Painterly), so the canvas is made without MSAA then too.
+    assert.match(preview, /createRenderer\(container, \{ antialias: this\.qualityMonitor\.tier !== 'low' && !paints \}\)/);
     assert.ok(LOW_PIXEL_RATIO <= 0.7);
     assert.ok(LOWEST_PIXEL_RATIO <= 0.5);
   });

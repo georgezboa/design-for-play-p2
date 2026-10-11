@@ -244,10 +244,38 @@ describe('Chapter 3 integrated final lock v48', () => {
     // oil line / letters), posts (Toma, Petar, Hana) turn back after; Olek
     // stops to talk after the crossing. Files unchanged: 34. Toma's
     // composition unchanged. Assets unchanged.
-    assert.equal(sourceFiles.length, 34);
+    // v53-r12-ch3look (round 12, George: "第三章的色彩我不喜欢 要极乐迪斯科的体感
+    // … 第三章的色彩要重新配" and "石油管道看不到了", 2026-10-10; the lead
+    // reconciles this lock with the other round-12 Chapter 3 branch at
+    // merge; tests/car03/chapter3PaintedLook, which replaces
+    // chapter3LeoneLook): the 3D city is painted like a Disco Elysium street
+    // instead of the Leone western. Same clock and sun path; soft light, a
+    // strong cool sky fill and a little haze; a grade in the same
+    // tone-mapping step with a selective palette (khaki stone, rust roads,
+    // teal-leaning blues), coloured lifted blacks and split toning, on every
+    // tier; dusk ochre / slate, an ink-and-teal night, a grey-green morning,
+    // a dirtier interior; PCF shadows with a wider filter. HIGH only: a
+    // painted frame (new chapter3Painterly: the city drawn into an
+    // off-screen frame that stands in for the screen, then a paint buffer of
+    // 440 rows at any resolution pinned to the world, an anisotropic
+    // Kuwahara on a fixed 37-sample disc, and a composite with a
+    // joint-bilateral upsample, bristle streaks, broken colour, umber
+    // contours and a canvas weave; film grain only on an unpainted HIGH
+    // frame, still under REDUCE MOTION); LOW / LOWEST unchanged in cost.
+    // The oil line: a soaked band along the authored route with the poured
+    // line in the joints inside it, amber at its edges and near black down
+    // its middle, a pale cleaned margin and a wet sky gloss, so it reads on
+    // the pale limestone and on the dark clock court; and the civic plaza
+    // paving lost a polygon offset that hid the clock and fountain courts on
+    // 720-row canvases only (the plaza now looks the same on every
+    // display). Files: +1 (chapter3Painterly): 34 -> 35. Toma's composition
+    // unchanged. Assets unchanged.
+    // v54-r12 (round 12 merge, 2026-10-10): v52-r12-ch3play and
+    // v53-r12-ch3look together. Files: 35.
+    assert.equal(sourceFiles.length, 35);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '55a040062e3fb5b0fe8b20b72879b5e9182771f7be38adb814ba448be3f42800',
+      'a0aff9410644c2d64b5c4588dd6b6c55a6c2824d348c0292da5efdacb1bec2d3',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
