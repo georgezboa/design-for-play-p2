@@ -9,7 +9,7 @@
 
 import { paintBillboardFace, paintBridgeDeck, paintLampNode, paintRainConductor, paintRainFigure, paintRainSkyline } from '../finaleArt.js';
 import { paintBeamWood, paintBell, paintFacade, paintTowerStone } from '../setPieceArt.js';
-import { LAMPS, PLANKS, ROOFS, ROOFTOP } from '../setPieces/bellRooftops.js';
+import { LAMPS, PLANKS, ROOFS, ROOFTOP, inLampReach } from '../setPieces/bellRooftops.js';
 import { TOWER, TOWER_LEDGES, TOWER_SWINGS } from '../setPieces/bellTower.js';
 import { THREE, basic, canvasTexture, createFrameCard, createParticles, figureFrame, paintedCard, paintedMaterial, uprightPlane } from './stageKit.js';
 
@@ -380,8 +380,9 @@ export function createRooftopView({ scene, low = false, still = () => false }) {
       if (mode === 'rooftops') {
         const b = piece.body;
         for (const l of piece.lamps()) {
-          if (Math.abs(l.x - b.x) > ROOFTOP.near) continue;
-          const near = Math.abs(l.x - b.x) <= ROOFTOP.reach;
+          // the rose signal (a stretch's goal) names itself from further off
+          if (Math.abs(l.x - b.x) > (l.line === 'rose' && !l.lit ? 16 : ROOFTOP.near)) continue;
+          const near = inLampReach(l, b.x, b.y);
           const name = { amber: 'AMBER LAMP · BRIDGE', teal: 'TEAL LAMP · BILLBOARD', rose: l.lit ? 'ROSE SIGNAL · LIT' : 'ROSE SIGNAL · ENDS THE STRETCH' }[l.line];
           out.push({ text: l.queued ? `${name} · ON THE NEXT BELL` : near && !l.lit ? `<kbd>E</kbd> · ${name}` : l.line === 'rose' && !l.lit ? `${name} · WALK UP · <kbd>E</kbd>` : name, x: l.x, y: l.y + 3, z: 0.4, dim: !near, color: { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' }[l.line] });
         }

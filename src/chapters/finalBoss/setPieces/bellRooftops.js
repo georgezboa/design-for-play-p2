@@ -93,6 +93,12 @@ export const ROOFTOP = Object.freeze({
   // in reach says "closer" (spectacleBattle onAct 'reach').
   reach: 2.0,
   near: 6,
+  // round 13, again: George walked up to the rose signal and E still did
+  // nothing (short of it, past it, or in a jump). The rose signal is the
+  // stretch's goal, not a timing test: it answers E from anywhere on its
+  // roof within this, and from a jump.
+  roseReach: 6,
+  reachUp: 3.2,
   plankOut: 2.25, // seconds a bell plank stays out (×window on STORY)
   plankWarn: 0.5, // it flickers this long before folding
   travel: 0.35, // a bridge or billboard moving
@@ -117,6 +123,11 @@ export const ROOFTOP_HINTS = Object.freeze({
 });
 
 let serial = 0;
+
+/** How far from a lamp E reaches it (the rose signal: the whole end of its roof). */
+export const lampReach = (lamp) => (lamp.line === 'rose' ? ROOFTOP.roseReach : ROOFTOP.reach);
+/** Is Butch at (x, y) within E's reach of a lamp? */
+export const inLampReach = (lamp, x, y) => Math.abs(lamp.x - x) <= lampReach(lamp) && Math.abs(lamp.y - y) <= ROOFTOP.reachUp;
 
 export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } = {}) {
   const d = createPieceBase({ id: 'on-the-bell', movement: 1, name: 'ON THE BELL', view: 'rooftops', segments: ROOFTOP_SEGMENTS, difficulty, seed, startSegment });
@@ -188,7 +199,9 @@ export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } =
         d.emit({ type: 'lit', lamp: lamp.id });
         d.emit({ type: 'damage', cause: 'borrowed-light', segment: lamp.segment });
         lastSignal = lamp.id;
-        if (lamp.segment === d.seg.index) {
+        // A rose signal of a later stretch (one walked past) clears every
+        // stretch up to its own: it is never spent out of turn.
+        while (d.state === 'play' && lamp.segment >= d.seg.index) {
           d.seg.setProgress(1);
           d.completeSegment({ via: 'rose' });
           if (d.state === 'finisher') d.emit({ type: 'finisher', kind: 'tower' });
@@ -237,16 +250,16 @@ export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } =
     let best = null;
     for (const lamp of lamps.values()) {
       const dx = Math.abs(lamp.x - body.x);
-      if (dx > ROOFTOP.reach || Math.abs(lamp.y - body.y) > 2.2) continue;
+      if (!inLampReach(lamp, body.x, body.y)) continue;
       if (!best || dx < best.dx) best = { lamp, dx };
     }
     if (!best) {
-      const near = [...lamps.values()].find((l) => Math.abs(l.x - body.x) <= ROOFTOP.near && Math.abs(l.y - body.y) <= 2.2 && !(l.line === 'rose' && l.lit));
+      const near = [...lamps.values()].find((l) => Math.abs(l.x - body.x) <= ROOFTOP.near && Math.abs(l.y - body.y) <= ROOFTOP.reachUp && !(l.line === 'rose' && l.lit));
       d.emit({ type: 'act', result: near ? 'reach' : 'none', lamp: near?.id ?? null, line: near?.line ?? null });
       return;
     }
     const { lamp } = best;
-    if (lamp.line === 'rose' && lamp.lit) { d.emit({ type: 'act', result: 'spent', lamp: lamp.id }); return; }
+    if (lamp.line === 'rose' && lamp.lit && lamp.segment < d.seg.index) { d.emit({ type: 'act', result: 'spent', lamp: lamp.id }); return; }
     if (lamp.queued) { d.emit({ type: 'act', result: 'already', lamp: lamp.id }); return; }
     if (machineLevel(lamp) > 0.05) { d.emit({ type: 'act', result: 'busy', lamp: lamp.id }); return; }
     lamp.queued = true;
@@ -377,8 +390,8 @@ export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } =
       if (rose?.queued) return `The rose signal is set: it lights him on the next bell · ${toBell} s`;
       const dx = rose ? rose.x - body.x : Infinity;
       if (rose && !rose.lit && dx > -4 && dx < 16) {
-        if (Math.abs(dx) <= ROOFTOP.reach && Math.abs(rose.y - body.y) <= 2.2) return 'At the rose signal: E. It lights him on the next bell, and the stretch is done.';
-        return `The rose signal ends this stretch, ${Math.max(1, Math.round(Math.abs(dx)))} m ${dx < 0 ? 'back' : 'ahead'}: walk right up to it and press E.`;
+        if (inLampReach(rose, body.x, body.y)) return 'At the rose signal: E. It lights him on the next bell, and the stretch is done.';
+        return `The rose signal ends this stretch, ${Math.max(1, Math.round(Math.abs(dx)))} m ${dx < 0 ? 'back' : 'ahead'}: walk up to it and press E.`;
       }
       const lamp = [...lamps.values()].filter((l) => l.line !== 'rose' && l.x - body.x > -ROOFTOP.reach && l.x - body.x < ROOFTOP.near && Math.abs(l.y - body.y) <= 2.2).sort((a, b) => Math.abs(a.x - body.x) - Math.abs(b.x - body.x))[0];
       if (lamp) {

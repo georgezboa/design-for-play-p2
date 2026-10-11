@@ -29,27 +29,43 @@ function until(piece, predicate, max = 60) {
 }
 const acts = (events) => events.filter((e) => e.type === 'act');
 
-test('the off-beat: E short of the rose signal says closer; the plaque says where it is and what to do', () => {
+test('the off-beat: the rose signal answers E from where George stood, short of it, past it or in a jump', () => {
   for (const difficulty of ['story', 'normal']) {
-    const piece = createBellRooftops({ difficulty, startSegment: 2 });
-    until(piece, () => piece.state === 'play');
     const rose = LAMPS.find((l) => l.line === 'rose' && l.segment === 2);
-    // where George stood: on the roof, nearly five metres short
-    placeBody(piece.body, rose.x - 4.8, rose.y, 1);
-    play(piece, 0.1);
-    assert.match(piece.objective(), /rose signal ends this stretch, 5 m ahead/);
-    const far = acts(piece.update(DT, { act: true }, GOD));
-    assert.deepEqual(far.map((e) => e.result), ['reach'], difficulty);
-    assert.equal(far[0].line, 'rose');
-    // a step or two short now answers
-    placeBody(piece.body, rose.x - ROOFTOP.reach + 0.1, rose.y, 1);
-    play(piece, 0.3);
-    assert.match(piece.objective(), /At the rose signal: E/);
-    assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)).map((e) => e.result), ['queued']);
-    assert.match(piece.objective(), /set: it lights him on the next bell · \d\.\d s/);
-    const events = until(piece, (step) => step.some((e) => e.type === 'bell'));
-    assert.ok(events.some((e) => e.type === 'segment-cleared' && e.index === 2), difficulty);
+    // where George stood (nearly five metres short), just past it, and in a jump beside it
+    for (const [dx, dy] of [[-4.8, 0], [2.5, 0], [-1, 2.8]]) {
+      const piece = createBellRooftops({ difficulty, startSegment: 2 });
+      until(piece, () => piece.state === 'play');
+      placeBody(piece.body, rose.x - 12, rose.y, 1);
+      play(piece, 0.1);
+      assert.match(piece.objective(), /rose signal ends this stretch, 12 m ahead: walk up to it and press E/);
+      placeBody(piece.body, rose.x + dx, rose.y, 1);
+      piece.body.y = rose.y + dy;
+      assert.match(piece.objective(), /At the rose signal: E/, `${difficulty} ${dx},${dy}`);
+      assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)).map((e) => e.result), ['queued'], `${difficulty} ${dx},${dy}`);
+      assert.match(piece.objective(), /set: it lights him on the next bell · \d\.\d s/);
+      const events = until(piece, (step) => step.some((e) => e.type === 'bell'));
+      assert.ok(events.some((e) => e.type === 'segment-cleared' && e.index === 2), difficulty);
+    }
   }
+});
+
+test('a lamp E cannot reach yet says CLOSER; a rose signal walked past is never spent out of turn', () => {
+  const piece = createBellRooftops({ difficulty: 'story' });
+  until(piece, () => piece.state === 'play');
+  const amber = LAMPS.find((l) => l.id === 'amber-1');
+  placeBody(piece.body, amber.x - ROOFTOP.reach - 1.5, amber.y, 1);
+  const far = acts(piece.update(DT, { act: true }, GOD));
+  assert.deepEqual(far.map((e) => e.result), ['reach']);
+  assert.equal(far[0].line, 'amber');
+  // STORY, in THE FIRST BELL: Butch walks past rose-1 and lights rose-2
+  const rose2 = LAMPS.find((l) => l.id === 'rose-2');
+  placeBody(piece.body, rose2.x, rose2.y, 1);
+  assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)).map((e) => e.result), ['queued']);
+  const events = until(piece, (step) => step.some((e) => e.type === 'bell'));
+  const cleared = events.filter((e) => e.type === 'segment-cleared').map((e) => e.index);
+  assert.deepEqual(cleared, [0, 1], 'both stretches up to its own are cleared');
+  assert.equal(piece.seg.index, 2);
 });
 
 test('the rooftops: a lamp nearby names itself on the plaque; far from every lamp, the stretch rule shows', () => {
