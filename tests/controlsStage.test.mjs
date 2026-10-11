@@ -46,7 +46,8 @@ test('every chapter has 3–5 basics and every stage 3–5 rows', () => {
   for (const stage of ['city', 'board', 'lens']) assert.ok(CONTROL_SETS.chapter3.stages[stage], stage);
   for (const stage of ['gallery', 'line']) assert.ok(CONTROL_SETS.chapter4.stages[stage], stage);
   for (const stage of ['walk', 'exhibit']) assert.ok(CONTROL_SETS.chapter5.stages[stage], stage);
-  assert.deepEqual(Object.keys(CONTROL_SETS.chapter6.stages), ['movement1', 'movement2', 'movement3', 'movement4']);
+  // round 12: the Conductor's seven set pieces and the departure
+  assert.deepEqual(Object.keys(CONTROL_SETS.chapter6.stages), ['roof-run', 'return-to-sender', 'on-the-bell', 'bell-tower', 'false-claims', 'standoff', 'painted-line', 'departure']);
   assert.ok(CONTROL_SETS.oneAnswer.stages.exhibit);
 });
 
@@ -81,9 +82,11 @@ test('chapter and stage names resolve through their aliases', () => {
   assert.equal(resolveStageId(CONTROL_SETS.chapter2, 'c'), 'C');
   assert.equal(resolveStageId(CONTROL_SETS.chapter3, 'ticket'), 'board');
   assert.equal(resolveStageId(CONTROL_SETS.chapter4, 'final-train'), 'line');
-  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'III'), 'movement3');
-  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'phase-4'), 'movement4');
-  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 2), 'movement2');
+  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'III'), 'false-claims');
+  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'phase-4'), 'painted-line');
+  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 2), 'on-the-bell');
+  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'movement1'), 'roof-run', 'the round-11 stage ids still resolve');
+  assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'standoff'), 'standoff');
   assert.equal(resolveStageId(CONTROL_SETS.chapter6, 'ard'), null, 'no loose suffix matches');
 });
 
@@ -97,8 +100,8 @@ test('the pause view: the event\'s own rows, else the stage\'s, else the basics'
 
   const staged = pauseControlsView({ setId: 'chapter6', stage: 'III' });
   assert.equal(staged.source, 'stage');
-  assert.equal(staged.label, 'III · TWO TRUE THINGS');
-  assert.match(staged.rows.map(([a]) => a).join(' | '), /SPEAK FACE TO FACE/);
+  assert.equal(staged.label, 'III · FALSE CLAIMS');
+  assert.match(staged.rows.map(([a]) => a).join(' | '), /SAY BOTH TRUE THINGS/);
   assert.equal(staged.expandable, true);
 
   const basics = pauseControlsView({ setId: 'chapter6' });
@@ -146,8 +149,8 @@ test('Chapter 1 reads its act from the page when no stage event came, and draws 
 
 test('the stage rows follow the unified scheme (item 18)', () => {
   const rowsOf = (set) => [set.basics, ...Object.values(set.stages).map((stage) => stage.rows)].flat();
-  // where there is jumping, Space only ever jumps (round 11: the Conductor's
-  // fight jumps his rings and sweeps)
+  // where there is jumping, Space only ever jumps (round 12: the Conductor's
+  // set pieces jump cases, couplings, rings and his brush)
   for (const id of ['chapter2', 'chapter4', 'chapter5', 'chapter6']) {
     for (const [action, keys] of rowsOf(CONTROL_SETS[id])) {
       if (/\bSPACE\b/.test(keys)) assert.match(action, /^JUMP/, `${id}: ${action} · ${keys}`);
@@ -160,7 +163,7 @@ test('the stage rows follow the unified scheme (item 18)', () => {
   }
   // E / Enter interact where a chapter has an interact verb
   assert.match(CONTROL_SETS.chapter3.basics.map(([, k]) => k).join(' '), /E \/ ENTER/);
-  assert.match(CONTROL_SETS.chapter6.stages.movement3.rows.map(([, k]) => k).join(' '), /E \/ ENTER/);
+  assert.match(CONTROL_SETS.chapter6.stages['false-claims'].rows.map(([, k]) => k).join(' '), /E \/ ENTER/);
   // movement uses WASD / arrows
   for (const id of ['chapter3', 'chapter5', 'chapter6']) assert.match(CONTROL_SETS[id].basics[0][1], /WASD \/ ARROWS/, id);
 });
@@ -210,7 +213,7 @@ test('every chapter has an entry card: 3–4 basics and what changed', () => {
     assert.ok(spec.changed.length >= 1, `${id} says what changed`);
     for (const { tag } of spec.changed) assert.match(tag, /^(NEW|NOW|SAME|NOTE)$/);
   }
-  assert.match(chapterCardSpec('chapter6').changed.map(({ text }) => text).join(' '), /three phases each[\s\S]*Each phase is a checkpoint/);
+  assert.match(chapterCardSpec('chapter6').changed.map(({ text }) => text).join(' '), /seven set pieces[\s\S]*Every stretch is a checkpoint/);
   assert.match(chapterCardSpec(2).changed.map(({ text }) => text).join(' '), /Space jumps/);
   assert.equal(chapterCardSpec('cutscene'), null);
   assert.equal(chapterCardSpec('nope'), null);

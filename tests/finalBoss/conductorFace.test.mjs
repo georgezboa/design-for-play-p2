@@ -8,7 +8,8 @@ import { CONDUCTOR_HEAD_PART, CONDUCTOR_TORSO_PART, HEAD_FACE, paintConductorHea
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
 const finaleArt = read('src/chapters/finalBoss/finaleArt.js');
-const battle = read('src/chapters/finalBoss/spectacleBattle.js');
+const trainView = read('src/chapters/finalBoss/stage/trainView.js');
+const rooftopView = read('src/chapters/finalBoss/stage/rooftopView.js');
 
 function recordingContext() {
   const calls = [];
@@ -59,8 +60,10 @@ test('Movements I and II both use the finale face', () => {
   assert.match(finaleArt, /export function paintInkConductor[\s\S]*?const P = FINALE_CONDUCTOR_PARTS;/);
   assert.match(finaleArt, /export function paintRainConductor[\s\S]*?drawConductorHeadOver\(c, headX, headY/);
   assert.match(finaleArt, /const spec = \{ \.\.\.CONDUCTOR_RAIN_SPEC, cap: null \}/, 'no side-view cap under the front-view head');
-  assert.match(battle, /const conductorRain = paintRainConductor\(\{ scale: 4 \}\);/);
-  assert.match(battle, /const conductorRainLit = paintRainConductor\(\{ scale: 4, lit: true \}\);/);
+  // Round 12: the train view and the rooftop view paint him.
+  assert.match(trainView, /art\.conductor = canvasTexture\(paintInkConductor\(\{\}\)\);/);
+  assert.match(rooftopView, /art\.conductor = canvasTexture\(paintRainConductor\(\{ scale: 4 \}\)\);/);
+  assert.match(rooftopView, /art\.conductorLit = canvasTexture\(paintRainConductor\(\{ scale: 4, lit: true \}\)\);/);
 });
 
 test('lamp heads are lanterns: glass in its line colour in a brass cage, never an empty dark square', () => {

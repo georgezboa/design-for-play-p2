@@ -4,7 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { describe, it } from 'node:test';
 
 import { MAX_FRAME_SECONDS, MAX_STEP_SECONDS, frameSteps } from '../../src/chapters/finalBoss/finaleQuality.js';
-import { BELL_ARENA, MACHINE_NAMES, createBellArena } from '../../src/chapters/finalBoss/finaleModel.js';
+import { BELL_MS } from '../../src/chapters/borrowedLight/timetableModel.js';
+import { BELL_S, LAMPS, createBellRooftops } from '../../src/chapters/finalBoss/setPieces/bellRooftops.js';
 
 const source = (path) => readFile(new URL(`../../${path}`, import.meta.url), 'utf8');
 const sum = (steps) => steps.reduce((total, step) => total + step, 0);
@@ -37,33 +38,22 @@ describe('frame-rate independence', () => {
   });
 });
 
-// Round 11: Movement II teaches by doing in its first phase (no beams until
-// the first punch lands, one hint at a time); movements/onTheBell.js has it
-// and round11Movements.test.mjs drives it. The arena keeps its hold and
-// its planks.
-describe('Movement II: the bell arena', () => {
-  it('a held bell stands still, but a plank laid for the learner still crosses', () => {
-    const arena = createBellArena({ seed: 3, beams: false });
-    const before = arena.msToBell();
-    arena.extendReturnBridge('bridge-west');
-    arena.update(2000, { hold: true });
-    assert.equal(arena.msToBell(), before);
-    assert.equal(arena.bridgeLevel('bridge-west'), 1);
-    assert.equal(arena.bridgeUnder(-7, -2.5), 'bridge-west');
+// Round 12: Movement II is two set pieces, the bell rooftops and the bell
+// tower (setPieces/bellRooftops.js, bellTower.js; round12*.test.mjs drive
+// them). Chapter 2's bell still sets the beat, and its colours still read.
+describe('Movement II: on the bell', () => {
+  it('the rooftops keep Chapter 2\'s bell, until the quickening', () => {
+    assert.equal(BELL_S * 1000, BELL_MS);
+    assert.equal(createBellRooftops({ difficulty: 'normal' }).period, BELL_S);
+    assert.ok(createBellRooftops({ difficulty: 'normal', startSegment: 3 }).period < BELL_S, 'the quickening');
   });
 
-  it('every lamp names its colour line, and LISTEN names the machines', () => {
-    for (const node of BELL_ARENA.nodes) assert.match(node.label, new RegExp(`^${node.line.toUpperCase()} `));
-    assert.equal(MACHINE_NAMES['bridge-east'], 'BRIDGE EAST');
+  it('every lamp names its colour line', () => {
+    for (const lamp of LAMPS) assert.ok(['amber', 'teal', 'rose'].includes(lamp.line), lamp.id);
   });
 });
 
 describe('Movement II reads at a glance', () => {
-  it('a billboard turns to glass while Butch stands behind it', async () => {
-    const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
-    assert.match(battle, /mesh\.fade \+= \(\(behind \? 0\.28 : 1\) - mesh\.fade\)/);
-  });
-
   it('lamps, tags and prompt pills take their line colour', async () => {
     const art = await source('src/chapters/finalBoss/finaleArt.js');
     assert.match(art, /color: LAMP_NODE_TAG\[line\]/);
@@ -127,21 +117,21 @@ describe('after an ending, the journey says it is complete', () => {
 });
 
 describe('Movement III and the departure', () => {
-  it('the argument never freezes the square (round 11: it is fought), and the exposed pose is a stagger, never the kneel', async () => {
+  it('the argument never freezes the square: his lines queue while it is fought', async () => {
     const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
     assert.doesNotMatch(battle, /this\.echo\.stage = 'deflected'/);
     assert.match(battle, /Movement III speaks while it fights: lines queue, never pause the square\./);
-    assert.doesNotMatch(battle, /playConductorAction\('Fixing_Kneeling'/);
-    assert.match(battle, /this\.playConductorAction\('Hit_Chest', true\);/);
+    assert.doesNotMatch(battle, /Fixing_Kneeling/);
+    const square = await source('src/chapters/finalBoss/stage/squareView.js');
+    assert.match(square, /'Hit_Chest'/, 'answered, he staggers');
   });
 
-  it('the lens opens onto the next world, the HUD leaves the departure, and the night service has an engine', async () => {
+  it('the lens closes on Butch and opens onto the next world; the HUD leaves the departure', async () => {
     const battle = await source('src/chapters/finalBoss/spectacleBattle.js');
-    assert.match(battle, /this\.setPortalWorld\(nextPhase\);/);
+    assert.match(battle, /\/\/ The lens closes on Butch, holds, and opens on the next world\./);
+    assert.match(battle, /this\.enterMovement\(tr\.nextPhase\);/);
     assert.match(battle, /this\.hud\.classList\.add\('is-cinematic'\);/);
-    assert.match(battle, /\/\/ locomotive \(x 7\.6 … 13\)/);
-    assert.match(battle, /RETURN \$\{paintReturnDamage\(Math\.max\(1, this\.player\.color\)\)\}/);
-    assert.doesNotMatch(battle, /lastPointer < 3\.5/);
+    assert.match(battle, /this\.views\.line\.syncRam\?\.\(t, dt, this\.camera, this\.cameraTarget\);/, 'the night service rams through him on screen');
   });
 });
 

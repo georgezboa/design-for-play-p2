@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import {
   HIGH_PIXEL_RATIO, LOW_PIXEL_RATIO, SLOW_FRAME_MS, createFinaleQualityMonitor, finalePixelRatio, finaleQualityPreference, lowGraphicsRequested,
 } from '../../src/chapters/finalBoss/finaleQuality.js';
-import { PAINT_MOVEMENT_DRAIN, paintReturnDamage, spreadWorldTags, tagWidth } from '../../src/chapters/finalBoss/finaleModel.js';
+import { spreadWorldTags, tagWidth } from '../../src/chapters/finalBoss/finaleModel.js';
 import { ECHO_EXCHANGES, ECHO_VOICE_URLS } from '../../src/chapters/finalBoss/echoExchanges.js';
 
 const read = (path) => readFileSync(new URL(`../../${path}`, import.meta.url), 'utf8');
@@ -53,34 +53,23 @@ test('R4-1: the low tier caps the pixel ratio at 0.75 and turns off MSAA and sha
   assert.equal(finalePixelRatio('low', 2), LOW_PIXEL_RATIO);
   assert.equal(finalePixelRatio('low', 0.5), 0.5);
   assert.equal(finalePixelRatio('high', 3), HIGH_PIXEL_RATIO);
-  // the Conductor's renderer reads the tier before the context exists
+  // the Conductor's renderer reads the tier before the context exists. Round
+  // 12's views are painted and unlit: there are no shadows to turn off.
   assert.match(battle, /new THREE\.WebGLRenderer\(\{ antialias: !low,/);
-  assert.match(battle, /this\.renderer\.shadowMap\.enabled = !low;/);
-  assert.match(battle, /this\.key\.castShadow = this\.quality\.tier !== 'low';/);
+  assert.match(battle, /this\.renderer\.shadowMap\.enabled = false;/);
   assert.match(battle, /finaleQualityPreference\(globalThis\.NIGHTFALL_SETTINGS \?\? readSettings\(\)\)/);
-  // the drop: pixel ratio, shadows off, Lambert in place of PBR
-  assert.match(battle, /applyLowQuality\(reason = 'setting'\) \{[\s\S]{0,400}setPixelRatio\(finalePixelRatio\('low'[\s\S]{0,300}shadowMap\.enabled = false;[\s\S]{0,80}this\.key\.castShadow = false;[\s\S]{0,40}this\.cheapenScene\(\);/);
+  // the drop: pixel ratio, then Lambert in place of PBR (Movement III's rigs)
+  assert.match(battle, /applyLowQuality\(reason = 'setting'\) \{[\s\S]{0,200}setPixelRatio\(finalePixelRatio\('low'[\s\S]{0,200}this\.cheapenScene\(\);/);
   assert.match(battle, /new THREE\.MeshLambertMaterial\(/);
   assert.match(battle, /if \(this\.quality\.sample\(frameSeconds\) === 'low'\) this\.applyLowQuality\('slow-frames'\);/);
   assert.match(battle, /lowGraphics === true\) game\.applyLowQuality\('setting'\)/);
+  // each view builds a cheaper set on the low tier
+  const ctx = /const ctx = \{ scene: this\.scene, textureLoader: this\.textureLoader, low, still, battle: this \};/;
+  assert.match(battle, ctx);
   // the Black Ticket: antialias from the setting, half the particles on low
   assert.match(ticketMain, /render: \{ antialias: !lowGraphicsRequested\(/);
   assert.match(ticketScene, /const total = this\.lowGraphics \? Math\.ceil\(count \/ 2\) : count;/);
   assert.match(ticketScene, /this\.quality\?\.sample\(deltaMs \/ 1000\)/);
-});
-
-// --------------------------------------------------------- R4-3 the window
-
-test('R4-3: when he has no answer, the front edge stays lit with a tag and a HUD line until it is said', () => {
-  // Round 11: this is Movement III's finisher (movements/echoCity.js).
-  const echo = read('src/chapters/finalBoss/movements/echoCity.js');
-  assert.match(echo, /const noAnswer = \(\) => \{\s*frontLit = true;/);
-  assert.match(echo, /if \(frontLit\) \{\s*if \(body\.z <= FRONT_EDGE_Z\) \{[\s\S]{0,200}d\.damage\(SAID_DAMAGE, 'said-to-his-face'\);/);
-  assert.match(echo, /if \(frontLit\) return 'HE HAS NO ANSWER · THE LIT FRONT EDGE · <kbd>E<\/kbd> · SAY IT TO HIS FACE';/);
-  assert.doesNotMatch(battle, /THE MOMENT PASSED/, 'the window never times out');
-  assert.match(battle, /this\.showFrontEdge\(director\.frontLit\);/);
-  assert.match(battle, /text: p\.z <= ECHO_FRONT_EDGE_Z \? '<kbd>E<\/kbd> · SAY IT TO HIS FACE' : 'THE FRONT EDGE · <kbd>E<\/kbd>'/);
-  assert.doesNotMatch(battle, /<kbd>SPACE<\/kbd> · SAY IT/);
 });
 
 // ------------------------------------------------------- R4-4 the argument
@@ -105,28 +94,15 @@ test('R4-4: a half answer is deflected in one short line, and the claim comes ba
       assert.ok(reply.deflect.length <= 72, `${exchange.id}: one short line (${reply.deflect.length})`);
     }
   }
-  // Round 11: the square never freezes; the line is a toast over the fight.
-  const echo = read('src/chapters/finalBoss/movements/echoCity.js');
-  assert.match(echo, /const line = why === 'none' \? ECHO_DEFLECT_FALLBACK : \(reply\.deflect \?\? ECHO_DEFLECT_FALLBACK\);/);
-  assert.match(echo, /argument\.deflect\(exchange\.id\);/);
-  assert.match(battle, /case 'deflected': this\.toast\(e\.line, 3\.2\);/);
-});
-
-// ------------------------------------------------------------ R4-5 colour
-
-test('R4-5 → round 11: a return lands only in the open beat, so each colour cuts deep and a fuller brush deeper', () => {
-  assert.equal(PAINT_MOVEMENT_DRAIN, 88);
-  // A phase is ~30 of the 88 and stops at its floor: two open windows a phase.
-  assert.ok(paintReturnDamage(3) < 30, 'one full brush never ends a phase by itself');
-  assert.ok(paintReturnDamage(3) * 2 >= 30, 'two full brushes always do');
-  assert.ok(paintReturnDamage(2) > paintReturnDamage(1) * 2, 'holding pays');
-  assert.ok(paintReturnDamage(3) > paintReturnDamage(1) * 3);
-  assert.equal(paintReturnDamage(9), paintReturnDamage(3), 'three colours at most');
+  // Round 12: the square never freezes; the line is a toast over the fight.
+  const claims = read('src/chapters/finalBoss/setPieces/falseClaims.js');
+  assert.match(claims, /d\.emit\(\{ type: 'half', exchange: exchange\(\)\.id, reply, line: reply\?\.deflect \?\? /);
+  assert.match(battle, /case 'half': this\.toast\(e\.line, 3\);/);
 });
 
 // ---------------------------------------------------------- layout and flow
 
-test('Movement I: a case tag never covers the E · RETURN prompt beside it', () => {
+test('a claim tag never covers the E · RETURN prompt beside it', () => {
   const prompt = { text: '<kbd>E</kbd> · RETURN', x: 470, y: 560, priority: 2 };
   const claim = { text: '1978-0402 · UMBRELLA', x: 330, y: 556, dim: true };
   const [placedPrompt, placedClaim] = spreadWorldTags([prompt, claim]);
@@ -138,7 +114,7 @@ test('Movement I: a case tag never covers the E · RETURN prompt beside it', () 
   // tags far apart are left alone
   const apart = spreadWorldTags([{ text: 'A', x: 100, y: 300 }, { text: 'B', x: 900, y: 300 }]);
   assert.deepEqual(apart.map((tag) => tag.y), [300, 300]);
-  assert.match(battle, /spreadWorldTags\(tags\)\.forEach\(\(tag\) => this\.tags\.tag\(tag\.text, tag\.x, tag\.y, \{ dim: Boolean\(tag\.dim\) \}\)\);/);
+  assert.match(battle, /spreadWorldTags\(tags\)\.forEach\(\(tag\) => this\.tags\.tag\(tag\.text, tag\.x, tag\.y, \{ dim: Boolean\(tag\.dim\), color: tag\.color \}\)\);/);
 });
 
 test('the STORY offer replaces the death card and carries what tore the layer', () => {
@@ -148,15 +124,14 @@ test('the STORY offer replaces the death card and carries what tore the layer', 
 });
 
 test('A4-10: a new world is held behind a veil until the GPU has drawn it; the title card waits for it', () => {
-  assert.match(battle, /tr\.switched = true;\s*this\.holdWorldVeil\(\{ cameraUp: true \}\);/);
-  assert.match(battle, /finishVerifiedTransition\(\) \{\s*const tr = this\.transition;\s*this\.holdWorldVeil\(\);/);
+  assert.match(battle, /tr\.switched = true;\s*this\.holdWorldVeil\(\);\s*this\.enterMovement\(tr\.nextPhase\);/);
+  assert.match(battle, /this\.transition = null;\s*this\.holdWorldVeil\(\);\s*this\.enterMovement\(tr\.nextPhase\);/, 'after the ticket inspection too');
   assert.match(battle, /gl\.fenceSync\(gl\.SYNC_GPU_COMMANDS_COMPLETE, 0\)/);
-  assert.match(battle, /this\.renderer\.render\(this\.scene, this\.camera\);\s*this\.checkWorldVeil\(\);/);
+  assert.match(battle, /this\.checkWorldVeil\(\);/);
   assert.match(battle, /if \(this\.worldVeiled\) this\.pendingTitleCard = card; else card\(\);/);
-  assert.match(battle, /!this\.dialoguePause && !this\.worldVeiled && director\) \{/, 'no world tags over the veil');
+  assert.match(battle, /!this\.dialoguePause && !this\.worldVeiled && this\.view && this\.run\) \{/, 'no world tags over the veil');
+  assert.match(battle, /if \(!this\.worldVeiled && !falling/, 'the fight waits under the veil');
   assert.match(style, /\.nf-world-veil\.is-held \{ opacity: 1;/);
-  // and the fall lands on the fight's own framing
-  assert.match(battle, /const pose = this\.landingCameraPose\(\);/);
 });
 
 test('A4-3: at 1280×720 the hint is one line under the ticket bar and the answer box clears the layers', () => {

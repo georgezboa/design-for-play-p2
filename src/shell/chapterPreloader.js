@@ -107,14 +107,10 @@ export const CHAPTER_PRELOAD_PROFILES = Object.freeze({
       '/assets/music/ch6/6.4_mussorgsky_kiev_gate.mp3',
       '/assets/music/ch6/6.5_night_train_departure.mp3',
       // Only what the fight draws (spectacleBattle.js FINAL_BOSS_MODEL_URLS):
-      // the Movement III rigs, their animation library and the three props
-      // the Conductor throws there.
+      // the Movement III rigs and their animation library.
       '/assets/chapter03-3d/characters/male_municipal_shared_rig.glb',
       '/assets/chapter03-3d/characters/butch_shared_rig.glb',
       '/assets/chapter03-3d/animations/quaternius_ual1_standard.glb',
-      '/assets/chapter03-3d/models/ch03_crushed_trash_can.glb',
-      '/assets/chapter03-3d/models/ch03_fountain_bench.glb',
-      '/assets/chapter03-3d/models/ch03_pa_speaker.glb',
       ...FINALE_ART,
       ...CHAPTER1_WORLD,
     ]),

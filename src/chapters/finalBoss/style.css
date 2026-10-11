@@ -233,3 +233,42 @@
 @media (max-width: 760px) { .nf-answer__grid { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .nf-answer .is-nudged { animation: none; } }
 :root[data-reduced-motion='true'] .nf-answer .is-nudged { animation: none; }
+
+/* Round 12 · the set pieces' transitions: the punch-hole lens a world falls
+   through (an iris round Butch with a brass rim), the cut between two pieces
+   of one movement (a tunnel's black, a wipe up the tower), and the quick
+   death card (play goes on under it). */
+.nf-iris { position: absolute; inset: 0; z-index: 7; pointer-events: none; background: #0b0806; opacity: 0;
+  -webkit-mask: radial-gradient(circle at var(--ix, 50%) var(--iy, 50%), transparent var(--ir, 200vmax), #000 calc(var(--ir, 200vmax) + 1px));
+  mask: radial-gradient(circle at var(--ix, 50%) var(--iy, 50%), transparent var(--ir, 200vmax), #000 calc(var(--ir, 200vmax) + 1px)); }
+.nf-iris.is-on { opacity: 1; }
+.nf-iris__rim { position: absolute; left: var(--ix, 50%); top: var(--iy, 50%); width: calc(var(--ir, 0px) * 2); height: calc(var(--ir, 0px) * 2);
+  transform: translate(-50%, -50%); border-radius: 50%; box-shadow: 0 0 0 6px #b08a4a, 0 0 0 9px rgba(11, 8, 6, 0.9), 0 0 26px 10px rgba(224, 162, 74, 0.35); }
+.nf-cut { position: absolute; inset: 0; z-index: 7; pointer-events: none; background: #05070d; opacity: 0; }
+.nf-cut[data-kind='crane-up'] { background: linear-gradient(180deg, #0b1418, #1a2a30); }
+.nf-death-card--quick.show { animation-duration: 2.4s; }
+.nf-checkpoint { position: absolute; left: 50%; top: 118px; transform: translate(-50%, -6px); opacity: 0; padding: 6px 14px 7px; border: 1px solid rgba(224, 162, 74, 0.8);
+  background: rgba(18, 12, 8, 0.86); color: #eadfc6; font: 600 calc(11px * var(--nf-scale, 1)) / 1.2 var(--nf-mono, monospace); letter-spacing: 0.18em; transition: opacity 0.25s ease, transform 0.25s ease; }
+.nf-checkpoint b { color: #e0a24a; margin-right: 10px; }
+.nf-checkpoint.show { opacity: 1; transform: translate(-50%, 0); animation: nf-checkpoint-out 2.6s ease forwards; }
+@keyframes nf-checkpoint-out { 0%, 80% { opacity: 1; } 100% { opacity: 0; } }
+.nf-death-card--quick { width: min(440px, calc(100vw - 80px)); top: 30%; }
+.nf-death-card--quick .nf-death-card__title { font-size: calc(18px * var(--nf-scale, 1)); }
+.nf-death-card--quick .nf-death-card__lines { font-size: calc(14px * var(--nf-scale, 1)); }
+/* THE STANDOFF: the four record cards at Butch's hands (↑ ← → ↓). */
+.nf-duel { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: min(740px, calc(100vw - 60px)); height: 264px; pointer-events: none; }
+.nf-duel__card { position: absolute; width: 270px; padding: 9px 12px 10px 44px; background: rgba(239, 227, 198, 0.94); color: #2a1712; border: 2px solid #b08a4a;
+  font: calc(14px * var(--nf-scale, 1)) / 1.3 var(--nf-serif, Georgia, serif); box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35); transition: transform 0.15s ease, opacity 0.2s ease; }
+.nf-duel__card kbd { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font: 700 calc(16px * var(--nf-scale, 1)) / 1 var(--nf-mono, monospace); color: #8a2a1e; }
+.nf-duel__card[data-slot='up'] { left: 50%; top: 0; transform: translateX(-50%); }
+.nf-duel__card[data-slot='left'] { left: 0; top: 86px; }
+.nf-duel__card[data-slot='right'] { right: 0; top: 86px; }
+.nf-duel__card[data-slot='down'] { left: 50%; top: 176px; transform: translateX(-50%); }
+.nf-duel__card.is-said { background: #e0a24a; border-color: #fff1c8; }
+.nf-duel__state { position: absolute; left: 50%; top: 106px; transform: translateX(-50%); margin: 0; padding: 6px 12px; background: rgba(18, 12, 8, 0.85); color: #e0a24a;
+  font: 700 calc(12px * var(--nf-scale, 1)) / 1.2 var(--nf-mono, monospace); letter-spacing: 0.16em; white-space: nowrap; }
+.nf-duel[data-stage='draw'] .nf-duel__state, .nf-duel[data-stage='second'] .nf-duel__state { background: #8a2a1e; color: #fff1d0; }
+.nf-duel[data-stage='claim'] .nf-duel__card { opacity: 0.8; }
+/* THE PAINTED LINE: his grey wash, creeping in from behind. */
+.nf-wash { position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0; transition: opacity 0.4s ease;
+  background: radial-gradient(ellipse 120% 70% at 50% 20%, transparent 55%, rgba(110, 112, 118, 0.55) 80%, rgba(80, 82, 88, 0.85) 100%); }
