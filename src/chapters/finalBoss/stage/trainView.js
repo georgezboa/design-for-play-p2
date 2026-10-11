@@ -472,7 +472,10 @@ export function createTrainView({ scene, textureLoader, low = false, still = () 
       if (piece.view === 'duel') {
         for (const h of piece.hazards) {
           if ((h.kind === 'claim' || h.kind === 'decoy') && h.T - h.age < 0.62 && h.T - h.age > -0.1) {
-            out.push({ text: h.kind === 'decoy' ? 'NO CLAIM' : `${CLAIM_TAGS[(h.rallyIndex + Number(h.id.split('-')[1])) % CLAIM_TAGS.length]} · <kbd>E</kbd>`, x: h.x, y: 2.2, z: 0, dim: h.kind === 'decoy' });
+            // the E shows only once a press counts (window + the held press), so the tag never asks too early
+            const ready = h.T - h.age <= piece.tuning.window * THROW.window + THROW.buffer;
+            const tag = CLAIM_TAGS[(h.rallyIndex + Number(h.id.split('-')[1])) % CLAIM_TAGS.length];
+            out.push({ text: h.kind === 'decoy' ? 'NO CLAIM' : ready ? `${tag} · <kbd>E</kbd>` : tag, x: h.x, y: 2.2, z: 0, dim: h.kind === 'decoy' });
           }
         }
       } else {

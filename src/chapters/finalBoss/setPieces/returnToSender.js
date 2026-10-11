@@ -57,6 +57,11 @@ export const THROW = Object.freeze({
   ring: 0.78, // a drop's ring
   claimRing: 0.95, // stand inside it to punch
   window: 0.15, // ± seconds around the landing
+  // Round 12 playtest (George: "sometimes I press E and it doesn't go back"):
+  // a press a little early is kept this long and lands the punch the moment
+  // the window opens (never on a decoy); only a press with nothing coming
+  // locks the fist (mashing).
+  buffer: 0.25,
   perfect: 0.055, // a VOLLEY
   reveal: 0.62, // a decoy reads NO CLAIM this long before it lands
   sweepSpeed: 15,
@@ -192,24 +197,53 @@ export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 }
   };
   const halfW = () => RTS.halfW * d.tuning.hurt;
 
-  // E: punch the claim landing in Butch's ring (a decoy is refused).
+  // E: punch the claim landing in Butch's ring (a decoy is refused). A press
+  // a little early is held (THROW.buffer) and lands when the window opens.
+  let held = null; // { until } a buffered press
+  const inReach = (h) => Math.abs(body.x - h.x) <= THROW.claimRing + halfW() && body.y <= 2.2;
+  const landing = (h) => !h.done && !h.punched && (h.kind === 'claim' || h.kind === 'decoy');
+  const findTarget = ({ decoys = true } = {}) => {
+    const win = d.win(THROW.window);
+    let best = null;
+    for (const h of hazards) {
+      if (!landing(h) || (!decoys && h.kind === 'decoy')) continue;
+      const left = h.T - h.age;
+      if (Math.abs(left) > win || !inReach(h)) continue;
+      if (!best || Math.abs(left) < Math.abs(best.left)) best = { h, left };
+    }
+    return best;
+  };
   const punch = () => {
     if (body.whiff > 0) return;
     body.punch = 0.22;
     const win = d.win(THROW.window);
-    let best = null;
-    for (const h of hazards) {
-      if (h.done || h.punched || (h.kind !== 'claim' && h.kind !== 'decoy')) continue;
-      const left = h.T - h.age;
-      if (Math.abs(left) > win || Math.abs(body.x - h.x) > THROW.claimRing || body.y > 1.6) continue;
-      if (!best || Math.abs(left) < Math.abs(best.left)) best = { h, left };
-    }
+    const best = findTarget();
     if (!best) {
-      const early = hazards.some((h) => (h.kind === 'claim' || h.kind === 'decoy') && !h.punched && h.T - h.age > win && h.T - h.age < 0.6);
-      body.whiff = 0.22;
+      // a claim landing within the buffer: hold the press for it
+      const coming = hazards.some((h) => landing(h) && h.kind === 'claim' && h.T - h.age > win && h.T - h.age - win <= THROW.buffer);
+      if (coming) { held = { until: d.clock + THROW.buffer }; return; }
+      // in its window, but Butch is not in the ring
+      const astray = hazards.some((h) => landing(h) && Math.abs(h.T - h.age) <= win && !inReach(h));
+      if (astray) { d.emit({ type: 'act', result: 'outside' }); return; }
+      const early = hazards.some((h) => landing(h) && h.T - h.age > win && h.T - h.age < 0.9);
+      if (!early) body.whiff = 0.22;
       d.emit({ type: 'act', result: early ? 'early' : 'none' });
       return;
     }
+    land(best);
+  };
+  // A held press: punch as soon as a claim (never a decoy) is in its window.
+  const stepHeld = () => {
+    if (!held) return;
+    const best = findTarget({ decoys: false });
+    if (best) { held = null; body.punch = 0.22; land(best); return; }
+    if (d.clock >= held.until) {
+      held = null;
+      const astray = hazards.some((h) => landing(h) && Math.abs(h.T - h.age) <= d.win(THROW.window) && !inReach(h));
+      d.emit({ type: 'act', result: astray ? 'outside' : 'early' });
+    }
+  };
+  const land = (best) => {
     const { h, left } = best;
     h.punched = true;
     if (h.kind === 'decoy') {
@@ -299,6 +333,7 @@ export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 }
     if (d.state === 'intro' && d.stateAge >= 1.4) { d.setState('play'); d.emit({ type: 'segment', index: d.seg.index, name: seg().name, id: seg().id, checkpoint: true }); }
     stepBody(dt, d.state === 'done' ? {} : input);
     if (input.act && d.state === 'play') punch();
+    if (d.state === 'play') stepHeld(); else held = null;
     // He shuffles along the engine roof, toward where Butch is.
     bossTarget = clamp(body.x * 0.6, -2, 2);
     bossX = approach(bossX, bossTarget, 1.2 * dt);
@@ -319,6 +354,7 @@ export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 }
 
   // NORMAL: the segment's rallies start again. STORY: what is won stays.
   const checkpoint = (rollback) => {
+    held = null;
     hazards.forEach((h) => { h.done = true; });
     hazards.length = 0;
     d.cancelTimers();
@@ -340,8 +376,9 @@ export function createReturnToSender({ difficulty, seed = 13, startSegment = 0 }
     get stagger() { return stagger; },
     update,
     checkpoint,
-    onHurt() { body.punch = 0; },
+    onHurt() { body.punch = 0; held = null; },
     jumpToSegment(i) {
+      held = null;
       d.seg.jump(i);
       hazards.length = 0; d.cancelTimers(); rally = null; wins = 0; beat = 0; beatClock = 1.5;
       if (d.state === 'intro') d.setState('play');

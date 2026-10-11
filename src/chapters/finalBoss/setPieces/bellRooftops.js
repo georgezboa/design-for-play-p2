@@ -88,7 +88,11 @@ export const LAMPS = Object.freeze([
 
 export const ROOFTOP = Object.freeze({
   killY: -5,
-  reach: 1.5,
+  // round 13 (George stood four metres short of the rose signal, pressing
+  // nothing): a lamp answers E a little further off, and one nearby but not
+  // in reach says "closer" (spectacleBattle onAct 'reach').
+  reach: 2.0,
+  near: 6,
   plankOut: 2.25, // seconds a bell plank stays out (×window on STORY)
   plankWarn: 0.5, // it flickers this long before folding
   travel: 0.35, // a bridge or billboard moving
@@ -236,7 +240,11 @@ export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } =
       if (dx > ROOFTOP.reach || Math.abs(lamp.y - body.y) > 2.2) continue;
       if (!best || dx < best.dx) best = { lamp, dx };
     }
-    if (!best) { d.emit({ type: 'act', result: 'none' }); return; }
+    if (!best) {
+      const near = [...lamps.values()].find((l) => Math.abs(l.x - body.x) <= ROOFTOP.near && Math.abs(l.y - body.y) <= 2.2 && !(l.line === 'rose' && l.lit));
+      d.emit({ type: 'act', result: near ? 'reach' : 'none', lamp: near?.id ?? null, line: near?.line ?? null });
+      return;
+    }
     const { lamp } = best;
     if (lamp.line === 'rose' && lamp.lit) { d.emit({ type: 'act', result: 'spent', lamp: lamp.id }); return; }
     if (lamp.queued) { d.emit({ type: 'act', result: 'already', lamp: lamp.id }); return; }
@@ -360,6 +368,25 @@ export function createBellRooftops({ difficulty, seed = 17, startSegment = 0 } =
           return 0;
         },
       };
+    },
+    // What to do now, in a line (the plaque, bottom right).
+    objective() {
+      if (d.state !== 'play') return null;
+      const toBell = Math.max(0, period() - bellClock).toFixed(1);
+      const rose = [...lamps.values()].find((l) => l.line === 'rose' && l.segment === d.seg.index);
+      if (rose?.queued) return `The rose signal is set: it lights him on the next bell · ${toBell} s`;
+      const dx = rose ? rose.x - body.x : Infinity;
+      if (rose && !rose.lit && dx > -4 && dx < 16) {
+        if (Math.abs(dx) <= ROOFTOP.reach && Math.abs(rose.y - body.y) <= 2.2) return 'At the rose signal: E. It lights him on the next bell, and the stretch is done.';
+        return `The rose signal ends this stretch, ${Math.max(1, Math.round(Math.abs(dx)))} m ${dx < 0 ? 'back' : 'ahead'}: walk right up to it and press E.`;
+      }
+      const lamp = [...lamps.values()].filter((l) => l.line !== 'rose' && l.x - body.x > -ROOFTOP.reach && l.x - body.x < ROOFTOP.near && Math.abs(l.y - body.y) <= 2.2).sort((a, b) => Math.abs(a.x - body.x) - Math.abs(b.x - body.x))[0];
+      if (lamp) {
+        const what = lamp.line === 'amber' ? 'its bridge lays across' : 'its billboard rises';
+        if (lamp.queued) return `Set: on the next bell ${what} · ${toBell} s`;
+        if (machineLevel(lamp) <= 0.05) return `${lamp.line === 'amber' ? 'An amber' : 'A teal'} lamp: E beside it, and on the next bell ${what}.`;
+      }
+      return null;
     },
     hint() {
       if (d.state === 'intro' || d.state === 'done') return '';

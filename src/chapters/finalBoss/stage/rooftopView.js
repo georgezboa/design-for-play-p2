@@ -380,10 +380,10 @@ export function createRooftopView({ scene, low = false, still = () => false }) {
       if (mode === 'rooftops') {
         const b = piece.body;
         for (const l of piece.lamps()) {
-          if (Math.abs(l.x - b.x) > 6) continue;
+          if (Math.abs(l.x - b.x) > ROOFTOP.near) continue;
           const near = Math.abs(l.x - b.x) <= ROOFTOP.reach;
-          const name = { amber: 'AMBER LAMP · BRIDGE', teal: 'TEAL LAMP · BILLBOARD', rose: 'ROSE SIGNAL · HIS LIGHT' }[l.line];
-          out.push({ text: l.queued ? `${name} · ON THE NEXT BELL` : near && !l.lit ? `<kbd>E</kbd> · ${name}` : name, x: l.x, y: l.y + 3, z: 0.4, dim: !near, color: { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' }[l.line] });
+          const name = { amber: 'AMBER LAMP · BRIDGE', teal: 'TEAL LAMP · BILLBOARD', rose: l.lit ? 'ROSE SIGNAL · LIT' : 'ROSE SIGNAL · ENDS THE STRETCH' }[l.line];
+          out.push({ text: l.queued ? `${name} · ON THE NEXT BELL` : near && !l.lit ? `<kbd>E</kbd> · ${name}` : l.line === 'rose' && !l.lit ? `${name} · WALK UP · <kbd>E</kbd>` : name, x: l.x, y: l.y + 3, z: 0.4, dim: !near, color: { amber: '#e0a24a', teal: '#6fb7ad', rose: '#c98088' }[l.line] });
         }
       } else if (piece.seg.current.id === 'on-the-bell') out.push({ text: '<kbd>E</kbd> · AS IT STRIKES', x: 0, y: TOWER.bellY - 2.4, z: 0 });
       return out;

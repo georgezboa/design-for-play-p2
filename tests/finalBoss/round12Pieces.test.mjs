@@ -92,8 +92,17 @@ test('a brass claim punched as it reaches Butch goes back; close in is a volley;
   const sweet = (CLAIM.sweet[0] + CLAIM.sweet[1]) / 2;
   assert.equal(result('normal', sweet), 'volley');
   assert.equal(result('normal', CLAIM.sweet[1] + 0.3), 'returned');
-  assert.equal(result('normal', CLAIM.reach[1] + 0.5), 'early');
+  assert.equal(result('normal', CLAIM.reach[1] + 2.5), 'early', 'well off: too early');
   assert.equal(result('story', CLAIM.reach[1] + 0.5), 'returned', 'STORY: a wider reach');
+  // round 12 playtest: a press a little early is held and lands as the case reaches him
+  {
+    const piece = createRoofRun({ difficulty: 'normal' });
+    toPlay(piece);
+    rollingClaim(piece, CLAIM.reach[1] + 0.5);
+    assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)), [], 'held, not refused');
+    const later = acts(play(piece, CLAIM.buffer, {}, GOD));
+    assert.ok(later.includes('returned') || later.includes('volley'), `the held press lands (${later})`);
+  }
   // a returned claim flies back to him and lands
   const piece = createRoofRun({ difficulty: 'normal' });
   toPlay(piece);
@@ -168,8 +177,31 @@ test('return to sender: E as it lands punches it back; on the beat is a volley; 
   };
   assert.equal(result('normal', 0.02), 'volley');
   assert.equal(result('normal', THROW.window - 0.04), 'returned');
-  assert.equal(result('normal', 0.3), 'early');
+  assert.equal(result('normal', 0.8), 'early', 'well before the landing: too early');
   assert.equal(result('story', 0.2), 'returned', `STORY's window is ±${(THROW.window * 1.6).toFixed(2)} s`);
+  // round 12 playtest: a press a little early (0.3 s) is held and lands when the window opens; never on a decoy
+  {
+    const piece = createReturnToSender({ difficulty: 'normal' });
+    toPlay(piece);
+    landingClaim(piece, 0.3);
+    assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)), [], 'held, not refused');
+    assert.ok(acts(play(piece, 0.3, {}, GOD)).includes('returned'), 'the held press lands when the window opens');
+  }
+  {
+    const piece = createReturnToSender({ difficulty: 'normal' });
+    toPlay(piece);
+    landingClaim(piece, 0.3, { kind: 'decoy' });
+    piece.update(DT, { act: true }, GOD);
+    assert.equal(acts(play(piece, 0.3, {}, GOD)).includes('decoy'), false, 'a held press never punches a decoy');
+  }
+  {
+    // in the window but outside the ring: told so, not silently ignored
+    const piece = createReturnToSender({ difficulty: 'normal' });
+    toPlay(piece);
+    const h = landingClaim(piece, 0.02);
+    h.x = piece.body.x + THROW.claimRing + 1;
+    assert.deepEqual(acts(piece.update(DT, { act: true }, GOD)), ['outside']);
+  }
 });
 
 test('a whiffed punch locks the fist for a moment; a decoy punched tears a layer', () => {

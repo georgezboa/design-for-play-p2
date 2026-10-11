@@ -913,7 +913,9 @@ class SpectacleBattle {
       this.hitStopFor(r === 'volley' ? 0.085 : 0.05);
       this.addTrauma(r === 'volley' ? 0.32 : 0.2, { x: 0.4 });
       this.toast(r === 'volley' ? 'VOLLEY · ON THE BOUNCE' : 'CLAIM RETURNED', 1.1);
-    } else if (r === 'early') { bellAudio.refused(); this.toastOnce('early', 'TOO EARLY · AS IT REACHES YOU', 1.2, 2); }
+    } else if (r === 'early') { bellAudio.refused(); this.toastOnce('early', this.run?.piece.id === 'return-to-sender' ? 'TOO EARLY · AS IT LANDS' : 'TOO EARLY · AS IT REACHES YOU', 1.2, 1.2); }
+    else if (r === 'outside') { bellAudio.refused(); this.toastOnce('outside', 'STAND IN ITS BRASS RING', 1.2, 1.2); }
+    else if (r === 'air') { bellAudio.refused(); this.toastOnce('air', 'TOO HIGH · PUNCH IT FROM THE ROOF', 1.2, 1.2); }
     else if (r === 'decoy') { bellAudio.refused(); this.toast('NO CLAIM · IT IS HEAVY', 1.4); }
     else if (r === 'queued') { bellAudio.punchClack(); this.audio.punch(); }
     else if (r === 'already' || r === 'busy' || r === 'spent') bellAudio.refused();
@@ -921,6 +923,8 @@ class SpectacleBattle {
     else if (r === 'late' || r === 'far') { if (this.run.piece.id === 'bell-tower') this.toastOnce('bell-miss', 'AS IT STRIKES · STAND UNDER IT', 1.4, 2); }
     else if (r === 'aside') { bellAudio.refused(); this.toastOnce('aside', 'HE STEPS ASIDE · LEAD HIM A LITTLE', 1.4, 1.5); }
     else if (r === 'one') this.toastOnce('one', 'ONE TRUE THING · NOW THE OTHER', 1.4, 2);
+    else if (r === 'nothing') this.toastOnce('nothing', 'FIRST THE TWO TRUE THINGS · WALK INTO THEIR BRASS RINGS', 1.6, 2);
+    else if (r === 'reach') { bellAudio.refused(); this.toastOnce('reach', e.line === 'rose' ? 'CLOSER · RIGHT UP TO THE ROSE SIGNAL' : 'CLOSER · RIGHT UP TO THE LAMP', 1.3, 1.2); }
     else if (r === 'pair') { this.audio.punch(); this.bossStruck(1, 'two-true-things', { big: true, reaction: 'shame' }); if (e.reply?.cue) this.queueVoice(e.reply.cue, { meta: 'BOTH TRUE THINGS' }); }
     else if (r === 'first') { this.audio.tone(660, 0.16, { type: 'triangle', vol: 0.035 }); this.hitStopFor(0.04); }
     else if (r === 'second') this.hitStopFor(0.06);
@@ -1339,9 +1343,18 @@ class SpectacleBattle {
     const plaqueTitle = this.plaque.querySelector('b');
     const plaqueRule = this.plaque.querySelector('span');
     const title = `${phase.number} · ${piece.seg.current.name}`;
-    const rule = SEGMENT_RULES[piece.seg.current.id] ?? phase.rule;
+    // Round 13: where a piece knows what to do next, the plaque says that
+    // (George got stuck twice not knowing); else the stretch's rule.
+    const task = this.mode === 'play' && !this.transition && !this.handoff ? piece.objective?.() ?? null : null;
+    const rule = task ?? SEGMENT_RULES[piece.seg.current.id] ?? phase.rule;
     if (plaqueTitle.textContent !== title) plaqueTitle.textContent = title;
     if (plaqueRule.textContent !== rule) plaqueRule.textContent = rule;
+    this.plaque.classList.toggle('is-task', Boolean(task));
+    const taskKey = task ? task.replace(/[\d.]+\s*s\b/g, '') : '';
+    if (taskKey !== (this.plaqueTaskKey ?? '')) {
+      this.plaqueTaskKey = taskKey;
+      if (taskKey) { this.plaque.classList.remove('is-new'); void this.plaque.offsetWidth; this.plaque.classList.add('is-new'); }
+    }
     const layerTitle = this.layers.querySelector('b');
     const label = `BUTCH · ${phase.form} · ${D().label}`;
     if (layerTitle.textContent !== label) layerTitle.textContent = label;

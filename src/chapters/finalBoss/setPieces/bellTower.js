@@ -282,6 +282,14 @@ export function createBellTower({ difficulty, seed = 19, startSegment = 0 } = {}
         },
       };
     },
+    // What to do now, in a line (the plaque): under the bell, the strike's count-down.
+    objective() {
+      if (d.state !== 'play' || seg().id !== 'on-the-bell') return null;
+      const next = Math.max(0, BELL_S - bellClock).toFixed(1);
+      const count = `${punches} / ${TOWER.punches}`;
+      if (Math.abs(body.x) > TOWER.punchReach) return `Walk under the bell, to the middle of the belfry. Then E as it strikes · ${count}`;
+      return `Under the bell: E as it strikes · ${next} s · ${count}`;
+    },
     hint() {
       if (d.state === 'intro' || d.state === 'done') return '';
       return teach ? TOWER_HINTS[teach.kind] ?? '' : '';

@@ -283,3 +283,5 @@
 .nf-finale .battle-hud.is-compact-caption .nf-caption .nf-caption__text { font-size: calc(15px * var(--nf-scale)); line-height: 1.32; }
 .nf-finale .battle-hud.is-compact-caption .nf-caption .nf-caption__meta { display: none; }
 .nf-finale .battle-hud.is-compact-caption:has(.nf-caption:not([hidden])) .nf-plaque { opacity: 0; }
+/* Round 13: the plaque's next step stays while he talks, lifted clear of the subtitle. */
+.nf-finale .battle-hud.is-compact-caption:has(.nf-caption:not([hidden])) .nf-plaque.is-task { opacity: 1; bottom: calc(26px + 4.6em * var(--nf-scale)); }

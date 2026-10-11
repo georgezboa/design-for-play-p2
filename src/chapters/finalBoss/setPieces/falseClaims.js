@@ -62,13 +62,15 @@ export function slipDistance(b, x, z) {
 
 export const BUTCH_TOP = Object.freeze({ speed: 6.4, accel: 90, dashSpeed: 15, dashTime: 0.15, dashInv: 0.22, dashCd: 0.6, hurt: 0.2 });
 
-export const CARDS = Object.freeze({ reach: 0.85, pair: 3.8, apart: 8, fromButch: 4, again: 2.4, drift: 0.45 });
+// reach: round 13 (George could not tell what to do with the cards): the
+// ring a card lies in is what Butch walks into, a little wider now.
+export const CARDS = Object.freeze({ reach: 1.15, pair: 3.8, apart: 8, fromButch: 4, again: 2.4, drift: 0.45, reteach: 6 });
 export const ANSWER = Object.freeze({ half: 1.6, cooldown: 0.7, flight: 0.45 });
 
 export const CLAIM_HINTS = Object.freeze({
   dodge: 'HIS MISREADINGS ARE THE WORDS · THE DOT IS ALL THEY CAN HIT · MOVE',
   cards: 'TWO TRUE THINGS CAME DOWN · WALK INTO ONE, THEN THE OTHER',
-  answer: 'YOU HOLD BOTH · LINE UP UNDER HIM · <kbd>E</kbd> · SAY IT',
+  answer: 'YOU HOLD BOTH · STAND ON THE GOLD LANE UNDER HIM · <kbd>E</kbd> · SAY IT',
   half: 'ONLY ONE TRUE THING · HE FILES THE HALF ANSWER · THEY COME DOWN AGAIN',
   ring: 'HIS CLAIM CLOSES ROUND YOU · LEAVE THROUGH THE GAP',
   echo: 'THE WORDS ECHO OFF THE SQUARE · WATCH BEHIND YOU',
@@ -108,6 +110,11 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
   let teach = null;
   const taught = new Set();
   const hint = (kind) => { if (!taught.has(kind)) { taught.add(kind); teach = { kind, until: d.clock + 4.5 }; } };
+  // The cards' hint comes back (twice at most) if they lie untouched.
+  let retaught = 0;
+  const reteach = (kind) => { if (retaught < 2 && (!teach || teach.kind !== kind)) { retaught += 1; teach = { kind, until: d.clock + 4.5 }; } };
+  // The answer's lane is a little wider on STORY.
+  const answerHalf = () => ANSWER.half * (1 + (d.tuning.window - 1) * 0.5);
 
   const seg = () => d.seg.current;
   const exchange = () => exchanges.find((e) => e.id === seg().exchange) ?? exchanges[0];
@@ -277,7 +284,7 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
     if (cooldown > 0) return;
     // It takes a moment to reach the steps, and he keeps walking: lead him.
     const hitX = bossAt(ANSWER.flight);
-    const lands = Math.abs(body.x - hitX) < ANSWER.half;
+    const lands = Math.abs(body.x - hitX) < answerHalf();
     cooldown = ANSWER.cooldown;
     if (!lands) { d.emit({ type: 'act', result: 'aside', x: body.x, bossX }); return; }
     ready = false;
@@ -372,6 +379,7 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
         if (held.length === 2) { ready = true; pairLeft = 0; d.emit({ type: 'ready', exchange: exchange().id }); hint('answer'); }
       }
     }
+    if (playing && cards.length && !held.length && cards[0].age > CARDS.reteach * (1 + retaught)) reteach('cards');
     if (held.length === 1 && playing) {
       pairLeft -= dt;
       if (pairLeft <= 0) halfAnswer();
@@ -425,7 +433,10 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
     get held() { return held; },
     get ready() { return ready; },
     get pairLeft() { return pairLeft; },
+    get pairTotal() { return d.win(CARDS.pair); },
     get bossX() { return bossX; },
+    // Where the answer lands, if said now: the gold lane (squareView).
+    get lane() { return ready ? { x: bossAt(ANSWER.flight), half: answerHalf(), under: Math.abs(body.x - bossAt(ANSWER.flight)) < answerHalf() } : null; },
     get exchange() { return exchange(); },
     // Where he will be `ahead` seconds from now (he walks a fixed path).
     bossAt,
@@ -435,6 +446,18 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
       d.seg.jump(i);
       bullets.length = 0; windups.length = 0; d.cancelTimers(); cards = []; held = []; ready = false; beat = 0; beatClock = 1.6; cardsAt = d.clock + 1.5;
       if (d.state === 'intro') { d.setState('play'); }
+    },
+    // What to do now, in a line (the plaque, bottom right).
+    objective() {
+      if (d.state !== 'play') return null;
+      if (ready) {
+        const x = bossAt(ANSWER.flight);
+        if (Math.abs(body.x - x) < answerHalf()) return 'You hold both true things, and you are under him: E.';
+        return `You hold both true things. Step ${x < body.x ? 'left' : 'right'} onto the gold lane under him, then E.`;
+      }
+      if (held.length === 1) return `One true thing held. Now walk into the other brass ring · ${Math.max(0, pairLeft).toFixed(1)} s`;
+      if (cards.length) return 'Two true things came down. Walk into one brass ring, then the other.';
+      return 'Dodge his words: only the white dot on Butch can be hit. Two true things are coming down.';
     },
     hint() {
       if (d.state === 'intro' || d.state === 'done') return '';

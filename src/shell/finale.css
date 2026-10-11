@@ -129,6 +129,11 @@
 }
 .nf-plaque b { display: block; font: 700 calc(12px * var(--nf-scale)) var(--nf-mono); letter-spacing: 0.2em; color: var(--nf-ivory); }
 .nf-plaque span { display: block; margin-top: 4px; font: calc(14px * var(--nf-scale)) var(--nf-serif); font-style: italic; color: #cdb892; }
+/* round 13: a piece's next step, plain and brighter; a glow when it changes */
+.nf-plaque.is-task span { font-style: normal; color: #f3e2c0; }
+.nf-plaque.is-new { animation: nf-plaque-new 1.4s ease-out; }
+@keyframes nf-plaque-new { 0% { box-shadow: 0 0 0 0 rgba(232, 184, 96, 0.9); border-color: #ffe2a0; } 100% { box-shadow: 0 0 0 14px rgba(232, 184, 96, 0); } }
+@media (prefers-reduced-motion: reduce) { .nf-plaque.is-new { animation: none; } }
 
 /* ---------- stone row (top-right) ---------- */
 .nf-stone-row {

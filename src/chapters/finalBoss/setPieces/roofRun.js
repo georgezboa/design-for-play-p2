@@ -44,7 +44,9 @@ export const ROOF = Object.freeze({
 });
 
 export const CASE = Object.freeze({ r: 0.42, speed: 9, warn: 0.75 });
-export const CLAIM = Object.freeze({ r: 0.46, speed: 6.2, warn: 0.9, reach: [0.15, 1.95], sweet: [0.5, 1.2] });
+// buffer: a press up to this long before the claim is in reach is kept and
+// lands the punch as it arrives (round 12 playtest: early presses were lost).
+export const CLAIM = Object.freeze({ r: 0.46, speed: 6.2, warn: 0.9, reach: [0.15, 1.95], sweet: [0.5, 1.2], buffer: 0.25 });
 export const TRUNK = Object.freeze({ half: 0.85, height: 1.3, flight: 1.15, bounce: 3.6, bounceT: 0.66, roll: 7, r: 0.55 });
 export const GANTRY = Object.freeze({ speed: 17, warn: 1.2, y0: 1.0, y1: 4.2, half: 0.3 });
 
@@ -298,22 +300,44 @@ export function createRoofRun({ difficulty, seed = 11, startSegment = 0 } = {}) 
     }
   };
 
-  // E: punch a claim case that is about to reach Butch.
-  const punch = () => {
-    body.punch = 0.24;
-    body.facing = 1;
+  // E: punch a claim case that is about to reach Butch. A press a little
+  // early (the case is still coming) is held for CLAIM.buffer seconds.
+  let held = null; // { until }
+  const reachTo = () => d.win(CLAIM.reach[1] - CLAIM.reach[0]) + CLAIM.reach[0];
+  const findClaim = ({ anyHeight = false } = {}) => {
     let best = null;
     for (const h of hazards) {
       if (h.kind !== 'claim' || h.returned || h.done) continue;
       const rel = h.x - body.x;
       const dy = Math.abs(h.y - (body.y + 0.9));
-      if (rel >= CLAIM.reach[0] && rel <= d.win(CLAIM.reach[1] - CLAIM.reach[0]) + CLAIM.reach[0] && dy < 1.4 && (!best || rel < best.rel)) best = { h, rel };
+      if (rel >= CLAIM.reach[0] && rel <= reachTo() && (anyHeight || dy < 1.6) && (!best || rel < best.rel)) best = { h, rel };
     }
+    return best;
+  };
+  const punch = () => {
+    body.punch = 0.24;
+    body.facing = 1;
+    const best = findClaim();
     if (!best) {
+      // still coming, and close enough to arrive within the buffer: hold the press
+      const coming = hazards.some((h) => h.kind === 'claim' && !h.returned && !h.done && h.x - body.x > reachTo()
+        && (h.x - body.x - reachTo()) / Math.max(0.1, Math.abs(h.vx ?? CLAIM.speed) + Math.max(0, body.vx ?? 0)) <= CLAIM.buffer);
+      if (coming) { held = { until: d.clock + CLAIM.buffer }; return; }
+      const inAir = findClaim({ anyHeight: true });
+      if (inAir) { d.emit({ type: 'act', result: 'air' }); return; }
       const near = hazards.some((h) => h.kind === 'claim' && !h.returned && h.x - body.x > 0 && h.x - body.x < 5);
       d.emit({ type: 'act', result: near ? 'early' : 'none' });
       return;
     }
+    land(best);
+  };
+  const stepHeld = () => {
+    if (!held) return;
+    const best = findClaim();
+    if (best) { held = null; body.punch = 0.24; land(best); return; }
+    if (d.clock >= held.until) { held = null; d.emit({ type: 'act', result: findClaim({ anyHeight: true }) ? 'air' : 'early' }); }
+  };
+  const land = (best) => {
     const { h, rel } = best;
     h.returned = true;
     h.perfect = rel >= CLAIM.sweet[0] && rel <= CLAIM.sweet[1];
@@ -369,6 +393,7 @@ export function createRoofRun({ difficulty, seed = 11, startSegment = 0 } = {}) 
       } else d.emit(e);
     }
     if (wantPunch) punch();
+    if (d.state !== 'intro') stepHeld(); else held = null;
     stepHazards(dt, vitals);
     // Progress: the run, and the claims returned on the way.
     const s = segment();
@@ -389,6 +414,7 @@ export function createRoofRun({ difficulty, seed = 11, startSegment = 0 } = {}) 
   // A torn last layer. NORMAL: the segment again, from its start. STORY:
   // he stands up where he is, and the nearby luggage is cleared.
   const checkpoint = (rollback) => {
+    held = null;
     warnings.length = 0;
     d.cancelTimers();
     stagger = 0;
@@ -420,7 +446,7 @@ export function createRoofRun({ difficulty, seed = 11, startSegment = 0 } = {}) 
     get reachedTender() { return reachedTender; },
     update,
     checkpoint,
-    onHurt() { body.punch = 0; },
+    onHurt() { body.punch = 0; held = null; },
     // What a player can foresee (the bot plans with it): the roofs, the
     // edges as the scroll moves them, and where each seen hazard will be.
     forecast(seen = hazards) {
@@ -455,6 +481,7 @@ export function createRoofRun({ difficulty, seed = 11, startSegment = 0 } = {}) 
       };
     },
     jumpToSegment(i) {
+      held = null;
       d.seg.jump(i);
       camX = segment().from;
       seekCursor(camX);

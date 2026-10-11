@@ -14,6 +14,7 @@ import { ANSWER, CARDS, SQUARE } from '../setPieces/falseClaims.js';
 import { THREE, basic, canvasTexture, createParticles, floorRing, flatBand, paintedCard, paintedMaterial } from './stageKit.js';
 
 const BRASS = 0xe8b860;
+const GOLD = 0xffd98a;
 const DANGER = 0xe8663f;
 const STAND = Object.freeze({ butch: new THREE.Vector3(-3.4, 0, 3.4), boss: new THREE.Vector3(4.6, 0, -4.8) });
 const SLOT_OFFSET = Object.freeze({ up: [0, 3.4, 0], left: [-1.9, 1.7, 0.2], right: [1.9, 1.7, 0.2], down: [0, 0.35, 0.9] });
@@ -90,6 +91,16 @@ export function createSquareView({ scene, low = false, still = () => false }) {
     const dotRim = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.27, 24), new THREE.MeshBasicMaterial({ color: 0x8a2a1e, depthTest: false, transparent: true, toneMapped: false }));
     dot.renderOrder = dotRim.renderOrder = 20;
     root.add(conductorWrap, butchWrap, dot, dotRim);
+    // Round 13 (George could not tell what to do here): a thread from Butch
+    // to the second true thing while he holds one, and, once he holds both,
+    // the gold lane on the stones where the answer would land.
+    const tether = flatBand(BRASS, { opacity: 0.5, y: 0.07 });
+    tether.visible = false;
+    const lane = flatBand(GOLD, { opacity: 0.2, y: 0.04 });
+    lane.material.blending = THREE.AdditiveBlending;
+    lane.visible = false;
+    const laneEdges = [-1, 1].map(() => { const e = flatBand(GOLD, { opacity: 0.6, y: 0.05 }); e.visible = false; return e; });
+    root.add(tether, lane, ...laneEdges);
     answerBeam = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), basic(0xffe2a0, 0, { blending: THREE.AdditiveBlending, fog: false }));
     answerBeam.rotation.x = -Math.PI / 2;
     answerBeam.renderOrder = 9;
@@ -101,7 +112,7 @@ export function createSquareView({ scene, low = false, still = () => false }) {
       root.add(card);
       return [slot, card];
     }));
-    parts = { floor, props: propMeshes, conductor: conductorWrap, butch: butchWrap, dot, dotRim, slotCards, pigeons: [] };
+    parts = { floor, props: propMeshes, conductor: conductorWrap, butch: butchWrap, dot, dotRim, slotCards, pigeons: [], tether, lane, laneEdges };
   }
 
   // Above the square he stands nearly twice Butch's height, all of him in view.
@@ -170,10 +181,14 @@ export function createSquareView({ scene, low = false, still = () => false }) {
         card.scale.set(1.3, 0.92, 1);
         card.renderOrder = 9;
         const ring = floorRing(BRASS, { edge: 0xffe2a0, y: 0.05 });
+        // A column of light over the ring: walk in here.
+        const column = new THREE.Mesh(new THREE.CylinderGeometry(CARDS.reach, CARDS.reach, 3.2, 28, 1, true), basic(GOLD, 0.16, { blending: THREE.AdditiveBlending, fog: false, depthWrite: false }));
+        column.position.y = 1.6;
+        column.renderOrder = 6;
         const g = new THREE.Group();
-        g.add(card, ring.root);
+        g.add(card, ring.root, column);
         root.add(g);
-        v = { root: g, card, ring, kind: 'card' };
+        v = { root: g, card, ring, column, kind: 'card' };
         views.set(c.id, v);
       }
       if (c.held) {
@@ -181,13 +196,44 @@ export function createSquareView({ scene, low = false, still = () => false }) {
         v.root.position.set(b.x + Math.cos(a) * 0.9, 0, b.z + Math.sin(a) * 0.9);
         v.card.position.y = 2.5;
         v.ring.root.visible = false;
+        v.column.visible = false;
       } else {
         v.root.position.set(c.x, 0, c.z);
-        v.card.position.y = c.age < 0.9 ? 1.6 + (1 - c.age / 0.9) * 6 : 1.6 + (still() ? 0 : Math.sin(time * 2.4 + c.x) * 0.12);
+        // the card comes down into its ring and stays low over it
+        v.card.position.y = c.age < 0.9 ? 1.05 + (1 - c.age / 0.9) * 6 : 1.05 + (still() ? 0 : Math.sin(time * 2.4 + c.x) * 0.1);
         v.ring.root.visible = true;
-        v.ring.set(CARDS.reach, 1, 1);
+        const pulse = still() ? 0.5 : 0.5 + 0.5 * Math.sin(time * 4);
+        // holding one: the other ring's fill is the time left
+        const left = piece.held.length === 1 ? Math.max(0, piece.pairLeft) / Math.max(0.01, piece.pairTotal ?? CARDS.pair) : 1;
+        v.ring.set(CARDS.reach, piece.held.length === 1 ? left : 0.6 + 0.4 * pulse, 1);
+        v.column.visible = true;
+        v.column.material.opacity = 0.1 + 0.12 * pulse;
       }
     });
+    // The thread to the second true thing.
+    const other = piece.held.length === 1 ? piece.cards.find((c) => !c.held) : null;
+    parts.tether.visible = Boolean(other);
+    if (other) {
+      const dx = other.x - b.x; const dz = other.z - b.z;
+      const len = Math.max(0.01, Math.hypot(dx, dz) - CARDS.reach);
+      const ux = dx / Math.max(0.01, Math.hypot(dx, dz)); const uz = dz / Math.max(0.01, Math.hypot(dx, dz));
+      parts.tether.position.set(b.x + ux * len / 2, 0.07, b.z + uz * len / 2);
+      parts.tether.rotation.set(-Math.PI / 2, 0, Math.atan2(-dz, dx));
+      parts.tether.scale.set(len, 0.14, 1);
+      parts.tether.material.opacity = 0.35 + (still() ? 0.15 : 0.25 * Math.abs(Math.sin(time * 6)));
+    }
+    // The gold lane under him, where the answer lands.
+    const lane = piece.lane;
+    parts.lane.visible = Boolean(lane);
+    parts.laneEdges.forEach((e) => { e.visible = Boolean(lane); });
+    if (lane) {
+      const z0 = SQUARE.bossZ + 0.6; const z1 = SQUARE.maxZ;
+      parts.lane.position.set(lane.x, 0.04, (z0 + z1) / 2);
+      parts.lane.scale.set(lane.half * 2, z1 - z0, 1);
+      parts.lane.material.opacity = lane.under ? 0.34 : 0.16 + (still() ? 0 : 0.06 * Math.sin(time * 5));
+      parts.laneEdges.forEach((e, i) => { e.position.set(lane.x + (i ? 1 : -1) * lane.half, 0.05, (z0 + z1) / 2); e.scale.set(0.08, z1 - z0, 1); });
+    }
+    parts.dot.material.color.setHex(lane?.under ? GOLD : 0xfff1d0);
     for (const [id, v] of views) if (!live.has(id) && v.kind !== 'slot') { root.remove(v.root); views.delete(id); }
     // The answer, up the square at him.
     answerBeam.material.opacity = Math.max(0, answerBeam.material.opacity - dt * 2.4);
@@ -315,12 +361,14 @@ export function createSquareView({ scene, low = false, still = () => false }) {
       const out = [];
       if (mode === 'top') {
         const b = piece.body;
+        const holding = piece.held.length === 1;
         for (const c of piece.cards) {
           if (c.held) continue;
           const near = Math.hypot(c.x - b.x, c.z - b.z) < 3;
-          out.push({ text: c.text, x: c.x, y: 2.6, z: c.z, priority: near ? 2 : 1 });
+          out.push({ text: `${holding ? 'AND THIS ONE' : 'TRUE'} · ${c.text}`, x: c.x, y: 2.2, z: c.z, priority: near || holding ? 2 : 1, color: '#e8b860' });
         }
-        if (piece.ready) out.push({ text: '<kbd>E</kbd> · UNDER HIM · SAY BOTH', x: b.x, y: 3.2, z: b.z, priority: 3 });
+        const lane = piece.lane;
+        if (lane) out.push({ text: lane.under ? '<kbd>E</kbd> · SAY BOTH' : lane.x < b.x ? '◂ TO THE GOLD LANE · THEN <kbd>E</kbd>' : 'TO THE GOLD LANE ▸ · THEN <kbd>E</kbd>', x: b.x, y: 3.2, z: b.z, priority: 3 });
       }
       // The standoff's cards are a DOM panel of their own (spectacleBattle
       // updateDuel): words that follow TEXT SIZE, at fixed hands.
