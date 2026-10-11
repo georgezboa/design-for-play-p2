@@ -272,10 +272,14 @@ describe('Chapter 3 integrated final lock v48', () => {
     // unchanged. Assets unchanged.
     // v54-r12 (round 12 merge, 2026-10-10): v52-r12-ch3play and
     // v53-r12-ch3look together. Files: 35.
+    // v55-voice2 (2026-10-11, voice pass 2): generated/chapter03VoiceAssets.js
+    // regenerated from the voice manifest with the 48 lines written after
+    // the August pass (scripts/voice/integrate_ch03_pass2.py); no other
+    // source changed. Files: 35.
     assert.equal(sourceFiles.length, 35);
     assert.equal(
       aggregateSignature(sourceFiles),
-      'a0aff9410644c2d64b5c4588dd6b6c55a6c2824d348c0292da5efdacb1bec2d3',
+      '82a165070bab2b08c0345e9305aff0cc1c20203f9ac99f5eeb25264b16e48a57',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
@@ -301,10 +305,13 @@ describe('Chapter 3 integrated final lock v48', () => {
     // Meshopt geometry + WebP maps, same triangles, skins, clips and names;
     // ASSET_MANIFEST.json and replacements/manifest.json record before/after
     // bytes and hashes (751 -> 751 files).
-    assert.equal(assetFiles.length, 751);
+    // v55-voice2 (2026-10-11): voice pass 2, 48 new voice OGGs (George's
+    // ElevenLabs voices, the same voice and settings per character) and
+    // their entries in voice/ch03/manifest.json (751 -> 799 files).
+    assert.equal(assetFiles.length, 799);
     assert.equal(
       aggregateSignature(assetFiles),
-      'fc2880bb5c00127e3f69358994d9d5fbe727c9d78ba518110893d935771323a0',
+      'f7fd71e65fb7f2bd304714be01da0c9c7a364e93aa63f7df24c79ad020920cf9',
       'Chapter 3 assets are locked. Reopen it explicitly and create a new lock version before changing assets.',
     );
   });

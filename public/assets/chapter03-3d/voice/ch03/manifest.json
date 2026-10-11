@@ -4686,6 +4686,342 @@
       "speaker": "WOMAN BY THE HEAT GRATE",
       "text": "If you are looking for the shelter office, it opens after eight. If you are not, mind the blanket.",
       "url": "./assets/chapter03-3d/voice/ch03/woman_by_the_heat_grate/CH03_WOMAN_BY_THE_HEAT_GRATE_0001.ogg"
+    },
+    {
+      "key": "BUTCH\u0000I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.",
+      "lineId": "CH03_BUTCH_0348",
+      "speaker": "BUTCH",
+      "text": "I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0348.ogg"
+    },
+    {
+      "key": "BUTCH\u0000She said she would leave another mark where she could. The last one pointed here.",
+      "lineId": "CH03_BUTCH_0349",
+      "speaker": "BUTCH",
+      "text": "She said she would leave another mark where she could. The last one pointed here.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0349.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.",
+      "lineId": "CH03_BUTCH_0350",
+      "speaker": "BUTCH",
+      "text": "Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0350.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Yesterday's ticket forty-three. Both of them.",
+      "lineId": "CH03_BUTCH_0351",
+      "speaker": "BUTCH",
+      "text": "Yesterday's ticket forty-three. Both of them.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0351.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Sava keeps the issue records. Every search at that terminal goes out under his stamp.",
+      "lineId": "CH03_BUTCH_0352",
+      "speaker": "BUTCH",
+      "text": "Sava keeps the issue records. Every search at that terminal goes out under his stamp.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0352.ogg"
+    },
+    {
+      "key": "BUTCH\u0000One seat, one claim, two tickets. The archive printed her twice.",
+      "lineId": "CH03_BUTCH_0353",
+      "speaker": "BUTCH",
+      "text": "One seat, one claim, two tickets. The archive printed her twice.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0353.ogg"
+    },
+    {
+      "key": "BUTCH\u0000The duplicate is a clerical ghost. The oil is not: it was bought on the same seat. Eda's stall, west past the clock.",
+      "lineId": "CH03_BUTCH_0354",
+      "speaker": "BUTCH",
+      "text": "The duplicate is a clerical ghost. The oil is not: it was bought on the same seat. Eda's stall, west past the clock.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0354.ogg"
+    },
+    {
+      "key": "BUTCH\u0000That stub on your ledger is seat forty-three. Did she stay here?",
+      "lineId": "CH03_BUTCH_0355",
+      "speaker": "BUTCH",
+      "text": "That stub on your ledger is seat forty-three. Did she stay here?",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0355.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Another mark. She said she would leave one where she could.",
+      "lineId": "CH03_BUTCH_0356",
+      "speaker": "BUTCH",
+      "text": "Another mark. She said she would leave one where she could.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0356.ogg"
+    },
+    {
+      "key": "BUTCH\u0000This afternoon's oil line. It was never a spill. It was the first row.",
+      "lineId": "CH03_BUTCH_0357",
+      "speaker": "BUTCH",
+      "text": "This afternoon's oil line. It was never a spill. It was the first row.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0357.ogg"
+    },
+    {
+      "key": "BUTCH\u0000It lit on the bell. As if she knew the minute I would kneel here.",
+      "lineId": "CH03_BUTCH_0358",
+      "speaker": "BUTCH",
+      "text": "It lit on the bell. As if she knew the minute I would kneel here.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0358.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Keep moving. The night service calls at seven.",
+      "lineId": "CH03_BUTCH_0359",
+      "speaker": "BUTCH",
+      "text": "Keep moving. The night service calls at seven.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0359.ogg"
+    },
+    {
+      "key": "BUTCH\u0000No name on the laundry ticket?",
+      "lineId": "CH03_BUTCH_0360",
+      "speaker": "BUTCH",
+      "text": "No name on the laundry ticket?",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0360.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Cold as the archive stacks. I will keep it out of the municipal ledger.",
+      "lineId": "CH03_BUTCH_0361",
+      "speaker": "BUTCH",
+      "text": "Cold as the archive stacks. I will keep it out of the municipal ledger.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0361.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Something blue catches in the cold ashes, under a coat someone left by the fire.",
+      "lineId": "CH03_BUTCH_0362",
+      "speaker": "BUTCH",
+      "text": "Something blue catches in the cold ashes, under a coat someone left by the fire.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0362.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Then I will not go alone.",
+      "lineId": "CH03_BUTCH_0363",
+      "speaker": "BUTCH",
+      "text": "Then I will not go alone.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0363.ogg"
+    },
+    {
+      "key": "BUTCH\u0000Mara.",
+      "lineId": "CH03_BUTCH_0364",
+      "speaker": "BUTCH",
+      "text": "Mara.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0364.ogg"
+    },
+    {
+      "key": "BUTCH\u0000One step ahead. Always one step.",
+      "lineId": "CH03_BUTCH_0365",
+      "speaker": "BUTCH",
+      "text": "One step ahead. Always one step.",
+      "url": "./assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0365.ogg"
+    },
+    {
+      "key": "LEV\u0000Keep that card out.",
+      "lineId": "CH03_LEV_0199",
+      "speaker": "LEV",
+      "text": "Keep that card out.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0199.ogg"
+    },
+    {
+      "key": "LEV\u0000That claim number went through our station reader yesterday. Twice.",
+      "lineId": "CH03_LEV_0200",
+      "speaker": "LEV",
+      "text": "That claim number went through our station reader yesterday. Twice.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0200.ogg"
+    },
+    {
+      "key": "LEV\u0000Two tickets forty-three, one seat, both valid. And someone poured a line of lamp oil into the paving. We start with the oil.",
+      "lineId": "CH03_LEV_0201",
+      "speaker": "LEV",
+      "text": "Two tickets forty-three, one seat, both valid. And someone poured a line of lamp oil into the paving. We start with the oil.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0201.ogg"
+    },
+    {
+      "key": "LEV\u0000Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is northeast, past the fountain. Toma keeps the door.",
+      "lineId": "CH03_LEV_0202",
+      "speaker": "LEV",
+      "text": "Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is northeast, past the fountain. Toma keeps the door.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0202.ogg"
+    },
+    {
+      "key": "LEV\u0000Lay both on the public table. We look at them before anyone tells us what they mean.",
+      "lineId": "CH03_LEV_0203",
+      "speaker": "LEV",
+      "text": "Lay both on the public table. We look at them before anyone tells us what they mean.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0203.ogg"
+    },
+    {
+      "key": "LEV\u0000Two true things, filed as two people.",
+      "lineId": "CH03_LEV_0204",
+      "speaker": "LEV",
+      "text": "Two true things, filed as two people.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0204.ogg"
+    },
+    {
+      "key": "LEV\u0000That crossing has a scanner. It flags anyone who crosses alone. Walk beside Olek, in step, and it reads you as one party.",
+      "lineId": "CH03_LEV_0205",
+      "speaker": "LEV",
+      "text": "That crossing has a scanner. It flags anyone who crosses alone. Walk beside Olek, in step, and it reads you as one party.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0205.ogg"
+    },
+    {
+      "key": "LEV\u0000The service joint at the south edge of the clock paving feeds the old fire letters, two rows in the grooves. The light is going; we should see it before dark.",
+      "lineId": "CH03_LEV_0206",
+      "speaker": "LEV",
+      "text": "The service joint at the south edge of the clock paving feeds the old fire letters, two rows in the grooves. The light is going; we should see it before dark.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0206.ogg"
+    },
+    {
+      "key": "LEV\u0000Sleep. I will find you before the first train.",
+      "lineId": "CH03_LEV_0207",
+      "speaker": "LEV",
+      "text": "Sleep. I will find you before the first train.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0207.ogg"
+    },
+    {
+      "key": "LEV\u0000The platform is past the square, where the rails come in. The night service will not wait for either of us.",
+      "lineId": "CH03_LEV_0208",
+      "speaker": "LEV",
+      "text": "The platform is past the square, where the rails come in. The night service will not wait for either of us.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0208.ogg"
+    },
+    {
+      "key": "LEV\u0000The platform scanner reads parties, not heads. Alone, it holds you at the line.",
+      "lineId": "CH03_LEV_0209",
+      "speaker": "LEV",
+      "text": "The platform scanner reads parties, not heads. Alone, it holds you at the line.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0209.ogg"
+    },
+    {
+      "key": "LEV\u0000This way. The tall stone front on the east lane. Toma keeps the door.",
+      "lineId": "CH03_LEV_0210",
+      "speaker": "LEV",
+      "text": "This way. The tall stone front on the east lane. Toma keeps the door.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0210.ogg"
+    },
+    {
+      "key": "LEV\u0000West, past the clock. Eda sells lamp oil under the blue canvas.",
+      "lineId": "CH03_LEV_0211",
+      "speaker": "LEV",
+      "text": "West, past the clock. Eda sells lamp oil under the blue canvas.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0211.ogg"
+    },
+    {
+      "key": "LEV\u0000The service joint is by the clock, at the south edge of the square.",
+      "lineId": "CH03_LEV_0212",
+      "speaker": "LEV",
+      "text": "The service joint is by the clock, at the south edge of the square.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0212.ogg"
+    },
+    {
+      "key": "LEV\u0000The Copper Heron. Past the ministry lane, at the east end of the street.",
+      "lineId": "CH03_LEV_0213",
+      "speaker": "LEV",
+      "text": "The Copper Heron. Past the ministry lane, at the east end of the street.",
+      "url": "./assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0213.ogg"
+    },
+    {
+      "key": "CONDUCTOR\u0000The night service calls back at seven tomorrow. Be on the platform.",
+      "lineId": "CH03_CONDUCTOR_0009",
+      "speaker": "CONDUCTOR",
+      "text": "The night service calls back at seven tomorrow. Be on the platform.",
+      "url": "./assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0009.ogg"
+    },
+    {
+      "key": "TOMA\u0000Nika runs the ticket terminal. The window on the right.",
+      "lineId": "CH03_TOMA_0004",
+      "speaker": "TOMA",
+      "text": "Nika runs the ticket terminal. The window on the right.",
+      "url": "./assets/chapter03-3d/voice/ch03/toma/CH03_TOMA_0004.ogg"
+    },
+    {
+      "key": "NIKA\u0000A market sale at fourteen twelve. Two cans of lamp oil, stamped with the seat number. Eda's stall.",
+      "lineId": "CH03_NIKA_0015",
+      "speaker": "NIKA",
+      "text": "A market sale at fourteen twelve. Two cans of lamp oil, stamped with the seat number. Eda's stall.",
+      "url": "./assets/chapter03-3d/voice/ch03/nika/CH03_NIKA_0015.ogg"
+    },
+    {
+      "key": "NIKA\u0000The first forty-three was issued to VELEZ, M. The second printed on the same seat, so the terminal filed it as a duplicate.",
+      "lineId": "CH03_NIKA_0016",
+      "speaker": "NIKA",
+      "text": "The first forty-three was issued to VELEZ, M. The second printed on the same seat, so the terminal filed it as a duplicate.",
+      "url": "./assets/chapter03-3d/voice/ch03/nika/CH03_NIKA_0016.ogg"
+    },
+    {
+      "key": "NIKA\u0000Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. My note is with the prints.",
+      "lineId": "CH03_NIKA_0017",
+      "speaker": "NIKA",
+      "text": "Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. My note is with the prints.",
+      "url": "./assets/chapter03-3d/voice/ch03/nika/CH03_NIKA_0017.ogg"
+    },
+    {
+      "key": "EDA\u0000A good coat, a rose scarf, a ticket in her glove. She kept her face to the street the whole time.",
+      "lineId": "CH03_EDA_0022",
+      "speaker": "EDA",
+      "text": "A good coat, a rose scarf, a ticket in her glove. She kept her face to the street the whole time.",
+      "url": "./assets/chapter03-3d/voice/ch03/eda/CH03_EDA_0022.ogg"
+    },
+    {
+      "key": "EDA\u0000Olek carried the two cans for her, the woman in the rose scarf. He is taking the cart through the ward crossing now.",
+      "lineId": "CH03_EDA_0023",
+      "speaker": "EDA",
+      "text": "Olek carried the two cans for her, the woman in the rose scarf. He is taking the cart through the ward crossing now.",
+      "url": "./assets/chapter03-3d/voice/ch03/eda/CH03_EDA_0023.ogg"
+    },
+    {
+      "key": "OLEK\u0000She said leave them by the clock paving, at the service joint. She walked ahead the whole way.",
+      "lineId": "CH03_OLEK_0009",
+      "speaker": "OLEK",
+      "text": "She said leave them by the clock paving, at the service joint. She walked ahead the whole way.",
+      "url": "./assets/chapter03-3d/voice/ch03/olek/CH03_OLEK_0009.ogg"
+    },
+    {
+      "key": "OLEK\u0000I never saw her face. Only the scarf.",
+      "lineId": "CH03_OLEK_0010",
+      "speaker": "OLEK",
+      "text": "I never saw her face. Only the scarf.",
+      "url": "./assets/chapter03-3d/voice/ch03/olek/CH03_OLEK_0010.ogg"
+    },
+    {
+      "key": "OLEK\u0000That is the trick of it. Two people in step and the machine counts one party.",
+      "lineId": "CH03_OLEK_0011",
+      "speaker": "OLEK",
+      "text": "That is the trick of it. Two people in step and the machine counts one party.",
+      "url": "./assets/chapter03-3d/voice/ch03/olek/CH03_OLEK_0011.ogg"
+    },
+    {
+      "key": "PETAR\u0000Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.",
+      "lineId": "CH03_PETAR_0011",
+      "speaker": "PETAR",
+      "text": "Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.",
+      "url": "./assets/chapter03-3d/voice/ch03/petar/CH03_PETAR_0011.ogg"
+    },
+    {
+      "key": "PETAR\u0000If you want warmth first, the laundry crew keep a fire by the west wall at dusk. Seline has been showing everyone something she found.",
+      "lineId": "CH03_PETAR_0012",
+      "speaker": "PETAR",
+      "text": "If you want warmth first, the laundry crew keep a fire by the west wall at dusk. Seline has been showing everyone something she found.",
+      "url": "./assets/chapter03-3d/voice/ch03/petar/CH03_PETAR_0012.ogg"
+    },
+    {
+      "key": "HANA\u0000No. Not once. She kept the scarf up and her back to the lamp. I remember thinking she was very good at it.",
+      "lineId": "CH03_HANA_0012",
+      "speaker": "HANA",
+      "text": "No. Not once. She kept the scarf up and her back to the lamp. I remember thinking she was very good at it.",
+      "url": "./assets/chapter03-3d/voice/ch03/hana/CH03_HANA_0012.ogg"
+    },
+    {
+      "key": "SELINE\u0000You inspect strange things, do you not? I found this sewn into an unclaimed coat lining.",
+      "lineId": "CH03_SELINE_0005",
+      "speaker": "SELINE",
+      "text": "You inspect strange things, do you not? I found this sewn into an unclaimed coat lining.",
+      "url": "./assets/chapter03-3d/voice/ch03/seline/CH03_SELINE_0005.ogg"
+    },
+    {
+      "key": "SELINE\u0000No ticket. The stone hums whenever the evening tram passes. I would rather you take it.",
+      "lineId": "CH03_SELINE_0006",
+      "speaker": "SELINE",
+      "text": "No ticket. The stone hums whenever the evening tram passes. I would rather you take it.",
+      "url": "./assets/chapter03-3d/voice/ch03/seline/CH03_SELINE_0006.ogg"
     }
   ]
 }

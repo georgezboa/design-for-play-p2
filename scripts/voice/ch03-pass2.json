@@ -65,7 +65,8 @@
    "lineId": "CH03_BUTCH_0348",
    "speaker": "BUTCH",
    "text": "I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.",
-   "where": "chapter3OpeningContent.js:ARRIVAL_DIALOGUE"
+   "where": "chapter3OpeningContent.js:ARRIVAL_DIALOGUE",
+   "say": "I have a claim card, not a ticket. Nineteen seventy-eight, oh four one two. The orchard case is still on board."
   },
   {
    "n": 2,
@@ -317,14 +318,16 @@
    "lineId": "CH03_NIKA_0016",
    "speaker": "NIKA",
    "text": "The first forty-three was issued to VELEZ, M. The second printed on the same seat, so the terminal filed it as a duplicate.",
-   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION"
+   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION",
+   "say": "The first forty-three was issued to Velez, M. The second printed on the same seat, so the terminal filed it as a duplicate."
   },
   {
    "n": 38,
    "lineId": "CH03_NIKA_0017",
    "speaker": "NIKA",
    "text": "Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. My note is with the prints.",
-   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION"
+   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION",
+   "say": "Terminals cut long surnames on duplicates. Two letters, then N N for no name on file. My note is with the prints."
   },
   {
    "n": 39,
@@ -366,7 +369,8 @@
    "lineId": "CH03_PETAR_0011",
    "speaker": "PETAR",
    "text": "Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.",
-   "where": "chapter3OpeningContent.js:CUT_INTERFACE_OPENING"
+   "where": "chapter3OpeningContent.js:CUT_INTERFACE_OPENING",
+   "say": "Order C four four one. An unregistered branch under the clock paving was losing pressure, so I cut it."
   },
   {
    "n": 45,
@@ -396,5 +400,18 @@
    "text": "No ticket. The stone hums whenever the evening tram passes. I would rather you take it.",
    "where": "chapter3OpeningContent.js:CAMPFIRE_SELINE_STONE_DIALOGUE"
   }
- ]
+ ],
+ "voices": {
+  "BUTCH": "NIGHTFALL Butch V01",
+  "LEV": "NIGHTFALL Lev V01",
+  "CONDUCTOR": "NIGHTFALL Support M4 Observer V01",
+  "TOMA": "NIGHTFALL Support M3 Methodical V01",
+  "NIKA": "NIGHTFALL Support F1 Precise V01",
+  "EDA": "NIGHTFALL Eda V01",
+  "OLEK": "NIGHTFALL Support M2 Practical V01",
+  "PETAR": "NIGHTFALL Support M3 Methodical V01",
+  "HANA": "NIGHTFALL Support F2 Dry V01",
+  "SELINE": "NIGHTFALL Support F2 Dry V01"
+ },
+ "settings": "ElevenLabs Eleven v3, stability 50%, similarity 75%, speed 1.0 (restored from each reference line), MP3 44.1 kHz 128 kbps"
 }

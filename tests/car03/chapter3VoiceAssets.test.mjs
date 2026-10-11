@@ -12,7 +12,9 @@ import {
 
 describe('Chapter 3 generated voice assets', () => {
   it('ships the complete locked Chapter 3 voice pass', () => {
-    assert.equal(CHAPTER03_VOICE_ASSET_COUNT, 669);
+    // 669 from the August pass, + 48 from pass 2 (2026-10-11: the lines
+    // written after it; scripts/voice/ch03-pass2.json).
+    assert.equal(CHAPTER03_VOICE_ASSET_COUNT, 717);
   });
 
   it('voices every ambient and environment interaction line', () => {
