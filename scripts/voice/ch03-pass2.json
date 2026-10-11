@@ -1,0 +1,400 @@
+{
+ "id": "ch03-voice-pass2",
+ "date": "2026-10-11",
+ "provider": "ElevenLabs",
+ "note": "Chapter 3 lines written after the August voice pass (the script changed since). NARRATION and GROUND LETTERS stay silent by design. Same ElevenLabs voice per character as the reference clip. Files: <lineId>.mp3 (or NN.mp3), one per line.",
+ "silent": [
+  "NARRATION",
+  "GROUND LETTERS"
+ ],
+ "references": {
+  "BUTCH": {
+   "lineId": "CH03_BUTCH_0144",
+   "text": "Thank you for treating the facts as facts.",
+   "file": "public/assets/chapter03-3d/voice/ch03/butch/CH03_BUTCH_0144.ogg"
+  },
+  "LEV": {
+   "lineId": "CH03_LEV_0109",
+   "text": "It is the least glamorous part of the job.",
+   "file": "public/assets/chapter03-3d/voice/ch03/lev/CH03_LEV_0109.ogg"
+  },
+  "CONDUCTOR": {
+   "lineId": "CH03_CONDUCTOR_0001",
+   "text": "Echo City. Passengers leaving the train, please step onto the platform. Keep the doorway clear.",
+   "file": "public/assets/chapter03-3d/voice/ch03/conductor/CH03_CONDUCTOR_0001.ogg"
+  },
+  "TOMA": {
+   "lineId": "CH03_TOMA_0001",
+   "text": "Public hall is open. What business are you bringing inside?",
+   "file": "public/assets/chapter03-3d/voice/ch03/toma/CH03_TOMA_0001.ogg"
+  },
+  "NIKA": {
+   "lineId": "CH03_NIKA_0004",
+   "text": "Sava authorized the search. I can show you timestamps, not conclusions.",
+   "file": "public/assets/chapter03-3d/voice/ch03/nika/CH03_NIKA_0004.ogg"
+  },
+  "EDA": {
+   "lineId": "CH03_EDA_0005",
+   "text": "If this is about the smell, I already called Sanitation. They sent me a complaint form instead of a cleaner.",
+   "file": "public/assets/chapter03-3d/voice/ch03/eda/CH03_EDA_0005.ogg"
+  },
+  "OLEK": {
+   "lineId": "CH03_OLEK_0002",
+   "text": "I carried two sealed cans. I did not open them.",
+   "file": "public/assets/chapter03-3d/voice/ch03/olek/CH03_OLEK_0002.ogg"
+  },
+  "PETAR": {
+   "lineId": "CH03_PETAR_0004",
+   "text": "I did not see a message. I worked from the access chamber below the paving.",
+   "file": "public/assets/chapter03-3d/voice/ch03/petar/CH03_PETAR_0004.ogg"
+  },
+  "HANA": {
+   "lineId": "CH03_HANA_0001",
+   "text": "That is generally how the book works.",
+   "file": "public/assets/chapter03-3d/voice/ch03/hana/CH03_HANA_0001.ogg"
+  },
+  "SELINE": {
+   "lineId": "CH03_SELINE_0002",
+   "text": "Rada says this is a celebration. It is really an excuse to keep me from going back for another shift.",
+   "file": "public/assets/chapter03-3d/voice/ch03/seline/CH03_SELINE_0002.ogg"
+  }
+ },
+ "items": [
+  {
+   "n": 1,
+   "lineId": "CH03_BUTCH_0348",
+   "speaker": "BUTCH",
+   "text": "I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.",
+   "where": "chapter3OpeningContent.js:ARRIVAL_DIALOGUE"
+  },
+  {
+   "n": 2,
+   "lineId": "CH03_BUTCH_0349",
+   "speaker": "BUTCH",
+   "text": "She said she would leave another mark where she could. The last one pointed here.",
+   "where": "chapter3OpeningContent.js:ARRIVAL_DIALOGUE"
+  },
+  {
+   "n": 3,
+   "lineId": "CH03_BUTCH_0350",
+   "speaker": "BUTCH",
+   "text": "Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.",
+   "where": "chapter3OpeningContent.js:SEAM_CONCLUSION"
+  },
+  {
+   "n": 4,
+   "lineId": "CH03_BUTCH_0351",
+   "speaker": "BUTCH",
+   "text": "Yesterday's ticket forty-three. Both of them.",
+   "where": "chapter3OpeningContent.js:TRANSPORT_ENTRANCE_DIALOGUE"
+  },
+  {
+   "n": 5,
+   "lineId": "CH03_BUTCH_0352",
+   "speaker": "BUTCH",
+   "text": "Sava keeps the issue records. Every search at that terminal goes out under his stamp.",
+   "where": "chapter3OpeningContent.js:SAVA_LOOK"
+  },
+  {
+   "n": 6,
+   "lineId": "CH03_BUTCH_0353",
+   "speaker": "BUTCH",
+   "text": "One seat, one claim, two tickets. The archive printed her twice.",
+   "where": "chapter3OpeningContent.js:TICKET_BOARD_CONCLUSION"
+  },
+  {
+   "n": 7,
+   "lineId": "CH03_BUTCH_0354",
+   "speaker": "BUTCH",
+   "text": "The duplicate is a clerical ghost. The oil is not: it was bought on the same seat. Eda's stall, west past the clock.",
+   "where": "chapter3OpeningContent.js:TICKET_BOARD_CONCLUSION"
+  },
+  {
+   "n": 8,
+   "lineId": "CH03_BUTCH_0355",
+   "speaker": "BUTCH",
+   "text": "That stub on your ledger is seat forty-three. Did she stay here?",
+   "where": "chapter3OpeningContent.js:HANA_OPENING"
+  },
+  {
+   "n": 9,
+   "lineId": "CH03_BUTCH_0356",
+   "speaker": "BUTCH",
+   "text": "Another mark. She said she would leave one where she could.",
+   "where": "chapter3OpeningContent.js:NIGHT_FIRST_LINE"
+  },
+  {
+   "n": 10,
+   "lineId": "CH03_BUTCH_0357",
+   "speaker": "BUTCH",
+   "text": "This afternoon's oil line. It was never a spill. It was the first row.",
+   "where": "chapter3OpeningContent.js:NIGHT_FIRST_LINE"
+  },
+  {
+   "n": 11,
+   "lineId": "CH03_BUTCH_0358",
+   "speaker": "BUTCH",
+   "text": "It lit on the bell. As if she knew the minute I would kneel here.",
+   "where": "chapter3OpeningContent.js:NIGHT_SECOND_LINE"
+  },
+  {
+   "n": 12,
+   "lineId": "CH03_BUTCH_0359",
+   "speaker": "BUTCH",
+   "text": "Keep moving. The night service calls at seven.",
+   "where": "chapter3OpeningContent.js:NIGHT_SECOND_LINE"
+  },
+  {
+   "n": 13,
+   "lineId": "CH03_BUTCH_0360",
+   "speaker": "BUTCH",
+   "text": "No name on the laundry ticket?",
+   "where": "chapter3OpeningContent.js:CAMPFIRE_SELINE_STONE_DIALOGUE"
+  },
+  {
+   "n": 14,
+   "lineId": "CH03_BUTCH_0361",
+   "speaker": "BUTCH",
+   "text": "Cold as the archive stacks. I will keep it out of the municipal ledger.",
+   "where": "chapter3OpeningContent.js:CAMPFIRE_SELINE_STONE_DIALOGUE"
+  },
+  {
+   "n": 15,
+   "lineId": "CH03_BUTCH_0362",
+   "speaker": "BUTCH",
+   "text": "Something blue catches in the cold ashes, under a coat someone left by the fire.",
+   "where": "chapter3OpeningContent.js:MORNING_STONE_PICKUP"
+  },
+  {
+   "n": 16,
+   "lineId": "CH03_BUTCH_0363",
+   "speaker": "BUTCH",
+   "text": "Then I will not go alone.",
+   "where": "chapter3OpeningContent.js:STATION_APPROACH_DIALOGUE"
+  },
+  {
+   "n": 17,
+   "lineId": "CH03_BUTCH_0364",
+   "speaker": "BUTCH",
+   "text": "Mara.",
+   "where": "chapter3OpeningContent.js:STATION_MARA_SIGHTED"
+  },
+  {
+   "n": 18,
+   "lineId": "CH03_BUTCH_0365",
+   "speaker": "BUTCH",
+   "text": "One step ahead. Always one step.",
+   "where": "chapter3OpeningContent.js:BOARDED_DIALOGUE"
+  },
+  {
+   "n": 19,
+   "lineId": "CH03_LEV_0199",
+   "speaker": "LEV",
+   "text": "Keep that card out.",
+   "where": "chapter3OpeningContent.js:LEV_INTRO_DIALOGUE"
+  },
+  {
+   "n": 20,
+   "lineId": "CH03_LEV_0200",
+   "speaker": "LEV",
+   "text": "That claim number went through our station reader yesterday. Twice.",
+   "where": "chapter3OpeningContent.js:LEV_INTRO_DIALOGUE"
+  },
+  {
+   "n": 21,
+   "lineId": "CH03_LEV_0201",
+   "speaker": "LEV",
+   "text": "Two tickets forty-three, one seat, both valid. And someone poured a line of lamp oil into the paving. We start with the oil.",
+   "where": "chapter3OpeningContent.js:LEV_INTRO_DIALOGUE"
+  },
+  {
+   "n": 22,
+   "lineId": "CH03_LEV_0202",
+   "speaker": "LEV",
+   "text": "Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is northeast, past the fountain. Toma keeps the door.",
+   "where": "chapter3OpeningContent.js:SEAM_CONCLUSION"
+  },
+  {
+   "n": 23,
+   "lineId": "CH03_LEV_0203",
+   "speaker": "LEV",
+   "text": "Lay both on the public table. We look at them before anyone tells us what they mean.",
+   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION"
+  },
+  {
+   "n": 24,
+   "lineId": "CH03_LEV_0204",
+   "speaker": "LEV",
+   "text": "Two true things, filed as two people.",
+   "where": "chapter3OpeningContent.js:TICKET_BOARD_CONCLUSION"
+  },
+  {
+   "n": 25,
+   "lineId": "CH03_LEV_0205",
+   "speaker": "LEV",
+   "text": "That crossing has a scanner. It flags anyone who crosses alone. Walk beside Olek, in step, and it reads you as one party.",
+   "where": "chapter3OpeningContent.js:EDA_CONCLUSION"
+  },
+  {
+   "n": 26,
+   "lineId": "CH03_LEV_0206",
+   "speaker": "LEV",
+   "text": "The service joint at the south edge of the clock paving feeds the old fire letters, two rows in the grooves. The light is going; we should see it before dark.",
+   "where": "chapter3OpeningContent.js:MARKET_CROSSED_DIALOGUE"
+  },
+  {
+   "n": 27,
+   "lineId": "CH03_LEV_0207",
+   "speaker": "LEV",
+   "text": "Sleep. I will find you before the first train.",
+   "where": "chapter3OpeningContent.js:HANA_CONCLUSION"
+  },
+  {
+   "n": 28,
+   "lineId": "CH03_LEV_0208",
+   "speaker": "LEV",
+   "text": "The platform is past the square, where the rails come in. The night service will not wait for either of us.",
+   "where": "chapter3OpeningContent.js:MORNING_LEV_REMINDER"
+  },
+  {
+   "n": 29,
+   "lineId": "CH03_LEV_0209",
+   "speaker": "LEV",
+   "text": "The platform scanner reads parties, not heads. Alone, it holds you at the line.",
+   "where": "chapter3OpeningContent.js:STATION_APPROACH_DIALOGUE"
+  },
+  {
+   "n": 30,
+   "lineId": "CH03_LEV_0210",
+   "speaker": "LEV",
+   "text": "This way. The tall stone front on the east lane. Toma keeps the door.",
+   "where": "chapter3LongWalks.js:LEAD_ROUTES"
+  },
+  {
+   "n": 31,
+   "lineId": "CH03_LEV_0211",
+   "speaker": "LEV",
+   "text": "West, past the clock. Eda sells lamp oil under the blue canvas.",
+   "where": "chapter3LongWalks.js:LEAD_ROUTES"
+  },
+  {
+   "n": 32,
+   "lineId": "CH03_LEV_0212",
+   "speaker": "LEV",
+   "text": "The service joint is by the clock, at the south edge of the square.",
+   "where": "chapter3LongWalks.js:LEAD_ROUTES"
+  },
+  {
+   "n": 33,
+   "lineId": "CH03_LEV_0213",
+   "speaker": "LEV",
+   "text": "The Copper Heron. Past the ministry lane, at the east end of the street.",
+   "where": "chapter3LongWalks.js:LEAD_ROUTES"
+  },
+  {
+   "n": 34,
+   "lineId": "CH03_CONDUCTOR_0009",
+   "speaker": "CONDUCTOR",
+   "text": "The night service calls back at seven tomorrow. Be on the platform.",
+   "where": "chapter3OpeningContent.js:ARRIVAL_DIALOGUE"
+  },
+  {
+   "n": 35,
+   "lineId": "CH03_TOMA_0004",
+   "speaker": "TOMA",
+   "text": "Nika runs the ticket terminal. The window on the right.",
+   "where": "chapter3OpeningContent.js:TRANSPORT_ENTRANCE_DIALOGUE"
+  },
+  {
+   "n": 36,
+   "lineId": "CH03_NIKA_0015",
+   "speaker": "NIKA",
+   "text": "A market sale at fourteen twelve. Two cans of lamp oil, stamped with the seat number. Eda's stall.",
+   "where": "chapter3OpeningContent.js:NIKA_TOPIC_RESPONSES"
+  },
+  {
+   "n": 37,
+   "lineId": "CH03_NIKA_0016",
+   "speaker": "NIKA",
+   "text": "The first forty-three was issued to VELEZ, M. The second printed on the same seat, so the terminal filed it as a duplicate.",
+   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION"
+  },
+  {
+   "n": 38,
+   "lineId": "CH03_NIKA_0017",
+   "speaker": "NIKA",
+   "text": "Terminals cut long surnames on duplicates. Two letters, then NN for no name on file. My note is with the prints.",
+   "where": "chapter3OpeningContent.js:NIKA_CONCLUSION"
+  },
+  {
+   "n": 39,
+   "lineId": "CH03_EDA_0022",
+   "speaker": "EDA",
+   "text": "A good coat, a rose scarf, a ticket in her glove. She kept her face to the street the whole time.",
+   "where": "chapter3OpeningContent.js:EDA_TOPIC_RESPONSES"
+  },
+  {
+   "n": 40,
+   "lineId": "CH03_EDA_0023",
+   "speaker": "EDA",
+   "text": "Olek carried the two cans for her, the woman in the rose scarf. He is taking the cart through the ward crossing now.",
+   "where": "chapter3OpeningContent.js:EDA_CONCLUSION"
+  },
+  {
+   "n": 41,
+   "lineId": "CH03_OLEK_0009",
+   "speaker": "OLEK",
+   "text": "She said leave them by the clock paving, at the service joint. She walked ahead the whole way.",
+   "where": "chapter3OpeningContent.js:OLEK_WALK_BARKS"
+  },
+  {
+   "n": 42,
+   "lineId": "CH03_OLEK_0010",
+   "speaker": "OLEK",
+   "text": "I never saw her face. Only the scarf.",
+   "where": "chapter3OpeningContent.js:OLEK_WALK_BARKS"
+  },
+  {
+   "n": 43,
+   "lineId": "CH03_OLEK_0011",
+   "speaker": "OLEK",
+   "text": "That is the trick of it. Two people in step and the machine counts one party.",
+   "where": "chapter3OpeningContent.js:MARKET_CROSSED_DIALOGUE"
+  },
+  {
+   "n": 44,
+   "lineId": "CH03_PETAR_0011",
+   "speaker": "PETAR",
+   "text": "Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.",
+   "where": "chapter3OpeningContent.js:CUT_INTERFACE_OPENING"
+  },
+  {
+   "n": 45,
+   "lineId": "CH03_PETAR_0012",
+   "speaker": "PETAR",
+   "text": "If you want warmth first, the laundry crew keep a fire by the west wall at dusk. Seline has been showing everyone something she found.",
+   "where": "chapter3OpeningContent.js:CUT_INTERFACE_CONCLUSION"
+  },
+  {
+   "n": 46,
+   "lineId": "CH03_HANA_0012",
+   "speaker": "HANA",
+   "text": "No. Not once. She kept the scarf up and her back to the lamp. I remember thinking she was very good at it.",
+   "where": "chapter3OpeningContent.js:HANA_TOPIC_RESPONSES"
+  },
+  {
+   "n": 47,
+   "lineId": "CH03_SELINE_0005",
+   "speaker": "SELINE",
+   "text": "You inspect strange things, do you not? I found this sewn into an unclaimed coat lining.",
+   "where": "chapter3OpeningContent.js:CAMPFIRE_SELINE_STONE_DIALOGUE"
+  },
+  {
+   "n": 48,
+   "lineId": "CH03_SELINE_0006",
+   "speaker": "SELINE",
+   "text": "No ticket. The stone hums whenever the evening tram passes. I would rather you take it.",
+   "where": "chapter3OpeningContent.js:CAMPFIRE_SELINE_STONE_DIALOGUE"
+  }
+ ]
+}
