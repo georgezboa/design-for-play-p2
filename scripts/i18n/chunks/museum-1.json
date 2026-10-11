@@ -1,0 +1,1849 @@
+[
+ {
+  "key": "ARCHIVAL RECONSTRUCTION",
+  "files": [
+   "museum-3d.html",
+   "src/chapters/museum3d/systems/EmbeddedDirectionExhibit.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BEGIN",
+  "files": [
+   "museum-3d.html",
+   "src/chapters/museum3d/systems/EmbeddedDirectionExhibit.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Chapter 5 framed exhibit",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "CLICK TO ENTER",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "E — INTERACT · ESC — PAUSE",
+  "files": [
+   "museum-3d.html",
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "ECHO CITY · DEV PREVIEW",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Echo City map (dev preview)",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "MUSEUM OF ONE ANSWER · DEV",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Return to the museum",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "THE MUSEUM OF ONE ANSWER",
+  "files": [
+   "museum-3d.html",
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/museum/labyrinth/labyrinthData.js",
+   "src/chapters/museum3d/scenes/ServiceLobby.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/shell/chapterControls.js",
+   "src/shell/cutscene/scenes/chapter4To5.js",
+   "src/shell/saveSystem.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD — WALK · MOUSE — LOOK · SPACE — JUMP",
+  "files": [
+   "museum-3d.html",
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "NIGHTFALL — Object Pending Classification",
+  "files": [
+   "one-answer.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Looking Fragment",
+  "files": [
+   "src/chapters/museum/labyrinth/chapter05LabyrinthContract.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "\"It only moves while you're not looking. Keep it in your eyes.\"",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "[E] CHANGE FLOOR",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "[E] TAKE IT",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "[R] RETURN TO ITS ENTRANCE",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "[SHIFT] ACTIVATE SHIELD",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0}[R] RETURN TO ITS ENTRANCE",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A BROKEN EYE RESTS ON YOUR SIDE OF THE GATE.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A NEW MAZE, AND EVERY KEY YOU CARRY IS LOST · [Y] REBUILD · [N] KEEP GOING",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALREADY CARRYING AS MANY SHIELDS AS YOU CAN HOLD.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALREADY SHIELDED.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE DEPTHS",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEFLECTED.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DON’T LOOK AWAY FOR LONG.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTRY HALL",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FROM THIS WING ·",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "HOLD R TO REBUILD THE MAZE",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "HOLD R TO REBUILD THE MAZE {0}{1}",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "IS OPEN.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "IT COULDN’T GET THROUGH.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IT MOVED WHEN YOU BLINKED.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LABYRINTH WING",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIVES",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MORE KEY",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "NEW WING — LIVES RESTORED TO THREE.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO SHIELD CHARGES — FIND ONE FIRST.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REBUILD THE LABYRINTH?",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTORATION WING",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SEALED — FIND",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SEALED — FIND {0} MORE KEY{1} TO OPEN {2}.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SHIELD RECOVERED —",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SHIELD RECOVERED — {0} CHARGE{1}.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SHIELD RECOVERED — PRESS SHIFT WHEN A STATUE CLOSES IN.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIELD UP — IT CAN'T TOUCH YOU.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SOMETHING WAS BEHIND YOU.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ARCHIVE HOLDS YOUR PLACE.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ARCHIVE TAKES BACK",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE ARCHIVE TAKES BACK {0} KEY{1} FROM THIS WING ·",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE BROKEN EYES ALL FACE THIS WAY.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FLAME IS GONE. STAY CLOSE TO THE WALLS.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FLAME RETURNS. SOMETHING ELSE NOTICED.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE GATE CLOSES ON SOMETHING BEHIND YOU.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE GATE IS OPEN. RUN.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE GATE WON’T OPEN — MORE KEYS, SOMEWHERE IN THE DARK.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST GALLERY",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LOOKING FRAGMENT COMES WITH YOU.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PASSAGES HAVE MOVED.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE SHIELD TAKES THE HIT.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WALLS ARE DRAWING BREATH.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WAY TO",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE WAY TO {0} IS OPEN.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "TO OPEN",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "TWO FLOORS SHARE ONE PLAN. USE E AT THE STAIRS. THE FINAL SEAL IS NOT ON THE MAP.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD MOVE · MOUSE AIM · Q HOLD GAZE · SHIFT SHIELD · E USE · HOLD R RESTART",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YOU LOOKED AWAY TOO LONG.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YOU WALKED OUT WITH EVERY KEY.",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PACE",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthRules.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PACES",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthRules.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "— THREE LIVES RESTORED.",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} KEY{1} LEFT · UNMAPPED",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "BACK AT",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "BACK AT {0} — THREE LIVES RESTORED.",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ESCAPE {0} {1}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "EVERY KEY · FIND THE SEAL",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FLAME {0}{1}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "FLAME OUT",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FLAME PERMANENT",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FLOOR {0}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "KEY {0} {1} · {2} LEFT",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "KEY BEYOND A LOCKED GATE ·",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "KEY BEYOND A LOCKED GATE · {0} LEFT",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "KEY FOUND —",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "KEY FOUND — {0} / {1}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "LEFT · UNMAPPED",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SURVEY · FLOOR",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SURVEY · FLOOR {0}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SURVEY · FLOOR I",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ENTRY",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST GALLERY · FLOOR",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE LAST GALLERY · FLOOR {0}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "07:10 EASTBOUND · CASH",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELLWETHER",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/act2Art.js",
+   "src/chapters/nightService/art/act3Art.js",
+   "src/chapters/nightService/art/oneAnswerArt.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/cutscene/scenes/chapter1To2.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CITY LINE",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js",
+   "src/shell/cutscene/painted/chapter1To2.js",
+   "src/shell/cutscene/painted/chapter4To5.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUPLICATE",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js",
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · RESERVATIONS",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATE IV · ARTIST UNKNOWN",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SINGLE · ADULT · 17 OCT 1978",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Terminal Row",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Amal Kumar",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Beige Wall 001",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dario Barresi, Dimitrios Savva, Rico Cilliers",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dark Wood",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dimitrios Savva, Rico Cilliers",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dirty Carpet",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rohit Seervi",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rubber Tiles",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Wood Table 001",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM OF ONE ANSWER · release 1.0",
+  "files": [
+   "src/chapters/museum3d/config.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "“Keep moving,” her letter said. So I did.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACC. 1978-0412 · VELEZ, M. · PENDING",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/chapters/museum3d/oneAnswer/chapter05OneAnswerContract.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Brown case, tag BELLWETHER. Left on the night service. Unclaimed.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CITY CASE — COLLECTED",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "City-line stub, punched once. Holder: VELEZ, M.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Claim closed.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUPLICATE RESERVATION · M. VENN",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EIGHT KEYS FILED",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Held as lost property.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I set it on the Bellwether bench. The archive came back for it.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One person, one claim.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORCHARD CASE — UNCLAIMED",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Orchard lane, hawthorn, one figure walking. Artist: unknown.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Owner: VELEZ, M. · a rented room near the terminal.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATE IV · A CHILD’S DRAWING",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Reservation 43, printed twice. Surname cut short. Nika’s torn page behind it.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa drew it. The hawthorn is Mara’s mark.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SECOND CLAIM — DISCARDED",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Tag reads BELLWETHER. No forwarding address on file.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive does not issue duplicates.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/chapters/museum3d/scenes/ServiceLobby.js",
+   "src/chapters/nightService/acts/oneAnswer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LABYRINTH",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LABYRINTH · EIGHT KEYS",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ORCHARD CASE",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The statues move only while you are not looking. Face them, keep them in your light, and bring out all eight keys.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The terminal shortened her name. The archive kept the short one.",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET STUB · CITY LINE",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "v68 spatial snapshot from the Chapter 3 working tree, 2026-08-09",
+  "files": [
+   "src/chapters/museum3d/data/echoCityAuthority.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLASSIFICATION REFUSED",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js",
+   "src/chapters/nightService/acts/oneAnswer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · RECONSTRUCTION",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER DOOR 4",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPEN THE CASE",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RECONSTRUCTION",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive wants one clean answer about Mara Velez. Four pieces of evidence are under the glass.",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "“The archive does not issue duplicates.”",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "</b><br/>WASD — WALK · MOUSE — LOOK · SPACE — JUMP<br/>E — INTERACT · ESC — PAUSE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "</strong><small>“The archive does not issue duplicates.”</small>",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<b>{0}</b><br/>WASD — WALK · MOUSE — LOOK · SPACE — JUMP<br/>E — INTERACT · ESC — PAUSE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ARCHIVIST",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js",
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js",
+   "src/chapters/museum3d/systems/AudioGuide.js",
+   "src/chapters/museum3d/systems/EchoRadioChatter.js",
+   "src/chapters/museum3d/systems/VoicePlayback.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK TO RESUME",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DOOR 4 · IN RANGE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DOOR 4 · OUT OF RANGE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City reconstruction complete (dev preview).",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Eight keys, filed to you. One object is still pending, in Room 101.",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM TO",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "MUSEUM TO {0}",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NONE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One door remains open, at the end of the wing.",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The service desk is inside the case now. Its register lies open at the last entry: BUTCH.",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two claims. One person. Then the archive will file the clerk instead.",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "X {0} · MAP-Y(Z) {1} · {2} STATE · {3} SCENE",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "OBJECT PENDING CLASSIFICATION",
+  "files": [
+   "src/chapters/museum3d/oneAnswer/chapter05OneAnswerContract.js",
+   "src/chapters/museum3d/scenes/ServiceLobby.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Object pending classification: four evidence windows",
+  "files": [
+   "src/chapters/museum3d/oneAnswer/oneAnswer-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "coords in meters; origin at active scene root; +x east, +z south; yaw 0 faces -z",
+  "files": [
+   "src/chapters/museum3d/qa/museum3dQaState.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM 1978-0412 FILED",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "CLAIM 1978-0412 FILED {0}",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "DOOR 4 · EIGHT KEYS FILED",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Door 4 is filed. You carry its eight keys.",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · ENTER DOOR 4 — THE LABYRINTH",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · INSPECT THE EIGHT KEYHOLES",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · READ THE ACCESSION CARD",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · READ THE FILED CLAIM",
+  "files": [
+   "src/chapters/museum3d/scenes/ArchiveCorridor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ". You can find it on the service map.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "After the street lamps return, draw the final market stall curtains, restart the fountain pump, and return the public-works ledger.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "archive ledger",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BREAKER COVER OPENING",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bring the badge back. It should be displayed with the record.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Circulation restored. The pump stayed on overnight so mineral deposits did not harden in the basin.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Correct. Nothing here is hidden. Walk the city and finish what the night attendant would have finished.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — CLEAR THE PUMP GRATE",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — CLOSE THE STANDPIPE",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — DRAW THE CANVAS CURTAINS",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — INSERT THE PUBLIC-WORKS LEDGER",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — OPEN THE BREAKER COVER",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — RELEASE THE WINCH PAWL",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — RETURN ROUTE OFFLINE",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — START CIRCULATION",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — STRAIGHTEN THE TRAM NOTICE",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — SWITCH OFF THE SERVICE WINDOW",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — SWITCH TO NIGHT POWER",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — TAKE THE NIGHT-ROUND KIT",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — TAKE THE NIGHT-SERVICE BADGE",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — THE WAY BACK IS DARK",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — UNLOCK THE NIGHT RETURN SLOT",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — WALK BACK INTO THE MUSEUM",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · NIGHT ROUND",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js",
+   "src/chapters/museum3d/systems/EchoCityMinimap.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City is still running its 9:30 p.m. municipal closing round. The station lighting circuit is off, so take the canvas kit and restore night power first.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIRST 06:10 LAST 23:04",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "fountain pump",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HANDWHEEL",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I am at the museum service desk. This receiver stays on my channel while you are in the reconstruction.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "In the daytime, people met here. At night, somebody still had to keep the water moving.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It belonged to the attendant whose round you just finished. The museum catalogued the work orders, but not the worker.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ledger returned and stamped. Most city records are ordinary: repairs, late keys, borrowed tools, and small mistakes.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "market curtains",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM RETURN / NIGHT ROUND OPEN",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM RETURN / ROUTE CONNECTED",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Next stop: the",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Next stop: the {0}. You can find it on the service map.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NIGHT LIGHTING",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE / A-17",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE. A-17. The brass is worn where someone held it between two fingers.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "night-service badge",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One service key, one ledger, and a hand lamp. The hand lamp is barely enough to see the pavement.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAWL",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She was not moving through a case file. She was moving through other people’s evening.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "So this is maintenance, not another test.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Someone always had to stay five minutes later.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Someone left the light on so late passengers could still ask for help.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "station breaker",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Station lamp on. The closing circuit is checking the line.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That is intentional. Follow the dim platform marker and open the station breaker first. The rest of the route will be easier once the street grid is back.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That sounds more like a city than the museum labels do.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That standpipe fed the fountain crew’s hose. Close it before water freezes on the pavement.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That was the night clerk’s service window. The last tram has gone; you can switch it off.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The last stall is covered. Vendors tied their own curtains; the night attendant checked the final row.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The museum door is here, but there is no room behind it. I need to finish what Lev asked me to do.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The museum doorway is offline while the closing round is open. The service kit lists the four remaining jobs.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night round is complete. The museum doorway is connected again.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The return slot opened a second tray. There is a night-service badge inside. Take it before you leave.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The timetable slipped in its frame. Set it upright for the morning crew.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "There. First service at six ten. Nothing mysterious about it.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Valve closed. The drip has stopped.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Walk back through the city. The four places you serviced will remain in their finished state.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "When Mara crossed Echo City, people were lowering shutters, returning books, cleaning stone, and waiting for the last car.",
+  "files": [
+   "src/chapters/museum3d/scenes/EchoCityWalkingSim.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A portable receiver is ringing on the pavement beside the museum door.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Are you in trouble?",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Because the tape will sound smaller if you remember where those voices were living.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Butch, if it is really you, do not file anything yet. Come to the west overlook. I found something Mara left.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CAFE",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Come west. I am sitting where the first tram used to catch the sunrise.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Did Mara come here often?",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Did you play it?",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — ANSWER LEV'S RECEIVER",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — BRUSH ASH FROM THE TOP LETTER",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — SIT AND WAIT FOR THE OLD BELL",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — SIT WITH LEV",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — TAKE MARA'S CASSETTE",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — TAKE THE COIN FROM THE BASIN",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E — TURN OVER MARA'S CUP",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · MARA'S TAPE",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIRST TRAM",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FOUNTAIN",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I found the tape in the room above the cafe, wrapped in an old receipt. The museum sent a request for it before I had finished cleaning the dust off.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I had forgotten that morning.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I remember her pretending it was our plan.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It was chipped on the side she drank from. I remember useless things.",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LETTERS",
+  "files": [
+   "src/chapters/museum3d/scenes/LevRevisitSequence.js"
+  ],
+  "kind": "literal"
+ }
+]

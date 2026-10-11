@@ -50,6 +50,27 @@ function dropDevOnlyPublicAssets() {
   };
 }
 
+// NIGHTFALL 汉化: every page runs src/shared/i18n/install.js before its own
+// scripts (it switches the screens to Chinese when SETTINGS · 中文 or the
+// computer's language asks for it); the Phaser pages also get the Phaser
+// Text patch. The page files themselves stay as they are.
+const PHASER_PAGES = new Set(['night-service.html', 'borrowed-light.html', 'painted-country.html', 'chapter05-painted-country.html', 'hidden-final-boss.html', 'labyrinth.html', 'one-answer.html']);
+
+function chineseOnEveryPage() {
+  return {
+    name: 'nightfall-i18n',
+    transformIndexHtml: {
+      order: 'pre',
+      handler(html, ctx) {
+        const page = (ctx.filename ?? ctx.path ?? '').split(/[\\/]/).pop();
+        const tags = ['<script type="module" src="/src/shared/i18n/install.js"></script>'];
+        if (PHASER_PAGES.has(page)) tags.push('<script type="module" src="/src/shared/i18n/phaser.js"></script>');
+        return html.replace(/<head>/i, `<head>\n    ${tags.join('\n    ')}`);
+      },
+    },
+  };
+}
+
 // `command` and `mode` are the only two inputs that decide whether this build
 // may skip ahead. `npm run dev` serves in development mode and gets the
 // chapter select; `npm run prod` serves the same code in production mode and
@@ -60,7 +81,7 @@ export default defineConfig(({ command, mode }) => {
   const devMode = command === 'serve' && mode !== 'production';
 
   return {
-    plugins: [serveOpeningArchiveInDev(), dropDevOnlyPublicAssets()],
+    plugins: [chineseOnEveryPage(), serveOpeningArchiveInDev(), dropDevOnlyPublicAssets()],
     define: {
       __DEV_MODE__: JSON.stringify(devMode),
       // Playtest builds keep the 1111 router; `npm run build:release` turns it off.

@@ -276,10 +276,14 @@ describe('Chapter 3 integrated final lock v48', () => {
     // regenerated from the voice manifest with the 48 lines written after
     // the August pass (scripts/voice/integrate_ch03_pass2.py); no other
     // source changed. Files: 35.
+    // v56-zh (2026-10-11, the Chinese patch): Chapter3Caption types the
+    // shown line (Chinese when SETTINGS · 中文 is on) in step with the
+    // English line's timing; voices and lookups still key on the English.
+    // No other source changed. Files: 35.
     assert.equal(sourceFiles.length, 35);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '82a165070bab2b08c0345e9305aff0cc1c20203f9ac99f5eeb25264b16e48a57',
+      '5b3f614aa3e6ead07f3cba2dbed82389c3daa9c7d2aca261dbe991df6b55a6f8',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });

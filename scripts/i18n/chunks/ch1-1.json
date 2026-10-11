@@ -1,0 +1,1718 @@
+[
+ {
+  "key": "Chapter 1 opening cinematic",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "ENTER CHAPTER 1",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "NIGHTFALL — Night Service",
+  "files": [
+   "chapter01-opening.html",
+   "night-service.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "OPENING // THE NIGHT SERVICE REMEMBERS",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "preview ends on the literal Chapter 1 first frame",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "The preview is muted by default. Enable sound in the player controls.",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Your browser cannot play this opening preview.",
+  "files": [
+   "chapter01-opening.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "ONE WINDOW",
+  "files": [
+   "src/chapters/nightService/acts/act0.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RING",
+  "files": [
+   "src/chapters/nightService/acts/act0.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Wake up, Lost Property. A claim has come in on the night service.",
+  "files": [
+   "src/chapters/nightService/acts/act0.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Locked. The key hangs on the line by my desk.",
+  "files": [
+   "src/chapters/nightService/acts/act05.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The counter bell. Someone’s waiting at my desk.",
+  "files": [
+   "src/chapters/nightService/acts/act05.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TWO WINDOWS",
+  "files": [
+   "src/chapters/nightService/acts/act05.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Night service is running without a timetable. Take the punch.",
+  "files": [
+   "src/chapters/nightService/acts/act1.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One case never came off this train. I'll find out where it was going.",
+  "files": [
+   "src/chapters/nightService/acts/act1.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One case, unclaimed.",
+  "files": [
+   "src/chapters/nightService/acts/act1.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The surname was torn from the paper. The punch number is intact.",
+  "files": [
+   "src/chapters/nightService/acts/act1.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TRY",
+  "files": [
+   "src/chapters/nightService/acts/act1.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dead today. It only rang in 1978 — look at it through the punch hole.",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I took a room by the terminal: the early shift starts before the first westbound train.",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I will be home Saturday.",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARK",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Not yet — the train hasn't been asked to stop.",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PRESS",
+  "files": [
+   "src/chapters/nightService/acts/act2.js",
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LUGGAGE CAR",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO ROSA, AT THE ORCHARD",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNSENT · CITY POSTMARK",
+  "files": [
+   "src/chapters/nightService/acts/act2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Maintained the city room for work.",
+  "files": [
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARA VELEZ",
+  "files": [
+   "src/chapters/nightService/acts/act3.js",
+   "src/chapters/nightService/acts/oneAnswer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Returned to Bellwether on weekends.",
+  "files": [
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Second claim: duplicate. Discard.",
+  "files": [
+   "src/chapters/nightService/acts/act3.js",
+   "src/chapters/nightService/acts/oneAnswer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She's always one stop ahead.",
+  "files": [
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The line keeps going.",
+  "files": [
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · CLERK B.",
+  "files": [
+   "src/chapters/nightService/art/act1Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "…home Saturday.",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CITY",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dear Rosa,",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HALFWAY HOUSE",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MILL ROAD",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PACKING CO-OP",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REQUEST",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIVER JUNCTION",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Sat.",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STOP",
+  "files": [
+   "src/chapters/nightService/art/act2Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REQUEST STOP",
+  "files": [
+   "src/chapters/nightService/art/act3Art.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Container",
+  "files": [
+   "src/chapters/nightService/art/act3Fx.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Image",
+  "files": [
+   "src/chapters/nightService/art/act3Fx.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Sprite",
+  "files": [
+   "src/chapters/nightService/art/act3Fx.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG · UNFOLD",
+  "files": [
+   "src/chapters/nightService/art/hintArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MULTIPLY",
+  "files": [
+   "src/chapters/nightService/art/plateKit.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A bell only works if somebody rings it, clerk.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A tag, a postcard, a house. Keep looking in.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A ticket isn’t a ticket until it’s punched.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A window frame decides where a train has arrived.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "An unclaimed tag always has another side.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bellwether is a request stop. In 1978 you only had to ask.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "City, hawthorn, orchard. The lane only goes one way.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Claim 1978-0412. Every claim starts on a stub.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Go on through. The night is bigger than your office.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her city window, her orchard window. One frame fits both.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her office floor is torn today. It wasn’t in 1978.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her stub still has the Conductor’s hole in it. Holes are for looking through.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Luggage falls down, clerk. Rack over arms.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "My punch leaves a hole. Holes are for looking through.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Open it once, then give it back its lid.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Plate IV. Rosa drew that lane. It deserves a closer look.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Platform, office, the drawing, the orchard. Put her day back in order.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She always took the hill path down to the station.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She stops where the floor is torn. In 1978 it was whole.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Someone polished that desk bell for a visitor. Look closer.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Step back a little. See the whole desk again.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That hedge wasn’t there in 1978. Hold the old light on the gate.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That was the counter bell. Bring the floor back to your desk.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The door to my car is past the window, not above it.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The key line runs when both of its ends are close enough to see.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The rest of the car is folded away underneath. Draw it out.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The tag says more in 1978 light.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The viaduct fell years ago. In 1978 it stood. Hold it there.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "They stamped the reservation FILED. In 1978 nobody had stamped it yet.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "This wall folds, clerk. There’s a second window tucked behind yours.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Your desk and that door don’t meet. Floors go where floors go.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Your ticket is in the pigeonholes, clerk. Tickets fall downhill.",
+  "files": [
+   "src/chapters/nightService/hintLines.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "\" has no states",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\" starts in unknown state \"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "bad edge on",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "bad edge on {0}:{1}.{2}",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "duplicate step id \"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "duplicate step id \"{0}\"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "edge side \"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "edge side \"{0}\" in {1}:{2}",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "hotspot {0}.{1} needs rect [x,y,w,h]",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "hotspot without id in",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "hotspot without id in {0}:{1}",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "missing id",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "needs rect [x,y,w,h]",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "readable {0}.{1} needs rect [x,y,w,h]",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "readable without id in",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "readable without id in {0}:{1}",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "slot names unknown tile \"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "slot names unknown tile \"{0}\"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "slots must list",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "slots must list {0} entries",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "step without id",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "steps must be an array",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "targets unknown state \"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "tile \"{0}\" has no states",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "tile \"{0}\" starts in unknown state \"{1}\"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "zoom hotspot",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "zoom hotspot {0}.{1} targets unknown state \"{2}\"",
+  "files": [
+   "src/chapters/nightService/panelModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "\") 12 12, zoom-in",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ADD",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/chapters/nightService/actorRig.js",
+   "src/chapters/nightService/art/act05Art.js",
+   "src/chapters/nightService/art/act05Plates.js",
+   "src/chapters/nightService/art/act1Plates.js",
+   "src/chapters/nightService/art/act2Fx.js",
+   "src/chapters/nightService/art/act3Fx.js",
+   "src/chapters/nightService/art/oneAnswerFx.js",
+   "src/chapters/nightService/art/plateKit.js",
+   "src/chapters/nightService/painter.js",
+   "src/chapters/nightService/spriteRig.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CARRY",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CARRY THE FRAME",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 1 · NIGHT SERVICE",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK · E · ENTER TO CLOSE",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK THROUGH IT",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG TO MOVE THE WINDOW",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DROP IT",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "game canvas 1920×1080, origin top-left; slot rects in the same space; tile-local coords are 0..1",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD · LIFT THE FRAME",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD · UNFOLD",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LENS",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIFT FRAME",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Linear",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/chapters/nightService/art/act2Fx.js",
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOOK CLOSER",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE THE LENS",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NEXT TAG",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT NOW",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING HERE",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING HERE · DRAG THE WINDOW",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING HERE · TRY THE TAGS",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING MORE HERE · STEP BACK",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING TO STEP BACK FROM",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PICK UP",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUT BACK",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUT DOWN",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP BACK",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THIS WINDOW STAYS PUT",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO STEP BACK: [ESC] · RIGHT-CLICK · OR THIS",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNFOLD",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "url(\"data:image/svg+xml,{0}\") 12 12, zoom-in",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "url(\"data:image/svg+xml,{0}\") 16 16, grab",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "USE",
+  "files": [
+   "src/chapters/nightService/PanelScene.js",
+   "src/chapters/nightService/panelModel.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WINDOW",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978 · THROUGH THE PUNCH HOLE",
+  "files": [
+   "src/chapters/nightService/readingView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK · [E] · [ESC] TO PUT IT BACK",
+  "files": [
+   "src/chapters/nightService/readingView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0} into the left jamb",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} into the left wall",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} into the right jamb",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} into the right wall",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "in the block",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "in the block {0}..{1} (front {2})",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "into the left jamb",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "into the left wall",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "into the right jamb",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "into the right wall",
+  "files": [
+   "src/chapters/nightService/stageClearance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Chapter 1 to Chapter 2 transition",
+  "files": [
+   "src/nightService-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Night Service panel puzzle",
+  "files": [
+   "src/nightService-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE WAY · 1978",
+  "files": [
+   "src/shell/cutscene/painted/chapter1To2.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "but I could not wait here.",
+  "files": [
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I made it through this city,",
+  "files": [
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "If you are following me —",
+  "files": [
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP MOVING.",
+  "files": [
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROSA",
+  "files": [
+   "src/shell/cutscene/painted/chapter3To4.js",
+   "src/shell/cutscene/painters-c2.js",
+   "src/shell/cutscene/painters.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PENDING",
+  "files": [
+   "src/shell/cutscene/painted/chapter4To5.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ADMIT ONE · NO RETURN",
+  "files": [
+   "src/shell/cutscene/painted/chapter5-to-black-knife.js",
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAST CARRIAGE",
+  "files": [
+   "src/shell/cutscene/painted/chapter5-to-black-knife.js",
+   "src/shell/cutscene/painters-c3.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "italic {0} {1}px {2}",
+  "files": [
+   "src/shell/cutscene/painted/kit.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Everything left on board comes here, to Lost Property.",
+  "files": [
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/scenes/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Lost Property",
+  "files": [
+   "src/shell/cutscene/painted/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORCHARD CASE",
+  "files": [
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/painters.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORCHARD CASE · UNCLAIMED",
+  "files": [
+   "src/shell/cutscene/painted/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The clerk, Butch, had filed it a hundred times. He could not leave it alone.",
+  "files": [
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/scenes/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The line keeps running while someone rides it.",
+  "files": [
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/scenes/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service runs between stored places. The archive calls it the last line.",
+  "files": [
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/scenes/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "grayscale(1) contrast(0.8) brightness(1.04)",
+  "files": [
+   "src/shell/cutscene/painters-c2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACCESSIONS",
+  "files": [
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO",
+  "files": [
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EMBER",
+  "files": [
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GRID",
+  "files": [
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PIGMENT",
+  "files": [
+   "src/shell/cutscene/painters-c3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "italic {0}px {1}",
+  "files": [
+   "src/shell/cutscene/painters.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "italic 400 {0}px {1}",
+  "files": [
+   "src/shell/cutscene/painters.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE NIGHT SERVICE IS ARRIVING",
+  "files": [
+   "src/shell/cutscene/player.js",
+   "src/shell/gameFlow.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALL NIGHT",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Borrowed light",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAMPS",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One roof ahead. Always one roof ahead.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TELEGRAPH",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TERMINAL",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city ahead ran on light it had borrowed from the train.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The orchard case stayed on the rack. Her other ticket did not.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "07:10 NIGHT SERVICE",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "09:40 CITY LINE",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "brightness(1.75) sepia(0.2) saturate(1.1)",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEPARTURES",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · TICKETS HELD",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City keeps the afternoon its people remember.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The letter was a day old. It read as if she had written it a minute ago.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Today it was keeping two tickets for seat forty-three.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa Velez drew the orchard every summer.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter3To4.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive kept her drawings, and painted the colour out. Colour is hard to file.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter3To4.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The painted country",
+  "files": [
+   "src/shell/cutscene/scenes/chapter3To4.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Under the grey, a hawthorn was still red.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter3To4.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LETTER · \"KEEP MOVING\"",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One object was still pending.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive had filed his journey already.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The museum of one answer",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The museum will need one clean answer.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET · CITY LINE",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TWO TICKETS · SEAT 43",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "…never ends its journey.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A ticket that is never punched…",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Five things the archive could not file.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The last carriage",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TIMETABLE · ALL STOPS",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The line runs while someone rides it.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-conductor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Tickets, please",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-conductor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Tickets, please.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-conductor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You are the someone.",
+  "files": [
+   "src/shell/cutscene/scenes/chapter5-to-conductor.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He did not look for her reflection.",
+  "files": [
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One carriage ahead, the seat beside her was empty at last.",
+  "files": [
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Conductor did not stop the train. Nobody could.",
+  "files": [
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service kept running",
+  "files": [
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service kept running.",
+  "files": [
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service",
+  "files": [
+   "src/shell/cutscene/scenes/opening.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0}: caption {1} has more than two lines",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: caption {1} is up {2} s (≥ {3})",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: caption {1} runs outside the cutscene",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: captions {1} and {2} overlap",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: shot {1} has an unknown join \"{2}\"",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: shot {1} has no painter",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}: shot {1}'s {2} join has no rect",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "has an unknown join \"",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "has more than two lines",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "has no painter",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "is up",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "join has no rect",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "runs outside the cutscene",
+  "files": [
+   "src/shell/cutscene/timeline.js"
+  ],
+  "kind": "quasi"
+ }
+]

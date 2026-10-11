@@ -1,0 +1,1969 @@
+[
+ {
+  "key": "THE BEAMS SWING WITH THE BELL · RIDE THEM ACROSS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL RINGS DOWN THE STONES ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE BELL RINGS DOWN THE STONES · <kbd>SPACE</kbd> · JUMP IT AS IT PASSES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL TOWER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js",
+   "src/chapters/finalBoss/setPieces/sequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BORROWED LIGHT IS RISING · KEEP CLIMBING",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE RISING LIGHT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE SWING",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TOWER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNDER THE BELL ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "UNDER THE BELL · <kbd>E</kbd> AS IT STRIKES · ON THE BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Under the bell: E as it strikes ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Under the bell: E as it strikes · {0} s · {1}",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Walk under the bell, to the middle of the belfry. Then E as it strikes ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Walk under the bell, to the middle of the belfry. Then E as it strikes · {0}",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· SAY IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Dodge his words: only the white dot on Butch can be hit. Two true things are coming down.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHOES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FALSE CLAIMS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js",
+   "src/chapters/finalBoss/setPieces/sequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files it unanswered. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS CLAIM CLOSES ROUND YOU · LEAVE THROUGH THE GAP",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS MISREADINGS ARE THE WORDS · THE DOT IS ALL THEY CAN HIT · MOVE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS RECORD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One true thing held. Now walk into the other brass ring ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "One true thing held. Now walk into the other brass ring · {0} s",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ONLY ONE TRUE THING · HE FILES THE HALF ANSWER · THEY COME DOWN AGAIN",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "onto the gold lane under him, then E.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE CLAIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WORDS ECHO OFF THE SQUARE · WATCH BEHIND YOU",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TWO TRUE THINGS CAME DOWN · WALK INTO ONE, THEN THE OTHER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two true things came down. Walk into one brass ring, then the other.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YOU HOLD BOTH · STAND ON THE GOLD LANE UNDER HIM ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "YOU HOLD BOTH · STAND ON THE GOLD LANE UNDER HIM · <kbd>E</kbd> · SAY IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You hold both true things, and you are under him: E.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You hold both true things. Step",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "You hold both true things. Step {0} onto the gold lane under him, then E.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/falseClaims.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· JUMP ABOARD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js",
+   "src/chapters/finalBoss/stage/lineView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· LEAN TO ANOTHER LINE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· PAINT IT BEFORE THE TRAIN GETS THERE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A 1978 TRAIN ON THE LINE · ITS LAMP · LEAN AWAY FROM IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A DRAWN LINE · ONLY PENCIL · HOLD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A DRAWN LINE · ONLY PENCIL · HOLD <kbd>E</kbd> · PAINT IT BEFORE THE TRAIN GETS THERE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ABOARD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELL PLANKS · AMBER LINES ON THE BELL · THE TEAL LINE ON THE OFF-BEAT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CASES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FORGED",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIDING",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS BRUSH · WHERE ITS SHADOW FALLS, THE LINE GOES BACK TO PENCIL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS BRUSH ACROSS THE FRONT ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HIS BRUSH ACROSS THE FRONT · <kbd>SPACE</kbd> · JUMP",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS WASH STANDS ON THE LINE ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HIS WASH STANDS ON THE LINE · <kbd>A</kbd> / <kbd>D</kbd> · LEAN TO ANOTHER LINE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS WORDS FALL ON THE LINE · LEAN AWAY",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEAVES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MADE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOBODY",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAY",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE DRAWN LINE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE NIGHT SERVICE · LEAN LEFT ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE NIGHT SERVICE · LEAN LEFT · <kbd>SPACE</kbd> · JUMP ABOARD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PAINTED LINE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js",
+   "src/chapters/finalBoss/setPieces/sequence.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WASH",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· DO NOT PUNCH IT · STEP OUT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A BRASS CLAIM CASE · STAND IN ITS RING ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A BRASS CLAIM CASE · STAND IN ITS RING · <kbd>E</kbd> AS IT LANDS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A MAIL SACK DOWN THE ROOF ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A MAIL SACK DOWN THE ROOF · <kbd>SPACE</kbd> · JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS IT LANDS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "GREY RINGS ARE UNCLAIMED · STEP OUT OF THEM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HE VOLLEYS IT BACK · PUNCH IT AGAIN · FASTER EACH TIME",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HIS <b>OVERDUE</b> STAMP · LEAVE THAT SIDE OF THE ROOF",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO CLAIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js",
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RETURN TO SENDER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js",
+   "src/chapters/finalBoss/setPieces/sequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAMP · LEAVE THAT SIDE OF THE ROOF",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE TENDER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNDER THE LENS A RING CAN READ",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "UNDER THE LENS A RING CAN READ <b>NO CLAIM</b> · DO NOT PUNCH IT · STEP OUT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· DUCK UNDER IT (RUNNING, YOU SLIDE)",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· JUMP ACROSS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· JUMP THE CASE · HOLD FOR HIGHER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "<kbd>SPACE</kbd> · JUMP THE CASE · HOLD FOR HIGHER",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A BRASS CLAIM CASE ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A BRASS CLAIM CASE · <kbd>E</kbd> AS IT REACHES YOU · PUNCH IT BACK TO HIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A SIGNAL GANTRY ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A SIGNAL GANTRY · <kbd>S</kbd> / <kbd>↓</kbd> · DUCK UNDER IT (RUNNING, YOU SLIDE)",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A TRUNK · ITS SHADOW FILLS ON THE ROOF · STAY OUT OF IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS IT REACHES YOU · PUNCH IT BACK TO HIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HE IS UNCOUPLING THE CARRIAGES · THE GAPS WIDEN",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LUGGAGE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE COUPLINGS ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE COUPLINGS · <kbd>SPACE</kbd> · JUMP ACROSS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE GANTRIES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST CARRIAGE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js",
+   "src/shell/devRoutes.js",
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ROOF RUN",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js",
+   "src/chapters/finalBoss/setPieces/sequence.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNCOUPLED",
+  "files": [
+   "src/chapters/finalBoss/setPieces/roofRun.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE STANDOFF",
+  "files": [
+   "src/chapters/finalBoss/setPieces/sequence.js",
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· THEN THE OTHER ON ITS SECOND STROKE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "FEINTS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS HAND IS NOT THE CLOCK",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CLOCK · ONE TRUE THING",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE CLOCK · ONE TRUE THING <kbd>↑</kbd> <kbd>←</kbd> <kbd>→</kbd> <kbd>↓</kbd> · THEN THE OTHER ON ITS SECOND STROKE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE DRAW",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST WORD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE RECORD SHUFFLES · READ IT AGAIN",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WAIT FOR THE CLOCK · NOT FOR HIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/standoff.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0} layers again. Nothing can tear you for {1} seconds.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<b>CHECKPOINT</b><span>{0}</span>",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<b>HIT BY</b><span></span>",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<div class=\"nf-duel__card\" data-slot=\"",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<span>ALL WORLDS AT ONCE</span><small>THE CONDUCTOR IS WAITING</small>",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978-0412 · STILL OPEN",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A 1978 TRAIN · ITS LAMP WARNED OF IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A BELL PLANK OUT OF TIME · TAKE THE LINE THAT IS OUT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A BRASS CLAIM CASE · E AS IT LANDS, OR STEP OUT OF ITS RING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A BRASS CLAIM CASE · PUNCH IT AS IT REACHES YOU, OR JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A COUNTERWEIGHT · WATCH ITS SHADOW",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A DRAWN LINE · PAINT IT BEFORE THE TRAIN GETS THERE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A FALLING WORD · LEAN AWAY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A MAIL SACK · JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A red lamp and a horn: a gantry. Duck under it.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A ring that reads NO CLAIM under the lens: step out, do not punch.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A ROLLING CASE · JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A SIGNAL GANTRY · DUCK UNDER IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A TRUNK · STAY OUT OF ITS SHADOW",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ABOARD THE NIGHT SERVICE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Amber on the bell, teal on the off-beat. His light stabs on the off-beat.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AN UNCLAIMED CASE · STEP OUT OF ITS GREY RING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS IT STRIKES · STAND UNDER IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "battle-hud hidden",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bell planks are out on the bell. Jump on the beat.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BOTH TRUE THINGS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BOTH TRUE THINGS · E UNDER HIM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BUTCH · LOST-PROPERTY CLERK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Cases roll, trunks drop. Stay out of a trunk’s shadow.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHECKPOINT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "CHECKPOINT · THIS STRETCH AGAIN",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/art/act0Art.js",
+   "src/chapters/nightService/art/act0Plates.js",
+   "src/chapters/nightService/art/act1Plates.js",
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/titlePlateArt.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CLAIM RETURNED",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Climb. On the bell, be in the air when the ring runs down the stones.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLOSER · RIGHT UP TO THE LAMP",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLOSER · RIGHT UP TO THE ROSE SIGNAL",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR · FROM THE RECORD",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER · CREDITS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Every world at once: the 1978 tunnel, the bell, the words.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIRST THE TWO TRUE THINGS · WALK INTO THEIR BRASS RINGS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FORM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "FROM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "FROM THE RECORD ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "FROM THE RECORD · {0}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "GOES ON",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "HE ANSWERS YOU FIRST",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HE SENDS IT BACK ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "HE SENDS IT BACK · {0} / {1}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "HE STEPS ASIDE · LEAD HIM A LITTLE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He uncouples the carriages. The gaps widen. Keep running.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He volleys it back, faster. Punch it again.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS BRUSH · JUMP IT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS CLAIM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "His hand is not the clock.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS MISREADING · FROM THE RECORD",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "His misreadings fly. Answer with both true things.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS OVERDUE STAMP · LEAVE THAT SIDE OF THE ROOF",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS SEARCHLIGHT · MOVE, OR GET UNDER A RAISED BILLBOARD",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "His stamp and his sacks come with the rally. He sends it wide.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS WASH ON THE LINE · LEAN TO ANOTHER LINE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIT BY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Hold E to paint the drawn line ahead. Lean round his wash.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I · NIGHT SERVICE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IDENTITY VERIFIED",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "II · BORROWED LIGHT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "III · ECHO CITY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INK CLERK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INK FIGURE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IV · THE PAINTED COUNTRY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Jump the cases and the couplings. E punches a brass claim back.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Keep climbing. His counterweights rattle down first.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP NORMAL",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "KEPT · NOTHING UNDONE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "layers again. Nothing can tear you for",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LAYERS TORN · MOVEMENT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LAYERS TORN · MOVEMENT {0} GOES ON",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Leave a closing ring through its gap. Then line up under him: E.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOST PROPERTY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/acts/act1.js",
+   "src/chapters/nightService/art/act1Art.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/cutscene/scenes/ending.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVEMENT {0}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "nf-card-backdrop nf-story-offer",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "nf-death-card nf-death-card--quick",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHTFALL ending cinematic",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO CLAIM · IT IS HEAVY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO CLAIM · LEAVE A RING THAT READS NO CLAIM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No one has punched her ticket.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Nothing is lost either way. What you have won stays won.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "ON THE BELL · PUNCH IT AS IT STRIKES",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One passenger, changing carriages",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "ONE TRUE THING ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ONE TRUE THING · {0}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ONE TRUE THING · NOW THE OTHER",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OUTLASTED",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Paint the line ahead. Outrun his wash.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINTING · BOTH HANDS ON THE BRUSH",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PASSENGER",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "PLAY THE CONDUCTOR AGAIN",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PREPARING THE CARRIAGE…",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Punch a lamp. It fires on the next bell.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RAIN CLERK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RALLY WON ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "RALLY WON · {0} / {1}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "READY",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RETURNED TO SENDER",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ride the swinging beams. The light is rising.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Run the roofs to the engine. Then send his cases back.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIFT · DASH",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SHIFT · DASH{0}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "STAND IN ITS BRASS RING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Stand in the brass ring. E as it lands.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STORY · THE LINE SLOWS DOWN",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Switch to STORY: the same set pieces, slower and kinder, more paper layers, and a torn last layer undoes nothing.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "THE BELL · PUNCH IT AS IT STRIKES, OR JUMP ITS RING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL CRACKS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The bell quickens: three seconds now.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL’S RING · BE IN THE AIR WHEN IT PASSES",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BORROWED LIGHT · KEEP CLIMBING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BORROWED LIGHT GOES BACK TO HIM",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city moves on the bell. Cross on it, then climb his tower.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CONDUCTOR",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/acts/act0.js",
+   "src/chapters/nightService/acts/act1.js",
+   "src/chapters/nightService/acts/act3.js",
+   "src/chapters/nightService/hintLines.js",
+   "src/shell/cutscene/scenes/chapter5-to-conductor.js",
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CONDUCTOR IS WAITING",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE CONDUCTOR READS YOUR TICKET · E / ENTER TO CONTINUE ONCE STAMPED",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE COUPLING · JUMP BETWEEN THE CARRIAGES",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST ARCHIVE LINE · TICKET INSPECTION",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "The line can wait for you.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "The orchard case remains on board.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE OTHER · ON THE SECOND STROKE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE RALLY IS LOST · HE THROWS AGAIN",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The record shuffles before the clock. Read it again.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE STREET · CROSS ON A PLANK OR A BRIDGE, ON THE BELL",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The words are his misreadings. Touch one true thing, then the other.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The words echo off the square. The true things drift.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "TOO EARLY · AS IT LANDS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO EARLY · AS IT REACHES YOU",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO HIGH · PUNCH IT FROM THE ROOF",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO LATE · HE ANSWERS FIRST",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO LATE · THE CLOCK STRUCK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO SOON · HE ANSWERS FIRST",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO SOON · WAIT FOR THE CLOCK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TWO TRUE THINGS",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VOLLEY · ON THE BOUNCE",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WAIT FOR THE CLOCK",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Wait for the clock. Then a true thing, and the other on the second stroke.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "What tore it:",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Where his brush’s shadow falls, the line goes back to pencil.",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>SPACE</kbd> · JUMP ABOARD",
+  "files": [
+   "src/chapters/finalBoss/stage/lineView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· AS IT STRIKES",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· ON THE NEXT BELL",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WALK UP ·",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "· WALK UP · <kbd>E</kbd>",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · ON THE NEXT BELL",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WALK UP ·",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "{0} · WALK UP · <kbd>E</kbd>",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<kbd>E</kbd> · AS IT STRIKES",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AMBER LAMP · BRIDGE",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROSE SIGNAL · ENDS THE STRETCH",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROSE SIGNAL · LIT",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TEAL LAMP · BILLBOARD",
+  "files": [
+   "src/chapters/finalBoss/stage/rooftopView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· SAY BOTH",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "<kbd>E</kbd> · SAY BOTH",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "◂ TO THE GOLD LANE · THEN",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "◂ TO THE GOLD LANE · THEN <kbd>E</kbd>",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AND THIS ONE",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO THE GOLD LANE ▸ · THEN",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "TO THE GOLD LANE ▸ · THEN <kbd>E</kbd>",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TRUE",
+  "files": [
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978-0391 · HAT BOX",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978-0409 · VIOLIN CASE",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978-0415 · WINTER COAT",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978-0421 · SEED TIN",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ }
+]

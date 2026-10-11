@@ -1,3 +1,5 @@
+import { chineseWanted } from '../shared/i18n/locale.js';
+
 // The one list of player settings shown by both the title SETTINGS dialog and
 // the in-chapter pause menu: [key, label, input type, min, max].
 //
@@ -12,4 +14,13 @@ export const SETTINGS_CONTROLS = Object.freeze([
   // Forces the low render tier in the 3D chapters (Echo City, the Museum);
   // off means each chapter picks its tier from measured frame time.
   Object.freeze(['lowGraphics', 'LOW GRAPHICS · SLOWER COMPUTERS', 'checkbox']),
+  // 汉化 (2026-10-11): Chinese subtitles and screens; voices stay English.
+  // Unset, a computer whose first language is Chinese shows Chinese
+  // (src/shared/i18n/locale.js). Changing it reloads the page.
+  Object.freeze(['chinese', '中文 · CHINESE', 'checkbox']),
 ]);
+
+/** The value a SETTINGS row shows (the language row follows the computer until set). */
+export function settingValue(settings, key) {
+  return key === 'chinese' ? chineseWanted(settings) : settings[key];
+}

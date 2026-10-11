@@ -1,0 +1,2010 @@
+[
+ {
+  "key": "NIGHTFALL — The Museum of One Answer",
+  "files": [
+   "chapter05-painted-country.html",
+   "labyrinth.html",
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "NIGHTFALL — The Painted Country",
+  "files": [
+   "painted-country.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "brightness(0.78) saturate(1.15)",
+  "files": [
+   "src/chapters/paintedCountry/art/pencilKit.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD LT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD RT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD SHIFT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT MOUSE",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT STICK",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOUSE",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT MOUSE",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT STICK",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIFT",
+  "files": [
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js",
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BRUSH REACH",
+  "files": [
+   "src/chapters/paintedCountry/brushNib.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GET CLOSER",
+  "files": [
+   "src/chapters/paintedCountry/brushNib.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "url({0}) {1} {2}, crosshair",
+  "files": [
+   "src/chapters/paintedCountry/brushNib.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "1978 · CITY ROOM",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A rented room near the terminal, kept for the early shift.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "APPLE",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BAY A · THE COLD END",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BAY B · THE GALLERY",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BAY C · THE LONG WALL",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELLWETHER ORCHARD",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HAWTHORN",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INDIGO",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "is in only one of them. She left one small mark in all three.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LANTERN",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARIGOLD",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MULBERRY",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OCHRE",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa Velez, age nine: \"my sister coming home\". Apples on every tree, because she wanted more of them.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She signed it the way she signed everything. So did her sister.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That's Rosa's. Mara signed with the hawthorn.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The {0} is in only one of them. She left one small mark in all three.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "The archive filed it as the first claim, collected, and painted it the colour of a filing cabinet.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive wrote \"second claim\" across it and never sent anyone to the address.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The door waits. Compare the three plates.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The orchard house, where she went home at weekends. Rosa drew it from the gate, porch lantern lit.",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VERDIGRIS",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VERMILION",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js",
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js",
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WHICH MARK DID SHE LEAVE IN ALL THREE?",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BAKERY AWNING",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CAB",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CARRIAGE",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENGINE",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FAMILY QUILT",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MILL GARDEN",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORCHARD SUN FLAG",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUBLIC WELL",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROOF",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STATION LANTERN",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WHEELS",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WHISTLE",
+  "files": [
+   "src/chapters/paintedCountry/chapter4ExpansionModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Earlier rooms are kept.",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER / A · RESTART ANY OTHER KEY / B · KEEP GOING",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Everything painted and washed in this room is cleared.",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD R · RESTART ROOM",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTART THIS ROOM?",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Start the room over",
+  "files": [
+   "src/chapters/paintedCountry/chapterUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE GREY",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE TIN",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLUE",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLUE JUG",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GREEN",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GREEN BOTTLE",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GREY",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORANGE",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORANGE JAR",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PURPLE",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PURPLE RIBBON",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RED",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RED CUP",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE APPLE",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FOX",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LEAVES",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PLUMS",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE SKY",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE SUN",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YELLOW",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YELLOW BOOK",
+  "files": [
+   "src/chapters/paintedCountry/drawingStudioModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· AS SHE REMEMBERED IT",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· SHE NOTED",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· TAKE IT FROM THE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· THE BRUSH HOLDS",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· THROUGH TO THE PAINTED TRAIN",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\"THE ORCHARD IN SUMMER\" · ROSA, 9",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0} · {1} · AS SHE REMEMBERED IT",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · AS SHE REMEMBERED IT",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · SHE NOTED {1} FOR {2}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · THROUGH TO THE PAINTED TRAIN",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} WANTS {1} · TAKE IT FROM THE {2}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} WANTS {1} · THE BRUSH HOLDS {2} TAKE {3} FROM THE {4}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A THING ON THE SHELF TO TAKE ITS COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "As Rosa remembered it.",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 4 · THE PAINTED COUNTRY",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PigmentTrainScene.js",
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FROM THE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "II · THE STILL LIFE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT {0}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NOT THE ARCHIVE'S GREY",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ON THE SHELF",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "paint each place the colour Rosa noted beside it (",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "paint each place the colour Rosa noted beside it ({0} / {1})",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ROSA NOTED EACH COLOUR BESIDE ITS PLACE IN HER DRAWING AIM WITH THE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ROSA NOTED EACH COLOUR BESIDE ITS PLACE IN HER DRAWING AIM WITH THE {0} · {1} A THING ON THE SHELF TO TAKE ITS COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "TAKE IT FROM THE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "TAKE IT FROM THE {0}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE ARCHIVE'S GREY",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRUSH HOLDS",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE BRUSH HOLDS {0}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE BRUSH IS DRY ·",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE BRUSH IS DRY · {0} WANTS {1} {2} THE {3} ON THE SHELF",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE DOOR TO THE TRAIN IS OPEN",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "the still life is as Rosa remembered it; the door to the painted train is open",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE STUDIO · ROSA'S STILL LIFE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THINGS FROM THE ORCHARD HOUSE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO THE PAINTED TRAIN",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "world pixels; origin top-left; x right; y down",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ": LESS ON THE SHELF. MORE ON THE TAG.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0}: LESS ON THE SHELF. MORE ON THE TAG.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A BROKEN TOOTH STOPPED EVERY SACK AT ONCE.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A/D · SPACE · LEFT PAINT · RIGHT WASH",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ANOTHER WISH TAKES SHAPE. THE PRICE SEAL CLIMBS.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BREAD",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GOODS WAIT HERE WHILE EMPTY STALLS WAIT THERE.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HE DREW EVERY WISH THEY NAMED THEY DREW A WAY TO MAKE ENOUGH",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD LEFT · PAINT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "hold left mouse to paint; hold right mouse to wash pigment into the two-slot brush",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD RIGHT · WASH",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MEDICINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE CLOSER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE NEW NOTE.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "origin top-left; x right; y down",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CART IS LOADED. ITS AXLE IS IN TWO PIECES.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CART MOVES WHAT THE MARKET ALREADY HAD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE COMMON FOLD COMES WITH YOU.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE GRANARY IS FULL. THE MILLSTONE DOES NOT TURN.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE HERBS HAVE SEED. THE CHANNEL HAS NO WATER.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE MILL TURNS. THE SAME COINS NOW MEET MORE BREAD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PAPER RETURNS YOU TO THE LAST FOLD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PUMP LOSES EACH CUP BEFORE IT REACHES THE FIELD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE RESIDENTS FOLD THE EXCESS INTO SOMETHING THEY CAN SHARE.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THERE IS MORE GOLD. THERE IS NOT MORE BREAD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THERE IS MORE MONEY. THERE IS NOT MORE BREAD.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TIMBER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH COLOR INTO THE BRUSH. LET THE BRUSH FIND ITS FORM.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH THE OLD FORMS BACK INTO THE BRUSH. PAINT WHAT THE COUNTRY ACTUALLY LACKS.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WATER REACHES THE HERBS BEFORE ANOTHER WISH IS DRAWN.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· CLOSE · OR WALK ON",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· COMPARE THE PLATES",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· DRAW PAPER ACROSS THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· JUMP ONTO YOUR PAPER ·",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· PAINT ALONG THE DOTTED LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· PUT IT BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WALK TO THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE ARCHIVE'S GREY AWAY",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE GREY FOR COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE GREY FOR HER COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "(STILL UNDER GREY)",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · CLOSE · OR WALK ON",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · COMPARE THE PLATES",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · DRAW PAPER ACROSS THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · JUMP ONTO YOUR PAPER · {1} · WALK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PAINT ALONG THE DOTTED LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PUT IT BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WALK TO THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WASH THE ARCHIVE'S GREY AWAY",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} (STILL UNDER GREY)",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} CLICK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} OF {1} COLOURS JOINED · {2} OF {3} SQUARES",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} OF {1} PLATES CLEAR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Address not on file.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALL JOINED · NOW COVER EVERY SQUARE OF GREY",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARROWS · MOVE F / SPACE · PICK UP / PUT DOWN SHIFT · LIFT E · PUT IT BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bellwether Orchard",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM 1978-0412 · SECOND CLAIM",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "COLOURS JOINED ·",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "compare the plates; choose the mark she left in all three",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Contents: drawings (a child's), painted over for the record.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "D-PAD · MOVE A · PICK UP / PUT DOWN LT · LIFT X · PUT IT BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRY BRUSH ·",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "DRY BRUSH · {0} · WASH THE GREY FOR COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "HER COLOURS ARE STILL UNDER THE GREY, IN PAIRS. JOIN EACH COLOUR TO ITS MATCH · THEY NEVER CROSS · COVER EVERY SQUARE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I · UNDER THE GOUACHE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IN ALL",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JOIN EACH COLOUR TO ITS MATCH · THEY NEVER CROSS · COVER EVERY SQUARE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "join Rosa's colours on the three plates (",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "join Rosa's colours on the three plates ({0} of {1} clear)",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "LEFT MOUSE · DRAG A COLOUR TO ITS MATCH RIGHT MOUSE · LIFT IT E · PUT IT BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOOK AGAIN",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT THROUGH ANOTHER COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTHING TO READ HERE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OUT OF REACH · GET CLOSER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT MAKES PAPER REAL · STAND ON IT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATES CLEAR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "STAND AT THE DOOR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "START ON A DAB OF COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAKE THE PLATE DOWN",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRUSH IS DRY · {0} · WASH THE GREY FOR HER COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE BRUSH REACHES THIS FAR · GET CLOSER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "the door is open; someone went through ahead",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE DOOR WAITS ·",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE DOOR WAITS · {0} OF {1} PLATES CLEAR",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE DOOR'S OWN FACE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE HAWTHORN. THE DOOR OPENS.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PLATE COMES CLEAR · IT GOES IN YOUR NOTES",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TOO HIGH · BUILD UP TO IT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASHES IT OFF",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "YOU PAINTED PAPER · IT IS SOLID NOW",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "YOU PAINTED PAPER · IT IS SOLID NOW {0} WASHES IT OFF",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "YOUR NOTES · THE THREE PLATES",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A PENCIL TRAIN STILL RUNS.",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A PENCIL TRAIN STILL RUNS. THE DAMP KEEPS WHAT IT TOOK.",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ANOTHER COAT RUNS OFF WHILE IT WAITS",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PLATFORM. THE COLOURS WERE ONLY BORROWED, AND SOME RAN OFF ON THE WAY.",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PLATFORM. THE COLOURS WERE ONLY BORROWED.",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN STANDS TOO LONG · A COAT OF PAINT RUNS OFF",
+  "files": [
+   "src/chapters/paintedCountry/paintedLineModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· PAINT THE RUBBED-OUT RAILS BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· PAINT THE TRACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· PAINT THE TRACK ACROSS THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE PAPER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE PAPER OFF THE LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · GIVE {1} BACK TO THE {2}",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PAINT THE RUBBED-OUT RAILS BACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PAINT THE TRACK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PAINT THE TRACK ACROSS THE GAP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WASH THE PAPER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WASH THE PAPER OFF THE LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} ON EACH COLOUR · WASH IT BACK TO WHOEVER LENT IT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A GAP IN THE LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BACK TO THE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Chapter 4 to Chapter 5 transition",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ON EACH COLOUR · WASH IT BACK TO WHOEVER LENT IT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "OUR COLOURS!",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OUT OF REACH · LET THE TRAIN BRING YOU CLOSER",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT THE RAILS AHEAD · THE TRAIN RUNS FASTER ON WET PAINT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAPER ON THE LINE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PENCIL RAILS",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATFORM",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEAM UP",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRUSH REACHES THIS FAR · THE TRAIN WILL BRING YOU",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST PAINTED PLATFORM",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LINE AHEAD",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js",
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LINE AHEAD IS BROKEN. PAINT IT IN AS YOU RIDE.",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE RAILS ARE RUBBED OUT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN IS ON IT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN WAITS ·",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "THE TRAIN WAITS · {0}",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "WAIT FOR US!",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WAITING",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WET PAINT · FAST",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· AFTER THE",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· PAINT THE",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH THE GREY",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · PAINT THE {1}",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WASH THE GREY",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} A PART · WHEELS FIRST",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} ON THE CAB · {1} · BOARD",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A PART · WHEELS FIRST",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "AIM AT THE AWNING ·",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "AIM AT THE AWNING · {0} TO BORROW ITS COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "AND",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BAKERY",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOME",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "III · THE PAINTED TRAIN",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MILL",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO {0} YET · BORROW IT FROM THE {1}",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NOTHING TO STAND ON ·",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "NOTHING TO STAND ON · {0} FIRST",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ON THE CAB ·",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ORCHARD",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PIGMENT STONE ·",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "PIGMENT STONE · {0}",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SQUARE",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE {0} · AFTER THE {1}",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE GREY THINS · ONCE MORE",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PAINTED TRAIN, AS DRAWN",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE YARD · THE UNFINISHED TRAIN",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO BORROW ITS COLOUR",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "WHEELS → ENGINE · CARRIAGE → CAB → ROOF",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YET · BORROW IT FROM THE",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ }
+]

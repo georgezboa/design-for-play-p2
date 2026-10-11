@@ -19,7 +19,7 @@ import { CINEMATICS, playCinematic } from './gameFlow.js';
 import { CHAPTER_CONTROLS } from './chapterControls.js';
 import { DEV_MODE, PLAYTEST_MODE, activateHiddenRouter, clearHiddenRouter } from '../devMode.js';
 import { quitGame, toggleFullscreen } from './desktopBridge.js';
-import { SETTINGS_CONTROLS } from './settingsControls.js';
+import { SETTINGS_CONTROLS, settingValue } from './settingsControls.js';
 import { DEV_ROUTES, routerEntries } from './devRoutes.js';
 import { resolveCheckpointRoute } from './finalBossRoute.js';
 import { activateWithin, createMenuGamepadPoll, menuKeyAction, moveFocusWithin } from './menuNavigation.js';
@@ -77,7 +77,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
         <p class="nf-kicker">NIGHT SERVICE · DEPARTURES</p>
         <span class="nf-menu-rule"></span>
       </header>
-      <p class="nf-board-columns" aria-hidden="true"><span>No.</span><span>SERVICE</span><span>LINE 01</span></p>
+      <p class="nf-board-columns" aria-hidden="true"><span>NO.</span><span>SERVICE</span><span>LINE 01</span></p>
       <nav class="nf-main-actions" aria-label="Main menu"></nav>
       <footer class="nf-menu-footer">
         <p class="nf-status" role="status" aria-live="polite"></p>
@@ -503,7 +503,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
       // The brass slider's amber fill follows the value (titleMenu.css).
       const fill = () => input.style.setProperty('--nf-range', `${((input.value - min) / (max - min)) * 100}%`);
       if (type === 'range') { input.min = min; input.max = max; input.value = settings[key]; fill(); }
-      else input.checked = settings[key];
+      else input.checked = settingValue(settings, key);
       input.addEventListener('input', () => {
         if (type === 'range') fill();
         const next = readSettings();

@@ -17,6 +17,7 @@
 
 import Phaser from 'phaser';
 import { DEPTH, FONTS, INK, INK_HEX, LINE_COLORS } from './art/palette.js';
+import { tr } from '../../shared/i18n/runtime.js';
 
 const LINES_ORDER = ['amber', 'teal', 'rose'];
 
@@ -455,7 +456,9 @@ export class BorrowedLightHud {
     const line = d.lines[d.index];
     this.captionSpeaker.setText(line.speaker);
     if (this.captionFull !== line.text) this.layoutCaption(line.text);
-    this.captionBody.setText(line.text.slice(0, Math.floor(d.shown)));
+    // 汉化: the Chinese line types in step with the English timing
+    const shown = tr(line.text);
+    this.captionBody.setText(shown === line.text ? line.text.slice(0, Math.floor(d.shown)) : shown.slice(0, Math.round(shown.length * Math.min(1, d.shown / Math.max(1, line.text.length)))));
   }
 
   // ---- cards ---------------------------------------------------------------

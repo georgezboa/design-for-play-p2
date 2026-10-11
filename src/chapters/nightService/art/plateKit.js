@@ -9,6 +9,7 @@
 import { FONT_SERIF, FONT_UI, HOUSE_FACES } from '../../../shared/fonts.js';
 import { plateKey } from '../panelModel.js';
 import { rng } from './ink.js';
+import { tr } from '../../../shared/i18n/runtime.js';
 
 export { FONT_SERIF, FONT_UI };
 
@@ -81,6 +82,7 @@ export function inkOnPaper(ctx, key, quad, { w = 400, h = 200, alpha = 0.92 } = 
 
 /** Letter-spaced capitals (canvas letterSpacing where supported, else per glyph). */
 export function spacedText(c, text, x, y, spacing) {
+  text = tr(text);
   if ('letterSpacing' in c) {
     const before = c.letterSpacing;
     c.letterSpacing = `${spacing}px`;

@@ -1,0 +1,2039 @@
+[
+ {
+  "key": "SYMPHONY NO. 7, ALLEGRETTO (BEETHOVEN)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TENCENT HUNYUAN 3D",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The English character voices in Chapters 3 and 5 were generated with ElevenLabs text-to-speech; Chapter 6 reuses selected Chapter 3 lines for the argument about Mara.",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE MUSEUM",
+  "files": [
+   "src/shell/creditsData.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE SNOW IS DANCING (DEBUSSY)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WASHINGTON POST MARCH (SOUSA)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Title and visual-direction imagery, world panoramas, painterly textures, Chapter 3 surface sources, selected production reference art, and the painted Chapter 1 windows, characters and frames (directed by George Zhong).",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Typefaces · © The EB Garamond Project Authors, © The Jost Project Authors · SIL Open Font License 1.1",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "U.S. federal-government work · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNITED STATES MARINE BAND",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Universal Animation Library 1 & 2 · CC0 1.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VISUAL & CINEMATIC LEAD",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VISUAL WORLDS",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A6 · TWO BELLS (DEV ONLY)",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A8 · THE CHASE (DEV ONLY)",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE CORRIDOR",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "B5 · BORROWED LIGHT (DEV ONLY)",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Behind Butch on the tender: punch his cases back as they land, volleys, then a ring that reads NO CLAIM.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Borrow six colours, paint the train, board it.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Carry a lantern’s light to the dead nodes.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 5 · MUSEUM OF ONE ANSWER",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CITY ENTRY · THE PLATFORM",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR I · RETURN TO SENDER",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR I · THE ROOF RUN",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR II · ON THE BELL",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR II · THE BELL TOWER",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR III · FALSE CLAIMS",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR III · THE STANDOFF",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR IV · THE PAINTED LINE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "COPPER HERON",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CREDITS",
+  "files": [
+   "src/shell/devRoutes.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Cross the ward scanner in step with Olek.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dev-only page: the retired Chapter 5 inflation of the painted country (not in production).",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dev-only preview of the Chapter 1 opening animation.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Drag and zoom: the desk, the pigeonholes, the Conductor.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUSK · THE CUT FEED",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUSK · THE LAUNDRY FIRE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Eight-key statue chase.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Face to face at the clock: wait for it, draw a true thing, then the other on the second stroke.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Filed claims, the four chapter cases and Door 4.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "From above, his misreadings fly as words: dodge them, touch both truths, say it under him.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GALLERY · UNDER THE GOUACHE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Hana’s ledger, the room and the night.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LABYRINTH",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Lines that ring on bell I or bell II.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Look at the oil in the paving with Lev.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARKET SCANNER · WALK BESIDE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Memory light, the Grid Stone, the hotel cut and borrowed light.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM COLLAPSE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM ECHO CITY (DEV ONLY)",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSEUM LOBBY",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT FIRE · THE CLAMP",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "On rails: paint the line ahead, outrun his grey wash and pigment, board the night service.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPENING STORYBOARD",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Paint and wash the gallery car; three plates and the door.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Paint the track ahead of the train on the four-second bell.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINTED COUNTRY REVISIT",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINTED TRAIN · YARD",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Petar’s work order and the cut by the clock.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Room 101, the pending case and the house rules.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHELL",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Side-on along the carriage roofs: jump cases, duck gantries, punch a brass claim back; the lens opens on the tender.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Six colours, as Rosa remembered them.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STATION SCANNER · FINALE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STUDIO · THE STILL LIFE",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Swap two windows; zoom decides which edges meet.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TD",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive collapse and the run to the last door.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The bridge through 1978 and the bell finale.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The ending after the last carriage, then the credits.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FIVE-STONE ENDING",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The five-stone route, opened directly for testing.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The lens, the ticket stack and one punch.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The lobby exhibit: four evidence windows (panel engine).",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The loose feed into the clamp, on the next bell.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service drops Butch with the claim card.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The optional fire by the west wall.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The production title menu (type 1111 for the node router).",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The punch-hole lens and the frame lift.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The punch, the bell, the one-line rule; then two bells.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The quick bell and the window cradles.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The rain rooftops on the four-second bell: lamps, planks, his searchlights, the quickening.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The round-10 painted title, George's nine paintings (the game's title).",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The round-6 procedural title, for comparison.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The sealed Echo City reconstruction; never in the shipping route.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The station scanner; board the night service.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The walk past the fountain to Toma’s door.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET 43 BOARD",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TITLE SCREEN",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TITLE SCREEN · DRAWN",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TITLE SCREEN · PAINTED",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Title screen with the credits roll open.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO THE MINISTRY",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TP",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Twelve-bell departure, the counterweight walkways; run for the train.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Up his tower: jump the bell’s ring, ride the swinging beams, punch the bell as it strikes.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Zoom with one picture: the desk bell, the stub, the porthole.",
+  "files": [
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ":scope > .nf-title-card",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "\" stroke-dasharray=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\" stroke-dashoffset=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\"/> <circle class=\"nf-bell__fill\" cx=\"39\" cy=\"39\" r=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\"/> <polygon class=\"nf-bell__shine\" points=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} of {1} magic stones held",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<circle class=\"nf-bell__track\" cx=\"39\" cy=\"39\" r=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "<g class=\"nf-bell__glyph\"> <rect x=\"37\" y=\"14\" width=\"4\" height=\"6\" fill=\"#6d5227\"/> <polygon class=\"nf-bell__body\" points=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<i data-line=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<line class=\"nf-bell__tick\" x1=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<polygon class=\"nf-bell__body\" points=\"",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "34%, #efe4cc)",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "button, a, .nf-pause, [role=\"dialog\"]",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "color-mix(in srgb,",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "color-mix(in srgb, {0} 34%, #efe4cc)",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ENTER · CONTINUE",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD TO SKIP",
+  "files": [
+   "src/shell/finaleUi.js",
+   "src/shell/gameFlow.js",
+   "src/trueEnding-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MAGIC STONES",
+  "files": [
+   "src/shell/finaleUi.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "magic stones held",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "nf-tag nf-world-tag",
+  "files": [
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHTFALL CINEMATIC",
+  "files": [
+   "src/shell/gameFlow.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· AN UNFILED RECORD",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "\" aria-hidden=\"true\">",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "\" aria-label=\"",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} Where the missing ones were:",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<div class=\"nf-stone-gem",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "<span class=\"nf-stones\" role=\"img\" aria-label=\"",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "A MAGIC STONE · AN UNFILED RECORD",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "an empty socket",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLACK TICKET STONE",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Borrowed Light: a ledge high above the roofs that shows only in the afterglow of a punched node.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City: someone at the dusk campfire kept one, sewn into an unclaimed coat.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Five open the last carriage.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEAVE IT · L",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "MAGIC STONE",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "MAGIC STONE {0} / {1} · AN UNFILED RECORD",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "magic stones held\">",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "nf-card-backdrop nf-stone-offer",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Night Service: look closer beneath the unfinished letter to Rosa, in the orchard case.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Records the archive could not file.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAKE IT · E",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "The archive could not file it. Keep what it can’t.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The last carriage stayed closed.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Museum: behind the pigment vials in the pending case. Only broken glass reaches it.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Painted Country: under the grey on the plate above the HOME door, in the painted-train yard.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "There are five on the line. Carry all five and the journey ends differently: the last carriage opens.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "To go back for them: LOAD · CHECKPOINTS on the title replays any chapter, and the stones already found stay found.",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Where the missing ones were:",
+  "files": [
+   "src/shell/magicStones.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "button, [role=\"button\"][tabindex], input, a[href]",
+  "files": [
+   "src/shell/menuNavigation.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALL CONTROLS",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "BACK",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CANCEL",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER {0} · {1} · SUSPENDED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "CONFIRM",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "CONTROLS",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "CONTROLS · NOW",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER · KEEP IT",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "input, button",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAST CHECKPOINT · CHAPTER",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LAST CHECKPOINT · CHAPTER {0} · {1}",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "nf-card-backdrop nf-pause-notice",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO ACTIVE JOURNEY · PROGRESS IS NOT BEING SAVED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONLY THE BASICS",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONLY WHAT MATTERS NOW",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAUSED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "Progress since your last save point will be lost.",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESUME",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "RETURN TO TITLE?",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "SELECT",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "SETTINGS",
+  "files": [
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TEST ROUTE · YOUR SAVE SLOTS ARE NOT TOUCHED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE NIGHT SERVICE · SUSPENDED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Preload stalled for",
+  "files": [
+   "src/shell/preloadQueue.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Preload stalled for {0}ms: {1}",
+  "files": [
+   "src/shell/preloadQueue.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Act I · Lost property. The pigeonholes and the Conductor.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Act II · The punch and the lens.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Act III · Two true things.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "audio, video",
+  "files": [
+   "src/shell/saveSystem.js",
+   "src/shell/titleReturn.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Begin a new journey here.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BORROWED LIGHT · BLACKOUT",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BORROWED LIGHT · EVACUATION PLATFORM",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY · DUSK",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EMPTY SLOT",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · THE LUGGAGE CAR",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · TWO TRUE THINGS",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · TWO WINDOWS",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One window. The desk bell and claim 1978-0412.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Return to the title screen? Progress since your last save point will be lost.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa’s orchard, painted over by the archive.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The archive wants one clean answer about Mara.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city runs on light borrowed from the train.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city takes its light back.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Conductor keeps the line running.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The duplicate ticket. M. Venn. Move as one.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The last archive line. Returning the orchard case.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The stores door and the key line.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Twelve bells to departure. Keep moving.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two tickets filed as one. Another mark waits in the square.",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOW GRAPHICS · SLOWER COMPUTERS",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MASTER VOLUME",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSIC VOLUME",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REDUCE MOTION",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SFX VOLUME",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TEXT SIZE",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ". This journey will be replaced by a new one.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· NIGHT SERVICE AWAKENING",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· this journey and its magic stones are gone for good.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · {1}. This journey will be replaced by a new one.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · this journey and its magic stones are gone for good.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "</span><span class=\"nf-slot-meta\">ARCHIVE SLOT</span><strong>",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "</span><span class=\"nf-slot-meta\">TEST NODE</span><strong>",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<kbd>SPACE</kbd> PAUSE <i></i> <kbd>↑</kbd> SLOWER <i></i> <kbd>↓</kbd> FASTER <i></i> <kbd>R</kbd> RESTART <i></i> <kbd>ESC</kbd> EXIT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<span class=\"nf-slot-index\">{0}</span><span class=\"nf-slot-meta\">ARCHIVE SLOT</span><strong>{1}</strong><small>{2}</small><b aria-hidden=\"true\">›</b>",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<span class=\"nf-slot-index\">{0}</span><span class=\"nf-slot-meta\">TEST NODE</span><strong>{1}</strong><small>{2}</small><b aria-hidden=\"true\">›</b>",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A GAME BY",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "ARCHIVE MEMORY",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE ROUTING · 1111",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "ARCHIVE SLOT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "AUDIO · DISPLAY · ACCESSIBILITY",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BACK TO THE TITLE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BEGIN THE NIGHT SERVICE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BRASS · STEEL · AMBER MEMORY",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CHECKPOINTS",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "CONTINUE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CREW · MUSIC · SOURCES · AI",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CREW MANIFEST",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "DELETE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DELETE SLOT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DELETE SLOT {0}?",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "END OF LINE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "END THE NIGHT SERVICE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Every entry skips the transition cutscenes and opens its playable node directly. Test nodes play on a scratch save: your slots are not touched.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "EXIT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Exited",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FASTER",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "FINAL DEPARTURES · LINE 01",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "GENERATIVE PRODUCTION LOG",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "GLASS · LEDGER · ONE CLEAN ANSWER",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "is kept at its last checkpoint:",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LICENSED SOURCE MATERIAL",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "LOAD / CHECKPOINTS",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSIC REGISTER",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "nf-credit-ledger nf-credit-ledger--compact",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "nf-credit-ledger nf-credit-style--",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "nf-credit-ledger nf-credit-style--{0}",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "nf-credit-section nf-credit-section--crew",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "nf-credit-section nf-credit-section--music",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "nf-credit-ticket nf-credit-style--",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "nf-credit-ticket nf-credit-style--{0}{1}",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "nf-slot is-empty",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "nf-slot nf-chapter-jump",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · DEPARTURES",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "NIGHT SERVICE · FINAL DEPARTURE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "NIGHT SERVICE ENDED",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "NIGHTFALL opening cinematic",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO ACTIVE JOURNEY",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO JOURNEY FOUND",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No journey has begun, so there is nothing to keep.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OFFICIAL SOURCE ↗",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPEN A NEW ARCHIVE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OVERWRITE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OVERWRITE SLOT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "OVERWRITE SLOT {0}?",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "PAPER · INK · THE HAWTHORN",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "QUIT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "QUIT GAME",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "QUIT GAME?",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "RAIN · BELL · BORROWED SIGNAL",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SELECT ARCHIVE OR CHAPTER",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SELECT TEST NODE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SERVICE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SLOT",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "quasi-segment"
+ },
+ {
+  "key": "SLOT {0}",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "SLOT {0} · NIGHT SERVICE AWAKENING",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Slot {0} is kept at its last checkpoint: {1}.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SLOWER",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SOURCE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Specific runtime manifests remain the authority for per-file provenance. Missing provider metadata is disclosed rather than guessed.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STONE · FIRE · CIVIC RECORD",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "TEST NODE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "THANK YOU FOR RIDING WITH US",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE CONDUCTOR · THE BLACK TICKET",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "THE JOURNEY IS COMPLETE · CLAIM CLOSED",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE JOURNEY IS COMPLETE · CLAIM OPEN",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST ARCHIVE LINE",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "This slot has no journey.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "TOGGLE FULLSCREEN",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You may close this tab.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "inset({0}px {1}px {2}px {3}px)",
+  "files": [
+   "src/shell/titlePainted.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "__rule\" aria-hidden=\"true\"></span>",
+  "files": [
+   "src/shell/titleReturn.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "</p><span class=\"",
+  "files": [
+   "src/shell/titleReturn.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "RETURNING TO THE TERMINAL…",
+  "files": [
+   "src/shell/titleReturn.js"
+  ],
+  "kind": "literal"
+ }
+]

@@ -10,6 +10,7 @@
 //       currentColor, with the amber arrow and an ivory hand.
 
 import { createSaveStore } from './saveSystem.js';
+import { tr } from '../shared/i18n/runtime.js';
 
 const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 
@@ -17,9 +18,10 @@ const escapeHtml = (value) => String(value).replace(/[&<>"']/g, (char) => `&#${c
 // lead a phrase or follow HOLD / PRESS / TAP (so "E AT A LIT NODE" capped
 // only the E).
 // ⌥ is the Mac's Option key, Alt elsewhere (Chapter 3's reveal, round 12).
-const NAMED_KEYS = new Set(['SPACE', 'ENTER', 'ESC', 'SHIFT', 'TAB', 'WASD', 'CTRL', 'ALT', '⌥', 'BACKSPACE', '←', '→', '↑', '↓', '⌫', '⤢']);
+// 汉化: 空格 is SPACE, and 按住 / 按 lead a key as HOLD / PRESS do.
+const NAMED_KEYS = new Set(['SPACE', 'ENTER', 'ESC', 'SHIFT', 'TAB', 'WASD', 'CTRL', 'ALT', '⌥', 'BACKSPACE', '←', '→', '↑', '↓', '⌫', '⤢', '空格']);
 const SHORT_KEY = /^(?:[A-Z]|[0-9])$/;
-const KEY_VERBS = new Set(['HOLD', 'PRESS', 'TAP']);
+const KEY_VERBS = new Set(['HOLD', 'PRESS', 'TAP', '按住', '按', '按下', '轻按']);
 
 function phraseHtml(phrase) {
   const words = phrase.split(/\s+/).filter(Boolean);
@@ -36,7 +38,8 @@ function phraseHtml(phrase) {
 
 /** A keys string as key caps and words (separators · / , kept, dimmed). */
 export function keysHtml(keys) {
-  const parts = String(keys ?? '').split(/(\s+·\s+|\s+\/\s+|,\s+)/);
+  // the whole line is translated first (its words and keys split after)
+  const parts = tr(String(keys ?? '')).split(/(\s+·\s+|\s+\/\s+|,\s+)/);
   return parts.map((part, index) => {
     if (index % 2) {
       const mark = part.trim() || ',';

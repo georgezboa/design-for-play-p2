@@ -40,6 +40,7 @@ import { BEZEL, CHROME_TEXTURES, paintBezel, paintLensRim, paintVignette, paintW
 import { PAL, brassFill, ink, roundRectPath, paperGrain } from './art/ink.js';
 import { PAPER_URL, TRAIN_KEY, TRAIN_URL, WORLDS } from './worldAssets.js';
 import { reducedMotionActive } from '../../shell/motion.js';
+import { tr } from '../../shared/i18n/runtime.js';
 import { magicStoneSnapshot } from '../../shell/magicStones.js';
 
 export const PANEL_SCENE = 'NightServicePanels';
@@ -2127,7 +2128,8 @@ export class PanelScene extends Phaser.Scene {
   // captions and cards
 
   showLine(line) {
-    this.caption = { speaker: line.speaker ?? '', text: line.text ?? '', shown: 0, done: false, lastTick: 0, at: this.clock };
+    // 汉化: the caption types the shown (Chinese) line
+    this.caption = { speaker: line.speaker ?? '', text: tr(line.text ?? ''), shown: 0, done: false, lastTick: 0, at: this.clock };
     this.captionSpeaker.setText(this.caption.speaker);
     this.layoutCaption(this.caption.text);
     this.captionText.setText('');

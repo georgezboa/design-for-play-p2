@@ -1,0 +1,1753 @@
+[
+ {
+  "key": "NIGHTFALL — Borrowed Light",
+  "files": [
+   "borrowed-light.html",
+   "src/borrowedLight-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHOW ME",
+  "files": [
+   "src/borrowedLight-main.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/nightService-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST ARCHIVE LINE · EVERY STOP BY NIGHT",
+  "files": [
+   "src/chapters/borrowedLight/art/paint.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AMBER",
+  "files": [
+   "src/chapters/borrowedLight/art/palette.js",
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROSE",
+  "files": [
+   "src/chapters/borrowedLight/art/palette.js",
+   "src/chapters/finalBoss/setPieces/bellRooftops.js",
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TEAL",
+  "files": [
+   "src/chapters/borrowedLight/art/palette.js",
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A · RAIN ROOFTOPS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLACKOUT",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLOWS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BRAKE RELEASES",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "C · EVACUATION PLATFORM",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DOWN",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DROPS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EVACUATION PLATFORM",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EXTENDS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IN TWO BELLS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js",
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIGHTS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIGHTS · SOLID",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOWERS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPENS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "origin top-left; +x right; +y down; world px; player x/y are the feet",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js",
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RISES",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROOFTOP MECHANIC",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SWITCHES OFF",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Text",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/nightService/readingView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CITY TAKES ITS LIGHT BACK",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN BRINGS ITS OWN LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN IS LEAVING · TWELVE BELLS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THROWS",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UP",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js",
+   "src/chapters/paintedCountry/brushInput.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· NEXT BUT ONE",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · NEXT BUT ONE",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "BELL {0}",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "BOARD LIGHTS",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BRIDGE DOWN",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BRIDGE OUT",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CRADLE DOWN",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LANTERN LIT",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEDGE DROPS",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIFT UP",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE PUNCH PER COLOUR",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "POINTS SWING",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RELEASE",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHUTTER UP",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SIGN LIGHTS",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SWITCHES ON",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VENT BLOWS",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WALKWAY UP",
+  "files": [
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALREADY LIT",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEAD NODE",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · GIVE LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · PUT IT BACK",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · TAKE IT BACK",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIFT WAITS",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LINE BUSY",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LINE HELD",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE LIGHT AT A TIME",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SAME LINE",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP OFF FIRST",
+  "files": [
+   "src/chapters/borrowedLight/hintBudget.js",
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELL",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELLS",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LISTENING · NEXT BELL",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MAGIC STONES ·",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "MAGIC STONES · {0} / {1}",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NEXT",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NEXT BELL ·",
+  "files": [
+   "src/chapters/borrowedLight/hud.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "NEXT BELL · {0}",
+  "files": [
+   "src/chapters/borrowedLight/hud.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "CITY TERMINAL",
+  "files": [
+   "src/chapters/borrowedLight/level.js",
+   "src/chapters/nightService/art/act2Art.js",
+   "src/shell/cutscene/painted/chapter1To2.js",
+   "src/shell/cutscene/scenes/chapter1To2.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DANCING",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EVACUATION",
+  "files": [
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOTEL MERIDIAN",
+  "files": [
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/cutscene/scenes/chapter1To2.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAST TRAM",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAUNDRY",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · ALL LINES",
+  "files": [
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPEN LATE",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PHARMACY",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RAIN ROOFTOPS",
+  "files": [
+   "src/chapters/borrowedLight/level.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROOMS",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAILOR",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TEAL TAG WHERE THE BRIDGE STARTS",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKETS",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WATCHES",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· ONE MORE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "A city-line ticket stub, pinned inside the glass of room 4, Hotel Meridian.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A dead lift, a dead bridge, one light. Lift first.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A letter on the bench.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A lift. Punch its pole, stand in the cage, and let the bell take me up.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A LIVE LINE · PUNCH IT (E)",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A LOOKOUT · PUNCH THE AMBER POLE TO BRING THE BRIDGE BACK, THEN TAKE THE BILLBOARD",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Across, while it's lit.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Across.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARCHIVE CARD B1",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BEST FROM CRADLE 1, AFTER ITS BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bring the bridge back, then cut it again and run before the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Butch— I made it through this city, but I could not wait here.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CAUGHT THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CITY LINE · SINGLE · PUNCHED",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CUT · RUN ACROSS NOW · THE BRIDGE GOES AT THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CUT · THE BRIDGE HOLDS UNTIL THE BELL AFTER NEXT · CROSS NOW",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CUT · THE BRIDGE HOLDS UNTIL THE NEXT BELL · CROSS NOW",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DARK DECK · IT HOLDS ONLY IN BORROWED LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dark decks. They only hold in borrowed light: punch the sign and jump while it glows.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEAD NODE · NO LINE · BRING IT LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · BORROW LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · CUT · FREES THE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "E · CUT · FREES THE {0} LINE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "E · RELEASE · THE LEDGE DROPS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · RELEASE THE BRAKE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · RELEASE THE LEDGE'S BRAKE (IT RINGS ON BELL I) · IT DROPS INTO LINE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · RENEW AT THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE AMBER POLE · STAND IN THE LIFT FOR THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE AMBER POLE · THE POINTS SWING ACROSS ON THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE BENCH · A LETTER WAITS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE BRIDGE'S DEAD NODE · GIVE IT THE LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE BRIDGE'S DEAD NODE · GIVE IT THE LIGHT · IT LIGHTS ON THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE BRIDGE'S NODE ON THE TOWER · TAKE ITS LIGHT BACK · CARRY IT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE HOTEL WINDOW · SOMETHING IS PINNED TO THE GLASS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE LANTERN · BORROW ITS LIGHT · E AT THE LIFT'S DEAD NODE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE LIFT'S DEAD NODE · GIVE IT THE LIGHT · STAND IN THE CAGE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE LIT LANTERN · BORROW ITS LIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE LIT LANTERN · BORROW ITS LIGHT · THEN E AT THE DEAD NODE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE ROSE POLE · ITS LIGHT SHOWS THE DARK DECKS · JUMP ACROSS WHILE THEY GLOW",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE ROSE POLE · STAND OVER THE VENT · THE UPDRAFT LIFTS YOU",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE TAGGED POLE BY THE GAP · THE BRIDGE COMES OUT ON THE NEXT BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE TEAL POLE · STAND IN THE LIFT TO THE GANTRY",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT THE TEAL POLE · THEN STAND IN THE LIFT CAGE FOR THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FORGETS THE OTHER",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "FROM CRADLE 1, AT THE MARK · E PUNCHES THE LAST (ROSE) POLE FOR THE NEXT BELL I",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Give the lift the light, and ride.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Give the light to the dead node. The bridge takes it at the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GIVEN · IT LIGHTS AT THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Good. Now wait for the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GRID STONE · MAGIC STONE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "GRID STONE · MAGIC STONE {0} / {1}",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "HOLD E · TAKE BACK",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Hold the— … Made it. Most of the coat, too.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "If you are following me, keep moving. I will leave another mark where I can. — Mara",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It holds a few seconds. Go.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ITS LIT TAG",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "letter · left on the platform bench",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIGHT BORROWED · CARRY IT TO A DEAD NODE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LINE BUSY · FREE WHEN ITS MACHINE GOES OFF",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LINE HOLDING",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "LINE HOLDING {0} CUT {1}",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "MARA",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MISSED THE TRAIN · AGAIN FROM THE LAMP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "My weight on one side, the walkway on the other. Stand in the cage and let the brake go.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NO LIGHT TO BORROW",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Nothing to punch up here. Down, and on.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Off the lift first, then take its light back for the bridge.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "On the bell. The door waited for me.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE AMBER LINE · PUNCH THE BILLBOARD'S POLE · CLIMB THE AC UNIT (SPACE) TO REACH IT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One line, one moment: the billboard or the bridge, not both. The billboard goes up and on.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One line, one moment. Punch two boxes on the same colour and the first one forgets.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One more walkway. Into the cage, brake off, and up.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OUT OF REACH · STEP CLOSER",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Punch a box, then wait for the bell. One colour, one line. The city keeps its own time.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH BOTH POLES · THE BELL RAISES THE LIFT AND SENDS THE BRIDGE OUT AT ITS TOP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH BOTH WHILE THE NEXT BELL IS I · UP ON BELL I, ACROSS ON BELL II",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH THE AMBER AND TEAL CRADLE POLES · STEP ON EACH CRADLE AS IT LOWERS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH THE LAST POLE FROM HERE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCHED · RINGS IN TWO BELLS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCHED · RINGS ON BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "PUNCHED · RINGS ON BELL {0}",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "PUNCHED · RINGS ON THE NEXT BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCHED · WAITING FOR THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Punched once at the terminal. The same clip as the 1978 claim: MARA VELEZ.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCHES FORGOTTEN · THE LAMP KEEPS YOUR PLACE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RENEWED · RUNS AGAIN FROM THIS BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RINGS ON BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "RINGS ON BELL {0}",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "RINGS ON BELL {0} · ONE MORE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "RUN FOR THE TRAIN DOOR · →",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Run.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SAME LINE ·",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SAME LINE · {0} FORGETS THE OTHER",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "She came through last night. Took the same roofs. Said you'd be along.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She left a letter at the platform. She said the person looking for her would know the name.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She was at that window. Something's pinned to the glass.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She's a roof ahead. Back across, and up by the billboard.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Someone kept it where it could be seen from the roofs.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · JUMP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · JUMP · HOLD FOR HEIGHT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAND IN CAGE A · E · RELEASE THE BRAKE · YOUR WEIGHT BRINGS THE WALKWAY UP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAND IN CAGE A2 · E · RELEASE ITS BRAKE (BELL I) · RIDE THE WALKWAY UP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAND IN THE CAGE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAND IN THE CAGE · YOUR WEIGHT TAKES IT DOWN",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAND IN THE LIFT CAGE · THE BELL TAKES IT UP",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP BACK TO THE MARK · THE LAST POLE IS IN REACH THERE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP CLOSER TO TALK",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP OFF THE LIFT · E AT ITS NODE UP HERE · TAKE THE LIGHT BACK",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAKEN BACK",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That bridge goes nowhere but a view. The billboard is the way on.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That bridge has no line of its own. The lantern's light can carry over.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That ledge is heavier than its box. Let its brake go and it drops into line.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "That punch. You're off the night service.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE",
+  "files": [
+   "src/chapters/borrowedLight/story.js",
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL COUNTS · I · II · I · II",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The bell counts here: one, two. That pole waits for two.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The bridge holds the line the lift needs. Back across, cut it there, and run.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE IS GONE · E AT ITS TEAL POLE BRINGS IT BACK ON THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE IS LIT · CROSS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE IS LIT · CROSS TO THE WATER TOWER",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE IS OUT · CROSS BEFORE ITS LAMPS GO OUT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BRIDGE ONLY LEADS TO A LOOKOUT · PUNCH THE BILLBOARD'S POLE INSTEAD",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The bridge, now.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city holds that bridge on the teal line, and the hotel lift needs the same line. Cut it, run across before the bell, then punch the lift.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CITY'S BELL QUICKENS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CITY'S OWN LINE · PUNCH IT (E)",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The decks ahead only hold in borrowed light. Take the bridge's light and carry it.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE DECKS HOLD IN THE LIGHT YOU CARRY · JUMP ACROSS · SPACE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The door's open. Go.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE HOTEL LIFT SHARES THE TEAL LINE · CUT THE TEAL TAG WHERE THE BRIDGE STARTS",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The last cradle shares the first one's bell. Punch it from the first cradle, once that one has lowered.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LEDGE IS DOWN · CROSS TO THE LANDING",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The lift goes on one, the bridge on two. Punch both before a one, and ride.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The lift to the gantry.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LIFT WAITS A BELL · STAND IN THE CAGE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LIGHT WENT HOME",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LIGHT WENT HOME TO ITS LANTERN",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The line's free now. Punch the lift and stand in the cage.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The mechanic's pole by the gap. Punch it, wait for the bell, and cross while the bridge is out.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The points. Punch them and cross on the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TEAL LINE HOLDS THE BRIDGE · E · CUT AT ITS POLE, THEN RUN ACROSS BEFORE THE BELL",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TEAL LINE IS FREE · E AT THE POLE BY THE HOTEL · STAND IN THE LIFT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRAIN IS PULLING OUT · RUN FOR THE LAST CAR",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The train opened the next door before dawn. I went on.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The vent. Punch it and stand in the draught when it blows.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WAY ON IS TO THE RIGHT · DROP TO THE ROOF BELOW",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "There. This city runs on borrowed light: punch a box and it switches on at the next bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "They hold while the light's on them. Jump.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THIS LINE RINGS ON BELL II · PUNCH IT AND WAIT · THE NUMBER BY THE BELL SAYS WHICH IS NEXT",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THREE BELLS TO DEPARTURE",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Three cradles: one, two, one. The bell's quick here.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two colours, two lines: both can ring on the same bell. Punch them both and ride.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Up. Punch the lift, stand in it, wait for the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Up. Then the light comes with me.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Wait for the bell.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You want across? Punch the box with the paper tag, on the pole by the gap.",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ }
+]

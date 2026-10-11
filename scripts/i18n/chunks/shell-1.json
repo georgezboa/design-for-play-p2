@@ -1,0 +1,2037 @@
+[
+ {
+  "key": "NIGHTFALL",
+  "files": [
+   "index.html",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "` DEV MENU",
+  "files": [
+   "src/devMenuReturn.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "button, a[href], input, select, textarea, [role=\"button\"]",
+  "files": [
+   "src/devMenuReturn.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Return to development menu",
+  "files": [
+   "src/devMenuReturn.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0} was a route into the retired Phaser Prologue. Pick a chapter page below.",
+  "files": [
+   "src/main.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "was a route into the retired Phaser Prologue. Pick a chapter page below.",
+  "files": [
+   "src/main.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "♪ CLICK FOR SOUND",
+  "files": [
+   "src/shared/autoplayGate.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EB Garamond",
+  "files": [
+   "src/shared/fonts.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Jost",
+  "files": [
+   "src/shared/fonts.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "background:rgba(9, 8, 7, 0.86)",
+  "files": [
+   "src/shared/musicDirector.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Click for sound",
+  "files": [
+   "src/shared/musicDirector.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A / D · ← → · LEFT STICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A SCANNER FIELD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A shield raised on the bell keeps its charge.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT 0 · ONE WINDOW",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT 0.5 · TWO WINDOWS",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT I · LOST PROPERTY",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT II · THE LUGGAGE CAR",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT III · TWO TRUE THINGS",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AIM THE BRUSH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AIM YOUR GAZE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AN EXHIBIT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARROW KEYS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BACK TO THE MUSEUM",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BACKSPACE · ESC",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BOARD BY KEYS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BORROW / GIVE LIGHT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 2 · BORROWED LIGHT",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 5 · THE MUSEUM OF ONE ANSWER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 6 · ALL WORLDS AT ONCE",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 6 · THE BLACK TICKET",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A LIT WALKER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Click a person or a thing to talk to them or look at it.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · TAB + ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · TAB NEXT TAG, E / ENTER USES IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · TAB, E / ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · TAB, ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK BEHIND YOU",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK INSIDE THE LENS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK IT · E / ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK THE GROUND",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK THE MARKED PART, UP CLOSE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK THE OFFER · G",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK THE PAPER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONTINUE (AFTER THE REVEAL)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONTINUE / READ",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONTINUE DIALOGUE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DOUBLE-CLICK THE GROUND",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG A PICTURE ONTO THE OTHER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · ARROWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · L",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · L + ARROWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · L, ARROWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · L, ARROWS MOVE IT, ENTER CLICKS THROUGH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · TAB",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT · TAB, ARROWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT OVER A CARD · L",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG IT THERE · L, ARROWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG ITS PICTURE OR BEZEL",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG ITS PICTURE OR BEZEL · ARROWS + SPACE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG ITS PICTURE OR ITS BEZEL · SPACE PICKS UP, ARROWS, SPACE PUTS DOWN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG PAPERS AND THE 1978 LENS · CLICK A STACK TO PUNCH · CLICK A PAPER TO PIN · H HINT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG THE BRASS PULL · HOLD ITS ARROW · ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG THE COPPER END · OR E",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG THE PULL OUTWARD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · CLICK IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · CLICK IT · FIRES ON THE NEXT BELL",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · CLICK THE MARKED NODE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · RIGHT CLICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · STANDING IN THE CAGE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · AS IT LANDS IN THE RING",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · AS IT REACHES YOU",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · AS IT STRIKES",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · CLICK THE TEXT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · PAD X",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · UNDER HIM",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER / LEFT CLICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / LEFT CLICK (THE MARKED NODE)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT A LIT / DEAD NODE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E AT A LIT / DEAD NODE (BLACKOUT)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E punches a lit node. It fires on the next bell.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City is point and click: a click on the ground walks Butch there.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER / SPACE / CLICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ESC · PAD START",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ESC · RIGHT-CLICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ESC · RIGHT-CLICK · WHEEL DOWN · ⤢ GLYPH · BACKSPACE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ESC / START",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Every stretch is a checkpoint, a few seconds back. Each set piece teaches its verb as it starts.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "First person: the mouse turns your head. Click once to take it.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Four movements, seven set pieces: a roof run, a bell tower, a standoff, a race down a painted line. Each plays its own way.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "G · LEV LEADS THE WAY (WHEN OFFERED)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "H · OR PAUSE → SHOW ME",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD ALT ⌥",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD ALT ⌥ · OR TAB",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD E / HOLD CLICK ON IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD F ON IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD LEFT CLICK · Z",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD R · HOLD PAD BACK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD SPACE / ENTER / ESC / MOUSE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD SPACE / ENTER / MOUSE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD YOUR GAZE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I · RETURN TO SENDER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I · THE ROOF RUN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "II · ON THE BELL",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "II · THE BELL TOWER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "III · FALSE CLAIMS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "III · THE STANDOFF",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IN STEP UNTIL THE ARCH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INTERACT",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INTERACT / READ",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IV · THE NIGHT SERVICE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP PACE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT MOUSE · AHEAD OF THE TRAIN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT MOUSE · DRAG",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT MOUSE · DRAG, NEAR BUTCH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEFT MOUSE · F · PAD RT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LENS ON A SEAM",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LET GO · L",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LET GO OF A WALKER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LISTEN (NEXT BELL)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LONG WALKS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOOK CLOSER / USE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOUSE · CLICK TO TAKE IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOUSE · I J K L · RIGHT STICK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOUSE (CLICK TO TAKE THE MOUSE)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NEW",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No brush here. A left click reads and opens.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No jumping in the city: Space has nothing to do here.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOTE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT / APPLY",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT PAPER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT THE TRACK IN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT THE TRAIN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAUSE → SHOW ME · H",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PRESS AND HOLD THE FRAME · F",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PRESS AND HOLD THE FRAME · F, ARROWS, SPACE DROPS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH · PIN A PAPER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH NODE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH-HOLE LENS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUT BACK WHAT YOU HOLD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUT IT DOWN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "READ / INTERACT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "READ / TALK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "READ ON",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REBUILD THE MAZE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESET CAMERA",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTART",
+  "files": [
+   "src/shell/chapterControls.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTART ROOM",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTART THE ROOM",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT MOUSE · SHIFT · PAD LT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT MOUSE ON IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT-CLICK · ⌫",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT-CLICK · WHEEL DOWN · ⌫",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RIGHT-CLICK · WHEEL DOWN · BACKSPACE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SAME",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIELD ×3 (ON THE BELL: KEEPS ITS CHARGE)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHOW ME (A HINT)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHOW WHAT MATTERS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SKIP",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SKIP A SCRIPTED WALK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SKIP THE REVEAL",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SLOT THE KEYS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · W · ↑ · HOLD FOR HEIGHT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE / W / ↑ · HOLD FOR HEIGHT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Space still jumps; E still reads.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STAIRS / TAKE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP AWAY",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STICK · A JUMP · X ACT · RB PUNCH · LB LISTEN",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STUCK?",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SWAP THE WINDOWS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAB + ARROWS · L LENS · E / ENTER ACT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAKE BACK A PUNCH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TALK / INSPECT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TALK / READ / CONTINUE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAP ESC",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE 1978 LENS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE HALLS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The mouse does the work here. Every move has a key too.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The mouse is a brush: left paints paper, right washes it away.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE NIGHT SERVICE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ONE-ANSWER EXHIBIT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE STREETS",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TICKET BOARD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE TRUE ENDING",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE WIRE CLAMP",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET BOARD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNFOLD THE WALL",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "USE THROUGH IT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WALK",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WALK IN STEP (SCANNERS)",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH / TAKE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH IT AWAY",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASH PAPER OFF THE LINE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WIRE CLAMP",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You walk Butch yourself. The arrows move him; Space jumps.",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Aborted",
+  "files": [
+   "src/shell/chapterPreloader.js",
+   "src/shell/preloadQueue.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "script[type=\"module\"][src], link[rel=\"stylesheet\"][href], link[rel=\"modulepreload\"][href], link[rel=\"preload\"][href]",
+  "files": [
+   "src/shell/chapterPreloader.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "\"><svg viewBox=\"0 0 120 54\" role=\"img\" aria-label=\"",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<figure class=\"nf-diagram\" data-diagram=\"",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<li data-tag=\"",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<path class=\"nf-diagram__hand\" transform=\"translate(",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<path class=\"nf-diagram__head\" transform=\"translate(",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<path class=\"nf-diagram__hill\" d=\"M",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<rect class=\"nf-diagram__frame",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<rect class=\"nf-diagram__picture\" x=\"",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ALT",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BACKSPACE",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CTRL",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Drag a window by its picture onto another window to swap them.",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Drag the brass pull outward, away from the window, to unfold the wall.",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG THE PICTURE",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD THE FRAME",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Press and hold a window frame: the frame lifts off and carries over another picture.",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PULL OUTWARD",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAP",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD",
+  "files": [
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AI-ASSISTED DEVELOPMENT",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AMBIENTCG",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Arranged for piano and viola by Elias Goldstein · converted to MP3 for the game",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Bittersweet contemporary classical · orchestra and solo violin · 07:48",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CARL",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC BY 3.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC BY 4.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC BY-SA 2.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC BY-SA 3.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC BY-SA 4.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CC0 / public-domain dedication · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 2 BUILDER",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · ARRIVAL",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · BURNING MESSAGE",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · COPPER HERON",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · DUSK",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · MARKET",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · SQUARE AND ARCHIVE",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · TRANSIT MINISTRY",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 4 · THE GALLERY AND THE STUDIO",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 4 · THE PIGMENT TRAIN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 4 OWNER",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 5 · THE MUSEUM AND LABYRINTH · THE BLACK TICKET",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 5 / LABYRINTH",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 6 · MOVEMENTS III AND IV",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Concrete asphalt texture behind the Echo City back-street paving · CC0 1.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CREATIVE & INTEGRATION LEAD",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CREDITS MUSIC",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dvořák and Mussorgsky · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EB GARAMOND · JOST",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ELEVENLABS · ELEVENLABS.IO",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ELIAS GOLDSTEIN · AL GOLDSTEIN COLLECTION",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Excerpted from Children's Corner · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Fingerprints001 museum glass fingerprints · CC0 1.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FRANK LÉVY / MUSOPEN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Generated and then optimized 3D environments, props and character source meshes used in Echo City and the Museum reconstruction.",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GEORGE",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GIORGI LATSO · RECORDED BY ASUAS",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GNOSSIENNE NO. 1 (SATIE)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HUMORESQUE, OP. 101 NO. 7 (DVOŘÁK)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IVAN ILIĆ",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JAAN PATTERSON",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JACK",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JASON",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JOHN MICHEL, CELLO",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAST AND FIRST LIGHT",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MATHIAS",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Museum wall, carpet, wood, rubber and table PBR materials · CC0 1.0",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MUSOPEN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NEW WORLD SYMPHONY IV · GREAT GATE OF KYIV",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOCTURNE IN D-FLAT, OP. 27 NO. 2 (CHOPIN)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OpenAI Codex, Anthropic Claude Code, Alibaba Qwen Code, Moonshot Kimi and Google Gemini supported planning, implementation, review and testing under team direction.",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPENAI IMAGE GENERATION",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINTED COUNTRY",
+  "files": [
+   "src/shell/creditsData.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PATHÉTIQUE II · MOONLIGHT I (BEETHOVEN)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAUL PITMAN / MUSOPEN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Performed on cello · converted to MP3 for the game",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PICTURES AT AN EXHIBITION · NIGHT ON BALD MOUNTAIN (MUSSORGSKY)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "POLY HAVEN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PRACCHIA-78 · VIRTUAL PIANO RENDITION",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PRELUDE IN E MINOR, OP. 28 NO. 4 (CHOPIN)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Promenade, The Old Castle, Catacombae, Baba-Yaga, Night on Bald Mountain · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUBLIC DOMAIN",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Public-domain dedication · credited voluntarily",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "QUATERNIUS",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "QUATERNIUS DOWNTOWN CITY MEGAKIT",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "REFLETS DANS L'EAU (DEBUSSY)",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SCOTT BUCKLEY",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Solo piano · converted to MP3 for the game",
+  "files": [
+   "src/shell/creditsData.js"
+  ],
+  "kind": "literal"
+ }
+]

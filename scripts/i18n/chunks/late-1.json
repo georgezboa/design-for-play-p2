@@ -1,0 +1,390 @@
+[
+ {
+  "key": "CHAPTER 5",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "X 0.00 · MAP-Y(Z) 0.00 · LOADING",
+  "files": [
+   "museum-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Room 6",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SEAT 43",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js",
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/painted/chapter4To5.js",
+   "src/shell/cutscene/scenes/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CLICK / E · PIN",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK / E · UNPIN",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO A PAPER,",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CHAPTER 3",
+  "files": [
+   "src/cars/presentCity3d/Chapter3OpeningRuntime.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "LIVE 3D READY",
+  "files": [
+   "src/cars/presentCity3d/EchoCity3DPreview.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATFORM 2",
+  "files": [
+   "src/chapters/borrowedLight/level.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD Q · LISTEN",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS A DISAPPEARANCE",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLERK'S NOTE · 1981",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js",
+   "src/chapters/nightService/acts/act3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EDA'S STALL · 14:12",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ORDER C-441 · P. KOLAR",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JUMP A SACK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH A LAMP",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD E · PAINT",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD <kbd>E</kbd> · PAINT",
+  "files": [
+   "src/chapters/finalBoss/stage/lineView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARA V",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No 0412",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No 43",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RES. 43 · M. VE",
+  "files": [
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Fingerprints 001",
+  "files": [
+   "src/chapters/museum3d/assets/MuseumMaterials.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 01",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 02",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 03",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 04",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RES 43 · M. VE",
+  "files": [
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NEED A HINT? [H]",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ROSA'S DRAWING",
+  "files": [
+   "src/chapters/paintedCountry/carLayout.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHOOSE A WINDOW",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK · E · ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK · E / ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · E",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLICK A TAG · E / ENTER",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LIFT A FRAME",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE A CARD",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE A WINDOW",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT A COLOUR",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH A NODE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RELEASE A BRAKE",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · W / ↑ · PAD A",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TAKE A PIGMENT",
+  "files": [
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAWING · R. VELEZ",
+  "files": [
+   "src/shell/cutscene/scenes/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "UNDER 1M",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CAR 01",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CAR 02",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CAR 03",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CAR 04",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CAR 05",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CAR 06",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "LINE 01",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ }
+]

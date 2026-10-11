@@ -1,0 +1,2074 @@
+[
+ {
+  "key": "Butch and Lev seen from behind on a bench above Echo City at sunrise",
+  "files": [
+   "car03-3d.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "CHAPTER 3 · ECHO CITY",
+  "files": [
+   "car03-3d.html",
+   "src/shell/chapterControls.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City",
+  "files": [
+   "car03-3d.html",
+   "src/cars/presentCity3d/Chapter3OpeningRuntime.js",
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOADING",
+  "files": [
+   "car03-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "LOADING THE CITY",
+  "files": [
+   "car03-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "NIGHTFALL — Echo City",
+  "files": [
+   "car03-3d.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "NOW",
+  "files": [
+   "car03-3d.html",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STEP OFF THE NIGHT SERVICE",
+  "files": [
+   "car03-3d.html",
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Chapter 2 to Chapter 3 transition",
+  "files": [
+   "src/car03-3d-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY FAILED TO START",
+  "files": [
+   "src/car03-3d-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO CITY TO THE PAINTED COUNTRY",
+  "files": [
+   "src/car03-3d-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOADING SHARED-RIG CAST",
+  "files": [
+   "src/car03-3d-main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Interact",
+  "files": [
+   "src/cars/presentCity3d/Chapter3AnimatedCharacters.js",
+   "src/chapters/finalBoss/stage/squareView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "COPPER END",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "DRAG THE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "DRAG THE <b>COPPER END</b> INTO THE <b>TEAL RING</b> · OR <kbd>E</kbd>",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DROP IT INTO THE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "DROP IT INTO THE <b>TEAL RING</b>",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GRAB THE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "GRAB THE <b>COPPER END</b> · OR <kbd>E</kbd>",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INTO THE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "NEXT BELL",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js",
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/borrowedLight/causeCard.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Next train bell",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT QUITE · INTO THE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "NOT QUITE · INTO THE <b>TEAL RING</b>",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TEAL RING",
+  "files": [
+   "src/cars/presentCity3d/Chapter3BellClamp.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CHOOSE",
+  "files": [
+   "src/cars/presentCity3d/Chapter3Caption.js",
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Dialogue",
+  "files": [
+   "src/cars/presentCity3d/Chapter3Caption.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NARRATION",
+  "files": [
+   "src/cars/presentCity3d/Chapter3Caption.js",
+   "src/cars/presentCity3d/Chapter3OpeningRuntime.js",
+   "src/cars/presentCity3d/chapter3LongWalks.js",
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SYSTEM",
+  "files": [
+   "src/cars/presentCity3d/Chapter3Caption.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ", 17:10. Main feed left in service.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": ": still on board.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "An unregistered branch under the clock paving lost pressure.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "City case",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "COPPER HERON · GUEST LEDGER",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Cut and cleaned by",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Cut and cleaned by <b>P. Kolar</b>, 17:10. Main feed left in service.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Isolate the lower branch",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · LOST PROPERTY",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js",
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/nightService/art/act0Plates.js",
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Orchard case",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Owner: VELEZ, M. Status: OPEN.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Paid in cash. Key returned before dawn.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUBLIC WORKS · ORDER C-441",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The name line is blank. Ticket stub pinned to the page:",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "The name line is blank. Ticket stub pinned to the page: <b>SEAT 43</b>.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two claims filed.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Two claims filed. <b>City case</b>: collected. <b>Orchard case</b>: still on board.",
+  "files": [
+   "src/cars/presentCity3d/Chapter3EvidenceViewer.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· LOOK AROUND",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "\" data-verb=\"",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> A TAG TO LOOK",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> TO WALK",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<span class=\"c3-controls__verb",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "A TAG TO LOOK",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "CLICK",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js",
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HOLD",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js",
+   "src/chapters/finalBoss/stage/lineView.js",
+   "src/shell/controlsView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HOLD <kbd>ALT ⌥</kbd> · LOOK AROUND",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD <kbd>ALT ⌥</kbd> TO LOOK AROUND",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TO LOOK AROUND",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "TO WALK",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Eastbound reservation",
+  "files": [
+   "src/cars/presentCity3d/Chapter3HotelHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Maintenance order C-441",
+  "files": [
+   "src/cars/presentCity3d/Chapter3HotelHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Municipal issue copy",
+  "files": [
+   "src/cars/presentCity3d/Chapter3HotelHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Oil route sketch",
+  "files": [
+   "src/cars/presentCity3d/Chapter3HotelHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Witness notes",
+  "files": [
+   "src/cars/presentCity3d/Chapter3HotelHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>G</kbd> FOLLOW THE FIRELIGHT",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>G</kbd> LEV LEADS THE WAY",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Butch follows the firelight down the empty street to the square.",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FOLLOW THE FIRELIGHT",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "LEV LEADS THE WAY",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "The Copper Heron. Past the ministry lane, at the east end of the street.",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The service joint is by the clock, at the south edge of the square.",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "This way. The tall stone front on the east lane. Toma keeps the door.",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "West, past the clock. Eda sells lamp oil under the blue canvas.",
+  "files": [
+   "src/cars/presentCity3d/chapter3LongWalks.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUBLIC SERVICES",
+  "files": [
+   "src/cars/presentCity3d/Chapter3MinistryHall.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "varying vec3 vOilWorld; uniform sampler2D uOilCore; uniform sampler2D uOilSoft; uniform sampler2D uOilWide; uniform mat3 uOilMask; uniform vec3 uOilColor; uniform vec3 uOilStain; uniform vec3 uOilPale; uniform vec3 uOilSky; uniform vec3 uOilAmber; uniform vec4 uOilLook; // x: wiped band strength, y: bead relief, z: joint relief, w: sky sheen uniform vec2 uOilBand; // x: pale margin strength, y: wet gloss on the band",
+  "files": [
+   "src/cars/presentCity3d/chapter3OilArt.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· KEEP BESIDE THE OTHER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· MOVE THE PAPER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· PUNCH THE STACK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "{0} Read both under the 1978 lens.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0}The Transport Ministry is {1} of here — the tall stone front with the recessed doors, where Toma waits.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<b>ARDIN → AR · NN</b>",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> · KEEP BESIDE THE OTHER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> · PUNCH THE STACK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> A PAPER TO PIN IT · AGAIN TO TAKE IT OFF · <kbd>TAB</kbd> TO A PAPER, <kbd>E</kbd>",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>CLICK</kbd> BEHIND · LET GO",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>DRAG</kbd> · 1978 LENS",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<kbd>DRAG</kbd> · MOVE THE PAPER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "<s>M. VENN</s> is the archive's duplicate of VELEZ.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "07:10 · one passenger.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978 · ON FILE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A good coat, a rose scarf, a ticket in her glove. She kept her face to the street the whole time.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A market sale at fourteen twelve. Two cans of lamp oil, stamped with the seat number. Eda's stall.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A PAPER TO PIN IT · AGAIN TO TAKE IT OFF ·",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "A SEAT, NOT A NAME",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Agreed. The person pouring it was following the paving.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AHEAD",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "All right.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALONE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ALONE · WALK BESIDE SOMEONE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Another mark. She said she would leave one where she could.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ARDIN → AR · NN",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "ASK EDA WHO BOUGHT THE OIL",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ask Hana about the previous guest.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ask Hana more, or take the room.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ASK NIKA ABOUT SEAT 43",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ask when she left.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ask whether Hana saw her face.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Ask why the register line was left blank.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Before dawn. I was setting the stove. She returned the key, crossed toward the square, and did not ask for a carriage.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BEHIND · LET GO",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "BOARD THE NIGHT SERVICE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Both ends overlap by a hand width. The old clamp is open.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Both faces carry the same fresh compression marks as Petar's cutter. One branch, one cut.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "But the second line was not simply destroyed. A way to restore it was left here.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BUTCH, I WAS HERE.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Carried by the porter, Olek.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 · COMPLETE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHAPTER 3 COMPLETE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHECK IN AT THE COPPER HERON",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHECK IN WITH HANA",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Check the smell without touching it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Check where both loose ends were left.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "City case collected. Orchard case on board.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "City case.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM CARD",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Cold as the archive stacks. I will keep it out of the municipal ledger.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Compare the two 1978 records, then lay one ticket on the other.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Completion signed P. Kolar. Petar Kolar.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CONDUCTOR",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CROSS THE MARKET SCANNER BESIDE OLEK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Do you come up here often?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DRAG",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "DRAG THE LOOSE FEED INTO THE CLAMP",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Duplicates",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUPLICATES",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Echo City. Passengers leaving the train, please step onto the platform. Keep the doorway clear.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO STONE · MAGIC STONE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ECHO STONE · MAGIC STONE {0} / {1}",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "EDA",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ENTER THE PUBLIC HALL",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Examine the cut surfaces.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FILE AS ONE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "File as one:",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "File as one: {0} of {1} pinned, the proof is not complete.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "FILED AS ONE · CLAIM 1978-0412",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Filed as one person.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIND OUT HOW THE TWO TICKETS ARE RELATED",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Find the porter. (Continue)",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIND THE SERVICE JOINT BY THE CLOCK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Find what explains the name VENN.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Find what makes the two tickets one claim.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "First read both tickets under the 1978 lens.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FOLLOW THE FIRE TO THE SQUARE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Follow the shape of the line.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Fresh lamp oil, poured by hand along every joint, over stone somebody cleaned first.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Give Lev your conclusion. (Continue)",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GO TO THE MINISTRY",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GO UPSTAIRS",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GROUND LETTERS",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HANA",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Click FILE AS ONE, or Tab to it and press E.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Drag one ticket onto the other, then click PUNCH THE STACK.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Drag the 1978 lens over each ticket and read what it was in 1978.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Drag the lens over the second ticket, then compare the two 1978 records.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Drag the lens over the ticket you have not read, then pin both 1978 records and the terminal note.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · File the stack as ONE PASSENGER, PRINTED TWICE.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Pin both 1978 records at the top of the table (VELEZ, M. and M. VENN): click each, or Tab to it and press E.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HINT · Pin Nika's terminal note, Duplicates: VELEZ cut to two letters is VE, then NN.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Hours later, light moves across the ceiling. Then comes the smell of lamp oil.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "How are the two tickets related?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I carried two sealed cans. I did not open them.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I did not see a message. I worked from the access chamber below the paving.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I have a claim card, not a ticket. 1978-0412. The orchard case is still on board.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I never saw her face. Only the scarf.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "If the square is really burning, the street will say so. Get up. Look.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "If this is about the smell, I already called Sanitation. They sent me a complaint form instead of a cleaner.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "If you want warmth first, the laundry crew keep a fire by the west wall at dusk. Seline has been showing everyone something she found.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Inspect the broken lower feed.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "INSPECT THE OIL LINE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Inspect the oil line.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Is it late today?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "is the archive's duplicate of VELEZ.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "Issued Echo City terminal.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It is the least glamorous part of the job.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It lit on the bell. As if she knew the minute I would kneel here.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "It stays inside the mortar. At every corner it turns with the joint instead of crossing the stone.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP MOVING. — M.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Keep moving. The night service calls at seven.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP PACE BESIDE HER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEEP PACE WITH OLEK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Keep that card out.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Kerosene. There is a sharper chemical smell under it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAMP OIL",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Lamp oil ×2",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Lay both on the public table. We look at them before anyone tells us what they mean.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAY BOTH TICKETS ON THE PUBLIC TABLE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LET GO",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Every paper on this table was printed over an older one.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Every question has its paper. The punch is waiting.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · How many people does one claim number make?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Its face says seat 43. You have not read what it was in 1978.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Lay one ticket on the other.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Nika told us how terminals print duplicates. Her note is on this table.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Now the other ticket, under the same lens.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · One claim, then. So why would the terminal print the second as VENN?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · One claim, two cases: the city case and the orchard case. Count the passengers.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · One claim, two names. So why would the terminal print the second ticket as VENN?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · One ticket's 1978 record says nothing about the other. Pin both records.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Same claim, two names. If they are one thing, treat them as one.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · That holds. File it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · The brass lens shows 1978. Try it on the tickets.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · The claim card agrees: one owner, two cases.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · The lens still works while you choose. Check what is under both tickets.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · The names differ. What makes these two tickets the same claim?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · The oil was charged to the seat, not to a name. It says where she went, not who she is.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Then show me.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Two passengers on one seat? Look at where these tickets came from before you file that.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Two passengers under one claim from 1978? Put their records side by side again.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · Two questions. Why are they one claim, and why does one say VENN? The first one first.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · What did the lens find under both tickets? Both records are on file at the top of the table.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · You are proving a claim you have not read yet.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEV · You have read one ticket's past. Only one.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Lev Ardin. Civic Movement Investigation Office.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Likely lamp oil and a stone solvent. The oil is fresh. The solvent may not be.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Long surnames are cut:",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Look at the pale marks along the edges.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Mara Venn.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Mara.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARKET WARD · EDA'S STALL · 14:12",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MARKET WARD CROSSING",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MEET THE MAN ON THE PLATFORM",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MEET THE NIGHT SERVICE ON THE PLATFORM",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Neither end fell back into the access channel. They are resting side by side in the shallow groove.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · SEAT 43",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE · SEAT 43 · DUPLICATE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIKA",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Nika runs the ticket terminal. The window on the right.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No name on the laundry ticket?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No ticket. The stone hums whenever the evening tram passes. I would rather you take it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/finalBoss/echoExchanges.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No. Not once. She kept the scarf up and her back to the lamp. I remember thinking she was very good at it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT READ IN 1978 YET",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NOT YET",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js",
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Nothing official. Seline finished her first paid week at the laundry, Miro found sugar, and nobody has been arrested. We decided that was enough.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "of here — the tall stone front with the recessed doors, where Toma waits.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "of here — the tall stone front with the recessed doors.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "of here, at the south edge of the square — look for the old connector block between the paving grooves.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "of here, beyond the ministry lane.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "of here. Eda sells lamp oil under the blue canvas.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "of here. Follow the rails.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Oil is bought, and yesterday someone paid for this on seat forty-three. The ministry is northeast, past the fountain. Toma keeps the door.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OLEK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Olek carried the two cans for her, the woman in the rose scarf. He is taking the cart through the ward crossing now.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Olek loaded the cans after she paid him. She left first.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE PASSENGER · CLAIM 1978-0412",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ONE PASSENGER, PRINTED TWICE",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One punch files them. Decide what the stack is.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One punch files them. File the stack as:",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One seat, one claim, two tickets. The archive printed her twice.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One step ahead. Always one step.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "One ticket read. Now the other, under the 1978 lens.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OPEN THE ROOM DOOR",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Or cleaned something that was here before. We record the pale area. We do not choose between those explanations yet.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Orchard case.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Order C-441. An unregistered branch under the clock paving was losing pressure, so I cut it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Paid in cash, stamped SEAT 43.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PATTERN OK",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "People miss trains, leave spouses, lose papers and sometimes want one quiet night. I have done it for years. She did not invent the arrangement.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PETAR",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Petar cut the branch. Later, someone placed both ends where a person could reconnect them by hand.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Petar says he left them below the cover. Someone lifted them to the surface later.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PIN",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Pin the other ticket's 1978 record too.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Pin the other ticket's record beside it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Pin the paper that explains the name VENN.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Pin the papers that show both tickets are one claim.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PINNED",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "pinned, the proof is not complete.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "PLATFORM SCANNER",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Possible by hand. Not safe to light while we are standing over it, but deliberately recoverable.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Possibly. The reservation contains no photograph and no identity number. I can prove the name and time, not the passenger.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Print both tickets. (Continue)",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Public hall is open. What business are you bringing inside?",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Punch the stack to file it.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RADA",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rada says this is a celebration. It is really an excuse to keep me from going back for another shift.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Read both tickets under the lens first.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Read both under the 1978 lens.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "READ THE BURNING LETTERS",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "READ THE SECOND ROW",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Record that much. The archive is closing and the next train is tomorrow morning. I booked you a room at the Copper Heron.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Reserved 15:38, cash.",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ }
+]

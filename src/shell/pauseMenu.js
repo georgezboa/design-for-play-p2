@@ -10,7 +10,7 @@ import {
   writeSettings,
 } from './saveSystem.js';
 import { getActiveCinematic } from './gameFlow.js';
-import { SETTINGS_CONTROLS } from './settingsControls.js';
+import { SETTINGS_CONTROLS, settingValue } from './settingsControls.js';
 import {
   MAGIC_STONE_LINE, firstStoneNotice, magicStoneCountLabel, magicStoneRowHtml, magicStoneSnapshot,
 } from './magicStones.js';
@@ -360,7 +360,7 @@ export function installPauseMenu({
       // The brass slider's amber fill follows the value (as on the title).
       const fill = () => input.style.setProperty('--nf-range', `${((input.value - min) / (max - min)) * 100}%`);
       if (type === 'range') { input.min = min; input.max = max; input.value = settings[key]; fill(); }
-      else input.checked = settings[key];
+      else input.checked = settingValue(settings, key);
       input.addEventListener('input', () => {
         if (type === 'range') fill();
         const next = readSettings();

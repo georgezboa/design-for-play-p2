@@ -1,4 +1,5 @@
 import { Chapter3VoicePlayback } from './Chapter3VoicePlayback.js';
+import { tr } from '../../shared/i18n/runtime.js';
 
 // Chapter 3 dialogue in the shared caption bar (src/shell/uiKit.css
 // .nf-caption): speaker in amber Jost, the line in EB Garamond, Georgia, choices as
@@ -229,7 +230,11 @@ export class Chapter3DialogueController {
     this.root.classList.toggle('is-locked', this.advanceLocked);
     this.speakerElement.textContent = speaker === 'CHOOSE' ? '' : speaker;
     this.speakerElement.hidden = speaker === 'CHOOSE' || speaker === '';
-    this.textElement.textContent = line.text.slice(0, Math.floor(this.visibleCharacters));
+    // 汉化: the voice and timing follow the English line; the Chinese one
+    // types in step with it (the same share of its length).
+    const typed = Math.floor(this.visibleCharacters);
+    const shown = tr(line.text);
+    this.textElement.textContent = shown === line.text ? line.text.slice(0, typed) : shown.slice(0, Math.round(shown.length * Math.min(1, typed / Math.max(1, line.text.length))));
     this.choicesElement.replaceChildren();
     if (complete && line.choices?.length) {
       line.choices.forEach((choice, index) => {

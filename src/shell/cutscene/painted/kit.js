@@ -15,6 +15,7 @@ import { drawRain as inkRain } from '../painters.js';
 import { rng } from '../../../chapters/nightService/art/ink.js';
 import { FONT_SERIF, FONT_UI } from '../../../shared/fonts.js';
 import { assetUrl } from '../../../shared/assetUrl.js';
+import { tr } from '../../../shared/i18n/runtime.js';
 import { BEZEL, CHROME_TEXTURES, RADIUS, brassFrame } from '../../../chapters/nightService/art/wallArt.js';
 
 export const STAGE_W = 1600;
@@ -320,7 +321,7 @@ const FACES = {
  * it in, character by character. `fade` (0..1) for old ink.
  */
 export function drawWords(c, lines, at, { face = 'print', size = 20, weight, ink = '#2a1c12', blend = 'multiply', tracking = 0.12, leading = 1.35, align = 'center', reveal = 1, fade = 1, seed = 1, jitter = 0 } = {}) {
-  const list = Array.isArray(lines) ? lines : [lines];
+  const list = (Array.isArray(lines) ? lines : [lines]).map((line) => tr(line));
   const total = list.reduce((n, l) => n + l.length, 0);
   let shown = Math.floor(total * clamp(reveal, 0, 1) + 1e-6);
   c.save();

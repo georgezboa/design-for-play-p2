@@ -1,0 +1,2117 @@
+[
+ {
+  "key": "3 layers · stretch checkpoints",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "6 layers · slower, kinder · nothing undone",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "A / D leans to a line · HOLD E or the mouse paints the drawn line ahead · SPACE jumps his brush · jump aboard the night service",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "ACT",
+  "files": [
+   "final-boss.html",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "All Worlds at Once",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "ALL WORLDS AT ONCE",
+  "files": [
+   "final-boss.html",
+   "src/chapters/finalBoss/setPieces/paintedLine.js",
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/shell/chapterControls.js",
+   "src/shell/finalBossRoute.js",
+   "src/shell/saveSystem.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CAMERA SHAKE",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "CHAPTER 6 · THE CONDUCTOR",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Controls by movement",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "DASH",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEPART",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "DIFFICULTY",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "E punches a lamp: it fires on the next bell · cross on the beat · climb his tower, in the air as the ring runs down · E punches the bell as it strikes",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "ESC",
+  "files": [
+   "final-boss.html",
+   "museum-3d.html",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js",
+   "src/shell/controlsView.js",
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FLASHING",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "I · THE ROOFS",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "II · THE BELL",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "III · TWO TRUE THINGS",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "IV · THE PAINTED LINE",
+  "files": [
+   "final-boss.html",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JUMP",
+  "files": [
+   "final-boss.html",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js",
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHTFALL — All Worlds at Once",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "NORMAL",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/blackKnifeFinal/entities/Hud.js",
+   "src/chapters/finalBoss/finaleModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OFF",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "ON",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "PAUSE",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/chapterControls.js",
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE",
+  "files": [
+   "final-boss.html",
+   "src/chapters/borrowedLight/BorrowedLightScene.js",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/chapters/finalBoss/setPieces/bellTower.js",
+   "src/chapters/finalBoss/setPieces/paintedLine.js",
+   "src/chapters/finalBoss/setPieces/returnToSender.js",
+   "src/chapters/finalBoss/setPieces/roofRun.js",
+   "src/chapters/finalBoss/stage/lineView.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PaintedCountryInhabitantScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js",
+   "src/chapters/paintedCountry/PigmentTrainScene.js",
+   "src/chapters/paintedCountry/brushInput.js",
+   "src/shell/chapterControls.js",
+   "src/shell/controlsView.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE jumps the cases and couplings (hold for higher) · S ducks a gantry · E punches a brass claim back · then punch his cases back as they land in the ring",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "STORY",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/blackKnifeFinal/entities/Hud.js",
+   "src/chapters/finalBoss/finaleModel.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Conductor keeps the line running. Outlast his four movements, one for every carriage you have ridden, each played its own way: a roof run, a bell tower, a standoff, a race down a painted line. Every stretch is a checkpoint, a few seconds back.",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "WASD / ARROWS",
+  "files": [
+   "final-boss.html",
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js",
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD dodges his misreadings · SHIFT dashes through · touch one true thing, then the other, and E under him · then wait for the clock: ↑ ← → ↓ the card at that hand",
+  "files": [
+   "final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "6 lives · slower",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "E / C / RIGHT CLICK · ON THE BELL IT KEEPS ITS CHARGE",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "FROM THE TOP",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "Here Butch flies as his own ticket, the one the clerk punched: the only thing on the line allowed to leave it. Punch the Black Ticket through, and the line can end.",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "HOLD CLICK / Z",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "HOLD SHIFT / X",
+  "files": [
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHTFALL — The Black Ticket",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "ORIGINAL FIGHT BY MATHIAS",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "PUNCH",
+  "files": [
+   "hidden-final-boss.html",
+   "src/chapters/borrowedLight/causeCard.js",
+   "src/chapters/nightService/acts/act2.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RETRY FROM PHASE",
+  "files": [
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SHIELD",
+  "files": [
+   "hidden-final-boss.html",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "six lives · slower tickets · the retry keeps it",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "The Black Ticket",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "attr"
+ },
+ {
+  "key": "THE BLACK TICKET",
+  "files": [
+   "hidden-final-boss.html",
+   "src/chapters/blackKnifeFinal/entities/Hud.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CONDUCTOR'S KEYS, PLUS A SHIELD",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "The Conductor's true form: the ticket that never gets punched, the line that never ends. Five phases, one for every stone.",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "THE LAST CARRIAGE · ALL FIVE MAGIC STONES",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "THE LINE CAN WAIT FOR YOU",
+  "files": [
+   "hidden-final-boss.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "THE UNFILED ENDING",
+  "files": [
+   "hidden-final-boss.html",
+   "true-ending.html"
+  ],
+  "kind": "html"
+ },
+ {
+  "key": "LAST CARRIAGE · No. 6",
+  "files": [
+   "src/chapters/blackKnifeFinal/carriageBackdrop.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BLACK TICKET",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/cutscene/painters-c3.js",
+   "src/shell/finalBossRoute.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BORROWED LIGHT",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/borrowedLight/story.js",
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/shell/chapterControls.js",
+   "src/shell/creditsData.js",
+   "src/shell/magicStones.js",
+   "src/shell/saveSystem.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / C / RIGHT CLICK",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ECHO STONE",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EMBER STONE",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GRID STONE",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD LEFT CLICK / Z",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Keep moving, the letter said. Too well timed.",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIGHT SERVICE",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/borrowedLight/art/machineArt.js",
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/shell/chapterControls.js",
+   "src/shell/cutscene/painted/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter2To3.js",
+   "src/shell/cutscene/scenes/chapter5-to-black-knife.js",
+   "src/shell/magicStones.js",
+   "src/shell/saveSystem.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PIGMENT STONE",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/shell/magicStones.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa drew the hawthorn before anyone painted over it.",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The orchard case is still on the rack.",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE PAINTED COUNTRY",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js",
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/shell/chapterControls.js",
+   "src/shell/magicStones.js",
+   "src/shell/saveSystem.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The ticket that never gets punched.",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two tickets. One name cut short.",
+  "files": [
+   "src/chapters/blackKnifeFinal/constants.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· DASH (SHIFT)",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "BUTCH · HIS PUNCHED TICKET ·",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "BUTCH · HIS PUNCHED TICKET · {0}",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NEVER PUNCHED",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIELD (E) {0}/{1} · DASH (SHIFT) {2}%",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SHIELD ON THE BELL · PARRY",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FIGHT THE BLACK TICKET AGAIN",
+  "files": [
+   "src/chapters/blackKnifeFinal/main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Reduce Motion is on in Settings",
+  "files": [
+   "src/chapters/blackKnifeFinal/main.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RESTART THE FIGHT",
+  "files": [
+   "src/chapters/blackKnifeFinal/main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE UNFILED ENDING AGAIN",
+  "files": [
+   "src/chapters/blackKnifeFinal/main.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ", with every life and all three shields. Raise a shield on the bell and it keeps its charge.",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· SHIELD · RAISE IT ON THE BELL AND THE CHARGE COMES BACK",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "<kbd>E</kbd> · SHIELD · RAISE IT ON THE BELL AND THE CHARGE COMES BACK",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "All five stones answer. The line that never ends has a last stop after all.",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM CLOSED",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEPARTING",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "II",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js",
+   "src/chapters/borrowedLight/causeCard.js",
+   "src/chapters/borrowedLight/hud.js",
+   "src/chapters/borrowedLight/story.js",
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/museum/labyrinth/LabyrinthScene.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "III",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js",
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/PanelScene.js",
+   "src/shell/devRoutes.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "IV",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js",
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PARRY · ON THE BELL · CHARGE KEPT",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PHASE {0} · THE {1}",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "RETRY FROM PHASE {0}",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SHIELDS REFILLED · 3 / 3 · A FAILURE NOW RETRIES FROM HERE",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The Black Ticket is punched.",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE LAST CARRIAGE · CLAIM CLOSED",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The line holds your place: retry from phase",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "The line holds your place: retry from phase {0}, with every life and all three shields. Raise a shield on the bell and it keeps its charge.",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "The ticket tore.",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "TICKET TORN",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "W,A,S,D,UP,DOWN,LEFT,RIGHT,Z,J,SPACE,X,C,E,SHIFT,K,P,ESC",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A child's drawing of a lane, from before. A drawing is not a timetable.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A late municipal clearance. I can give you the carriage ledger, not a story about why it came through.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A message can be true and still withhold most of the truth. The second line is the part she expected me to restore.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS A COVER-UP",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS A MESSAGE HALF READ",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS A QUESTION ONLY SHE CAN ANSWER",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS A WORRY, NOT A CHARGE",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS CENSORSHIP",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS FACTS, AND ONE UNKNOWN",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS FORCE",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS HIS FAULT",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS YOUR OWN PROBLEM",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Before dawn she returned the key and asked for no carriage. Nobody walked her out.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BORROWED LIGHT · LAST NIGHT",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Cases stay aboard. Owners get off. Her city case was collected.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Cash is how this city pays. People want one quiet night. She did not invent the arrangement.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Choice does not guarantee she is still safe. The message is already a day old.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CHOOSE TWO TRUE THINGS · ONE HE CAN GRANT, ONE THAT STAYS OPEN",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM 1978-0412 · THE ORCHARD CASE",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM 1978-0412 · TWO CLAIMS",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js",
+   "src/trueEndingScript.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Clear of the door.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Eastbound is a direction, not an address. Bellwether has no forwarding address on file.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Eastbound means she has gone home to the orchard.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Eastbound. That is all I can say before this door closes. Station staff keep the fuller record.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EDA'S STALL · PAID IN CASH",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Every record gives a time. None of them gives a reason.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HANA · BEFORE DAWN",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files a complaint. It says nothing of her. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files a conspiracy. Her message stays unread. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files a missing person. The file has none. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files her as forced. She chose. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "He files the doubt. She chose to go. Try the true thing.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her first line burned true: BUTCH, I WAS HERE.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HER LETTER · BORROWED LIGHT",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her message was already a day old when I found it.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Her orchard case is still aboard. She never got off.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I do not know how to stop looking yet. That may be my problem, not hers.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I need to know why she left. I can accept the answer if I hear it from her.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "I ride on a claim card, not a ticket. The looking is mine.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAMP OIL · TWO CANS",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Late is not forged. A ledger says what came through. Not why.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Mara was alive when she prepared this route. She left by choice. Those are facts. Her reason is still unknown.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "NIKA'S TERMINAL · TIMESTAMPS",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No record says why she left. The claim lists cases, not reasons.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "No. Personal. Mara disappeared. Echo City is the first place anyone saw her afterward.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Nobody leaves before dawn unless someone makes them.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Not in my carriage. Station staff keep their own records.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Official inquiry? Then make it brief. This service is leaving.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Order C-441. A branch losing pressure, cut from below. Petar never saw a message.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "People wait here every day. One woman kept looking east, then left when the replacement service arrived.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PLATE IV · ROSA'S DRAWING",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Rosa drew her walking home. That is where she is now.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SEAT 43 · TWO TICKETS",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She bought the lamp oil to set the square alight.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She chose to go. She handed Hana the key herself.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She kept two lives on purpose: a city room, the orchard at weekends.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She left voluntarily, or somebody made it look that way. Either way, someone here remembers the route.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She paid everything in cash. She was hiding from someone.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She was alive and laying the route. She bought the oil herself.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "She went on by choice. Her letter says she could not wait.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Someone could have forced her to perform the whole route alone.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Staff keep timetables, not secrets. You have read every record she left.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Stand back, please.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STATION STAFF · THE FULLER RECORD",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CARRIAGE LEDGER",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The city cut her second line to silence her.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The clearance came late, so the ledger is forged.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE COPPER HERON · ROOM SIX",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE CUT FEED · BY THE CLOCK",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FIRE LETTERS · FIRST ROW",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE ORCHARD CASE · BELLWETHER",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The second line was cut, and its ends were left for a hand to rejoin.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The station staff are hiding the rest of her record.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Transport noticed the code and Maintenance cut the message. That can be municipal censorship.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two cans, poured along the joints. The letters burned. Nothing else did.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two tickets 43 were issued. Someone else travels as her.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Two tickets, one seat, one passenger. The terminal printed her twice.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "You found me at the station and led me to the first trace. Maybe you already knew where this ended.",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "YOUR CLAIM CARD · 1978-0412",
+  "files": [
+   "src/chapters/finalBoss/echoExchanges.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ") saturate(1.35) contrast(0.92) brightness(1.24)",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js",
+   "src/chapters/nightService/art/ink.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "KEEP MOVING",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js",
+   "src/shell/cutscene/painted/chapter4To5.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LOST PROPERTY · 1978",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "OVERDUE",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js",
+   "src/chapters/finalBoss/setPieces/returnToSender.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "sepia({0}) saturate(1.35) contrast(0.92) brightness(1.24)",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js",
+   "src/chapters/nightService/art/ink.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "sepia(0.9) saturate(1.2) brightness(1.1)",
+  "files": [
+   "src/chapters/finalBoss/finaleArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "↑ ← → ↓ / WASD · PAD: D-PAD OR Y X B A",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "↑ ← → ↓ / WASD · THE CARD AT THAT HAND",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A / D · LEAN TO A LINE · HOLD E · PAINT THE DRAWN LINE AHEAD · SPACE · JUMP",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "A TRUE THING",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACT · PUNCH · SAY IT",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ANSWER (THE STANDOFF)",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DASH THROUGH THE WORDS",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUCK · SLIDE (THE ROOF RUN)",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DUCK · SLIDE UNDER A GANTRY",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · AS IT STRIKES",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · PUNCH A LAMP, IT FIRES ON THE BELL · SPACE · JUMP ON THE BEAT",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E · PUNCH IT BACK AS IT LANDS · SPACE · JUMP A SACK · SHIFT · DASH",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · IT FIRES ON THE NEXT BELL",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER · LEFT CLICK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER / CLICK · AS IT LANDS IN THE BRASS RING",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER / CLICK · AS IT REACHES YOU",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "E / ENTER / CLICK · UNDER HIM",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "EVERY STRETCH IS A CHECKPOINT · A TORN LAST LAYER RESTARTS ONLY THE STRETCH",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FOR THE CLOCK, NOT FOR HIM",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "FULLSCREEN",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "GAMEPAD",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD E · HOLD THE MOUSE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HOLD E · OR HOLD THE MOUSE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ITS DIRECTION ON THE SECOND STROKE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JUMP · JUMP THE BELL’S RING",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JUMP ABOARD",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "JUMP HIS BRUSH",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEAN LEFT",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LEAN TO A LINE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "MOVE ACROSS THE ROOF",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT (THE PAINTED LINE)",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PAINT THE LINE AHEAD",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH A BRASS CLAIM BACK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH IT BACK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PUNCH THE BELL",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RUN",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SAY BOTH TRUE THINGS",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SHIFT / X · ONCE IN THE AIR",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · CLIMB, AND JUMP THE BELL’S RING · E · PUNCH THE BELL AS IT STRIKES",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · HOLD FOR HIGHER",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SPACE · JUMP · S · DUCK UNDER A GANTRY · E · PUNCH A BRASS CLAIM BACK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STICK MOVE · A JUMP · B / RB DASH · X ACT (HOLD TO PAINT) · STICK DOWN DUCK · START PAUSE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "STORY · A TORN LAST LAYER UNDOES NOTHING",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE OTHER TRUE THING",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WAIT",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WAIT FOR THE CLOCK · ↑ ← → ↓ · ONE TRUE THING, THEN THE OTHER ON THE SECOND STROKE",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD · MOVE · SHIFT · DASH THROUGH · E · SAY BOTH TRUE THINGS, UNDER HIM",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "WASD / ARROWS · STICK",
+  "files": [
+   "src/chapters/finalBoss/finaleControls.js",
+   "src/shell/chapterControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ". What you won before it stays won.",
+  "files": [
+   "src/chapters/finalBoss/finaleModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "He stands up where he fell. Nothing is undone.",
+  "files": [
+   "src/chapters/finalBoss/finaleModel.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "This stretch starts again",
+  "files": [
+   "src/chapters/finalBoss/finaleModel.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "This stretch starts again{0}. What you won before it stays won.",
+  "files": [
+   "src/chapters/finalBoss/finaleModel.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "<b>CH {0}</b> {1}",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "Any chapter can be played again from LOAD · CHECKPOINTS on the title (or below). The stones this journey holds stay with it.",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Butch got off at Bellwether and left the orchard case at Rosa’s door.",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CH {0}",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "template-segment"
+ },
+ {
+  "key": "CLAIM 1978-0412 · CLOSED",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "CLAIM 1978-0412 · STATUS: OPEN",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RETURN TO TITLE",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js",
+   "src/shell/pauseMenu.js",
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE JOURNEY IS COMPLETE",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The night service keeps running. Butch rides on beside the Mara ahead.",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The property was lost, not Mara.",
+  "files": [
+   "src/chapters/finalBoss/journeyComplete.js",
+   "src/trueEndingScript.js",
+   "true-ending.html"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": ": walk up to it and press E.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· ITS BRIDGE LAYS ON THE NEXT BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· ON THE BELL IT LIGHTS HIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "{0} lamp: E beside it, and on the next bell {1}.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "A <kbd>TEAL</kbd> LAMP · ITS BILLBOARD RISES ON THE BELL · SHELTER, AND A STEP UP",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AMBER PLANKS ON THE BELL · TEAL PLANKS ON THE OFF-BEAT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AN",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "AN <kbd>AMBER</kbd> LAMP · <kbd>E</kbd> · ITS BRIDGE LAYS ON THE NEXT BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "An amber",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "At the rose signal: E. It lights him on the next bell, and the stretch is done.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BELL PLANKS · OUT ON THE BELL, FOR TWO SECONDS · JUMP ON THE BEAT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "HIS SEARCHLIGHT · IT STABS DOWN ON THE OFF-BEAT · KEEP MOVING, OR GET UNDER A BILLBOARD",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "its billboard rises",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "its bridge lays across",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAMP · ITS BILLBOARD RISES ON THE BELL · SHELTER, AND A STEP UP",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "lamp: E beside it, and on the next bell",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "ON THE BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js",
+   "src/chapters/finalBoss/setPieces/bellTower.js",
+   "src/chapters/finalBoss/setPieces/sequence.js",
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "Set: on the next bell",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "Set: on the next bell {0} · {1} s",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "THE <kbd>ROSE</kbd> SIGNAL · <kbd>E</kbd> · ON THE BELL IT LIGHTS HIM",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE BELL QUICKENS · THREE SECONDS NOW · EVERY PLANK WITH IT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE FIRST BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE OFF-BEAT",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "THE QUICKENING",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "The rose signal ends this stretch,",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "The rose signal ends this stretch, {0} m {1}: walk up to it and press E.",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "The rose signal is set: it lights him on the next bell ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "The rose signal is set: it lights him on the next bell · {0} s",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "WAIT FOR THE BELL · THEN CROSS BEFORE THE BRIDGE FOLDS",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· JUMP · HOLD FOR HIGHER · CLIMB",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· JUMP IT AS IT PASSES",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "<kbd>SPACE</kbd> · JUMP · HOLD FOR HIGHER · CLIMB",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "AS IT STRIKES · ON THE BELL",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "HIS COUNTERWEIGHTS · A SHADOW RATTLES DOWN THE SHAFT FIRST · STEP ASIDE",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellTower.js"
+  ],
+  "kind": "literal"
+ }
+]

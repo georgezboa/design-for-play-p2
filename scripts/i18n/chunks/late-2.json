@@ -1,0 +1,586 @@
+[
+ {
+  "key": "ALT ⌥",
+  "files": [
+   "src/cars/presentCity3d/chapter3Guidance.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· 1978 LENS",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "1978 · CHECKED",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "1978 · CLAIM",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "PINNED {0} / {1}",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "VELEZ · 1978",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "VENN · 1978",
+  "files": [
+   "src/cars/presentCity3d/chapter3OpeningContent.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· ESC",
+  "files": [
+   "src/cars/presentCity3d/Chapter3TicketBoard.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · ESC",
+  "files": [
+   "src/cars/presentCity3d/Chapter3TicketBoard.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "DAY {0} · {1}:{2}",
+  "files": [
+   "src/cars/presentCity3d/chapter3TimeSystem.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "PHASE {0} / 5 · {1}",
+  "files": [
+   "src/chapters/blackKnifeFinal/entities/Hud.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· THE",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "PHASE {0} · {1}",
+  "files": [
+   "src/chapters/blackKnifeFinal/scenes/BossScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "CHAPTER 2 ·",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "CHAPTER 2 · {0}",
+  "files": [
+   "src/chapters/borrowedLight/BorrowedLightScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· HELD",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "DEPARTURE ·",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "DEPARTURE · {0} {1}{2}",
+  "files": [
+   "src/chapters/borrowedLight/hud.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· FORGOTTEN",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · FORGOTTEN",
+  "files": [
+   "src/chapters/borrowedLight/story.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "MAIL · 1978",
+  "files": [
+   "src/chapters/finalBoss/setPieceArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "LAMP ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SIGNAL ·",
+  "files": [
+   "src/chapters/finalBoss/setPieces/bellRooftops.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· JUMP",
+  "files": [
+   "src/chapters/finalBoss/setPieces/paintedLine.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "BUTCH ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "BUTCH · {0} · {1}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "CLAIM 1978-0412",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js",
+   "src/chapters/museum3d/assets/ChapterCaseObjects.js",
+   "src/chapters/nightService/acts/act1.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/shell/cutscene/painted/opening.js",
+   "src/shell/cutscene/painters.js",
+   "src/shell/finaleUi.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "RALLY ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "RALLY · {0} / {1}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "STEADY ·",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "STEADY · {0}",
+  "files": [
+   "src/chapters/finalBoss/spectacleBattle.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· PAINT",
+  "files": [
+   "src/chapters/finalBoss/stage/lineView.js",
+   "src/chapters/paintedCountry/DrawingStudioScene.js",
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "· RETURN",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "1978-0402 · UMBRELLA",
+  "files": [
+   "src/chapters/finalBoss/stage/trainView.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "KEYS {0} / {1}",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SHIELD ×",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "SHIELD ×{0}",
+  "files": [
+   "src/chapters/museum/labyrinth/labyrinthData.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· FLOOR",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · FLOOR {1}",
+  "files": [
+   "src/chapters/museum/labyrinth/LabyrinthScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "17 OCT 1978",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js",
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACC. 1978-0412 · 1",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACC. 1978-0412 · 2",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACC. 1978-0412 · 3",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "ACC. 1978-0412 · 4",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "BUTCH —",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "BUTCH — {0}",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "FILED ·",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "FILED · {0}",
+  "files": [
+   "src/chapters/museum3d/data/chapterExhibitCatalog.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "DOOR {0} · {1}",
+  "files": [
+   "src/chapters/museum3d/directions/directionRegistry.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "STATE ·",
+  "files": [
+   "src/chapters/museum3d/Museum3DApp.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "→ BELLWETHER",
+  "files": [
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "07:10 EASTBOUND",
+  "files": [
+   "src/chapters/nightService/acts/oneAnswer.js",
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "SAT 07:10",
+  "files": [
+   "src/chapters/nightService/art/oneAnswerArt.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "▸ CONTINUE",
+  "files": [
+   "src/chapters/nightService/PanelScene.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· TAKE",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · PAINT {1} {2}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · TAKE {1}",
+  "files": [
+   "src/chapters/paintedCountry/DrawingStudioScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· CLOSE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WALK",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· WASH",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · CLOSE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · PAINT",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · WASH",
+  "files": [
+   "src/chapters/paintedCountry/PaintedCountryScene.js",
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· GIVE",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· RETURNED",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · RETURNED",
+  "files": [
+   "src/chapters/paintedCountry/PaintedLineScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "· BOARD",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· BORROW",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· BORROWED",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "{0} · BORROW {1}",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "{0} · BORROWED",
+  "files": [
+   "src/chapters/paintedCountry/PigmentTrainScene.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "ACC. 1978-0412",
+  "files": [
+   "src/shell/cutscene/painted/chapter4To5.js",
+   "src/shell/cutscene/painters.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "15:38 RESERVED",
+  "files": [
+   "src/shell/cutscene/scenes/chapter2To3.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "· SUSPENDED",
+  "files": [
+   "src/shell/pauseMenu.js"
+  ],
+  "kind": "quasi"
+ },
+ {
+  "key": "· {0} PLAYED",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "CHAPTER {0} · {1}{2}",
+  "files": [
+   "src/shell/saveSystem.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "中文 · CHINESE",
+  "files": [
+   "src/shell/settingsControls.js"
+  ],
+  "kind": "literal"
+ },
+ {
+  "key": "{0} CHAPTER {1} · {2}",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "NO.",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "literal-segment"
+ },
+ {
+  "key": "SLOT {0} · {1}",
+  "files": [
+   "src/shell/titleMenu.js"
+  ],
+  "kind": "template"
+ },
+ {
+  "key": "SPEED {0}×",
+  "files": [
+   "src/shell/titleMenuBoard.js"
+  ],
+  "kind": "template"
+ }
+]
