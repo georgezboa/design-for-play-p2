@@ -37,7 +37,7 @@ import { reducedMotionActive } from '../../shell/motion.js';
 import { createBellMeter, createStoneRow, createTagLayer, createTicketBar, showArchiveCard, showTitleCard, stampAnnounce } from '../../shell/finaleUi.js';
 import { DEV_MODE, devParam } from '../../devMode.js';
 import * as bellAudio from '../borrowedLight/audio.js';
-import { DEFAULT_DIFFICULTY, checkpointLine, createDeathLedger, difficultyPreset, spreadWorldTags } from './finaleModel.js';
+import { DEFAULT_DIFFICULTY, checkpointLine, createDeathLedger, difficultyPreset, spreadWorldTags, tagWidth } from './finaleModel.js';
 import { NIGHT_SERVICE_SHARE, SET_PIECES, createMovementRun } from './setPieces/sequence.js';
 import { FINALE_ALL_CONTROLS, PIECE_KEY_LINES, PROGRESS_KEPT_LINE, STORY_KEPT_LINE, announceControlsStage, padDirection, readFinalePad } from './finaleControls.js';
 import { completedEnding, recordEnding, showJourneyComplete } from './journeyComplete.js';
@@ -1398,9 +1398,14 @@ class SpectacleBattle {
     this.tags.begin();
     if (this.mode === 'play' && !this.transition && !this.handoff && !this.dialoguePause && !this.worldVeiled && this.view && this.run) {
       const tags = [];
+      // A tag stays whole on screen (its width grows with TEXT SIZE).
+      const scale = Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--nf-scale')) || 1;
+      const width = this.container.clientWidth;
       for (const tag of this.view.tags(this.run.piece) ?? []) {
         const pt = this.screenPoint(tag.x, tag.y, tag.z ?? 0);
-        if (pt) tags.push({ ...tag, x: pt.x, y: pt.y });
+        if (!pt) continue;
+        const half = Math.min(width / 2 - 8, (tagWidth(tag.text) * scale) / 2);
+        tags.push({ ...tag, x: THREE.MathUtils.clamp(pt.x, half + 8, width - half - 8), y: pt.y });
       }
       spreadWorldTags(tags).forEach((tag) => this.tags.tag(tag.text, tag.x, tag.y, { dim: Boolean(tag.dim), color: tag.color }));
     }
