@@ -18,10 +18,14 @@
 import { clamp } from './kernel.js';
 import { stepPlatformBody } from './platformer.js';
 import { TOWER_LEDGES, TOWER_SWINGS } from './bellTower.js';
+import { LINE } from './paintedLine.js';
 
 export const BOT_SKILL = Object.freeze({
-  skilled: Object.freeze({ id: 'skilled', react: 0.2, jitter: 0.025, slip: 0.04, blind: 0.35, care: 1, feint: 0, punchChance: 0.9, hesitate: 0 }),
-  weaker: Object.freeze({ id: 'weaker', react: 0.3, jitter: 0.06, slip: 0.12, blind: 0.5, care: 0.75, feint: 0.06, punchChance: 0.55, hesitate: 0.25 }),
+  // misread: how far off it judges when a moving thing will be where (a
+  // plank's beat, a case's arrival), each time it plans: a fraction of the
+  // time ahead, one sigma (near things are read better than far ones).
+  skilled: Object.freeze({ id: 'skilled', react: 0.2, jitter: 0.025, slip: 0.04, blind: 0.35, care: 1, feint: 0, punchChance: 0.9, hesitate: 0, misread: 0.04 }),
+  weaker: Object.freeze({ id: 'weaker', react: 0.3, jitter: 0.06, slip: 0.12, blind: 0.5, care: 0.75, feint: 0.06, punchChance: 0.55, hesitate: 0.25, misread: 0.14 }),
 });
 // Round 11's names, kept as aliases.
 const ALIASES = { competent: 'skilled', learner: 'weaker' };
@@ -80,6 +84,7 @@ function buildPlans() {
     plans.push({ x, release: true });
     for (const jumpAt of [0, 0.1, 0.22, 0.36]) for (const hold of [0.12, 0.5]) plans.push({ x, jumpAt, hold });
     plans.push({ x, duckTo: 0.45 });
+    plans.push({ x, duckTo: 0.85 });
     plans.push({ x, dashAt: 0 });
     if (x !== 0) for (const stopAt of [0.12, 0.3, 0.55]) plans.push({ x, stopAt });
     plans.push({ x, jumpAt: 0, hold: 0.5, dashAt: 0.28 });
@@ -155,7 +160,11 @@ export function sidePolicy(mind, { goalOf, extra = null, horizon = 0.95, every =
     if (next <= 0 && !mind.blind) {
       next = every * (S.id === 'weaker' ? 1.35 : 1);
       const seen = piece.hazards.filter((h) => h.age >= S.react && !(ignore && ignore(h, piece)));
-      const forecast = piece.forecast(seen);
+      // It reads the timing of what moves a little wrong, each time.
+      const exact = piece.forecast(seen);
+      const bias = jitterOf(mind.random, S.misread ?? 0);
+      const at = (t) => Math.max(0, t * (1 + bias));
+      const forecast = { world: (t) => exact.world(at(t)), hits: (b, t) => exact.hits(b, at(t)), risk: exact.risk ? (b, t) => exact.risk(b, at(t)) : undefined };
       const best = planPlatformer({ body: piece.body, forecast, goal: goalOf(piece), horizon: horizon * S.care + 0.2, prefer: plan });
       if (best.plan !== plan || since > 0.5) {
         // A human presses a beat early or late.
@@ -505,7 +514,9 @@ export function paintedLinePolicy(mind, { lanes = [-2.4, 0, 2.4] } = {}) {
       input.jumpHeld = jumpHold > 0;
       return input;
     }
-    const horizon = 75;
+    // How far down the line it reads (a first-timer looks at the train, not
+    // the horizon), and a beat of hesitation before both hands go on the brush.
+    const horizon = S.id === 'weaker' ? 34 : 70;
     // When does each line first become impassable (in metres ahead)?
     const blockedAt = (lane) => {
       let first = horizon;
@@ -531,7 +542,7 @@ export function paintedLinePolicy(mind, { lanes = [-2.4, 0, 2.4] } = {}) {
         const room = blockedAt(lane);
         const move = Math.abs(lanes[lane] - body.x) / 6.6 * speed;
         let score = room - move * 0.6 - Math.abs(lane - piece.trainLane) * 2 - (lane === target ? 0 : 3);
-        for (const g of piece.gaps) if (g.lane === lane && g.d1 > at && g.d0 - at < 40 && g.painted < g.d1 - g.d0) score -= 4;
+        for (const g of piece.gaps) if (g.lane === lane && g.d1 > at && g.d0 - at < Math.min(40, horizon) && g.painted < g.d1 - g.d0) score -= 4;
         return { lane, score, room };
       });
       scores.sort((a, b) => b.score - a.score);
@@ -540,7 +551,8 @@ export function paintedLinePolicy(mind, { lanes = [-2.4, 0, 2.4] } = {}) {
     const want = lanes[target];
     const dx = want - body.x;
     // Paint the drawn stretch on this line once it is in reach (and the lean is done).
-    const gap = piece.gaps.find((g) => g.lane === piece.trainLane && g.d1 > at && g.painted < g.d1 - g.d0 && g.d0 - at < 15.5);
+    const reach = LINE.reach - 0.5 - speed * S.hesitate;
+    const gap = piece.gaps.find((g) => g.lane === piece.trainLane && g.d1 > at && g.painted < g.d1 - g.d0 && g.d0 - at < reach);
     const steering = Math.abs(dx) > 0.35;
     if (gap && !steering) input.actHeld = true;
     else input.x = Math.abs(dx) > 0.12 ? clamp(dx / 0.5, -1, 1) : 0;

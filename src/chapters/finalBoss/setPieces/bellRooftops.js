@@ -96,7 +96,7 @@ export const ROOFTOP = Object.freeze({
   beamAim: 0.6, // he aims this long after the bell (the beam fires on the off-beat)
   beamHalf: 0.9,
   beamLive: 0.3,
-  beamFrom: 36, // the searchlight finds Butch from the first planks on
+  beamFrom: 30, // the searchlight finds Butch from the end of the first roofs on
   towerX: 232,
   quickBell: 3, // THE QUICKENING (STORY: 3.6)
 });

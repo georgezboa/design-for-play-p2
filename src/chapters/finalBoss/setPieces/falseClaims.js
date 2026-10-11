@@ -33,9 +33,10 @@ import { ECHO_EXCHANGES } from '../echoExchanges.js';
 import { approach, clamp, createPieceBase, pieceApi } from './kernel.js';
 
 export const CLAIM_SEGMENTS = Object.freeze([
-  Object.freeze({ id: 'the-claim', name: 'THE CLAIM', share: 0.25, exchange: 'brief' }),
-  Object.freeze({ id: 'his-record', name: 'HIS RECORD', share: 0.35, exchange: 'looked-east' }),
-  Object.freeze({ id: 'echoes', name: 'ECHOES', share: 0.4, exchange: 'ledger' }),
+  // dodge: seconds of his patterns before the true things come down
+  Object.freeze({ id: 'the-claim', name: 'THE CLAIM', share: 0.25, exchange: 'brief', dodge: 3.2 }),
+  Object.freeze({ id: 'his-record', name: 'HIS RECORD', share: 0.35, exchange: 'looked-east', dodge: 5.5 }),
+  Object.freeze({ id: 'echoes', name: 'ECHOES', share: 0.4, exchange: 'ledger', dodge: 7 }),
 ]);
 
 export const SQUARE = Object.freeze({ minX: -9, maxX: 9, minZ: -4.2, maxZ: 7, bossZ: -7.4, spawnZ: 5 });
@@ -293,7 +294,7 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
     d.seg.setProgress(1);
     quiet = 2.6;
     const more = d.completeSegment({ exchange: exchange().id });
-    if (more) { beat = 0; beatClock = quiet + 0.6; cardsAt = d.clock + quiet + 1.4; d.emit({ type: 'claim', exchange: exchange().id, cue: exchange().claim, after: quiet }); } else d.emit({ type: 'finisher', kind: 'no-answer' });
+    if (more) { beat = 0; beatClock = quiet + 0.6; cardsAt = d.clock + quiet + d.tele(seg().dodge); d.emit({ type: 'claim', exchange: exchange().id, cue: exchange().claim, after: quiet }); } else d.emit({ type: 'finisher', kind: 'no-answer' });
   };
 
   // ---------------------------------------------------------------- update
@@ -335,7 +336,7 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
       d.emit({ type: 'segment', index: d.seg.index, name: seg().name, id: seg().id, checkpoint: true });
       d.emit({ type: 'claim', exchange: exchange().id, cue: exchange().claim, after: 0 });
       hint('dodge');
-      cardsAt = d.clock + d.tele(seg().id === 'the-claim' ? 3.2 : 1.6);
+      cardsAt = d.clock + d.tele(seg().dodge);
     }
     stepBody(dt, d.state === 'done' ? {} : input);
     if (input.act && d.state === 'play') answer();
@@ -408,7 +409,7 @@ export function createFalseClaims({ difficulty, seed = 23, startSegment = 0, exc
     beatClock = 2.0;
     if (rollback === 'segment') {
       cards = []; held = []; ready = false; pairLeft = 0;
-      cardsAt = d.clock + 1.8;
+      cardsAt = d.clock + d.tele(Math.min(3.5, seg().dodge));
       d.seg.restart();
     }
     Object.assign(body, { x: 0, z: SQUARE.spawnZ, vx: 0, vz: 0, dashT: 0 });

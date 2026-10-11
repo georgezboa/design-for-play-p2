@@ -44,8 +44,8 @@ export const LINE = Object.freeze({
   lean: 6.6, // m/s across the lines
   leanAccel: 55,
   painting: 0.22, // steering while painting
-  reach: 16, // the brush reaches this far ahead
-  paintSpeed: 46, // m/s the paint runs along a drawn stretch
+  reach: 15, // the brush reaches this far ahead
+  paintSpeed: 26, // m/s the paint runs along a drawn stretch (a 10 m stretch: 0.4 s of both hands)
   jumpV: 7.4,
   gravity: 22,
   strokeLead: 1.35, // a wash stroke's shadow warns this long
@@ -84,20 +84,22 @@ export const LINE_LAYOUT = Object.freeze([
   // S1 THE WASH
   S(318, ['butch'], 11, { teach: 'stroke' }),
   W(372, { teach: 'sweep' }),
-  B(424, 0), B(424, 1),
-  S(444, ['butch', 'next']),
-  W(500),
-  G(540, 1, 10), B(542, 0),
-  S(566, ['butch']), W(606), S(624, ['butch', 'next'], 12, { extra: true }),
-  B(676, 2), B(676, 1), G(690, 0, 8),
+  B(400, 0), B(400, 1),
+  S(420, ['butch', 'next']), W(436),
+  G(462, 1, 10), B(464, 0), B(464, 2), W(478),
+  S(500, ['butch']), W(512),
+  G(540, 1, 10), B(542, 0), S(552, ['butch', 'next'], 10, { extra: true }),
+  B(578, 1), G(574, 0, 9), G(574, 2, 9), W(596),
+  S(612, ['butch']), W(624), S(640, ['butch', 'next'], 12),
+  B(676, 2), B(676, 1), G(690, 0, 8), W(704),
   // S2 ALL WORLDS AT ONCE: the 1978 tunnel …
-  T(742, 'butch', { teach: 'ghost' }), B(790, 1, 3, { world: 'tunnel' }), T(802, 'other'), T(842, 'butch'),
+  T(742, 'butch', { teach: 'ghost' }), T(770, 'other'), B(790, 1, 3, { world: 'tunnel' }), T(800, 'butch'), T(818, 'other', { extra: true }), T(842, 'butch'), W(852),
   // … the rain city's bell planks …
-  P(906, 8, { teach: 'planks' }), P(962, 8), W(986), P(1010, 8),
+  P(906, 8, { teach: 'planks' }), W(930), P(962, 8), G(976, 1, 8), W(990), P(1010, 8),
   // … Echo City's words …
-  X(1032, 'butch', { teach: 'words' }), X(1052, 'other'), X(1076, 'butch'), X(1078, 'next', { extra: true }), S(1100, ['butch']),
+  X(1030, 'butch', { teach: 'words' }), X(1046, 'other'), X(1062, 'butch'), X(1064, 'next', { extra: true }), W(1078), X(1090, 'butch'), S(1104, ['butch']),
   // … the painted country, the wash closing in.
-  S(1150, ['butch', 'next']), W(1176), B(1206, 1), B(1206, 0), S(1214, ['butch'], 9, { extra: true }),
+  S(1136, ['butch', 'next']), W(1150), G(1168, 2, 8), B(1170, 1), W(1186), B(1206, 1), B(1206, 0), S(1214, ['butch'], 9, { extra: true }), W(1226),
 ]);
 
 export const LINE_WORLDS = Object.freeze([
