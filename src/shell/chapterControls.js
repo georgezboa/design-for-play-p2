@@ -58,18 +58,21 @@ export const CHAPTER_CONTROLS = Object.freeze({
     ['PAUSE', 'ESC / START'],
   ),
   echoCity: list(
-    // Echo City: click-to-walk streets; scanner fields switch to direct
-    // movement. F is free (fullscreen is the desktop bridge's F11).
-    ['WALK', 'CLICK THE GROUND · WASD / ARROWS · A FAR CLICK STRIDES'],
-    ['RUN', 'DOUBLE-CLICK THE GROUND · HOLD SHIFT'],
+    // Echo City is point and click (round 12, George: "第三章不要awsd的控制 就是
+    // 只要一个point and click"): a click walks, everywhere, scanner fields
+    // included; no key walks Butch (round 6 had WASD / arrows and Shift). F
+    // is free (fullscreen is the desktop bridge's F11).
+    ['WALK', 'CLICK THE GROUND'],
+    ['RUN', 'DOUBLE-CLICK THE GROUND'],
     // Alpha round 4 fix round (P2): the long walks.
     ['LONG WALKS', 'G · LEV LEADS THE WAY (WHEN OFFERED)'],
     ['SKIP A SCRIPTED WALK', 'CLICK'],
     ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
     ['CONTINUE DIALOGUE', 'CLICK · E / ENTER'],
-    ['SHOW WHAT MATTERS', 'HOLD TAB'],
-    ['WALK IN STEP (SCANNERS)', 'HOLD E BESIDE A LIT WALKER · OR WASD TOWARD THE ARCH'],
-    ['LET GO OF A WALKER', 'WALK BACK'],
+    // Round 12: Alt (⌥ Option on a Mac) shows every interactable; Tab too.
+    ['SHOW WHAT MATTERS', 'HOLD ALT ⌥ · OR TAB'],
+    ['WALK IN STEP (SCANNERS)', 'CLICK A LIT WALKER'],
+    ['LET GO OF A WALKER', 'CLICK BEHIND YOU'],
     ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
     // Round 6 (items 8, 18): the operations only, never the solution
     // order; E / Enter acts (Ch3 has no jump, so Space is not shown).
@@ -302,30 +305,31 @@ export const CONTROL_SETS = Object.freeze({
     id: 'chapter3',
     title: 'ECHO CITY',
     all: CHAPTER_CONTROLS.echoCity,
+    // Round 12: point and click (no WASD); Alt shows what can be used.
     basics: list(
-      ['WALK', 'WASD / ARROWS · CLICK THE GROUND'],
-      ['TALK / INSPECT', 'E / ENTER · CLICK A TAG'],
-      ['SHOW WHAT MATTERS', 'HOLD TAB'],
-      ['LEV LEADS THE WAY', 'G (WHEN OFFERED)'],
+      ['WALK', 'CLICK THE GROUND'],
+      ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
+      ['SHOW WHAT MATTERS', 'HOLD ALT ⌥ · OR TAB'],
+      ['LEV LEADS THE WAY', 'CLICK THE OFFER · G'],
     ),
     stages: Object.freeze({
       city: stage('THE STREETS', [
-        ['WALK', 'WASD / ARROWS · CLICK THE GROUND'],
-        ['RUN', 'HOLD SHIFT · DOUBLE-CLICK'],
-        ['TALK / INSPECT', 'E / ENTER · CLICK A TAG'],
-        ['SHOW WHAT MATTERS', 'HOLD TAB'],
-        ['LEV LEADS THE WAY', 'G (WHEN OFFERED)'],
+        ['WALK', 'CLICK THE GROUND'],
+        ['RUN', 'DOUBLE-CLICK THE GROUND'],
+        ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
+        ['SHOW WHAT MATTERS', 'HOLD ALT ⌥ · OR TAB'],
+        ['LEV LEADS THE WAY', 'CLICK THE OFFER · G'],
       ]),
       scanner: stage('A SCANNER FIELD', [
-        ['WALK IN STEP', 'HOLD E BESIDE A LIT WALKER'],
-        ['KEEP PACE', 'WASD TOWARD THE ARCH'],
-        ['LET GO OF A WALKER', 'WALK BACK'],
-        ['SHOW WHAT MATTERS', 'HOLD TAB'],
+        ['WALK IN STEP', 'CLICK A LIT WALKER'],
+        ['KEEP PACE', 'IN STEP UNTIL THE ARCH'],
+        ['LET GO OF A WALKER', 'CLICK BEHIND YOU'],
+        ['SHOW WHAT MATTERS', 'HOLD ALT ⌥ · OR TAB'],
       ]),
       clamp: stage('THE WIRE CLAMP', [
         ['WIRE CLAMP', 'DRAG THE COPPER END · OR E'],
-        ['TALK / INSPECT', 'E / ENTER'],
-        ['WALK', 'WASD / ARROWS · CLICK THE GROUND'],
+        ['TALK / INSPECT', 'CLICK A TAG · E / ENTER'],
+        ['WALK', 'CLICK THE GROUND'],
       ]),
       board: stage('THE TICKET BOARD', [
         ['MOVE A CARD', 'DRAG IT · TAB, ARROWS'],
@@ -345,13 +349,13 @@ export const CONTROL_SETS = Object.freeze({
     // Chapter3OpeningRuntime publishControlsStage
     probe: () => globalThis.document?.documentElement?.dataset?.chapter3Stage ?? null,
     entry: entry('CHAPTER 3 · ECHO CITY', [
-      ['WALK', 'WASD / ARROWS · CLICK THE GROUND'],
-      ['TALK / INSPECT', 'E / ENTER'],
-      ['SHOW WHAT MATTERS', 'HOLD TAB'],
+      ['WALK', 'CLICK THE GROUND'],
+      ['TALK / INSPECT', 'CLICK A TAG · E'],
+      ['SHOW WHAT MATTERS', 'HOLD ALT ⌥'],
     ], [
-      ['NOW', 'E speaks to people and inspects things.'],
+      ['NEW', 'Echo City is point and click: a click on the ground walks Butch there.'],
+      ['NEW', 'Click a person or a thing to talk to them or look at it.'],
       ['NOW', 'No jumping in the city: Space has nothing to do here.'],
-      ['NEW', 'A click on the ground walks Butch there.'],
     ]),
   }),
   // Chapter 4 · THE PAINTED COUNTRY. Stages are the rooms (chapter4Resume

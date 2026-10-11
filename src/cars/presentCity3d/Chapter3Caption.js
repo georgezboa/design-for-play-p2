@@ -56,7 +56,9 @@ export class Chapter3DialogueController {
       if (!this.active) return;
       const line = this.currentLine();
       const choices = this.isLineComplete() ? line?.choices ?? [] : [];
-      const digit = Number(event.key);
+      // By the key's position as well (round 12): with ⌥ Option held on a
+      // Mac the 1 key types "¡", and Alt is the reveal key in the city.
+      const digit = /^(?:Digit|Numpad)([1-9])$/.test(event.code ?? '') ? Number(event.code.slice(-1)) : Number(event.key);
       if (choices.length && digit >= 1 && digit <= choices.length) {
         event.preventDefault();
         // A held key never auto-repeats into the next menu; a used topic

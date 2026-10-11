@@ -167,10 +167,14 @@ describe('Chapter 3 walk beside (scanner crossings)', () => {
     assert.equal(inScanVolume(walk.geometry, back), false, 'the flag returns Butch to the safe line');
   });
 
-  it('switches to direct movement only inside a live scanner field', () => {
+  // Round 12 (George: point and click only): no field switches to direct
+  // movement any more. A click walks there as anywhere; the arch's beam
+  // stops a lone walker inside it; a click on the walker walks in step.
+  it('walks by click inside a live scanner field, and the arch stops a lone walker', () => {
     assert.match(runtime, /activeField\(\) \{[\s\S]*?this\.model\.scannerActive\(id\)/);
-    assert.match(runtime, /Scanner fields use direct movement; a click never paths through them/);
-    assert.match(runtime, /KeyW', 'KeyA', 'KeyS', 'KeyD'/);
-    assert.match(runtime, /this\.pointerHeld/);
+    assert.doesNotMatch(runtime, /Scanner fields use direct movement; a click never paths through them/);
+    assert.doesNotMatch(runtime, /KeyW|ArrowUp|keysHeld|pointerHeld|movementIntent/);
+    assert.match(runtime, /if \(!backOut\) this\.preview\.stopWalking\(\);/);
+    assert.match(runtime, /this\.inStepField = id;/);
   });
 });

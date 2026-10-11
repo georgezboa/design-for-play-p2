@@ -18,10 +18,23 @@
 // his hand, Lev's introduction) is walk-and-talk: captions that never take
 // the input, while Lev comes over and keeps beside him.
 //
+// Round 12 (George: "一开始是应该那个人走到前面必须聊天的", at the start that man
+// should walk up in front of Butch and they must talk): the step down and the
+// announcement over it stay as they were, but the opening is a conversation
+// again, not walk-and-talk. Once Butch is on the paving he stays there (the
+// runtime's arrival hold): the train pulls out, Lev walks over and stops in
+// front of him, face to face (chapter3Entrance LEV_ENTRANCE.faceToFace), the
+// two turn to each other, and when the announcement has finished the rest of
+// the opening is one conversation the player clicks through (CONTINUE · E):
+// the conductor's call-back as the train leaves, Butch's two lines with the
+// claim card in his hand, then Lev's introduction. The oil line is the task
+// when it ends. Before (round 11) Lev talked beside a Butch who was free to
+// walk off, and the lines ran on their own.
+//
 // Pure: no THREE, no DOM. Points are { x, z } on the ground; yaw follows the
 // runtime's convention (rotation.y = atan2(dx, dz), 0 faces +z).
 
-import { OPENING_POSITIONS } from './chapter3OpeningContent.js';
+import { ARRIVAL_DIALOGUE, LEV_INTRO_DIALOGUE, OPENING_POSITIONS } from './chapter3OpeningContent.js';
 
 /** The carriage group (makeFinalTrainDoor): origin on the rail centreline, turned 55°. */
 export const ARRIVAL_CARRIAGE = Object.freeze({
@@ -47,9 +60,11 @@ export const ALIGHTING = Object.freeze({
   // He stands a moment in the doorway, looking out.
   pause: 0.55,
   // m/s: the walk clip's own pace is 1.75; a careful step, then a walk out.
+  // Round 12: the walk out is a little slower (2.6 -> 2.1), with Butch's new
+  // walk (1.9); the whole step down still takes about four seconds.
   doorSpeed: 1.35,
   stepSpeed: 1.45,
-  walkSpeed: 2.6,
+  walkSpeed: 2.1,
   // the last metres ease to a stop
   settleMetres: 0.7,
 });
@@ -237,4 +252,33 @@ export function createLineQueue(entries, { gap = 0.35, hold = lineSeconds } = {}
     get remaining() { return queue.length - index + (current ? 1 : 0); },
     get clock() { return clock; },
   };
+}
+
+// ---------------------------------------------------------------------------
+// Round 12: the opening conversation.
+
+/** The announcement, over the step down (a caption that takes no input). */
+export const ARRIVAL_ANNOUNCEMENT = Object.freeze(ARRIVAL_DIALOGUE.slice(0, 1));
+
+/**
+ * Everything after it, as one conversation once Lev stands in front of
+ * Butch: the call-back, Butch's two lines (the claim card in his hand), then
+ * Lev's introduction.
+ */
+export const ARRIVAL_CONVERSATION = Object.freeze([...ARRIVAL_DIALOGUE.slice(1), ...LEV_INTRO_DIALOGUE]);
+
+/** The line that brings the claim card out (Butch's first). */
+export const ARRIVAL_CARD_OUT = ARRIVAL_CONVERSATION.findIndex((line) => line.speaker === 'BUTCH');
+
+/** The line it goes away on: Butch's "Why?", once Lev has asked him to keep it out. */
+export const ARRIVAL_CARD_AWAY = (ARRIVAL_DIALOGUE.length - ARRIVAL_ANNOUNCEMENT.length) + 1;
+
+/**
+ * Whether the arrival conversation opens now: Butch is down, the
+ * announcement has finished, Lev stands in front of him (the runtime places
+ * him there if his walk takes longer than LEV_ENTRANCE.meetWithin), it has
+ * not opened yet, and nothing else holds the screen (`busy`).
+ */
+export function arrivalTalkDue({ landed = false, announcementDone = false, levArrived = false, opened = false, busy = false } = {}) {
+  return landed && announcementDone && levArrived && !opened && !busy;
 }

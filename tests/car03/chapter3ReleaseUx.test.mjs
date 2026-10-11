@@ -19,8 +19,8 @@ const board = read('src/cars/presentCity3d/Chapter3TicketBoard.js');
 const caption = read('src/cars/presentCity3d/Chapter3Caption.js');
 
 describe('Chapter 3 release UX', () => {
-  it('lights only story interactables with Tab, each with a paper tag', () => {
-    assert.match(runtime, /\(this\.tabHeld && !interaction\.ambient\)/);
+  it('lights every interactable with the reveal held (round 12: Alt / Tab), each with a paper tag', () => {
+    assert.match(runtime, /\.filter\(\(interaction\) => this\.revealHeld\n/);
     // Round 2 (R2-3): chapter3Guidance.autoTaggedInteractions picks the tags
     // (hover, Tab, and the story interactable within E's reach).
     assert.match(runtime, /if \(!plan\.shown\.has\(interaction\.id\)\) continue;/);
@@ -57,7 +57,10 @@ describe('Chapter 3 release UX', () => {
     assert.doesNotMatch(preview, /requestFullscreen/);
     const keys = CHAPTER_CONTROLS.echoCity.map(([, input]) => input).join(' ');
     assert.doesNotMatch(keys, /(^|[^A-Z])F([^A-Z0-9]|$)/);
-    assert.match(keys, /WASD/);
+    // Round 12: point and click, no WASD (only the ticket board keeps
+    // arrow keys, for its papers).
+    const walking = CHAPTER_CONTROLS.echoCity.filter(([action]) => !/BOARD/.test(action)).map(([, input]) => input).join(' ');
+    assert.doesNotMatch(walking, /WASD|ARROWS|SHIFT/);
   });
 
   it('fixes the four reported bugs', () => {

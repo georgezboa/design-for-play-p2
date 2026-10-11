@@ -57,17 +57,18 @@ describe('Chapter 3 alpha round 2 guidance', () => {
     assert.deepEqual([...plan.shown], []);
     plan = autoTaggedInteractions({ candidates: [{ id: 'transport-entrance', distance: 30 }], hoveredId: 'transport-entrance', radius: 4.2 });
     assert.deepEqual([...plan.shown], ['transport-entrance'], 'hover always tags');
+    // Round 12: the reveal (Alt / Tab held) tags everything, flavour too.
     plan = autoTaggedInteractions({ candidates, tabHeld: true, radius: 4.2 });
-    assert.ok(plan.shown.has('transport-entrance') && !plan.shown.has('flavour-clock-tower'));
+    assert.ok(plan.shown.has('transport-entrance') && plan.shown.has('flavour-clock-tower') && plan.shown.has('lev-morning-companion'));
     plan = autoTaggedInteractions({ candidates: [{ id: 'night-cut-feed', distance: 3.6, radius: 3.2 }], radius: 4.2 });
     assert.equal(plan.nearestId, null, 'per-interactable reach');
     assert.match(runtime, /const plan = autoTaggedInteractions\(\{/);
     assert.match(runtime, /outline: this\.levOutline, follows: true,/);
   });
 
-  it('R2-3: after 20 s idle the city suggests holding Tab', () => {
+  it('R2-3: after 20 s idle the city suggests holding the reveal (Alt, round 12)', () => {
     assert.equal(IDLE_LOOK_HINT_SECONDS, 20);
-    assert.match(IDLE_LOOK_HINT_HTML, /HOLD <kbd>TAB<\/kbd> · LOOK AROUND/);
+    assert.match(IDLE_LOOK_HINT_HTML, /HOLD <kbd>ALT ⌥<\/kbd> · LOOK AROUND/);
     const base = { idleSeconds: 20, storyTargets: 1 };
     assert.equal(idleLookHintDue(base), true);
     assert.equal(idleLookHintDue({ ...base, idleSeconds: 19.9 }), false);

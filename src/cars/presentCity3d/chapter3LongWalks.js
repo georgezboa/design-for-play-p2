@@ -3,18 +3,22 @@
 //
 // Pure: no THREE, no DOM. Points are { x, z } (y ignored).
 //
-// The four longest walks between beats (A* path length at 5.4 m/s):
+// The four longest walks between beats (A* path length):
 //   board → Eda's stall        58 m   oil line → the ministry   45 m
 //   dusk → the Copper Heron    55 m   hotel → the night fire    51 m
 // The street camera shows about 12 m around Butch, so each one took four or
-// five clicks and ~15–25 s even for a player who knew the way, and much
-// longer for one who did not. Two changes, both optional to the player:
+// five clicks. Two changes, both optional to the player:
 //
 //   1. STRIDE. A walk ordered far away (a path of STRIDE_MIN_METRES or more:
-//      a click near the screen edge, or a tag across the street) is taken
+//      a click near the screen edge, or a tag across the street) was taken
 //      at a brisk jog, STRIDE_MULTIPLIER × the walk, easing back to a walk
-//      over the last STRIDE_EASE_METRES. Short clicks still walk; a
-//      double-click or Shift still runs.
+//      over the last STRIDE_EASE_METRES. Round 12 (George: "走的速度太快了",
+//      he walks too fast): Butch walks at a natural pace now (EchoCity3DPreview
+//      WALK_SPEED 1.9 m/s, the walk clip at about its own cadence, down from
+//      5.4 m/s, a 3x fast-forward walk), and a far click no longer strides
+//      (STRIDE_MULTIPLIER 1): every click walks. A double-click jogs at about
+//      3.3 m/s, the jog clip's own pace. The long walks take 24–31 s at the
+//      walk, so the offer below matters more.
 //   2. LEV LEADS THE WAY. Once the task card names the destination and
 //      Butch is LEAD_MIN_METRES or more from it, a tag under the task card
 //      offers G · LEV LEADS THE WAY: the screen goes to black, one line
@@ -23,10 +27,12 @@
 //      The beat itself still waits for the player's E.
 
 export const STRIDE_MIN_METRES = 9;
-export const STRIDE_MULTIPLIER = 1.45;
+export const STRIDE_MULTIPLIER = 1;
 export const STRIDE_EASE_METRES = 2.4;
-// Above this ground speed (m/s) Butch's rig plays its jog, not its walk.
-export const JOG_GAIT_SPEED = 6.6;
+// Above this ground speed (m/s) Butch's rig plays its jog, not its walk:
+// between the walk (1.9) and the double-click jog (3.3), the clips' own
+// paces 1.75 and 3.4 (Chapter3AnimatedCharacters).
+export const JOG_GAIT_SPEED = 2.8;
 
 /** Length of `path` (waypoints) walked from `from`. */
 export function pathMetres(from, path) {

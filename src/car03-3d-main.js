@@ -76,13 +76,15 @@ let arrivalHandedOver = false;
 let platformStarted = false;
 // Round 6 (item 18): name this chapter's keys once, as play begins (round
 // 11: as control comes to the player at the end of the step down, or 7 s in
-// on any other start).
+// on any other start; round 12: at the end of the arrival's conversation
+// with Lev, the first moment Butch can walk, so the card is not dismissed by
+// the clicks that read the conversation).
 const startPlatform = () => {
   if (platformStarted) return;
   platformStarted = true;
   // the city's clock starts from this frame, not from when it was covered
   preview.lastFrame = performance.now();
-  if (gameplayRuntime.beginArrival()) scheduleChapterControlsCard('chapter3', 4200);
+  if (gameplayRuntime.beginArrival()) gameplayRuntime.onArrivalControl = () => scheduleChapterControlsCard('chapter3', 900);
   else scheduleChapterControlsCard('chapter3', 7000);
 };
 if (arrival) {

@@ -220,10 +220,34 @@ describe('Chapter 3 integrated final lock v48', () => {
     // playerStart and levStart moved to the forecourt and the paving past
     // it. Files: +1 (chapter3Alighting): 33 -> 34. Toma's composition
     // unchanged. Assets unchanged.
+    // v52-r12-ch3play (round 12, George's playtest of how Chapter 3 plays,
+    // agent ch3play, 2026-10-10; tests/car03/chapter3Round12Play; the lead
+    // reconciles this lock with the other round-12 Chapter 3 branch at
+    // merge): point and click only: no key walks Butch (the round-6 WASD /
+    // arrows, Shift run and held-E walk in step are gone); a click walks in a
+    // scanner field too, the arch's beam stops a lone walker, a click on the
+    // lit walker walks in step until the crossing and a click behind lets
+    // go; the cards and hints name clicks. A natural walk: WALK_SPEED 5.4 ->
+    // 1.9 m/s (the walk clip at about its own cadence), no stride on far
+    // clicks, the double-click a 3.3 m/s jog; Lev's guide, follows and
+    // scripted walks at that pace; rig speed is measured on slow frames too.
+    // The arrival: after the step down Butch stays on the paving
+    // (arrivalHold) while Lev walks up and stops in front of him, face to
+    // face, then the call-back, Butch's lines (claim card in hand) and Lev's
+    // introduction are one required conversation (click through); the
+    // controls card comes when control does. The reveal: holding Alt (⌥
+    // Option) or Tab lights and tags every interactable on screen, flavour
+    // objects included (createRevealHold: either key, the pointer's altKey,
+    // cleared on blur / hidden); dialogue digits read event.code. Facing:
+    // everyone Butch talks to turns to him at a turn rate from any side (Lev
+    // too), whoever speaks a line turns to him, he turns to them (or to the
+    // oil line / letters), posts (Toma, Petar, Hana) turn back after; Olek
+    // stops to talk after the crossing. Files unchanged: 34. Toma's
+    // composition unchanged. Assets unchanged.
     assert.equal(sourceFiles.length, 34);
     assert.equal(
       aggregateSignature(sourceFiles),
-      '26db495e94c1d2ed00d2b4de560c62a20c8830db8d5a0fa1dcd946d2fa0703d3',
+      '55a040062e3fb5b0fe8b20b72879b5e9182771f7be38adb814ba448be3f42800',
       'Chapter 3 is locked. Reopen it explicitly and create a new lock version before changing runtime source.',
     );
   });
