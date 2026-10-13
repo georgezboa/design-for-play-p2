@@ -1047,6 +1047,8 @@ html[data-reduced-motion="true"] .nf-slot::after { animation: none !important; }
 #nightfall-title[data-layout="narrow"] .nf-main-actions .nf-action-detail { font-size: calc(clamp(9px, var(--nf-board) * .025, 13px) * var(--nightfall-text-scale) * var(--nf-fit, 1)); letter-spacing: .1em; }
 #nightfall-title[data-layout="narrow"][data-plaque="compact"] :is(.nf-menu-header, .nf-main-actions .nf-action-detail) { display: none; }
 #nightfall-title[data-layout="narrow"] .nf-menu-footer { padding-top: .45em; }
+/* seven lines (HOT COFFEE · DLC joined the board): the smallest board steps the rows down too */
+#nightfall-title[data-layout="narrow"][data-fit="tiny"] .nf-main-actions .nf-action { min-height: 32px; padding-block: 3px; }
 
 /* narrow screens: the dialogs fill them */
 @media (max-aspect-ratio: 5/4), (max-width: 760px) {

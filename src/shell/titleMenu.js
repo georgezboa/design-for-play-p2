@@ -28,6 +28,7 @@ import { dressCarriageWall } from './titleCarriage.js';
 import { mountTitleScene } from './titlePlate.js';
 import { clearCreditsQuery } from './endCredits.js';
 import { BOARD_FIT_LEVELS, boardFits, creditDepartureTime, formatCreditRate } from './titleMenuBoard.js';
+import { COFFEE_TEXT, coffeeMenuDetail, mountHotCoffee } from './hotCoffee.js';
 
 // The title always shows the player's own three slots, never a test route's
 // scratch slots (saveSystem.js ROUTER_SAVE_KEY).
@@ -127,9 +128,18 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     creditPlaybackRate = 1;
   };
 
+  let coffeeCleanup = null;
   const closeDialog = () => {
     stopCreditsMusic();
     stopCreditsRoll();
+    if (coffeeCleanup) {
+      coffeeCleanup();
+      coffeeCleanup = null;
+      // the board line reads FREE · COLD once it has gone cold
+      const detail = actions.querySelector('.nf-dlc .nf-action-detail');
+      if (detail) detail.textContent = coffeeMenuDetail();
+    }
+    dialog.classList.remove('nf-dialog--coffee');
     if (dialog.open) dialog.close();
     scene.hold('dialog', false);
     dialog.classList.remove('nf-dialog--credits-roll');
@@ -164,6 +174,17 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
     anchor.rel = 'noreferrer';
     anchor.textContent = label;
     return anchor;
+  };
+
+  // HOT COFFEE · DLC (hotCoffee.js): George's free DLC, one cup of coffee.
+  const renderCoffee = () => {
+    dialog.dataset.variant = 'coffee';
+    dialog.classList.add('nf-dialog--coffee');
+    openDialog();
+    coffeeCleanup = mountHotCoffee(panel);
+    // the dialog has no buttons: focus rests on the panel, ESC / B leaves
+    panel.tabIndex = -1;
+    panel.focus({ preventScroll: true });
   };
 
   const renderCredits = () => {
@@ -646,6 +667,7 @@ export function createTitleMenu({ openCredits = false, ending = null } = {}) {
       button('LOAD / CHECKPOINTS', () => renderSlots('checkpoints'), '', 'SELECT ARCHIVE OR CHAPTER'),
       button('CREDITS', renderCredits, '', 'CREW · MUSIC · SOURCES · AI'),
       button('SETTINGS', renderSettings, '', 'AUDIO · DISPLAY · ACCESSIBILITY'),
+      button(COFFEE_TEXT.title, renderCoffee, 'nf-dlc', coffeeMenuDetail()),
       button('QUIT GAME', renderQuit, 'nf-quit', 'END THE NIGHT SERVICE'),
     );
     [...actions.children].forEach((action, index) => {
