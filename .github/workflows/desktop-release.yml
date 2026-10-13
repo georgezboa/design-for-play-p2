@@ -52,7 +52,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: node --test tests/desktop/*.test.mjs
-      - run: npm run build
+      # The public build: NIGHTFALL_RELEASE=1 compiles out the 1111 test router
+      # and the dev routes (scripts/build-release.mjs).
+      - run: npm run build:release
       - run: ${{ matrix.script }}
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -63,9 +65,10 @@ jobs:
           retention-days: 14
           compression-level: 0
 
-  # A public pre-release with the three packages, so playtesters can download
-  # without a GitHub account: Releases → "NIGHTFALL playtest <n>". Runs after
-  # all three packages built. The playtest build keeps the 1111 test router.
+  # A public pre-release with the three packages, so players can download
+  # without a GitHub account: Releases → "NIGHTFALL build <n>". Runs after
+  # all three packages built. Since 2026-10-12 this is the release build (no
+  # 1111 test router); the same packages go to itch.io.
   publish:
     needs: package
     if: github.event_name == 'push'
@@ -86,23 +89,23 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: playtest-${{ github.run_number }}
-          TITLE: NIGHTFALL playtest ${{ github.run_number }}
+          TAG: build-${{ github.run_number }}
+          TITLE: NIGHTFALL build ${{ github.run_number }}
           SHA: ${{ github.sha }}
         run: |
           set -u
           cat > notes.md <<'NOTES'
-          NIGHTFALL — playtest build
+          NIGHTFALL — The Last Archive Line
 
           **Mac:** download the `.dmg` (or `-mac-universal.zip`), drag NIGHTFALL to Applications. First launch: right-click the app → **Open** → **Open** (the build is not notarized yet).
           **Windows:** download `-win-setup.exe` (or the `-win-x64.zip`). If SmartScreen warns, click **More info → Run anyway**.
           **Linux:** download the `.AppImage`, `chmod +x` it, run it.
 
-          About 3.5–4.5 hours; saves are automatic (CONTINUE). Settings has LOW GRAPHICS for slower computers. On the title screen, typing 1 1 1 1 opens the test router.
+          About 3.5–4.5 hours; saves are automatic (CONTINUE). Settings has LOW GRAPHICS for slower computers, and 中文 for Chinese screens and subtitles.
 
           **Mac：** 下载 `.dmg`，把 NIGHTFALL 拖进「应用程序」。第一次打开：右键点 App →「打开」→「打开」（还没做苹果公证）。
           **Windows：** 下载 `-win-setup.exe`。如果 SmartScreen 拦截，点「更多信息 → 仍要运行」。
-          存档自动保存（继续游戏）。电脑比较慢可以在设置里打开 LOW GRAPHICS。
+          存档自动保存（继续游戏）。电脑比较慢可以在设置里打开 LOW GRAPHICS；设置里的「中文」切换中文界面和字幕。
           NOTES
           echo "Build: $SHA" >> notes.md
           # a re-run of this job starts clean
